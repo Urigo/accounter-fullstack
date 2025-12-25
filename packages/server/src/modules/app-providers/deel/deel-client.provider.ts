@@ -6,6 +6,7 @@ import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import {
   downloadInvoicePdfSchema,
+  Invoice,
   retrieveInvoicesSchema,
   retrievePaymentBreakdownSchema,
   retrievePaymentReceiptsSchema,
@@ -104,6 +105,7 @@ export class DeelClientProvider {
   }
 
   public async getSalaryInvoices() {
+    const invoices: Invoice[] = [];
     try {
       const queryVars: {
         issued_from_date?: TimelessDateString;
@@ -116,41 +118,44 @@ export class DeelClientProvider {
         offset: 0,
         issued_from_date: dateToTimelessDateString(subYears(new Date(), 1)),
       };
-      const url = new URL(`${this.host}/invoices`);
-      Object.entries(queryVars).map(([key, value]) => {
-        url.searchParams.set(key, value as string);
-      });
-      const res = await fetch(url, {
-        headers: {
-          accept: 'application/json',
-          authorization: `Bearer ${this.apiToken}`,
-        },
-      });
-
-      if (!res.ok) {
-        console.error(await res.text());
-        throw new Error(`Deel API returned status ${res.status}`);
-      }
-      const rawData = await res.json();
-
-      if ('errors' in rawData) {
-        console.log(rawData);
-        throw new Error('Deel API returned an error');
-      }
-
-      const data = retrieveInvoicesSchema.parse(rawData);
-
-      if (data.data.length) {
-        data.data = data.data.map(invoice => {
-          return {
-            ...invoice,
-            issued_at: this.timeZoneFix(invoice.issued_at),
-            due_date: this.timeZoneFix(invoice.due_date),
-          };
+      for (let i = 0; i < 10; i++) {
+        const url = new URL(`${this.host}/invoices`);
+        Object.entries({ ...queryVars, offset: i * 50 }).map(([key, value]) => {
+          url.searchParams.set(key, value as string);
         });
+        const res = await fetch(url, {
+          headers: {
+            accept: 'application/json',
+            authorization: `Bearer ${this.apiToken}`,
+          },
+        });
+
+        if (!res.ok) {
+          console.error(await res.text());
+          throw new Error(`Deel API returned status ${res.status}`);
+        }
+        const rawData = await res.json();
+
+        if ('errors' in rawData) {
+          console.log(rawData);
+          throw new Error('Deel API returned an error');
+        }
+
+        const data = retrieveInvoicesSchema.parse(rawData);
+
+        if (data.data.length) {
+          data.data = data.data.map(invoice => {
+            return {
+              ...invoice,
+              issued_at: this.timeZoneFix(invoice.issued_at),
+              due_date: this.timeZoneFix(invoice.due_date),
+            };
+          });
+        }
+        invoices.push(...data.data);
       }
 
-      return data;
+      return invoices;
     } catch (error) {
       const message = 'Failed to fetch Deel salary invoices';
       console.error(`${message}: ${error}`);
