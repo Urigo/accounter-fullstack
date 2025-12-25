@@ -29,6 +29,10 @@ export async function calculateTotalAmount(
       getChargeDocumentsMeta(chargeId, injector),
     ]);
 
+    if (!charge) {
+      throw new Error(`Charge ID="${chargeId}" not found`);
+    }
+
     if (charge.type === 'PAYROLL' && transactionsAmount) {
       return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
     }
@@ -53,6 +57,10 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
     injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
     injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(chargeId),
   ]);
+
+  if (!charge) {
+    throw new Error(`Charge ID="${chargeId}" not found`);
+  }
 
   const allBusinessIdsSet = new Set<string>();
   const mainBusinessIdsSet = new Set<string>();
@@ -111,6 +119,10 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
     injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
   ]);
+
+  if (!charge) {
+    throw new Error(`Charge ID="${chargeId}" not found`);
+  }
 
   let invalidDocuments = false;
   let receiptAmount = 0;
@@ -230,6 +242,9 @@ export async function getChargeTaxCategoryId(
   injector: Injector,
 ): Promise<string | null> {
   const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+  if (!charge) {
+    throw new Error(`Charge ID="${chargeId}" not found`);
+  }
   if (charge.tax_category_id) {
     return charge.tax_category_id;
   }

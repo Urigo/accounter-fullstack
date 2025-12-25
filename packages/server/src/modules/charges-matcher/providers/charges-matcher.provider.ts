@@ -68,7 +68,7 @@ export class ChargesMatcherProvider {
 
     // Step 1: Load source charge data
     const sourceCharge = await chargesProvider.getChargeByIdLoader.load(chargeId);
-    if (sourceCharge instanceof Error) {
+    if (!sourceCharge || sourceCharge instanceof Error) {
       throw new Error(`Source charge not found: ${chargeId}`);
     }
 

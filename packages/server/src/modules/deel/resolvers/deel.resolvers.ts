@@ -113,6 +113,9 @@ export const deelResolvers: DeelModule.Resolvers = {
               injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
               injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
             ]);
+            if (!charge) {
+              return;
+            }
             if (documents.length === 0 && transactions.length === 0) {
               await deleteCharges([charge.id], injector);
             } else {

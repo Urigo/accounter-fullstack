@@ -25,7 +25,12 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         const charges = await injector
           .get(ChargesProvider)
           .getChargeByIdLoader.loadMany(Array.from(chargeIds))
-          .then(res => res.filter(charge => charge && 'id' in charge) as IGetChargesByIdsResult[]);
+          .then(
+            res =>
+              res.filter(
+                charge => charge && !(charge instanceof Error),
+              ) as IGetChargesByIdsResult[],
+          );
 
         const referenceMap = new Map<
           string,
