@@ -5,7 +5,7 @@ import { IGetChargesByIdsResult } from '../../charges/types.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
-  DeelInvoiceMatch,
+  createDeelInvoiceMatchFromUnmatchedInvoice,
   fetchAndFilterInvoices,
   fetchPaymentBreakdowns,
   fetchReceipts,
@@ -80,38 +80,7 @@ export const deelResolvers: DeelModule.Resolvers = {
 
           updatedChargeIdsSet.add(charge.id);
 
-          const match: DeelInvoiceMatch = {
-            ...invoice,
-            breakdown_receipt_id: '',
-            breakdown_adjustment: '0.00',
-            breakdown_approve_date: '',
-            breakdown_approvers: '',
-            breakdown_bonus: '0.00',
-            breakdown_commissions: '0.00',
-            breakdown_contract_country: '',
-            breakdown_contract_start_date: '',
-            breakdown_contract_type: '',
-            breakdown_contractor_email: '',
-            breakdown_contractor_employee_name: '',
-            breakdown_contractor_unique_identifier: '',
-            breakdown_currency: '',
-            breakdown_date: '',
-            breakdown_deductions: '0.00',
-            breakdown_expenses: '0.00',
-            breakdown_frequency: '',
-            breakdown_general_ledger_account: '',
-            breakdown_group_id: '',
-            breakdown_invoice_id: '',
-            breakdown_others: '0.00',
-            breakdown_overtime: '0.00',
-            breakdown_payment_currency: invoice.currency,
-            breakdown_payment_date: '',
-            breakdown_pro_rata: '0.00',
-            breakdown_processing_fee: '0.00',
-            breakdown_work: '0.00',
-            breakdown_total: '',
-            breakdown_total_payment_currency: invoice.amount,
-          };
+          const match = createDeelInvoiceMatchFromUnmatchedInvoice(invoice);
 
           await insertDeelInvoiceRecord(context, match, charge.id);
         }
