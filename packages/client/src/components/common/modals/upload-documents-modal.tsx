@@ -251,7 +251,7 @@ export function UploadDocumentsModal({
                     render={({ field: { value, onChange, ...field } }) => (
                       <TooltipProvider delayDuration={0}>
                         <Tooltip>
-                          <TooltipTrigger>
+                          <TooltipTrigger asChild>
                             <FormItem className="flex flex-row gap-2 items-center">
                               <FormControl>
                                 <Checkbox
