@@ -217,6 +217,8 @@ export class BankDepositChargesProvider {
       this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId),
     ]);
 
+    let accountId: string | null = null;
+
     // Check currency conflict
     if (depositTransactions.length > 0) {
       const depositCurrency = depositTransactions[0].currency;
@@ -234,9 +236,17 @@ export class BankDepositChargesProvider {
           );
         }
       }
+      accountId = depositAccountId;
+    } else {
+      for (const transaction of transactions) {
+        accountId ??= transaction.account_id;
+        if (accountId !== transaction.account_id) {
+          throw new Error(`Account conflict: Transactions accounts are inconsistent`);
+        }
+      }
     }
 
-    await this.insertOrUpdateBankDepositCharge({ chargeId, depositId });
+    await this.insertOrUpdateBankDepositCharge({ chargeId, depositId, accountId });
 
     // Return updated deposit metadata
     const allDeposits = await this.getAllDepositsWithMetadata();
