@@ -1,4 +1,5 @@
 import { endOfDay, startOfDay } from 'date-fns';
+import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';
@@ -131,6 +132,39 @@ type Prefixer<Type> = {
 export type PrefixedBreakdown = Prefixer<PaymentBreakdownRecord & { receipt_id: string }>;
 export type DeelInvoiceMatch = Invoice & PrefixedBreakdown;
 
+export const createDeelInvoiceMatchFromUnmatchedInvoice = (invoice: Invoice): DeelInvoiceMatch => ({
+  ...invoice,
+  breakdown_receipt_id: '',
+  breakdown_adjustment: '0.00',
+  breakdown_approve_date: '',
+  breakdown_approvers: '',
+  breakdown_bonus: '0.00',
+  breakdown_commissions: '0.00',
+  breakdown_contract_country: '',
+  breakdown_contract_start_date: '',
+  breakdown_contract_type: '',
+  breakdown_contractor_email: '',
+  breakdown_contractor_employee_name: '',
+  breakdown_contractor_unique_identifier: '',
+  breakdown_currency: '',
+  breakdown_date: '',
+  breakdown_deductions: '0.00',
+  breakdown_expenses: '0.00',
+  breakdown_frequency: '',
+  breakdown_general_ledger_account: '',
+  breakdown_group_id: '',
+  breakdown_invoice_id: '',
+  breakdown_others: '0.00',
+  breakdown_overtime: '0.00',
+  breakdown_payment_currency: invoice.currency,
+  breakdown_payment_date: '',
+  breakdown_pro_rata: '0.00',
+  breakdown_processing_fee: '0.00',
+  breakdown_work: '0.00',
+  breakdown_total: '',
+  breakdown_total_payment_currency: invoice.amount,
+});
+
 export async function uploadDeelInvoice(
   chargeId: string,
   match: DeelInvoiceMatch,
@@ -155,7 +189,9 @@ export async function uploadDeelInvoice(
       documentType:
         match.breakdown_contract_type === 'prepaid_billing'
           ? DocumentType.Other
-          : DocumentType.Invoice,
+          : match.status === 'refunded'
+            ? DocumentType.CreditInvoice
+            : DocumentType.Invoice,
       serialNumber: match.label,
       date: match.issued_at,
       amount: Number(match.breakdown_total_payment_currency),
@@ -169,8 +205,8 @@ export async function uploadDeelInvoice(
       allocationNumber: null,
       exchangeRateOverride: null,
       fileHash,
-      description: match.id,
-      remarks: match.breakdown_others,
+      description: match.breakdown_contractor_employee_name,
+      remarks: match.id,
     };
 
     // upload the document
@@ -278,7 +314,7 @@ export async function fetchAndFilterInvoices(injector: Injector) {
     const filteredInvoices: Invoice[] = [];
 
     await Promise.all(
-      invoices.data.map(async invoice => {
+      invoices.map(async invoice => {
         const dbInvoice = await injector
           .get(DeelInvoicesProvider)
           .getInvoicesByIdLoader.load(invoice.id)
@@ -293,7 +329,7 @@ export async function fetchAndFilterInvoices(injector: Injector) {
       }),
     );
 
-    return { invoices: filteredInvoices };
+    return filteredInvoices;
   } catch (error) {
     const message = 'Error fetching Deel invoices';
     console.error(`${message}: ${error}`);
@@ -303,7 +339,7 @@ export async function fetchAndFilterInvoices(injector: Injector) {
 
 export async function fetchReceipts(injector: Injector) {
   try {
-    const res = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERION_IN_MONTHS
+    const res = await injector.get(DeelClientProvider).getPaymentReceipts(); // TODO: use PERIOD_IN_MONTHS
     return res.data.rows;
   } catch (error) {
     const message = 'Error fetching Deel receipts';
@@ -443,7 +479,11 @@ export function matchInvoicesWithPayments(
   const unmatched: Invoice[] = [];
 
   invoices.map(invoice => {
-    if (invoice.status === 'processed' || invoice.total === '0.00') {
+    if (
+      invoice.status === 'processed' ||
+      invoice.total === '0.00' ||
+      invoice.status === 'refunded'
+    ) {
       unmatched.push(invoice);
       return;
     }
@@ -461,4 +501,29 @@ export function matchInvoicesWithPayments(
   });
 
   return { matches, unmatched };
+}
+
+export async function insertDeelInvoiceRecord(
+  context: GraphQLModules.ModuleContext,
+  match: DeelInvoiceMatch,
+  chargeId: string,
+) {
+  try {
+    const {
+      injector,
+      adminContext: { defaultAdminBusinessId },
+    } = context;
+    const documentId = await uploadDeelInvoice(chargeId, match, injector, defaultAdminBusinessId);
+
+    await injector
+      .get(DeelInvoicesProvider)
+      .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId));
+  } catch (error) {
+    const message = 'Error uploading Deel invoice record';
+    console.error(`${message}: ${error}`);
+    if (error instanceof GraphQLError) {
+      throw error;
+    }
+    throw new Error(message);
+  }
 }
