@@ -178,7 +178,6 @@ describe('parseUniformFormatFiles', () => {
           id: 'ITEM001',
           name: 'Product A',
           quantity: 100,
-          unitPrice: 25.5,
         },
       ],
     };
@@ -282,7 +281,6 @@ describe('parseUniformFormatFiles', () => {
           id: 'ITEM001',
           name: 'Product A',
           quantity: 100,
-          unitPrice: 25.5,
         },
       ],
     };

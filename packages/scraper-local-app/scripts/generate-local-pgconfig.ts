@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { config as appConfig } from '../src/env.ts';
+import { config as appConfig } from '../src/env.js';
 
 let pgconfigPath = 'pgconfig.json';
 

@@ -1,6 +1,6 @@
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { CountryCode } from '../../shared/enums.js';
-import { FixtureBusinesses } from '__tests__/helpers/fixture-types.js';
+import { FixtureBusinesses } from '../helpers/fixture-types.js';
 
 /**
  * Business factory for test fixtures

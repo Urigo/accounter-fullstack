@@ -325,6 +325,8 @@ async function updateEnvFile(key: string, value: string) {
 
 seedDemoData().catch(error => {
   console.error('❌ Fatal seed error');
+  console.error('Error object:', error);
+  console.error('Error type:', typeof error);
   if (error instanceof DemoSeedError) {
     console.error('Stack:', error.stack);
   } else if (error instanceof Error) {

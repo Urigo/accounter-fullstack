@@ -1,4 +1,4 @@
-import type { UseCaseSpec } from '../types.js';
+import type { UseCaseSpec } from '../../fixtures/fixture-spec.js';
 import { shareholderDividend } from './equity/shareholder-dividend.js';
 import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js';
 import { clientPaymentWithRefund } from './income/client-payment-with-refund.js';

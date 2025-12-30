@@ -1,5 +1,5 @@
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
-import { FixtureTaxCategories } from '__tests__/helpers/fixture-types.js';
+import { FixtureTaxCategories } from '../helpers/fixture-types.js';
 
 /**
  * Tax category factory for test fixtures

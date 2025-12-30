@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { qualifyTable } from './test-db-config.js';
 import { EntityValidationError, SeedError } from './seed-errors.js';
+import { makeUUID } from '../factories/index.js';
 
 /**
  * Valid financial entity types based on database schema
@@ -111,15 +112,17 @@ export async function ensureFinancialEntity(
     }
 
     // Insert new entity
+    const newAdminId = makeUUID(type, name);
+
     const insertQuery = `
-      INSERT INTO ${qualifyTable('financial_entities')} (name, type, owner_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO ${qualifyTable('financial_entities')} (id, name, type, owner_id)
+      VALUES ($1, $2, $3, $4)
       RETURNING id
     `;
 
     const insertResult = await client.query<{ id: string }>(
       insertQuery,
-      [name, type, ownerId ?? null],
+      [newAdminId, name, type, ownerId ?? null],
     );
 
     const row = insertResult.rows[0];

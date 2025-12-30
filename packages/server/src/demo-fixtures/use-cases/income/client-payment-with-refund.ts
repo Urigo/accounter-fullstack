@@ -1,7 +1,6 @@
-import { CountryCode } from '../../../modules/countries/types.js';
-import { Currency } from '../../../shared/enums.js';
+import type { UseCaseSpec } from '../../../fixtures/fixture-spec.js';
+import { CountryCode, Currency } from '../../../shared/enums.js';
 import { makeUUID } from '../../helpers/deterministic-uuid.js';
-import type { UseCaseSpec } from '../../types.js';
 
 /**
  * Client Payment with Refund Cycle
