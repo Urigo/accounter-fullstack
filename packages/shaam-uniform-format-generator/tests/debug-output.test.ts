@@ -52,32 +52,11 @@ describe('Debug SHAAM Format Output', () => {
           id: 'ITEM001',
           name: 'Product A',
           quantity: 100,
-          unitPrice: 25.0,
         },
       ],
     };
 
     const result = generateUniformFormatReport(input);
-
-    console.log('INI Text:');
-    console.log(result.iniText);
-    console.log('\n=== INI LINES BREAKDOWN ===');
-    for (const [i, line] of result.iniText.split('\r\n').entries()) {
-      if (line.trim()) {
-        console.log(`Line ${i + 1}: ${line.substring(0, 4)} - ${line}`);
-      }
-    }
-
-    console.log('\nData Text:');
-    console.log(result.dataText);
-    console.log('\n=== DATA LINES BREAKDOWN ===');
-    for (const [i, line] of result.dataText.split('\r\n').entries()) {
-      if (line.trim()) {
-        console.log(`Line ${i + 1}: ${line.substring(0, 4)} - ${line}`);
-      }
-    }
-
-    console.log('\nSummary:', result.summary);
 
     expect(result).toBeDefined();
   });

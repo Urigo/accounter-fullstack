@@ -1,6 +1,6 @@
 import type { FixtureSpec } from 'fixtures/fixture-spec';
-import type { CountryCode } from '@modules/countries/types.js';
-import type { Currency } from '@shared/enums';
+import type { financial_account_type } from '../modules/financial-accounts/types.js';
+import type { CountryCode, Currency } from '../shared/enums.js';
 
 /**
  * Tax Category Mapping for Financial Accounts
@@ -34,7 +34,7 @@ export interface TaxCategoryFixture {
 export interface FinancialAccountFixture {
   id: string;
   accountNumber: string;
-  type: string; // 'BANK_ACCOUNT', 'CREDIT_CARD', etc.
+  type: financial_account_type; // 'BANK_ACCOUNT', 'CREDIT_CARD', etc.
   currency: Currency;
   taxCategoryMappings?: TaxCategoryMapping[];
 }
