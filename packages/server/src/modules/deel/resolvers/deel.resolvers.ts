@@ -44,6 +44,9 @@ export const deelResolvers: DeelModule.Resolvers = {
       const { injector, adminContext } = context;
       try {
         const invoices = await fetchAndFilterInvoices(injector);
+        if (invoices.length === 0) {
+          return [];
+        }
 
         const receipts = await fetchReceipts(injector);
 
