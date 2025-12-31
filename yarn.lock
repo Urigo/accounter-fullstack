@@ -85,7 +85,7 @@ __metadata:
     "@radix-ui/react-toggle": "npm:1.1.10"
     "@radix-ui/react-tooltip": "npm:1.2.8"
     "@tailwindcss/vite": "npm:4.1.18"
-    "@tanstack/react-query": "npm:5.90.15"
+    "@tanstack/react-query": "npm:5.90.16"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -107,7 +107,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.12.0"
-    html2canvas-pro: "npm:1.6.2"
+    html2canvas-pro: "npm:1.6.3"
     iconv-lite: "npm:0.7.1"
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:0.562.0"
@@ -284,7 +284,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.1"
+    "@ai-sdk/anthropic": "npm:3.0.2"
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -298,7 +298,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.3"
+    ai: "npm:6.0.5"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -354,50 +354,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.1":
-  version: 3.0.1
-  resolution: "@ai-sdk/anthropic@npm:3.0.1"
+"@ai-sdk/anthropic@npm:3.0.2":
+  version: 3.0.2
+  resolution: "@ai-sdk/anthropic@npm:3.0.2"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.0"
-    "@ai-sdk/provider-utils": "npm:4.0.1"
+    "@ai-sdk/provider": "npm:3.0.1"
+    "@ai-sdk/provider-utils": "npm:4.0.2"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4b92945d1d8104c1a3aaadfef7aca62ef434ed8ddad196a58a900e050fc8b67e5b8fe79dbcee9bf6931a28da4980d0b960ad6201969a5d46eb5afa40e65cf01a
+  checksum: 10c0/de98ed597668a955df37fff149d664544414f4ae25b7822937b47598132a0245e19a667fdd712b4d41496a02af02c533277f683ba6a399e5a4c11281f0ddb06f
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.2":
-  version: 3.0.2
-  resolution: "@ai-sdk/gateway@npm:3.0.2"
+"@ai-sdk/gateway@npm:3.0.4":
+  version: 3.0.4
+  resolution: "@ai-sdk/gateway@npm:3.0.4"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.0"
-    "@ai-sdk/provider-utils": "npm:4.0.1"
+    "@ai-sdk/provider": "npm:3.0.1"
+    "@ai-sdk/provider-utils": "npm:4.0.2"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/bb96dc47d0dae7bfa2854afb4690b6b447866916a80235615b20ab64a10abfe3d45b20178d4de761747232872680d21a74e8081b7a57834c7f5da24056fb8d75
+  checksum: 10c0/ec346b8c36de2d7c58955b5338382d7505ffb2c002e727b08f068c450652a7ec33997f3e7dac405a0ccb4cfd87afd14865db4b0df54ee6682d51f763270b926c
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.1":
-  version: 4.0.1
-  resolution: "@ai-sdk/provider-utils@npm:4.0.1"
+"@ai-sdk/provider-utils@npm:4.0.2":
+  version: 4.0.2
+  resolution: "@ai-sdk/provider-utils@npm:4.0.2"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.0"
+    "@ai-sdk/provider": "npm:3.0.1"
     "@standard-schema/spec": "npm:^1.1.0"
     eventsource-parser: "npm:^3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/f874702d8e8dcf07e1aa69087a0713528edaed6a45468758eb788dbceaef374868e5e880728e49bb15a78f6efc0893bb22b0ca0e9f73f38b9b89bcfb6084c29a
+  checksum: 10c0/a2619fb2557acdd96f246ecce1aa04bb7c72eacadb371d62cbc60fc9ce76a3ca8d0fd37a43dc6184a3b835a303f46cdb24c0c73d2284e2020a06bf75789c9cb1
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:3.0.0":
-  version: 3.0.0
-  resolution: "@ai-sdk/provider@npm:3.0.0"
+"@ai-sdk/provider@npm:3.0.1":
+  version: 3.0.1
+  resolution: "@ai-sdk/provider@npm:3.0.1"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/520664b2bceb019fa398e8406d03070122d13a32efb491aa83cd156800a3eedf224985da984bccf97c9ad64e252870f92400d615858a4e2a57a442194c054031
+  checksum: 10c0/0f92beb00c2213d693a058ae58aa66ac0c79b98710c21361ac6ea3d2ec05e03da39f9996cd9434c29c69756ef5b3e4fb43db3b58dc508db8a9764379f7bdb24e
   languageName: node
   linkType: hard
 
@@ -7978,21 +7978,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.90.15":
-  version: 5.90.15
-  resolution: "@tanstack/query-core@npm:5.90.15"
-  checksum: 10c0/8618a2002a25d0fbcfe4167918344aec1408a68dc641062b1045e3f47c46617bc0d5803758a49069ad46f8726802cb0a22f6cee4eb51838b8c4feb55e3fb8a05
+"@tanstack/query-core@npm:5.90.16":
+  version: 5.90.16
+  resolution: "@tanstack/query-core@npm:5.90.16"
+  checksum: 10c0/f6a4827feeed2b4118323056bbda8d5099823202d1f29b538204ae2591be4e80f2946f3311eed30fefe866643f431c04b560457f03415d40caf2f353ba1efac0
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.90.15":
-  version: 5.90.15
-  resolution: "@tanstack/react-query@npm:5.90.15"
+"@tanstack/react-query@npm:5.90.16":
+  version: 5.90.16
+  resolution: "@tanstack/react-query@npm:5.90.16"
   dependencies:
-    "@tanstack/query-core": "npm:5.90.15"
+    "@tanstack/query-core": "npm:5.90.16"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/b661307a624d8566dd3d9c952a85e2036f96dce19347b4eeb96fdd4b4e32cfb2ae7a0f6e765c526a72a5635cf28f60e7b7abad17ce143f05382f845e0c5adaf4
+  checksum: 10c0/03bd2aa23187003b45dc3d4b465a68f19806369283487a004acd6dd2ad8ba1fa0ec343da616cb1c43c342609202d0776fee68867246caa5ad6915f090539c168
   languageName: node
   linkType: hard
 
@@ -9250,17 +9250,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.3":
-  version: 6.0.3
-  resolution: "ai@npm:6.0.3"
+"ai@npm:6.0.5":
+  version: 6.0.5
+  resolution: "ai@npm:6.0.5"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.2"
-    "@ai-sdk/provider": "npm:3.0.0"
-    "@ai-sdk/provider-utils": "npm:4.0.1"
+    "@ai-sdk/gateway": "npm:3.0.4"
+    "@ai-sdk/provider": "npm:3.0.1"
+    "@ai-sdk/provider-utils": "npm:4.0.2"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/b81789fe05d8da6cf9052c72d532c54a55e169bbfaca180055d12133c390164021448460ce5642025f7dfb31e943b81cc2e91973d24e5c7e37fd70f99ce9580f
+  checksum: 10c0/12601cafdf24bc4b3df62a06ab1283af784793bce8e13cbccaaff6c3b50902e242025d2136e8765f42ddfd25844bd1b6e11741b1502c743b0e8c896720eb47de
   languageName: node
   linkType: hard
 
@@ -14767,13 +14767,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html2canvas-pro@npm:1.6.2":
-  version: 1.6.2
-  resolution: "html2canvas-pro@npm:1.6.2"
+"html2canvas-pro@npm:1.6.3":
+  version: 1.6.3
+  resolution: "html2canvas-pro@npm:1.6.3"
   dependencies:
     css-line-break: "npm:^2.1.0"
     text-segmentation: "npm:^1.0.3"
-  checksum: 10c0/3d1c01a0f3f3e0ed4b61b05db80a203ccea9a1578b66acf5d13f6622645432e4cd61a8efd19ce4a6a7063d9fc6a4b6e74d4afecb8ffd57eded6205416b5324bd
+  checksum: 10c0/311799e53d2b7a55083258e385bdad17d3d3e38d0a4b1f670cd0c65bbd3c6deedd58f85f4006fe84df972cb92a43da1409c7f343ac9ee4513a657d8aac473cd3
   languageName: node
   linkType: hard
 
