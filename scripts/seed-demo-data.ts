@@ -271,7 +271,7 @@ async function seedDemoData() {
           });
         }
 
-        await insertFixture(client, fixture);
+        await insertFixture(client, fixture, adminBusinessId);
       }
       await client.query('COMMIT');
       console.log('✅ All use-cases seeded successfully');

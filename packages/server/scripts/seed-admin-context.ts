@@ -73,9 +73,10 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     const { id } = await ensureFinancialEntity(client, {
       name,
       type: 'business',
+      ownerId: adminEntityId,
     });
     authorityBusinessIds[name] = id;
-    await ensureBusinessForEntity(client, id, { noInvoicesRequired: true });
+    await ensureBusinessForEntity(client, id, { isDocumentsOptional: true });
   }
   console.log(`✅ Created ${authorities.businesses.length} authority businesses`);
 
@@ -86,6 +87,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     const { id } = await ensureFinancialEntity(client, {
       name,
       type: 'tax_category',
+      ownerId: adminEntityId,
     });
     authorityTaxCategoryIds[name] = id;
     await ensureTaxCategoryForEntity(client, id);
@@ -114,6 +116,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     const { id } = await ensureFinancialEntity(client, {
       name,
       type: 'tax_category',
+      ownerId: adminEntityId,
     });
     generalTaxCategoryIds[name] = id;
     await ensureTaxCategoryForEntity(client, id);
@@ -134,6 +137,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     const { id } = await ensureFinancialEntity(client, {
       name,
       type: 'tax_category',
+      ownerId: adminEntityId,
     });
     crossYearTaxCategoryIds[name] = id;
     await ensureTaxCategoryForEntity(client, id);
@@ -184,7 +188,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     const values = Object.values(context);
 
     await client.query(
-      `INSERT INTO accounter_schema.user_context (${columns}) VALUES (${placeholders})`,
+      `INSERT INTO accounter_schema.user_context (${columns}) VALUES (${placeholders}) ON CONFLICT (owner_id) DO NOTHING`,
       values,
     );
     console.log('✅ user_context created');

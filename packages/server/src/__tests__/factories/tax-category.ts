@@ -41,7 +41,7 @@ export function createTaxCategory(
     id: defaultId,
     // Intelligent name defaulting: use provided id, or use generated UUID
     // This ensures display name is always meaningful even when only id is specified
-    name: overrides?.id ?? defaultId,
+    name: overrides?.name ?? overrides?.id ?? defaultId,
     hashavshevetName: null,
     taxExcluded: false,
     ...overrides,

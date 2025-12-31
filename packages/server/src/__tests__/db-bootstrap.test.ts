@@ -3,6 +3,7 @@ import { TestDatabase, isPoolHealthy } from './helpers/db-setup.js';
 import { assertLatestMigrationApplied } from './helpers/migration-verification.js';
 import { seedAdminCore } from '../../scripts/seed-admin-context.js';
 import { qualifyTable } from './helpers/test-db-config.js';
+import { buildAdminContextFromDb } from './helpers/admin-context-builder.js';
 
 /**
  * Smoke test for DB test harness
@@ -67,8 +68,10 @@ describe('DB Test Harness Bootstrap', () => {
   it('has expected tax categories', async () =>
     db.withTransaction(async client => {
       await seedAdminCore(client);
+      const adminContext = await buildAdminContextFromDb(client);
       const result = await client.query(
-        `SELECT COUNT(*) FROM ${qualifyTable('tax_categories')}`,
+        `SELECT COUNT(*) FROM ${qualifyTable('tax_categories')} WHERE owner_id = $1`,
+        [adminContext.defaultAdminBusinessId]
       );
       const count = parseInt(result.rows[0].count, 10);
       expect(count).toBe(EXPECTED_TAX_CATEGORIES);
@@ -77,8 +80,10 @@ describe('DB Test Harness Bootstrap', () => {
   it('has user_context after seeding', async () =>
     db.withTransaction(async client => {
       await seedAdminCore(client);
+      const adminContext = await buildAdminContextFromDb(client);
       const result = await client.query(
-        `SELECT owner_id, vat_business_id FROM ${qualifyTable('user_context')} LIMIT 1`,
+        `SELECT owner_id, vat_business_id FROM ${qualifyTable('user_context')} WHERE owner_id = $1 LIMIT 1`,
+        [adminContext.defaultAdminBusinessId]
       );
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].owner_id).toBeDefined();
