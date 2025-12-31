@@ -13,6 +13,7 @@ import type { Fixture } from './fixture-types.js';
 import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
 import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
+import { UUID_REGEX } from '../../shared/constants.js';
 
 /**
  * Custom error for fixture insertion failures
@@ -328,7 +329,7 @@ export async function insertFixture(
       for (const transaction of fixture.transactions!.transactions) {
         // If account_id looks like an account_number (not a UUID), look up the actual UUID
         let accountId = transaction.account_id;
-        if (accountId && !accountId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        if (accountId && !accountId.match(UUID_REGEX)) {
           // account_id is actually an account_number, look up the UUID
           const accountResult = await client.query(
             `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,

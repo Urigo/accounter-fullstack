@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { UUID_REGEX } from '../constants.js';
 import type { TimelessDateString } from '../types/index.js';
 
 function parseIntRound(v: number) {
@@ -38,9 +39,7 @@ export function isTimelessDateString(date: string): date is TimelessDateString {
 }
 
 export function isUUID(raw: string) {
-  const regexExp =
-    /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
-  return regexExp.test(raw);
+  return UUID_REGEX.test(raw);
 }
 
 function convertMonthNameToNumber(monthName: string): string | null {
