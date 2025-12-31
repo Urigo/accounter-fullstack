@@ -2,7 +2,7 @@
 
 ## Test Suites
 
-The test suite is split into two Vitest projects for efficiency and isolation:
+The test suite is split into three Vitest projects for efficiency and isolation:
 
 ### 1. Unit Tests (`yarn test`)
 
@@ -21,6 +21,23 @@ DB-backed tests including:
 - PostgreSQL running
 - Migrations applied (see below)
 
+### 3. Demo Seed E2E (`yarn test:demo-seed`)
+
+Full seed-and-validate pipeline test that:
+
+- Seeds complete demo dataset
+- Validates data integrity and ledger balance
+- Takes 10-30 seconds to complete
+
+**Prerequisites:**
+
+- PostgreSQL running
+- Migrations applied
+- `ALLOW_DEMO_SEED=1` environment variable
+
+**Graceful Failure**: If migrations are stale, the test fails with a clear error message directing
+you to run migrations, rather than hanging or producing cryptic errors.
+
 ### Running Tests
 
 ```bash
@@ -30,8 +47,8 @@ yarn test
 # Unit + integration tests (for PRs)
 yarn test:integration
 
-# All suites (for main branch merges)
-yarn test:all
+# Demo seed E2E only
+ALLOW_DEMO_SEED=1 yarn test:demo-seed
 ```
 
 ## Test DB Harness
@@ -86,6 +103,52 @@ TEST_ENV_FILE=/tmp/accounter-test.env DEBUG=accounter:test yarn workspace @accou
 The global Vitest setup may set `TEST_ENV_FILE` automatically to a temporary path; check logs if
 needed. If the write fails, tests continue (non-fatal). To disable writing entirely you can point
 `TEST_ENV_FILE` to a throwaway location.
+
+## Demo Staging Dataset
+
+The demo staging dataset system provides **use-case-driven financial scenarios** for staging
+environments. Each use-case represents a complete financial scenario (expense, income, equity, etc.)
+that can be seeded with deterministic UUIDs for stable demo data across deployments.
+
+### Quick Start
+
+```bash
+# Seed demo data (staging/local only - requires explicit flag)
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+
+# Validate seeded data integrity
+yarn validate:demo
+
+# Combined workflow (recommended)
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
+```
+
+### Key Features
+
+- **Deterministic UUIDs**: Stable entity IDs via UUID v5 generation
+- **Modular Registry**: Self-contained use-case fixtures with metadata
+- **Production Safeguards**: Hard refusal to run in production environments
+- **Comprehensive Validation**: Ledger balance checks, entity reconciliation
+
+### Documentation
+
+- **Specification**: `docs/demo-staging-dataset-spec.md` – Complete technical specification
+- **Developer Guide**: `packages/server/docs/demo-staging-guide.md` – Quick start, adding use-cases,
+  troubleshooting
+- **Implementation Plan**: `docs/demo-staging-dataset-prompt-plan.md` – Step-by-step prompts
+- **Progress Tracking**: `docs/demo-staging-dataset-todo.md` – Implementation checklist
+
+### Architecture
+
+```
+Use-Case Registry → Seed Orchestrator → Validation Layer
+(TypeScript modules)  (seed-demo-data)   (validate-demo)
+```
+
+See the [Developer Guide](./docs/demo-staging-guide.md) for detailed instructions on adding new
+use-cases and troubleshooting.
+
+---
 
 ## Demo Test Data & Ledger Docs
 

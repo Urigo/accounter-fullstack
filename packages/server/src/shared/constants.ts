@@ -4,6 +4,8 @@ export const TIMELESS_DATE_REGEX =
 
 export const UUID_REGEX =
   /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
+export const UUID5_REGEX =
+  /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-5[0-9a-fA-F]{3}\b-[89abAB][0-9a-fA-F]{3}\b-[0-9a-fA-F]{12}$/;
 
 export const DECREASED_VAT_RATIO = 2 / 3;
 

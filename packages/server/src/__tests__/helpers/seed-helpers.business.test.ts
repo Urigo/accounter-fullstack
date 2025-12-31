@@ -70,7 +70,7 @@ describe('ensureBusinessForEntity', () => {
       });
 
       // Ensure business with noInvoicesRequired set to true
-      await ensureBusinessForEntity(client, entityId, { noInvoicesRequired: true });
+      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: true });
 
       // Verify business has correct option set
       const result = await client.query(
@@ -112,11 +112,11 @@ describe('ensureBusinessForEntity', () => {
         type: 'business',
       });
 
-      // Create business with noInvoicesRequired = true
-      await ensureBusinessForEntity(client, entityId, { noInvoicesRequired: true });
+      // Create business with isDocumentsOptional = true
+      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: true });
 
       // Call again with different options (should be no-op)
-      await ensureBusinessForEntity(client, entityId, { noInvoicesRequired: false });
+      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: false });
 
       // Verify original value is preserved
       const result = await client.query(

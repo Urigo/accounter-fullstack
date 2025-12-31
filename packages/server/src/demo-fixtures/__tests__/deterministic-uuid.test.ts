@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeUUID } from '../helpers/deterministic-uuid.js';
+import { UUID5_REGEX } from 'shared/constants.js';
 
 describe('deterministic-uuid', () => {
   describe('makeUUID', () => {
@@ -8,7 +9,7 @@ describe('deterministic-uuid', () => {
       const uuid2 = makeUUID('business', 'acme-consulting-llc');
 
       expect(uuid1).toBe(uuid2);
-      expect(uuid1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      expect(uuid1).toMatch(UUID5_REGEX);
     });
 
     it('generates different UUIDs for different names', () => {
@@ -41,7 +42,7 @@ describe('deterministic-uuid', () => {
 
       // UUID v5 format: xxxxxxxx-xxxx-5xxx-yxxx-xxxxxxxxxxxx
       // where y is one of [8, 9, a, b]
-      expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      expect(uuid).toMatch(UUID5_REGEX);
     });
 
     it('handles kebab-case names correctly', () => {

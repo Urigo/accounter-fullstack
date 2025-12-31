@@ -133,7 +133,7 @@ jobs:
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |
-          yarn test:all --reporter=default --coverage
+          yarn test:demo-seed --reporter=default --coverage
 
       - name: Upload Coverage
         if: always()

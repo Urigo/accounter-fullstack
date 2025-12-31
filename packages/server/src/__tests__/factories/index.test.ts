@@ -45,6 +45,7 @@ describe('Factory Integration', () => {
     const taxCategoryId = makeUUID('tax-category', 'tax-expense');
     const taxCategory = createTaxCategory({
       id: taxCategoryId,
+      name: 'Expense Tax',
     });
 
     const accountId = makeUUID('financial-account', 'bank-account');

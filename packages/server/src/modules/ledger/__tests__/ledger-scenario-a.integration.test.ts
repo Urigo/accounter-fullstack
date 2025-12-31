@@ -99,7 +99,8 @@ describe('Ledger Generation - Expense Scenario A', () => {
     try {
       await insertClient.query('BEGIN');
 
-      await insertFixture(insertClient, expenseScenarioA);
+      const adminContext = await buildAdminContextFromDb(insertClient);
+      await insertFixture(insertClient, expenseScenarioA, adminContext.defaultAdminBusinessId);
 
       const chargeId = makeUUID('charge', 'charge-office-supplies');
 
@@ -218,10 +219,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
         [chargeId],
       );
+      const adminContext = await buildAdminContextFromDb(client);
       if (existingCharge.rows.length === 0) {
         // Reinsert fixture quickly
         await client.query('BEGIN');
-        await insertFixture(client, expenseScenarioA);
+        await insertFixture(client, expenseScenarioA, adminContext.defaultAdminBusinessId);
         await client.query('COMMIT');
       }
 
@@ -230,7 +232,6 @@ describe('Ledger Generation - Expense Scenario A', () => {
         [chargeId],
       );
       const charge = chargeResult.rows[0];
-      const adminContext = await buildAdminContextFromDb(client);
       const mockUser: UserType = {
         username: 'test-admin',
         userId: adminContext.defaultAdminBusinessId,

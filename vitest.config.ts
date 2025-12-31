@@ -47,6 +47,16 @@ export default defineConfig({
           globalSetup: ['./scripts/vitest-global-setup.ts'],
         },
       },
+      {
+        test: {
+          name: 'demo-seed',
+          include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
+          exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
+          globals: true,
+          setupFiles: ['./scripts/vitest-setup.ts', './scripts/vitest-demo-seed-setup.ts'],
+          globalSetup: ['./scripts/vitest-global-setup.ts'],
+        },
+      },
     ],
   },
 });

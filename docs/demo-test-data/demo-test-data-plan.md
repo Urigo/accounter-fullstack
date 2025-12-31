@@ -396,7 +396,7 @@ Phase 3 (Source Ingestion Simulation):
 
 ## 18. Acceptance Criteria (Phase 1)
 
-- Running `yarn seed:admin` creates all mandatory entities idempotently.
+- Running `yarn seed:admin-context` creates all mandatory entities idempotently.
 - Two expense fixtures insert successfully under transactional tests.
 - Ledger generation tests pass with:
   - Balanced entries (debit == credit within 0.01 tolerance)
@@ -497,7 +497,7 @@ docker compose -f docker/docker-compose.dev.yml up -d postgres
 yarn workspace @accounter/migrations migration:run
 
 # (Optional) Seed admin for manual exploration
-yarn seed:admin
+yarn seed:admin-context
 
 # Run full test suite (includes schema guard + coverage)
 yarn test

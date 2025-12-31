@@ -6,7 +6,7 @@ import { createTaxCategory } from './tax-category.js';
 describe('Factory: Tax Category', () => {
   describe('createTaxCategory', () => {
     it('should create tax category with default values', () => {
-      const category = createTaxCategory();
+      const category = createTaxCategory({name: 'Default Category'});
 
       // Required field with default
       expect(category.id).toBeDefined();
@@ -20,8 +20,8 @@ describe('Factory: Tax Category', () => {
     });
 
     it('should generate unique IDs by default', () => {
-      const category1 = createTaxCategory();
-      const category2 = createTaxCategory();
+      const category1 = createTaxCategory({name: 'Category 1'});
+      const category2 = createTaxCategory({name: 'Category 2'});
 
       expect(category1.id).not.toBe(category2.id);
     });
@@ -50,7 +50,7 @@ describe('Factory: Tax Category', () => {
     });
 
     it('should preserve all required fields', () => {
-      const category = createTaxCategory();
+      const category = createTaxCategory({name: 'Default Category'});
 
       // Verify structure matches expected pgtyped interface
       expect(category).toHaveProperty('id');
@@ -61,6 +61,7 @@ describe('Factory: Tax Category', () => {
     it('should handle tax-excluded categories', () => {
       const category = createTaxCategory({
         taxExcluded: true,
+        name: 'Tax Exempt',
       });
 
       expect(category.taxExcluded).toBe(true);
@@ -78,14 +79,15 @@ describe('Factory: Tax Category', () => {
     it('should allow explicit null overrides', () => {
       const category = createTaxCategory({
         hashavshevetName: null,
+        name: 'No Integration',
       });
 
       expect(category.hashavshevetName).toBeNull();
     });
 
     it('should create deterministic categories with seed', () => {
-      const category1 = createTaxCategory({ id: makeUUID('tax-category', 'default-category') });
-      const category2 = createTaxCategory({ id: makeUUID('tax-category', 'default-category') });
+      const category1 = createTaxCategory({ id: makeUUID('tax-category', 'default-category'), name: 'Default Category' });
+      const category2 = createTaxCategory({ id: makeUUID('tax-category', 'default-category'), name: 'Default Category' });
 
       expect(category1.id).toBe(category2.id);
     });

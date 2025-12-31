@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { TestDatabase } from './helpers/db-setup.js';
 import { seedAdminCore } from '../../scripts/seed-admin-context.js';
+import { UUID_REGEX } from '../shared/constants.js';
 
 describe('seedAdminCore integration', () => {
   let db: TestDatabase;
@@ -22,7 +23,7 @@ describe('seedAdminCore integration', () => {
       // Verify admin entity exists
       expect(adminEntityId).toBeTruthy();
       expect(adminEntityId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        UUID_REGEX
       );
 
       // Verify admin financial entity

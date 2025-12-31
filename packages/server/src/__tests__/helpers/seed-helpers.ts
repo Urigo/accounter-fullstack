@@ -1,6 +1,9 @@
-import type { PoolClient } from 'pg';
+import type { Client, PoolClient } from 'pg';
 import { qualifyTable } from './test-db-config.js';
 import { EntityValidationError, SeedError } from './seed-errors.js';
+import { makeUUID } from '../factories/index.js';
+import { UUID_REGEX } from '../../shared/constants.js';
+import type {FixtureBusinesses, FixtureTaxCategories} from './fixture-types.js';
 
 /**
  * Valid financial entity types based on database schema
@@ -13,6 +16,7 @@ export type FinancialEntityType = 'business' | 'tax_category' | 'tag';
 const VALID_ENTITY_TYPES: readonly FinancialEntityType[] = ['business', 'tax_category', 'tag'];
 
 export interface EnsureFinancialEntityParams {
+  id?: string;
   name: string;
   type: FinancialEntityType;
   ownerId?: string;
@@ -68,10 +72,10 @@ export interface FinancialEntityResult {
  * ```
  */
 export async function ensureFinancialEntity(
-  client: PoolClient,
+  client: PoolClient | Client,
   params: EnsureFinancialEntityParams,
 ): Promise<FinancialEntityResult> {
-  const { name, type, ownerId } = params;
+  const { name, type, ownerId, id: originId } = params;
 
   // Validate inputs
   const validationErrors: string[] = [];
@@ -91,41 +95,32 @@ export async function ensureFinancialEntity(
   }
 
   try {
-    // Check if entity already exists
-    const selectQuery = `
-      SELECT id
-      FROM ${qualifyTable('financial_entities')}
-      WHERE name = $1
-        AND type = $2
-        AND (owner_id = $3 OR (owner_id IS NULL AND $3 IS NULL))
-      LIMIT 1
-    `;
+    // Generate deterministic UUID based on type, name, and ownerId for idempotency
+    // Same (type, name, ownerId) always generates same ID, ensuring multiple calls are safe
+    // Include ownerId in the composite key so different owners get different IDs
+    const compositeKey = ownerId ? `${name}:owner=${ownerId}` : name;
+    const consistentId = originId ?? makeUUID(type, compositeKey);
 
-    const existingResult = await client.query<{ id: string }>(
-      selectQuery,
-      [name, type, ownerId ?? null],
-    );
-
-    if (existingResult.rows.length > 0) {
-      return { id: existingResult.rows[0].id };
-    }
-
-    // Insert new entity
+    // Use atomic INSERT...ON CONFLICT on PRIMARY KEY (id) to handle concurrent inserts
+    // If the deterministic ID already exists (from a previous call or concurrent insert),
+    // the conflict handler will safely return the existing row
     const insertQuery = `
-      INSERT INTO ${qualifyTable('financial_entities')} (name, type, owner_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO ${qualifyTable('financial_entities')} (id, name, type, owner_id)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (id) DO UPDATE
+      SET id = EXCLUDED.id  -- No-op update, just to return the existing id
       RETURNING id
     `;
 
-    const insertResult = await client.query<{ id: string }>(
+    const result = await client.query<{ id: string }>(
       insertQuery,
-      [name, type, ownerId ?? null],
+      [consistentId, name, type, ownerId ?? null],
     );
 
-    const row = insertResult.rows[0];
+    const row = result.rows[0];
     if (!row) {
       throw new SeedError(
-        'INSERT returned no rows',
+        'INSERT...ON CONFLICT returned no rows',
         { name, type, ownerId },
       );
     }
@@ -144,9 +139,7 @@ export async function ensureFinancialEntity(
   }
 }
 
-export interface EnsureBusinessForEntityOptions {
-  noInvoicesRequired?: boolean;
-}
+export type EnsureBusinessForEntityOptions = Partial<Omit<FixtureBusinesses['businesses'][number], 'id'>>
 
 /**
  * Ensure a business row exists for a given financial entity id (idempotent)
@@ -190,13 +183,12 @@ export interface EnsureBusinessForEntityOptions {
  * ```
  */
 export async function ensureBusinessForEntity(
-  client: PoolClient,
+  client: PoolClient | Client,
   entityId: string,
   options?: EnsureBusinessForEntityOptions,
 ): Promise<void> {
   // Validate entityId format (basic UUID check)
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidPattern.test(entityId)) {
+  if (!UUID_REGEX.test(entityId)) {
     throw new EntityValidationError(
       'Business',
       ['entityId must be a valid UUID'],
@@ -223,27 +215,36 @@ export async function ensureBusinessForEntity(
       );
     }
 
-    // Check if business already exists
-    const selectQuery = `
-      SELECT 1
-      FROM ${qualifyTable('businesses')}
-      WHERE id = $1
-      LIMIT 1
-    `;
-
-    const existingResult = await client.query(selectQuery, [entityId]);
-
-    if (existingResult.rows.length > 0) {
-      return; // Business already exists, preserve existing values
-    }
-
-    // Insert new business
+    // Use atomic INSERT...ON CONFLICT on PRIMARY KEY (id) to handle concurrent inserts
+    // If the deterministic ID already exists (from a previous call or concurrent insert),
+    // the conflict handler will safely return the existing row
     const insertQuery = `
-      INSERT INTO ${qualifyTable('businesses')} (id, no_invoices_required)
-      VALUES ($1, $2)
+      INSERT INTO ${qualifyTable('businesses')} (
+        id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number,
+        exempt_dealer, suggestion_data, optional_vat, country,
+        pcn874_record_type_override, can_settle_with_receipt, no_invoices_required
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      ON CONFLICT (id) DO NOTHING
     `;
 
-    await client.query(insertQuery, [entityId, options?.noInvoicesRequired ?? false]);
+    await client.query(insertQuery, [
+            entityId,
+            options?.hebrewName,
+            options?.address,
+            options?.city,
+            options?.zipCode,
+            options?.email,
+            options?.website,
+            options?.phoneNumber,
+            options?.governmentId, // Maps to vat_number column
+            options?.exemptDealer ?? false,
+            options?.suggestions ?? null,
+            options?.optionalVat ?? false,
+            options?.country ?? 'ISR',
+            options?.pcn874RecordTypeOverride ?? null,
+            options?.isReceiptEnough ?? false,
+            options?.isDocumentsOptional ?? false]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;
@@ -257,7 +258,7 @@ export async function ensureBusinessForEntity(
   }
 }
 
-export interface EnsureTaxCategoryForEntityOptions {
+export type EnsureTaxCategoryForEntityOptions = Partial<Omit<FixtureTaxCategories['taxCategories'][number], 'id'>> & {
   sortCode?: number;
 }
 
@@ -307,13 +308,12 @@ export interface EnsureTaxCategoryForEntityOptions {
  * ```
  */
 export async function ensureTaxCategoryForEntity(
-  client: PoolClient,
+  client: PoolClient | Client,
   entityId: string,
   options?: EnsureTaxCategoryForEntityOptions,
 ): Promise<void> {
   // Validate entityId format (basic UUID check)
-  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (!uuidPattern.test(entityId)) {
+  if (!UUID_REGEX.test(entityId)) {
     throw new EntityValidationError(
       'TaxCategory',
       ['entityId must be a valid UUID'],
@@ -340,27 +340,18 @@ export async function ensureTaxCategoryForEntity(
       );
     }
 
-    // Check if tax category already exists
-    const selectQuery = `
-      SELECT 1
-      FROM ${qualifyTable('tax_categories')}
-      WHERE id = $1
-      LIMIT 1
-    `;
-
-    const existingResult = await client.query(selectQuery, [entityId]);
-
-    if (existingResult.rows.length > 0) {
-      return; // Tax category already exists, preserve existing values
-    }
-
-    // Insert new tax category
+    // Use atomic INSERT...ON CONFLICT on PRIMARY KEY (id) to handle concurrent inserts
+    // If the deterministic ID already exists (from a previous call or concurrent insert),
+    // the conflict handler will safely return the existing row
     const insertQuery = `
-      INSERT INTO ${qualifyTable('tax_categories')} (id)
-      VALUES ($1)
+      INSERT INTO ${qualifyTable('tax_categories')} (
+        id, hashavshevet_name, tax_excluded
+      )
+      VALUES ($1, $2, $3)
+      ON CONFLICT (id) DO NOTHING
     `;
 
-    await client.query(insertQuery, [entityId]);
+    await client.query(insertQuery, [entityId, options?.hashavshevetName, options?.taxExcluded ?? false]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;
