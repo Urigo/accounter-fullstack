@@ -102,9 +102,9 @@ touch packages/server/src/demo-fixtures/use-cases/payroll/monthly-salary-payment
 ```typescript
 // packages/server/src/demo-fixtures/use-cases/payroll/monthly-salary-payment.ts
 
-import { Currency, CountryCode } from '@shared/enums';
-import { makeUUID } from '../../helpers/deterministic-uuid.js';
-import type { UseCaseSpec } from '../../types.js';
+import { Currency, CountryCode } from '@shared/enums'
+import { makeUUID } from '../../helpers/deterministic-uuid.js'
+import type { UseCaseSpec } from '../../types.js'
 
 export const monthlySalaryPayment: UseCaseSpec = {
   id: 'monthly-salary-payment',
@@ -117,18 +117,18 @@ export const monthlySalaryPayment: UseCaseSpec = {
         id: makeUUID('business', 'employee-john-doe'),
         name: 'John Doe (Employee)',
         country: CountryCode.Isr,
-        canSettleWithReceipt: true,
-      },
+        canSettleWithReceipt: true
+      }
     ],
     taxCategories: [
       {
         id: makeUUID('tax-category', 'salary-expenses'),
-        name: 'Salary Expenses',
+        name: 'Salary Expenses'
       },
       {
         id: makeUUID('tax-category', 'bank-account-ils'),
-        name: 'Bank Account (ILS)',
-      },
+        name: 'Bank Account (ILS)'
+      }
     ],
     financialAccounts: [
       {
@@ -138,17 +138,17 @@ export const monthlySalaryPayment: UseCaseSpec = {
         taxCategoryMappings: [
           {
             currency: Currency.Ils,
-            taxCategoryId: makeUUID('tax-category', 'bank-account-ils'),
-          },
-        ],
-      },
+            taxCategoryId: makeUUID('tax-category', 'bank-account-ils')
+          }
+        ]
+      }
     ],
     charges: [
       {
         id: makeUUID('charge', 'salary-payment-2024-11'),
         ownerId: '{{ADMIN_BUSINESS_ID}}',
-        userDescription: 'November 2024 salary payment',
-      },
+        userDescription: 'November 2024 salary payment'
+      }
     ],
     transactions: [
       {
@@ -159,8 +159,8 @@ export const monthlySalaryPayment: UseCaseSpec = {
         amount: '-15000', // 15,000 ILS expense
         currency: Currency.Ils,
         eventDate: '2024-11-30',
-        debitDate: '2024-11-30',
-      },
+        debitDate: '2024-11-30'
+      }
     ],
     documents: [
       {
@@ -172,21 +172,21 @@ export const monthlySalaryPayment: UseCaseSpec = {
         type: 'RECEIPT',
         date: '2024-11-30',
         totalAmount: '15000',
-        currencyCode: Currency.Ils,
-      },
-    ],
+        currencyCode: Currency.Ils
+      }
+    ]
   },
   metadata: {
     author: 'your-name',
     createdAt: '2024-11-30',
-    updatedAt: '2024-11-30',
+    updatedAt: '2024-11-30'
   },
   expectations: {
     ledgerRecordCount: 2, // Debit (salary expense) + Credit (bank account)
     totalDebitILS: '15000.00',
-    totalCreditILS: '15000.00',
-  },
-};
+    totalCreditILS: '15000.00'
+  }
+}
 ```
 
 ### Step 3: Register Use-Case
@@ -196,21 +196,21 @@ Update the registry to include your new use-case:
 ```typescript
 // packages/server/src/demo-fixtures/use-cases/index.ts
 
-import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js';
-import { shareholderDividend } from './equity/shareholder-dividend.js';
-import { clientPaymentWithRefund } from './income/client-payment-with-refund.js';
-import { monthlySalaryPayment } from './payroll/monthly-salary-payment.js'; // Add import
-import type { UseCaseSpec } from '../types.js';
+import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js'
+import { shareholderDividend } from './equity/shareholder-dividend.js'
+import { clientPaymentWithRefund } from './income/client-payment-with-refund.js'
+import { monthlySalaryPayment } from './payroll/monthly-salary-payment.js' // Add import
+import type { UseCaseSpec } from '../types.js'
 
 export const USE_CASE_REGISTRY: Record<string, UseCaseSpec[]> = {
   expenses: [monthlyExpenseForeignCurrency],
   equity: [shareholderDividend],
   income: [clientPaymentWithRefund],
-  payroll: [monthlySalaryPayment], // Add to registry
-};
+  payroll: [monthlySalaryPayment] // Add to registry
+}
 
 export function getAllUseCases(): UseCaseSpec[] {
-  return Object.values(USE_CASE_REGISTRY).flat();
+  return Object.values(USE_CASE_REGISTRY).flat()
 }
 ```
 
@@ -249,14 +249,14 @@ The next staging deploy will automatically include your use-case.
 
 ```typescript
 // ✅ Good
-makeUUID('business', 'acme-consulting-llc');
-makeUUID('charge', 'consulting-invoice-2024-11');
-makeUUID('transaction', 'bank-transfer-usd-500');
+makeUUID('business', 'acme-consulting-llc')
+makeUUID('charge', 'consulting-invoice-2024-11')
+makeUUID('transaction', 'bank-transfer-usd-500')
 
 // ❌ Bad
-makeUUID('business', 'Acme Consulting LLC');
-makeUUID('charge', 'consulting_invoice_2024_11');
-makeUUID('transaction', 'BankTransfer500');
+makeUUID('business', 'Acme Consulting LLC')
+makeUUID('charge', 'consulting_invoice_2024_11')
+makeUUID('transaction', 'BankTransfer500')
 ```
 
 ### Namespace Guidelines
@@ -265,13 +265,13 @@ makeUUID('transaction', 'BankTransfer500');
 
 ```typescript
 // ✅ Good - Different entities, different namespaces
-const businessId = makeUUID('business', 'acme-corp');
-const chargeId = makeUUID('charge', 'acme-corp');
+const businessId = makeUUID('business', 'acme-corp')
+const chargeId = makeUUID('charge', 'acme-corp')
 // These produce different UUIDs even with same name
 
 // ❌ Bad - Risk of collision
-const businessId = makeUUID('entities', 'acme-corp-business');
-const chargeId = makeUUID('entities', 'acme-corp-charge');
+const businessId = makeUUID('entities', 'acme-corp-business')
+const chargeId = makeUUID('entities', 'acme-corp-charge')
 ```
 
 ### Stability Rules
@@ -281,13 +281,13 @@ const chargeId = makeUUID('entities', 'acme-corp-charge');
 ```typescript
 // ❌ BREAKING: Changing the name breaks external references
 // Old version (deployed):
-makeUUID('business', 'supplier-acme-llc');
+makeUUID('business', 'supplier-acme-llc')
 
 // New version (breaks UUIDs):
-makeUUID('business', 'supplier-acme-inc'); // Different UUID!
+makeUUID('business', 'supplier-acme-inc') // Different UUID!
 
 // ✅ If entity changes, create a new version:
-makeUUID('business', 'supplier-acme-llc-v2');
+makeUUID('business', 'supplier-acme-llc-v2')
 ```
 
 ### Uniqueness Verification
@@ -296,14 +296,14 @@ Combine entity type + descriptive name to ensure no collisions:
 
 ```typescript
 // ✅ Good - Unique combinations
-makeUUID('business', 'us-supplier-acme-llc');
-makeUUID('business', 'uk-supplier-acme-ltd');
-makeUUID('charge', 'november-expense-2024');
-makeUUID('charge', 'december-expense-2024');
+makeUUID('business', 'us-supplier-acme-llc')
+makeUUID('business', 'uk-supplier-acme-ltd')
+makeUUID('charge', 'november-expense-2024')
+makeUUID('charge', 'december-expense-2024')
 
 // ⚠️ Be specific to avoid accidental duplicates
-makeUUID('business', 'supplier-1'); // Too generic
-makeUUID('business', 'supplier-2'); // Better: 'supplier-acme-llc'
+makeUUID('business', 'supplier-1') // Too generic
+makeUUID('business', 'supplier-2') // Better: 'supplier-acme-llc'
 ```
 
 ### Placeholder Usage
@@ -466,10 +466,10 @@ with:
 
 ```typescript
 // ✅ Good
-import { Currency, CountryCode } from '@shared/enums';
+import { Currency, CountryCode } from '@shared/enums'
 
 // ❌ Bad
-import { Currency } from '../../../shared/enums'; // Relative path breaks
+import { Currency } from '../../../shared/enums' // Relative path breaks
 ```
 
 ---

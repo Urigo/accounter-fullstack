@@ -134,30 +134,30 @@ packages/server/src/demo-fixtures/
 
 ```typescript
 export interface UseCaseSpec {
-  id: string; // Unique slug: 'monthly-expense-foreign-currency'
-  name: string; // Display name: 'Monthly Expense (Foreign Currency)'
-  description: string; // Long-form explanation for docs
-  category: 'expenses' | 'income' | 'equity' | 'payroll' | 'other';
+  id: string // Unique slug: 'monthly-expense-foreign-currency'
+  name: string // Display name: 'Monthly Expense (Foreign Currency)'
+  description: string // Long-form explanation for docs
+  category: 'expenses' | 'income' | 'equity' | 'payroll' | 'other'
   fixtures: {
-    businesses: BusinessFixture[];
-    taxCategories: TaxCategoryFixture[];
-    financialAccounts: FinancialAccountFixture[];
-    charges: ChargeFixture[];
-    transactions: TransactionFixture[];
-    documents: DocumentFixture[];
-    tags?: TagFixture[];
-  };
+    businesses: BusinessFixture[]
+    taxCategories: TaxCategoryFixture[]
+    financialAccounts: FinancialAccountFixture[]
+    charges: ChargeFixture[]
+    transactions: TransactionFixture[]
+    documents: DocumentFixture[]
+    tags?: TagFixture[]
+  }
   metadata: {
-    author: string; // Developer who created it
-    createdAt: string; // ISO date
-    updatedAt: string;
-    volumeMultiplier?: number; // Optional: Create N instances (default 1)
-  };
+    author: string // Developer who created it
+    createdAt: string // ISO date
+    updatedAt: string
+    volumeMultiplier?: number // Optional: Create N instances (default 1)
+  }
   expectations?: {
-    ledgerRecordCount: number;
-    totalDebitILS: string; // For smoke test validation
-    totalCreditILS: string;
-  };
+    ledgerRecordCount: number
+    totalDebitILS: string // For smoke test validation
+    totalCreditILS: string
+  }
 }
 ```
 
@@ -166,9 +166,9 @@ export interface UseCaseSpec {
 ```typescript
 // packages/server/src/demo-fixtures/use-cases/expenses/monthly-expense-foreign-currency.ts
 
-import { Currency, CountryCode } from '@shared/enums';
-import { makeUUID } from '../../helpers/deterministic-uuid.js';
-import type { UseCaseSpec } from '../../types.js';
+import { Currency, CountryCode } from '@shared/enums'
+import { makeUUID } from '../../helpers/deterministic-uuid.js'
+import type { UseCaseSpec } from '../../types.js'
 
 export const monthlyExpenseForeignCurrency: UseCaseSpec = {
   id: 'monthly-expense-foreign-currency',
@@ -181,14 +181,14 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         id: makeUUID('business', 'us-supplier-acme-llc'),
         name: 'Acme Consulting LLC',
         country: CountryCode['United States of America (the)'],
-        canSettleWithReceipt: false,
-      },
+        canSettleWithReceipt: false
+      }
     ],
     taxCategories: [
       {
         id: makeUUID('tax-category', 'consulting-expenses'),
-        name: 'Consulting Expenses',
-      },
+        name: 'Consulting Expenses'
+      }
     ],
     financialAccounts: [
       {
@@ -199,17 +199,17 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         taxCategoryMappings: [
           {
             taxCategoryId: makeUUID('tax-category', 'bank-usd-expenses'),
-            currency: Currency.Usd,
-          },
-        ],
-      },
+            currency: Currency.Usd
+          }
+        ]
+      }
     ],
     charges: [
       {
         id: makeUUID('charge', 'consulting-invoice-2024-11'),
         ownerId: '{{ADMIN_BUSINESS_ID}}', // Replaced at runtime
-        userDescription: 'November consulting services',
-      },
+        userDescription: 'November consulting services'
+      }
     ],
     transactions: [
       {
@@ -220,8 +220,8 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         currency: Currency.Usd,
         eventDate: '2024-11-15',
         debitDate: '2024-11-15',
-        accountNumber: '123-456-7890',
-      },
+        accountNumber: '123-456-7890'
+      }
     ],
     documents: [
       {
@@ -233,21 +233,21 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         type: 'INVOICE',
         date: '2024-11-01',
         totalAmount: '500.00',
-        currencyCode: Currency.Usd,
-      },
-    ],
+        currencyCode: Currency.Usd
+      }
+    ]
   },
   metadata: {
     author: 'demo-team',
     createdAt: '2024-11-24',
-    updatedAt: '2024-11-24',
+    updatedAt: '2024-11-24'
   },
   expectations: {
     ledgerRecordCount: 2,
     totalDebitILS: '1750.00', // 500 USD * 3.5 rate
-    totalCreditILS: '1750.00',
-  },
-};
+    totalCreditILS: '1750.00'
+  }
+}
 ```
 
 ### 5.4 Registry Index
@@ -255,19 +255,19 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
 ```typescript
 // packages/server/src/demo-fixtures/use-cases/index.ts
 
-import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js';
-import { shareholderDividend } from './equity/shareholder-dividend.js';
-import { clientPaymentWithRefund } from './income/client-payment-with-refund.js';
-import type { UseCaseSpec } from '../types.js';
+import { monthlyExpenseForeignCurrency } from './expenses/monthly-expense-foreign-currency.js'
+import { shareholderDividend } from './equity/shareholder-dividend.js'
+import { clientPaymentWithRefund } from './income/client-payment-with-refund.js'
+import type { UseCaseSpec } from '../types.js'
 
 export const USE_CASE_REGISTRY: Record<string, UseCaseSpec[]> = {
   expenses: [monthlyExpenseForeignCurrency],
   equity: [shareholderDividend],
-  income: [clientPaymentWithRefund],
-};
+  income: [clientPaymentWithRefund]
+}
 
 export function getAllUseCases(): UseCaseSpec[] {
-  return Object.values(USE_CASE_REGISTRY).flat();
+  return Object.values(USE_CASE_REGISTRY).flat()
 }
 ```
 
@@ -280,10 +280,10 @@ export function getAllUseCases(): UseCaseSpec[] {
 ```typescript
 // packages/server/src/demo-fixtures/helpers/deterministic-uuid.ts
 
-import { v5 as uuidv5 } from 'uuid';
+import { v5 as uuidv5 } from 'uuid'
 
 // Fixed namespace for all demo data (regenerate on schema-breaking changes if needed)
-const DEMO_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Standard DNS namespace
+const DEMO_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8' // Standard DNS namespace
 
 /**
  * Generate deterministic UUID v5 from semantic name.
@@ -296,8 +296,8 @@ const DEMO_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8'; // Standard DNS n
  * @param name - Semantic identifier (kebab-case recommended)
  */
 export function makeUUID(namespace: string, name: string): string {
-  const composite = `${namespace}:${name}`;
-  return uuidv5(composite, DEMO_NAMESPACE);
+  const composite = `${namespace}:${name}`
+  return uuidv5(composite, DEMO_NAMESPACE)
 }
 ```
 
@@ -315,9 +315,9 @@ at insertion time:
 
 ```typescript
 function resolveAdminPlaceholders(fixture: any, adminBusinessId: string): any {
-  const json = JSON.stringify(fixture);
-  const resolved = json.replace(/\{\{ADMIN_BUSINESS_ID\}\}/g, adminBusinessId);
-  return JSON.parse(resolved);
+  const json = JSON.stringify(fixture)
+  const resolved = json.replace(/\{\{ADMIN_BUSINESS_ID\}\}/g, adminBusinessId)
+  return JSON.parse(resolved)
 }
 ```
 
@@ -328,24 +328,24 @@ function resolveAdminPlaceholders(fixture: any, adminBusinessId: string): any {
 ### 7.1 File: `scripts/seed-demo-data.ts`
 
 ```typescript
-import pg from 'pg';
-import { config } from 'dotenv';
-import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
-import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
-import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
+import pg from 'pg'
+import { config } from 'dotenv'
+import { seedCountries } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js'
+import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js'
+import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js'
 
-config();
+config()
 
 async function seedDemoData() {
   // 1. Guard checks
   if (process.env.NODE_ENV === 'production') {
-    console.error('❌ Refusing to seed demo data in production environment');
-    process.exit(1);
+    console.error('❌ Refusing to seed demo data in production environment')
+    process.exit(1)
   }
 
   if (process.env.ALLOW_DEMO_SEED !== '1') {
-    console.error('❌ ALLOW_DEMO_SEED=1 required to run demo seed');
-    process.exit(1);
+    console.error('❌ ALLOW_DEMO_SEED=1 required to run demo seed')
+    process.exit(1)
   }
 
   const client = new pg.Client({
@@ -354,15 +354,15 @@ async function seedDemoData() {
     host: process.env.POSTGRES_HOST,
     port: parseInt(process.env.POSTGRES_PORT || '5432'),
     database: process.env.POSTGRES_DB,
-    ssl: process.env.POSTGRES_SSL === '1',
-  });
+    ssl: process.env.POSTGRES_SSL === '1'
+  })
 
   try {
-    await client.connect();
-    console.log('🔗 Connected to database');
+    await client.connect()
+    console.log('🔗 Connected to database')
 
     // 2. Destructive reset (domain tables only; preserve schema/migrations/countries)
-    console.log('🧹 Clearing existing demo data...');
+    console.log('🧹 Clearing existing demo data...')
     await client.query(`
       TRUNCATE TABLE accounter_schema.ledger_records,
                      accounter_schema.documents,
@@ -376,46 +376,46 @@ async function seedDemoData() {
                      accounter_schema.user_context,
                      accounter_schema.financial_entities
       RESTART IDENTITY CASCADE;
-    `);
-    console.log('✅ Domain tables cleared');
+    `)
+    console.log('✅ Domain tables cleared')
 
     // 3. Seed foundation data
-    console.log('🌍 Seeding countries...');
-    await seedCountries(client);
+    console.log('🌍 Seeding countries...')
+    await seedCountries(client)
 
-    console.log('💱 Seeding FIAT exchange rates...');
-    await seedExchangeRates(client);
+    console.log('💱 Seeding FIAT exchange rates...')
+    await seedExchangeRates(client)
 
-    console.log('📊 Seeding VAT default...');
-    await seedVATDefault(client);
+    console.log('📊 Seeding VAT default...')
+    await seedVATDefault(client)
 
     // 4. Create admin business context (reuse existing seed.ts logic)
-    console.log('🏢 Creating admin business context...');
-    const adminBusinessId = await createAdminBusinessContext(client);
-    console.log(`✅ Accounter Admin Business ID: ${adminBusinessId}`);
+    console.log('🏢 Creating admin business context...')
+    const adminBusinessId = await createAdminBusinessContext(client)
+    console.log(`✅ Accounter Admin Business ID: ${adminBusinessId}`)
 
     // 5. Load all use-cases
-    const useCases = getAllUseCases();
-    console.log(`📦 Loading ${useCases.length} use-cases...`);
+    const useCases = getAllUseCases()
+    console.log(`📦 Loading ${useCases.length} use-cases...`)
 
     for (const useCase of useCases) {
-      console.log(`  ➡️  ${useCase.name} (${useCase.id})`);
-      const resolvedFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId);
-      await insertFixture(client, resolvedFixtures);
+      console.log(`  ➡️  ${useCase.name} (${useCase.id})`)
+      const resolvedFixtures = resolveAdminPlaceholders(useCase.fixtures, adminBusinessId)
+      await insertFixture(client, resolvedFixtures)
     }
 
-    console.log('✅ All use-cases seeded successfully');
+    console.log('✅ All use-cases seeded successfully')
 
     // 6. Write env vars (if not already set)
-    await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId);
+    await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId)
     // AUTHORIZED_USERS typically set manually in Render dashboard
 
-    console.log('🎉 Demo data seed complete');
+    console.log('🎉 Demo data seed complete')
   } catch (error) {
-    console.error('❌ Seed failed:', error);
-    throw error;
+    console.error('❌ Seed failed:', error)
+    throw error
   } finally {
-    await client.end();
+    await client.end()
   }
 }
 
@@ -423,27 +423,27 @@ async function seedExchangeRates(client: pg.Client) {
   const rates = [
     { from: 'USD', to: 'ILS', rate: 3.5 },
     { from: 'EUR', to: 'ILS', rate: 4.0 },
-    { from: 'GBP', to: 'ILS', rate: 4.5 },
-  ];
+    { from: 'GBP', to: 'ILS', rate: 4.5 }
+  ]
 
   for (const { from, to, rate } of rates) {
     await client.query(
       `INSERT INTO accounter_schema.exchange_rates (from_currency, to_currency, rate, date)
        VALUES ($1, $2, $3, CURRENT_DATE)
        ON CONFLICT (from_currency, to_currency, date) DO UPDATE SET rate = EXCLUDED.rate`,
-      [from, to, rate],
-    );
+      [from, to, rate]
+    )
   }
-  console.log(`✅ Seeded ${rates.length} FIAT exchange rates`);
+  console.log(`✅ Seeded ${rates.length} FIAT exchange rates`)
 }
 
 async function seedVATDefault(client: pg.Client) {
   await client.query(
     `INSERT INTO accounter_schema.vat_value (percentage, effective_date)
      VALUES (17, '2024-01-01')
-     ON CONFLICT (effective_date) DO NOTHING`,
-  );
-  console.log('✅ VAT default (17%) seeded');
+     ON CONFLICT (effective_date) DO NOTHING`
+  )
+  console.log('✅ VAT default (17%) seeded')
 }
 
 // Import existing createAdminBusinessContext from seed.ts or extract into shared module
@@ -453,9 +453,9 @@ async function createAdminBusinessContext(client: pg.Client): Promise<string> {
 }
 
 function resolveAdminPlaceholders(fixture: any, adminBusinessId: string): any {
-  const json = JSON.stringify(fixture);
-  const resolved = json.replace(/\{\{ADMIN_BUSINESS_ID\}\}/g, adminBusinessId);
-  return JSON.parse(resolved);
+  const json = JSON.stringify(fixture)
+  const resolved = json.replace(/\{\{ADMIN_BUSINESS_ID\}\}/g, adminBusinessId)
+  return JSON.parse(resolved)
 }
 
 async function updateEnvFile(key: string, value: string) {
@@ -463,9 +463,9 @@ async function updateEnvFile(key: string, value: string) {
 }
 
 seedDemoData().catch(error => {
-  console.error('Fatal seed error:', error);
-  process.exit(1);
-});
+  console.error('Fatal seed error:', error)
+  process.exit(1)
+})
 ```
 
 ---
@@ -479,11 +479,11 @@ with ledger expectations. It connects to the database, runs base checks (Account
 charge count), then iterates each relevant use-case to validate ledger records.
 
 ```typescript
-import pg from 'pg';
-import { config } from 'dotenv';
-import { getAllUseCases } from './use-cases/index.js';
+import pg from 'pg'
+import { config } from 'dotenv'
+import { getAllUseCases } from './use-cases/index.js'
 
-config();
+config()
 
 async function validateDemoData() {
   const client = new pg.Client({
@@ -492,39 +492,39 @@ async function validateDemoData() {
     host: process.env.POSTGRES_HOST,
     port: parseInt(process.env.POSTGRES_PORT || '5432'),
     database: process.env.POSTGRES_DB,
-    ssl: process.env.POSTGRES_SSL === '1',
-  });
+    ssl: process.env.POSTGRES_SSL === '1'
+  })
 
-  const errors: string[] = [];
+  const errors: string[] = []
 
   try {
-    await client.connect();
+    await client.connect()
 
     // 1. Accounter Admin Business exists
     const adminCheck = await client.query(
-      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Accounter Admin Business'`,
-    );
+      `SELECT id FROM accounter_schema.financial_entities WHERE type = 'business' AND name = 'Accounter Admin Business'`
+    )
     if (adminCheck.rows.length === 0) {
-      errors.push('Accounter Admin Business entity missing');
+      errors.push('Accounter Admin Business entity missing')
     }
 
     // 2. Use-case charge count reconciliation
-    const useCases = getAllUseCases();
-    const expectedChargeCount = useCases.reduce((sum, uc) => sum + uc.fixtures.charges.length, 0);
-    const actualChargeCount = await client.query(`SELECT COUNT(*) FROM accounter_schema.charges`);
+    const useCases = getAllUseCases()
+    const expectedChargeCount = useCases.reduce((sum, uc) => sum + uc.fixtures.charges.length, 0)
+    const actualChargeCount = await client.query(`SELECT COUNT(*) FROM accounter_schema.charges`)
     if (parseInt(actualChargeCount.rows[0].count) !== expectedChargeCount) {
       errors.push(
-        `Charge count mismatch: expected ${expectedChargeCount}, got ${actualChargeCount.rows[0].count}`,
-      );
+        `Charge count mismatch: expected ${expectedChargeCount}, got ${actualChargeCount.rows[0].count}`
+      )
     }
 
     // 3. Ledger validation (for all use-cases with expectations)
     for (const useCase of useCases.filter(uc => uc.expectations)) {
-      const chargeId = useCase.fixtures.charges[0].id;
+      const chargeId = useCase.fixtures.charges[0].id
       const { rows: ledgerRecords } = await client.query(
         `SELECT * FROM accounter_schema.ledger_records WHERE charge_id = $1`,
-        [chargeId],
-      );
+        [chargeId]
+      )
 
       // Aggregate balance check (debits == credits within tolerance)
       const totalDebit = ledgerRecords.reduce(
@@ -532,68 +532,68 @@ async function validateDemoData() {
           sum +
           parseFloat(rec.debit_local_amount1 || '0') +
           parseFloat(rec.debit_local_amount2 || '0'),
-        0,
-      );
+        0
+      )
       const totalCredit = ledgerRecords.reduce(
         (sum, rec) =>
           sum +
           parseFloat(rec.credit_local_amount1 || '0') +
           parseFloat(rec.credit_local_amount2 || '0'),
-        0,
-      );
+        0
+      )
       if (Math.abs(totalDebit - totalCredit) > 0.01) {
         errors.push(
-          `${useCase.id}: aggregate ledger not balanced (debit ${totalDebit.toFixed(2)}, credit ${totalCredit.toFixed(2)})`,
-        );
+          `${useCase.id}: aggregate ledger not balanced (debit ${totalDebit.toFixed(2)}, credit ${totalCredit.toFixed(2)})`
+        )
       }
 
       // Record count check
       if (ledgerRecords.length !== useCase.expectations!.ledgerRecordCount) {
         errors.push(
-          `${useCase.id}: ledger record count mismatch (expected ${useCase.expectations!.ledgerRecordCount}, got ${ledgerRecords.length})`,
-        );
+          `${useCase.id}: ledger record count mismatch (expected ${useCase.expectations!.ledgerRecordCount}, got ${ledgerRecords.length})`
+        )
       }
 
       // Per-record internal balance (debit1+debit2 == credit1+credit2)
       ledgerRecords.forEach((rec: any, idx: number) => {
         const recDebit =
-          parseFloat(rec.debit_local_amount1 || '0') + parseFloat(rec.debit_local_amount2 || '0');
+          parseFloat(rec.debit_local_amount1 || '0') + parseFloat(rec.debit_local_amount2 || '0')
         const recCredit =
-          parseFloat(rec.credit_local_amount1 || '0') + parseFloat(rec.credit_local_amount2 || '0');
+          parseFloat(rec.credit_local_amount1 || '0') + parseFloat(rec.credit_local_amount2 || '0')
         if (Math.abs(recDebit - recCredit) > 0.01) {
           errors.push(
             `${useCase.id} - Record ${idx}: internal imbalance (debit=${recDebit.toFixed(
-              2,
-            )}, credit=${recCredit.toFixed(2)})`,
-          );
+              2
+            )}, credit=${recCredit.toFixed(2)})`
+          )
         }
-      });
+      })
     }
 
     // 4. VAT row present
     const vatCheck = await client.query(
-      `SELECT * FROM accounter_schema.vat_value WHERE percentage = 17`,
-    );
+      `SELECT * FROM accounter_schema.vat_value WHERE percentage = 17`
+    )
     if (vatCheck.rows.length === 0) {
-      errors.push('VAT default (17%) missing');
+      errors.push('VAT default (17%) missing')
     }
 
     if (errors.length > 0) {
-      console.error('❌ Validation failed:');
-      errors.forEach(err => console.error(`  - ${err}`));
-      process.exit(1);
+      console.error('❌ Validation failed:')
+      errors.forEach(err => console.error(`  - ${err}`))
+      process.exit(1)
     }
 
-    console.log('✅ Demo data validation passed');
+    console.log('✅ Demo data validation passed')
   } catch (error) {
-    console.error('❌ Validation error:', error);
-    process.exit(1);
+    console.error('❌ Validation error:', error)
+    process.exit(1)
   } finally {
-    await client.end();
+    await client.end()
   }
 }
 
-validateDemoData();
+validateDemoData()
 ```
 
 ### 8.2 Ledger Validation Enhancements
@@ -701,16 +701,16 @@ Add to root `package.json`:
 
 ```typescript
 // Success: ✅ prefix
-console.log('✅ All use-cases seeded successfully');
+console.log('✅ All use-cases seeded successfully')
 
 // Info: ℹ️ or plain
-console.log('📦 Loading 12 use-cases...');
+console.log('📦 Loading 12 use-cases...')
 
 // Warning: ⚠️
-console.warn('⚠️ Use-case X has no ledger expectations; skipping balance check');
+console.warn('⚠️ Use-case X has no ledger expectations; skipping balance check')
 
 // Error: ❌
-console.error('❌ Seed failed: Foreign key violation on business_id');
+console.error('❌ Seed failed: Foreign key violation on business_id')
 ```
 
 ---
@@ -724,23 +724,23 @@ console.error('❌ Seed failed: Foreign key violation on business_id');
 ```typescript
 describe('makeUUID', () => {
   it('generates same UUID for same inputs', () => {
-    const uuid1 = makeUUID('business', 'acme-llc');
-    const uuid2 = makeUUID('business', 'acme-llc');
-    expect(uuid1).toBe(uuid2);
-  });
+    const uuid1 = makeUUID('business', 'acme-llc')
+    const uuid2 = makeUUID('business', 'acme-llc')
+    expect(uuid1).toBe(uuid2)
+  })
 
   it('generates different UUIDs for different names', () => {
-    const uuid1 = makeUUID('business', 'acme-llc');
-    const uuid2 = makeUUID('business', 'acme-corp');
-    expect(uuid1).not.toBe(uuid2);
-  });
+    const uuid1 = makeUUID('business', 'acme-llc')
+    const uuid2 = makeUUID('business', 'acme-corp')
+    expect(uuid1).not.toBe(uuid2)
+  })
 
   it('includes namespace in composite key', () => {
-    const bizUUID = makeUUID('business', 'acme');
-    const chargeUUID = makeUUID('charge', 'acme');
-    expect(bizUUID).not.toBe(chargeUUID);
-  });
-});
+    const bizUUID = makeUUID('business', 'acme')
+    const chargeUUID = makeUUID('charge', 'acme')
+    expect(bizUUID).not.toBe(chargeUUID)
+  })
+})
 ```
 
 **File**: `packages/server/src/demo-fixtures/__tests__/use-case-registry.test.ts`
@@ -748,21 +748,21 @@ describe('makeUUID', () => {
 ```typescript
 describe('Use-Case Registry', () => {
   it('has no duplicate IDs across all categories', () => {
-    const allUseCases = getAllUseCases();
-    const ids = allUseCases.map(uc => uc.id);
-    const uniqueIds = new Set(ids);
-    expect(ids.length).toBe(uniqueIds.size);
-  });
+    const allUseCases = getAllUseCases()
+    const ids = allUseCases.map(uc => uc.id)
+    const uniqueIds = new Set(ids)
+    expect(ids.length).toBe(uniqueIds.size)
+  })
 
   it('all use-cases have required fields', () => {
     getAllUseCases().forEach(uc => {
-      expect(uc.id).toBeTruthy();
-      expect(uc.name).toBeTruthy();
-      expect(uc.category).toBeTruthy();
-      expect(uc.fixtures).toBeDefined();
-    });
-  });
-});
+      expect(uc.id).toBeTruthy()
+      expect(uc.name).toBeTruthy()
+      expect(uc.category).toBeTruthy()
+      expect(uc.fixtures).toBeDefined()
+    })
+  })
+})
 ```
 
 ### 11.2 Integration Tests (Local)
@@ -951,7 +951,7 @@ yarn seed:staging-demo --exclude=payroll
 
 ```typescript
 metadata: {
-  volumeMultiplier: 6; // Generate 6 months of this use-case
+  volumeMultiplier: 6 // Generate 6 months of this use-case
 }
 ```
 
@@ -962,7 +962,7 @@ Query external API (e.g., ECB, CoinGecko for crypto) during seed with fallback t
 ### 17.4 Use-Case Dependency Graph
 
 ```typescript
-dependencies: ['admin-context-basic', 'bank-account-ils'];
+dependencies: ['admin-context-basic', 'bank-account-ils']
 ```
 
 Auto-resolve insertion order based on topological sort.

@@ -42,22 +42,22 @@ Create `packages/server/src/fixtures/fixture-spec.ts`:
 ```typescript
 export interface FixtureSpec {
   meta?: {
-    id: string;
-    description?: string;
-    version?: string;
-    [key: string]: any;
-  };
-  businesses: any[];
-  taxCategories: any[];
-  financialAccounts: any[];
-  charges: any[];
-  transactions: any[];
-  documents: any[];
+    id: string
+    description?: string
+    version?: string
+    [key: string]: any
+  }
+  businesses: any[]
+  taxCategories: any[]
+  financialAccounts: any[]
+  charges: any[]
+  transactions: any[]
+  documents: any[]
   expectations?: {
-    ledger?: any[];
-    [key: string]: any;
-  };
-  placeholders?: Record<string, string>;
+    ledger?: any[]
+    [key: string]: any
+  }
+  placeholders?: Record<string, string>
 }
 ```
 

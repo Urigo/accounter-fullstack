@@ -81,14 +81,14 @@ All validators return `string[]` of error messages. No errors = rule passed.
 ## Usage Example
 
 ```ts
-import { validateLedgerRecords } from './validators/ledger-validators.js';
-import type { LedgerRecord, ValidationContext } from './validators/types.js';
+import { validateLedgerRecords } from './validators/ledger-validators.js'
+import type { LedgerRecord, ValidationContext } from './validators/types.js'
 
 const context: ValidationContext = {
   useCaseId: 'example-use-case',
   defaultCurrency: 'ILS',
-  tolerance: 0.005,
-};
+  tolerance: 0.005
+}
 
 const records: LedgerRecord[] = [
   {
@@ -117,17 +117,17 @@ const records: LedgerRecord[] = [
     value_date: new Date('2024-01-01') as any,
     description: 'Demo',
     reference1: null,
-    locked: false,
-  },
-];
+    locked: false
+  }
+]
 
-const expectedRecordCount = 1;
-const errors = validateLedgerRecords(records, expectedRecordCount, context);
+const expectedRecordCount = 1
+const errors = validateLedgerRecords(records, expectedRecordCount, context)
 
 if (errors.length === 0) {
-  console.log('✅ Ledger valid');
+  console.log('✅ Ledger valid')
 } else {
-  console.error('❌ Validation failed:', errors);
+  console.error('❌ Validation failed:', errors)
 }
 ```
 
@@ -140,9 +140,9 @@ if (errors.length === 0) {
  * Validates specific rule X
  */
 export function validateRuleX(records: LedgerRecord[], context: ValidationContext): string[] {
-  const errors: string[] = [];
+  const errors: string[] = []
   // ... push error strings when violations are found
-  return errors;
+  return errors
 }
 ```
 
