@@ -83,7 +83,7 @@ export function validateRecordInternalBalance(
 ): string[] {
   const errors: string[] = [];
 
-  records.forEach((record, index) => {
+  records.map((record, index) => {
     const totalDebit =
       parseAmount(record.debit_local_amount1) + parseAmount(record.debit_local_amount2);
 
@@ -232,7 +232,7 @@ export function validateEntityBalance(
   };
 
   // Accumulate balances for all entities across all records
-  records.forEach(record => {
+  records.map(record => {
     addToEntity(record.debit_entity1, parseAmount(record.debit_local_amount1), 0);
     addToEntity(record.debit_entity2, parseAmount(record.debit_local_amount2), 0);
     addToEntity(record.credit_entity1, 0, parseAmount(record.credit_local_amount1));
@@ -240,7 +240,7 @@ export function validateEntityBalance(
   });
 
   // Validate each entity balances to zero (within tolerance)
-  entityBalances.forEach(balance => {
+  Array.from(entityBalances.values()).map(balance => {
     if (!isBalanced(balance.netBalance, 0, context.tolerance)) {
       errors.push(
         `${context.useCaseId}: Entity ${balance.entityId} unbalanced ` +
@@ -345,8 +345,8 @@ export function validatePositiveAmounts(
     'credit_foreign_amount2',
   ] as const;
 
-  records.forEach((record, index) => {
-    amountFields.forEach(field => {
+  records.map((record, index) => {
+    amountFields.map(field => {
       const value = parseAmount(record[field]);
       if (value < 0) {
         errors.push(
@@ -399,7 +399,7 @@ export function validateDates(records: LedgerRecord[], context: ValidationContex
   const minDate = new Date('2020-01-01');
   const maxDate = new Date('2030-12-31');
 
-  records.forEach((record, index) => {
+  records.map((record, index) => {
     // Check invoice_date
     if (record.invoice_date) {
       const invoiceDate = new Date(record.invoice_date);
@@ -480,7 +480,7 @@ export function validateForeignCurrency(
 ): string[] {
   const errors: string[] = [];
 
-  records.forEach((record, index) => {
+  records.map((record, index) => {
     const isForeignCurrency = record.currency !== context.defaultCurrency;
 
     const hasForeignAmounts =
@@ -590,7 +590,7 @@ export function validateNoOrphanedAmounts(
 ): string[] {
   const errors: string[] = [];
 
-  records.forEach((record, index) => {
+  records.map((record, index) => {
     const checks = [
       // Debit entity 1 (primary - always required to have entity if amount > 0)
       {
@@ -618,7 +618,7 @@ export function validateNoOrphanedAmounts(
       },
     ];
 
-    checks.forEach(({ amount, entity, field }) => {
+    checks.map(({ amount, entity, field }) => {
       if (amount > 0 && !entity) {
         errors.push(
           `${context.useCaseId} - Record ${index} (${record.id}): ` +

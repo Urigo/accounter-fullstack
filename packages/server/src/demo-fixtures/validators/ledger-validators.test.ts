@@ -238,7 +238,7 @@ describe('validateForeignCurrency', () => {
 describe('validateDates', () => {
   it('should fail for missing dates', () => {
     const record = createMockRecord({
-      invoice_date: null as any,
+      invoice_date: null as unknown as Date,
     });
 
     const errors = validateDates([record], mockContext);
@@ -286,7 +286,7 @@ describe('validateLedgerRecords', () => {
       debit_local_amount1: '100.00',
       credit_local_amount1: '99.00', // Imbalance
       debit_entity1: null, // Orphaned amount
-      invoice_date: null as any, // Missing date
+      invoice_date: null as unknown as Date, // Missing date
     });
 
     const errors = validateLedgerRecords([record], 1, mockContext);
