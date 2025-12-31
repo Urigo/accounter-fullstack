@@ -14,6 +14,7 @@ import { assertValidFixture } from './fixture-validation.js';
 import { qualifyTable } from './test-db-config.js';
 import { makeUUID, makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { UUID_REGEX } from '../../shared/constants.js';
+import { ensureBusinessForEntity, ensureFinancialEntity, ensureTaxCategoryForEntity } from './seed-helpers.js';
 
 /**
  * Custom error for fixture insertion failures
@@ -119,6 +120,7 @@ export type FixtureIdMapping = Map<string, string>;
 export async function insertFixture(
   client: PoolClient | Client,
   fixture: Fixture,
+  adminBusinessId?: string,
 ): Promise<FixtureIdMapping> {
   // Validate fixture before insertion
   assertValidFixture(fixture);
@@ -154,49 +156,19 @@ export async function insertFixture(
       for (const business of fixture.businesses!.businesses) {
         // Insert financial entity first (type='business')
         // Field mapping: business.name used for display (required); hebrewName is legacy/optional
-        const entityResult = await client.query(
-          `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type)
-           VALUES ($1, $2, 'business')
-           ON CONFLICT (id) DO NOTHING
-           RETURNING id`,
-          [business.id, business.name || business.id],
-        );
+        const {id: entityId} = await ensureFinancialEntity(client, {
+          id: business.id,
+          name: business.name || business.id!,
+          type: 'business',
+          ownerId: adminBusinessId,
+        });
+
+        const {id: businessId, ...options } = business;
 
         // Insert business details - note: vat_number column maps to governmentId field
-        await client.query(
-          `INSERT INTO ${qualifyTable('businesses')} (
-            id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number,
-            exempt_dealer, suggestion_data, optional_vat, country,
-            pcn874_record_type_override, can_settle_with_receipt, no_invoices_required
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-          ON CONFLICT (id) DO NOTHING`,
-          [
-            business.id,
-            business.hebrewName,
-            business.address,
-            business.city,
-            business.zipCode,
-            business.email,
-            business.website,
-            business.phoneNumber,
-            business.governmentId, // Maps to vat_number column
-            business.exemptDealer ?? false,
-            business.suggestions ?? null,
-            business.optionalVat ?? false,
-            business.country ?? 'ISR',
-            business.pcn874RecordTypeOverride ?? null,
-            business.isReceiptEnough ?? false,
-            business.isDocumentsOptional ?? false,
-          ],
-        );
+        await ensureBusinessForEntity(client, entityId, options)
 
-        if (entityResult.rows.length > 0) {
-          idMapping.set(business.id!, entityResult.rows[0].id);
-        } else {
-          // Entity already existed, map to itself
-          idMapping.set(business.id!, business.id!);
-        }
+        idMapping.set(business.id!, entityId);
       }
     });
   }
@@ -206,29 +178,21 @@ export async function insertFixture(
     await executeSavepointSection('tax_categories', async () => {
       for (const taxCategory of fixture.taxCategories!.taxCategories) {
         // Insert financial entity first
-        const entityResult = await client.query(
-          `INSERT INTO ${qualifyTable('financial_entities')} (id, name, type)
-           VALUES ($1, $2, 'tax_category')
-           ON CONFLICT (id) DO NOTHING
-           RETURNING id`,
-          [taxCategory.id, taxCategory.hashavshevetName || taxCategory.id],
-        );
+        const {id: entityId} = await ensureFinancialEntity(client, {
+          id: taxCategory.id,
+          name: taxCategory.name || taxCategory.id!,
+          type: 'tax_category',
+          ownerId: adminBusinessId,
+        });
 
         // Insert tax category details
-        await client.query(
-          `INSERT INTO ${qualifyTable('tax_categories')} (
-            id, hashavshevet_name, tax_excluded
-          )
-          VALUES ($1, $2, $3)
-          ON CONFLICT (id) DO NOTHING`,
-          [taxCategory.id, taxCategory.hashavshevetName, taxCategory.taxExcluded ?? false],
-        );
+        await ensureTaxCategoryForEntity(client, entityId, {
+          name: taxCategory.name,
+          hashavshevetName: taxCategory.hashavshevetName,
+          taxExcluded: taxCategory.taxExcluded,
+        });
 
-        if (entityResult.rows.length > 0) {
-          idMapping.set(taxCategory.id!, entityResult.rows[0].id);
-        } else {
-          idMapping.set(taxCategory.id!, taxCategory.id!);
-        }
+        idMapping.set(taxCategory.id!, entityId);
       }
     });
   }
