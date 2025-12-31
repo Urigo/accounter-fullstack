@@ -223,7 +223,7 @@ Test your new use-case before deploying:
 yarn workspace @accounter/server tsc --noEmit
 
 # Seed with your new use-case
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 
 # Validate integrity
 yarn validate:demo
@@ -350,7 +350,7 @@ NODE_ENV=development ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 **Solution**: Explicitly enable seeding:
 
 ```bash
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 ```
 
 ---
@@ -438,7 +438,7 @@ yarn workspace @accounter/migrations db:reset
 yarn workspace @accounter/migrations migration:run
 
 # Re-seed
-ALLOW_DEMO_SEED=1 yarn seed:demo
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
 ```
 
 ---

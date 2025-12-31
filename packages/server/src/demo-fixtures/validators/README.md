@@ -169,7 +169,7 @@ Optionally run the demo validation script end-to-end (requires DB + seeded data)
 ```bash
 # Setup and seed (example commands may vary by project scripts)
 yarn db:test:setup
-yarn seed:demo
+yarn seed:staging-demo
 
 # Run validation
 tsx packages/server/src/demo-fixtures/validate-demo-data.ts

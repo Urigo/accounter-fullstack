@@ -843,7 +843,7 @@ fixtures + exchange mocking + scenarios)
 - [x] Update `docs/demo-test-data-plan.md` with enum conventions and recent improvements
 - [x] Update `docs/demo-test-data-prompt-plan.md` with completion status
 - [x] Verify scripts execute in local dev environment
-  - [x] Test: `yarn seed:admin` (runs from root)
+  - [x] Test: `yarn seed:admin-context` (runs from root)
   - [x] Test: `yarn test` (1236 tests passing)
 - [x] Scripts run successfully ✅
 - [x] CI workflow includes migration guard and coverage upload ✅
@@ -964,8 +964,8 @@ fixtures + exchange mocking + scenarios)
 - **Prompt 22** (November 23, 2025): CountryCode and Currency enum consistency across all test
   files - replaced magic strings with type-safe enums for compile-time validation and IDE
   autocomplete
-- **Prompt 18** (November 23, 2025): Convenience scripts (`yarn seed:admin`, `yarn test`) and
-  comprehensive documentation polish
+- **Prompt 18** (November 23, 2025): Convenience scripts (`yarn seed:admin-context`, `yarn test`)
+  and comprehensive documentation polish
 - **Milestone 6** (November 2025): Expense Scenario B with foreign currency (USD), exchange rate
   mocking, and ledger integration (6 integration tests)
 - **Milestone 5** (November 2025): Expense Scenario A with full ledger integration (4 integration
