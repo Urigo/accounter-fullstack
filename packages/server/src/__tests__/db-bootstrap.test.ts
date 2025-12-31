@@ -70,7 +70,9 @@ describe('DB Test Harness Bootstrap', () => {
       await seedAdminCore(client);
       const adminContext = await buildAdminContextFromDb(client);
       const result = await client.query(
-        `SELECT COUNT(*) FROM ${qualifyTable('tax_categories')} WHERE owner_id = $1`,
+        `SELECT COUNT(tc.*) FROM ${qualifyTable('tax_categories')} tc
+        LEFT JOIN ${qualifyTable('financial_entities')} fe USING (id)
+        WHERE owner_id = $1`,
         [adminContext.defaultAdminBusinessId]
       );
       const count = parseInt(result.rows[0].count, 10);
