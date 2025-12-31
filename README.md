@@ -107,9 +107,6 @@ yarn test:integration
 
 # Demo seed E2E (requires DB + migrations + ALLOW_DEMO_SEED=1)
 ALLOW_DEMO_SEED=1 yarn test:demo-seed
-
-# All three suites
-ALLOW_DEMO_SEED=1 yarn test:all
 ```
 
 ### Prerequisites for Integration/Demo Tests

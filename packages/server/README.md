@@ -49,9 +49,6 @@ yarn test:integration
 
 # Demo seed E2E only
 ALLOW_DEMO_SEED=1 yarn test:demo-seed
-
-# All three suites (for main branch merges)
-ALLOW_DEMO_SEED=1 yarn test:all
 ```
 
 ## Test DB Harness
