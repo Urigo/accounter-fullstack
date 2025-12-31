@@ -44,37 +44,22 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
   console.log('Creating admin business entity...');
 
   // First check if admin entity already exists (by name and type, ignoring owner_id for admin)
-  const existingAdmin = await client.query(
-    `SELECT id FROM accounter_schema.financial_entities 
-     WHERE name = $1 AND type = $2 
-     ORDER BY created_at ASC
-     LIMIT 1`,
-    ['Admin Business', 'business'],
-  );
+  const { id } = await ensureFinancialEntity(client, {
+    name: 'Admin Business',
+    type: 'business',
+  });
+  const adminEntityId = id;
+  console.log(`✅ Admin entity: ${adminEntityId}`);
 
-  let adminEntityId: string;
-  if (existingAdmin.rows.length > 0) {
-    adminEntityId = existingAdmin.rows[0].id;
-    console.log(`ℹ️  Admin entity already exists: ${adminEntityId}`);
-  } else {
-    const { id } = await ensureFinancialEntity(client, {
-      name: 'Admin Business',
-      type: 'business',
-    });
-    adminEntityId = id;
-    console.log(`✅ Admin entity: ${adminEntityId}`);
+  // Create corresponding business record
+  await ensureBusinessForEntity(client, adminEntityId);
+  console.log('✅ Admin business record created');
 
-    // Create corresponding business record
-    await ensureBusinessForEntity(client, adminEntityId);
-    console.log('✅ Admin business record created');
-
-    // Update owner_id to self
-    await client.query(
-      `UPDATE accounter_schema.financial_entities SET owner_id = $1 WHERE id = $1`,
-      [adminEntityId],
-    );
-    console.log('✅ Admin entity owner_id set to self');
-  }
+  // Update owner_id to self
+  await client.query(`UPDATE accounter_schema.financial_entities SET owner_id = $1 WHERE id = $1`, [
+    adminEntityId,
+  ]);
+  console.log('✅ Admin entity owner_id set to self');
 
   // 2. Create authority businesses
   const authorities = {
