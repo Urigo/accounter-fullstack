@@ -56,7 +56,7 @@
     "playwright": "1.57.0",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
-    "zod": "4.2.1"
+    "zod": "4.3.2"
   },
   "devDependencies": {
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.4.1#~/.yarn/patches/@slonik-pg-driver-npm-48.4.1-79145eeaac.patch",
