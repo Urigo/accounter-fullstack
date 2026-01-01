@@ -324,7 +324,7 @@ __metadata:
     slonik: "npm:48.4.1"
     strip-indent: "npm:4.1.1"
     tsc-alias: "npm:1.8.16"
-    tsx: "npm:4.20.6"
+    tsx: "npm:4.21.0"
     typescript: "npm:5.9.3"
     zod: "npm:4.3.2"
   languageName: unknown
@@ -12457,7 +12457,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.25.0, esbuild@npm:~0.25.0":
+"esbuild@npm:^0.25.0":
   version: 0.25.12
   resolution: "esbuild@npm:0.25.12"
   dependencies:
@@ -22264,22 +22264,6 @@ __metadata:
     tsup: dist/cli-default.js
     tsup-node: dist/cli-node.js
   checksum: 10c0/86b0a5ee5533cf5363431ffaf6a244d06fbc80e3a739f216a121a336b28e663d521bae1d3b2d9ba7d479cb4b5f7dcb5e0722e169d3daf664c78f0d68676fa06a
-  languageName: node
-  linkType: hard
-
-"tsx@npm:4.20.6":
-  version: 4.20.6
-  resolution: "tsx@npm:4.20.6"
-  dependencies:
-    esbuild: "npm:~0.25.0"
-    fsevents: "npm:~2.3.3"
-    get-tsconfig: "npm:^4.7.5"
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    tsx: dist/cli.mjs
-  checksum: 10c0/07757a9bf62c271e0a00869b2008c5f2d6e648766536e4faf27d9d8027b7cde1ac8e4871f4bb570c99388bcee0018e6869dad98c07df809b8052f9c549cd216f
   languageName: node
   linkType: hard
 
