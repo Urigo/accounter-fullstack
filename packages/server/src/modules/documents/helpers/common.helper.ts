@@ -17,13 +17,17 @@ export function isAccountingDocument(
   type: document_type,
   includeProforma: boolean = false,
 ): boolean {
-  return (
-    type === DocumentType.Invoice ||
-    type === DocumentType.CreditInvoice ||
-    type === DocumentType.Receipt ||
-    type === DocumentType.InvoiceReceipt ||
-    (includeProforma && type === DocumentType.Proforma)
-  );
+  switch (type) {
+    case DocumentType.Invoice:
+    case DocumentType.CreditInvoice:
+    case DocumentType.Receipt:
+    case DocumentType.InvoiceReceipt:
+      return true;
+    case DocumentType.Proforma:
+      return includeProforma;
+    default:
+      return false;
+  }
 }
 
 export function getDocumentNameFromType(documentType: DocumentType): string {
