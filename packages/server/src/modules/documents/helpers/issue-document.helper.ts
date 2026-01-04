@@ -281,6 +281,17 @@ export async function deduceVatTypeFromBusiness(
   return 'EXEMPT';
 }
 
+export function createRemarks(contract: IGetContractsByIdsResult): string {
+  const remarks: string[] = [];
+  if (contract.purchase_orders.length) {
+    remarks.push(`PO: ${contract.purchase_orders[contract.purchase_orders.length - 1]}`);
+  }
+  if (contract.remarks) {
+    remarks.push(contract.remarks);
+  }
+  return remarks.join(', ');
+}
+
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,
   injector: Injector,
@@ -315,7 +326,7 @@ export const convertContractToDraft = async (
   const vatType = await deduceVatTypeFromBusiness(injector, business.country, contract.client_id);
 
   const documentInput: ResolversTypes['DocumentDraft'] = {
-    remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+    remarks: createRemarks(contract),
     description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
     type: normalizeDocumentType(contract.document_type),
     date: monthStart,

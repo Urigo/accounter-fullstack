@@ -30,6 +30,7 @@ import { TransactionsProvider } from '../../transactions/providers/transactions.
 import { getDocumentNameFromType } from '../helpers/common.helper.js';
 import {
   convertContractToDraft,
+  createRemarks,
   deduceVatTypeFromBusiness,
   executeDocumentIssue,
   filterAndHandleSwiftTransactions,
@@ -458,7 +459,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       );
 
       const draft: ResolversTypes['DocumentDraft'] = {
-        remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+        remarks: createRemarks(contract),
         description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
         type: normalizeDocumentType(contract.document_type),
         date: monthStart,
