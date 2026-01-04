@@ -281,11 +281,29 @@ export async function deduceVatTypeFromBusiness(
   return 'EXEMPT';
 }
 
+export function createRemarks(contract: IGetContractsByIdsResult): string {
+  const remarks: string[] = [];
+  if (contract.purchase_orders?.length) {
+    const lastPo = contract.purchase_orders[contract.purchase_orders.length - 1];
+    if (lastPo) {
+      remarks.push(`PO: ${lastPo}`);
+    }
+  }
+  if (contract.remarks) {
+    remarks.push(contract.remarks);
+  }
+  return remarks.join(', ');
+}
+
 export const convertContractToDraft = async (
   contract: IGetContractsByIdsResult,
-  injector: Injector,
+  context: GraphQLModules.Context,
   issueMonth: TimelessDateString,
 ) => {
+  const {
+    injector,
+    adminContext: { locality },
+  } = context;
   const businessPromise = injector
     .get(BusinessesProvider)
     .getBusinessByIdLoader.load(contract.client_id);
@@ -312,10 +330,10 @@ export const convertContractToDraft = async (
   const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
   const month = format(subMonths(today, 1), 'MMMM');
 
-  const vatType = await deduceVatTypeFromBusiness(injector, business.country, contract.client_id);
+  const vatType = await deduceVatTypeFromBusiness(injector, locality, contract.client_id);
 
   const documentInput: ResolversTypes['DocumentDraft'] = {
-    remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+    remarks: createRemarks(contract),
     description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
     type: normalizeDocumentType(contract.document_type),
     date: monthStart,

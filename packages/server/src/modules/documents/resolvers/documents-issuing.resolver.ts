@@ -30,6 +30,7 @@ import { TransactionsProvider } from '../../transactions/providers/transactions.
 import { getDocumentNameFromType } from '../helpers/common.helper.js';
 import {
   convertContractToDraft,
+  createRemarks,
   deduceVatTypeFromBusiness,
   executeDocumentIssue,
   filterAndHandleSwiftTransactions,
@@ -374,7 +375,8 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       };
       return draft;
     },
-    periodicalDocumentDrafts: async (_, { issueMonth }, { injector }) => {
+    periodicalDocumentDrafts: async (_, { issueMonth }, context) => {
+      const { injector } = context;
       const openContracts = await injector.get(ContractsProvider).getAllOpenContracts();
       const monthlyBillingCycle: BillingCycle = 'MONTHLY';
       const monthlyContracts = openContracts.filter(
@@ -382,20 +384,21 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       );
       const drafts = await Promise.all(
         monthlyContracts.map(async contract =>
-          convertContractToDraft(contract, injector, issueMonth),
+          convertContractToDraft(contract, context, issueMonth),
         ),
       );
 
       return drafts;
     },
-    periodicalDocumentDraftsByContracts: async (_, { issueMonth, contractIds }, { injector }) => {
+    periodicalDocumentDraftsByContracts: async (_, { issueMonth, contractIds }, context) => {
+      const { injector } = context;
       const contracts = await injector
         .get(ContractsProvider)
         .getContractsByIdLoader.loadMany(contractIds)
         .then(res => res.filter(c => !!c && !(c instanceof Error)) as IGetContractsByIdsResult[]);
 
       const drafts = await Promise.all(
-        contracts.map(async contract => convertContractToDraft(contract, injector, issueMonth)),
+        contracts.map(async contract => convertContractToDraft(contract, context, issueMonth)),
       );
 
       return drafts;
@@ -458,7 +461,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       );
 
       const draft: ResolversTypes['DocumentDraft'] = {
-        remarks: `${contract.purchase_orders[0] ? `PO: ${contract.purchase_orders[0]}${contract.remarks ? ', ' : ''}` : ''}${contract.remarks ?? ''}`,
+        remarks: createRemarks(contract),
         description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
         type: normalizeDocumentType(contract.document_type),
         date: monthStart,
