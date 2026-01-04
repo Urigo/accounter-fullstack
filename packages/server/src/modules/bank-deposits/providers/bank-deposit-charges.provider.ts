@@ -33,12 +33,12 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
       ON cbd.id = t.charge_id
     WHERE deposit_id IN (
       SELECT deposit_id
-      FROM accounter_schema.charges_bank_deposits
-      LEFT JOIN accounter_schema.transactions
-        ON cbd.id = t.charge_id
-      WHERE charge_id = $chargeId
+      FROM accounter_schema.charges_bank_deposits cbd2
+      LEFT JOIN accounter_schema.transactions t2
+        ON cbd2.id = t2.charge_id
+      WHERE t2.charge_id = $chargeId
     )
-    AND ($includeCharge OR charge_id <> $chargeId);`;
+    AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
 const insertOrUpdateBankDepositCharge = sql<IInsertOrUpdateBankDepositChargeQuery>`
   INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id)
