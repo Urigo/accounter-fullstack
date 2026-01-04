@@ -16,7 +16,7 @@ export const TypeCell = ({ document: { documentType }, isOpen }: Props): ReactEl
 
   return (
     <div className="flex flex-wrap">
-      <div className="flex flex-col justify-center">
+      <div className="flex flex-col justify-center whitespace-normal">
         <Indicator inline size={12} disabled={!isError && !isOpen} color={color} zIndex="auto">
           <p>{getDocumentNameFromType(cellText)}</p>
         </Indicator>

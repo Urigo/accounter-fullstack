@@ -7,7 +7,7 @@ type Props = {
 
 export const Remarks = ({ document }: Props): ReactElement => {
   return (
-    <div className="flex flex-col items-center justify-center flex-wrap">
+    <div className="flex flex-col justify-center whitespace-normal">
       <p>{document.remarks}</p>
     </div>
   );
