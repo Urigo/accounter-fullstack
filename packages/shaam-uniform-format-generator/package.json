@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "iconv-lite": "0.7.1",
-    "zod": "4.3.4"
+    "zod": "4.3.5"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
