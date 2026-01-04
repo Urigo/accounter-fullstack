@@ -90,7 +90,7 @@ export function aggregateDocuments(
 ): Omit<AggregatedDocument, 'businessIsCreditor'> {
   const accountingDocuments = documents.filter(doc => isAccountingDocument(doc.type, true));
   // Validate non-empty input
-  if (!accountingDocuments || accountingDocuments.length === 0) {
+  if (accountingDocuments.length === 0) {
     throw new Error('Cannot aggregate documents: array is empty');
   }
 
