@@ -1,8 +1,9 @@
 import { forwardRef, useEffect, type ReactElement } from 'react';
 import { Controller, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
-import { Group, Select, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import { EMPTY_UUID } from '../../../helpers/index.js';
 import { useGetTags } from '../../../hooks/use-get-tags.js';
+import { ComboBox } from './combo-box.js';
 
 type Props<T extends FieldValues> = {
   formManager: UseFormReturn<T, unknown>;
@@ -16,7 +17,6 @@ export function TagInput<T extends FieldValues>({
   formManager,
   tagsPath,
   setFetching,
-  label,
   required = false,
 }: Props<T>): ReactElement {
   const { selectableTags: allTags, fetching } = useGetTags();
@@ -41,24 +41,12 @@ export function TagInput<T extends FieldValues>({
         minLength: { value: 2, message: 'Minimum 2 characters' },
       }}
       render={({ field, fieldState }): ReactElement => (
-        <Select
-          className="w-full"
+        <ComboBox
           {...field}
           data={allTags}
-          label={label}
-          itemComponent={SelectTagItem}
-          value={field.value}
           disabled={fetching}
           placeholder="Scroll to see all options"
-          maxDropdownHeight={160}
-          searchable
           error={fieldState.error?.message}
-          withinPortal
-          allowDeselect={!required}
-          filter={(value, item) =>
-            item.label?.toLowerCase().includes(value.toLowerCase().trim()) ||
-            item.description?.toLowerCase().includes(value.toLowerCase().trim())
-          }
         />
       )}
     />
