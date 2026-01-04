@@ -283,8 +283,11 @@ export async function deduceVatTypeFromBusiness(
 
 export function createRemarks(contract: IGetContractsByIdsResult): string {
   const remarks: string[] = [];
-  if (contract.purchase_orders.length) {
-    remarks.push(`PO: ${contract.purchase_orders[contract.purchase_orders.length - 1]}`);
+  if (contract.purchase_orders?.length) {
+    const lastPo = contract.purchase_orders[contract.purchase_orders.length - 1];
+    if (lastPo) {
+      remarks.push(`PO: ${lastPo}`);
+    }
   }
   if (contract.remarks) {
     remarks.push(contract.remarks);
