@@ -91,7 +91,7 @@ export const Creditor = ({ document, onChange }: Props): ReactElement => {
   );
 
   return (
-    <div className="flex flex-wrap">
+    <div className="flex flex-wrap whitespace-normal">
       <div className="flex flex-col justify-center">
         <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
           {shouldHaveCreditor &&

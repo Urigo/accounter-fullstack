@@ -17,7 +17,7 @@ export const Description = ({ document }: Props): ReactElement => {
     description = income.map(item => item.description).join(', ');
   }
   return (
-    <div className="flex flex-col align-center justify-center flex-wrap">
+    <div className="flex flex-col justify-center whitespace-normal">
       <p>{description}</p>
     </div>
   );
