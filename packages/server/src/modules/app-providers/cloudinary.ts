@@ -19,9 +19,13 @@ export class CloudinaryProvider {
 
   public async uploadInvoiceToCloudinary(
     base64string: string,
+    // fileFormat?: string,
   ): Promise<{ fileUrl: string; imageUrl: string }> {
     try {
-      const res = await cloudinary.uploader.upload(base64string);
+      const res = await cloudinary.uploader.upload(base64string, {
+        resource_type: 'auto',
+        quality: 100,
+      });
 
       const fileUrl = res.url;
 

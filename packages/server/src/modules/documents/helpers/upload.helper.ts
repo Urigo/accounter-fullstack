@@ -25,16 +25,17 @@ export const uploadToCloudinary = async (injector: Injector, file: File | Blob) 
 };
 
 export type OcrData = {
-  isOwnerIssuer: boolean | null;
-  counterpartyId: string | null;
+  isOwnerIssuer?: boolean;
+  counterpartyId?: string;
   documentType: DocumentType;
-  serial: string | null;
-  date: Date | null;
-  amount: number | null;
-  currency: Currency | null;
-  vat: number | null;
-  allocationNumber: string | null;
-  description: string | null;
+  serial?: string;
+  date?: Date;
+  amount?: number;
+  currency?: Currency;
+  vat?: number;
+  allocationNumber?: string;
+  description?: string;
+  remarks?: string;
 };
 
 export async function getOcrData(
@@ -42,28 +43,19 @@ export async function getOcrData(
   file: File | Blob,
   isSensitive: boolean | null = true,
 ): Promise<OcrData> {
-  const validateNumber = (value: unknown): number | null => {
-    return typeof value === 'number' && !Number.isNaN(value) ? value : null;
+  const validateNumber = (value: unknown): number | undefined => {
+    return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
   };
 
-  const validateDate = (value: string | null): Date | null => {
-    if (!value) return null;
+  const validateDate = (value?: string): Date | undefined => {
+    if (!value) return undefined;
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
+    return Number.isNaN(date.getTime()) ? undefined : date;
   };
 
   if (isSensitive) {
     return {
-      isOwnerIssuer: null,
-      counterpartyId: null,
       documentType: DocumentType.Unprocessed,
-      serial: null,
-      date: null,
-      amount: null,
-      currency: null,
-      vat: null,
-      allocationNumber: null,
-      description: null,
     };
   }
 
@@ -73,7 +65,7 @@ export async function getOcrData(
     throw new Error('No data returned from Anthropic OCR');
   }
 
-  let isOwnerIssuer: boolean | null = null;
+  let isOwnerIssuer: boolean | undefined = undefined;
   if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
     isOwnerIssuer = false;
   }
@@ -83,15 +75,15 @@ export async function getOcrData(
 
   return {
     isOwnerIssuer,
-    counterpartyId: null,
     documentType: draft.type ?? DocumentType.Unprocessed,
     serial: draft.referenceCode,
     date: validateDate(draft.date),
     amount: validateNumber(draft.fullAmount),
     currency: draft.currency,
     vat: validateNumber(draft.vatAmount),
-    allocationNumber: draft.allocationNumber ?? null,
-    description: draft.description ?? null,
+    allocationNumber: draft.allocationNumber ?? undefined,
+    description: draft.description,
+    remarks: draft.issuer,
   };
 }
 
@@ -101,17 +93,17 @@ async function getHashFromFile(file: File | Blob): Promise<number> {
 
 function figureOutSides(
   documentType: DocumentType,
-  isOwnerIssuer: boolean | null,
   defaultAdminBusinessId: string,
-  counterPartyId: string | null,
-): { creditorId: string | null; debtorId: string | null } {
+  isOwnerIssuer?: boolean,
+  counterPartyId?: string,
+): { creditorId?: string; debtorId?: string } {
   if (documentType === DocumentType.Unprocessed || documentType === DocumentType.Other) {
-    return { creditorId: null, debtorId: null };
+    return {};
   }
 
   let res: {
-    creditorId: string | null;
-    debtorId: string | null;
+    creditorId: string | undefined;
+    debtorId: string | undefined;
   } = {
     creditorId: counterPartyId,
     debtorId: defaultAdminBusinessId,
@@ -144,8 +136,8 @@ export function getDocumentFromUrlsAndOcrData(
 ): IInsertDocumentsParams['document'][number] {
   const sides = figureOutSides(
     ocrData.documentType,
-    ocrData.isOwnerIssuer,
     adminBusinessId,
+    ocrData.isOwnerIssuer,
     ocrData.counterpartyId,
   );
 
@@ -153,20 +145,21 @@ export function getDocumentFromUrlsAndOcrData(
     image: imageUrl ?? null,
     file: fileUrl ?? null,
     documentType: ocrData.documentType,
-    serialNumber: ocrData.serial,
-    date: ocrData.date,
-    amount: ocrData.amount,
-    currencyCode: ocrData.currency,
-    vat: ocrData.vat,
+    serialNumber: ocrData.serial ?? null,
+    date: ocrData.date ?? null,
+    amount: ocrData.amount ?? null,
+    currencyCode: ocrData.currency ?? null,
+    vat: ocrData.vat ?? null,
     chargeId: chargeId ?? null,
     vatReportDateOverride: null,
     noVatAmount: null,
-    allocationNumber: ocrData.allocationNumber,
+    allocationNumber: ocrData.allocationNumber ?? null,
     exchangeRateOverride: null,
     fileHash: fileHash?.toString() ?? null,
-    description: ocrData.description,
-    remarks: null,
-    ...sides,
+    description: ocrData.description ?? null,
+    remarks: ocrData.remarks ?? null,
+    creditorId: sides.creditorId ?? null,
+    debtorId: sides.debtorId ?? null,
   };
 
   return newDocument;

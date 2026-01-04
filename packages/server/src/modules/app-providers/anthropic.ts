@@ -6,29 +6,29 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '../../shared/enums.js';
 
 const documentDataSchema = z.object({
-  type: z.enum(DocumentType).nullable().describe('The type of financial document'),
-  issuer: z.string().nullable().describe('Legal name of the organization that issued the document'),
+  type: z.enum(DocumentType).optional().describe('The type of financial document'),
+  issuer: z.string().optional().describe('Legal name of the organization that issued the document'),
   recipient: z
     .string()
-    .nullable()
+    .optional()
     .describe('Legal name and details of the entity to whom the document is addressed'),
   fullAmount: z
     .number()
-    .nullable()
+    .optional()
     .describe('Total monetary amount including taxes and all charges'),
-  currency: z.enum(Currency).nullable().describe('ISO 4217 currency code'),
+  currency: z.enum(Currency).optional().describe('ISO 4217 currency code'),
   vatAmount: z
     .number()
-    .nullable()
+    .optional()
     .describe('Value Added Tax amount if separately specified on the document'),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
+    .optional()
     .describe('Document issue date in ISO 8601 format (YYYY-MM-DD)'),
   referenceCode: z
     .string()
-    .nullable()
+    .optional()
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
   allocationNumber: z
     .string()
@@ -40,7 +40,7 @@ const documentDataSchema = z.object({
     ),
   description: z
     .string()
-    .nullable()
+    .optional()
     .describe('Additional description or remarks found on the document'),
 });
 

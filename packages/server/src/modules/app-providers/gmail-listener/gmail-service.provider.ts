@@ -224,14 +224,14 @@ export class GmailServiceProvider {
   }
 
   private async getOcrData(doc: EmailDocument): Promise<OcrData> {
-    const validateNumber = (value: unknown): number | null => {
-      return typeof value === 'number' && !Number.isNaN(value) ? value : null;
+    const validateNumber = (value: unknown): number | undefined => {
+      return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
     };
 
-    const validateDate = (value: string | null): Date | null => {
-      if (!value) return null;
+    const validateDate = (value: string | undefined): Date | undefined => {
+      if (!value) return undefined;
       const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? null : date;
+      return Number.isNaN(date.getTime()) ? undefined : date;
     };
 
     if (!doc.content || !doc.mimeType) {
@@ -248,7 +248,7 @@ export class GmailServiceProvider {
         throw new Error('No data returned from Anthropic OCR');
       }
 
-      let isOwnerIssuer: boolean | null = null;
+      let isOwnerIssuer: boolean | undefined = undefined;
       if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
         isOwnerIssuer = false;
       }
@@ -258,15 +258,18 @@ export class GmailServiceProvider {
 
       return {
         isOwnerIssuer,
-        counterpartyId: null,
         documentType: draft.type ?? DocumentType.Unprocessed,
         serial: draft.referenceCode,
         date: validateDate(draft.date),
         amount: validateNumber(draft.fullAmount),
         currency: draft.currency,
         vat: validateNumber(draft.vatAmount),
-        allocationNumber: draft.allocationNumber ?? null,
-        description: draft.description ?? null,
+        allocationNumber: draft.allocationNumber ?? undefined,
+        description: draft.issuer
+          ? draft.description
+            ? `${draft.issuer} | ${draft.description}`
+            : draft.issuer
+          : draft.description,
       };
     } catch (e) {
       const message = 'Error extracting OCR data from document';
