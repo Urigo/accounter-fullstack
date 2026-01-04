@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 type Option = {
   value: string;
   label: string;
+  description?: string;
 };
 
 type ComboBoxProps = {
@@ -28,6 +29,7 @@ type ComboBoxProps = {
   onChange?: ((option: string | null) => void) | undefined;
   value?: string | null;
   formPart?: boolean;
+  error?: string;
 };
 
 export function ComboBox({
@@ -38,6 +40,7 @@ export function ComboBox({
   onChange,
   value,
   formPart,
+  error,
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -49,8 +52,36 @@ export function ComboBox({
 
   if (isDesktop) {
     return (
-      <Popover modal open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild className="w-fit min-w-40">
+      <div className="flex flex-col gap-1 w-full">
+        <Popover modal open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild className="w-fit min-w-40">
+            <Trigger
+              placeholder={placeholder}
+              selectedOption={selectedOption}
+              disabled={disabled}
+              formPart={formPart}
+              {...triggerProps}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0" align="start">
+            <OptionsList
+              setOpen={setOpen}
+              onChange={onChange}
+              data={data}
+              placeholder={placeholder}
+              value={value}
+            />
+          </PopoverContent>
+        </Popover>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1 w-full">
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
           <Trigger
             placeholder={placeholder}
             selectedOption={selectedOption}
@@ -58,43 +89,21 @@ export function ComboBox({
             formPart={formPart}
             {...triggerProps}
           />
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0" align="start">
-          <OptionsList
-            setOpen={setOpen}
-            onChange={onChange}
-            data={data}
-            placeholder={placeholder}
-            value={value}
-          />
-        </PopoverContent>
-      </Popover>
-    );
-  }
-
-  return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>
-        <Trigger
-          placeholder={placeholder}
-          selectedOption={selectedOption}
-          disabled={disabled}
-          formPart={formPart}
-          {...triggerProps}
-        />
-      </DrawerTrigger>
-      <DrawerContent>
-        <div className="mt-4 border-t">
-          <OptionsList
-            setOpen={setOpen}
-            onChange={onChange}
-            data={data}
-            placeholder={placeholder}
-            value={value}
-          />
-        </div>
-      </DrawerContent>
-    </Drawer>
+        </DrawerTrigger>
+        <DrawerContent>
+          <div className="mt-4 border-t">
+            <OptionsList
+              setOpen={setOpen}
+              onChange={onChange}
+              data={data}
+              placeholder={placeholder}
+              value={value}
+            />
+          </div>
+        </DrawerContent>
+      </Drawer>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
   );
 }
 
@@ -153,14 +162,22 @@ function OptionsList({
           {data.map(option => (
             <CommandItem
               key={option.value}
-              keywords={[option.label]}
+              keywords={[option.label, option.description ?? '']}
               value={option.value}
               onSelect={value => {
-                onChange?.(data.find(priority => priority.value === value)?.value ?? null);
+                onChange?.(
+                  data.find(option => option.value.toLowerCase() === value.toLowerCase())?.value ??
+                    null,
+                );
                 setOpen(false);
               }}
             >
-              {option.label}
+              <div className="flex flex-col">
+                {option.description && (
+                  <span className="text-xs opacity-65">{option.description}</span>
+                )}
+                <span>{option.label}</span>
+              </div>
               <Check
                 className={cn('ml-auto', option.value === value ? 'opacity-100' : 'opacity-0')}
               />
