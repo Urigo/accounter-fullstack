@@ -1,4 +1,5 @@
 import { DocumentType } from '../../../shared/enums.js';
+import { isAccountingDocument } from '../../documents/helpers/common.helper.js';
 import type { Document, Transaction } from '../types.js';
 
 /**
@@ -10,17 +11,6 @@ interface Charge {
   transactions?: Transaction[];
   documents?: Document[];
 }
-
-/**
- * Accounting document types that count toward matched/unmatched status
- */
-const ACCOUNTING_DOC_TYPES: DocumentType[] = [
-  DocumentType.Invoice,
-  DocumentType.CreditInvoice,
-  DocumentType.Receipt,
-  DocumentType.InvoiceReceipt,
-  DocumentType.Proforma,
-];
 
 /**
  * Validate a charge is properly formed for matching
@@ -41,7 +31,9 @@ export function validateChargeForMatching(charge: Charge): void {
 
   // Check if charge has data
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
-  const hasDocuments = charge.documents && charge.documents.length > 0;
+  const hasDocuments =
+    charge.documents &&
+    charge.documents.filter(doc => isAccountingDocument(doc.type as DocumentType, true)).length > 0;
 
   if (!hasTransactions && !hasDocuments) {
     throw new Error(`Charge ${charge.id} has no transactions or documents - cannot be matched`);
@@ -55,7 +47,7 @@ export function isChargeMatched(charge: Charge): boolean {
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
 
   const hasAccountingDocs = charge.documents?.some(doc =>
-    ACCOUNTING_DOC_TYPES.includes(doc.type as DocumentType),
+    isAccountingDocument(doc.type as DocumentType, true),
   );
 
   return !!hasTransactions && !!hasAccountingDocs;
@@ -68,7 +60,7 @@ export function hasOnlyTransactions(charge: Charge): boolean {
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
 
   const hasAccountingDocs = charge.documents?.some(doc =>
-    ACCOUNTING_DOC_TYPES.includes(doc.type as DocumentType),
+    isAccountingDocument(doc.type as DocumentType, true),
   );
 
   return !!hasTransactions && !hasAccountingDocs;
@@ -81,7 +73,7 @@ export function hasOnlyDocuments(charge: Charge): boolean {
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
 
   const hasAccountingDocs = charge.documents?.some(doc =>
-    ACCOUNTING_DOC_TYPES.includes(doc.type as DocumentType),
+    isAccountingDocument(doc.type as DocumentType, true),
   );
 
   return !hasTransactions && !!hasAccountingDocs;

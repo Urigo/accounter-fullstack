@@ -7,6 +7,7 @@
  */
 
 import { DocumentType } from '../../../shared/enums.js';
+import { isAccountingDocument } from '../../documents/helpers/common.helper.js';
 import { currency, document_type } from '../../documents/types.js';
 import { normalizeDocumentAmount } from '../helpers/document-amount.helper.js';
 import { extractDocumentBusiness } from '../helpers/document-business.helper.js';
@@ -87,19 +88,20 @@ export function aggregateDocuments(
   documents: Document[],
   adminBusinessId: string,
 ): Omit<AggregatedDocument, 'businessIsCreditor'> {
+  const accountingDocuments = documents.filter(doc => isAccountingDocument(doc.type, true));
   // Validate non-empty input
-  if (!documents || documents.length === 0) {
+  if (!accountingDocuments || accountingDocuments.length === 0) {
     throw new Error('Cannot aggregate documents: array is empty');
   }
 
   // Apply type priority filtering
-  const hasInvoices = documents.some(d => isInvoiceType(d.type as DocumentType));
-  const hasReceipts = documents.some(d => isReceiptType(d.type as DocumentType));
+  const hasInvoices = accountingDocuments.some(d => isInvoiceType(d.type as DocumentType));
+  const hasReceipts = accountingDocuments.some(d => isReceiptType(d.type as DocumentType));
 
-  let filteredDocuments = documents;
+  let filteredDocuments = accountingDocuments;
   if (hasInvoices && hasReceipts) {
     // If both invoices and receipts exist, use only invoices
-    filteredDocuments = documents.filter(d => isInvoiceType(d.type as DocumentType));
+    filteredDocuments = accountingDocuments.filter(d => isInvoiceType(d.type as DocumentType));
   }
 
   // Validate we still have documents after filtering
