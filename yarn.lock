@@ -298,7 +298,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.5"
+    ai: "npm:6.0.6"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -366,16 +366,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.4":
-  version: 3.0.4
-  resolution: "@ai-sdk/gateway@npm:3.0.4"
+"@ai-sdk/gateway@npm:3.0.5":
+  version: 3.0.5
+  resolution: "@ai-sdk/gateway@npm:3.0.5"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.1"
     "@ai-sdk/provider-utils": "npm:4.0.2"
     "@vercel/oidc": "npm:3.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ec346b8c36de2d7c58955b5338382d7505ffb2c002e727b08f068c450652a7ec33997f3e7dac405a0ccb4cfd87afd14865db4b0df54ee6682d51f763270b926c
+  checksum: 10c0/79975e9796ea9d7370bdf3eac58cae06860776fadf8b8a5561a15962818ca76f14c3ec784b1bcf2ccec470e5a09b3e0f4bbab79806b8ff0c296a2d3010086878
   languageName: node
   linkType: hard
 
@@ -9250,17 +9250,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.5":
-  version: 6.0.5
-  resolution: "ai@npm:6.0.5"
+"ai@npm:6.0.6":
+  version: 6.0.6
+  resolution: "ai@npm:6.0.6"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.4"
+    "@ai-sdk/gateway": "npm:3.0.5"
     "@ai-sdk/provider": "npm:3.0.1"
     "@ai-sdk/provider-utils": "npm:4.0.2"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/12601cafdf24bc4b3df62a06ab1283af784793bce8e13cbccaaff6c3b50902e242025d2136e8765f42ddfd25844bd1b6e11741b1502c743b0e8c896720eb47de
+  checksum: 10c0/9732f538b6f908adf3e0a5a4a5c99d4a82f257f12d6ecfb1e8533c6deadc1b5e8921020962e244cd316b6f8718c918978ecd2a21ef2409fb11dbc4b890a4837b
   languageName: node
   linkType: hard
 
