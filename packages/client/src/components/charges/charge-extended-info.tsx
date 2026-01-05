@@ -194,9 +194,6 @@ export function ChargeExtendedInfo({
     if (hasMiscExpenses) {
       tabs.push('miscExpenses');
     }
-    if (chargeType === 'BankDepositCharge') {
-      tabs.push('bankDeposit');
-    }
     setAccordionItems(tabs);
   }, [hasTransactions, hasDocs, hasLedgerRecords, isSalaryCharge, hasMiscExpenses, chargeType]);
 
@@ -441,17 +438,6 @@ export function ChargeExtendedInfo({
               </Accordion.Item>
             )}
 
-            {chargeType === 'BankDepositCharge' && (
-              <Accordion.Item value="bankDeposit">
-                <Accordion.Control onClick={() => toggleAccordionItem('bankDeposit')}>
-                  Bank Deposit
-                </Accordion.Control>
-                <Accordion.Panel>
-                  <ChargeBankDeposit chargeId={charge.id} />
-                </Accordion.Panel>
-              </Accordion.Item>
-            )}
-
             {hasLedgerRecords && (
               <Accordion.Item value="ledger">
                 <Accordion.Control
@@ -474,6 +460,17 @@ export function ChargeExtendedInfo({
                 </Accordion.Control>
                 <Accordion.Panel>
                   {ledgerRecordsAreReady && <ChargeLedgerTable data={charge} />}
+                </Accordion.Panel>
+              </Accordion.Item>
+            )}
+
+            {chargeType === 'BankDepositCharge' && (
+              <Accordion.Item value="bankDeposit">
+                <Accordion.Control onClick={() => toggleAccordionItem('bankDeposit')}>
+                  Bank Deposit
+                </Accordion.Control>
+                <Accordion.Panel>
+                  <ChargeBankDeposit chargeId={charge.id} />
                 </Accordion.Panel>
               </Accordion.Item>
             )}
