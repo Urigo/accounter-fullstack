@@ -7,10 +7,10 @@ import { TransactionsProvider } from '../../transactions/providers/transactions.
 import {
   createDeelInvoiceMatchFromUnmatchedInvoice,
   fetchAndFilterInvoices,
-  fetchPaymentBreakdowns,
   fetchReceipts,
   getChargeMatchesForPayments,
   getContractsFromPaymentBreakdowns,
+  getDeelChargeDescription,
   insertDeelInvoiceRecord,
   matchInvoicesWithPayments,
   validateContracts,
@@ -50,9 +50,11 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         const receipts = await fetchReceipts(injector);
 
-        const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
-
-        const { matches, unmatched } = matchInvoicesWithPayments(invoices, paymentBreakdowns);
+        const { matches, unmatched } = await matchInvoicesWithPayments(
+          injector,
+          invoices,
+          receipts,
+        );
 
         if (matches.length + unmatched.length <= 0) {
           return [];
@@ -62,13 +64,10 @@ export const deelResolvers: DeelModule.Resolvers = {
         const contractsInfo = getContractsFromPaymentBreakdowns(matches);
         await validateContracts(contractsInfo, injector);
 
-        const { receiptChargeMap, invoiceChargeMap } = await getChargeMatchesForPayments(
-          injector,
-          adminContext.defaultAdminBusinessId,
-          receipts,
-        );
+        const { receiptChargeMap, invoiceChargeMap, newReceipts } =
+          await getChargeMatchesForPayments(injector, receipts);
 
-        const updatedChargeIdsSet = new Set<string>(receiptChargeMap.values());
+        const updatedChargeIdsSet = new Set<string>();
 
         // insert/update unmatched Deel invoice records
         for (const invoice of unmatched) {
@@ -90,8 +89,24 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         // insert/update matched Deel invoice records
         for (const match of matches) {
-          const chargeId =
+          let chargeId =
             invoiceChargeMap.get(match.id) ?? receiptChargeMap.get(match.breakdown_receipt_id);
+
+          // if no charge found, create one from receipt
+          if (!chargeId) {
+            const receipt = newReceipts.find(r => r.id === match.breakdown_receipt_id);
+            if (receipt) {
+              const description = await getDeelChargeDescription(injector, receipt.workers);
+              const charge = await injector.get(ChargesProvider).generateCharge({
+                ownerId: adminContext.defaultAdminBusinessId,
+                userDescription: description,
+              });
+              chargeId = charge.id;
+
+              // TODO: upload receipt file (currently not available from Deel API)
+            }
+          }
+
           if (!chargeId) {
             throw new Error('Charge not found for invoice');
           }

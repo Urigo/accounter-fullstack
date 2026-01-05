@@ -5,6 +5,7 @@ import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
 import {
+  ContractSchema,
   downloadInvoicePdfSchema,
   Invoice,
   retrieveInvoicesSchema,
@@ -151,6 +152,8 @@ export class DeelClientProvider {
               due_date: this.timeZoneFix(invoice.due_date),
             };
           });
+        } else {
+          break;
         }
         invoices.push(...data.data);
       }
@@ -206,6 +209,49 @@ export class DeelClientProvider {
       return blob;
     } catch (error) {
       const message = 'Failed to fetch Deel invoice file';
+      console.error(`${message}: ${error}`);
+      throw new Error(message);
+    }
+  }
+
+  public async getContractDetails(contractId: string) {
+    try {
+      const url = new URL(`${this.host}/contracts/${contractId}`);
+      const res = await fetch(url, {
+        headers: {
+          accept: 'application/json',
+          authorization: `Bearer ${this.apiToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error(await res.text());
+        throw new Error(`Deel API returned status ${res.status}`);
+      }
+      const rawData = await res.json();
+
+      if ('errors' in rawData) {
+        console.log(rawData);
+        throw new Error('Deel API returned an error');
+      }
+
+      const contract = ContractSchema.safeParse(rawData);
+      if (!contract.success) {
+        let errorMessage = 'Deel contract data validation failed';
+        if (contract.error.issues) {
+          for (const issue of contract.error.issues) {
+            let value = rawData;
+            for (const pathPart of issue.path) {
+              value = value ? value[pathPart] : undefined;
+            }
+            errorMessage += `\n - Path: ${issue.path.join('.')}, Message: ${issue.message}, value: ${value}`;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      return contract.data;
+    } catch (error) {
+      const message = 'Failed to fetch Deel contract details';
       console.error(`${message}: ${error}`);
       throw new Error(message);
     }

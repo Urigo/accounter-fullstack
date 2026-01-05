@@ -274,3 +274,164 @@ export const retrievePaymentBreakdownSchema = z
   .strict();
 
 export type RetrievePaymentBreakdown = z.infer<typeof retrievePaymentBreakdownSchema>;
+
+/* contracts schemas */
+const TeamSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+  })
+  .strict();
+
+const LegalEntitySchema = z
+  .object({
+    email: z.literal(''),
+    id: z.uuid(),
+    name: z.string(),
+    registration_number: z.string(),
+    subtype: z.literal('private-liability-company'),
+    type: z.literal('company'),
+    vat_number: z.string(),
+  })
+  .strict();
+
+const ClientSchema = z
+  .object({
+    email: z.email(),
+    full_name: z.string(),
+    id: z.uuid(),
+    legal_entity: LegalEntitySchema,
+    team: TeamSchema,
+  })
+  .strict();
+
+const WorkerSchema = z
+  .object({
+    alternate_email: z.array(z.never()),
+    country: z.string().length(2),
+    date_of_birth: z.iso.date(),
+    email: z.email(),
+    expected_email: z.email(),
+    first_name: z.string(),
+    full_name: z.string(),
+    id: z.uuid(),
+    last_name: z.string(),
+    nationality: z.enum(['KR', 'GB', 'US']).nullable(),
+  })
+  .strict();
+
+const InvitationsSchema = z
+  .object({
+    client_email: z.email(),
+    worker_email: z.email().or(z.literal('')),
+  })
+  .strict();
+
+const SignaturesSchema = z
+  .object({
+    client_signature: z.string(),
+    client_signed_at: z.iso.datetime(),
+    signed_at: z.iso.datetime(),
+    worker_signature: z.string(),
+    worker_signed_at: z.iso.datetime(),
+  })
+  .strict();
+
+const CompensationDetailsSchema = z
+  .object({
+    amount: z.string().nullable(),
+    currency_code: z.string().length(3),
+    cycle_end: z.number().int().nullable(),
+    cycle_end_type: z.enum(['DAY_OF_MONTH', 'DAY_OF_WEEK', 'DAY_OF_LAST_WEEK']).nullable(),
+    first_payment: z
+      .number()
+      .or(z.literal(''))
+      .or(z.string().refine(val => Number(val))),
+    first_payment_date: z.iso.datetime({ offset: true }).or(z.literal('')),
+    frequency: z.enum(['', 'weekly', 'biweekly', 'semimonthly', 'monthly', 'calendar-month']),
+    gross_annual_salary: z.number().or(z.literal('')),
+    gross_signing_bonus: z.literal(''),
+    gross_variable_bonus: z.literal(''),
+    scale: z.enum(['', 'monthly', 'hourly', 'daily', 'custom']),
+    variable_compensations: z.array(z.never()),
+  })
+  .strict();
+
+const EmploymentProbationPeriodMetadataSchema = z
+  .object({
+    display_value: z.literal(90),
+    time_unit: z.literal('DAY'),
+  })
+  .strict();
+
+const EmploymentDetailsSchema = z
+  .object({
+    days_per_week: z.literal(0),
+    hours_per_day: z.literal(0),
+    paid_vacation_days: z.literal(0),
+    probation_period: z.number().int(),
+    probation_period_metadata: EmploymentProbationPeriodMetadataSchema.nullable(),
+    type: z.enum(['ongoing_time_based', 'eor', 'pay_as_you_go_time_based']),
+  })
+  .strict();
+
+const EmploymentTypeSchema = z.enum(['FULL_TIME']);
+
+const WorkDaySchema = z
+  .object({
+    day: z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']),
+    end: z.iso.time(),
+    start: z.iso.time(),
+    work_hours: z.number().int(),
+  })
+  .strict();
+
+const WorkScheduleSchema = z
+  .object({
+    country: z.enum(['DE', 'US', 'KR']),
+    days: z.array(WorkDaySchema),
+    employment_type: EmploymentTypeSchema,
+    name: z.string(),
+    work_hours_per_week: z.number().int(),
+    work_schedule_type: z.string(),
+    worker_types: z.array(z.enum(['HOURLY_EOR_EMPLOYEE', 'SALARIED_EOR_EMPLOYEE'])),
+  })
+  .strict();
+
+export const ContractSchema = z
+  .object({
+    data: z
+      .object({
+        client: ClientSchema,
+        compensation_details: CompensationDetailsSchema,
+        contract_template: z.null(),
+        created_at: z.iso.datetime(),
+        custom_fields: z.array(z.never()),
+        employment_details: EmploymentDetailsSchema,
+        employment_type: EmploymentTypeSchema.nullable(),
+        external_id: z.null(),
+        id: z.string(),
+        invitations: InvitationsSchema,
+        is_archived: z.boolean(),
+        job_title: z.string().optional(),
+        notice_period: z.number().int(),
+        scope_of_work: z.string().optional(),
+        seniority: z.null(),
+        signatures: SignaturesSchema,
+        special_clause: z.literal(''),
+        start_date: z.iso.datetime({ offset: true }),
+        status: z.enum(['in_progress', 'completed', 'cancelled', 'user_cancelled']),
+        termination_date: z.iso.datetime().or(z.literal('')),
+        title: z.string(),
+        type: z.enum(['ongoing_time_based', 'eor', 'pay_as_you_go_time_based']),
+        updated_at: z.iso.datetime(),
+        who_reports: z.enum(['both']).optional(),
+        work_schedule: WorkScheduleSchema.nullable(),
+        work_statement_id: z.uuid().optional(),
+        worker: WorkerSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
+export type Contract = z.infer<typeof ContractSchema>;
