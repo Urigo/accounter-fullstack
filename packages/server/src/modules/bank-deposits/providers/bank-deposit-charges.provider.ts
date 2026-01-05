@@ -32,11 +32,9 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
     LEFT JOIN accounter_schema.transactions t
       ON cbd.id = t.charge_id
     WHERE deposit_id IN (
-      SELECT deposit_id
+      SELECT cbd2.deposit_id
       FROM accounter_schema.charges_bank_deposits cbd2
-      LEFT JOIN accounter_schema.transactions t2
-        ON cbd2.id = t2.charge_id
-      WHERE t2.charge_id = $chargeId
+      WHERE cbd2.charge_id = $chargeId
     )
     AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
