@@ -31,7 +31,9 @@ export function validateChargeForMatching(charge: Charge): void {
 
   // Check if charge has data
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
-  const hasDocuments = charge.documents?.some(doc => isAccountingDocument(doc.type as DocumentType, true));
+  const hasDocuments = charge.documents?.some(doc =>
+    isAccountingDocument(doc.type as DocumentType, true),
+  );
 
   if (!hasTransactions && !hasDocuments) {
     throw new Error(`Charge ${charge.id} has no transactions or documents - cannot be matched`);
