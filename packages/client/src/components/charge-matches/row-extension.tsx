@@ -56,7 +56,7 @@ export function ChargeMatchesRowExtensions({ row }: Props) {
       {hasTransactions && (
         <AccordionItem value="transactions" className="rounded-lg border-2">
           <div className="px-2 bg-gray-600/10 rounded-t-lg">
-            <AccordionTrigger className="hover:no-underline p-2" disabled={!hasTransactions}>
+            <AccordionTrigger className="p-2" disabled={!hasTransactions}>
               <h3 className="font-semibold text-lg">Transactions</h3>
             </AccordionTrigger>
           </div>
@@ -82,7 +82,7 @@ export function ChargeMatchesRowExtensions({ row }: Props) {
       {hasDocuments && (
         <AccordionItem value="documents" className="rounded-lg border-2">
           <div className="px-2 bg-gray-600/10 rounded-t-lg">
-            <AccordionTrigger className="hover:no-underline p-2" disabled={!hasDocuments}>
+            <AccordionTrigger className="p-2" disabled={!hasDocuments}>
               <h3 className="font-semibold text-lg">Documents</h3>
             </AccordionTrigger>
           </div>

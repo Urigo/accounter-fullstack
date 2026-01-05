@@ -1,7 +1,6 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Accordion } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsScreenDocument,
@@ -11,6 +10,7 @@ import type { FragmentType } from '../../gql/index.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusinessTripModal, PrintToPdfButton, Tooltip } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Accordion } from '../ui/accordion.js';
 import { Switch } from '../ui/switch.js';
 import { BusinessTripsRow } from './business-trips-row.js';
 
@@ -83,17 +83,9 @@ export const BusinessTrips = (): ReactElement => {
       ) : (
         <Accordion
           className="w-full"
-          multiple
+          type="multiple"
           value={openedTrips}
-          onChange={setOpenedTrips}
-          chevron={<Plus size="1rem" />}
-          styles={{
-            chevron: {
-              '&[data-rotate]': {
-                transform: 'rotate(45deg)',
-              },
-            },
-          }}
+          onValueChange={setOpenedTrips}
         >
           {businessTrips?.map(businessTrip => {
             return (
