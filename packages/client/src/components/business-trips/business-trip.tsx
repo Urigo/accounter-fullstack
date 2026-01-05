@@ -1,7 +1,6 @@
 import { useContext, useEffect, type ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Container } from '@mantine/core';
 import { BusinessTripScreenDocument } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { AccounterLoader, PrintToPdfButton } from '../common/index.js';
@@ -51,9 +50,7 @@ export const BusinessTrip = ({ businessTripId }: Props): ReactElement => {
       title={`Business Trip: ${data.businessTrip.name}`}
       description="Manage business trip"
     >
-      <Container className="mt-5">
-        {id && <EditableBusinessTrip tripId={id} isExtended />}
-      </Container>
+      <div>{id && <EditableBusinessTrip tripId={id} isExtended />}</div>
     </PageLayout>
   );
 };

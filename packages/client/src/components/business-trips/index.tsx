@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Accordion, Container } from '@mantine/core';
+import { Accordion } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsScreenDocument,
@@ -81,37 +81,35 @@ export const BusinessTrips = (): ReactElement => {
       {businessTrips.length === 0 && fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <Container>
-          <Accordion
-            className="w-full"
-            multiple
-            value={openedTrips}
-            onChange={setOpenedTrips}
-            chevron={<Plus size="1rem" />}
-            styles={{
-              chevron: {
-                '&[data-rotate]': {
-                  transform: 'rotate(45deg)',
-                },
+        <Accordion
+          className="w-full"
+          multiple
+          value={openedTrips}
+          onChange={setOpenedTrips}
+          chevron={<Plus size="1rem" />}
+          styles={{
+            chevron: {
+              '&[data-rotate]': {
+                transform: 'rotate(45deg)',
               },
-            }}
-          >
-            {businessTrips?.map(businessTrip => {
-              return (
-                <BusinessTripsRow
-                  key={businessTrip.id}
-                  data={
-                    businessTrips.find(trip => trip.id === businessTrip.id) as FragmentType<
-                      typeof BusinessTripsRowFieldsFragmentDoc
-                    >
-                  }
-                  shouldValidate={shouldValidate}
-                  isOpened={openedTrips.includes(businessTrip.id)}
-                />
-              );
-            })}
-          </Accordion>
-        </Container>
+            },
+          }}
+        >
+          {businessTrips?.map(businessTrip => {
+            return (
+              <BusinessTripsRow
+                key={businessTrip.id}
+                data={
+                  businessTrips.find(trip => trip.id === businessTrip.id) as FragmentType<
+                    typeof BusinessTripsRowFieldsFragmentDoc
+                  >
+                }
+                shouldValidate={shouldValidate}
+                isOpened={openedTrips.includes(businessTrip.id)}
+              />
+            );
+          })}
+        </Accordion>
       )}
     </PageLayout>
   );
