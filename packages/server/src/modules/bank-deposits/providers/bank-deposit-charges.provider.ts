@@ -34,7 +34,7 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
     WHERE deposit_id IN (
       SELECT cbd2.deposit_id
       FROM accounter_schema.charges_bank_deposits cbd2
-      WHERE cbd2.charge_id = $chargeId
+      WHERE cbd2.id = $chargeId
     )
     AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
