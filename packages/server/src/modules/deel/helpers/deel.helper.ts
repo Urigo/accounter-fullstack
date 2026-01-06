@@ -11,7 +11,6 @@ import type {
   PaymentBreakdownRecord,
   PaymentReceipts,
 } from '../../app-providers/deel/schemas.js';
-import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { uploadToCloudinary } from '../../documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import type {
@@ -310,24 +309,44 @@ export async function getDeelChargeDescription(
 export async function fetchAndFilterInvoices(injector: Injector) {
   try {
     const invoices = await injector.get(DeelClientProvider).getSalaryInvoices(); // TODO: enable setting up period
+    const contracts = await injector
+      .get(DeelContractsProvider)
+      .getEmployeeByContractIdLoader.loadMany(
+        Array.from(new Set(invoices.map(i => i.contract_id).filter(id => !!id) as string[])),
+      );
+    const existingContractIds = new Set(
+      (
+        contracts.filter(c => !!c && !(c instanceof Error)) as IGetEmployeeIDsByContractIdsResult[]
+      ).map(c => c.contract_id),
+    );
 
     const filteredInvoices: Invoice[] = [];
 
-    await Promise.all(
-      invoices.map(async invoice => {
-        const dbInvoice = await injector
-          .get(DeelInvoicesProvider)
-          .getInvoicesByIdLoader.load(invoice.id)
-          .catch(e => {
-            const message = 'Error fetching invoice by ID';
-            console.error(`${message}: ${e}`);
-            throw new Error(message);
-          });
-        if (!dbInvoice) {
-          filteredInvoices.push(invoice);
-        }
-      }),
-    );
+    for (const invoice of invoices) {
+      if (invoice.contract_id && !existingContractIds.has(invoice.contract_id)) {
+        const deelContract = await injector
+          .get(DeelClientProvider)
+          .getContractDetails(invoice.contract_id);
+        console.debug(`New contract found: ${invoice.contract_id}
+          ${JSON.stringify(deelContract, null, 2)}`);
+        throw new Error(`Deel contract ID [${invoice.contract_id}] not found in DB. Match business to the following contract details:
+          id: ${deelContract.data.id}
+          contractor_id: ${deelContract.data.worker?.id}
+          contractor_name: ${deelContract.data.worker?.full_name}
+          contract_start_date: ${deelContract.data.start_date}`);
+      }
+      const dbInvoice = await injector
+        .get(DeelInvoicesProvider)
+        .getInvoicesByIdLoader.load(invoice.id)
+        .catch(e => {
+          const message = 'Error fetching invoice by ID';
+          console.error(`${message}: ${e}`);
+          throw new Error(message);
+        });
+      if (!dbInvoice) {
+        filteredInvoices.push(invoice);
+      }
+    }
 
     return filteredInvoices;
   } catch (error) {
@@ -436,47 +455,32 @@ export async function validateContracts(
   );
 }
 
-export async function getChargeMatchesForPayments(
-  injector: Injector,
-  ownerId: string,
-  receipts: PaymentReceipts[],
-) {
+export async function getChargeMatchesForPayments(injector: Injector, receipts: PaymentReceipts[]) {
   const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
   const invoiceChargeMap = new Map<string, string>();
-
   const newReceipts: PaymentReceipts[] = [];
+
   receipts.map(receipt => {
     const chargeId = receiptChargeMap.get(receipt.id);
     if (chargeId) {
-      receipt.invoices?.map(invoiceId => invoiceChargeMap.set(invoiceId.id, chargeId));
+      receipt.invoices?.map(invoice => invoiceChargeMap.set(invoice.id, chargeId));
     } else {
       newReceipts.push(receipt);
     }
   });
 
-  await Promise.all(
-    newReceipts.map(async receipt => {
-      const description = await getDeelChargeDescription(injector, receipt.workers);
-      const charge = await injector.get(ChargesProvider).generateCharge({
-        ownerId,
-        userDescription: description,
-      });
-
-      receiptChargeMap.set(receipt.id, charge.id);
-
-      // TODO: upload receipt file (currently not available from Deel API)
-    }),
-  );
-
-  return { receiptChargeMap, invoiceChargeMap };
+  return { receiptChargeMap, invoiceChargeMap, newReceipts };
 }
 
-export function matchInvoicesWithPayments(
+export async function matchInvoicesWithPayments(
+  injector: Injector,
   invoices: Invoice[],
-  paymentBreakdowns: PaymentBreakdownRecord[],
+  receipts: PaymentReceipts[],
 ) {
   const matches: DeelInvoiceMatch[] = [];
   const unmatched: Invoice[] = [];
+
+  const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
 
   invoices.map(invoice => {
     if (

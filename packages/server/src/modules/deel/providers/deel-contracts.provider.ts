@@ -70,13 +70,7 @@ export class DeelContractsProvider {
   );
   private async batchEmployeesByContractIds(contractIds: readonly string[]) {
     const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.dbProvider);
-    return contractIds.map(id => {
-      const contract = contracts.find(contract => contract.contract_id === id);
-      if (!contract) {
-        throw new Error(`Missing Deel contract for ID [${id}]`);
-      }
-      return contract;
-    });
+    return contractIds.map(id => contracts.find(contract => contract.contract_id === id));
   }
 
   public getEmployeeByContractIdLoader = new DataLoader(
