@@ -284,7 +284,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.6"
+    "@ai-sdk/anthropic": "npm:3.0.7"
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.0"
@@ -298,7 +298,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.11"
+    ai: "npm:6.0.12"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.8.0"
@@ -354,50 +354,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.6":
-  version: 3.0.6
-  resolution: "@ai-sdk/anthropic@npm:3.0.6"
+"@ai-sdk/anthropic@npm:3.0.7":
+  version: 3.0.7
+  resolution: "@ai-sdk/anthropic@npm:3.0.7"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.1"
-    "@ai-sdk/provider-utils": "npm:4.0.3"
+    "@ai-sdk/provider": "npm:3.0.2"
+    "@ai-sdk/provider-utils": "npm:4.0.4"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/43865c71eec8c2f002e26e65473f32af5b486e1c16bfd1244ed49a0fb6267d67db4fbc00117fff7a5b9a3166d88403c59fdf5f90c1a070008b6532be4cfc3876
+  checksum: 10c0/be3eddc3ede02f0cc37efc95e8a41ad7b435a8d1ce8996bc4c4622e9249d19c30d68277f4f545a12f98a968ab5844ed0b12c8ec827862060c1208d7b884b7192
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@ai-sdk/gateway@npm:3.0.8"
+"@ai-sdk/gateway@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@ai-sdk/gateway@npm:3.0.9"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.1"
-    "@ai-sdk/provider-utils": "npm:4.0.3"
+    "@ai-sdk/provider": "npm:3.0.2"
+    "@ai-sdk/provider-utils": "npm:4.0.4"
     "@vercel/oidc": "npm:3.1.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/0bfaaf587e8741812f98d11e9c1fef76b691eaa7ede176a3ce93557df68aa132b5b5f078a24cf11fcdf926f862b5a4415cf7917b72a6da63d1f7c98e58d4d879
+  checksum: 10c0/7d6d1d2565e481e318a009b922580b7df6f70f6d93f1b7f17aae23841191b0ca697df82cc42d1a9ae687767ad16a1326e53a496ddb9367ce614f6339f1473a25
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.3":
-  version: 4.0.3
-  resolution: "@ai-sdk/provider-utils@npm:4.0.3"
+"@ai-sdk/provider-utils@npm:4.0.4":
+  version: 4.0.4
+  resolution: "@ai-sdk/provider-utils@npm:4.0.4"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.1"
+    "@ai-sdk/provider": "npm:3.0.2"
     "@standard-schema/spec": "npm:^1.1.0"
     eventsource-parser: "npm:^3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/57945375d68434e62b59110503fd4be559dedfa33d5134bcdadb27dfdc3329578c222866e53d3a658d139170e2914a894cbc38a2f830ec9c825f432b493a6000
+  checksum: 10c0/22d4772e5cbbb764f2508e4b3055e84346435a9394749567dc284522e65201b17a66e137d4b0a9d5094c776252f940a02489f146c7d2ca4b34d71c01b46cc8c9
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:3.0.1":
-  version: 3.0.1
-  resolution: "@ai-sdk/provider@npm:3.0.1"
+"@ai-sdk/provider@npm:3.0.2":
+  version: 3.0.2
+  resolution: "@ai-sdk/provider@npm:3.0.2"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/0f92beb00c2213d693a058ae58aa66ac0c79b98710c21361ac6ea3d2ec05e03da39f9996cd9434c29c69756ef5b3e4fb43db3b58dc508db8a9764379f7bdb24e
+  checksum: 10c0/31617f93a78af9c96e4ef7938d168a55da32095d62aee4e6ad1ee4976738da11d7f948d930fc79c396ac38ace99e67e58f52a281cb925de40d365986c635a8ed
   languageName: node
   linkType: hard
 
@@ -9068,17 +9068,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.11":
-  version: 6.0.11
-  resolution: "ai@npm:6.0.11"
+"ai@npm:6.0.12":
+  version: 6.0.12
+  resolution: "ai@npm:6.0.12"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.8"
-    "@ai-sdk/provider": "npm:3.0.1"
-    "@ai-sdk/provider-utils": "npm:4.0.3"
+    "@ai-sdk/gateway": "npm:3.0.9"
+    "@ai-sdk/provider": "npm:3.0.2"
+    "@ai-sdk/provider-utils": "npm:4.0.4"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/f56ee4387d4c944c46621484ba3e0c7aaaa3a05f2e3e388d552435676d9cfa17de3ee876fd34225959eaf3030326224cbf92d75416e9964c07c52cd1fab6c534
+  checksum: 10c0/4ec5159d545fda51000f3dea5c3274fffa9c2e7016760e725cc2f6e986108b6264ca6270e87ce74cb1f07e5868df82ee3a0984115fa1408f778eea79fd33e159
   languageName: node
   linkType: hard
 
