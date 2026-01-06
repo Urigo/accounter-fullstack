@@ -45,8 +45,10 @@ export async function getPoalimAccounts(bankKey: string) {
 
         ctx[bankKey].scrapedAccounts = accounts.data.filter(
           account =>
-            ctx[bankKey].acceptedAccountNumbers.length === 0 ||
-            ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber),
+            (ctx[bankKey].acceptedAccountNumbers.length === 0 ||
+              ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber)) &&
+            (ctx[bankKey].acceptedBranchNumbers.length === 0 ||
+              ctx[bankKey].acceptedBranchNumbers.includes(account.branchNumber)),
         );
       },
     },
@@ -88,8 +90,10 @@ export async function getPoalimAccounts(bankKey: string) {
       task: async (ctx, task) => {
         for (const account of ctx[bankKey].scrapedAccounts) {
           if (
-            ctx[bankKey].acceptedAccountNumbers.length &&
-            !ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber)
+            (ctx[bankKey].acceptedAccountNumbers.length &&
+              !ctx[bankKey].acceptedAccountNumbers.includes(account.accountNumber)) ||
+            (ctx[bankKey].acceptedBranchNumbers.length &&
+              !ctx[bankKey].acceptedBranchNumbers.includes(account.branchNumber))
           ) {
             throw new Error(`Poalim Account ${account.accountNumber} is not accepted`);
           }

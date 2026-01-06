@@ -12,6 +12,7 @@ export type PoalimCredentials = {
   options?: {
     isBusinessAccount?: boolean;
     acceptedAccountNumbers?: number[];
+    acceptedBranchNumbers?: number[];
   };
 };
 
@@ -23,6 +24,7 @@ export type PoalimContext = {
   nickname?: string;
   scraper?: PoalimScraper;
   acceptedAccountNumbers: number[];
+  acceptedBranchNumbers: number[];
   accounts?: ScrapedAccount[];
   columns?: {
     [table: string]: IGetTableColumnsResult[];
