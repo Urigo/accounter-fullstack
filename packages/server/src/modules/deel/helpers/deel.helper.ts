@@ -324,16 +324,16 @@ export async function fetchAndFilterInvoices(injector: Injector) {
 
     for (const invoice of invoices) {
       if (invoice.contract_id && !existingContractIds.has(invoice.contract_id)) {
-        const deelDontract = await injector
+        const deelContract = await injector
           .get(DeelClientProvider)
           .getContractDetails(invoice.contract_id);
         console.debug(`New contract found: ${invoice.contract_id}
-          ${JSON.stringify(deelDontract, null, 2)}`);
+          ${JSON.stringify(deelContract, null, 2)}`);
         throw new Error(`Deel contract ID [${invoice.contract_id}] not found in DB. Match business to the following contract details:
-          id: ${deelDontract.data.id}
-          contractor_id: ${deelDontract.data.worker?.id}
-          contractor_name: ${deelDontract.data.worker?.full_name}
-          contract_start_date: ${deelDontract.data.start_date}`);
+          id: ${deelContract.data.id}
+          contractor_id: ${deelContract.data.worker?.id}
+          contractor_name: ${deelContract.data.worker?.full_name}
+          contract_start_date: ${deelContract.data.start_date}`);
       }
       const dbInvoice = await injector
         .get(DeelInvoicesProvider)

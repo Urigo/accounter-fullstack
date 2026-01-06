@@ -316,7 +316,7 @@ const WorkerSchema = z
     full_name: z.string(),
     id: z.uuid(),
     last_name: z.string(),
-    nationality: z.enum(['KR', 'GB', 'US']).nullable(),
+    nationality: z.string().length(2).nullable(),
   })
   .strict();
 
@@ -343,10 +343,7 @@ const CompensationDetailsSchema = z
     currency_code: z.string().length(3),
     cycle_end: z.number().int().nullable(),
     cycle_end_type: z.enum(['DAY_OF_MONTH', 'DAY_OF_WEEK', 'DAY_OF_LAST_WEEK']).nullable(),
-    first_payment: z
-      .number()
-      .or(z.literal(''))
-      .or(z.string().refine(val => Number(val))),
+    first_payment: z.preprocess(val => (val === '' ? null : val), z.coerce.number().nullable()),
     first_payment_date: z.iso.datetime({ offset: true }).or(z.literal('')),
     frequency: z.enum(['', 'weekly', 'biweekly', 'semimonthly', 'monthly', 'calendar-month']),
     gross_annual_salary: z.number().or(z.literal('')),
@@ -388,7 +385,7 @@ const WorkDaySchema = z
 
 const WorkScheduleSchema = z
   .object({
-    country: z.enum(['DE', 'US', 'KR']),
+    country: z.string().length(2),
     days: z.array(WorkDaySchema),
     employment_type: EmploymentTypeSchema,
     name: z.string(),
