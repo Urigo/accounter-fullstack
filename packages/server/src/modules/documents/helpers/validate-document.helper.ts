@@ -53,6 +53,7 @@ export async function validateDocumentAllocation(
       return false;
     }
     const docYear = document.date.getFullYear();
+    const docMonth = document.date.getMonth() + 1; // getMonth is zero-based
 
     // set amount to local currency
     let amount = Math.abs(document.total_amount) - Math.abs(document.vat_amount);
@@ -73,13 +74,13 @@ export async function validateDocumentAllocation(
     if (docYear === 2025 && amount < 20_000) {
       return true;
     }
-    if (docYear === 2026 && amount < 15_000) {
-      return true;
+    if (docYear === 2026) {
+      const amountBar = docMonth < 6 ? 10_000 : 5000;
+      if (amount < amountBar) {
+        return true;
+      }
     }
-    if (docYear === 2027 && amount < 10_000) {
-      return true;
-    }
-    if (docYear === 2028 && amount < 5000) {
+    if (docYear >= 2027 && amount < 5000) {
       return true;
     }
     return !!document.allocation_number && document.allocation_number !== '';
