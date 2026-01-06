@@ -748,7 +748,7 @@ describe('Match Scorer', () => {
         expect(result.components.date).toBeCloseTo(0.53, 1);
       });
 
-      it('should handle OTHER type with both dates', async () => {
+      it('should fail on non-accounting (OTHER / UNPROCESSED) types', async () => {
         const txCharge: TransactionCharge = {
           chargeId: 'charge-tx-11',
           transactions: [
@@ -766,30 +766,6 @@ describe('Match Scorer', () => {
               date: new Date('2024-01-10'), // Matches event_date
               type: 'OTHER',
             }),
-          ],
-        };
-
-        const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
-
-        // Should use event_date since it matches better
-        expect(result.components.date).toBe(1.0);
-      });
-
-      it('should handle UNPROCESSED type', async () => {
-        const txCharge: TransactionCharge = {
-          chargeId: 'charge-tx-12',
-          transactions: [
-            createMockTransaction({
-              event_date: new Date('2024-01-15'),
-              debit_date: new Date('2024-01-15'),
-              debit_timestamp: null,
-            }),
-          ],
-        };
-
-        const docCharge: DocumentCharge = {
-          chargeId: 'charge-doc-12',
-          documents: [
             createMockDocument({
               date: new Date('2024-01-15'),
               type: 'UNPROCESSED',
@@ -797,9 +773,8 @@ describe('Match Scorer', () => {
           ],
         };
 
-        const result = await scoreMatch(txCharge, docCharge, USER_ID, createMockInjector());
 
-        expect(result.components.date).toBe(1.0);
+        await expect(scoreMatch(txCharge, docCharge, USER_ID, createMockInjector())).rejects.toThrow(/Cannot aggregate documents: array is empty/);
       });
 
       it('should handle flexible type without debit_date', async () => {
@@ -819,7 +794,7 @@ describe('Match Scorer', () => {
           documents: [
             createMockDocument({
               date: new Date('2024-01-15'),
-              type: 'OTHER',
+              type: 'PROFORMA',
             }),
           ],
         };
