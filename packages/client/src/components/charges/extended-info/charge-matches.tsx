@@ -1,9 +1,9 @@
 import { type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { Accordion } from '@mantine/core';
 import { ChargeMatchesTable } from '@/components/charge-matches/index.js';
 import { ChargeMatchesDocument } from '../../../gql/graphql.js';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '../../ui/accordion.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -19,17 +19,11 @@ import { ChargeMatchesDocument } from '../../../gql/graphql.js';
 
 type Props = {
   chargeId: string;
-  toggleAccordionItem: (value: string) => void;
   isOpened?: boolean;
   onChange: () => void;
 };
 
-export const ChargeMatches = ({
-  chargeId,
-  toggleAccordionItem,
-  isOpened,
-  onChange,
-}: Props): ReactElement => {
+export const ChargeMatches = ({ chargeId, isOpened, onChange }: Props): ReactElement => {
   const [{ data, fetching }] = useQuery({
     query: ChargeMatchesDocument,
     variables: {
@@ -39,11 +33,9 @@ export const ChargeMatches = ({
   });
 
   return (
-    <Accordion.Item value="charges-matches">
-      <Accordion.Control onClick={() => toggleAccordionItem('charges-matches')}>
-        Charge Matches
-      </Accordion.Control>
-      <Accordion.Panel>
+    <AccordionItem value="charges-matches">
+      <AccordionTrigger>Charge Matches</AccordionTrigger>
+      <AccordionContent>
         {fetching ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
@@ -53,7 +45,7 @@ export const ChargeMatches = ({
             onChange={onChange}
           />
         )}
-      </Accordion.Panel>
-    </Accordion.Item>
+      </AccordionContent>
+    </AccordionItem>
   );
 };

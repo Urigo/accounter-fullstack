@@ -1,11 +1,12 @@
 import { useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { Accordion, Indicator } from '@mantine/core';
+import { Indicator } from '@mantine/core';
 import {
   BusinessTripsRowFieldsFragmentDoc,
   BusinessTripsRowValidationDocument,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
+import { AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { EditableBusinessTrip } from './editable-business-trip.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -67,8 +68,8 @@ export const BusinessTripsRow = ({
   const indicatorUp = isError || trip?.accountantApproval !== 'APPROVED';
 
   return (
-    <Accordion.Item value={trip.id}>
-      <Accordion.Control>
+    <AccordionItem value={trip.id}>
+      <AccordionTrigger>
         <Indicator
           inline
           size={12}
@@ -79,10 +80,10 @@ export const BusinessTripsRow = ({
         >
           {trip.name}
         </Indicator>
-      </Accordion.Control>
-      <Accordion.Panel>
+      </AccordionTrigger>
+      <AccordionContent>
         {isOpened && <EditableBusinessTrip tripId={trip.id} isExtended key={trip.id} />}
-      </Accordion.Panel>
-    </Accordion.Item>
+      </AccordionContent>
+    </AccordionItem>
   );
 };

@@ -227,7 +227,7 @@ export function IntegrationsSection({ data }: Props) {
                       updateClient={async newId => updateIdByAttribute(newId, 'greenInvoiceId')}
                     />
                     {business?.clientInfo?.integrations.greenInvoiceInfo?.greenInvoiceId && (
-                      <AccordionTrigger className="hover:no-underline p-2" />
+                      <AccordionTrigger className="p-2" />
                     )}
                   </div>
                 </div>
@@ -462,7 +462,7 @@ export function IntegrationsSection({ data }: Props) {
                     updateClient={async newId => updateIdByAttribute(newId, 'hiveId')}
                   />
                 </div>
-                {hiveClient && <AccordionTrigger className="hover:no-underline p-2" />}
+                {hiveClient && <AccordionTrigger className="p-2" />}
               </div>
             </div>
 
@@ -559,7 +559,7 @@ export function IntegrationsSection({ data }: Props) {
                       keyType={integration.keyType}
                       updateClient={async newId => updateIdByAttribute(newId, integration.id)}
                     />
-                    {/* <AccordionTrigger className="hover:no-underline p-2" /> */}
+                    {/* <AccordionTrigger className="p-2" /> */}
                   </div>
                 </div>
               </div>
