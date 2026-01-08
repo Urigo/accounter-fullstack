@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { TransactionsTableAccountFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
+import { getAccountTypeLabel } from '../../financial-accounts/utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -8,7 +9,6 @@ import { getFragmentData, type FragmentType } from '../../../gql/index.js';
     id
     account {
       id
-      __typename
       name
       type
     }
@@ -23,7 +23,7 @@ export const Account = ({ data }: Props): ReactElement => {
   const transaction = getFragmentData(TransactionsTableAccountFieldsFragmentDoc, data);
   const { account } = transaction;
 
-  const accountType = account.type;
+  const accountType = getAccountTypeLabel(account.type);
   const accountName = account.name;
 
   return (

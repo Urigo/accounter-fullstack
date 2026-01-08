@@ -2,6 +2,7 @@ import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessTransactionsSectionDocument } from '@/gql/graphql.js';
 import { TransactionsTable } from '../transactions-table';
+import { DownloadCSV } from '../transactions-table/download-csv';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -9,6 +10,7 @@ import { TransactionsTable } from '../transactions-table';
     transactionsByFinancialEntity(financialEntityID: $businessId) {
       id
       ...TransactionForTransactionsTableFields
+      ...TransactionToDownloadForTransactionsTableFields
     }
   }
 `;
@@ -37,6 +39,7 @@ export function TransactionsSection({ businessId }: Props) {
             <CardDescription>Complete transaction history for this business</CardDescription>
           </div>
         </div>
+        <DownloadCSV rawTransactions={data?.transactionsByFinancialEntity ?? []} />
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">

@@ -1,6 +1,7 @@
 import { useMemo, type ReactElement } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from 'urql';
+import { DownloadCSV } from '@/components/transactions-table/download-csv.js';
 import { BalanceReportExtendedTransactionsDocument } from '../../../../gql/graphql.js';
 import { AccounterLoader } from '../../../common/index.js';
 import { TransactionsTable } from '../../../transactions-table/index.js';
@@ -13,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
     transactionsByIDs(transactionIDs: $transactionIDs) {
       id
       ...TransactionForTransactionsTableFields
+      ...TransactionToDownloadForTransactionsTableFields
     }
   }
 `;
@@ -53,9 +55,12 @@ export const ExtendedTransactionsCard = ({
           <CardHeader>
             <CardTitle className="flex justify-between">
               <span>{period} Transactions</span>
-              <Button variant="link" onClick={onCloseExtendedTransactions}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex flex-row gap-2 items-center">
+                <DownloadCSV rawTransactions={transactions} />
+                <Button variant="link" onClick={onCloseExtendedTransactions}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
