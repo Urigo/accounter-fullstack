@@ -30,7 +30,6 @@ import {
     }
     account {
       id
-      __typename
       name
       type
     }

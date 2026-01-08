@@ -3,7 +3,11 @@ import { format } from 'date-fns';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
-import { EditTransactionDocument, type UpdateTransactionInput } from '../../../gql/graphql.js';
+import {
+  EditTransactionDocument,
+  FinancialAccountType,
+  type UpdateTransactionInput,
+} from '../../../gql/graphql.js';
 import {
   relevantDataPicker,
   TIMELESS_DATE_REGEX,
@@ -28,7 +32,7 @@ import { DatePickerInput, SimpleGrid } from '../index.js';
       effectiveDate
       isFee
       account {
-        __typename
+        type
         id
       }
     }
@@ -127,7 +131,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                     </FormItem>
                   )}
                 />
-                {transaction?.account.__typename === 'CardFinancialAccount' ? (
+                {transaction?.account.type === FinancialAccountType.CreditCard ? (
                   <FormField
                     name="effectiveDate"
                     control={control}

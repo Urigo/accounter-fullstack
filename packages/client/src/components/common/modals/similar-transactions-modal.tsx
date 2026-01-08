@@ -14,6 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { SimilarTransactionsDocument } from '../../../gql/graphql.js';
 import { useUpdateTransactions } from '../../../hooks/use-update-transactions.js';
+import { getAccountTypeLabel } from '../../financial-accounts/utils.js';
 import { Button } from '../../ui/button.js';
 import { Card } from '../../ui/card.js';
 import { Checkbox } from '../../ui/checkbox.js';
@@ -156,7 +157,7 @@ export function SimilarTransactionsModal({
         sourceDescription: t.sourceDescription,
         eventDate: new Date(t.eventDate),
         valueDate: t.effectiveDate ? new Date(t.effectiveDate) : undefined,
-        accountType: t.account.type,
+        accountType: getAccountTypeLabel(t.account.type),
         accountName: t.account.name,
       })) ?? [];
     if (data && transactions.length === 0) {
