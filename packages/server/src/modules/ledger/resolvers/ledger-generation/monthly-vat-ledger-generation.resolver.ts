@@ -177,11 +177,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     const isProperty = charge.is_property;
     if (isProperty && !propertyOutputVatTaxCategoryId) {
       console.error(
-        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context"`,
+        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
       );
       return {
         __typename: 'CommonError',
-        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context"`,
+        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
       };
     }
 

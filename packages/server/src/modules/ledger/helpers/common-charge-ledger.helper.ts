@@ -1,3 +1,4 @@
+import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -69,7 +70,7 @@ export async function ledgerEntryFromDocument(
   let vatTaxCategory: string | null = null;
 
   if (vatAmount != null && charge.is_property) {
-    vatAmount = (vatAmount * 2) / 3; // Adjust VAT for property charges
+    vatAmount = vatAmount * DECREASED_VAT_RATIO; // Adjust VAT for property charges
   }
 
   const isCreditInvoice = document.type === 'CREDIT_INVOICE';

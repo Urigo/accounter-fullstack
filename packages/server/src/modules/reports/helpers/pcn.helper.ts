@@ -181,7 +181,7 @@ function getTotalVat(t: RawVatReportRecord): number {
   return Math.round(Math.abs(Number(t.roundedVATToAdd ?? 0)));
 }
 
-const transactionsFormVatReportRecords = (
+const transactionsFromVatReportRecords = (
   vatRecords: RawVatReportRecord[],
 ): ExtendedPCNTransaction[] => {
   const transactions: ExtendedPCNTransaction[] = [];
@@ -262,7 +262,7 @@ export const generatePcnFromCharges = (
     throw new Error(`Expected vatNumber to be 9 digits, received "${vatNumber}"`);
   }
 
-  const transactions = transactionsFormVatReportRecords(vatRecords);
+  const transactions = transactionsFromVatReportRecords(vatRecords);
 
   const header = headerPropsFromTransactions(transactions, vatNumber, reportMonth);
 

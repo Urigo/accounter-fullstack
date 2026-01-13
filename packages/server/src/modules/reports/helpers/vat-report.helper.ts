@@ -77,7 +77,9 @@ export async function adjustTaxRecord(
       getChargeDocumentsMeta(charge.id, injector),
     ]);
 
-    if (charge.is_property && !isProperty) {
+    const isDecreasedVat = charge.is_property;
+
+    if (isDecreasedVat && !isProperty) {
       throw new Error(
         `Charge ${charge.id} is marked as property, but has no depreciation records.`,
       );
@@ -94,10 +96,7 @@ export async function adjustTaxRecord(
     }
 
     const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
-    let vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
-    if (charge.is_property) {
-      vatAmount = (vatAmount * 2) / 3; // apply 66% rule for property VAT
-    }
+    const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
     const totalAmount = doc.total_amount * creditInvoiceFactor;
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
@@ -144,9 +143,6 @@ export async function adjustTaxRecord(
           } for invoice ID=${doc.id}`,
         );
       }
-
-      // TODO: implement based on tax category / sort code
-      const isDecreasedVat = false;
 
       // decorate record with additional fields
       const vatAfterDeduction = vatAmount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);
