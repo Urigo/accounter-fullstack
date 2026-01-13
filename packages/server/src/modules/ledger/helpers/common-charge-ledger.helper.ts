@@ -28,7 +28,11 @@ export async function ledgerEntryFromDocument(
     injector,
     adminContext: {
       defaultLocalCurrency,
-      authorities: { inputVatTaxCategoryId, outputVatTaxCategoryId },
+      authorities: {
+        inputVatTaxCategoryId,
+        outputVatTaxCategoryId,
+        propertyOutputVatTaxCategoryId,
+      },
     },
   } = context;
   if (!document.date) {
@@ -64,11 +68,20 @@ export async function ledgerEntryFromDocument(
   let foreignVatAmount: number | null = null;
   let vatTaxCategory: string | null = null;
 
+  if (vatAmount != null && charge.is_property) {
+    vatAmount = (vatAmount * 2) / 3; // Adjust VAT for property charges
+  }
+
   const isCreditInvoice = document.type === 'CREDIT_INVOICE';
   if (vatAmount) {
     amountWithoutVat = amountWithoutVat - vatAmount;
+    const adjustedOutputVatTaxCategoryId = charge.is_property
+      ? propertyOutputVatTaxCategoryId
+      : outputVatTaxCategoryId;
     vatTaxCategory =
-      isCreditorCounterparty === isCreditInvoice ? inputVatTaxCategoryId : outputVatTaxCategoryId;
+      isCreditorCounterparty === isCreditInvoice
+        ? inputVatTaxCategoryId
+        : adjustedOutputVatTaxCategoryId;
 
     const vatValue = await injector
       .get(VatProvider)

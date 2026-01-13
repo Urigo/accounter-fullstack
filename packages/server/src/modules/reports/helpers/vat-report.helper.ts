@@ -77,6 +77,12 @@ export async function adjustTaxRecord(
       getChargeDocumentsMeta(charge.id, injector),
     ]);
 
+    if (charge.is_property && !isProperty) {
+      throw new Error(
+        `Charge ${charge.id} is marked as property, but has no depreciation records.`,
+      );
+    }
+
     // get exchange rate
     let rate = 1;
     if (doc.exchange_rate_override) {
@@ -88,7 +94,10 @@ export async function adjustTaxRecord(
     }
 
     const creditInvoiceFactor = doc.type === DocumentType.CreditInvoice ? -1 : 1;
-    const vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
+    let vatAmount = doc.vat_amount ? doc.vat_amount * creditInvoiceFactor : 0;
+    if (charge.is_property) {
+      vatAmount = (vatAmount * 2) / 3; // apply 66% rule for property VAT
+    }
     const totalAmount = doc.total_amount * creditInvoiceFactor;
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
