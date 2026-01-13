@@ -236,7 +236,7 @@ __metadata:
     "@types/uuid": "npm:11.0.0"
     concurrently: "npm:9.2.1"
     date-fns: "npm:4.1.0"
-    inquirer: "npm:13.1.0"
+    inquirer: "npm:13.2.0"
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.11"
@@ -4184,7 +4184,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/ansi@npm:^2.0.2, @inquirer/ansi@npm:^2.0.3":
+"@inquirer/ansi@npm:^2.0.3":
   version: 2.0.3
   resolution: "@inquirer/ansi@npm:2.0.3"
   checksum: 10c0/69c87abf39878fc68b07f9171249434dc055b95dbcafe81dc6f273aaa59343ce192e50063e7438ad6f3792d059731558f1537124f8230f219676108df3d3396c
@@ -4277,7 +4277,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/core@npm:^11.1.0, @inquirer/core@npm:^11.1.1":
+"@inquirer/core@npm:^11.1.1":
   version: 11.1.1
   resolution: "@inquirer/core@npm:11.1.1"
   dependencies:
@@ -4539,7 +4539,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/prompts@npm:^8.1.0":
+"@inquirer/prompts@npm:^8.2.0":
   version: 8.2.0
   resolution: "@inquirer/prompts@npm:8.2.0"
   dependencies:
@@ -4704,7 +4704,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/type@npm:^4.0.2, @inquirer/type@npm:^4.0.3":
+"@inquirer/type@npm:^4.0.3":
   version: 4.0.3
   resolution: "@inquirer/type@npm:4.0.3"
   peerDependencies:
@@ -14848,14 +14848,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inquirer@npm:13.1.0":
-  version: 13.1.0
-  resolution: "inquirer@npm:13.1.0"
+"inquirer@npm:13.2.0":
+  version: 13.2.0
+  resolution: "inquirer@npm:13.2.0"
   dependencies:
-    "@inquirer/ansi": "npm:^2.0.2"
-    "@inquirer/core": "npm:^11.1.0"
-    "@inquirer/prompts": "npm:^8.1.0"
-    "@inquirer/type": "npm:^4.0.2"
+    "@inquirer/ansi": "npm:^2.0.3"
+    "@inquirer/core": "npm:^11.1.1"
+    "@inquirer/prompts": "npm:^8.2.0"
+    "@inquirer/type": "npm:^4.0.3"
     mute-stream: "npm:^3.0.0"
     run-async: "npm:^4.0.6"
     rxjs: "npm:^7.8.2"
@@ -14864,7 +14864,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/node":
       optional: true
-  checksum: 10c0/d7fb0d4c471db79ba985d31f3d6aa21c3cabf468a7e1013cc3c4dd0b1e1c5a3fb6f8493254b4e2fca7b1be594dcc4fd21e14c496f44f79882187e8d9716c224b
+  checksum: 10c0/4f4e47eb40e6429a8c711c1b8aea9c3bb8eea54333140f23dda7847102938f3b1d82d44ed9932c3e3f6f560425a6c4fe5fd1ec5678682171054685ad54c0184d
   languageName: node
   linkType: hard
 
