@@ -51,10 +51,10 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     currency_code: 'USD' as currency,
     date: new Date('2024-01-14'),
     total_amount: 100.0,
-    type: 'INVOICE' as document_type,
+    type: 'RECEIPT' as document_type,
     vat_amount: 17.0,
     no_vat_amount: '83.00',
-    serial_number: 'INV-001',
+    serial_number: 'REC-001',
     is_reviewed: false,
     created_at: new Date('2024-01-14T08:00:00Z'),
     updated_at: new Date('2024-01-14T08:00:00Z'),
@@ -64,7 +64,7 @@ export function createMockDocument(overrides: Partial<Document> = {}): Document 
     exchange_rate_override: null,
     file_hash: null,
     vat_report_date_override: null,
-    description: 'INV-001',
+    description: 'REC-001',
     remarks: null,
   };
 

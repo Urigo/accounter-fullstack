@@ -1,5 +1,5 @@
 import { DocumentType } from '../../../shared/enums.js';
-import { isAccountingDocument } from '../../documents/helpers/common.helper.js';
+import { isAccountingDocument, isReceipt } from '../../documents/helpers/common.helper.js';
 import type { Document, Transaction } from '../types.js';
 
 /**
@@ -31,9 +31,7 @@ export function validateChargeForMatching(charge: Charge): void {
 
   // Check if charge has data
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
-  const hasDocuments = charge.documents?.some(doc =>
-    isAccountingDocument(doc.type as DocumentType, true),
-  );
+  const hasDocuments = charge.documents?.some(doc => isAccountingDocument(doc.type));
 
   if (!hasTransactions && !hasDocuments) {
     throw new Error(`Charge ${charge.id} has no transactions or documents - cannot be matched`);
@@ -46,37 +44,9 @@ export function validateChargeForMatching(charge: Charge): void {
 export function isChargeMatched(charge: Charge): boolean {
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
 
-  const hasAccountingDocs = charge.documents?.some(doc =>
-    isAccountingDocument(doc.type as DocumentType, true),
-  );
+  const hasAccountingDocs = charge.documents?.some(doc => isReceipt(doc.type));
 
   return !!hasTransactions && !!hasAccountingDocs;
-}
-
-/**
- * Check if charge has only transactions (no accounting documents)
- */
-export function hasOnlyTransactions(charge: Charge): boolean {
-  const hasTransactions = charge.transactions && charge.transactions.length > 0;
-
-  const hasAccountingDocs = charge.documents?.some(doc =>
-    isAccountingDocument(doc.type as DocumentType, true),
-  );
-
-  return !!hasTransactions && !hasAccountingDocs;
-}
-
-/**
- * Check if charge has only accounting documents (no transactions)
- */
-export function hasOnlyDocuments(charge: Charge): boolean {
-  const hasTransactions = charge.transactions && charge.transactions.length > 0;
-
-  const hasAccountingDocs = charge.documents?.some(doc =>
-    isAccountingDocument(doc.type as DocumentType, true),
-  );
-
-  return !hasTransactions && !!hasAccountingDocs;
 }
 
 /**
