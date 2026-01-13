@@ -1,5 +1,5 @@
 import { DocumentType } from '../../../shared/enums.js';
-import { isReceipt } from '../../documents/helpers/common.helper.js';
+import { isAccountingDocument, isReceipt } from '../../documents/helpers/common.helper.js';
 import type { Document, Transaction } from '../types.js';
 
 /**
@@ -31,7 +31,7 @@ export function validateChargeForMatching(charge: Charge): void {
 
   // Check if charge has data
   const hasTransactions = charge.transactions && charge.transactions.length > 0;
-  const hasDocuments = charge.documents && charge.documents.length > 0;
+  const hasDocuments = charge.documents?.some(doc => isAccountingDocument(doc.type));
 
   if (!hasTransactions && !hasDocuments) {
     throw new Error(`Charge ${charge.id} has no transactions or documents - cannot be matched`);

@@ -274,9 +274,11 @@ export class ChargesMatcherProvider {
     // Step 3: Filter to get only unmatched charges
     const unmatchedCharges = chargesWithData.filter(charge => {
       const hasTx = charge.transactions && charge.transactions.length > 0;
-      const hasDocs =
-        charge.documents && charge.documents.filter(doc => isReceipt(doc.type)).length > 0; // flag only accounting documents, not including proforma
-      return (hasTx && !hasDocs) || (!hasTx && hasDocs);
+      const hasAccountingDocs =
+        charge.documents &&
+        charge.documents.filter(doc => isAccountingDocument(doc.type)).length > 0;
+      const hasReceipts = charge.documents?.some(doc => isReceipt(doc.type));
+      return (hasTx && !hasReceipts) || (!hasTx && hasAccountingDocs);
     });
 
     // Step 4: Process each unmatched charge
