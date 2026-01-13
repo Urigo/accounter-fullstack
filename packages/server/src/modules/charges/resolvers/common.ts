@@ -40,6 +40,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       throw errorSimplifier('Failed to fetch depreciation records', error);
     }
   },
+  decreasedVAT: DbCharge => DbCharge.is_property,
   conversion: DbCharge => DbCharge.type === 'CONVERSION',
   salary: DbCharge => DbCharge.type === 'PAYROLL',
   isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,

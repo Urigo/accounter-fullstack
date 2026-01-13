@@ -34,6 +34,8 @@ export default gql`
     totalAmount: FinancialAmount
     " פחת, ציוד  "
     property: Boolean
+    " decreased VAT for property-related charges "
+    decreasedVAT: Boolean
     " is currency conversion "
     conversion: Boolean
     " is salary "
@@ -65,6 +67,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -85,6 +88,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -105,6 +109,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -125,6 +130,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -145,6 +151,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -165,6 +172,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -185,6 +193,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -205,6 +214,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -225,6 +235,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -245,6 +256,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
@@ -310,6 +322,7 @@ export default gql`
   " input variables for updateCharge "
   input UpdateChargeInput {
     isConversion: Boolean
+    isDecreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
     userDescription: String

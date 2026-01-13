@@ -271,6 +271,22 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               />
 
               <FormField
+                name="isDecreasedVAT"
+                control={control}
+                defaultValue={charge.decreasedVAT}
+                render={({ field }) => (
+                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Is Decreased VAT</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
                 name="optionalVAT"
                 control={control}
                 defaultValue={charge.optionalVAT ?? false}

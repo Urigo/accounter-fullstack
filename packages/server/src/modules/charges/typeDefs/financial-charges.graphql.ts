@@ -27,6 +27,7 @@ export default gql`
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
+    decreasedVAT: Boolean
     conversion: Boolean
     salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean

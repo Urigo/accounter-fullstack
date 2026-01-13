@@ -272,6 +272,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       const adjustedFields: IUpdateChargeParams = {
         accountantStatus: fields.accountantApproval,
         type: fields.isConversion ? 'CONVERSION' : undefined,
+        isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
@@ -411,6 +412,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       const adjustedFields: IBatchUpdateChargesParams = {
         accountantStatus: fields.accountantApproval,
         type: fields.isConversion ? 'CONVERSION' : undefined,
+        isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
         userDescription: fields.userDescription,
@@ -507,6 +509,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           const adjustedFields: IUpdateChargeParams = {
             accountantStatus: fields?.accountantApproval,
             type: fields?.isConversion ? 'CONVERSION' : undefined,
+            isProperty: fields?.isDecreasedVAT,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             optionalVAT: fields?.optionalVAT,
             optionalDocuments: fields?.optionalDocuments,
