@@ -319,9 +319,9 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
 
         return ledgerEntryFromDocument(
-          document,
           context,
-          chargeId,
+          document,
+          charge,
           charge.owner_id,
           documentsTaxCategoryId!,
         )

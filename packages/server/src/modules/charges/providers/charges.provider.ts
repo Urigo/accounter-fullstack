@@ -111,6 +111,10 @@ const updateCharge = sql<IUpdateChargeQuery>`
   documents_optional_flag = COALESCE(
     $optionalDocuments,
     documents_optional_flag
+  ),
+  is_property = COALESCE(
+    $isProperty,
+    is_property
   )
   WHERE
     id = $chargeId
@@ -151,6 +155,10 @@ const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
   documents_optional_flag = COALESCE(
     $optionalDocuments,
     documents_optional_flag
+  ),
+  is_property = COALESCE(
+    $isProperty,
+    is_property
   )
   WHERE
     id in $$chargeIds
@@ -167,8 +175,8 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 `;
 
 const generateCharge = sql<IGenerateChargeQuery>`
-  INSERT INTO accounter_schema.charges (owner_id, type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag)
-  VALUES ($ownerId, $type, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments)
+  INSERT INTO accounter_schema.charges (owner_id, type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag, is_property)
+  VALUES ($ownerId, $type, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments, $isProperty)
   RETURNING *;
 `;
 

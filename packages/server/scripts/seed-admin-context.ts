@@ -64,7 +64,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
   // 2. Create authority businesses
   const authorities = {
     businesses: ['VAT', 'Tax', 'Social Security'],
-    taxCategories: ['Input Vat', 'Output Vat', 'Tax Expenses'],
+    taxCategories: ['Input Vat', 'Output Vat', 'Property Output Vat', 'Tax Expenses'],
   };
 
   console.log('Creating authority businesses...');
@@ -153,6 +153,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     vat_business_id: authorityBusinessIds['VAT'],
     input_vat_tax_category_id: authorityTaxCategoryIds['Input Vat'],
     output_vat_tax_category_id: authorityTaxCategoryIds['Output Vat'],
+    property_output_vat_tax_category_id: authorityTaxCategoryIds['Property Output Vat'],
     tax_business_id: authorityBusinessIds['Tax'],
     tax_expenses_tax_category_id: authorityTaxCategoryIds['Tax Expenses'],
     social_security_business_id: authorityBusinessIds['Social Security'],

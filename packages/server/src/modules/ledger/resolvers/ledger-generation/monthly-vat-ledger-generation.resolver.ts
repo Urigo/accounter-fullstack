@@ -39,7 +39,12 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     injector,
     adminContext: {
       defaultLocalCurrency,
-      authorities: { vatBusinessId, inputVatTaxCategoryId, outputVatTaxCategoryId },
+      authorities: {
+        vatBusinessId,
+        inputVatTaxCategoryId,
+        outputVatTaxCategoryId,
+        propertyOutputVatTaxCategoryId,
+      },
       general: {
         taxCategories: { balanceCancellationTaxCategoryId },
       },
@@ -169,6 +174,17 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       });
     });
 
+    const isProperty = charge.is_property;
+    if (isProperty && !propertyOutputVatTaxCategoryId) {
+      console.error(
+        `Charge ID="${chargeId}" is marked as property but no Property Output VAT tax category is configured in admin context`,
+      );
+      return {
+        __typename: 'CommonError',
+        message: `One of the charges is marked as property but no Property Output VAT tax category is configured in admin context`,
+      };
+    }
+
     await Promise.all([...mainTransactionsPromises, miscExpensesLedgerPromise]);
     for (const { income, expenses, ledgerDate, vatDate } of vatRecords) {
       const [incomeVat, roundedIncomeVat] = getVatDataFromVatReportRecords(
@@ -191,7 +207,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         },
         {
           amount: roundedExpensesVat * -1,
-          taxCategoryId: outputVatTaxCategoryId,
+          taxCategoryId: isProperty ? propertyOutputVatTaxCategoryId! : outputVatTaxCategoryId,
           counterpartyId: vatBusinessId,
         },
       );
@@ -209,7 +225,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       if (roundedExpensesVatDiff) {
         accountingLedgerMaterials.push({
           amount: roundedExpensesVatDiff,
-          taxCategoryId: outputVatTaxCategoryId,
+          taxCategoryId: isProperty ? propertyOutputVatTaxCategoryId! : outputVatTaxCategoryId,
           counterpartyId: balanceCancellationTaxCategoryId,
         });
       }

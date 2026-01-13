@@ -19,6 +19,7 @@ export default gql`
     vatBusinessId: UUID
     inputVatTaxCategoryId: UUID
     outputVatTaxCategoryId: UUID
+    propertyOutputVatTaxCategoryId: UUID
     taxBusinessId: UUID
     taxExpensesTaxCategoryId: UUID
     socialSecurityBusinessId: UUID
@@ -86,6 +87,7 @@ export default gql`
     vatBusiness: Business!
     inputVatTaxCategory: TaxCategory!
     outputVatTaxCategory: TaxCategory!
+    propertyOutputVatTaxCategory: TaxCategory
     taxBusiness: Business!
     taxExpensesTaxCategory: TaxCategory!
     socialSecurityBusiness: Business!

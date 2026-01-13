@@ -1,5 +1,7 @@
+import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import {
   validateDocumentAllocation,
   validateDocumentVat,
@@ -17,9 +19,9 @@ import {
 } from './utils.helper.js';
 
 export async function ledgerEntryFromDocument(
-  document: IGetDocumentsByChargeIdResult,
   context: GraphQLModules.Context,
-  chargeId: string,
+  document: IGetDocumentsByChargeIdResult,
+  charge: IGetChargesByIdsResult,
   ownerId: string,
   taxCategoryId: string,
 ): Promise<StrictLedgerProto> {
@@ -27,7 +29,11 @@ export async function ledgerEntryFromDocument(
     injector,
     adminContext: {
       defaultLocalCurrency,
-      authorities: { inputVatTaxCategoryId, outputVatTaxCategoryId },
+      authorities: {
+        inputVatTaxCategoryId,
+        outputVatTaxCategoryId,
+        propertyOutputVatTaxCategoryId,
+      },
     },
   } = context;
   if (!document.date) {
@@ -63,11 +69,20 @@ export async function ledgerEntryFromDocument(
   let foreignVatAmount: number | null = null;
   let vatTaxCategory: string | null = null;
 
+  if (vatAmount != null && charge.is_property) {
+    vatAmount = vatAmount * DECREASED_VAT_RATIO; // Adjust VAT for property charges
+  }
+
   const isCreditInvoice = document.type === 'CREDIT_INVOICE';
   if (vatAmount) {
     amountWithoutVat = amountWithoutVat - vatAmount;
+    const adjustedOutputVatTaxCategoryId = charge.is_property
+      ? propertyOutputVatTaxCategoryId
+      : outputVatTaxCategoryId;
     vatTaxCategory =
-      isCreditorCounterparty === isCreditInvoice ? inputVatTaxCategoryId : outputVatTaxCategoryId;
+      isCreditorCounterparty === isCreditInvoice
+        ? inputVatTaxCategoryId
+        : adjustedOutputVatTaxCategoryId;
 
     const vatValue = await injector
       .get(VatProvider)
@@ -169,7 +184,7 @@ export async function ledgerEntryFromDocument(
     isCreditorCounterparty,
     isCreditInvoice,
     ownerId,
-    chargeId,
+    chargeId: charge.id,
   };
 
   return ledgerEntry;

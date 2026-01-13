@@ -137,6 +137,7 @@ import migration_2025_12_21T17_04_14_enrich_document_with_description_remarks fr
 import migration_2025_12_22T13_41_41_rename_documents_modified_column from './actions/2025-12-22T13-41-41.rename-documents-modified-column.js';
 import migration_2025_12_22T13_49_25_enrich_business_with_city_zip from './actions/2025-12-22T13-49-25.enrich-business-with-city-zip.js';
 import migration_2025_12_25T13_29_15_charge_bank_deposits_table from './actions/2025-12-25T13-29-15.charge-bank-deposits-table.js';
+import migration_2026_01_13T12_00_49_add_property_vat_to_user_context from './actions/2026-01-13T12-00-49.add-property-vat-to-user-context.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -278,6 +279,7 @@ export const MIGRATIONS = [
   migration_2025_12_22T13_41_41_rename_documents_modified_column,
   migration_2025_12_22T13_49_25_enrich_business_with_city_zip,
   migration_2025_12_25T13_29_15_charge_bank_deposits_table,
+  migration_2026_01_13T12_00_49_add_property_vat_to_user_context,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

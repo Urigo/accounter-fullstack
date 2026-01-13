@@ -167,9 +167,9 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         }
 
         return ledgerEntryFromDocument(
-          document,
           context,
-          chargeId,
+          document,
+          charge,
           charge.owner_id,
           documentsTaxCategoryId!,
         )

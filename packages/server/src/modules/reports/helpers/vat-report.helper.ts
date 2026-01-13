@@ -77,6 +77,14 @@ export async function adjustTaxRecord(
       getChargeDocumentsMeta(charge.id, injector),
     ]);
 
+    const isDecreasedVat = charge.is_property;
+
+    if (isDecreasedVat && !isProperty) {
+      throw new Error(
+        `Charge ${charge.id} is marked as property, but has no depreciation records.`,
+      );
+    }
+
     // get exchange rate
     let rate = 1;
     if (doc.exchange_rate_override) {
@@ -135,9 +143,6 @@ export async function adjustTaxRecord(
           } for invoice ID=${doc.id}`,
         );
       }
-
-      // TODO: implement based on tax category / sort code
-      const isDecreasedVat = false;
 
       // decorate record with additional fields
       const vatAfterDeduction = vatAmount * (isDecreasedVat ? DECREASED_VAT_RATIO : 1);

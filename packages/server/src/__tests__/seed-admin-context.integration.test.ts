@@ -80,6 +80,7 @@ describe('seedAdminCore integration', () => {
         'default_tax_category_id',
         'input_vat_tax_category_id',
         'output_vat_tax_category_id',
+        'property_output_vat_tax_category_id',
         'tax_expenses_tax_category_id',
         'exchange_rate_tax_category_id',
         'income_exchange_rate_tax_category_id',
@@ -216,6 +217,7 @@ describe('seedAdminCore integration', () => {
         'default_tax_category_id',
         'input_vat_tax_category_id',
         'output_vat_tax_category_id',
+        'property_output_vat_tax_category_id',
       ];
 
       for (const field of taxCategoryFields) {
