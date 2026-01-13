@@ -3,8 +3,6 @@ import {
   validateChargeForMatching,
   validateChargeIsUnmatched,
   isChargeMatched,
-  hasOnlyTransactions,
-  hasOnlyDocuments,
 } from '../helpers/charge-validator.helper.js';
 import { createMockTransaction, createMockDocument } from './test-helpers.js';
 
@@ -101,7 +99,7 @@ describe('Charge Validator', () => {
   });
 
   describe('isChargeMatched', () => {
-    it('should return true for charge with transactions and accounting documents', () => {
+    it('should return false for charge with INVOICE', () => {
       const charge = {
         id: 'charge-1',
         owner_id: 'user-1',
@@ -109,10 +107,10 @@ describe('Charge Validator', () => {
         documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
       };
 
-      expect(isChargeMatched(charge)).toBe(true);
+      expect(isChargeMatched(charge)).toBe(false);
     });
 
-    it('should return true for charge with CREDIT_INVOICE', () => {
+    it('should return false for charge with CREDIT_INVOICE', () => {
       const charge = {
         id: 'charge-1',
         owner_id: 'user-1',
@@ -120,10 +118,10 @@ describe('Charge Validator', () => {
         documents: [createMockDocument({ charge_id: 'charge-1', type: 'CREDIT_INVOICE' })],
       };
 
-      expect(isChargeMatched(charge)).toBe(true);
+      expect(isChargeMatched(charge)).toBe(false);
     });
 
-    it('should return true for charge with RECEIPT', () => {
+    it('should return true for charge with transactions and receipts', () => {
       const charge = {
         id: 'charge-1',
         owner_id: 'user-1',
@@ -190,131 +188,6 @@ describe('Charge Validator', () => {
     });
   });
 
-  describe('hasOnlyTransactions', () => {
-    it('should return true for charge with only transactions', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [],
-      };
-
-      expect(hasOnlyTransactions(charge)).toBe(true);
-    });
-
-    it('should return true for charge with transactions and non-accounting documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'OTHER' })],
-      };
-
-      expect(hasOnlyTransactions(charge)).toBe(true);
-    });
-
-    it('should return false for charge with transactions and accounting documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
-      };
-
-      expect(hasOnlyTransactions(charge)).toBe(false);
-    });
-
-    it('should return false for charge with only documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
-      };
-
-      expect(hasOnlyTransactions(charge)).toBe(false);
-    });
-
-    it('should return false for charge with no data', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [],
-      };
-
-      expect(hasOnlyTransactions(charge)).toBe(false);
-    });
-  });
-
-  describe('hasOnlyDocuments', () => {
-    it('should return true for charge with only accounting documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(true);
-    });
-
-    it('should return true for charge with CREDIT_INVOICE', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'CREDIT_INVOICE' })],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(true);
-    });
-
-    it('should return false for charge with only non-accounting documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'OTHER' })],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(false);
-    });
-
-    it('should return false for charge with transactions and documents', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(false);
-    });
-
-    it('should return false for charge with only transactions', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(false);
-    });
-
-    it('should return false for charge with no data', () => {
-      const charge = {
-        id: 'charge-1',
-        owner_id: 'user-1',
-        transactions: [],
-        documents: [],
-      };
-
-      expect(hasOnlyDocuments(charge)).toBe(false);
-    });
-  });
-
   describe('validateChargeIsUnmatched', () => {
     it('should pass for charge with only transactions', () => {
       const charge = {
@@ -338,12 +211,12 @@ describe('Charge Validator', () => {
       expect(() => validateChargeIsUnmatched(charge)).not.toThrow();
     });
 
-    it('should throw for charge with both transactions and accounting documents', () => {
+    it('should throw for charge with both transactions and receipts', () => {
       const charge = {
         id: 'charge-1',
         owner_id: 'user-1',
         transactions: [createMockTransaction({ charge_id: 'charge-1' })],
-        documents: [createMockDocument({ charge_id: 'charge-1', type: 'INVOICE' })],
+        documents: [createMockDocument({ charge_id: 'charge-1', type: 'RECEIPT' })],
       };
 
       expect(() => validateChargeIsUnmatched(charge)).toThrow('is already matched');

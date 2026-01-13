@@ -43,7 +43,7 @@ describe('Charges Matcher - Test Infrastructure', () => {
       expect(document.charge_id).toBeDefined();
       expect(document.total_amount).toBe(100.0);
       expect(document.currency_code).toBe('USD');
-      expect(document.type).toBe('INVOICE');
+      expect(document.type).toBe('RECEIPT');
     });
 
     it('should create a mock document with overrides', () => {

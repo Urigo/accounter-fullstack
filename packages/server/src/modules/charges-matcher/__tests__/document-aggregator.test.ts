@@ -192,46 +192,47 @@ describe('Document Aggregator', () => {
   });
 
   describe('Type Priority Filtering', () => {
-    it('should use only invoices when both invoices and receipts exist', () => {
+    it('should use only receipts when both invoices and receipts exist', () => {
       const documents = [
-        createDocument({ total_amount: 100, type: 'INVOICE', serial_number: 'INV-001' }),
-        createDocument({ total_amount: 200, type: 'RECEIPT', serial_number: 'REC-001' }),
-        createDocument({ total_amount: 50, type: 'INVOICE', serial_number: 'INV-002' }),
+        createDocument({ total_amount: 100, type: 'RECEIPT', serial_number: 'REC-001' }),
+        createDocument({ total_amount: 200, type: 'INVOICE', serial_number: 'INV-001' }),
+        createDocument({ total_amount: 50, type: 'RECEIPT', serial_number: 'REC-002' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.amount).toBe(150); // Only invoices: 100 + 50
-      expect(result.type).toBe('INVOICE');
-      expect(result.description).toContain('INV-001');
-      expect(result.description).toContain('INV-002');
-      expect(result.description).not.toContain('REC-001'); // Receipt excluded
+      expect(result.amount).toBe(150);
+      expect(result.type).toBe('RECEIPT');
+      expect(result.description).toContain('REC-001');
+      expect(result.description).toContain('REC-002');
+      expect(result.description).not.toContain('INV-001'); // Invoices excluded
     });
 
-    it('should use only credit invoices when both credit invoices and receipts exist', () => {
+    it('should use only receipts when both credit invoices and receipts exist', () => {
       const documents = [
-        createDocument({ total_amount: 100, type: 'CREDIT_INVOICE' }),
-        createDocument({ total_amount: 200, type: 'RECEIPT' }),
-        createDocument({ total_amount: 50, type: 'CREDIT_INVOICE' }),
+        createDocument({ total_amount: 100, type: 'RECEIPT' }),
+        createDocument({ total_amount: 200, type: 'CREDIT_INVOICE' }),
+        createDocument({ total_amount: 50, type: 'RECEIPT' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
       // Credit invoices with user as creditor (business debtor): negate
-      expect(result.amount).toBe(-150); // -(100 + 50)
-      expect(result.type).toBe('CREDIT_INVOICE');
+      expect(result.amount).toBe(150); // 100 + 50
+      expect(result.type).toBe('RECEIPT');
     });
 
-    it('should use only invoices/credit-invoices when mixed with invoice-receipts', () => {
+    it('should use only receipts/invoice-receipts when mixed with invoices and credit-invoices', () => {
       const documents = [
-        createDocument({ total_amount: 100, type: 'INVOICE' }),
-        createDocument({ total_amount: 200, type: 'INVOICE_RECEIPT' }), // Should be excluded
-        createDocument({ total_amount: 50, type: 'CREDIT_INVOICE' }),
+        createDocument({ total_amount: 100, type: 'INVOICE' }), // Should be excluded
+        createDocument({ total_amount: 200, type: 'INVOICE_RECEIPT' }),
+        createDocument({ total_amount: 10, type: 'RECEIPT' }),
+        createDocument({ total_amount: 50, type: 'CREDIT_INVOICE' }), // Should be excluded
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.amount).toBe(50); // 100 - 50 (credit invoice negates)
+      expect(result.amount).toBe(210); // 200 + 10 (receipt and invoice-receipt)
     });
 
     it('should use receipts when no invoices exist', () => {
@@ -290,16 +291,16 @@ describe('Document Aggregator', () => {
       );
     });
 
-    it('should ignore currency of filtered-out receipts', () => {
+    it('should ignore currency of filtered-out invoices', () => {
       const documents = [
-        createDocument({ currency_code: 'USD', type: 'INVOICE' }),
-        createDocument({ currency_code: 'EUR', type: 'RECEIPT' }), // Different currency but will be filtered
-        createDocument({ currency_code: 'USD', type: 'INVOICE' }),
+        createDocument({ currency_code: 'USD', type: 'INVOICE' }), // Different currency but will be filtered
+        createDocument({ currency_code: 'EUR', type: 'RECEIPT' }),
+        createDocument({ currency_code: 'EUR', type: 'RECEIPT' }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.currency).toBe('USD');
+      expect(result.currency).toBe('EUR');
     });
   });
 
@@ -539,7 +540,7 @@ describe('Document Aggregator', () => {
       const documents = [
         createDocument({
           total_amount: 1000,
-          type: 'INVOICE',
+          type: 'INVOICE', // Will be filtered out
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
           date: new Date('2024-01-15'),
@@ -548,7 +549,7 @@ describe('Document Aggregator', () => {
         }),
         createDocument({
           total_amount: 500,
-          type: 'RECEIPT', // Will be filtered out
+          type: 'RECEIPT',
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
           date: new Date('2024-01-20'),
@@ -557,25 +558,35 @@ describe('Document Aggregator', () => {
         }),
         createDocument({
           total_amount: 200,
-          type: 'CREDIT_INVOICE',
+          type: 'CREDIT_INVOICE', // Will be filtered out
           creditor_id: USER_ID,
           debtor_id: 'business-abc',
-          date: new Date('2024-01-25'), // Latest
+          date: new Date('2024-01-25'),
           serial_number: 'CRD-2024-001',
           currency_code: 'USD',
+        }),
+        createDocument({
+          total_amount: 100,
+          type: 'INVOICE_RECEIPT',
+          creditor_id: USER_ID,
+          debtor_id: 'business-abc',
+          date: new Date('2024-01-23'), // Latest
+          serial_number: 'REC-2024-002',
+          currency_code: 'EUR', // Different currency but will be filtered
         }),
       ];
 
       const result = aggregateDocuments(documents, USER_ID);
 
-      expect(result.amount).toBe(800); // 1000 - 200 (credit invoice)
-      expect(result.currency).toBe('USD');
+      expect(result.amount).toBe(600); // 500 + 100
+      expect(result.currency).toBe('EUR');
       expect(result.businessId).toBe('business-abc');
-      expect(result.date).toEqual(new Date('2024-01-25')); // Latest among invoices
-      expect(result.type).toBe('INVOICE'); // First invoice type
-      expect(result.description).toContain('INV-2024-001');
-      expect(result.description).toContain('CRD-2024-001');
-      expect(result.description).not.toContain('REC-2024-001'); // Receipt excluded
+      expect(result.date).toEqual(new Date('2024-01-23')); // Latest among receipts
+      expect(result.type).toBe('RECEIPT'); // First receipt type
+      expect(result.description).not.toContain('INV-2024-001'); // Invoice excluded
+      expect(result.description).not.toContain('CRD-2024-001'); // Credit-Invoice excluded
+      expect(result.description).toContain('REC-2024-001');
+      expect(result.description).toContain('REC-2024-002');
     });
 
     it('should handle documents with null business IDs', () => {

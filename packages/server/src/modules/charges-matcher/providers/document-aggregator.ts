@@ -88,7 +88,7 @@ export function aggregateDocuments(
   documents: Document[],
   adminBusinessId: string,
 ): Omit<AggregatedDocument, 'businessIsCreditor'> {
-  const accountingDocuments = documents?.filter(doc => isAccountingDocument(doc.type, true));
+  const accountingDocuments = documents?.filter(doc => isAccountingDocument(doc.type));
   // Validate non-empty input
   if (!documents || accountingDocuments.length === 0) {
     throw new Error('Cannot aggregate documents: array is empty');
@@ -99,8 +99,11 @@ export function aggregateDocuments(
   const hasReceipts = accountingDocuments.some(d => isReceiptType(d.type as DocumentType));
 
   let filteredDocuments = accountingDocuments;
-  if (hasInvoices && hasReceipts) {
-    // If both invoices and receipts exist, use only invoices
+  if (hasReceipts) {
+    // If receipts exist, use only receipts
+    filteredDocuments = accountingDocuments.filter(d => isReceiptType(d.type as DocumentType));
+  } else if (hasInvoices) {
+    // If no receipts and invoices exist, use only invoices
     filteredDocuments = accountingDocuments.filter(d => isInvoiceType(d.type as DocumentType));
   }
 

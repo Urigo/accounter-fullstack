@@ -13,18 +13,14 @@ export function isReceipt(type: document_type): boolean {
   return type === DocumentType.Receipt || type === DocumentType.InvoiceReceipt;
 }
 
-export function isAccountingDocument(
-  type: document_type,
-  includeProforma: boolean = false,
-): boolean {
+export function isAccountingDocument(type: document_type): boolean {
   switch (type) {
     case DocumentType.Invoice:
     case DocumentType.CreditInvoice:
     case DocumentType.Receipt:
     case DocumentType.InvoiceReceipt:
-      return true;
     case DocumentType.Proforma:
-      return includeProforma;
+      return true;
     default:
       return false;
   }
