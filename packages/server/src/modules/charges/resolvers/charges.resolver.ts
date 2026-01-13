@@ -29,7 +29,7 @@ import {
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
-import { ChargeRequiredWrapper, ChargesProvider } from '../providers/charges.provider.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 import type {
   accountant_statusArray,
   ChargesModule,
@@ -83,11 +83,13 @@ export const chargesResolvers: ChargesModule.Resolvers &
         }
 
         const charges = chargeIDs.map(id => {
-          const charge = dbCharges.find(charge => charge && 'id' in charge && charge.id === id);
+          const charge = dbCharges.find(
+            charge => charge && !(charge instanceof Error) && charge.id === id,
+          ) as IGetChargesByIdsResult | undefined;
           if (!charge) {
             throw new GraphQLError(`Charge ID="${id}" not found`);
           }
-          return charge as ChargeRequiredWrapper<IGetChargesByIdsResult>;
+          return charge;
         });
         return charges;
       } catch (error) {
@@ -449,7 +451,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         }
 
         // Type assertion as error handling is done above
-        const charges = updatedCharges as ChargeRequiredWrapper<IGetChargesByIdsResult>[];
+        const charges = updatedCharges as IGetChargesByIdsResult[];
 
         const indirectUpdatesPromises: Array<Promise<unknown>> = [];
 
