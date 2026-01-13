@@ -309,8 +309,9 @@ function splitVatPayments(
   adjustedEntry: LedgerProto;
   vatEntries: LedgerProto[];
 } {
-  const { inputVatTaxCategoryId, outputVatTaxCategoryId } = context.adminContext.authorities;
-  const vatTaxIds = [inputVatTaxCategoryId, outputVatTaxCategoryId];
+  const { inputVatTaxCategoryId, outputVatTaxCategoryId, propertyOutputVatTaxCategoryId } =
+    context.adminContext.authorities;
+  const vatTaxIds = [inputVatTaxCategoryId, outputVatTaxCategoryId, propertyOutputVatTaxCategoryId];
   const vatEntries: LedgerProto[] = [];
   const adjustedEntry = { ...entry };
   if (vatTaxIds.includes(entry.creditAccountID2 ?? '')) {

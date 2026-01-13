@@ -1,5 +1,6 @@
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import {
   validateDocumentAllocation,
   validateDocumentVat,
@@ -17,9 +18,9 @@ import {
 } from './utils.helper.js';
 
 export async function ledgerEntryFromDocument(
-  document: IGetDocumentsByChargeIdResult,
   context: GraphQLModules.Context,
-  chargeId: string,
+  document: IGetDocumentsByChargeIdResult,
+  charge: IGetChargesByIdsResult,
   ownerId: string,
   taxCategoryId: string,
 ): Promise<StrictLedgerProto> {
@@ -169,7 +170,7 @@ export async function ledgerEntryFromDocument(
     isCreditorCounterparty,
     isCreditInvoice,
     ownerId,
-    chargeId,
+    chargeId: charge.id,
   };
 
   return ledgerEntry;
