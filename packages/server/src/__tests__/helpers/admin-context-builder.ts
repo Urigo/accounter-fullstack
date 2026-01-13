@@ -58,6 +58,7 @@ export async function buildAdminContextFromDb(
       vatBusinessId: dbContext.vat_business_id,
       inputVatTaxCategoryId: dbContext.input_vat_tax_category_id,
       outputVatTaxCategoryId: dbContext.output_vat_tax_category_id,
+      propertyOutputVatTaxCategoryId: dbContext.property_output_vat_tax_category_id,
       taxBusinessId: dbContext.tax_business_id,
       taxExpensesTaxCategoryId: dbContext.tax_expenses_tax_category_id,
       socialSecurityBusinessId: dbContext.social_security_business_id,

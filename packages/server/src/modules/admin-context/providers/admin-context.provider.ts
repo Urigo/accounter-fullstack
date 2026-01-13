@@ -42,6 +42,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $outputVatTaxCategoryId,
       output_vat_tax_category_id
     ),
+    property_output_vat_tax_category_id = COALESCE(
+      $propertyOutputVatTaxCategoryId,
+      property_output_vat_tax_category_id
+    ),
     tax_business_id = COALESCE(
       $taxBusinessId,
       tax_business_id

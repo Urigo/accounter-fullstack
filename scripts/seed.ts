@@ -459,6 +459,7 @@ async function createAdminBusinessContext(
     vat_business_id: findId('VAT', 'business'),
     input_vat_tax_category_id: findId('Input Vat', 'tax_category'),
     output_vat_tax_category_id: findId('Output Vat', 'tax_category'),
+    property_output_vat_tax_category_id: findId('Property Output Vat', 'tax_category'),
     tax_business_id: findId('Tax', 'business'),
     tax_expenses_tax_category_id: findId('Tax Expenses', 'tax_category'),
     social_security_business_id: findId('Social Security', 'business'),

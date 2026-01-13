@@ -64,6 +64,12 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
       fetchTaxCategory(injector, 'inputVatTaxCategory', dbAdminContext.input_vat_tax_category_id),
     outputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(injector, 'outputVatTaxCategory', dbAdminContext.output_vat_tax_category_id),
+    propertyOutputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
+      fetchTaxCategory(
+        injector,
+        'propertyOutputVatTaxCategory',
+        dbAdminContext.property_output_vat_tax_category_id,
+      ),
     taxBusiness: async (dbAdminContext, _, { injector }) =>
       fetchBusiness(injector, 'taxBusiness', dbAdminContext.tax_business_id),
     taxExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>

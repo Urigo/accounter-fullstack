@@ -31,6 +31,7 @@ export type AdminContext = {
     vatBusinessId: string;
     inputVatTaxCategoryId: string;
     outputVatTaxCategoryId: string;
+    propertyOutputVatTaxCategoryId: string | null;
     taxBusinessId: string;
     taxExpensesTaxCategoryId: string;
     socialSecurityBusinessId: string;
@@ -177,6 +178,7 @@ function normalizeContext(rawContext: IGetAdminBusinessContextResult): AdminCont
       vatBusinessId: rawContext.vat_business_id,
       inputVatTaxCategoryId: rawContext.input_vat_tax_category_id,
       outputVatTaxCategoryId: rawContext.output_vat_tax_category_id,
+      propertyOutputVatTaxCategoryId: rawContext.property_output_vat_tax_category_id,
       taxBusinessId: rawContext.tax_business_id,
       taxExpensesTaxCategoryId: rawContext.tax_expenses_tax_category_id,
       socialSecurityBusinessId: rawContext.social_security_business_id,
