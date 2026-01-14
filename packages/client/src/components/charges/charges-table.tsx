@@ -18,15 +18,6 @@ import { ChargesTableRow } from './charges-row.jsx';
 interface Props {
   setEditChargeId?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   setInsertDocument?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setMatchDocuments?: Dispatch<
-    React.SetStateAction<
-      | {
-          id: string;
-          ownerId: string;
-        }
-      | undefined
-    >
-  >;
   toggleMergeCharge?: (chargeId: string, onChange: () => void) => void;
   mergeSelectedCharges?: Set<string>;
   data?: FragmentType<typeof ChargesTableFieldsFragmentDoc>[];
@@ -36,7 +27,6 @@ interface Props {
 export const ChargesTable = ({
   setEditChargeId,
   setInsertDocument,
-  setMatchDocuments,
   toggleMergeCharge,
   mergeSelectedCharges,
   data,
@@ -76,11 +66,6 @@ export const ChargesTable = ({
             setInsertDocument={
               setInsertDocument
                 ? (onChange: () => void): void => setInsertDocument({ id: charge.id, onChange })
-                : undefined
-            }
-            setMatchDocuments={
-              setMatchDocuments
-                ? (): void => setMatchDocuments({ id: charge.id, ownerId: charge.owner.id })
                 : undefined
             }
             toggleMergeCharge={

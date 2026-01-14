@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { ArrowDownWideNarrow, FilePlus2, ListPlus, Search, Trash } from 'lucide-react';
+import { ArrowDownWideNarrow, FilePlus2, ListPlus, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
@@ -18,7 +18,6 @@ interface ChargeExtendedInfoMenuProps {
   chargeId: string;
   chargeType: ChargesTableRowFieldsFragment['__typename'];
   setInsertDocument?: () => void;
-  setMatchDocuments?: () => void;
   onChange?: () => void;
   isIncome: boolean;
 }
@@ -29,7 +28,6 @@ export function ChargeExtendedInfoMenu({
   chargeId,
   chargeType,
   setInsertDocument,
-  setMatchDocuments,
   onChange,
   isIncome,
 }: ChargeExtendedInfoMenuProps): ReactElement {
@@ -100,17 +98,6 @@ export function ChargeExtendedInfoMenu({
           >
             Upload Documents
           </Menu.Item>
-          {setMatchDocuments && (
-            <Menu.Item
-              icon={<Search size={14} />}
-              onClick={(): void => {
-                setMatchDocuments();
-                closeMenu();
-              }}
-            >
-              Match Document
-            </Menu.Item>
-          )}
           {isIncome && (
             <Menu.Item
               icon={<ListPlus size={14} />}
