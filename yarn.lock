@@ -288,7 +288,7 @@ __metadata:
     "@envelop/generic-auth": "npm:11.0.0"
     "@envelop/graphql-modules": "npm:9.0.0"
     "@google-cloud/pubsub": "npm:5.2.1"
-    "@graphql-hive/yoga": "npm:0.46.0"
+    "@graphql-hive/yoga": "npm:0.47.0"
     "@graphql-yoga/plugin-defer-stream": "npm:3.18.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
@@ -2437,25 +2437,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/core@npm:0.18.0":
-  version: 0.18.0
-  resolution: "@graphql-hive/core@npm:0.18.0"
-  dependencies:
-    "@graphql-hive/logger": "npm:^1.0.9"
-    "@graphql-hive/signal": "npm:^2.0.0"
-    "@graphql-tools/utils": "npm:^10.0.0"
-    "@whatwg-node/fetch": "npm:^0.10.13"
-    async-retry: "npm:^1.3.3"
-    events: "npm:^3.3.0"
-    js-md5: "npm:0.8.3"
-    lodash.sortby: "npm:^4.7.0"
-    tiny-lru: "npm:^8.0.2"
-  peerDependencies:
-    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/e693a59e2dbdf10a1e90bd3ab4468b09648ac9ea5de17d0549b42267a96b159c166694c0ac83951fc6967574212a4903bf4e802ebe1f7d51b43d3045893db583
-  languageName: node
-  linkType: hard
-
 "@graphql-hive/core@npm:0.20.0":
   version: 0.20.0
   resolution: "@graphql-hive/core@npm:0.20.0"
@@ -2525,17 +2506,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/yoga@npm:0.46.0":
-  version: 0.46.0
-  resolution: "@graphql-hive/yoga@npm:0.46.0"
+"@graphql-hive/yoga@npm:0.47.0":
+  version: 0.47.0
+  resolution: "@graphql-hive/yoga@npm:0.47.0"
   dependencies:
-    "@graphql-hive/core": "npm:0.18.0"
+    "@graphql-hive/core": "npm:0.20.0"
     "@graphql-hive/logger": "npm:^1.0.9"
     "@graphql-yoga/plugin-persisted-operations": "npm:^3.9.0"
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-yoga: ^5.10.8
-  checksum: 10c0/63befd5195c305c104007ffb70c9ecc532774ff083dfe0d5bbb202da770b67f482a6d569b9448f97d012806633e062687dcb561605aa69e32c80d645a2b28587
+  checksum: 10c0/257e34316c5d26d9f17dc6f4151546467226ae93dedbe4e1ff73b878bc2b89c82ef73de190e917b609d723ba84271988deaf245c65f92ce00160a53c1bc9ebb8
   languageName: node
   linkType: hard
 
