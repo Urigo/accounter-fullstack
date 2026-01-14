@@ -71,7 +71,7 @@
     "react-hook-form": "7.71.0",
     "react-number-format": "5.4.4",
     "react-router-dom": "7.12.0",
-    "react-to-pdf": "2.0.3",
+    "react-to-pdf": "3.0.0",
     "recharts": "2.15.4",
     "sonner": "2.0.7",
     "tailwind-merge": "3.4.0",
