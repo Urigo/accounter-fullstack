@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
+import { NewChargesTable } from '@/components/charges/new-charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -19,6 +20,7 @@ import { Button } from '../../ui/button.js';
       nodes {
         id
         ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
       pageInfo {
         totalPages
@@ -142,6 +144,7 @@ export const AllCharges = (): ReactElement => {
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
+          <NewChargesTable data={chargeNodes} />
           <ChargesTable
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
