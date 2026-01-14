@@ -1,36 +1,76 @@
-import { forwardRef, useEffect, useState, type ReactElement } from 'react';
-import { Select, Text } from '@mantine/core';
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { Check, Clock, X } from 'lucide-react';
 import { AccountantStatus } from '../../../gql/graphql.js';
+import { useUpdateChargeAccountantApproval } from '../../../hooks/use-update-charge-accountant-approval.js';
+import { Button } from '../../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../../ui/dropdown-menu.js';
 
-export const accountantApprovalInputData: Array<ItemProps & { value: AccountantStatus }> = [
-  {
+export const accountantApprovalOptions: Record<
+  AccountantStatus,
+  { icon: typeof Check; color: string; bgColor: string; label: string; value: AccountantStatus }
+> = {
+  [AccountantStatus.Approved]: {
+    icon: Check,
+    color: 'text-green-600',
+    bgColor: 'hover:bg-green-50',
+    label: 'Approved',
     value: AccountantStatus.Approved,
-    label: '🟢',
-    description: 'Approved',
   },
-  {
+  [AccountantStatus.Pending]: {
+    icon: Clock,
+    color: 'text-yellow-600',
+    bgColor: 'hover:bg-yellow-50',
+    label: 'Pending',
     value: AccountantStatus.Pending,
-    label: '🟠',
-    description: 'Pending',
   },
-  {
+  [AccountantStatus.Unapproved]: {
+    icon: X,
+    color: 'text-red-600',
+    bgColor: 'hover:bg-red-50',
+    label: 'Unapproved',
     value: AccountantStatus.Unapproved,
-    label: '🔴',
-    description: 'Unapproved',
   },
-];
+};
+
+const getApprovalStatusConfig = (status: AccountantStatus) => {
+  switch (status) {
+    case AccountantStatus.Approved:
+      return accountantApprovalOptions[AccountantStatus.Approved];
+    case AccountantStatus.Pending:
+      return accountantApprovalOptions[AccountantStatus.Pending];
+    case AccountantStatus.Unapproved:
+      return accountantApprovalOptions[AccountantStatus.Unapproved];
+  }
+};
 
 export function UpdateAccountantStatus(props: {
   onChange: (status: AccountantStatus) => void;
+  chargeId: string;
   value?: AccountantStatus;
 }): ReactElement {
   const { onChange, value } = props;
   const [status, setStatus] = useState(value ?? AccountantStatus.Unapproved);
+  const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
 
-  function onStatusChange(status: AccountantStatus): void {
-    setStatus(status);
-    onChange(status);
-  }
+  const approvalConfig = getApprovalStatusConfig(status);
+  const ApprovalIcon = approvalConfig.icon;
+
+  const onStatusChange = useCallback(
+    async (status: AccountantStatus): Promise<void> => {
+      setStatus(status);
+      await updateChargeAccountantApproval({
+        chargeId: props.chargeId,
+        status,
+      });
+      onChange(status);
+    },
+    [onChange, props.chargeId, updateChargeAccountantApproval],
+  );
 
   useEffect(() => {
     if (value) {
@@ -39,40 +79,31 @@ export function UpdateAccountantStatus(props: {
   }, [value]);
 
   return (
-    <Select
-      className="text-center"
-      itemComponent={SelectItem}
-      value={status}
-      onChange={onStatusChange}
-      onClick={e => {
-        e.stopPropagation();
-        return e;
-      }}
-      data={accountantApprovalInputData}
-      size="xs"
-      styles={{
-        input: {
-          textAlign: 'center',
-        },
-      }}
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`h-7 w-7 p-0 ${approvalConfig.bgColor}`}
+          title={approvalConfig.label}
+        >
+          <ApprovalIcon className={`h-3.5 w-3.5 ${approvalConfig.color}`} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center">
+        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Approved)}>
+          <Check className="h-4 w-4 mr-2 text-green-600" />
+          Approved
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Pending)}>
+          <Clock className="h-4 w-4 mr-2 text-yellow-600" />
+          Pending
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Unapproved)}>
+          <X className="h-4 w-4 mr-2 text-red-600" />
+          Unapproved
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
-
-interface ItemProps extends React.ComponentPropsWithoutRef<'div'> {
-  description: string;
-  label: string;
-}
-
-const temp: React.ForwardRefRenderFunction<HTMLDivElement, ItemProps> = (
-  { description, ...others }: ItemProps,
-  ref,
-) => (
-  <div ref={ref} {...others}>
-    <Text className="whitespace-nowrap" size="xs" opacity={0.65}>
-      {description}
-    </Text>
-  </div>
-);
-
-const SelectItem = forwardRef<HTMLDivElement, ItemProps>(temp);

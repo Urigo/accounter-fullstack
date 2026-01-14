@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { ChargesTableAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { useUpdateChargeAccountantApproval } from '../../../hooks/use-update-charge-accountant-approval.js';
 import { UpdateAccountantStatus } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -20,7 +19,6 @@ interface Props {
 export function AccountantApproval({ data, onChange }: Props): ReactElement {
   const charge = getFragmentData(ChargesTableAccountantApprovalFieldsFragmentDoc, data);
   const [status, setStatus] = useState(charge.accountantApproval);
-  const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
 
   useEffect(() => {
     if (status == null && charge.accountantApproval != null) {
@@ -30,15 +28,7 @@ export function AccountantApproval({ data, onChange }: Props): ReactElement {
 
   return (
     <td>
-      <UpdateAccountantStatus
-        value={status}
-        onChange={status =>
-          updateChargeAccountantApproval({
-            chargeId: charge.id,
-            status,
-          }).then(onChange)
-        }
-      />
+      <UpdateAccountantStatus chargeId={charge.id} value={status} onChange={onChange} />
     </td>
   );
 }
