@@ -194,10 +194,10 @@ const transactionsFromVatReportRecords = (
     if (!entryType) {
       entryType = EntryType.INPUT_REGULAR;
       if (!t.isExpense) {
-        if (Number(t.foreignVatAfterDeduction) > 0) {
-          entryType = EntryType.SALE_REGULAR;
-        } else {
+        if (Number(t.foreignVatAfterDeduction ?? 0) === 0) {
           entryType = EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
+        } else {
+          entryType = EntryType.SALE_REGULAR;
         }
       }
     }
