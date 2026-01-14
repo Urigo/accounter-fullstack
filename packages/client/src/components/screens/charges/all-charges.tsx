@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
+import { NewChargesTable } from '@/components/charges/new-charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -17,6 +18,7 @@ import { Button } from '../../ui/button.js';
       nodes {
         id
         ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
       pageInfo {
         totalPages
@@ -126,12 +128,15 @@ export const AllCharges = (): ReactElement => {
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : data?.allCharges.nodes ? (
-        <ChargesTable
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-          data={data?.allCharges?.nodes}
-          isAllOpened={isAllOpened}
-        />
+        <>
+          <NewChargesTable data={data?.allCharges.nodes} />
+          <ChargesTable
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
+            data={data?.allCharges?.nodes}
+            isAllOpened={isAllOpened}
+          />
+        </>
       ) : (
         <span>Please apply filters</span>
       )}
