@@ -30,6 +30,7 @@ import { AccounterLoader, ListCapsule } from '../index.js';
         namePath
       }
       conversion
+      decreasedVAT
       property
       isInvoicePaymentDifferentCurrency
       userDescription
@@ -69,6 +70,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedConversion, setSelectedConversion] = useState<
+    { id: string; value: boolean } | undefined
+  >(undefined);
+  const [selectedDecreasedVAT, setSelectedDecreasedVAT] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
   const [selectedCurrencyDiff, setSelectedCurrencyDiff] = useState<
@@ -118,6 +122,13 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
       fields = {
         ...fields,
         isConversion: selectedConversion.value,
+      };
+    }
+    if (selectedDecreasedVAT && selectedDecreasedVAT.value !== mainCharge.decreasedVAT) {
+      fields ??= {};
+      fields = {
+        ...fields,
+        isDecreasedVAT: selectedDecreasedVAT.value,
       };
     }
     if (selectedOptionalVAT && selectedOptionalVAT.value !== mainCharge.optionalVAT) {
@@ -171,6 +182,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedDescription,
     selectedOwner,
     selectedConversion,
+    selectedDecreasedVAT,
     selectedOptionalVAT,
     selectedCurrencyDiff,
     selectedTags,
@@ -228,6 +240,10 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedConversion({
                           id: charge.id,
                           value: charge.conversion ?? false,
+                        });
+                        setSelectedDecreasedVAT({
+                          id: charge.id,
+                          value: charge.decreasedVAT ?? false,
                         });
                         setSelectedTags({
                           id: charge.id,
@@ -315,6 +331,39 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.conversion ? (
+                        <CheckSquare size={20} color="green" />
+                      ) : (
+                        <XSquare size={20} color="red" />
+                      )}
+                    </div>
+                  </button>
+                </td>
+              ))}
+            </tr>
+            <tr>
+              <th>Is Decreased VAT</th>
+              {charges.map(charge => (
+                <td key={charge.id}>
+                  <button
+                    className="w-full px-2"
+                    disabled={
+                      charge.decreasedVAT == null ||
+                      charge.decreasedVAT === selectedDecreasedVAT?.value
+                    }
+                    onClick={(): void => {
+                      setSelectedDecreasedVAT({
+                        id: charge.id,
+                        value: charge.decreasedVAT ?? false,
+                      });
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center px-2 py-2 border-x-2"
+                      style={
+                        selectedDecreasedVAT?.id === charge.id ? { background: '#228be633' } : {}
+                      }
+                    >
+                      {charge.decreasedVAT ? (
                         <CheckSquare size={20} color="green" />
                       ) : (
                         <XSquare size={20} color="red" />

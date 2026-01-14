@@ -20,6 +20,7 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
       }
       property
       conversion
+      decreasedVAT
       isInvoicePaymentDifferentCurrency
       userDescription
       taxCategory {
