@@ -19,10 +19,9 @@ const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
       cbd.account_id as deposit_account_id,
       t.*
     FROM accounter_schema.charges_bank_deposits cbd
-    LEFT JOIN accounter_schema.transactions t
+    INNER JOIN accounter_schema.transactions t
       ON cbd.id = t.charge_id
-    WHERE t.id IS NOT NULL
-    AND deposit_id IN $$depositIds;`;
+    WHERE deposit_id IN $$depositIds;`;
 
 const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQuery>`
     SELECT
