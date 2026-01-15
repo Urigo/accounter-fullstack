@@ -13,10 +13,10 @@ import { MergeChargesSelectionForm } from './merge-charges-selection-form.js';
 
 export function MergeChargesButton(props: {
   selected: { id: string; onChange: () => void }[];
-  resetMerge: () => void;
+  resetMergeList: () => void;
 }): ReactElement {
   const [open, setOpen] = useState(false);
-  const { selected, resetMerge } = props;
+  const { selected, resetMergeList } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
   const isMergeable = distinctIDs.size > 1;
 
@@ -61,7 +61,7 @@ export function MergeChargesButton(props: {
         <MergeChargesSelectionForm
           chargeIds={Array.from(distinctIDs)}
           onDone={onDone}
-          resetMerge={resetMerge}
+          resetMergeList={resetMergeList}
         />
       </DialogContent>
     </Dialog>
