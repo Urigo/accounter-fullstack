@@ -8,7 +8,6 @@ import { ChargesTable } from '../../charges/charges-table.js';
 import {
   EditChargeModal,
   InsertDocumentModal,
-  MatchDocumentModal,
   MergeChargesButton,
   Tooltip,
 } from '../../common/index.js';
@@ -38,9 +37,6 @@ export const MissingInfoCharges = (): ReactElement => {
   const [insertDocument, setInsertDocument] = useState<
     { id: string; onChange: () => void } | undefined
   >(undefined);
-  const [matchDocuments, setMatchDocuments] = useState<{ id: string; ownerId: string } | undefined>(
-    undefined,
-  );
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
     Array<{ id: string; onChange: () => void }>
@@ -113,7 +109,6 @@ export const MissingInfoCharges = (): ReactElement => {
         <ChargesTable
           setEditChargeId={setEditChargeId}
           setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
           toggleMergeCharge={toggleMergeCharge}
           mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
           data={data?.chargesWithMissingRequiredInfo?.nodes}
@@ -132,13 +127,6 @@ export const MissingInfoCharges = (): ReactElement => {
           chargeId={insertDocument.id}
           onChange={insertDocument.onChange}
           close={(): void => setInsertDocument(undefined)}
-        />
-      )}
-      {matchDocuments && (
-        <MatchDocumentModal
-          chargeId={matchDocuments.id}
-          ownerId={matchDocuments.ownerId}
-          setMatchDocuments={(): void => setMatchDocuments(undefined)}
         />
       )}
     </PageLayout>

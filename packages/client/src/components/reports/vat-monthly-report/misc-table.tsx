@@ -21,9 +21,6 @@ type Props = {
   setInsertDocument: React.Dispatch<
     React.SetStateAction<{ id: string; onChange: () => void } | undefined>
   >;
-  setMatchDocuments: React.Dispatch<
-    React.SetStateAction<{ id: string; ownerId: string } | undefined>
-  >;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: Set<string>;
 };
@@ -32,7 +29,6 @@ export const MiscTable = ({
   data,
   setEditCharge,
   setInsertDocument,
-  setMatchDocuments,
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
@@ -56,7 +52,6 @@ export const MiscTable = ({
         <ChargesTable
           setEditChargeId={setEditCharge}
           setInsertDocument={setInsertDocument}
-          setMatchDocuments={setMatchDocuments}
           data={chargesData.differentMonthDoc}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}

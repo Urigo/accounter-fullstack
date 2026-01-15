@@ -4,7 +4,6 @@ export * from './consts.js';
 export * from './contracts.js';
 export * from './currency.js';
 export * from './dates.js';
-export * from './document-matches.js';
 export * from './documents.js';
 export * from './files.js';
 export * from './form.js';

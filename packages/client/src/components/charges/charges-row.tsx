@@ -72,7 +72,6 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 interface Props {
   setEditCharge?: (onChange: () => void) => void;
   setInsertDocument?: (onChange: () => void) => void;
-  setMatchDocuments?: () => void;
   toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: ChargesTableFieldsFragment;
@@ -82,7 +81,6 @@ interface Props {
 export const ChargesTableRow = ({
   setEditCharge,
   setInsertDocument,
-  setMatchDocuments,
   toggleMergeCharge,
   isSelectedForMerge,
   data,
@@ -221,7 +219,6 @@ export const ChargesTableRow = ({
               chargeId={charge.id}
               chargeType={charge.__typename}
               setInsertDocument={setInsertDocument ? () => setInsertDocument(onChange) : undefined}
-              setMatchDocuments={setMatchDocuments}
               onChange={onChange}
               isIncome={isIncomeCharge}
             />
