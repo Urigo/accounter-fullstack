@@ -44,17 +44,17 @@ export function ChargeActionsMenu({
 
   const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
+  const closeMenu = useCallback((): void => {
+    setOpened(false);
+  }, []);
+
   const onDelete = useCallback(async (): Promise<void> => {
     await deleteCharge({
       chargeId,
     });
     onChange?.();
     closeMenu();
-  }, [chargeId, deleteCharge, onChange]);
-
-  function closeMenu(): void {
-    setOpened(false);
-  }
+  }, [chargeId, deleteCharge, onChange, closeMenu]);
 
   return (
     <>
@@ -229,11 +229,11 @@ export function ChargeActionsMenu({
       <EditChargeModal
         chargeId={editingCharge ? chargeId : undefined}
         close={() => setEditingCharge(false)}
-        onChange={() => onChange?.()}
+        onChange={onChange}
       />
       <InsertDocumentModal
         chargeId={insertingDocument ? chargeId : undefined}
-        onChange={() => onChange?.()}
+        onChange={onChange}
         close={() => setInsertingDocument(false)}
       />
     </>
