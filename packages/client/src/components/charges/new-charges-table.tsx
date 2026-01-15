@@ -94,28 +94,6 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
         }
       }
     }
-    # metadata {
-    #   ... on ChargeMetadata @defer {
-    #     documentsCount
-    #     ledgerCount
-    #     transactionsCount
-    #     miscExpensesCount
-    #   }
-    # }
-    # totalAmount {
-    #   raw
-    # }
-    # ...ChargesTableAccountantApprovalFields
-    # ...ChargesTableAmountFields
-    # ...ChargesTableBusinessTripFields @defer
-    # ...ChargesTableDateFields
-    # ...ChargesTableDescriptionFields
-    # ...ChargesTableEntityFields @defer
-    # ...ChargesTableMoreInfoFields
-    # ...ChargesTableTagsFields @defer
-    # ...ChargesTableTaxCategoryFields @defer
-    # ...ChargesTableTypeFields
-    # ...ChargesTableVatFields
   }
 `;
 
@@ -133,22 +111,6 @@ export interface ChargeRow {
   businessTrip?: BusinessTripProps;
   moreInfo: MoreInfoProps;
   accountantApproval: AccountantStatus;
-  // amountRaw?: number;
-  // amountFormatted?: string;
-  // vatAmountRaw?: number;
-  // vatAmountFormatted?: string;
-  // businessId?: string;
-  // businessName?: string;
-  // description?: string;
-  // tags: Array<{
-  //   id: string;
-  //   name: string;
-  //   namePath?: string[];
-  // }>;
-  // taxCategoryId?: string;
-  // taxCategoryName?: string;
-  // selectCharge: (id: string | null) => void;
-  // isSelected: boolean;
 }
 
 export function convertChargeFragmentToTableRow(
@@ -256,22 +218,6 @@ export function convertChargeFragmentToTableRow(
         : undefined,
     },
     accountantApproval: fragmentData.accountantApproval,
-    // amountRaw: fragmentData.charge.totalAmount?.raw,
-    // amountFormatted: fragmentData.charge.totalAmount?.formatted,
-    // vatAmountRaw: fragmentData.charge.vat?.raw,
-    // vatAmountFormatted: fragmentData.charge.vat?.formatted,
-    // businessId: fragmentData.charge.counterparty?.id,
-    // businessName: fragmentData.charge.counterparty?.name,
-    // description: fragmentData.charge.userDescription ?? undefined,
-    // tags: fragmentData.charge.tags.map(tag => ({
-    //   id: tag.id,
-    //   name: tag.name,
-    //   namePath: tag.namePath ?? undefined,
-    // })),
-    // taxCategoryId: fragmentData.charge.taxCategory?.id,
-    // taxCategoryName: fragmentData.charge.taxCategory?.name,
-    // selectCharge,
-    // isSelected: fragmentData.charge.id === selectedChargeId,
   };
 }
 
@@ -288,7 +234,6 @@ export const NewChargesTable = ({ data }: Props): ReactElement => {
 
   // Function to update a specific cell value
   const updateCharge = (chargeIndex: number, updatedCharge: ChargeRow) => {
-    console.log('Updating charge at index', chargeIndex, 'with', updatedCharge);
     setCharges(old =>
       old.map((row, index) => {
         if (index === chargeIndex) {
@@ -301,7 +246,6 @@ export const NewChargesTable = ({ data }: Props): ReactElement => {
 
   // Update charges when data changes
   useEffect(() => {
-    console.log('Data changed, updating charges:', data);
     setCharges(
       data?.map(rawCharge =>
         convertChargeFragmentToTableRow(
@@ -333,8 +277,6 @@ export const NewChargesTable = ({ data }: Props): ReactElement => {
       },
     },
   });
-
-  console.log('Rendering NewChargesTable with charges:', charges);
 
   return (
     <div className="overflow-hidden rounded-md border w-auto max-w-fit [&>div]:w-auto [&>div]:max-w-fit">
