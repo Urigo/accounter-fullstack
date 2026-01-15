@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
@@ -60,24 +60,19 @@ interface Props {
 }
 
 export const EditChargeModal = ({ chargeId, close, onChange }: Props): ReactElement | null => {
-  return chargeId ? (
-    <EditChargeModalContent chargeId={chargeId} close={close} onChange={onChange} />
-  ) : null;
-};
-
-export const EditChargeModalContent = ({
-  chargeId,
-  close,
-  onChange = (): void => {},
-}: Omit<Props, 'chargeId'> & { chargeId: string }): ReactElement => {
   const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,
     variables: {
-      chargeId,
+      chargeId: chargeId!,
     },
+    pause: !chargeId,
   });
 
   const charge = chargeData?.charge;
+
+  if (!chargeId) {
+    return null;
+  }
 
   return (
     <PopUpDrawer
@@ -101,7 +96,7 @@ export const EditChargeModalContent = ({
       {fetchingCharge || !charge ? (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       ) : (
-        <EditCharge charge={charge} close={close} onChange={onChange} />
+        <EditCharge charge={charge} close={close} onChange={onChange ?? (() => {})} />
       )}
     </PopUpDrawer>
   );

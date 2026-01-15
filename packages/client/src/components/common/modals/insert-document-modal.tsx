@@ -1,9 +1,9 @@
-import type { ReactElement } from 'react';
+import type { ReactNode } from 'react';
 import { ROUTES } from '@/router/routes.js';
 import { CopyToClipboardButton, InsertDocument, PopUpDrawer } from '../index.js';
 
 interface Props {
-  chargeId: string;
+  chargeId?: string;
   close: () => void;
   onChange?: () => void;
 }
@@ -12,7 +12,11 @@ export const InsertDocumentModal = ({
   chargeId,
   close,
   onChange = (): void => {},
-}: Props): ReactElement => {
+}: Props): ReactNode => {
+  if (!chargeId) {
+    return null;
+  }
+
   return (
     <PopUpDrawer
       modalSize="40%"
