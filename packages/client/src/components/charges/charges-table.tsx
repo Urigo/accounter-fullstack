@@ -1,4 +1,4 @@
-import type { Dispatch, ReactElement, SetStateAction } from 'react';
+import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { ChargesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
@@ -16,8 +16,6 @@ import { ChargesTableRow } from './charges-row.jsx';
 `;
 
 interface Props {
-  setEditChargeId?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setInsertDocument?: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   toggleMergeCharge?: (chargeId: string, onChange: () => void) => void;
   mergeSelectedCharges?: Set<string>;
   data?: FragmentType<typeof ChargesTableFieldsFragmentDoc>[];
@@ -25,8 +23,6 @@ interface Props {
 }
 
 export const ChargesTable = ({
-  setEditChargeId,
-  setInsertDocument,
   toggleMergeCharge,
   mergeSelectedCharges,
   data,
@@ -58,16 +54,6 @@ export const ChargesTable = ({
           <ChargesTableRow
             key={charge.id}
             data={charge}
-            setEditCharge={
-              setEditChargeId
-                ? (onChange: () => void): void => setEditChargeId({ id: charge.id, onChange })
-                : undefined
-            }
-            setInsertDocument={
-              setInsertDocument
-                ? (onChange: () => void): void => setInsertDocument({ id: charge.id, onChange })
-                : undefined
-            }
             toggleMergeCharge={
               toggleMergeCharge
                 ? (onChange: () => void): void => toggleMergeCharge(charge.id, onChange)

@@ -1,36 +1,36 @@
-import { useState, type ReactElement } from 'react';
-import { ArrowDownWideNarrow, FilePlus2, ListPlus, Trash } from 'lucide-react';
+import { useCallback, useState, type ReactElement } from 'react';
+import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
-import { Depreciation } from '../common/depreciation/index.js';
+import { Depreciation } from '../common/depreciation/index.jsx';
 import {
   ConfirmationModal,
+  EditChargeModal,
+  InsertDocumentModal,
   InsertMiscExpense,
   PreviewDocumentModal,
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
-import { Dialog, DialogContent } from '../ui/dialog.js';
+import { Dialog, DialogContent } from '../ui/dialog.jsx';
 
-interface ChargeExtendedInfoMenuProps {
+interface ChargeActionsMenuProps {
   chargeId: string;
   chargeType: ChargesTableRowFieldsFragment['__typename'];
-  setInsertDocument?: () => void;
   onChange?: () => void;
   isIncome: boolean;
 }
 
 type ClickEvent = React.MouseEvent<HTMLAnchorElement, MouseEvent>;
 
-export function ChargeExtendedInfoMenu({
+export function ChargeActionsMenu({
   chargeId,
   chargeType,
-  setInsertDocument,
   onChange,
   isIncome,
-}: ChargeExtendedInfoMenuProps): ReactElement {
+}: ChargeActionsMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
   const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
@@ -39,19 +39,22 @@ export function ChargeExtendedInfoMenu({
   const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
     useDisclosure(false);
   const [previewIssueDocument, setPreviewIssueDocument] = useState(false);
+  const [editingCharge, setEditingCharge] = useState(false);
+  const [insertingDocument, setInsertingDocument] = useState(false);
 
   const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
-  function onDelete(): void {
-    deleteCharge({
+  const closeMenu = useCallback((): void => {
+    setOpened(false);
+  }, []);
+
+  const onDelete = useCallback(async (): Promise<void> => {
+    await deleteCharge({
       chargeId,
     });
     onChange?.();
-  }
-
-  function closeMenu(): void {
-    setOpened(false);
-  }
+    closeMenu();
+  }, [chargeId, deleteCharge, onChange, closeMenu]);
 
   return (
     <>
@@ -68,26 +71,36 @@ export function ChargeExtendedInfoMenu({
 
         <Menu.Dropdown>
           <Menu.Label>Charge</Menu.Label>
+          <Menu.Item
+            icon={<Edit size={14} />}
+            onClick={() => {
+              setEditingCharge(true);
+              closeMenu();
+            }}
+          >
+            Edit Charge
+          </Menu.Item>
           <ConfirmationModal
             onConfirm={onDelete}
             title="Are you sure you want to delete this charge?"
           >
             <Menu.Item icon={<Trash size={14} />}>Delete Charge</Menu.Item>
           </ConfirmationModal>
+
           <Menu.Divider />
+
           <Menu.Label>Documents</Menu.Label>
-          {setInsertDocument && (
-            <Menu.Item
-              icon={<ListPlus size={14} />}
-              onClick={(event: ClickEvent): void => {
-                event.stopPropagation();
-                setInsertDocument();
-                closeMenu();
-              }}
-            >
-              Insert Document
-            </Menu.Item>
-          )}
+
+          <Menu.Item
+            icon={<ListPlus size={14} />}
+            onClick={(event: ClickEvent): void => {
+              event.stopPropagation();
+              setInsertingDocument(true);
+              closeMenu();
+            }}
+          >
+            Insert Document
+          </Menu.Item>
           <Menu.Item
             icon={<FilePlus2 size={14} />}
             onClick={(event: ClickEvent): void => {
@@ -110,7 +123,9 @@ export function ChargeExtendedInfoMenu({
               Issue Document
             </Menu.Item>
           )}
+
           <Menu.Divider />
+
           <Menu.Label>Misc Expenses</Menu.Label>
           <Menu.Item
             icon={<ListPlus size={14} />}
@@ -210,6 +225,16 @@ export function ChargeExtendedInfoMenu({
         open={previewIssueDocument}
         setOpen={setPreviewIssueDocument}
         onDone={() => onChange?.()}
+      />
+      <EditChargeModal
+        chargeId={editingCharge ? chargeId : undefined}
+        close={() => setEditingCharge(false)}
+        onChange={onChange}
+      />
+      <InsertDocumentModal
+        chargeId={insertingDocument ? chargeId : undefined}
+        onChange={onChange}
+        close={() => setInsertingDocument(false)}
       />
     </>
   );

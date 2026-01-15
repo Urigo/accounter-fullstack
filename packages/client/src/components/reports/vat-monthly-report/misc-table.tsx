@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
@@ -17,18 +17,12 @@ import { Button } from '../../ui/button.js';
 
 type Props = {
   data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
-  setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setInsertDocument: React.Dispatch<
-    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
-  >;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: Set<string>;
 };
 
 export const MiscTable = ({
   data,
-  setEditCharge,
-  setInsertDocument,
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
@@ -50,8 +44,6 @@ export const MiscTable = ({
       </span>
       {isOpened && chargesData && (
         <ChargesTable
-          setEditChargeId={setEditCharge}
-          setInsertDocument={setInsertDocument}
           data={chargesData.differentMonthDoc}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}
