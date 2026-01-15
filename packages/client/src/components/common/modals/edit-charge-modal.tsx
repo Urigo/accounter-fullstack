@@ -1,4 +1,4 @@
-import { useEffect, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
@@ -60,19 +60,13 @@ interface Props {
 }
 
 export const EditChargeModal = ({ chargeId, close, onChange }: Props): ReactElement | null => {
-  const [{ data: chargeData, fetching: fetchingCharge }, fetchCharge] = useQuery({
+  const [{ data: chargeData, fetching: fetchingCharge }] = useQuery({
     query: EditChargeDocument,
     variables: {
       chargeId: chargeId!,
     },
     pause: !chargeId,
   });
-
-  useEffect(() => {
-    if (chargeId) {
-      fetchCharge();
-    }
-  }, [chargeId, fetchCharge]);
 
   const charge = chargeData?.charge;
 
