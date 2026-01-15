@@ -86,7 +86,7 @@ export const IncomeRow = ({
       </tr>
       {opened && (
         <tr>
-          <td colSpan={11}>
+          <td colSpan={10}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo chargeID={incomeItem.chargeId} fetching={!!incomeItem} />
             </Paper>
