@@ -7,7 +7,7 @@ import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { ChargesFilters } from './charges/charges-filters.js';
 import { ChargesTable } from './charges/charges-table.js';
-import { EditChargeModal, MergeChargesButton, Tooltip } from './common/index.js';
+import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
 import { Button } from './ui/button.js';
 
@@ -26,9 +26,6 @@ import { Button } from './ui/button.js';
 
 export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [editChargeId, setEditChargeId] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
     Array<{ id: string; onChange: () => void }>
@@ -146,7 +143,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
       ) : (
         <>
           <ChargesTable
-            setEditChargeId={setEditChargeId}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
             data={
@@ -165,13 +161,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
               )}
           </div>
         </>
-      )}
-      {editChargeId && (
-        <EditChargeModal
-          chargeId={editChargeId?.id}
-          close={() => setEditChargeId(undefined)}
-          onChange={editChargeId.onChange}
-        />
       )}
     </PageLayout>
   );

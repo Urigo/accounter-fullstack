@@ -12,7 +12,7 @@ import {
   type ChargesTableRowFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady } from '../../gql/index.js';
-import { EditMiniButton, ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
+import { ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
 import {
   AccountantApproval,
   Amount,
@@ -70,7 +70,6 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 `;
 
 interface Props {
-  setEditCharge?: (onChange: () => void) => void;
   toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: ChargesTableFieldsFragment;
@@ -78,7 +77,6 @@ interface Props {
 }
 
 export const ChargesTableRow = ({
-  setEditCharge,
   toggleMergeCharge,
   isSelectedForMerge,
   data,
@@ -194,15 +192,6 @@ export const ChargesTableRow = ({
 
         <td>
           <div className="flex flex-col gap-2">
-            {setEditCharge && (
-              <EditMiniButton
-                onClick={event => {
-                  event.stopPropagation();
-                  setEditCharge(onChange);
-                }}
-                tooltip="Edit Charge"
-              />
-            )}
             {toggleMergeCharge && (
               <ToggleMergeSelected
                 toggleMergeSelected={(): void => toggleMergeCharge(onChange)}

@@ -6,7 +6,7 @@ import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
 import { ChargesTable } from '../../charges/charges-table.js';
-import { EditChargeModal, MergeChargesButton, Tooltip } from '../../common/index.js';
+import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.jsx';
 import { Button } from '../../ui/button.js';
 
@@ -27,9 +27,6 @@ import { Button } from '../../ui/button.js';
 
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
-  const [editChargeId, setEditChargeId] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
     Array<{ id: string; onChange: () => void }>
@@ -130,7 +127,6 @@ export const AllCharges = (): ReactElement => {
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : data?.allCharges.nodes ? (
         <ChargesTable
-          setEditChargeId={setEditChargeId}
           toggleMergeCharge={toggleMergeCharge}
           mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
           data={data?.allCharges?.nodes}
@@ -138,13 +134,6 @@ export const AllCharges = (): ReactElement => {
         />
       ) : (
         <span>Please apply filters</span>
-      )}
-      {editChargeId && (
-        <EditChargeModal
-          chargeId={editChargeId?.id}
-          close={() => setEditChargeId(undefined)}
-          onChange={editChargeId.onChange}
-        />
       )}
     </PageLayout>
   );

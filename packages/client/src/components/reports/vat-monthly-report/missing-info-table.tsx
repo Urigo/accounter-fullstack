@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
+import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { VatReportMissingInfoFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
@@ -17,14 +17,12 @@ import { Button } from '../../ui/button.js';
 
 interface Props {
   data?: FragmentType<typeof VatReportMissingInfoFieldsFragmentDoc>;
-  setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: Set<string>;
 }
 
 export const MissingInfoTable = ({
   data,
-  setEditCharge,
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
@@ -46,7 +44,6 @@ export const MissingInfoTable = ({
       </span>
       {isOpened && chargesData && (
         <ChargesTable
-          setEditChargeId={setEditCharge}
           data={chargesData.missingInfo}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}

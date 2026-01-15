@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, type ReactElement } from 'react';
 import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument, type ChargeScreenQuery } from '../../../gql/graphql.js';
 import { ChargesTable } from '../../charges/charges-table.js';
-import { AccounterLoader, EditChargeModal } from '../../common/index.js';
+import { AccounterLoader } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -32,10 +32,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
     // No loader data - component used outside router context (e.g., as child component)
   }
 
-  const [editChargeId, setEditChargeId] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
-
   // Only fetch if we don't have loader data and need to fetch (prop-based usage)
   const [{ data, fetching }, fetchCharge] = useQuery({
     query: ChargeScreenDocument,
@@ -59,24 +55,9 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
     return <div>Charge not found</div>;
   }
 
-  return (
-    <>
-      {isLoading ? (
-        <AccounterLoader />
-      ) : (
-        <ChargesTable
-          setEditChargeId={setEditChargeId}
-          data={chargeData?.charge ? [chargeData.charge] : []}
-          isAllOpened
-        />
-      )}
-      {editChargeId && (
-        <EditChargeModal
-          chargeId={editChargeId?.id}
-          close={() => setEditChargeId(undefined)}
-          onChange={editChargeId.onChange}
-        />
-      )}
-    </>
+  return isLoading ? (
+    <AccounterLoader />
+  ) : (
+    <ChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened />
   );
 };

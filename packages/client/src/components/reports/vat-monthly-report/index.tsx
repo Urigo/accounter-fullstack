@@ -11,7 +11,7 @@ import { dedupeFragments, type TimelessDateString } from '../../../helpers/index
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { EditChargeModal, MergeChargesButton } from '../../common/index.js';
+import { MergeChargesButton } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { BusinessTripsTable } from './business-trips-table.js';
 import { ExpensesTable } from './expenses-section/expenses-table.js';
@@ -62,11 +62,6 @@ export const VatMonthlyReport = (): ReactElement => {
       });
     }
   }, [filter, userContext?.context.adminBusinessId]);
-
-  // modals state
-  const [editCharge, setEditCharge] = useState<{ id: string; onChange: () => void } | undefined>(
-    undefined,
-  );
 
   // fetch data
   const [{ data, fetching }] = useQuery({
@@ -138,32 +133,21 @@ export const VatMonthlyReport = (): ReactElement => {
 
           <MissingInfoTable
             data={data?.vatReport}
-            setEditCharge={setEditCharge}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
 
           <BusinessTripsTable
             data={data?.vatReport}
-            setEditCharge={setEditCharge}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
 
           <MiscTable
             data={data?.vatReport}
-            setEditCharge={setEditCharge}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
-
-          {/* modification modals */}
-          {editCharge && (
-            <EditChargeModal
-              chargeId={editCharge.id}
-              close={(): void => setEditCharge(undefined)}
-            />
-          )}
         </div>
       )}
     </PageLayout>
