@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactElement } from 'react';
 import { X } from 'lucide-react';
-import { Button } from '@/components/ui/button.js';
-import { Drawer, DrawerContent, DrawerHeader } from '@/components/ui/drawer.js';
+import { Button } from '../../ui/button.js';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../ui/drawer.js';
 
 export interface PopUpDrawerProps {
   ButtonDisplay?: ReactElement;
@@ -33,13 +33,16 @@ export const PopUpDrawer = ({
     <Drawer direction={position} open={opened} onClose={onClose} modal={false}>
       <DrawerContent asChild withOverlay={withOverlay}>
         <div>
-          <DrawerHeader className="flex flex-row justify-between">
-            {title}
-            {withCloseButton && (
-              <Button size="icon" className="size-6" variant="ghost" onClick={onClose}>
-                <X className="size-4 text-gray-500" />
-              </Button>
-            )}
+          <DrawerHeader className="flex flex-row justify-start">
+            <DrawerTitle />
+            <div className="flex flex-row justify-between w-full">
+              {title}
+              {withCloseButton && (
+                <Button size="icon" className="size-6" variant="ghost" onClick={onClose}>
+                  <X className="size-4 text-gray-500" />
+                </Button>
+              )}
+            </div>
           </DrawerHeader>
           <div className="mx-auto w-full px-4 pb-4">{children}</div>
         </div>
