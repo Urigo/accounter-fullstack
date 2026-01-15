@@ -8,7 +8,6 @@ import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
-import { ChargesTable } from '../../charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
@@ -85,9 +84,9 @@ export const AllCharges = (): ReactElement => {
   // refetch returns identical results.
   const chargeNodes = useStableValue(data?.allCharges?.nodes);
 
-  function onResetMerge(): void {
+  const resetMergeList = useCallback((): void => {
     setMergeSelectedCharges([]);
-  }
+  }, []);
 
   // Only the page count is consumed from the query result here. Depend on it
   // directly (instead of the whole `data`/`fetching`) so the filters bar isn't
@@ -119,7 +118,7 @@ export const AllCharges = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={resetMergeList} />
       </div>,
     );
   }, [
@@ -132,6 +131,7 @@ export const AllCharges = (): ReactElement => {
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
+    resetMergeList,
   ]);
 
   return (
@@ -145,12 +145,6 @@ export const AllCharges = (): ReactElement => {
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
           <NewChargesTable data={chargeNodes} />
-          <ChargesTable
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-            data={chargeNodes}
-            isAllOpened={isAllOpened}
-          />
         </div>
       ) : (
         <span>Please apply filters</span>
