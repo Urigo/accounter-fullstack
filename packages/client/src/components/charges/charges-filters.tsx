@@ -1,4 +1,5 @@
 import {
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -21,7 +22,7 @@ import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import {
-  accountantApprovalInputData,
+  accountantApprovalOptions,
   Pagination,
   PopUpModal,
   SelectTagItem,
@@ -293,7 +294,8 @@ function ChargesFiltersForm({
                 <MultiSelect
                   {...field}
                   value={field.value ?? []}
-                  data={accountantApprovalInputData}
+                  itemComponent={AccountantStatusMultiSelectItem}
+                  data={Object.values(accountantApprovalOptions)}
                   disabled={financialEntitiesFetching}
                   label="Accountant Status"
                   placeholder="All"
@@ -557,3 +559,22 @@ export function ChargesFilters({
     </div>
   );
 }
+
+type ItemProps = (typeof accountantApprovalOptions)[keyof typeof accountantApprovalOptions];
+
+const AccountantStatusMultiSelectItem = forwardRef<HTMLButtonElement, ItemProps>(
+  ({ bgColor, label, color, icon: ApprovalIcon, ...others }: ItemProps, ref) => (
+    <Button
+      ref={ref}
+      {...others}
+      variant="ghost"
+      size="sm"
+      className={`h-7 p-0 ${bgColor}`}
+      title={label}
+    >
+      <ApprovalIcon className={`h-3.5 w-3.5 ${color}`} />
+      {label}
+    </Button>
+  ),
+);
+AccountantStatusMultiSelectItem.displayName = 'AccountantStatusMultiSelectItem';
