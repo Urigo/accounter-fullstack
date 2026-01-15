@@ -562,14 +562,19 @@ export function ChargesFilters({
 
 type ItemProps = (typeof accountantApprovalOptions)[keyof typeof accountantApprovalOptions];
 
-const AccountantStatusMultiSelectItem = forwardRef<HTMLDivElement, ItemProps>(
+const AccountantStatusMultiSelectItem = forwardRef<HTMLButtonElement, ItemProps>(
   ({ bgColor, label, color, icon: ApprovalIcon, ...others }: ItemProps, ref) => (
-    <div ref={ref} {...others}>
-      <Button variant="ghost" size="sm" className={`h-7 p-0 ${bgColor}`} title={label}>
-        <ApprovalIcon className={`h-3.5 w-3.5 ${color}`} />
-        {label}
-      </Button>
-    </div>
+    <Button
+      ref={ref}
+      {...others}
+      variant="ghost"
+      size="sm"
+      className={`h-7 p-0 ${bgColor}`}
+      title={label}
+    >
+      <ApprovalIcon className={`h-3.5 w-3.5 ${color}`} />
+      {label}
+    </Button>
   ),
 );
 AccountantStatusMultiSelectItem.displayName = 'AccountantStatusMultiSelectItem';

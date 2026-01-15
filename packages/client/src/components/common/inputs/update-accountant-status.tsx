@@ -37,19 +37,10 @@ export const accountantApprovalOptions: Record<
   },
 };
 
-const getApprovalStatusConfig = (status: AccountantStatus) => {
-  switch (status) {
-    case AccountantStatus.Approved:
-      return accountantApprovalOptions[AccountantStatus.Approved];
-    case AccountantStatus.Pending:
-      return accountantApprovalOptions[AccountantStatus.Pending];
-    case AccountantStatus.Unapproved:
-      return accountantApprovalOptions[AccountantStatus.Unapproved];
-  }
-};
+const getApprovalStatusConfig = (status: AccountantStatus) => accountantApprovalOptions[status];
 
 export function UpdateAccountantStatus(props: {
-  onChange: (status: AccountantStatus) => void;
+  onChange: () => void;
   chargeId: string;
   value?: AccountantStatus;
 }): ReactElement {
@@ -61,15 +52,19 @@ export function UpdateAccountantStatus(props: {
   const ApprovalIcon = approvalConfig.icon;
 
   const onStatusChange = useCallback(
-    async (status: AccountantStatus): Promise<void> => {
-      setStatus(status);
-      await updateChargeAccountantApproval({
+    async (newStatus: AccountantStatus): Promise<void> => {
+      const oldStatus = status;
+      setStatus(newStatus);
+      const result = await updateChargeAccountantApproval({
         chargeId: props.chargeId,
-        status,
+        status: newStatus,
       });
-      onChange(status);
+      if (!result) {
+        setStatus(oldStatus);
+      }
+      onChange();
     },
-    [onChange, props.chargeId, updateChargeAccountantApproval],
+    [onChange, props.chargeId, updateChargeAccountantApproval, status],
   );
 
   useEffect(() => {
