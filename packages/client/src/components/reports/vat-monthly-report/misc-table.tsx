@@ -18,9 +18,6 @@ import { Button } from '../../ui/button.js';
 type Props = {
   data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
   setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setInsertDocument: React.Dispatch<
-    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
-  >;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: Set<string>;
 };
@@ -28,7 +25,6 @@ type Props = {
 export const MiscTable = ({
   data,
   setEditCharge,
-  setInsertDocument,
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
@@ -51,7 +47,6 @@ export const MiscTable = ({
       {isOpened && chargesData && (
         <ChargesTable
           setEditChargeId={setEditCharge}
-          setInsertDocument={setInsertDocument}
           data={chargesData.differentMonthDoc}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}

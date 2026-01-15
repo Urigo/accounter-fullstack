@@ -3,7 +3,7 @@ import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { ChargeScreenDocument, type ChargeScreenQuery } from '../../../gql/graphql.js';
 import { ChargesTable } from '../../charges/charges-table.js';
-import { AccounterLoader, EditChargeModal, InsertDocumentModal } from '../../common/index.js';
+import { AccounterLoader, EditChargeModal } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -33,9 +33,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   }
 
   const [editChargeId, setEditChargeId] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
-  const [insertDocument, setInsertDocument] = useState<
     { id: string; onChange: () => void } | undefined
   >(undefined);
 
@@ -69,7 +66,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
       ) : (
         <ChargesTable
           setEditChargeId={setEditChargeId}
-          setInsertDocument={setInsertDocument}
           data={chargeData?.charge ? [chargeData.charge] : []}
           isAllOpened
         />
@@ -79,13 +75,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
           chargeId={editChargeId?.id}
           close={() => setEditChargeId(undefined)}
           onChange={editChargeId.onChange}
-        />
-      )}
-      {insertDocument && (
-        <InsertDocumentModal
-          chargeId={insertDocument.id}
-          onChange={insertDocument.onChange}
-          close={(): void => setInsertDocument(undefined)}
         />
       )}
     </>

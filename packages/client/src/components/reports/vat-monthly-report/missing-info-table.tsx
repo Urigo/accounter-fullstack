@@ -18,9 +18,6 @@ import { Button } from '../../ui/button.js';
 interface Props {
   data?: FragmentType<typeof VatReportMissingInfoFieldsFragmentDoc>;
   setEditCharge: Dispatch<SetStateAction<{ id: string; onChange: () => void } | undefined>>;
-  setInsertDocument: React.Dispatch<
-    React.SetStateAction<{ id: string; onChange: () => void } | undefined>
-  >;
   toggleMergeCharge: (chargeId: string) => void;
   mergeSelectedCharges: Set<string>;
 }
@@ -28,7 +25,6 @@ interface Props {
 export const MissingInfoTable = ({
   data,
   setEditCharge,
-  setInsertDocument,
   toggleMergeCharge,
   mergeSelectedCharges,
 }: Props): ReactElement => {
@@ -51,7 +47,6 @@ export const MissingInfoTable = ({
       {isOpened && chargesData && (
         <ChargesTable
           setEditChargeId={setEditCharge}
-          setInsertDocument={setInsertDocument}
           data={chargesData.missingInfo}
           isAllOpened={false}
           toggleMergeCharge={toggleMergeCharge}

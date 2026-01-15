@@ -26,7 +26,7 @@ import {
   TypeCell,
   Vat,
 } from './cells/index.js';
-import { ChargeExtendedInfoMenu } from './charge-extended-info-menu.js';
+import { ChargeActionsMenu } from './charge-actions-menu.js';
 import { ChargeExtendedInfo } from './charge-extended-info.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -71,7 +71,6 @@ import { ChargeExtendedInfo } from './charge-extended-info.js';
 
 interface Props {
   setEditCharge?: (onChange: () => void) => void;
-  setInsertDocument?: (onChange: () => void) => void;
   toggleMergeCharge?: (onChange: () => void) => void;
   isSelectedForMerge: boolean;
   data: ChargesTableFieldsFragment;
@@ -80,7 +79,6 @@ interface Props {
 
 export const ChargesTableRow = ({
   setEditCharge,
-  setInsertDocument,
   toggleMergeCharge,
   isSelectedForMerge,
   data,
@@ -215,10 +213,9 @@ export const ChargesTableRow = ({
         </td>
         <td>
           <div className="flex flex-col gap-2">
-            <ChargeExtendedInfoMenu
+            <ChargeActionsMenu
               chargeId={charge.id}
               chargeType={charge.__typename}
-              setInsertDocument={setInsertDocument ? () => setInsertDocument(onChange) : undefined}
               onChange={onChange}
               isIncome={isIncomeCharge}
             />

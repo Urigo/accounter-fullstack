@@ -11,7 +11,7 @@ import { dedupeFragments, type TimelessDateString } from '../../../helpers/index
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { EditChargeModal, InsertDocumentModal, MergeChargesButton } from '../../common/index.js';
+import { EditChargeModal, MergeChargesButton } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { BusinessTripsTable } from './business-trips-table.js';
 import { ExpensesTable } from './expenses-section/expenses-table.js';
@@ -64,9 +64,6 @@ export const VatMonthlyReport = (): ReactElement => {
   }, [filter, userContext?.context.adminBusinessId]);
 
   // modals state
-  const [insertDocument, setInsertDocument] = useState<
-    { id: string; onChange: () => void } | undefined
-  >(undefined);
   const [editCharge, setEditCharge] = useState<{ id: string; onChange: () => void } | undefined>(
     undefined,
   );
@@ -142,7 +139,6 @@ export const VatMonthlyReport = (): ReactElement => {
           <MissingInfoTable
             data={data?.vatReport}
             setEditCharge={setEditCharge}
-            setInsertDocument={setInsertDocument}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
@@ -150,7 +146,6 @@ export const VatMonthlyReport = (): ReactElement => {
           <BusinessTripsTable
             data={data?.vatReport}
             setEditCharge={setEditCharge}
-            setInsertDocument={setInsertDocument}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
@@ -158,7 +153,6 @@ export const VatMonthlyReport = (): ReactElement => {
           <MiscTable
             data={data?.vatReport}
             setEditCharge={setEditCharge}
-            setInsertDocument={setInsertDocument}
             toggleMergeCharge={toggleMergeCharge}
             mergeSelectedCharges={mergeSelectedChargesSet}
           />
@@ -168,12 +162,6 @@ export const VatMonthlyReport = (): ReactElement => {
             <EditChargeModal
               chargeId={editCharge.id}
               close={(): void => setEditCharge(undefined)}
-            />
-          )}
-          {insertDocument && (
-            <InsertDocumentModal
-              chargeId={insertDocument.id}
-              close={() => setInsertDocument(undefined)}
             />
           )}
         </div>
