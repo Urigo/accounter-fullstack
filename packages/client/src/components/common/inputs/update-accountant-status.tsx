@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Check, Clock, X } from 'lucide-react';
 import { AccountantStatus } from '../../../gql/graphql.js';
+import { useUpdateBusinessTripAccountantApproval } from '../../../hooks/use-update-business-trip-accountant-approval.js';
 import { useUpdateChargeAccountantApproval } from '../../../hooks/use-update-charge-accountant-approval.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -40,13 +41,15 @@ export const accountantApprovalOptions: Record<
 const getApprovalStatusConfig = (status: AccountantStatus) => accountantApprovalOptions[status];
 
 export function UpdateAccountantStatus(props: {
-  onChange: () => void;
-  chargeId: string;
+  onChange?: () => void;
+  chargeId?: string;
+  businessTripId?: string;
   value?: AccountantStatus;
-}): ReactElement {
+}): ReactNode {
   const { onChange, value } = props;
   const [status, setStatus] = useState(value ?? AccountantStatus.Unapproved);
   const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
+  const { updateBusinessTripAccountantApproval } = useUpdateBusinessTripAccountantApproval();
 
   const approvalConfig = getApprovalStatusConfig(status);
   const ApprovalIcon = approvalConfig.icon;
@@ -55,16 +58,31 @@ export function UpdateAccountantStatus(props: {
     async (newStatus: AccountantStatus): Promise<void> => {
       const oldStatus = status;
       setStatus(newStatus);
-      const result = await updateChargeAccountantApproval({
-        chargeId: props.chargeId,
-        status: newStatus,
-      });
+      let result: AccountantStatus | null | void = null;
+      if (props.chargeId) {
+        result = await updateChargeAccountantApproval({
+          chargeId: props.chargeId,
+          status: newStatus,
+        });
+      } else if (props.businessTripId) {
+        result = await updateBusinessTripAccountantApproval({
+          businessTripId: props.businessTripId,
+          status: newStatus,
+        });
+      }
       if (!result) {
         setStatus(oldStatus);
       }
-      onChange();
+      onChange?.();
     },
-    [onChange, props.chargeId, updateChargeAccountantApproval, status],
+    [
+      props.chargeId,
+      updateChargeAccountantApproval,
+      props.businessTripId,
+      updateBusinessTripAccountantApproval,
+      status,
+      onChange,
+    ],
   );
 
   useEffect(() => {
@@ -73,14 +91,17 @@ export function UpdateAccountantStatus(props: {
     }
   }, [value]);
 
+  const isDisabled = !props.chargeId && !props.businessTripId;
+
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger asChild disabled={isDisabled}>
         <Button
           variant="ghost"
           size="sm"
           className={`h-7 w-7 p-0 ${approvalConfig.bgColor}`}
           title={approvalConfig.label}
+          disabled={isDisabled}
         >
           <ApprovalIcon className={`h-3.5 w-3.5 ${approvalConfig.color}`} />
         </Button>
