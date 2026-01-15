@@ -5,7 +5,7 @@ import type { ChargeType } from '@/helpers/index.js';
 import { DataTableColumnHeader, Tooltip, UpdateAccountantStatus } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
-import { ChargeExtendedInfoMenu } from './charge-extended-info-menu.js';
+import { ChargeActionsMenu } from './charge-actions-menu.js';
 import { Amount } from './new-cells/amount.js';
 import { BusinessTrip } from './new-cells/business-trip.js';
 import { Counterparty } from './new-cells/counterparty.js';
@@ -114,7 +114,7 @@ export const columns: ColumnDef<ChargeRow>[] = [
       const isExpanded = row.getIsExpanded();
       return (
         <div className="flex flex-col gap-2 items-center">
-          <ChargeExtendedInfoMenu
+          <ChargeActionsMenu
             chargeId={row.original.id}
             chargeType={row.original.type}
             onChange={row.original.onChange}
