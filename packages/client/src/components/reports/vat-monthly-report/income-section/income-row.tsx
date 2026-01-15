@@ -4,7 +4,11 @@ import { VatReportIncomeRowFieldsFragmentDoc } from '../../../../gql/graphql.js'
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { ChargeExtendedInfo } from '../../../charges/charge-extended-info.js';
-import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';
+import {
+  ChargeNavigateButton,
+  ToggleExpansionButton,
+  ToggleMergeSelected,
+} from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -72,18 +76,17 @@ export const IncomeRow = ({
         <td>
           <div className="flex flex-col gap-2">
             <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />
+            <ToggleMergeSelected
+              toggleMergeSelected={(): void => toggleMergeCharge(incomeItem.chargeId)}
+              mergeSelected={mergeSelectedCharges.includes(incomeItem.chargeId)}
+            />
+            <ChargeNavigateButton chargeId={incomeItem.chargeId} />
           </div>
-        </td>
-        <td>
-          <ToggleMergeSelected
-            toggleMergeSelected={(): void => toggleMergeCharge(incomeItem.chargeId)}
-            mergeSelected={mergeSelectedCharges.includes(incomeItem.chargeId)}
-          />
         </td>
       </tr>
       {opened && (
         <tr>
-          <td colSpan={11}>
+          <td colSpan={10}>
             <Paper style={{ width: '100%' }} withBorder shadow="lg">
               <ChargeExtendedInfo chargeID={incomeItem.chargeId} fetching={!!incomeItem} />
             </Paper>

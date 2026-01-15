@@ -4,7 +4,11 @@ import { VatReportExpensesRowFieldsFragmentDoc } from '../../../../gql/graphql.j
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { ChargeExtendedInfo } from '../../../charges/charge-extended-info.js';
-import { ToggleExpansionButton, ToggleMergeSelected } from '../../../common/index.js';
+import {
+  ChargeNavigateButton,
+  ToggleExpansionButton,
+  ToggleMergeSelected,
+} from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -94,18 +98,18 @@ export const ExpensesRow = ({
           {expenseItem.roundedLocalVatAfterDeduction?.formatted}
         </td>
         <td className="whitespace-nowrap">&#8362; {formatStringifyAmount(cumulativeVat, 0)}</td>
+        <td className="whitespace-nowrap">{expenseItem.taxReducedLocalAmount?.formatted}</td>
         <td className="whitespace-nowrap">&#8362; {formatStringifyAmount(cumulativeAmount, 0)}</td>
         <AccountantApproval data={expenseItem} />
         <td>
           <div className="flex flex-col gap-2">
             <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />
+            <ToggleMergeSelected
+              toggleMergeSelected={(): void => toggleMergeCharge(expenseItem.chargeId)}
+              mergeSelected={mergeSelectedCharges.includes(expenseItem.chargeId)}
+            />
+            <ChargeNavigateButton chargeId={expenseItem.chargeId} />
           </div>
-        </td>
-        <td>
-          <ToggleMergeSelected
-            toggleMergeSelected={(): void => toggleMergeCharge(expenseItem.chargeId)}
-            mergeSelected={mergeSelectedCharges.includes(expenseItem.chargeId)}
-          />
         </td>
       </tr>
       {opened && (
