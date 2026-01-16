@@ -83,7 +83,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `role_id`: `integer`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper')
     *   `key_hash`: `text`, not null, unique (store hashed version of the key)
     *   `name`: `text` (e.g., "Production Scraper")
-    *   `last_used_at`: `timestamptz` (optional, for auditing)
+    *   `last_used_at`: `timestamptz` (optional, for auditing - updated hourly, to prevent write amplification)
 *   **`audit_logs`**: Stores a trail of critical actions for security and compliance.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id`, nullable
@@ -135,6 +135,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to generate keys. Store a hashed version (e.g., using `bcrypt` or `argon2`) in the `api_keys` table with the associated `business_id` and `scraper` role. Only return the raw key to the user (admin) upon generation.
         *   **Validation**: When a request contains an API key header (e.g., `Authorization: Bearer <key>` or `X-API-Key: <key>`), hash the provided key and look it up in the `api_keys` table. If found, authenticate the request with the associated `business_id` and `role_id`.
+        *   **Usage Tracking**: Update the `last_used_at` field asynchronously or conditionally (only if > 1 hour since last update) to avoid write usage amplification on high-frequency requests.
 *   **Authentication Plugin (`packages/server/src/plugins/auth-plugin.ts`)**:
     *   This plugin will be refactored to leverage `@graphql-yoga/plugin-jwt` for token validation, `@whatwg-node/server-plugin-cookies` for cookie management, and `@graphql-yoga/plugin-csrf-prevention` for security.
     *   The plugin will support dual authentication mechanisms:
