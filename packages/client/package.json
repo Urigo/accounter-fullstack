@@ -67,7 +67,7 @@
     "react-day-picker": "9.13.0",
     "react-dnd": "16.0.1",
     "react-dom": "19.2.3",
-    "react-error-boundary": "6.0.3",
+    "react-error-boundary": "6.1.0",
     "react-hook-form": "7.71.1",
     "react-number-format": "5.4.4",
     "react-router-dom": "7.12.0",
