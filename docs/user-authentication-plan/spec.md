@@ -80,7 +80,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
         *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookie.
         *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookie.
-        *   `logout`: Clears the JWT cookie.
+        *   `logout`: Invalidates the session by clearing the JWT cookie.
 *   **Services and Resolvers**:
 *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, `roles`, `permissions`, and the expiration (`exp`).
 *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
