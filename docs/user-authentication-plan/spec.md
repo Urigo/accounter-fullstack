@@ -44,7 +44,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
 *   **`user-accounts`**: Stores authentication-related data, linked to a user.
     *   `id`: `uuid`, primary key
     *   `user_id`: `uuid`, foreign key to `users.id`
-    *   `provider`: `text` (e.g., 'email', 'google'), not null
+    *   `provider`: `provider_enum` (ENUM: 'email', 'google', 'github'), not null
     *   `password_hash`: `text`, nullable (for non-password providers)
 *   **`roles`**: Defines available roles.
     *   `id`: `serial`, primary key
