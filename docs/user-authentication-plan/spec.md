@@ -66,7 +66,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `business_id`: `uuid`, foreign key to `businesses.id`
     *   `email`: `text`, not null
     *   `role_id`: `integer`, foreign key to `roles.id`
-    *   `token`: `text`, unique, not null (a secure random string)
+    *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
     *   `expires_at`: `timestamptz`, not null
     *   `created_at`: `timestamptz`
 
@@ -83,8 +83,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   `logout`: Invalidates the session by clearing the JWT cookie.
 *   **Services and Resolvers**:
 *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, `roles`, `permissions`, and the expiration (`exp`).
-*   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
-    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (e.g., 72 hours), and returns a URL like `/accept-invitation?token=...`.
+*   **Password Hashing**: Use `bcrypt` to hash and compare passwords.    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
     *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the JWT cookie.
 *   **Authentication Plugin (`packages/server/src/plugins/auth-plugin.ts`)**:
     *   This plugin will be refactored to leverage `@graphql-yoga/plugin-jwt` for token validation, `@whatwg-node/server-plugin-cookies` for cookie management, and `@graphql-yoga/plugin-csrf-prevention` for security.
