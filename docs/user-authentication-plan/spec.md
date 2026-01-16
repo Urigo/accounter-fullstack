@@ -56,33 +56,33 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `password_hash`: `text`, nullable (for non-password providers)
     *   `refresh_token_hash`: `text`, nullable (stores the hashed refresh token for revocation)
 *   **`roles`**: Defines available roles.
-    *   `id`: `serial`, primary key
-    *   `name`: `text`, unique, not null (e.g., 'business owner', 'employee')
+    *   `id`: `text`, primary key (slug, e.g., 'business_owner', 'employee')
+    *   `name`: `text`, unique, not null (Display name, e.g., 'Business Owner')
 *   **`permissions`**: Defines available permissions.
-    *   `id`: `serial`, primary key
-    *   `name`: `text`, unique, not null (e.g., 'manage:users', 'issue:docs')
+    *   `id`: `text`, primary key (slug, e.g., 'manage:users', 'issue:docs')
+    *   `name`: `text`, unique, not null (Display name, e.g., 'Manage Users')
 *   **`role_permissions`**: Maps permissions to roles.
-    *   `role_id`: `integer`, foreign key to `roles.id`
-    *   `permission_id`: `integer`, foreign key to `permissions.id`
+    *   `role_id`: `text`, foreign key to `roles.id`
+    *   `permission_id`: `text`, foreign key to `permissions.id`
     *   Primary key on (`role_id`, `permission_id`)
 *   **`business_users`**: The existing `users` table should be repurposed or replaced by this join table to link users, businesses, and roles.
     *   `user_id`: `uuid`, foreign key to `users.id`
     *   `business_id`: `uuid`, foreign key to `businesses.id`
-    *   `role_id`: `integer`, foreign key to `roles.id`
+    *   `role_id`: `text`, foreign key to `roles.id`
     *   *Note: This structure supports M:N relationships, but initial application logic will enforce/assume a single active business context per user session.*
     *   Primary key on (`user_id`, `business_id`)
 *   **`invitations`**: Stores pending user invitations.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id`
     *   `email`: `text`, not null
-    *   `role_id`: `integer`, foreign key to `roles.id`
+    *   `role_id`: `text`, foreign key to `roles.id`
     *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
     *   `expires_at`: `timestamptz`, not null
     *   `created_at`: `timestamptz`
 *   **`api_keys`**: Stores API keys for the scraper role and other programatic access.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id` (API keys are linked to a business, not a specific human user)
-    *   `role_id`: `integer`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper')
+    *   `role_id`: `text`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper_production')
     *   `key_hash`: `text`, not null, unique (store hashed version of the key)
     *   `name`: `text` (e.g., "Production Scraper")
     *   `last_used_at`: `timestamptz` (optional, for auditing - updated hourly, to prevent write amplification)
