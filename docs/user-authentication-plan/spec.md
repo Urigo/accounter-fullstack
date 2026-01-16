@@ -12,7 +12,9 @@ This document outlines the implementation of a new user management system for th
 *   **Authentication**:
     *   Implement email/password-based authentication.
     *   Use JSON Web Tokens (JWT) for session management.
-    *   JWT expiration: **7 days** for standard users.
+    *   **Token Strategy**:
+        *   **Access Token**: Short-lived (e.g., 15 minutes), used for API requests.
+        *   **Refresh Token**: Long-lived (e.g., 7 days), securely stored (HttpOnly cookie) and used to obtain new access tokens. stored as a hash in the database to allow for revocation.
     *   **API Keys**: Implement API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues.
 *   **User Onboarding**:
     *   New users must be invited to a business by an administrator (`business owner`).
@@ -47,6 +49,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `user_id`: `uuid`, foreign key to `users.id`
     *   `provider`: `provider_enum` (ENUM: 'email', 'google', 'github'), not null
     *   `password_hash`: `text`, nullable (for non-password providers)
+    *   `refresh_token_hash`: `text`, nullable (stores the hashed refresh token for revocation)
 *   **`roles`**: Defines available roles.
     *   `id`: `serial`, primary key
     *   `name`: `text`, unique, not null (e.g., 'business owner', 'employee')
@@ -87,15 +90,19 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
     *   **Mutations**:
         *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
-        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookie.
-        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookie.
-        *   `logout`: Invalidates the session by clearing the JWT cookie.
+        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookies (Access & Refresh).
+        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
+        *   `refreshToken`: AuthPayload! - Uses the Refresh Token cookie to generate a new Access Token.
+        *   `logout`: Invalidates the session by clearing the cookies and removing the refresh token from the DB.
         *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
         *   `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
 *   **Services and Resolvers**:
-*   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, `roles`, `permissions`, and the expiration (`exp`).
-*   **Password Hashing**: Use `bcrypt` to hash and compare passwords.    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
-    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the JWT cookie.
+    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions`, and a short expiration (`exp`).
+    *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
+    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
+    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
+    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
+    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT). Stores the hash of the Refresh Token in the `user-accounts` table. Sets both as `HttpOnly` cookies.
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to generate keys. Store a hashed version (e.g., using `bcrypt` or `argon2`) in the `api_keys` table with the associated `business_id` and `scraper` role. Only return the raw key to the user (admin) upon generation.
         *   **Validation**: When a request contains an API key header (e.g., `Authorization: Bearer <key>` or `X-API-Key: <key>`), hash the provided key and look it up in the `api_keys` table. If found, authenticate the request with the associated `business_id` and `role_id`.
@@ -106,6 +113,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
         2.  **API Key from Header**: For the `scraper` role/automated tools. Check for `Authorization` header. If the format is `Bearer <key>`, attempt to validate it as an API Key first (checking against DB hash). If valid, attach a context object containing the `businessId` and `role` (e.g., `scraper`) to the request, allowing access to resources within that business scope.
     *   The JWT plugin will be configured with a custom extractor to retrieve the token from the `access_token` cookie.
     *   On successful verification, the decoded JWT payload (containing the user's ID, roles, and permissions) will be attached to the GraphQL `context`. This avoids the need for extra database lookups on each request.
+    *   **Token Refresh Logic**: If the Access Token is expired but a valid Refresh Token cookie exists, the client (or a specific `refresh` endpoint) should initiate a refresh flow: Validate the Refresh Token against the DB hash. If valid, issue new Access and Refresh tokens, and update the hash in the DB (Rotation).
     *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
 
 #### 3.3. Client Application (`packages/client`)
