@@ -31,6 +31,7 @@ This document outlines the implementation of a new user management system for th
         *   `view:salary`
         *   `insert:transactions`
 *   **Data-Level Security**: The system must enforce data access restrictions based on the user's role. For example, an `employee` should not be able to view salary information.
+*   **Audit Logging**: The system must verify and record critical security and business actions (e.g., login, user creation, sensitive data access) for compliance and security monitoring.
 *   **Future-Proofing**:
     *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
     *   **Multi-Factor Authentication (MFA)**: While out of scope for the initial implementation, the system should be designed with future MFA support (TOTP, etc.) in mind to enhance security for sensitive financial data.
@@ -82,6 +83,16 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `key_hash`: `text`, not null, unique (store hashed version of the key)
     *   `name`: `text` (e.g., "Production Scraper")
     *   `last_used_at`: `timestamptz` (optional, for auditing)
+*   **`audit_logs`**: Stores a trail of critical actions for security and compliance.
+    *   `id`: `uuid`, primary key
+    *   `business_id`: `uuid`, foreign key to `businesses.id`, nullable
+    *   `user_id`: `uuid`, foreign key to `users.id`, nullable (nullable to support system actions or failed logins)
+    *   `action`: `text`, not null (e.g., 'USER_LOGIN', 'INVOICE_UPDATE', 'PERMISSION_CHANGE')
+    *   `entity`: `text`, nullable (e.g., 'Invoice', 'User')
+    *   `entity_id`: `text`, nullable (ID of the affected record)
+    *   `details`: `jsonb`, nullable (stores before/after state or metadata)
+    *   `ip_address`: `text`, nullable
+    *   `created_at`: `timestamptz`
     *   `created_at`: `timestamptz`
 
 #### 3.2. GraphQL API (`packages/server`)
@@ -89,6 +100,10 @@ A new database migration will be created in `packages/migrations/src`. This migr
 A new `auth` module will be created under `packages/server/src/modules`.
 
 *   **Schema (`schema.graphql`)**:
+    *   **Audit Service**: Implement a dedicated `AuditService` to handle log ingestion.
+        *   Should be called asynchronously to avoid blocking user requests.
+        *   Must be integrated into critical flows: `login`, `logout`, `inviteUser`, `acceptInvitation`, `generateApiKey`, `revokeApiKey`.
+        *   Should be reusable by other modules for business logic events (e.g., `createInvoice`).
     *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
     *   **Mutations**:
         *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
@@ -150,6 +165,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   Test password hashing and JWT generation/validation logic.
     *   Test **API Key authentication**: verify that a valid API key in the header authenticates the user, and an invalid one fails.
     *   Test the `auth-plugin`'s ability to correctly parse tokens and attach user context.
+    *   Test **Audit Logging**: verify that critical actions (login, invite) create corresponding records in the `audit_logs` table.
     *   Test the RBAC logic: ensure users can only access data and perform actions allowed by their roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific restrictions.
 *   **Client (Component/E2E Tests)**:
     *   Test the login and invitation acceptance forms.
