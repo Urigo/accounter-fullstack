@@ -31,7 +31,9 @@ This document outlines the implementation of a new user management system for th
         *   `view:salary`
         *   `insert:transactions`
 *   **Data-Level Security**: The system must enforce data access restrictions based on the user's role. For example, an `employee` should not be able to view salary information.
-*   **Future-Proofing**: The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
+*   **Future-Proofing**:
+    *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
+    *   **Multi-Factor Authentication (MFA)**: While out of scope for the initial implementation, the system should be designed with future MFA support (TOTP, etc.) in mind to enhance security for sensitive financial data.
 
 ### 3. Architecture and Implementation Details
 
