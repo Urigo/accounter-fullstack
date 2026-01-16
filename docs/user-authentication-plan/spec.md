@@ -2,6 +2,12 @@
 
 ## Specification: User Management and Role-Based Access Control (RBAC)
 
+### Critical Risks (Showstoppers)
+
+*   **Tenant isolation leakage via pooled connections**: The implementation must use `BEGIN; SET LOCAL app.current_business_id = ...; SET LOCAL app.current_user_id = ...; COMMIT;` for every request. Any query executed outside a transaction is forbidden.
+*   **Ambiguous business ownership**: The implementation must define deterministic backfill rules for legacy tables that do not carry a `business_id` (see Transition State Management). Rows without resolvable ownership must be quarantined and excluded by RLS.
+*   **Refresh token single point of failure**: The implementation must replace the single `refresh_token_hash` field with a multi-session token table to avoid global logout and to enable rotation and reuse detection.
+
 ### 1. Overview
 
 This document outlines the implementation of a new user management system for the Accounter application. The new system will replace the current basic authentication with a robust, secure, and scalable solution featuring personal user accounts, an invitation-based workflow, and granular role-based access control (RBAC).
@@ -14,7 +20,7 @@ This document outlines the implementation of a new user management system for th
     *   Use JSON Web Tokens (JWT) for session management.
     *   **Token Strategy**:
         *   **Access Token**: Short-lived (e.g., 15 minutes), used for API requests.
-        *   **Refresh Token**: Long-lived (e.g., 7 days), securely stored (HttpOnly cookie) and used to obtain new access tokens. stored as a hash in the database to allow for revocation.
+        *   **Refresh Token**: Long-lived (e.g., 7 days), securely stored (HttpOnly cookie) and used to obtain new access tokens. The implementation must store refresh tokens in a dedicated table to support multi-device sessions, rotation, and reuse detection.
     *   **API Keys**: Implement API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues.
 *   **User Onboarding**:
     *   New users must be invited to a business by an administrator (`business owner`).
@@ -54,7 +60,14 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `user_id`: `uuid`, foreign key to `users.id`
     *   `provider`: `provider_enum` (ENUM: 'email', 'google', 'github'), not null
     *   `password_hash`: `text`, nullable (for non-password providers)
-    *   `refresh_token_hash`: `text`, nullable (stores the hashed refresh token for revocation)
+*   **`user_refresh_tokens`**: Stores refresh tokens per device/session.
+    *   `id`: `uuid`, primary key
+    *   `user_id`: `uuid`, foreign key to `users.id`
+    *   `token_hash`: `text`, not null
+    *   `created_at`: `timestamptz`
+    *   `expires_at`: `timestamptz`
+    *   `revoked_at`: `timestamptz`, nullable
+    *   `replaced_by_token_id`: `uuid`, nullable (rotation tracking)
 *   **`roles`**: Defines available roles.
     *   `id`: `text`, primary key (slug, e.g., 'business_owner', 'employee')
     *   `name`: `text`, unique, not null (Display name, e.g., 'Business Owner')
@@ -104,10 +117,72 @@ A new database migration will be created in `packages/migrations/src`. This migr
         *   Enable RLS on all sensitive tables (`transactions`, `documents`, `salary_records`, etc.).
         *   Create policies that query a session variable (e.g., `app.current_business_id`) to compare against the row's `business_id`.
     *   **Application Logic**:
-        *   The GraphQL middleware (auth plugin) will set the postgres configuration variable `SET app.current_business_id = '...'` at the start of every transaction based on the authenticated user's context.
+        *   The GraphQL middleware (auth plugin) will set postgres configuration variables with `SET LOCAL` inside a transaction: `app.current_business_id`, `app.current_user_id`, and `app.auth_type`.
         *   Any query attempted without this variable set (or with a mismatch) will return zero rows or be rejected.
     *   **Bypass**:
         *   System-level maintenance tasks can use a "super user" connection that bypasses RLS, but standard application connections must perform as the limited user.
+
+#### 3.2.1. Macro-Level Flaw Detection (Decisions)
+
+*   **Single Points of Failure**: The implementation must enforce request-scoped transactions for RLS and replace single refresh token storage with multi-session storage.
+*   **Data Leakage Vectors**: The implementation must create DataLoaders per request, must never share caches across requests, and must enforce RLS for all tenant tables and views.
+*   **Architectural Debt**: The implementation must support an explicit `active_business_id` per session and must avoid embedding immutable permissions without rotation safeguards.
+
+#### 3.2.2. Database Execution Blueprint (Multi-Tenant Migration)
+
+*   **Tables that must carry `business_id`**:
+    *   business_tax_category_match (owner_id)
+    *   business_trip_charges (charge_id => charges)
+    *   business_trips
+    *   business_trips_attendees (business_trip_id => business_trips)
+    *   business_trips_employee_payments (id => business_trips_transactions => business_trips)
+    *   business_trips_transactions (business_trip_id => business_trips)
+    *   business_trips_transactions_accommodations (id => business_trips_transactions => business_trips)
+    *   business_trips_transactions_car_rental (id => business_trips_transactions => business_trips)
+    *   business_trips_transactions_flights (id => business_trips_transactions => business_trips)
+    *   business_trips_transactions_match (business_trips_transaction_id => business_trips_transactions => business_trips)
+    *   business_trips_transactions_other (id => business_trips_transactions => business_trips)
+    *   business_trips_transactions_tns (id => business_trips_transactions => business_trips)
+    *   businesses (id => financial_entities)
+    *   businesses_admin (id => businesses => financial_entities)
+    *   businesses_green_invoice_match (business_id => businesses => financial_entities)
+    *   charge_balance_cancellation (charge_id => charges)
+    *   charge_spread (charge_id => charges)
+    *   charge_tags (charge_id => charges)
+    *   charge_unbalanced_ledger_businesses (charge_id => charges)
+    *   charges
+    *   charges_bank_deposits (charge_id => charges)
+    *   clients (business_id => businesses => financial_entities)
+    *   clients_contracts (client_id => clients => businesses => financial_entities)
+    *   corporate_tax_variables (corporate_id)
+    *   deel_invoices (document_id => documents => charges)
+    *   deel_workers (business_id => businesses => financial_entities)
+    *   depreciation (charge_id => charges)
+    *   dividends (business_id => businesses => financial_entities)
+    *   documents (charge_id => charges)
+    *   documents_issued (id => documents => charges)
+    *   dynamic_report_templates (owner_id)
+    *   employees (business_id => businesses => financial_entities)
+    *   financial_accounts (owner)
+    *   financial_accounts_tax_categories (financial_account_id => financial_accounts)
+    *   financial_bank_accounts (id => financial_accounts)
+    *   financial_entities (owner_id)
+    *   ledger_records (charge_id => charges)
+    *   misc_expenses (charge_id => charges)
+    *   pcn874 (business_id)
+    *   poalim_ils_account_transactions
+    *   salaries (employer)
+    *   tags
+    *   tax_categories (id => financial_entities)
+    *   transactions (charge_id => charges)
+    *   user_context (owner_id)
+
+*   **Locking Strategy**:
+    *   The implementation must add `business_id` columns as nullable first.
+    *   Backfills must be performed in batches to avoid long locks.
+    *   Indexes must be created `CONCURRENTLY`.
+    *   Foreign keys must be added `NOT VALID` and validated after backfill.
+    *   `NOT NULL` constraints must only be added after 100% backfill completion.
 
 #### 3.3. GraphQL API (`packages/server`)
 
@@ -135,7 +210,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
     *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
         *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
-        *   Stores the hash of the Refresh Token in the `user-accounts` table. Sets both as `HttpOnly` cookies.
+        *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to generate keys. Store a hashed version (e.g., using `bcrypt` or `argon2`) in the `api_keys` table with the associated `business_id` and `scraper` role. Only return the raw key to the user (admin) upon generation.
         *   **Validation**: When a request contains an API key header (e.g., `Authorization: Bearer <key>` or `X-API-Key: <key>`), hash the provided key and look it up in the `api_keys` table. If found, authenticate the request with the associated `business_id` and `role_id`.
@@ -149,6 +224,13 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   On successful verification, the decoded JWT payload (containing the user's ID, roles, and permissions) will be attached to the GraphQL `context`. This avoids the need for extra database lookups on each request.
     *   **Token Refresh Logic**: If the Access Token is expired but a valid Refresh Token cookie exists, the client (or a specific `refresh` endpoint) should initiate a refresh flow: Validate the Refresh Token against the DB hash. If valid, issue new Access and Refresh tokens, and update the hash in the DB (Rotation).
     *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
+
+#### 3.3.1. Middleware & Resolver Hardening
+
+*   **Context Binding**: The implementation must derive `businessId` exclusively from JWT or API key validation. Any `businessId` argument provided by the client must be treated as data, not as authorization.
+*   **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT` block to avoid connection pool leakage.
+*   **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id` automatically. Any raw query access must be disallowed in GraphQL resolvers.
+*   **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and must rely on RLS-protected base tables.
 
 #### 3.4. Client Application (`packages/client`)
 
@@ -165,9 +247,14 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **CSRF Protection**: To counter Cross-Site Request Forgery (CSRF) attacks (which cookies are vulnerable to), the server's CSRF prevention plugin must be enabled and configured.
     *   **Client State**: The client will use React Context to track the user's *authentication status* (e.g., `isLoggedIn`, `currentUser`), but it will **not** manage the raw JWT string.
 *   **Networking**:
-    *   The Apollo Client does not need to manually attach the `Authorization` header (since the cookie is sent automatically by the browser). Instead, ensure `credentials: 'include'` is set in the Apollo Client configuration.
+    *   The Urql client does not need to manually attach the `Authorization` header (since the cookie is sent automatically by the browser). Instead, ensure `credentials: 'include'` is set in the Urql configuration.
 *   **Routing**:
     *   Implement a "protected route" component that wraps pages requiring authentication. If the user is not authenticated, they should be redirected to the `/login` page.
+
+#### 3.4.1. Frontend State & Cache Safety (Urql Graphcache)
+
+*   **Cache Reset Triggers**: The implementation must hard-reset the Graphcache store on login, logout, invitation acceptance, business switch, and `UNAUTHENTICATED` responses.
+*   **Business Context Provider**: The implementation must maintain `activeBusinessId` in React context and must re-instantiate the Urql client on business changes to prevent stale entities from bleeding across tenants.
 
 ### 4. Error Handling
 
@@ -189,4 +276,57 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   Test that the JWT is correctly stored and sent with API requests.
     *   Test the protected route logic, ensuring unauthorized users are redirected.
     *   Test that UI elements for restricted actions (e.g., "Manage Users" button) are hidden for users without the necessary permissions.
+
+### 6. Transition State Management (Dual-Write & Defaulting)
+
+*   **Dual-Write**: The implementation must write `business_id` for all tenant tables and continue writing legacy owner columns until migration completion.
+*   **Backfill Rules**:
+        *   `charges.business_id = charges.owner_id`
+        *   `ledger_records.business_id = ledger_records.owner_id`
+        *   `financial_entities.business_id = financial_entities.owner_id`
+        *   `user_context.business_id = user_context.owner_id`
+        *   `financial_accounts.business_id = financial_accounts.owner`
+        *   `documents.business_id = COALESCE(charges.owner_id, documents.debtor_id, documents.creditor_id)`
+        *   `documents_issued.business_id = documents.business_id`
+        *   `salaries.business_id = employees.business_id` via `employee_id`, fallback `charge_id -> charges.owner_id`
+        *   `charge_tags.business_id = charges.owner_id`
+        *   `tags.business_id = charge_tags.business_id`
+*   **Quarantine**: Rows that cannot be deterministically assigned must remain inaccessible by RLS until resolved.
+
+### 7. Auth/Tenant Context Interfaces
+
+```ts
+export type AuthType = "jwt" | "apiKey" | "system";
+
+export interface AuthUser {
+    userId: string;
+    email: string;
+    roles: string[];
+    permissions: string[];
+    permissionsVersion: number;
+}
+
+export interface TenantContext {
+    businessId: string;
+    businessName?: string;
+}
+
+export interface AuthContext {
+    authType: AuthType;
+    user?: AuthUser;
+    tenant?: TenantContext;
+    accessTokenExpiresAt?: number;
+}
+
+export interface RequestContext {
+    auth: AuthContext;
+    dbTenant: {
+        query<T>(sql: string, params?: unknown[]): Promise<T>;
+        transaction<T>(fn: () => Promise<T>): Promise<T>;
+    };
+    audit: {
+        log(action: string, entity?: string, entityId?: string, details?: Record<string, unknown>): void;
+    };
+}
+```
 ---
