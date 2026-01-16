@@ -82,16 +82,15 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and returns a JWT.
         *   `logout`: (Optional) Can be implemented on the client-side by simply deleting the token.
 *   **Services and Resolvers**:
-*   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, and the expiration (`exp`).
+*   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, `roles`, `permissions`, and the expiration (`exp`).
 *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
     *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (e.g., 72 hours), and returns a URL like `/accept-invitation?token=...`.
     *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and returns a JWT.
 *   **Authentication Plugin (`packages/server/src/plugins/auth-plugin.ts`)**:
-    *   This plugin will be refactored to be JWT-based.
-    *   It will extract the JWT from the `Authorization: Bearer <token>` header.
-    *   It will verify the token's signature and expiration.
-    *   On success, it will fetch the user's ID, roles, and permissions for the relevant business (determined from the query context or a header like `X-Business-ID`) and attach a `currentUser` object to the GraphQL `context`.
-    *   The `validateUser` function will be updated to check `context.currentUser.permissions` against the `@auth` directive's requirements.
+    *   This plugin will be refactored to leverage the `@graphql-yoga/plugin-jwt`.
+    *   The JWT plugin will handle the extraction and verification of the token from the `Authorization: Bearer <token>` header.
+    *   On successful verification, the decoded JWT payload (containing the user's ID, roles, and permissions) will be attached to the GraphQL `context`. This avoids the need for extra database lookups on each request.
+    *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
 
 #### 3.3. Client Application (`packages/client`)
 
