@@ -78,17 +78,17 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`.
     *   **Mutations**:
         *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
-        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and returns a JWT.
-        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and returns a JWT.
-        *   `logout`: (Optional) Can be implemented on the client-side by simply deleting the token.
+        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookie.
+        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookie.
+        *   `logout`: Clears the JWT cookie.
 *   **Services and Resolvers**:
 *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The JWT payload should contain `userId`, `email`, `roles`, `permissions`, and the expiration (`exp`).
 *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
     *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (e.g., 72 hours), and returns a URL like `/accept-invitation?token=...`.
-    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and returns a JWT.
+    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the JWT cookie.
 *   **Authentication Plugin (`packages/server/src/plugins/auth-plugin.ts`)**:
-    *   This plugin will be refactored to leverage the `@graphql-yoga/plugin-jwt`.
-    *   The JWT plugin will handle the extraction and verification of the token from the `Authorization: Bearer <token>` header.
+    *   This plugin will be refactored to leverage `@graphql-yoga/plugin-jwt` for token validation, `@whatwg-node/server-plugin-cookies` for cookie management, and `@graphql-yoga/plugin-csrf-prevention` for security.
+    *   The JWT plugin will be configured with a custom extractor to retrieve the token from the `access_token` cookie.
     *   On successful verification, the decoded JWT payload (containing the user's ID, roles, and permissions) will be attached to the GraphQL `context`. This avoids the need for extra database lookups on each request.
     *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
 
@@ -98,11 +98,12 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   Modify the existing `login-page.tsx` component. The form should be updated to use `email` instead of `username`, and the `onSubmit` handler should be adapted to call the new `login` GraphQL mutation.
     *   Create a new screen/page for `Accept Invitation` (`/accept-invitation`).
     *   Create a form for admins to invite new users.
-*   **State Management**:
-    *   Use a React Context or a state management library to store the JWT and the user's authentication status globally.
-    *   The JWT should be stored securely, either in an `HttpOnly` cookie (preferred for security) or `localStorage`.
+*   **Token Storage & State Management**:
+    *   **Cookie-Based Auth**: The server will set the JWT in an `HttpOnly`, `Secure`, `SameSite` cookie upon successful login or invitation acceptance. This prevents client-side JavaScript from accessing the token, mitigating XSS attacks.
+    *   **CSRF Protection**: To counter Cross-Site Request Forgery (CSRF) attacks (which cookies are vulnerable to), the server's CSRF prevention plugin must be enabled and configured.
+    *   **Client State**: The client will use React Context to track the user's *authentication status* (e.g., `isLoggedIn`, `currentUser`), but it will **not** manage the raw JWT string.
 *   **Networking**:
-    *   An Apollo Client `link` or similar middleware should be used to automatically attach the JWT as an `Authorization` header to every GraphQL request.
+    *   The Apollo Client does not need to manually attach the `Authorization` header (since the cookie is sent automatically by the browser). Instead, ensure `credentials: 'include'` is set in the Apollo Client configuration.
 *   **Routing**:
     *   Implement a "protected route" component that wraps pages requiring authentication. If the user is not authenticated, they should be redirected to the `/login` page.
 
