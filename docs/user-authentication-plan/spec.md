@@ -31,6 +31,7 @@ This document outlines the implementation of a new user management system for th
         *   `view:salary`
         *   `insert:transactions`
 *   **Data-Level Security**: The system must enforce data access restrictions based on the user's role. For example, an `employee` should not be able to view salary information.
+    *   **Row-Level Security (RLS)**: Must be implemented at the database level to strictly isolate data between businesses.
 *   **Audit Logging**: The system must verify and record critical security and business actions (e.g., login, user creation, sensitive data access) for compliance and security monitoring.
 *   **Future-Proofing**:
     *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
@@ -93,9 +94,20 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `details`: `jsonb`, nullable (stores before/after state or metadata)
     *   `ip_address`: `text`, nullable
     *   `created_at`: `timestamptz`
-    *   `created_at`: `timestamptz`
 
-#### 3.2. GraphQL API (`packages/server`)
+#### 3.2. Post-Migration Security & RLS
+
+*   **Row-Level Security (RLS)**: Enforce multi-tenancy at the Postgres engine level to prevent cross-business data leakage.
+    *   **Policy Strategy**:
+        *   Enable RLS on all sensitive tables (`transactions`, `documents`, `salary_records`, etc.).
+        *   Create policies that query a session variable (e.g., `app.current_business_id`) to compare against the row's `business_id`.
+    *   **Application Logic**:
+        *   The GraphQL middleware (auth plugin) will set the postgres configuration variable `SET app.current_business_id = '...'` at the start of every transaction based on the authenticated user's context.
+        *   Any query attempted without this variable set (or with a mismatch) will return zero rows or be rejected.
+    *   **Bypass**:
+        *   System-level maintenance tasks can use a "super user" connection that bypasses RLS, but standard application connections must perform as the limited user.
+
+#### 3.3. GraphQL API (`packages/server`)
 
 A new `auth` module will be created under `packages/server/src/modules`.
 
@@ -133,7 +145,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Token Refresh Logic**: If the Access Token is expired but a valid Refresh Token cookie exists, the client (or a specific `refresh` endpoint) should initiate a refresh flow: Validate the Refresh Token against the DB hash. If valid, issue new Access and Refresh tokens, and update the hash in the DB (Rotation).
     *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
 
-#### 3.3. Client Application (`packages/client`)
+#### 3.4. Client Application (`packages/client`)
 
 *   **UI Components**:
     *   Modify the existing `login-page.tsx` component. The form should be updated to use `email` instead of `username`, and the `onSubmit` handler should be adapted to call the new `login` GraphQL mutation.
