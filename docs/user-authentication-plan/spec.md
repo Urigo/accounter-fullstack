@@ -35,6 +35,7 @@ This document outlines the implementation of a new user management system for th
 *   **Audit Logging**: The system must verify and record critical security and business actions (e.g., login, user creation, sensitive data access) for compliance and security monitoring.
 *   **Future-Proofing**:
     *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
+    *   **User-Level Multi-Tenancy**: While the database schema (`business_users`) supports users belonging to multiple businesses, the initial implementation will assume a 1:1 relationship or auto-select the first available business context upon login. Full multi-business UI switching is a future enhancement.
     *   **Multi-Factor Authentication (MFA)**: While out of scope for the initial implementation, the system should be designed with future MFA support (TOTP, etc.) in mind to enhance security for sensitive financial data.
 
 ### 3. Architecture and Implementation Details
@@ -68,6 +69,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `user_id`: `uuid`, foreign key to `users.id`
     *   `business_id`: `uuid`, foreign key to `businesses.id`
     *   `role_id`: `integer`, foreign key to `roles.id`
+    *   *Note: This structure supports M:N relationships, but initial application logic will enforce/assume a single active business context per user session.*
     *   Primary key on (`user_id`, `business_id`)
 *   **`invitations`**: Stores pending user invitations.
     *   `id`: `uuid`, primary key
@@ -131,7 +133,9 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
     *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
     *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
-    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT). Stores the hash of the Refresh Token in the `user-accounts` table. Sets both as `HttpOnly` cookies.
+    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
+        *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
+        *   Stores the hash of the Refresh Token in the `user-accounts` table. Sets both as `HttpOnly` cookies.
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to generate keys. Store a hashed version (e.g., using `bcrypt` or `argon2`) in the `api_keys` table with the associated `business_id` and `scraper` role. Only return the raw key to the user (admin) upon generation.
         *   **Validation**: When a request contains an API key header (e.g., `Authorization: Bearer <key>` or `X-API-Key: <key>`), hash the provided key and look it up in the `api_keys` table. If found, authenticate the request with the associated `business_id` and `role_id`.
