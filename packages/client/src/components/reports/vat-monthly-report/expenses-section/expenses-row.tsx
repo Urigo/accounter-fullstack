@@ -11,47 +11,6 @@ import {
 } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment VatReportExpensesRowFields on VatReportRecord {
-    ...VatReportAccountantApprovalFields
-    business {
-      id
-      name
-    }
-    vatNumber
-    image
-    documentSerial
-    documentDate
-    chargeDate
-    chargeId
-    # chargeAccountantReviewed
-    amount {
-      formatted
-    }
-    localAmount {
-      formatted
-    }
-    localVat {
-      formatted
-    }
-    foreignVatAfterDeduction {
-      formatted
-    }
-    localVatAfterDeduction {
-      formatted
-    }
-    roundedLocalVatAfterDeduction {
-      formatted
-      #   raw
-    }
-    taxReducedLocalAmount {
-      formatted
-      #   raw
-    }
-  }
-`;
-
 interface Props {
   data: FragmentType<typeof VatReportExpensesRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
