@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
+import { ROUTES } from '@/router/routes.js';
 import { VatReportIncomeRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
@@ -57,7 +59,19 @@ export const columns = [
         const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
         return (
           <div className="flex flex-col gap-1">
-            {income.business?.name}
+            {income.business?.id ? (
+              <Link
+                to={ROUTES.BUSINESSES.DETAIL(income.business.id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                className="inline-flex items-center font-semibold"
+              >
+                {income.business.name}
+              </Link>
+            ) : (
+              <span>{income.business?.name}</span>
+            )}
             {income.vatNumber && (
               <span style={{ fontSize: '10px', color: 'darkGray' }}>{income.vatNumber}</span>
             )}

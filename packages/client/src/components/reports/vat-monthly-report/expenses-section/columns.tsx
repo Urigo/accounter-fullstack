@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
+import { ROUTES } from '@/router/routes.js';
 import { VatReportExpensesRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { formatStringifyAmount } from '../../../../helpers/index.js';
@@ -82,7 +84,19 @@ export const columns = [
         );
         return (
           <div className="flex flex-col gap-1">
-            {expense.business?.name}
+            {expense.business?.id ? (
+              <Link
+                to={ROUTES.BUSINESSES.DETAIL(expense.business.id)}
+                target="_blank"
+                rel="noreferrer"
+                onClick={event => event.stopPropagation()}
+                className="inline-flex items-center font-semibold"
+              >
+                {expense.business.name}
+              </Link>
+            ) : (
+              <span>{expense.business?.name}</span>
+            )}
             {expense.vatNumber && (
               <span style={{ fontSize: '10px', color: 'darkGray' }}>{expense.vatNumber}</span>
             )}
@@ -115,7 +129,10 @@ export const columns = [
       id: 'documentSerial',
       header: 'Invoice Serial#',
       cell: info => {
-        const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, info.row.original.data);
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
         return (
           <div className="flex flex-col">
             <span>{info.getValue()}</span>
