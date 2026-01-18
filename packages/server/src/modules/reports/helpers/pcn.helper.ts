@@ -43,6 +43,16 @@ const headerPropsFromTransactions = (
         salesRecordCount += 1;
         break;
       }
+      case EntryType.SALE_UNIDENTIFIED_CUSTOMER: {
+        if (t.totalVat === 0) {
+          zeroValOrExemptSalesCount += t.invoiceSum;
+        } else {
+          taxableSalesVat += t.totalVat * invoiceSumFactor;
+          taxableSalesAmount += t.invoiceSum;
+        }
+        salesRecordCount += 1;
+        break;
+      }
       case EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT: {
         salesRecordCount += 1;
         zeroValOrExemptSalesCount += t.invoiceSum;
@@ -194,7 +204,9 @@ const transactionsFromVatReportRecords = (
     if (!entryType) {
       entryType = EntryType.INPUT_REGULAR;
       if (!t.isExpense) {
-        if (Number(t.foreignVatAfterDeduction ?? 0) === 0) {
+        if (t.businessId === 'dba3952b-9d31-4aff-b0c2-f967c2fe4a0e') {
+          entryType = EntryType.SALE_UNIDENTIFIED_CUSTOMER;
+        } else if (Number(t.foreignVatAfterDeduction ?? 0) === 0) {
           entryType = EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
         } else {
           entryType = EntryType.SALE_REGULAR;
