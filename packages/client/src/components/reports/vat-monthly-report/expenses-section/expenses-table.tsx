@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { Fragment, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Paper } from '@mantine/core';
 import {
@@ -141,7 +141,7 @@ export const ExpensesTable = ({
                   row.original.data,
                 );
                 return (
-                  <React.Fragment key={row.id}>
+                  <Fragment key={row.id}>
                     <TableRow data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map(cell => (
                         <TableCell key={cell.id}>
@@ -158,7 +158,7 @@ export const ExpensesTable = ({
                         </TableCell>
                       </TableRow>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 );
               })
             ) : (

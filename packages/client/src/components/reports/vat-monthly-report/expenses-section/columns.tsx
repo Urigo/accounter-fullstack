@@ -174,7 +174,13 @@ export const columns = [
     {
       id: 'amount',
       header: 'Amount',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return <span className="whitespace-nowrap">{expense.amount.formatted}</span>;
+      },
     },
   ),
   columnHelper.accessor(
@@ -196,7 +202,13 @@ export const columns = [
     {
       id: 'localVat',
       header: 'VAT',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return <span className="whitespace-nowrap">{expense.localVat?.formatted}</span>;
+      },
     },
   ),
   columnHelper.accessor(
@@ -207,7 +219,15 @@ export const columns = [
     {
       id: 'localVatAfterDeduction',
       header: 'VAT ₪',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return (
+          <span className="whitespace-nowrap">{expense.localVatAfterDeduction?.formatted}</span>
+        );
+      },
     },
   ),
   columnHelper.accessor(
@@ -218,7 +238,15 @@ export const columns = [
     {
       id: 'foreignVatAfterDeduction',
       header: 'Actual VAT',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return (
+          <span className="whitespace-nowrap">{expense.foreignVatAfterDeduction?.formatted}</span>
+        );
+      },
     },
   ),
   columnHelper.accessor(
@@ -229,7 +257,17 @@ export const columns = [
     {
       id: 'roundedLocalVatAfterDeduction',
       header: 'Rounded VAT',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return (
+          <span className="whitespace-nowrap">
+            {expense.roundedLocalVatAfterDeduction?.formatted}
+          </span>
+        );
+      },
     },
   ),
   columnHelper.accessor(row => row.cumulativeVat, {
@@ -247,7 +285,15 @@ export const columns = [
     {
       id: 'taxReducedLocalAmount',
       header: 'Amount without VAT ₪',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return (
+          <span className="whitespace-nowrap">{expense.taxReducedLocalAmount?.formatted}</span>
+        );
+      },
     },
   ),
   columnHelper.accessor(row => row.cumulativeAmount, {
