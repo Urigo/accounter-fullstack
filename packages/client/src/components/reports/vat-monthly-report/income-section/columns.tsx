@@ -73,7 +73,7 @@ export const columns = [
               <span>{income.business?.name}</span>
             )}
             {income.vatNumber && (
-              <span style={{ fontSize: '10px', color: 'darkGray' }}>{income.vatNumber}</span>
+              <span className="text-[10px] text-gray-500">{income.vatNumber}</span>
             )}
           </div>
         );
