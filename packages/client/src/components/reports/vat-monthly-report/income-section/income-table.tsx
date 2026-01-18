@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { Fragment, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDownIcon, ChevronUpIcon, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { Paper } from '@mantine/core';
 import {
@@ -133,8 +133,8 @@ export const IncomeTable = ({
                   row.original.data,
                 );
                 return (
-                  <>
-                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  <Fragment key={row.id}>
+                    <TableRow data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map(cell => (
                         <TableCell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -142,7 +142,7 @@ export const IncomeTable = ({
                       ))}
                     </TableRow>
                     {row.getIsExpanded() && (
-                      <TableRow key={`${row.id}-expanded`}>
+                      <TableRow>
                         <TableCell colSpan={columns.length}>
                           <Paper style={{ width: '100%' }} withBorder shadow="lg">
                             <ChargeExtendedInfo chargeID={income.chargeId} fetching={!!income} />
@@ -150,7 +150,7 @@ export const IncomeTable = ({
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 );
               })
             ) : (
