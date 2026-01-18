@@ -191,7 +191,13 @@ export const columns = [
     {
       id: 'localAmount',
       header: 'Amount ₪',
-      cell: info => <span className="whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return <span className="whitespace-nowrap">{expense.localAmount?.formatted}</span>;
+      },
     },
   ),
   columnHelper.accessor(
