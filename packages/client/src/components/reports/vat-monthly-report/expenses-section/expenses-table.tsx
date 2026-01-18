@@ -141,8 +141,8 @@ export const ExpensesTable = ({
                   row.original.data,
                 );
                 return (
-                  <>
-                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                  <React.Fragment key={row.id}>
+                    <TableRow data-state={row.getIsSelected() && 'selected'}>
                       {row.getVisibleCells().map(cell => (
                         <TableCell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -150,7 +150,7 @@ export const ExpensesTable = ({
                       ))}
                     </TableRow>
                     {row.getIsExpanded() && (
-                      <TableRow key={`${row.id}-expanded`}>
+                      <TableRow>
                         <TableCell colSpan={columns.length}>
                           <Paper style={{ width: '100%' }} withBorder shadow="lg">
                             <ChargeExtendedInfo chargeID={expense.chargeId} fetching={!!expense} />
@@ -158,7 +158,7 @@ export const ExpensesTable = ({
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             ) : (
