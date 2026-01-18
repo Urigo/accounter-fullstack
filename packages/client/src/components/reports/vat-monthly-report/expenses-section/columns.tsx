@@ -98,7 +98,7 @@ export const columns = [
               <span>{expense.business?.name}</span>
             )}
             {expense.vatNumber && (
-              <span style={{ fontSize: '10px', color: 'darkGray' }}>{expense.vatNumber}</span>
+              <span className="text-[10px] text-gray-500">{expense.vatNumber}</span>
             )}
           </div>
         );

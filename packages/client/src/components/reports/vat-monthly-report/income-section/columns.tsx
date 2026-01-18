@@ -166,7 +166,9 @@ export const columns = [
   columnHelper.accessor(row => row.cumulativeAmount, {
     id: 'cumulativeAmount',
     header: 'Cumulative Amount ₪',
-    cell: info => '₪ ' + formatStringifyAmount(info.getValue(), 0),
+    cell: info => (
+      <span className="whitespace-nowrap">₪ {formatStringifyAmount(info.getValue(), 0)}</span>
+    ),
   }),
   columnHelper.display({
     id: 'accountantApproval',
