@@ -88,6 +88,7 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     },
   },
   VatReportRecord: {
+    allocationNumber: raw => raw.allocationNumber ?? null,
     documentId: raw => raw.documentId,
     chargeAccountantStatus: raw => raw.chargeAccountantStatus,
     chargeId: raw => raw.chargeId,

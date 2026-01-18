@@ -19,6 +19,7 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
     }
     vatNumber
     image
+    allocationNumber
     documentSerial
     documentDate
     chargeDate
@@ -113,7 +114,17 @@ export const columns = [
     {
       id: 'documentSerial',
       header: 'Invoice Serial#',
-      cell: info => info.getValue(),
+      cell: info => {
+        const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, info.row.original.data);
+        return (
+          <div className="flex flex-col">
+            <span>{info.getValue()}</span>
+            {expense.allocationNumber && (
+              <span className="text-xs">({expense.allocationNumber})</span>
+            )}
+          </div>
+        );
+      },
     },
   ),
   columnHelper.accessor(
