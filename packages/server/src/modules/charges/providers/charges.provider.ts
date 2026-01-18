@@ -340,6 +340,7 @@ export class ChargesProvider {
 
   public generateCharge(params: IGenerateChargeParams) {
     const fullParams = {
+      isProperty: false,
       userDescription: null,
       optionalVAT: false,
       optionalDocuments: false,
