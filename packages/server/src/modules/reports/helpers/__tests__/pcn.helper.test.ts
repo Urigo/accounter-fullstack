@@ -8,12 +8,27 @@ import {
   getTotalVAT,
   getVatIdForTransaction,
 } from '../pcn.helper.js';
-import { EntryType } from '@accounter/pcn874-generator';
+import { EntryType, validatePcn874 } from '@accounter/pcn874-generator';
 import type { RawVatReportRecord } from '../vat-report.helper.js';
 import { Currency } from '../../../../shared/enums.js';
+import { getVatRecords } from '../../resolvers/get-vat-records.resolver.js';
+import { IGetChargesByIdsResult } from '../../../charges/types.js';
+import { TimelessDateString } from 'shared/types/index.js';
+
+type GetVatRecordsResponse = {
+      income: Array<RawVatReportRecord>;
+      expenses: Array<RawVatReportRecord>;
+      missingInfo: Array<IGetChargesByIdsResult>;
+      differentMonthDoc: Array<IGetChargesByIdsResult>;
+      businessTrips: Array<IGetChargesByIdsResult>;
+    };
+
+vi.mock('../../resolvers/get-vat-records.resolver.js', () => ({
+  getVatRecords: vi.fn(),
+}));
 
 const FIXED_DATE = new Date('2024-01-15');
-const FIXED_REPORT_MONTH = '2024-01';
+const FIXED_REPORT_MONTH = '2024-01-15';
 const FIXED_VAT_NUMBER = '123456789';
 const FIXED_BUSINESS_ID = 'test-business-123';
 
@@ -46,6 +61,56 @@ function createMockVatRecord(overrides?: Partial<RawVatReportRecord>): RawVatRep
   };
 }
 
+function createMockBusiness(vatNumber?: string) {
+  const resolvedVatNumber = vatNumber || FIXED_VAT_NUMBER;
+  return {
+    id: FIXED_BUSINESS_ID,
+    name: 'Test Business Ltd',
+    hebrewName: 'חברת בדיקה בע"מ',
+    address: 'Tel Aviv',
+    country: 'IL',
+    vatNumber: resolvedVatNumber,
+    vat_number: resolvedVatNumber,
+  };
+}
+
+interface MockContextOptions {
+  business?: any;
+  vatRecords?: RawVatReportRecord[];
+}
+
+function createMockContext(options: MockContextOptions = {}) {
+  const { business, vatRecords } = options;
+
+  const mockLoaders = {
+    getFinancialEntityByIdLoader: {
+      load: vi.fn().mockResolvedValue(business || createMockBusiness()),
+    },
+    getIncomeAndExpenseVatRecordsForReportLoader: {
+      load: vi.fn().mockResolvedValue(vatRecords || []),
+    },
+  };
+  const mockProviders = {
+    BusinessesProvider: {
+      getBusinessByIdLoader: {
+        load: vi.fn().mockResolvedValue(business || createMockBusiness()),
+      },
+    },
+  };
+
+  return {
+    injector: {
+      get: vi.fn((token: any) => {
+        const tokenName = typeof token === 'string' ? token : token.name;
+        return (
+          mockProviders[tokenName as keyof typeof mockProviders] ||
+          mockLoaders[tokenName as keyof typeof mockLoaders]
+        );
+      }),
+    },
+  } as unknown as GraphQLModules.Context;
+}
+
 describe('pcn.helper', () => {
   describe('Mock Factories', () => {
     it('should create a mock VAT record with defaults', () => {
@@ -58,6 +123,20 @@ describe('pcn.helper', () => {
       const record = createMockVatRecord({ localVat: 200 });
       expect(record.localVat).toBe(200);
       expect(record.localAmountBeforeVAT).toBe(1000);
+    });
+
+    it('should create a mock business with VAT number', () => {
+      const business = createMockBusiness('987654321');
+      expect(business.vatNumber).toBe('987654321');
+    });
+
+    it('should create a mock context with loaders', () => {
+      const business = createMockBusiness();
+      const vatRecords = [createMockVatRecord()];
+      const context = createMockContext({ business, vatRecords });
+
+      expect(context.injector).toBeDefined();
+      expect(vi.isMockFunction(context.injector.get)).toBe(true);
     });
   });
 
@@ -146,7 +225,7 @@ describe('pcn.helper', () => {
           vatNumber: '123456789',
           pcn874RecordType: EntryType.SALE_UNIDENTIFIED_CUSTOMER,
         });
-        const result = (getVatIdForTransaction as any)(record, 'L1' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('0');
       });
 
@@ -155,7 +234,7 @@ describe('pcn.helper', () => {
           vatNumber: '123456789',
           pcn874RecordType: EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT,
         });
-        const result = (getVatIdForTransaction as any)(record, 'L2' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('0');
       });
 
@@ -164,7 +243,7 @@ describe('pcn.helper', () => {
           vatNumber: '123456789',
           pcn874RecordType: EntryType.INPUT_PETTY_CASH,
         });
-        const result = (getVatIdForTransaction as any)(record, 'K' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('0');
       });
 
@@ -173,7 +252,7 @@ describe('pcn.helper', () => {
           vatNumber: null,
           pcn874RecordType: EntryType.INPUT_REGULAR,
         });
-        const result = (getVatIdForTransaction as any)(record, 'T' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('999999999');
       });
 
@@ -182,7 +261,7 @@ describe('pcn.helper', () => {
           vatNumber: '123456789',
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getVatIdForTransaction as any)(record, 'S1' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('123456789');
       });
 
@@ -191,7 +270,7 @@ describe('pcn.helper', () => {
           vatNumber: '987654321',
           pcn874RecordType: EntryType.SALE_PALESTINIAN_CUSTOMER,
         });
-        const result = (getVatIdForTransaction as any)(record, 'I' as any);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('987654321');
       });
 
@@ -200,7 +279,7 @@ describe('pcn.helper', () => {
           vatNumber: '123456789',
           pcn874RecordType: undefined,
         });
-        const result = (getVatIdForTransaction as any)(record, undefined);
+        const result = getVatIdForTransaction(record);
         expect(result).toBe('123456789');
       });
     });
@@ -211,7 +290,7 @@ describe('pcn.helper', () => {
           documentSerial: 'INV-123',
           pcn874RecordType: EntryType.INPUT_IMPORT,
         });
-        const result = (getReferenceForTransaction as any)(record, 'R' as any);
+        const result = getReferenceForTransaction(record);
         expect(result).toBe('0');
       });
 
@@ -220,7 +299,7 @@ describe('pcn.helper', () => {
           documentSerial: 'INV-1234',
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getReferenceForTransaction as any)(record, 'S1' as any);
+        const result = getReferenceForTransaction(record);
         expect(result).toBe('INV-1234');
       });
 
@@ -229,7 +308,7 @@ describe('pcn.helper', () => {
           documentSerial: null,
           pcn874RecordType: EntryType.SALE_UNIDENTIFIED_CUSTOMER,
         });
-        const result = (getReferenceForTransaction as any)(record, 'L1' as any);
+        const result = getReferenceForTransaction(record);
         expect(result).toBe('1');
       });
 
@@ -238,7 +317,7 @@ describe('pcn.helper', () => {
           documentSerial: null,
           pcn874RecordType: EntryType.INPUT_PETTY_CASH,
         });
-        const result = (getReferenceForTransaction as any)(record, 'K' as any);
+        const result = getReferenceForTransaction(record);
         expect(result).toBe('1');
       });
 
@@ -247,7 +326,7 @@ describe('pcn.helper', () => {
           documentSerial: null,
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getReferenceForTransaction as any)(record, 'S1' as any);
+        const result = getReferenceForTransaction(record);
         expect(result).toBe('0');
       });
     });
@@ -258,7 +337,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: 170.4,
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getTotalVAT as any)(record, 'S1' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(170);
       });
 
@@ -267,7 +346,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: -170.6,
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getTotalVAT as any)(record, 'S1' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(171);
       });
 
@@ -276,7 +355,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: 170,
           pcn874RecordType: EntryType.SALE_ZERO_OR_EXEMPT,
         });
-        const result = (getTotalVAT as any)(record, 'S2' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(0);
       });
 
@@ -285,7 +364,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: 170,
           pcn874RecordType: EntryType.SALE_EXPORT,
         });
-        const result = (getTotalVAT as any)(record, 'Y' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(0);
       });
 
@@ -294,7 +373,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: 0,
           pcn874RecordType: EntryType.SALE_REGULAR,
         });
-        const result = (getTotalVAT as any)(record, 'S1' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(0);
       });
 
@@ -303,7 +382,7 @@ describe('pcn.helper', () => {
           roundedVATToAdd: 85.3,
           pcn874RecordType: EntryType.SALE_PALESTINIAN_CUSTOMER,
         });
-        const result = (getTotalVAT as any)(record, 'I' as any);
+        const result = getTotalVAT(record);
         expect(result).toBe(85);
       });
     });
@@ -441,14 +520,451 @@ describe('pcn.helper', () => {
   });
 
   describe('Integration Tests', () => {
-    it('placeholder', () => {
-      expect(true).toBe(true);
+    describe('getPcn874String', () => {
+      describe('Standard Mixed Report', () => {
+        it('should generate valid PCN874 for typical monthly report', async () => {
+          const vatRecords = [
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_REGULAR,
+              localAmountBeforeVAT: 1000,
+              localVat: 170,
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_REGULAR,
+              localAmountBeforeVAT: 2000,
+              localVat: 340,
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.INPUT_REGULAR,
+              localAmountBeforeVAT: 500,
+              localVat: 85,
+              isExpense: true,
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.INPUT_REGULAR,
+              localAmountBeforeVAT: 300,
+              localVat: 51,
+              isExpense: true,
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_EXPORT,
+              localAmountBeforeVAT: 5000,
+              localVat: 0,
+            }),
+          ];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as GetVatRecordsResponse);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(true);
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          expect(lines[0].length).toBe(131);
+          expect(lines[lines.length - 1].length).toBe(10);
+
+          const transactionLines = lines.slice(1, -1);
+          expect(transactionLines.length).toBe(5);
+          transactionLines.forEach((line) => {
+            expect(line.length).toBe(60);
+          });
+
+          expect(result.reportMonth).toBe('202401');
+          expect(result.financialEntity.vat_number).toBe(FIXED_VAT_NUMBER);
+        });
+      });
+
+      describe('Foreign Businesses with VAT', () => {
+        it('should place foreign business with VAT in exempt sales', async () => {
+          const vatRecords = [
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_PALESTINIAN_CUSTOMER,
+              localAmountBeforeVAT: 1000,
+              localVat: 170,
+              vatNumber: '987654321',
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_REGULAR,
+              localAmountBeforeVAT: 2000,
+              localVat: 340,
+            }),
+          ];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as GetVatRecordsResponse);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(true);
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          const transactionLines = lines.slice(1, -1);
+
+          const foreignTx = transactionLines.find((line) => line.startsWith('I'));
+          expect(foreignTx).toBeDefined();
+          expect(foreignTx).toContain('987654321');
+
+          const regularTx = transactionLines.find((line) => line.startsWith('S'));
+          expect(regularTx).toBeDefined();
+        });
+      });
+
+      describe('Edge Cases', () => {
+        it('should handle zero-VAT transactions only', async () => {
+          const vatRecords = [
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_ZERO_OR_EXEMPT,
+              localVat: 0,
+              localAmountBeforeVAT: 1000,
+            }),
+            createMockVatRecord({
+              pcn874RecordType: EntryType.SALE_EXPORT,
+              localVat: 0,
+              localAmountBeforeVAT: 2000,
+            }),
+          ];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as GetVatRecordsResponse);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(true);
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          expect(lines.length).toBeGreaterThan(2);
+        });
+
+        it('should handle negative amounts (credit invoices)', async () => {
+          const vatRecords = [
+            createMockVatRecord({
+              localAmountBeforeVAT: -500,
+              localVat: -85,
+            }),
+          ];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as GetVatRecordsResponse);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(true);
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          expect(lines.length).toBe(3);
+        });
+
+        it('should skip records with missing document dates', async () => {
+          const vatRecords = [
+            createMockVatRecord({ documentDate: null }),
+            createMockVatRecord({ documentDate: FIXED_DATE }),
+          ];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as any);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(true);
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          const transactionLines = lines.slice(1, -1);
+          expect(transactionLines.length).toBe(1);
+          expect(consoleDebugSpy).toHaveBeenCalled();
+
+          consoleDebugSpy.mockRestore();
+        });
+
+        it('should generate minimal report for empty records', async () => {
+          const vatRecords: RawVatReportRecord[] = [];
+
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: [],
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as any);
+
+          const result = await getPcn874String(
+            context,
+            FIXED_BUSINESS_ID,
+            FIXED_REPORT_MONTH,
+          );
+
+          expect(validatePcn874(result.reportContent)).toBe(false); // Header/footer only is not valid but should still be generated
+
+          const lines = result.reportContent.split('\n').filter((line) => line.length > 0);
+          expect(lines.length).toBe(2);
+          expect(lines[0].length).toBe(131);
+          expect(lines[1].length).toBe(10);
+        });
+      });
+
+      describe('Error Handling', () => {
+        it('should throw error when business has no VAT number', async () => {
+          const vatRecords = [createMockVatRecord()];
+          const businessWithoutVAT = createMockBusiness(undefined) as any;
+          businessWithoutVAT.vatNumber = null;
+          businessWithoutVAT.vat_number = null;
+
+          const context = createMockContext({
+            business: businessWithoutVAT,
+            vatRecords,
+          });
+
+          await expect(
+            getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH),
+          ).rejects.toThrow(/VAT/i);
+        });
+
+        it('should validate report month format', async () => {
+          const vatRecords = [createMockVatRecord()];
+          const business = createMockBusiness();
+          const context = createMockContext({ business, vatRecords });
+
+          vi.mocked(getVatRecords).mockResolvedValue({
+            income: vatRecords,
+            expenses: [],
+            missingInfo: [],
+            differentMonthDoc: [],
+            businessTrips: [],
+          } as GetVatRecordsResponse);
+
+          const result = await getPcn874String(context, FIXED_BUSINESS_ID, '2024-1' as TimelessDateString);
+          expect(result.reportMonth).toBe('202401');
+        });
+      });
     });
   });
 
   describe('Snapshot Tests', () => {
-    it('placeholder', () => {
-      expect(true).toBe(true);
+    describe('PCN874 Format Snapshots', () => {
+      it('should match snapshot for standard mixed report', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_REGULAR,
+            localAmountBeforeVAT: 1000,
+            localVat: 170,
+            documentSerial: 'INV-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_REGULAR,
+            localAmountBeforeVAT: 2000,
+            localVat: 340,
+            documentSerial: 'INV-002',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.INPUT_REGULAR,
+            localAmountBeforeVAT: 500,
+            localVat: 85,
+            isExpense: true,
+            documentSerial: 'BILL-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.INPUT_REGULAR,
+            localAmountBeforeVAT: 300,
+            localVat: 51,
+            isExpense: true,
+            documentSerial: 'BILL-002',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_EXPORT,
+            localAmountBeforeVAT: 5000,
+            localVat: 0,
+            documentSerial: 'EXP-001',
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: vatRecords,
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for PR #2940 foreign businesses', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_PALESTINIAN_CUSTOMER,
+            localAmountBeforeVAT: 1000,
+            localVat: 170,
+            vatNumber: '987654321',
+            documentSerial: 'INTL-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_REGULAR,
+            localAmountBeforeVAT: 2000,
+            localVat: 340,
+            documentSerial: 'INV-001',
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: vatRecords,
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for zero-VAT transactions', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_ZERO_OR_EXEMPT,
+            localAmountBeforeVAT: 1000,
+            localVat: 0,
+            documentSerial: 'EXEMPT-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_EXPORT,
+            localAmountBeforeVAT: 2000,
+            localVat: 0,
+            documentSerial: 'EXP-001',
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: vatRecords,
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for imports and exports', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            pcn874RecordType: EntryType.INPUT_IMPORT,
+            localAmountBeforeVAT: 3000,
+            localVat: 510,
+            isExpense: true,
+            documentSerial: 'IMP-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_EXPORT,
+            localAmountBeforeVAT: 5000,
+            localVat: 0,
+            documentSerial: 'EXP-001',
+          }),
+          createMockVatRecord({
+            pcn874RecordType: EntryType.SALE_REGULAR,
+            localAmountBeforeVAT: 1000,
+            localVat: 170,
+            documentSerial: 'INV-001',
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: vatRecords,
+          expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
     });
   });
 
