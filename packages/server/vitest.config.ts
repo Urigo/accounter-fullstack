@@ -23,7 +23,7 @@ export default defineConfig({
         __dirname,
         '../green-invoice-graphql/src/index.js',
       ),
-      '@accounter/pcn874-generator': path.resolve(__dirname, '../pcn874-generator/src/index.js'),
+      '@accounter/pcn874-generator': path.resolve(__dirname, '../pcn874-generator/src/index.ts'),
       '@accounter/shaam6111-generator': path.resolve(
         __dirname,
         '../shaam6111-generator/src/index.js',
