@@ -1,12 +1,22 @@
 import 'reflect-metadata';
+import { resolve } from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
+const __dirname = new URL('.', import.meta.url).pathname;
+
 export default defineConfig({
   plugins: [tsconfigPaths()],
+  resolve: {
+    alias: {
+      '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+    },
+  },
   test: {
     globals: true,
-    alias: {},
+    alias: {
+      '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+    },
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
     globalSetup: ['./scripts/vitest-global-setup.ts'],
@@ -24,6 +34,12 @@ export default defineConfig({
             '**/*.integration.test.ts',
           ],
           globals: true,
+          alias: {
+            '@accounter/pcn874-generator': resolve(
+              __dirname,
+              'packages/pcn874-generator/src/index.ts',
+            ),
+          },
           setupFiles: ['./scripts/vitest-setup.ts'],
           globalSetup: ['./scripts/vitest-global-setup.ts'],
         },
@@ -43,6 +59,12 @@ export default defineConfig({
             'packages/server/src/demo-fixtures/**',
           ],
           globals: true,
+          alias: {
+            '@accounter/pcn874-generator': resolve(
+              __dirname,
+              'packages/pcn874-generator/src/index.ts',
+            ),
+          },
           setupFiles: ['./scripts/vitest-setup.ts'],
           globalSetup: ['./scripts/vitest-global-setup.ts'],
         },
@@ -53,6 +75,12 @@ export default defineConfig({
           include: ['packages/server/src/demo-fixtures/__tests__/seed-and-validate.test.ts'],
           exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
           globals: true,
+          alias: {
+            '@accounter/pcn874-generator': resolve(
+              __dirname,
+              'packages/pcn874-generator/src/index.ts',
+            ),
+          },
           setupFiles: ['./scripts/vitest-setup.ts', './scripts/vitest-demo-seed-setup.ts'],
           globalSetup: ['./scripts/vitest-global-setup.ts'],
         },
