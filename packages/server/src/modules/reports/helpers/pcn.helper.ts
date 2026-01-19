@@ -18,7 +18,7 @@ type Transaction = GeneratorParameters[1][number];
 export type ExtendedPCNTransaction = Omit<Transaction, 'totalVat'> &
   Required<Pick<Transaction, 'totalVat'>> & { isProperty: boolean };
 
-const headerPropsFromTransactions = (
+export const getHeaderDataFromRecords = (
   transactions: ExtendedPCNTransaction[],
   licensedDealerId: string,
   reportMonth = '',
@@ -105,7 +105,9 @@ const headerPropsFromTransactions = (
   return header;
 };
 
-const safeParseEntryType = (entryType: Pcn874RecordType | undefined): EntryType | undefined => {
+export const getEntryTypeByRecord = (
+  entryType: Pcn874RecordType | undefined,
+): EntryType | undefined => {
   if (!entryType) {
     return undefined;
   }
@@ -149,7 +151,7 @@ const NO_VAT_ID_ENTRIES: string[] = [
 ] as const;
 
 // TODO: migrate helper functions to PCN874 generator
-function getVatId(t: RawVatReportRecord): string {
+export function getVatIdForTransaction(t: RawVatReportRecord): string {
   if (t.pcn874RecordType && NO_VAT_ID_ENTRIES.includes(t.pcn874RecordType)) {
     return '0';
   }
@@ -161,7 +163,7 @@ function getVatId(t: RawVatReportRecord): string {
   return t.vatNumber ?? '0';
 }
 
-function getRefNumber(t: RawVatReportRecord): string {
+export function getReferenceForTransaction(t: RawVatReportRecord): string {
   if (t.pcn874RecordType === EntryType.INPUT_IMPORT) {
     return '0';
   }
@@ -180,7 +182,7 @@ function getRefNumber(t: RawVatReportRecord): string {
   return '0';
 }
 
-function getTotalVat(t: RawVatReportRecord): number {
+export function getTotalVAT(t: RawVatReportRecord): number {
   if (
     t.pcn874RecordType === EntryType.SALE_ZERO_OR_EXEMPT ||
     t.pcn874RecordType === EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT ||
@@ -200,11 +202,11 @@ const transactionsFromVatReportRecords = (
       console.debug(`Document ${t.documentId} has no tax_invoice_date. Skipping it.`);
       continue;
     }
-    let entryType = safeParseEntryType(t.pcn874RecordType);
+    let entryType = getEntryTypeByRecord(t.pcn874RecordType);
     if (!entryType) {
       entryType = EntryType.INPUT_REGULAR;
       if (!t.isExpense) {
-        if (t.businessId === 'dba3952b-9d31-4aff-b0c2-f967c2fe4a0e') {
+        if ((t.vatNumber ?? 0) !== 0) {
           entryType = EntryType.SALE_UNIDENTIFIED_CUSTOMER;
         } else if (Number(t.foreignVatAfterDeduction ?? 0) === 0) {
           entryType = EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
@@ -216,11 +218,11 @@ const transactionsFromVatReportRecords = (
 
     const transaction: ExtendedPCNTransaction = {
       entryType,
-      vatId: getVatId(t),
+      vatId: getVatIdForTransaction(t),
       invoiceDate: format(new Date(t.documentDate!), 'yyyyMMdd'),
       refGroup: '0000',
-      refNumber: getRefNumber(t),
-      totalVat: getTotalVat(t),
+      refNumber: getReferenceForTransaction(t),
+      totalVat: getTotalVAT(t),
       invoiceSum: Math.round(Number(t.localAmountBeforeVAT)),
       isProperty: t.isProperty,
       allocationNumber: t.allocationNumber ?? undefined,
@@ -259,7 +261,7 @@ export async function getPcn874String(
   return { reportContent, monthDate, reportMonth, financialEntity };
 }
 
-export const generatePcnFromCharges = (
+const generatePcnFromCharges = (
   vatRecords: RawVatReportRecord[],
   vatNumber: string,
   reportMonth: string,
@@ -276,7 +278,7 @@ export const generatePcnFromCharges = (
 
   const transactions = transactionsFromVatReportRecords(vatRecords);
 
-  const header = headerPropsFromTransactions(transactions, vatNumber, reportMonth);
+  const header = getHeaderDataFromRecords(transactions, vatNumber, reportMonth);
 
   const reportContent = pcnGenerator(header, transactions, { strict: false });
 
