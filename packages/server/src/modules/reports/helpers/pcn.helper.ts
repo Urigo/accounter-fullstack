@@ -249,7 +249,7 @@ export async function getPcn874String(
     context,
   );
   const reportMonth = format(new Date(monthDate), 'yyyyMM');
-  const reportContent = generatePcnFromCharges(
+  const reportContent = generatePcnFromVatRecords(
     [
       ...(vatRecords.income as RawVatReportRecord[]),
       ...(vatRecords.expenses as RawVatReportRecord[]),
@@ -261,7 +261,7 @@ export async function getPcn874String(
   return { reportContent, monthDate, reportMonth, financialEntity };
 }
 
-const generatePcnFromCharges = (
+const generatePcnFromVatRecords = (
   vatRecords: RawVatReportRecord[],
   vatNumber: string,
   reportMonth: string,
