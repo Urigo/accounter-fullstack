@@ -3,6 +3,8 @@ import { resolve } from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
+const __dirname = new URL('.', import.meta.url).pathname;
+
 export default defineConfig({
   plugins: [tsconfigPaths()],
   resolve: {
