@@ -1,9 +1,15 @@
 import 'reflect-metadata';
+import { resolve } from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
+  resolve: {
+    alias: {
+      '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+    },
+  },
   test: {
     globals: true,
     alias: {},
