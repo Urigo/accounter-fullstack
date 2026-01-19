@@ -117,7 +117,7 @@ __metadata:
     react-day-picker: "npm:9.13.0"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.2.3"
-    react-error-boundary: "npm:6.0.3"
+    react-error-boundary: "npm:6.1.0"
     react-hook-form: "npm:7.71.1"
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.12.0"
@@ -19561,12 +19561,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-error-boundary@npm:6.0.3":
-  version: 6.0.3
-  resolution: "react-error-boundary@npm:6.0.3"
+"react-error-boundary@npm:6.1.0":
+  version: 6.1.0
+  resolution: "react-error-boundary@npm:6.1.0"
   peerDependencies:
     react: ^18.0.0 || ^19.0.0
-  checksum: 10c0/993f1e31b5dd78ae254e122faee53ef4cb986dc8f029fa670584bea25c713f38f82e9aba870d5083a47802c88aee534758111ebc5d2a2209ba79e1becb8a65f9
+  checksum: 10c0/943eda25fef9bb70400861506be679d3025fa291ac1665b789d6af886cfb8d8af6c155d1fa6649b19ff45aa40ec9fd88592f169da07beeb74e08e674452932a9
   languageName: node
   linkType: hard
 
