@@ -17,7 +17,7 @@ jobs:
           node -e "const fs=require('fs'); const pkg=require('./package.json');
           const path='.node-version';
           const version=fs.existsSync(path)?fs.readFileSync(path,'utf8').trim():(pkg.engines&&pkg.engines.node);
-          if(!version) throw new Error('No Node version found'); 
+          if(version == null) throw new Error('No Node version found'); 
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `node=${version}\n`);"
 
   stable:
