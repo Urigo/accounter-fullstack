@@ -61,16 +61,14 @@ function createMockVatRecord(overrides?: Partial<RawVatReportRecord>): RawVatRep
   };
 }
 
-function createMockBusiness(vatNumber?: string) {
-  const resolvedVatNumber = vatNumber || FIXED_VAT_NUMBER;
+function createMockBusiness(vatNumber: string = FIXED_VAT_NUMBER) {
   return {
     id: FIXED_BUSINESS_ID,
     name: 'Test Business Ltd',
     hebrewName: 'חברת בדיקה בע"מ',
     address: 'Tel Aviv',
     country: 'IL',
-    vatNumber: resolvedVatNumber,
-    vat_number: resolvedVatNumber,
+    vat_number: vatNumber,
   };
 }
 
@@ -127,7 +125,7 @@ describe('pcn.helper', () => {
 
     it('should create a mock business with VAT number', () => {
       const business = createMockBusiness('987654321');
-      expect(business.vatNumber).toBe('987654321');
+      expect(business.vat_number).toBe('987654321');
     });
 
     it('should create a mock context with loaders', () => {
@@ -955,6 +953,217 @@ describe('pcn.helper', () => {
         vi.mocked(getVatRecords).mockResolvedValue({
           income: vatRecords,
           expenses: [],
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for property expenses', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "0101-0202",
+            documentAmount: "4680",
+            foreignVat: null,
+            localVat: 713.9,
+            isProperty: true,
+            vatNumber: FIXED_VAT_NUMBER,
+            isExpense: true,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: 475.9333333333333,
+            localVatAfterDeduction: 475.9333333333333,
+            foreignAmountBeforeVAT: 4204.066666666667,
+            localAmountBeforeVAT: 4204.066666666667,
+            roundedVATToAdd: 476,
+            eventLocalAmount: 4680,
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: [],
+          expenses: vatRecords,
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for credit invoices (with & without VAT)', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Usd,
+            documentSerial: "10123",
+            documentAmount: "6000",
+            foreignVat: -1810.54,
+            localVat: null,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: -1810.54,
+            localVatAfterDeduction: -2597.4086299999996,
+            foreignAmountBeforeVAT: -5084.74,
+            localAmountBeforeVAT: -16596.59136,
+            roundedVATToAdd: -2598,
+            eventLocalAmount: -10584,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Usd,
+            documentSerial: "20123",
+            documentAmount: "6000",
+            foreignVat: 1810.54,
+            localVat: null,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: 1810.54,
+            localVatAfterDeduction: 2597.4086299999996,
+            foreignAmountBeforeVAT: 5084.74,
+            localAmountBeforeVAT: 16596.59136,
+            roundedVATToAdd: 2598,
+            eventLocalAmount: 10584,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "80123",
+            documentAmount: "2000.15",
+            foreignVat: null,
+            localVat: null,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: undefined,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: -2000.15,
+            roundedVATToAdd: undefined,
+            eventLocalAmount: -2000.15,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "90123",
+            documentAmount: "2000.15",
+            foreignVat: undefined,
+            localVat: undefined,
+            isProperty: false,
+            vatNumber: undefined,
+            isExpense: false,
+            allocationNumber: undefined,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: undefined,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: 2000.15,
+            roundedVATToAdd: undefined,
+            eventLocalAmount: 2000.15,
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: [],
+          expenses: vatRecords,
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for petty cash (taxi invoices - record type is overridden)', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            chargeAccountantStatus: "APPROVED",
+            currencyCode: Currency.Ils,
+            documentSerial: "19",
+            documentAmount: "441.7",
+            foreignVat: null,
+            localVat: 67.38,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: true,
+            pcn874RecordType: "K",
+            foreignVatAfterDeduction: 67.38,
+            localVatAfterDeduction: 67.38,
+            foreignAmountBeforeVAT: 374.32,
+            localAmountBeforeVAT: 374.32,
+            roundedVATToAdd: 67,
+            eventLocalAmount: 441.7,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "APPROVED",
+            currencyCode: Currency.Ils,
+            documentSerial: "565",
+            documentAmount: "199.8",
+            foreignVat: null,
+            localVat: 30.48,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: true,
+            pcn874RecordType: "K",
+            foreignVatAfterDeduction: 30.48,
+            localVatAfterDeduction: 30.48,
+            foreignAmountBeforeVAT: 169.32000000000002,
+            localAmountBeforeVAT: 169.32000000000002,
+            roundedVATToAdd: 30,
+            eventLocalAmount: 199.8,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "APPROVED",
+            currencyCode: Currency.Ils,
+            documentSerial: "9476",
+            documentAmount: "165",
+            foreignVat: null,
+            localVat: 25.17,
+            isProperty: false,
+            vatNumber: null,
+            isExpense: true,
+            pcn874RecordType: "K",
+            foreignVatAfterDeduction: 25.17,
+            localVatAfterDeduction: 25.17,
+            foreignAmountBeforeVAT: 139.82999999999998,
+            localAmountBeforeVAT: 139.82999999999998,
+            roundedVATToAdd: 25,
+            eventLocalAmount: 165,
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: [],
+          expenses: vatRecords,
           missingInfo: [],
           differentMonthDoc: [],
           businessTrips: [],
