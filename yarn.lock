@@ -308,7 +308,7 @@ __metadata:
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:170.0.0"
     graphql: "npm:16.12.0"
-    graphql-modules: "npm:3.0.0"
+    graphql-modules: "npm:3.1.1"
     graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.18.0"
     inline-css: "npm:4.0.3"
@@ -14331,9 +14331,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-modules@npm:3.0.0":
-  version: 3.0.0
-  resolution: "graphql-modules@npm:3.0.0"
+"graphql-modules@npm:3.1.1":
+  version: 3.1.1
+  resolution: "graphql-modules@npm:3.1.1"
   dependencies:
     "@graphql-tools/schema": "npm:^10.0.0"
     "@graphql-tools/wrap": "npm:^10.0.0"
@@ -14341,7 +14341,7 @@ __metadata:
     ramda: "npm:^0.30.0"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/946d8d88841aeb01ab0786c48bd8b393714e4d4528e2737036a5d6e8ebd66b2130c85160a5898fd6653fbda336192082775cb616e96beddd827688ccc2293e35
+  checksum: 10c0/94f230bb46146f8eb45d894cb8ff8c1344e4c6a5380096d488be7f86bbe8ee61532222e6deb5a96de945948529ad712112003332fb9847dee85c849a898cb4ae
   languageName: node
   linkType: hard
 
