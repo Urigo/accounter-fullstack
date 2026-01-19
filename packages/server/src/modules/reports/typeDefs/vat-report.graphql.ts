@@ -31,6 +31,7 @@ export default gql`
     image: String
     documentSerial: String
     documentDate: TimelessDate
+    allocationNumber: String
     chargeDate: TimelessDate
     amount: FinancialAmount!
     localAmount: FinancialAmount
