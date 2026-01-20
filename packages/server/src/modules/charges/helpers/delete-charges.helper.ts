@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { BankDepositChargesProvider } from 'modules/bank-deposits/providers/bank-deposit-charges.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../../ledger/providers/unbalanced-businesses.provider.js';
@@ -71,12 +72,26 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
           throw new Error(message);
         });
 
+      // clear assigned bank deposit
+      const clearAssignedBankDepositPromise = injector
+        .get(BankDepositChargesProvider)
+        .deleteChargeDepositByChargeId(chargeId)
+        .catch(e => {
+          const message = `Failed to clear assigned bank deposit for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new Error(message);
+        });
+
       await Promise.all([
         clearAllChargeTagsPromise,
         clearBusinessTripsPromise,
         clearLedgerPromise,
         clearSpreadPromise,
         clearUnbalancedBusinessesPromise,
+        clearAssignedBankDepositPromise,
       ]);
     } catch (e) {
       if (e instanceof GraphQLError) {

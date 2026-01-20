@@ -6,6 +6,7 @@ import { DBProvider } from '../../app-providers/db.provider.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type {
+  IDeleteBankDepositChargeByChargeIdQuery,
   IGetAllDepositsWithTransactionsQuery,
   IGetDepositTransactionsByChargeIdQuery,
   IGetTransactionsByBankDepositsQuery,
@@ -42,6 +43,11 @@ const insertOrUpdateBankDepositCharge = sql<IInsertOrUpdateBankDepositChargeQuer
   INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id)
   VALUES ($chargeId, $depositId, $accountId)
   ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id, account_id = EXCLUDED.account_id;
+`;
+
+const deleteBankDepositChargeByChargeId = sql<IDeleteBankDepositChargeByChargeIdQuery>`
+  DELETE FROM accounter_schema.charges_bank_deposits
+  WHERE id = $chargeId;
 `;
 
 const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>`
@@ -206,6 +212,10 @@ export class BankDepositChargesProvider {
       currencyError: [],
       transactionIds: [],
     };
+  }
+
+  public async deleteChargeDepositByChargeId(chargeId: string) {
+    return deleteBankDepositChargeByChargeId.run({ chargeId }, this.dbProvider);
   }
 
   public async assignChargeToDeposit(chargeId: string, depositId: string) {
