@@ -127,7 +127,7 @@ export const VatMonthlyReport = (): ReactElement => {
               <IncomeTable
                 data={data?.vatReport}
                 toggleMergeCharge={toggleMergeCharge}
-                mergeSelectedCharges={mergeSelectedCharges}
+                mergeSelectedCharges={mergeSelectedChargesSet}
               />
             )}
 
@@ -135,7 +135,7 @@ export const VatMonthlyReport = (): ReactElement => {
               <ExpensesTable
                 data={data?.vatReport}
                 toggleMergeCharge={toggleMergeCharge}
-                mergeSelectedCharges={mergeSelectedCharges}
+                mergeSelectedCharges={mergeSelectedChargesSet}
               />
             )}
 

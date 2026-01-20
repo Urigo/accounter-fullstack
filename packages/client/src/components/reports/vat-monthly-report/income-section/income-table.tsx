@@ -53,7 +53,7 @@ import { columns, type IncomeTableRowType } from './columns.js';
 interface Props {
   data?: FragmentType<typeof VatReportIncomeFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
 }
 
 export const IncomeTable = ({
@@ -66,7 +66,7 @@ export const IncomeTable = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
-  const [inputsView, setInputsView] = useState<'detailed' | 'summarized'>('detailed');
+  const [incomeView, setIncomeView] = useState<'detailed' | 'summarized'>('detailed');
 
   const tableData: IncomeTableRowType[] = useMemo(() => {
     let incomeCumulativeAmount = 0;
@@ -115,17 +115,17 @@ export const IncomeTable = ({
         {isOpened && (
           <div className="flex gap-2">
             <Button
-              variant={inputsView === 'detailed' ? 'default' : 'outline'}
+              variant={incomeView === 'detailed' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setInputsView('detailed')}
+              onClick={() => setIncomeView('detailed')}
             >
               <FileText className="h-4 w-4 mr-2" />
               Detailed
             </Button>
             <Button
-              variant={inputsView === 'summarized' ? 'default' : 'outline'}
+              variant={incomeView === 'summarized' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setInputsView('summarized')}
+              onClick={() => setIncomeView('summarized')}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Summarized
@@ -134,7 +134,7 @@ export const IncomeTable = ({
         )}
       </div>
       {isOpened &&
-        (inputsView === 'detailed' ? (
+        (incomeView === 'detailed' ? (
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map(headerGroup => (

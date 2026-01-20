@@ -38,23 +38,35 @@ export const ReportSummary = ({ data }: Props): ReactElement => {
   // Calculate totals
   const inputDocuments = useMemo(() => vatReport?.expenses ?? [], [vatReport?.expenses]);
   const salesDocuments = useMemo(() => vatReport?.income ?? [], [vatReport?.income]);
-  const taxableSalesTotal = salesDocuments.reduce(
-    (sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0),
-    0,
+  const taxableSalesTotal = useMemo(
+    () => salesDocuments.reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
+    [salesDocuments],
   );
-  const taxableSalesVAT = salesDocuments.reduce(
-    (sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0),
-    0,
+  const taxableSalesVAT = useMemo(
+    () =>
+      salesDocuments.reduce((sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0), 0),
+    [salesDocuments],
   );
-  const zeroExemptSales = salesDocuments
-    .filter(doc => (doc.roundedLocalVatAfterDeduction?.raw ?? 0) === 0)
-    .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0);
-  const equipmentInputs = inputDocuments
-    .filter(doc => doc.isProperty)
-    .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0);
-  const totalVAT =
-    taxableSalesVAT -
-    inputDocuments.reduce((sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0), 0);
+  const zeroExemptSales = useMemo(
+    () =>
+      salesDocuments
+        .filter(doc => (doc.roundedLocalVatAfterDeduction?.raw ?? 0) === 0)
+        .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
+    [salesDocuments],
+  );
+  const equipmentInputs = useMemo(
+    () =>
+      inputDocuments
+        .filter(doc => doc.isProperty)
+        .reduce((sum, doc) => sum + (doc.taxReducedLocalAmount?.raw ?? 0), 0),
+    [inputDocuments],
+  );
+  const totalVAT = useMemo(
+    () =>
+      taxableSalesVAT -
+      inputDocuments.reduce((sum, doc) => sum + (doc.roundedLocalVatAfterDeduction?.raw ?? 0), 0),
+    [taxableSalesVAT, inputDocuments],
+  );
 
   return (
     <Card className="p-6">

@@ -56,7 +56,7 @@ import { columns, type ExpensesTableRowType } from './columns.js';
 interface Props {
   data?: FragmentType<typeof VatReportExpensesFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
 }
 
 export const ExpensesTable = ({
@@ -71,7 +71,7 @@ export const ExpensesTable = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
-  const [salesView, setSalesView] = useState<'detailed' | 'summarized'>('detailed');
+  const [expensesView, setExpensesView] = useState<'detailed' | 'summarized'>('detailed');
 
   const tableData: ExpensesTableRowType[] = useMemo(() => {
     let expensesCumulativeAmount = 0;
@@ -123,17 +123,17 @@ export const ExpensesTable = ({
         {isOpened && (
           <div className="flex gap-2">
             <Button
-              variant={salesView === 'detailed' ? 'default' : 'outline'}
+              variant={expensesView === 'detailed' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSalesView('detailed')}
+              onClick={() => setExpensesView('detailed')}
             >
               <FileText className="h-4 w-4 mr-2" />
               Detailed
             </Button>
             <Button
-              variant={salesView === 'summarized' ? 'default' : 'outline'}
+              variant={expensesView === 'summarized' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setSalesView('summarized')}
+              onClick={() => setExpensesView('summarized')}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Summarized
@@ -142,7 +142,7 @@ export const ExpensesTable = ({
         )}
       </div>
       {isOpened &&
-        (salesView === 'detailed' ? (
+        (expensesView === 'detailed' ? (
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map(headerGroup => (

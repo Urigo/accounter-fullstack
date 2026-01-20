@@ -42,7 +42,7 @@ import { getRecordTypeName } from '../utils.js';
 export type IncomeTableRowType = {
   data: FragmentType<typeof VatReportIncomeRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
   cumulativeAmount: number;
 };
 
@@ -58,11 +58,9 @@ export const columns = [
       id: 'recordType',
       header: 'Record Type',
       cell: info => {
-        const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
+        const recordType = info.getValue();
         return (
-          <p className="whitespace-wrap">
-            {`${getRecordTypeName(income.recordType)} (${income.recordType})`}
-          </p>
+          <p className="whitespace-wrap">{`${getRecordTypeName(recordType)} (${recordType})`}</p>
         );
       },
     },
@@ -212,7 +210,7 @@ export const columns = [
           />
           <ToggleMergeSelected
             toggleMergeSelected={(): void => info.row.original.toggleMergeCharge(income.chargeId)}
-            mergeSelected={info.row.original.mergeSelectedCharges.includes(income.chargeId)}
+            mergeSelected={info.row.original.mergeSelectedCharges.has(income.chargeId)}
           />
           <ChargeNavigateButton chargeId={income.chargeId} />
         </div>
