@@ -270,8 +270,8 @@ describe('pcn.helper', () => {
         it('should infer sale unidentified customer when VAT number exists', () => {
           const result = getEntryTypeByRecord({
             isExpense: false,
-            vatNumber: '123456789',
-            foreignVatAfterDeduction: 0,
+            vatNumber: null,
+            foreignVatAfterDeduction: 12,
           });
           expect(result).toBe('L1');
         });
@@ -285,10 +285,10 @@ describe('pcn.helper', () => {
           expect(result).toBe('L2');
         });
 
-        it('should infer sale regular when foreign VAT exists', () => {
+        it('should infer sale regular when VAT number and foreign VAT exists', () => {
           const result = getEntryTypeByRecord({
             isExpense: false,
-            vatNumber: null,
+            vatNumber: '123456789',
             foreignVatAfterDeduction: 12,
           });
           expect(result).toBe('S1');
@@ -1091,7 +1091,7 @@ describe('pcn.helper', () => {
         expect(result.reportContent).toMatchSnapshot();
       });
 
-      it('should match snapshot for credit invoices (with & without VAT)', async () => {
+      it('should match snapshot for foreign customer, credit invoices (with & without VAT)', async () => {
         const vatRecords = [
           createMockVatRecord({
             chargeAccountantStatus: "PENDING",
@@ -1168,6 +1168,124 @@ describe('pcn.helper', () => {
             localAmountBeforeVAT: 2000.15,
             roundedVATToAdd: undefined,
             eventLocalAmount: 2000.15,
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: [],
+          expenses: vatRecords,
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for local customer, credit invoices with VAT', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "10001",
+            documentAmount: "4000",
+            foreignVat: undefined,
+            localVat: -610.17,
+            isProperty: false,
+            vatNumber: '191919191',
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: -610.17,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: -3389.83,
+            roundedVATToAdd: -610,
+            eventLocalAmount: -4000,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "20002",
+            documentAmount: "4000",
+            foreignVat: undefined,
+            localVat: 610.17,
+            isProperty: false,
+            vatNumber: '191919191',
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: 610.17,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: 3389.83,
+            roundedVATToAdd: 610,
+            eventLocalAmount: 4000,
+          }),
+        ];
+
+        const business = createMockBusiness();
+        const context = createMockContext({ business, vatRecords });
+
+        vi.mocked(getVatRecords).mockResolvedValue({
+          income: [],
+          expenses: vatRecords,
+          missingInfo: [],
+          differentMonthDoc: [],
+          businessTrips: [],
+        } as GetVatRecordsResponse);
+
+        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+
+        expect(validatePcn874(result.reportContent)).toBe(true);
+        expect(result.reportContent).toMatchSnapshot();
+      });
+
+      it('should match snapshot for local customer, credit invoices without VAT', async () => {
+        const vatRecords = [
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "10001",
+            documentAmount: "4000",
+            foreignVat: undefined,
+            localVat: undefined,
+            isProperty: false,
+            vatNumber: '191919191',
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: undefined,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: -4000,
+            roundedVATToAdd: undefined,
+            eventLocalAmount: -4000,
+          }),
+          createMockVatRecord({
+            chargeAccountantStatus: "PENDING",
+            currencyCode: Currency.Ils,
+            documentSerial: "20002",
+            documentAmount: "4000",
+            foreignVat: undefined,
+            localVat: undefined,
+            isProperty: false,
+            vatNumber: '191919191',
+            isExpense: false,
+            allocationNumber: null,
+            pcn874RecordType: undefined,
+            foreignVatAfterDeduction: undefined,
+            localVatAfterDeduction: undefined,
+            foreignAmountBeforeVAT: undefined,
+            localAmountBeforeVAT: 4000,
+            roundedVATToAdd: undefined,
+            eventLocalAmount: 4000,
           }),
         ];
 
