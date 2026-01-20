@@ -10,6 +10,7 @@ import {
   ToggleMergeSelected,
 } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import { getRecordTypeName } from '../utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -55,6 +56,7 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
       formatted
       raw
     }
+    recordType
   }
 `;
 
@@ -69,6 +71,27 @@ export type ExpensesTableRowType = {
 const columnHelper = createColumnHelper<ExpensesTableRowType>();
 
 export const columns = [
+  columnHelper.accessor(
+    row => {
+      const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, row.data);
+      return expense.recordType;
+    },
+    {
+      id: 'recordType',
+      header: 'Record Type',
+      cell: info => {
+        const expense = getFragmentData(
+          VatReportExpensesRowFieldsFragmentDoc,
+          info.row.original.data,
+        );
+        return (
+          <p className="whitespace-wrap">
+            {`${getRecordTypeName(expense.recordType)} (${expense.recordType})`}
+          </p>
+        );
+      },
+    },
+  ),
   columnHelper.accessor(
     row => {
       const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, row.data);

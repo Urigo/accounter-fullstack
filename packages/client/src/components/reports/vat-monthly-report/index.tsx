@@ -19,12 +19,14 @@ import { IncomeTable } from './income-section/income-table.js';
 import { MiscTable } from './misc-table.js';
 import { MissingInfoTable } from './missing-info-table.js';
 import { PCNGenerator } from './pcn-generator.js';
+import { ReportSummary } from './report-summary.js';
 import { VatMonthlyReportFilter } from './vat-monthly-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query VatMonthlyReport($filters: VatReportFilter) {
     vatReport(filters: $filters) {
+      ...VatReportSummaryFields
       ...VatReportIncomeFields
       ...VatReportExpensesFields
       ...VatReportMissingInfoFields
@@ -109,45 +111,52 @@ export const VatMonthlyReport = (): ReactElement => {
     () => new Set(mergeSelectedCharges),
     [mergeSelectedCharges],
   );
+
   return (
     <PageLayout title="VAT Monthly Report">
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <div className="flex flex-col gap-4">
-          {filter.chargesType !== ChargeFilterType.Expense && (
-            <IncomeTable
+        <div className="min-h-screen">
+          <div className="space-y-4">
+            {filter.financialEntityId && filter.monthDate && (
+              <ReportSummary data={data?.vatReport} />
+            )}
+
+            {filter.chargesType !== ChargeFilterType.Expense && (
+              <IncomeTable
+                data={data?.vatReport}
+                toggleMergeCharge={toggleMergeCharge}
+                mergeSelectedCharges={mergeSelectedCharges}
+              />
+            )}
+
+            {filter.chargesType !== ChargeFilterType.Income && (
+              <ExpensesTable
+                data={data?.vatReport}
+                toggleMergeCharge={toggleMergeCharge}
+                mergeSelectedCharges={mergeSelectedCharges}
+              />
+            )}
+
+            <MissingInfoTable
               data={data?.vatReport}
               toggleMergeCharge={toggleMergeCharge}
-              mergeSelectedCharges={mergeSelectedCharges}
+              mergeSelectedCharges={mergeSelectedChargesSet}
             />
-          )}
 
-          {filter.chargesType !== ChargeFilterType.Income && (
-            <ExpensesTable
+            <BusinessTripsTable
               data={data?.vatReport}
               toggleMergeCharge={toggleMergeCharge}
-              mergeSelectedCharges={mergeSelectedCharges}
+              mergeSelectedCharges={mergeSelectedChargesSet}
             />
-          )}
 
-          <MissingInfoTable
-            data={data?.vatReport}
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={mergeSelectedChargesSet}
-          />
-
-          <BusinessTripsTable
-            data={data?.vatReport}
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={mergeSelectedChargesSet}
-          />
-
-          <MiscTable
-            data={data?.vatReport}
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={mergeSelectedChargesSet}
-          />
+            <MiscTable
+              data={data?.vatReport}
+              toggleMergeCharge={toggleMergeCharge}
+              mergeSelectedCharges={mergeSelectedChargesSet}
+            />
+          </div>
         </div>
       )}
     </PageLayout>
