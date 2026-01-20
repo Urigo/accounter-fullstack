@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
-    ExtendedPCNTransaction,
+  ExtendedPCNTransaction,
   getEntryTypeByRecord,
   getHeaderDataFromRecords,
   getPcn874String,
@@ -31,6 +31,15 @@ const FIXED_DATE = new Date('2024-01-15');
 const FIXED_REPORT_MONTH = '2024-01-15';
 const FIXED_VAT_NUMBER = '123456789';
 const FIXED_BUSINESS_ID = 'test-business-123';
+
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(FIXED_DATE);
+});
+
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 function createMockVatRecord(overrides?: Partial<RawVatReportRecord>): RawVatReportRecord {
   return {
