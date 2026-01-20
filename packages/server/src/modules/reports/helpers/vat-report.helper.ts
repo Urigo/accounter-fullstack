@@ -51,7 +51,7 @@ export async function adjustTaxRecord(
 ): Promise<RawVatReportRecord> {
   const {
     injector,
-    adminContext: { defaultLocalCurrency },
+    adminContext: { defaultLocalCurrency, locality },
   } = context;
   try {
     const { charge, doc, business } = rawRecord;
@@ -100,6 +100,8 @@ export async function adjustTaxRecord(
     const totalAmount = doc.total_amount * creditInvoiceFactor;
     const noVatAmount = doc.no_vat_amount ? Number(doc.no_vat_amount) * creditInvoiceFactor : 0;
 
+    const isLocal = business.country === locality;
+
     const partialRecord: RawVatReportRecord = {
       businessId: business.id,
       chargeAccountantStatus: charge.accountant_status,
@@ -114,7 +116,7 @@ export async function adjustTaxRecord(
       foreignVat: doc.currency_code === defaultLocalCurrency ? null : vatAmount,
       localVat: doc.currency_code === defaultLocalCurrency ? vatAmount : null,
       isProperty,
-      vatNumber: business.vat_number,
+      vatNumber: isLocal ? business.vat_number : undefined,
       isExpense:
         doc.type === DocumentType.CreditInvoice
           ? doc.debtor_id !== charge.owner_id
