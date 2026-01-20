@@ -109,6 +109,7 @@ export const getEntryTypeByRecord = (entry: {
   pcn874RecordType?: Pcn874RecordType;
   isExpense: boolean;
   vatNumber?: string | null;
+  localVat?: number | null;
   foreignVatAfterDeduction?: number;
 }): EntryType => {
   if (entry.pcn874RecordType) {
@@ -144,16 +145,19 @@ export const getEntryTypeByRecord = (entry: {
     }
   }
 
-  if (!entry.isExpense) {
-    if ((entry.vatNumber ?? 0) !== 0) {
-      return EntryType.SALE_UNIDENTIFIED_CUSTOMER;
-    }
-    if (Number(entry.foreignVatAfterDeduction ?? 0) === 0) {
+  if (entry.isExpense) {
+    return EntryType.INPUT_REGULAR;
+  }
+  if ((entry.vatNumber ?? 0) === 0) {
+    if (Number(entry.foreignVatAfterDeduction ?? 0) === 0 && (entry.localVat ?? 0) === 0) {
       return EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
     }
-    return EntryType.SALE_REGULAR;
+    return EntryType.SALE_UNIDENTIFIED_CUSTOMER;
   }
-  return EntryType.INPUT_REGULAR;
+  if (Number(entry.foreignVatAfterDeduction ?? 0) === 0 && (entry.localVat ?? 0) === 0) {
+    return EntryType.SALE_ZERO_OR_EXEMPT;
+  }
+  return EntryType.SALE_REGULAR;
 };
 
 const NO_VAT_ID_ENTRIES: string[] = [
