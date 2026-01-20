@@ -151,77 +151,156 @@ describe('pcn.helper', () => {
     describe('getEntryTypeByRecord', () => {
       describe('Sales Entry Types', () => {
         it('should map S1 to S1', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_REGULAR);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_REGULAR,
+            isExpense: false,
+          });
           expect(result).toBe('S1');
         });
 
         it('should map S2 to S2', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_ZERO_OR_EXEMPT);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_ZERO_OR_EXEMPT,
+            isExpense: false,
+          });
           expect(result).toBe('S2');
         });
 
         it('should map L1 to L1', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_UNIDENTIFIED_CUSTOMER);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_UNIDENTIFIED_CUSTOMER,
+            isExpense: false,
+          });
           expect(result).toBe('L1');
         });
 
         it('should map L2 to L2', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT,
+            isExpense: false,
+          });
           expect(result).toBe('L2');
         });
 
         it('should map M to M', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_SELF_INVOICE);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_SELF_INVOICE,
+            isExpense: false,
+          });
           expect(result).toBe('M');
         });
 
         it('should map Y to Y', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_EXPORT);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_EXPORT,
+            isExpense: false,
+          });
           expect(result).toBe('Y');
         });
 
         it('should map I to I', () => {
-          const result = getEntryTypeByRecord(EntryType.SALE_PALESTINIAN_CUSTOMER);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.SALE_PALESTINIAN_CUSTOMER,
+            isExpense: false,
+          });
           expect(result).toBe('I');
         });
       });
 
       describe('Input Entry Types', () => {
         it('should map T to T', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_REGULAR);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_REGULAR,
+            isExpense: true,
+          });
           expect(result).toBe('T');
         });
 
         it('should map K to K', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_PETTY_CASH);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_PETTY_CASH,
+            isExpense: true,
+          });
           expect(result).toBe('K');
         });
 
         it('should map R to R', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_IMPORT);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_IMPORT,
+            isExpense: true,
+          });
           expect(result).toBe('R');
         });
 
         it('should map P to P', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_PALESTINIAN_SUPPLIER);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_PALESTINIAN_SUPPLIER,
+            isExpense: true,
+          });
           expect(result).toBe('P');
         });
 
         it('should map H to H', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_SINGLE_DOC_BY_LAW);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_SINGLE_DOC_BY_LAW,
+            isExpense: true,
+          });
           expect(result).toBe('H');
         });
 
         it('should map C to C', () => {
-          const result = getEntryTypeByRecord(EntryType.INPUT_SELF_INVOICE);
+          const result = getEntryTypeByRecord({
+            pcn874RecordType: EntryType.INPUT_SELF_INVOICE,
+            isExpense: true,
+          });
           expect(result).toBe('C');
         });
       });
 
       describe('Edge Cases', () => {
-        it('should return undefined for unmapped types', () => {
-          const result = getEntryTypeByRecord('UNKNOWN_TYPE' as any);
-          expect(result).toBeUndefined();
+        it('should throw for unmapped types', () => {
+          expect(() =>
+            getEntryTypeByRecord({
+              pcn874RecordType: 'UNKNOWN_TYPE' as any,
+              isExpense: false,
+            }),
+          ).toThrow(/Unhandled PCN874 Record Type/);
+        });
+
+        it('should infer sale unidentified customer when VAT number exists', () => {
+          const result = getEntryTypeByRecord({
+            isExpense: false,
+            vatNumber: '123456789',
+            foreignVatAfterDeduction: 0,
+          });
+          expect(result).toBe('L1');
+        });
+
+        it('should infer sale unidentified zero/exempt when foreign VAT is zero', () => {
+          const result = getEntryTypeByRecord({
+            isExpense: false,
+            vatNumber: null,
+            foreignVatAfterDeduction: 0,
+          });
+          expect(result).toBe('L2');
+        });
+
+        it('should infer sale regular when foreign VAT exists', () => {
+          const result = getEntryTypeByRecord({
+            isExpense: false,
+            vatNumber: null,
+            foreignVatAfterDeduction: 12,
+          });
+          expect(result).toBe('S1');
+        });
+
+        it('should infer input regular for expenses without explicit type', () => {
+          const result = getEntryTypeByRecord({
+            isExpense: true,
+            vatNumber: null,
+            foreignVatAfterDeduction: 0,
+          });
+          expect(result).toBe('T');
         });
       });
     });

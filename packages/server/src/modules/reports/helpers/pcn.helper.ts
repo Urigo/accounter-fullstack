@@ -105,43 +105,55 @@ export const getHeaderDataFromRecords = (
   return header;
 };
 
-export const getEntryTypeByRecord = (
-  entryType: Pcn874RecordType | undefined,
-): EntryType | undefined => {
-  if (!entryType) {
-    return undefined;
+export const getEntryTypeByRecord = (entry: {
+  pcn874RecordType?: Pcn874RecordType;
+  isExpense: boolean;
+  vatNumber?: string | null;
+  foreignVatAfterDeduction?: number;
+}): EntryType => {
+  if (entry.pcn874RecordType) {
+    switch (entry.pcn874RecordType) {
+      case EntryType.SALE_REGULAR:
+        return EntryType.SALE_REGULAR;
+      case EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT:
+        return EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
+      case EntryType.INPUT_REGULAR:
+        return EntryType.INPUT_REGULAR;
+      case EntryType.INPUT_PETTY_CASH:
+        return EntryType.INPUT_PETTY_CASH;
+      case EntryType.SALE_SELF_INVOICE:
+        return EntryType.SALE_SELF_INVOICE;
+      case EntryType.SALE_EXPORT:
+        return EntryType.SALE_EXPORT;
+      case EntryType.SALE_PALESTINIAN_CUSTOMER:
+        return EntryType.SALE_PALESTINIAN_CUSTOMER;
+      case EntryType.SALE_ZERO_OR_EXEMPT:
+        return EntryType.SALE_ZERO_OR_EXEMPT;
+      case EntryType.SALE_UNIDENTIFIED_CUSTOMER:
+        return EntryType.SALE_UNIDENTIFIED_CUSTOMER;
+      case EntryType.INPUT_IMPORT:
+        return EntryType.INPUT_IMPORT;
+      case EntryType.INPUT_PALESTINIAN_SUPPLIER:
+        return EntryType.INPUT_PALESTINIAN_SUPPLIER;
+      case EntryType.INPUT_SINGLE_DOC_BY_LAW:
+        return EntryType.INPUT_SINGLE_DOC_BY_LAW;
+      case EntryType.INPUT_SELF_INVOICE:
+        return EntryType.INPUT_SELF_INVOICE;
+      default:
+        throw new Error(`Unhandled PCN874 Record Type: ${entry.pcn874RecordType}`);
+    }
   }
-  switch (entryType) {
-    case EntryType.SALE_REGULAR:
-      return EntryType.SALE_REGULAR;
-    case EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT:
-      return EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
-    case EntryType.INPUT_REGULAR:
-      return EntryType.INPUT_REGULAR;
-    case EntryType.INPUT_PETTY_CASH:
-      return EntryType.INPUT_PETTY_CASH;
-    case EntryType.SALE_SELF_INVOICE:
-      return EntryType.SALE_SELF_INVOICE;
-    case EntryType.SALE_EXPORT:
-      return EntryType.SALE_EXPORT;
-    case EntryType.SALE_PALESTINIAN_CUSTOMER:
-      return EntryType.SALE_PALESTINIAN_CUSTOMER;
-    case EntryType.SALE_ZERO_OR_EXEMPT:
-      return EntryType.SALE_ZERO_OR_EXEMPT;
-    case EntryType.SALE_UNIDENTIFIED_CUSTOMER:
+
+  if (!entry.isExpense) {
+    if ((entry.vatNumber ?? 0) !== 0) {
       return EntryType.SALE_UNIDENTIFIED_CUSTOMER;
-    case EntryType.INPUT_IMPORT:
-      return EntryType.INPUT_IMPORT;
-    case EntryType.INPUT_PALESTINIAN_SUPPLIER:
-      return EntryType.INPUT_PALESTINIAN_SUPPLIER;
-    case EntryType.INPUT_SINGLE_DOC_BY_LAW:
-      return EntryType.INPUT_SINGLE_DOC_BY_LAW;
-    case EntryType.INPUT_SELF_INVOICE:
-      return EntryType.INPUT_SELF_INVOICE;
-    default:
-      console.debug(`Entry type ${entryType} is not implemented yet`);
-      return undefined;
+    }
+    if (Number(entry.foreignVatAfterDeduction ?? 0) === 0) {
+      return EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
+    }
+    return EntryType.SALE_REGULAR;
   }
+  return EntryType.INPUT_REGULAR;
 };
 
 const NO_VAT_ID_ENTRIES: string[] = [
@@ -202,19 +214,7 @@ const transactionsFromVatReportRecords = (
       console.debug(`Document ${t.documentId} has no tax_invoice_date. Skipping it.`);
       continue;
     }
-    let entryType = getEntryTypeByRecord(t.pcn874RecordType);
-    if (!entryType) {
-      entryType = EntryType.INPUT_REGULAR;
-      if (!t.isExpense) {
-        if ((t.vatNumber ?? 0) !== 0) {
-          entryType = EntryType.SALE_UNIDENTIFIED_CUSTOMER;
-        } else if (Number(t.foreignVatAfterDeduction ?? 0) === 0) {
-          entryType = EntryType.SALE_UNIDENTIFIED_ZERO_OR_EXEMPT;
-        } else {
-          entryType = EntryType.SALE_REGULAR;
-        }
-      }
-    }
+    const entryType = getEntryTypeByRecord(t);
 
     const transaction: ExtendedPCNTransaction = {
       entryType,
