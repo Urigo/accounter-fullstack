@@ -43,5 +43,7 @@ export default gql`
     roundedLocalVatAfterDeduction: FinancialIntAmount
     taxReducedLocalAmount: FinancialIntAmount
     taxReducedForeignAmount: FinancialIntAmount
+    recordType: Pcn874RecordType!
+    isProperty: Boolean!
   }
 `;

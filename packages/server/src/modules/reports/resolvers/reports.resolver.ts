@@ -7,6 +7,7 @@ import {
 } from '../../../shared/helpers/index.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { getEntryTypeByRecord } from '../helpers/pcn.helper.js';
 import {
   accountsForUniformFormat,
   businessForUniformFormat,
@@ -139,6 +140,8 @@ export const reportsResolvers: ReportsModule.Resolvers = {
             .getBusinessByIdLoader.load(raw.businessId)
             .then(entity => entity?.vat_number ?? null)
         : null,
+    recordType: raw => getEntryTypeByRecord(raw),
+    isProperty: raw => raw.isProperty,
   },
   CorporateTaxRulingComplianceReport: {
     id: report => report.id,
