@@ -1,5 +1,12 @@
 import { Fragment, useMemo, useState, type ReactElement } from 'react';
-import { ChevronDownIcon, ChevronUpIcon, PanelTopClose, PanelTopOpen } from 'lucide-react';
+import {
+  BarChart3,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  FileText,
+  PanelTopClose,
+  PanelTopOpen,
+} from 'lucide-react';
 import { Paper } from '@mantine/core';
 import {
   flexRender,
@@ -11,6 +18,7 @@ import {
   type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
+import { Card } from '@/components/ui/card.js';
 import {
   VatReportIncomeFieldsFragmentDoc,
   VatReportIncomeRowFieldsFragmentDoc,
@@ -26,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../../ui/table.js';
+import { SectionSummary } from '../section-summary.js';
 import { columns, type IncomeTableRowType } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -36,6 +45,7 @@ import { columns, type IncomeTableRowType } from './columns.js';
       taxReducedLocalAmount {
         raw
       }
+      recordType
     }
   }
 `;
@@ -56,6 +66,7 @@ export const IncomeTable = ({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [inputsView, setInputsView] = useState<'detailed' | 'summarized'>('detailed');
 
   const tableData: IncomeTableRowType[] = useMemo(() => {
     let incomeCumulativeAmount = 0;
@@ -88,81 +99,106 @@ export const IncomeTable = ({
   });
 
   return (
-    <>
-      <span className="text-lg font-semibold whitespace-nowrap flex flex-row gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          className="size-7.5"
-          onClick={(): void => setIsOpened(i => !i)}
-        >
-          {isOpened ? <PanelTopClose className="size-5" /> : <PanelTopOpen className="size-5" />}
-        </Button>
-        Income
-      </span>
-      {isOpened && (
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <TableHead key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder ? null : (
-                      <Button
-                        variant="ghost"
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="h-auto p-0 hover:bg-transparent"
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: <ChevronUpIcon className="size-5" />,
-                          desc: <ChevronDownIcon className="size-5" />,
-                        }[header.column.getIsSorted() as string] ?? null}
-                      </Button>
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map(row => {
-                const income = getFragmentData(
-                  VatReportIncomeRowFieldsFragmentDoc,
-                  row.original.data,
-                );
-                return (
-                  <Fragment key={row.id}>
-                    <TableRow data-state={row.getIsSelected() && 'selected'}>
-                      {row.getVisibleCells().map(cell => (
-                        <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {row.getIsExpanded() && (
-                      <TableRow>
-                        <TableCell colSpan={columns.length}>
-                          <Paper style={{ width: '100%' }} withBorder shadow="lg">
-                            <ChargeExtendedInfo chargeID={income.chargeId} fetching={!!income} />
-                          </Paper>
-                        </TableCell>
+    <Card className="p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7.5"
+            onClick={(): void => setIsOpened(i => !i)}
+          >
+            {isOpened ? <PanelTopClose className="size-5" /> : <PanelTopOpen className="size-5" />}
+          </Button>
+          Income
+        </h2>
+        {isOpened && (
+          <div className="flex gap-2">
+            <Button
+              variant={inputsView === 'detailed' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setInputsView('detailed')}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Detailed
+            </Button>
+            <Button
+              variant={inputsView === 'summarized' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setInputsView('summarized')}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Summarized
+            </Button>
+          </div>
+        )}
+      </div>
+      {isOpened &&
+        (inputsView === 'detailed' ? (
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder ? null : (
+                        <Button
+                          variant="ghost"
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="h-auto p-0 hover:bg-transparent"
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: <ChevronUpIcon className="size-5" />,
+                            desc: <ChevronDownIcon className="size-5" />,
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </Button>
+                      )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map(row => {
+                  const income = getFragmentData(
+                    VatReportIncomeRowFieldsFragmentDoc,
+                    row.original.data,
+                  );
+                  return (
+                    <Fragment key={row.id}>
+                      <TableRow data-state={row.getIsSelected() && 'selected'}>
+                        {row.getVisibleCells().map(cell => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
                       </TableRow>
-                    )}
-                  </Fragment>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      )}
-    </>
+                      {row.getIsExpanded() && (
+                        <TableRow>
+                          <TableCell colSpan={columns.length}>
+                            <Paper style={{ width: '100%' }} withBorder shadow="lg">
+                              <ChargeExtendedInfo chargeID={income.chargeId} fetching={!!income} />
+                            </Paper>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Fragment>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        ) : (
+          <SectionSummary records={income} />
+        ))}
+    </Card>
   );
 };

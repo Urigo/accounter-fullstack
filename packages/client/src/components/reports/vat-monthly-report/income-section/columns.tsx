@@ -10,6 +10,7 @@ import {
   ToggleMergeSelected,
 } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import { getRecordTypeName } from '../utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,6 +35,7 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
       formatted
       raw
     }
+    recordType
   }
 `;
 
@@ -47,6 +49,24 @@ export type IncomeTableRowType = {
 const columnHelper = createColumnHelper<IncomeTableRowType>();
 
 export const columns = [
+  columnHelper.accessor(
+    row => {
+      const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, row.data);
+      return income.recordType;
+    },
+    {
+      id: 'recordType',
+      header: 'Record Type',
+      cell: info => {
+        const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, info.row.original.data);
+        return (
+          <p className="whitespace-wrap">
+            {`${getRecordTypeName(income.recordType)} (${income.recordType})`}
+          </p>
+        );
+      },
+    },
+  ),
   columnHelper.accessor(
     row => {
       const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, row.data);
