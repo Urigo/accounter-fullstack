@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { BankDepositChargesProvider } from 'modules/bank-deposits/providers/bank-deposit-charges.provider.js';
+import { BankDepositChargesProvider } from '../../bank-deposits/providers/bank-deposit-charges.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../../ledger/providers/unbalanced-businesses.provider.js';
