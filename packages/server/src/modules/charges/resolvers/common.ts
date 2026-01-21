@@ -41,8 +41,6 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     }
   },
   decreasedVAT: DbCharge => DbCharge.is_property,
-  conversion: DbCharge => DbCharge.type === 'CONVERSION',
-  salary: DbCharge => DbCharge.type === 'PAYROLL',
   isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
   userDescription: DbCharge => DbCharge.user_description,
   minEventDate: async (DbCharge, _, { injector }) =>

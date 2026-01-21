@@ -271,7 +271,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     updateCharge: async (_, { chargeId, fields }, { injector }) => {
       const adjustedFields: IUpdateChargeParams = {
         accountantStatus: fields.accountantApproval,
-        type: fields.isConversion ? 'CONVERSION' : undefined,
+        type: fields.type,
         isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
@@ -411,7 +411,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
       const adjustedFields: IBatchUpdateChargesParams = {
         accountantStatus: fields.accountantApproval,
-        type: fields.isConversion ? 'CONVERSION' : undefined,
+        type: fields.type,
         isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
         ownerId: fields.ownerId,
@@ -508,7 +508,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         if (fields) {
           const adjustedFields: IUpdateChargeParams = {
             accountantStatus: fields?.accountantApproval,
-            type: fields?.isConversion ? 'CONVERSION' : undefined,
+            type: fields?.type,
             isProperty: fields?.isDecreasedVAT,
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             optionalVAT: fields?.optionalVAT,
@@ -598,51 +598,61 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Common, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'COMMON',
   },
   ConversionCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Conversion, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'CONVERSION',
   },
   SalaryCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Salary, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'PAYROLL',
   },
   InternalTransferCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.InternalTransfer, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'INTERNAL',
   },
   DividendCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Dividend, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'DIVIDEND',
   },
   BusinessTripCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.BusinessTrip, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'BUSINESS_TRIP',
   },
   MonthlyVatCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.MonthlyVat, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'VAT',
   },
   BankDepositCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.BankDeposit, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'BANK_DEPOSIT',
   },
   ForeignSecuritiesCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.ForeignSecurities, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'FOREIGN_SECURITIES',
   },
   CreditcardBankCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.CreditcardBankCharge, DbCharge, context),
     ...commonChargeFields,
+    type: () => 'CREDITCARD_BANK',
   },
   Invoice: {
     ...commonDocumentsFields,
@@ -785,6 +795,5 @@ export const chargesResolvers: ChargesModule.Resolvers &
         throw errorSimplifier('Failed to fetch optional businesses', error);
       }
     },
-    isSalary: DbCharge => DbCharge.type === 'PAYROLL',
   },
 };

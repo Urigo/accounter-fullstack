@@ -199,6 +199,7 @@ export async function generateChargeForEmployeePayment(
       ownerId: defaultAdminBusinessId,
       taxCategoryId: businessTripTaxCategoryId,
       userDescription: description || 'Employee payment charge',
+      type: 'BUSINESS_TRIP',
     });
 
     if (!chargeId) {

@@ -36,10 +36,6 @@ export default gql`
     property: Boolean
     " decreased VAT for property-related charges "
     decreasedVAT: Boolean
-    " is currency conversion "
-    conversion: Boolean
-    " is salary "
-    salary: Boolean
     " is invoice currency different from the payment currency"
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
@@ -68,8 +64,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -89,8 +83,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -110,8 +102,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -131,8 +121,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -152,8 +140,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -173,8 +159,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -194,8 +178,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -215,8 +197,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -236,8 +216,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -257,8 +235,6 @@ export default gql`
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -268,6 +244,21 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " Charge type enum "
+  enum ChargeType {
+    COMMON
+    CONVERSION
+    PAYROLL
+    INTERNAL
+    DIVIDEND
+    BUSINESS_TRIP
+    VAT
+    BANK_DEPOSIT
+    FOREIGN_SECURITIES
+    CREDITCARD_BANK
+    FINANCIAL
   }
 
   " input variables for charge filtering "
@@ -321,7 +312,7 @@ export default gql`
 
   " input variables for updateCharge "
   input UpdateChargeInput {
-    isConversion: Boolean
+    type: ChargeType
     isDecreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
@@ -375,7 +366,6 @@ export default gql`
     openDocuments: Boolean!
     transactionsCount: Int!
     optionalBusinesses: [String!]!
-    isSalary: Boolean!
     ledgerCount: Int!
     miscExpensesCount: Int!
     invalidLedger: LedgerValidationStatus!

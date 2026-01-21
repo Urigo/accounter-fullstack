@@ -1132,6 +1132,7 @@ export async function insertNewDocumentFromGreenInvoice(
       const charge = await injector.get(ChargesProvider).generateCharge({
         ownerId,
         userDescription,
+        type: 'COMMON',
       });
       if (!charge) {
         throw new Error('Failed to generate charge');
