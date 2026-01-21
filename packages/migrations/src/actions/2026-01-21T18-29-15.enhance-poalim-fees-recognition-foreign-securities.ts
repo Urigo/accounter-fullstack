@@ -63,9 +63,6 @@ BEGIN
         is_fee = true;
     END IF;
 
-    -- check if new record contains fees
-    -- TBD
-
     -- create new transaction
     INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
                                                event_date, debit_date, amount, current_balance, source_reference,
@@ -166,9 +163,6 @@ BEGIN
     THEN
         is_fee = true;
     END IF;
-
-    -- check if new record contains fees
-    -- TBD
 
     -- create new transaction
     INSERT INTO accounter_schema.transactions (account_id, charge_id, source_id, source_description, currency,
