@@ -26,7 +26,7 @@ export type ChargeType =
   | 'CreditcardBankCharge'
   | 'FinancialCharge';
 
-const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
+export const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
   CommonCharge: 'Common',
   BusinessTripCharge: 'Business Trip',
   DividendCharge: 'Dividend',
@@ -40,7 +40,8 @@ const CHARGE_TYPE_NAME: Record<ChargeType, string> = {
   FinancialCharge: 'Financial Charge',
 };
 
-export const getChargeTypeName = (type: ChargeType): string => CHARGE_TYPE_NAME[type] ?? 'Unknown';
+export const getChargeTypeName = (type?: ChargeType): string =>
+  !type || !(type in CHARGE_TYPE_NAME) ? 'Unknown' : CHARGE_TYPE_NAME[type];
 
 const ICON_MAP: Record<ChargeType, ReactElement> = {
   CommonCharge: <Coins />,
@@ -56,4 +57,5 @@ const ICON_MAP: Record<ChargeType, ReactElement> = {
   FinancialCharge: <Scale />,
 };
 
-export const getChargeTypeIcon = (type: ChargeType): ReactElement => ICON_MAP[type] ?? <Coins />;
+export const getChargeTypeIcon = (type?: ChargeType): ReactElement =>
+  !type || !(type in ICON_MAP) ? <Coins /> : ICON_MAP[type];

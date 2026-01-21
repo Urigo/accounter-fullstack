@@ -3,19 +3,22 @@ import { CheckSquare, XSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
+import { getChargeTypeIcon, getChargeTypeName } from '@/helpers/index.js';
 import {
+  ChargeType,
   FetchMultipleChargesDocument,
   type FetchMultipleChargesQuery,
   type UpdateChargeInput,
 } from '../../../gql/graphql.js';
 import { useMergeCharges } from '../../../hooks/use-merge-charges.js';
-import { AccounterLoader, ListCapsule } from '../index.js';
+import { AccounterLoader, ListCapsule, Tooltip } from '../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query FetchMultipleCharges($chargeIds: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIds) {
       id
+      __typename
       metadata {
         transactionsCount
         invoicesCount
@@ -29,7 +32,6 @@ import { AccounterLoader, ListCapsule } from '../index.js';
         name
         namePath
       }
-      conversion
       decreasedVAT
       property
       isInvoicePaymentDifferentCurrency
@@ -69,9 +71,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
   const [selectedOptionalDocuments, setSelectedOptionalDocuments] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
-  const [selectedConversion, setSelectedConversion] = useState<
-    { id: string; value: boolean } | undefined
-  >(undefined);
+  const [selectedType, setSelectedType] = useState<{ id: string; value: ChargeType } | undefined>(
+    undefined,
+  );
   const [selectedDecreasedVAT, setSelectedDecreasedVAT] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
@@ -117,11 +119,11 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         ownerId: selectedOwner.value,
       };
     }
-    if (selectedConversion && selectedConversion.value !== mainCharge.conversion) {
+    if (selectedType && selectedType.value !== mainCharge.type) {
       fields ??= {};
       fields = {
         ...fields,
-        isConversion: selectedConversion.value,
+        type: selectedType.value,
       };
     }
     if (selectedDecreasedVAT && selectedDecreasedVAT.value !== mainCharge.decreasedVAT) {
@@ -181,7 +183,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     mergeCharges,
     selectedDescription,
     selectedOwner,
-    selectedConversion,
+    selectedType,
     selectedDecreasedVAT,
     selectedOptionalVAT,
     selectedCurrencyDiff,
@@ -237,9 +239,9 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                           id: charge.id,
                           value: charge.isInvoicePaymentDifferentCurrency ?? false,
                         });
-                        setSelectedConversion({
+                        setSelectedType({
                           id: charge.id,
-                          value: charge.conversion ?? false,
+                          value: charge.type,
                         });
                         setSelectedDecreasedVAT({
                           id: charge.id,
@@ -309,32 +311,26 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
               ))}
             </tr>
             <tr>
-              <th>Is Conversion</th>
+              <th>Type</th>
               {charges.map(charge => (
                 <td key={charge.id}>
                   <button
                     className="w-full px-2"
-                    disabled={
-                      charge.conversion == null || charge.conversion === selectedConversion?.value
-                    }
+                    disabled={charge.type == null || charge.type === selectedType?.value}
                     onClick={(): void => {
-                      setSelectedConversion({
+                      setSelectedType({
                         id: charge.id,
-                        value: charge.conversion ?? false,
+                        value: charge.type,
                       });
                     }}
                   >
                     <div
                       className="flex items-center justify-center px-2 py-2 border-x-2"
-                      style={
-                        selectedConversion?.id === charge.id ? { background: '#228be633' } : {}
-                      }
+                      style={selectedType?.id === charge.id ? { background: '#228be633' } : {}}
                     >
-                      {charge.conversion ? (
-                        <CheckSquare size={20} color="green" />
-                      ) : (
-                        <XSquare size={20} color="red" />
-                      )}
+                      <Tooltip content={getChargeTypeName(charge.__typename)}>
+                        {getChargeTypeIcon(charge.__typename)}
+                      </Tooltip>
                     </div>
                   </button>
                 </td>

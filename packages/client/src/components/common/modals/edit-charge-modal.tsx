@@ -10,6 +10,7 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
   query EditCharge($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
       id
+      __typename
       counterparty {
         id
         name
@@ -19,7 +20,6 @@ import { CopyToClipboardButton, EditCharge, PopUpDrawer } from '../index.js';
         name
       }
       property
-      conversion
       decreasedVAT
       isInvoicePaymentDifferentCurrency
       userDescription

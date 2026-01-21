@@ -9,6 +9,7 @@ import {
   type UpdateChargeInput,
 } from '../../../gql/graphql.js';
 import {
+  CHARGE_TYPE_NAME,
   EMPTY_UUID,
   relevantDataPicker,
   type MakeBoolean,
@@ -27,6 +28,11 @@ import {
   SimpleGrid,
   TagsInput,
 } from '../index.js';
+
+const chargeTypes = Object.entries(CHARGE_TYPE_NAME).map(([value, label]) => ({
+  value,
+  label,
+}));
 
 type Props = {
   charge: EditChargeQuery['charge'];
@@ -238,19 +244,21 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               />
               <TagsInput formManager={formManager} tagsPath="tags" />
 
-              <FormField
-                name="isConversion"
+              <Controller
+                name="type"
                 control={control}
-                defaultValue={charge.conversion}
-                render={({ field }) => (
-                  <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <div className="space-y-0.5">
-                      <FormLabel>Is Conversion</FormLabel>
-                    </div>
-                    <FormControl>
-                      <Switch checked={field.value === true} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
+                defaultValue={charge.type}
+                render={({ field, fieldState }): ReactElement => (
+                  <Select
+                    {...field}
+                    data={chargeTypes}
+                    value={field.value}
+                    label="ChargeType"
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
                 )}
               />
 

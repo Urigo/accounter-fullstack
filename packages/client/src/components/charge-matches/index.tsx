@@ -98,7 +98,7 @@ function convertChargeMatchFragmentToTableRow(
   return {
     id: fragmentData.charge.id,
     confidenceScore: fragmentData.confidenceScore,
-    type: fragmentData.charge.__typename as ChargeType,
+    type: fragmentData.charge.__typename!,
     date: rawDate ? new Date(rawDate) : undefined,
     amountRaw: fragmentData.charge.totalAmount?.raw,
     amountFormatted: fragmentData.charge.totalAmount?.formatted,
