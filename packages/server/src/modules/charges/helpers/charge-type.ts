@@ -1,20 +1,48 @@
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
-import type { IGetChargesByIdsResult } from '../types.js';
+import type { charge_type, IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
+
+function normalizeDbType(chargeType?: charge_type | null): ChargeTypeEnum | undefined {
+  if (!chargeType) {
+    return undefined;
+  }
+  switch (chargeType) {
+    case 'COMMON':
+      return ChargeTypeEnum.Common;
+    case 'BANK_DEPOSIT':
+      return ChargeTypeEnum.BankDeposit;
+    case 'CREDITCARD_BANK':
+      return ChargeTypeEnum.CreditcardBankCharge;
+    case 'DIVIDEND':
+      return ChargeTypeEnum.Dividend;
+    case 'FOREIGN_SECURITIES':
+      return ChargeTypeEnum.ForeignSecurities;
+    case 'INTERNAL':
+      return ChargeTypeEnum.InternalTransfer;
+    case 'VAT':
+      return ChargeTypeEnum.MonthlyVat;
+    case 'PAYROLL':
+      return ChargeTypeEnum.Salary;
+    case 'BUSINESS_TRIP':
+      return ChargeTypeEnum.BusinessTrip;
+    case 'CONVERSION':
+      return ChargeTypeEnum.Conversion;
+    case 'FINANCIAL':
+      return ChargeTypeEnum.Financial;
+    default:
+      throw new Error(`Unsupported charge type: ${chargeType}`);
+  }
+}
 
 export async function getChargeType(
   charge: IGetChargesByIdsResult,
   context: GraphQLModules.Context,
 ): Promise<ChargeTypeEnum> {
-  switch (charge.type) {
-    case 'CONVERSION':
-      return ChargeTypeEnum.Conversion;
-    case 'PAYROLL':
-      return ChargeTypeEnum.Salary;
-    case 'FINANCIAL':
-      return ChargeTypeEnum.Financial;
+  const type = normalizeDbType(charge.type);
+  if (type) {
+    return type;
   }
 
   const [{ allBusinessIds, mainBusinessId }, businessTrip, transactions] = await Promise.all([

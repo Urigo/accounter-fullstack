@@ -26,6 +26,8 @@ export default gql`
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
   interface Charge {
     id: UUID!
+    " charge type "
+    type: ChargeType!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "
@@ -36,10 +38,6 @@ export default gql`
     property: Boolean
     " decreased VAT for property-related charges "
     decreasedVAT: Boolean
-    " is currency conversion "
-    conversion: Boolean
-    " is salary "
-    salary: Boolean
     " is invoice currency different from the payment currency"
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
@@ -63,13 +61,12 @@ export default gql`
   " common charge "
   type CommonCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -84,13 +81,12 @@ export default gql`
   " charge with conversion transactions "
   type ConversionCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -105,13 +101,12 @@ export default gql`
   " charge with conversion transactions "
   type SalaryCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -126,13 +121,12 @@ export default gql`
   " charge of internal transfer "
   type InternalTransferCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -147,13 +141,12 @@ export default gql`
   " charge of dividends "
   type DividendCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -168,13 +161,12 @@ export default gql`
   " charge of dividends "
   type BusinessTripCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -189,13 +181,12 @@ export default gql`
   " charge of monthly VAT payment "
   type MonthlyVatCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -210,13 +201,12 @@ export default gql`
   " charge of bank deposits "
   type BankDepositCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -231,13 +221,12 @@ export default gql`
   " charge of foreign securities "
   type ForeignSecuritiesCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -252,13 +241,12 @@ export default gql`
   " charge of creditcard over bank account "
   type CreditcardBankCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
@@ -268,6 +256,21 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " Charge type enum "
+  enum ChargeType {
+    COMMON
+    CONVERSION
+    PAYROLL
+    INTERNAL
+    DIVIDEND
+    BUSINESS_TRIP
+    VAT
+    BANK_DEPOSIT
+    FOREIGN_SECURITIES
+    CREDITCARD_BANK
+    FINANCIAL
   }
 
   " input variables for charge filtering "
@@ -321,7 +324,7 @@ export default gql`
 
   " input variables for updateCharge "
   input UpdateChargeInput {
-    isConversion: Boolean
+    type: ChargeType
     isDecreasedVAT: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     " user custom description "
@@ -375,7 +378,6 @@ export default gql`
     openDocuments: Boolean!
     transactionsCount: Int!
     optionalBusinesses: [String!]!
-    isSalary: Boolean!
     ledgerCount: Int!
     miscExpensesCount: Int!
     invalidLedger: LedgerValidationStatus!

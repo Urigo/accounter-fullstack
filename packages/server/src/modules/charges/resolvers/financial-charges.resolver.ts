@@ -265,11 +265,10 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw errorSimplifier('Failed to determine charge type', error);
       })) === ChargeTypeEnum.Financial,
     ...commonChargeFields,
+    type: () => 'FINANCIAL',
     vat: () => null,
     totalAmount: () => null,
     property: () => false,
-    conversion: () => false,
-    salary: () => false,
     isInvoicePaymentDifferentCurrency: () => false,
     minEventDate: async (DbCharge, _, { injector }) => {
       try {

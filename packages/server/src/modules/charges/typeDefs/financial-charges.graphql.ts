@@ -23,13 +23,12 @@ export default gql`
   " financial charge "
   type FinancialCharge implements Charge {
     id: UUID!
+    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
     property: Boolean
     decreasedVAT: Boolean
-    conversion: Boolean
-    salary: Boolean
     isInvoicePaymentDifferentCurrency: Boolean
     userDescription: String
     minEventDate: DateTime
