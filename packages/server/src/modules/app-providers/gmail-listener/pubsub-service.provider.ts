@@ -143,15 +143,16 @@ export class PubsubServiceProvider {
           clearTimeout(this.watchExpirationTimer);
         }
 
-        this.watchExpirationTimer = setTimeout(
-          () => {
-            console.log('Renewing Gmail watch subscription...');
-            this.setupPushNotifications(topicName).catch(error => {
-              console.error('Failed to renew Gmail watch:', error);
-            });
-          },
-          Math.max(renewalTime, 0),
-        );
+        const renewWatch = () => {
+          console.log('Renewing Gmail watch subscription...');
+          this.setupPushNotifications(topicName).catch(error => {
+            console.error('Failed to renew Gmail watch. Retrying in 5 minutes.', error);
+            // Retry after a delay
+            setTimeout(renewWatch, 5 * 60 * 1000);
+          });
+        };
+
+        this.watchExpirationTimer = setTimeout(renewWatch, Math.max(renewalTime, 0));
 
         console.log(
           `Push notifications set up successfully. Watch expires at ${new Date(expirationMs).toISOString()}, renewal scheduled`,
