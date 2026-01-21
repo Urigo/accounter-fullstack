@@ -119,8 +119,78 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   **Application Logic**:
         *   The GraphQL middleware (auth plugin) will set postgres configuration variables with `SET LOCAL` inside a transaction: `app.current_business_id`, `app.current_user_id`, and `app.auth_type`.
         *   Any query attempted without this variable set (or with a mismatch) will return zero rows or be rejected.
+        *   **CRITICAL**: All database access MUST go through a `TenantAwareDBClient` that wraps queries in transactions:
+
+```typescript
+// packages/server/src/shared/helpers/tenant-db-client.ts
+import { Injectable, Scope } from 'graphql-modules';
+import { DBProvider } from '@modules/app-providers/db.provider';
+import type { PoolClient, QueryResult } from 'pg';
+
+@Injectable({
+  scope: Scope.Operation, // Request-scoped: one instance per GraphQL operation
+})
+export class TenantAwareDBClient {
+  constructor(
+    private dbProvider: DBProvider,      // Singleton pool manager
+    private authContext: AuthContext,    // Request-scoped auth context
+  ) {}
+
+  async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
+    return this.transaction(async (client) => client.query<T>(queryText, params));
+  }
+
+  async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.dbProvider.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Set transaction-scoped RLS context
+      if (this.authContext.tenant?.businessId) {
+        await client.query('SET LOCAL app.current_business_id = $1', [this.authContext.tenant.businessId]);
+      }
+      if (this.authContext.user?.userId) {
+        await client.query('SET LOCAL app.current_user_id = $1', [this.authContext.user.userId]);
+      }
+      if (this.authContext.authType) {
+        await client.query('SET LOCAL app.auth_type = $1', [this.authContext.authType]);
+      }
+      
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+}
+```
+
+    *   **Architectural Separation**:
+        *   `DBProvider` (Singleton): Manages the connection pool, used for system-level operations (migrations, background jobs that bypass RLS)
+        *   `TenantAwareDBClient` (Request-scoped): Wraps `DBProvider.pool` with tenant isolation, the ONLY DB client allowed in GraphQL resolvers
+        *   **ESLint Enforcement**: Configure rule to prevent direct `DBProvider` imports in resolver files
+
     *   **Bypass**:
         *   System-level maintenance tasks can use a "super user" connection that bypasses RLS, but standard application connections must perform as the limited user.
+    *   **RLS Function**:
+```sql
+CREATE OR REPLACE FUNCTION accounter_schema.get_current_business_id()
+RETURNS UUID LANGUAGE plpgsql STABLE SECURITY DEFINER
+AS $$
+DECLARE v_business_id UUID;
+BEGIN
+  v_business_id := current_setting('app.current_business_id', true)::uuid;
+  IF v_business_id IS NULL THEN
+    RAISE EXCEPTION 'No business context set - authentication required';
+  END IF;
+  RETURN v_business_id;
+END;
+$$;
+```
 
 #### 3.2.1. Macro-Level Flaw Detection (Decisions)
 
@@ -177,12 +247,187 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   transactions (charge_id => charges)
     *   user_context (owner_id)
 
-*   **Locking Strategy**:
-    *   The implementation must add `business_id` columns as nullable first.
-    *   Backfills must be performed in batches to avoid long locks.
-    *   Indexes must be created `CONCURRENTLY`.
-    *   Foreign keys must be added `NOT VALID` and validated after backfill.
-    *   `NOT NULL` constraints must only be added after 100% backfill completion.
+*   **Locking Strategy** (5-Phase Low-Downtime Migration):
+    *   **Phase 1**: Add `business_id` columns as nullable (acquires brief ACCESS EXCLUSIVE lock, < 1 second)
+    *   **Phase 2**: Backfill in batches of 10,000 rows with 1-second sleep between batches (background job, no downtime)
+    *   **Phase 3**: Validate 100% backfill completion (SELECT COUNT(*) WHERE business_id IS NULL must = 0)
+    *   **Phase 4**: Add NOT NULL constraint (requires brief ACCESS EXCLUSIVE lock, < 5 seconds)
+    *   **Phase 5**: Create indexes `CONCURRENTLY` (2-10 minutes, non-blocking), then add foreign keys with `NOT VALID` and validate separately
+    *   **Total Downtime**: < 10 seconds per large table
+
+*   **Migration Naming Collision Resolution**:
+    *   The current `accounter_schema.users` table is actually a businesses table and MUST be renamed before creating the new personal users table:
+
+```sql
+-- Pre-migration: 2026-01-20-rename-users-to-legacy-businesses.sql
+ALTER TABLE accounter_schema.users RENAME TO legacy_business_users;
+-- Postgres automatically updates FK constraints
+
+-- Main migration: 2026-01-21-create-user-auth-system.sql
+CREATE TABLE accounter_schema.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- ... other auth tables ...
+
+-- Post-migration: 2026-01-22-backfill-business-users.sql
+INSERT INTO accounter_schema.users (id, name, email, created_at)
+SELECT gen_random_uuid(), name, name || '@legacy.local', created
+FROM accounter_schema.legacy_business_users;
+
+INSERT INTO accounter_schema.business_users (user_id, business_id, role_id)
+SELECT u.id, lbu.id, 'business_owner'
+FROM accounter_schema.users u
+JOIN accounter_schema.legacy_business_users lbu ON u.name = lbu.name;
+```
+
+*   **Refresh Token Rotation Service** (with reuse detection):
+
+```typescript
+export class RefreshTokenService {
+  constructor(private dbProvider: DBProvider) {}
+  
+  async rotateToken(oldTokenHash: string, userId: string) {
+    const client = await this.dbProvider.pool.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const { rows } = await client.query(`
+        SELECT id, revoked_at, replaced_by_token_id, expires_at
+        FROM accounter_schema.user_refresh_tokens
+        WHERE token_hash = $1 AND user_id = $2
+      `, [oldTokenHash, userId]);
+      
+      if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
+        await client.query('ROLLBACK');
+        return null; // Invalid or expired
+      }
+      
+      const oldToken = rows[0];
+      
+      // REUSE DETECTION: If token was already rotated, this is a replay attack
+      if (oldToken.replaced_by_token_id) {
+        console.error('[SECURITY] Token reuse detected for user', userId);
+        await client.query(`
+          UPDATE accounter_schema.user_refresh_tokens
+          SET revoked_at = NOW()
+          WHERE id = $1 OR id = $2
+        `, [oldToken.id, oldToken.replaced_by_token_id]);
+        await client.query('COMMIT');
+        return null; // Force re-login
+      }
+      
+      if (oldToken.revoked_at) {
+        await client.query('ROLLBACK');
+        return null;
+      }
+      
+      // Generate new token
+      const newRefreshToken = crypto.randomBytes(32).toString('hex');
+      const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+      
+      const { rows: newRows } = await client.query(`
+        INSERT INTO accounter_schema.user_refresh_tokens
+          (user_id, token_hash, expires_at)
+        VALUES ($1, $2, NOW() + INTERVAL '7 days')
+        RETURNING id
+      `, [userId, newRefreshTokenHash]);
+      
+      // Mark old token as replaced (not revoked, for reuse detection)
+      await client.query(`
+        UPDATE accounter_schema.user_refresh_tokens
+        SET replaced_by_token_id = $1
+        WHERE id = $2
+      `, [newRows[0].id, oldToken.id]);
+      
+      await client.query('COMMIT');
+      
+      const newAccessToken = this.jwtService.sign({ sub: userId, /* ... */ });
+      return { newAccessToken, newRefreshToken };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+}
+```
+
+*   **Critical**: The `adminContextPlugin` MUST be refactored to use `auth.tenant.businessId` instead of the legacy `currentUser.userId` pattern:
+
+```typescript
+export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = () =>
+  useExtendContext(
+    async (contextSoFar: { 
+      env: Environment; 
+      auth: AuthContext;  // Use auth.tenant.businessId
+      db: TenantAwareDBClient;
+    }) => {
+      if (!contextSoFar.auth.tenant?.businessId) {
+        throw new Error('No business context available');
+      }
+      
+      const rawContext = await fetchContext(
+        contextSoFar.auth.tenant.businessId,  // Correct: Use businessId from auth context
+        contextSoFar.db,
+      );
+      
+      const adminContext = normalizeContext(rawContext);
+      return { adminContext };
+    },
+  );
+```
+
+*   **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT` block to avoid connection pool leakage.
+    *   **GraphQL Context**: Must provide `db: TenantAwareDBClient` instead of raw `pool: pg.Pool`
+*   **Implementation Strategy** (Client Recreation for Zero Cache Leakage):
+
+```typescript
+// packages/client/src/providers/business-context.tsx
+export function BusinessProvider({ children }: { children: ReactNode }) {
+  const [businessId, setBusinessId] = useState<string | null>(null);
+  const [urqlClient, setUrqlClient] = useState<Client>(() => getUrqlClient(null));
+
+  const switchBusiness = (newBusinessId: string) => {
+    // 1. Clear existing client (triggers garbage collection)
+    setUrqlClient(null as any);
+    
+    // 2. Create fresh client with empty cache
+    const newClient = getUrqlClient(newBusinessId);
+    setUrqlClient(newClient);
+    
+    // 3. Update business context
+    setBusinessId(newBusinessId);
+    
+    // Urql automatically refetches when client changes
+  };
+
+  return (
+    <BusinessContext.Provider value={{ businessId, switchBusiness, urqlClient }}>
+      <UrqlProvider value={urqlClient}>
+        {children}
+      </UrqlProvider>
+    </BusinessContext.Provider>
+  );
+}
+```
+
+*   **Alternative** (Future Optimization): Cache key prefixing with `business:${businessId}:${typename}:${id}` to avoid client recreation overhead
+    *   **ESLint Rule**: Enforce no direct `pool.query()` usage in resolvers
+*   **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id` automatically. Any raw query access must be disallowed in GraphQL resolvers.
+*   **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and must rely on RLS-protected base tables.
+*   **Composite Uniqueness**: All business-scoped unique constraints must include `business_id`:
+    *   `documents`: (business_id, serial_number)
+    *   `financial_entities`: (business_id, name)
+    *   `tags`: (business_id, name)
+    *   `tax_categories`: (business_id, code)
+    *   `employees`: (business_id, employee_id)
+    *   `business_users`: PRIMARY KEY (user_id, business_id)
+    *   `invitations`: (business_id, email)
 
 #### 3.3. GraphQL API (`packages/server`)
 
@@ -212,18 +457,15 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
         *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
     *   **API Key Management**:
-        *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to generate keys. Store a hashed version (e.g., using `bcrypt` or `argon2`) in the `api_keys` table with the associated `business_id` and `scraper` role. Only return the raw key to the user (admin) upon generation.
-        *   **Validation**: When a request contains an API key header (e.g., `Authorization: Bearer <key>` or `X-API-Key: <key>`), hash the provided key and look it up in the `api_keys` table. If found, authenticate the request with the associated `business_id` and `role_id`.
-        *   **Usage Tracking**: Update the `last_used_at` field asynchronously or conditionally (only if > 1 hour since last update) to avoid write usage amplification on high-frequency requests.
-*   **Authentication Plugin (`packages/server/src/plugins/auth-plugin.ts`)**:
-    *   This plugin will be refactored to leverage `@graphql-yoga/plugin-jwt` for token validation, `@whatwg-node/server-plugin-cookies` for cookie management, and `@graphql-yoga/plugin-csrf-prevention` for security.
-    *   The plugin will support dual authentication mechanisms:
-        1.  **JWT from Cookie**: For standard browser-based users.
-        2.  **API Key from Header**: For the `scraper` role/automated tools. Check for `Authorization` header. If the format is `Bearer <key>`, attempt to validate it as an API Key first (checking against DB hash). If valid, attach a context object containing the `businessId` and `role` (e.g., `scraper`) to the request, allowing access to resources within that business scope.
-    *   The JWT plugin will be configured with a custom extractor to retrieve the token from the `access_token` cookie.
-    *   On successful verification, the decoded JWT payload (containing the user's ID, roles, and permissions) will be attached to the GraphQL `context`. This avoids the need for extra database lookups on each request.
-    *   **Token Refresh Logic**: If the Access Token is expired but a valid Refresh Token cookie exists, the client (or a specific `refresh` endpoint) should initiate a refresh flow: Validate the Refresh Token against the DB hash. If valid, issue new Access and Refresh tokens, and update the hash in the DB (Rotation).
-    *   The `validateUser` function will be updated to check `context.currentUser.permissions` (or a similar field populated by the JWT plugin) against the `@auth` directive's requirements.
+        *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to create a unique 64-character key. Hash it with `bcrypt` before storing in `api_keys.key_hash`.
+        *   **Return Value**: Return the plain key to the user **only once** on creation. Display a warning that it cannot be retrieved again.
+        *   **Validation**: On each API request with an `X-API-Key` header, hash the provided key and query `api_keys` for a match. If found and not revoked, attach the corresponding `businessId` and `roleId` to the context.
+        *   **Audit**: Log key generation and usage in `audit_logs`.
+    *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
+    *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
+*   **Authorization Directive (`@auth`)**:
+    *   Create a GraphQL schema directive `@auth(requires: Permission!)` to protect individual fields or mutations.
+    *   The directive's implementation will check the user's permissions (pre-populated by the JWT plugin) against the `@auth` directive's requirements.
 
 #### 3.3.1. Middleware & Resolver Hardening
 
