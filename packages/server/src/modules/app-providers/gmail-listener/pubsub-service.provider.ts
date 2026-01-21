@@ -15,6 +15,7 @@ export class PubsubServiceProvider {
   private pubSubClient: PubSub;
   private historyId: string | undefined = undefined;
   private processesGuard = new Set<string>();
+  private watchExpirationTimer: NodeJS.Timeout | null = null;
 
   constructor(
     @Inject(ENVIRONMENT) private env: Environment,
@@ -120,20 +121,45 @@ export class PubsubServiceProvider {
 
   private async setupPushNotifications(topicName: string): Promise<void> {
     try {
-      await this.gmailService.gmail.users
-        .watch({
-          userId: 'me',
-          requestBody: {
-            topicName: `projects/${this.gmailEnv.cloudProjectId}/topics/${topicName}`,
-            labelIds: ['INBOX'], // Watch inbox changes
-          },
-        })
-        .then(res => {
-          if (res?.data?.historyId) {
-            this.historyId = res.data.historyId;
-          }
-        });
-      console.log('Push notifications set up successfully');
+      const response = await this.gmailService.gmail.users.watch({
+        userId: 'me',
+        requestBody: {
+          topicName: `projects/${this.gmailEnv.cloudProjectId}/topics/${topicName}`,
+          labelIds: ['INBOX'], // Watch inbox changes
+        },
+      });
+
+      if (response?.data?.historyId) {
+        this.historyId = response.data.historyId;
+      }
+
+      // Schedule renewal before expiration
+      if (response?.data?.expiration) {
+        const expirationMs = parseInt(response.data.expiration);
+        const now = Date.now();
+        const renewalTime = expirationMs - now - 24 * 60 * 60 * 1000; // Renew 1 day before expiry
+
+        if (this.watchExpirationTimer) {
+          clearTimeout(this.watchExpirationTimer);
+        }
+
+        const renewWatch = () => {
+          console.log('Renewing Gmail watch subscription...');
+          this.setupPushNotifications(topicName).catch(error => {
+            console.error('Failed to renew Gmail watch. Retrying in 5 minutes.', error);
+            // Retry after a delay
+            setTimeout(renewWatch, 5 * 60 * 1000);
+          });
+        };
+
+        this.watchExpirationTimer = setTimeout(renewWatch, Math.max(renewalTime, 0));
+
+        console.log(
+          `Push notifications set up successfully. Watch expires at ${new Date(expirationMs).toISOString()}, renewal scheduled`,
+        );
+      } else {
+        console.log('Push notifications set up successfully');
+      }
     } catch (error) {
       console.error('Error setting up push notifications:', error);
       throw error;
@@ -155,6 +181,7 @@ export class PubsubServiceProvider {
     // Setup Gmail push notifications
     await this.setupPushNotifications(this.gmailEnv.topicName).catch(error => {
       console.error('Error setting up Gmail push notifications:', error);
+      throw error;
     });
 
     console.log('Starting to listen for Gmail notifications...');
@@ -182,11 +209,24 @@ export class PubsubServiceProvider {
   }
 
   public stopListening(): void {
+    if (this.watchExpirationTimer) {
+      clearTimeout(this.watchExpirationTimer);
+      this.watchExpirationTimer = null;
+    }
     this.subscription?.removeAllListeners();
     console.log('Stopped listening for notifications');
   }
 
-  public healthCheck(): boolean {
-    return !!this.subscription;
+  public async healthCheck(): Promise<boolean> {
+    if (!this.subscription) return false;
+
+    // Verify Gmail API connection is still active
+    try {
+      await this.gmailService.gmail.users.getProfile({ userId: 'me' });
+      return true;
+    } catch (error) {
+      console.error('Gmail API connection failed in health check:', error);
+      return false;
+    }
   }
 }

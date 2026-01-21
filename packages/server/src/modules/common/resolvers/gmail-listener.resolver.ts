@@ -4,8 +4,8 @@ import type { CommonModule } from '../types.js';
 
 export const gmailListenerResolvers: CommonModule.Resolvers = {
   Query: {
-    gmailListenerStatus: (_, __, { injector }) => {
-      return injector.get(PubsubServiceProvider).healthCheck();
+    gmailListenerStatus: async (_, __, { injector }) => {
+      return await injector.get(PubsubServiceProvider).healthCheck();
     },
   },
   Mutation: {
