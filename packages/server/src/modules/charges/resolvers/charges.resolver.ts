@@ -598,61 +598,51 @@ export const chargesResolvers: ChargesModule.Resolvers &
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Common, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'COMMON',
   },
   ConversionCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Conversion, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'CONVERSION',
   },
   SalaryCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Salary, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'PAYROLL',
   },
   InternalTransferCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.InternalTransfer, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'INTERNAL',
   },
   DividendCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.Dividend, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'DIVIDEND',
   },
   BusinessTripCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.BusinessTrip, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'BUSINESS_TRIP',
   },
   MonthlyVatCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.MonthlyVat, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'VAT',
   },
   BankDepositCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.BankDeposit, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'BANK_DEPOSIT',
   },
   ForeignSecuritiesCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.ForeignSecurities, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'FOREIGN_SECURITIES',
   },
   CreditcardBankCharge: {
     __isTypeOf: async (DbCharge, context) =>
       chargeTypeChecker(ChargeTypeEnum.CreditcardBankCharge, DbCharge, context),
     ...commonChargeFields,
-    type: () => 'CREDITCARD_BANK',
   },
   Invoice: {
     ...commonDocumentsFields,
