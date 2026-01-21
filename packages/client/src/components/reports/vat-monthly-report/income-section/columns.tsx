@@ -10,6 +10,7 @@ import {
   ToggleMergeSelected,
 } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import { getRecordTypeName } from '../utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -34,19 +35,36 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
       formatted
       raw
     }
+    recordType
   }
 `;
 
 export type IncomeTableRowType = {
   data: FragmentType<typeof VatReportIncomeRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
   cumulativeAmount: number;
 };
 
 const columnHelper = createColumnHelper<IncomeTableRowType>();
 
 export const columns = [
+  columnHelper.accessor(
+    row => {
+      const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, row.data);
+      return income.recordType;
+    },
+    {
+      id: 'recordType',
+      header: 'Record Type',
+      cell: info => {
+        const recordType = info.getValue();
+        return (
+          <p className="whitespace-wrap">{`${getRecordTypeName(recordType)} (${recordType})`}</p>
+        );
+      },
+    },
+  ),
   columnHelper.accessor(
     row => {
       const income = getFragmentData(VatReportIncomeRowFieldsFragmentDoc, row.data);
@@ -192,7 +210,7 @@ export const columns = [
           />
           <ToggleMergeSelected
             toggleMergeSelected={(): void => info.row.original.toggleMergeCharge(income.chargeId)}
-            mergeSelected={info.row.original.mergeSelectedCharges.includes(income.chargeId)}
+            mergeSelected={info.row.original.mergeSelectedCharges.has(income.chargeId)}
           />
           <ChargeNavigateButton chargeId={income.chargeId} />
         </div>

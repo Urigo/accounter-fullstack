@@ -10,6 +10,7 @@ import {
   ToggleMergeSelected,
 } from '../../../common/index.js';
 import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import { getRecordTypeName } from '../utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -55,13 +56,14 @@ import { AccountantApproval } from '../cells/accountant-approval.jsx';
       formatted
       raw
     }
+    recordType
   }
 `;
 
 export type ExpensesTableRowType = {
   data: FragmentType<typeof VatReportExpensesRowFieldsFragmentDoc>;
   toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: string[];
+  mergeSelectedCharges: Set<string>;
   cumulativeVat: number;
   cumulativeAmount: number;
 };
@@ -69,6 +71,22 @@ export type ExpensesTableRowType = {
 const columnHelper = createColumnHelper<ExpensesTableRowType>();
 
 export const columns = [
+  columnHelper.accessor(
+    row => {
+      const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, row.data);
+      return expense.recordType;
+    },
+    {
+      id: 'recordType',
+      header: 'Record Type',
+      cell: info => {
+        const recordType = info.getValue();
+        return (
+          <p className="whitespace-wrap">{`${getRecordTypeName(recordType)} (${recordType})`}</p>
+        );
+      },
+    },
+  ),
   columnHelper.accessor(
     row => {
       const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, row.data);
@@ -337,7 +355,7 @@ export const columns = [
           />
           <ToggleMergeSelected
             toggleMergeSelected={(): void => info.row.original.toggleMergeCharge(expense.chargeId)}
-            mergeSelected={info.row.original.mergeSelectedCharges.includes(expense.chargeId)}
+            mergeSelected={info.row.original.mergeSelectedCharges.has(expense.chargeId)}
           />
           <ChargeNavigateButton chargeId={expense.chargeId} />
         </div>
