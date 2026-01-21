@@ -3,9 +3,13 @@ import { CheckSquare, XSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Checkbox } from '@mantine/core';
-import { getChargeTypeIcon, getChargeTypeName } from '@/helpers/index.js';
 import {
-  ChargeType,
+  getChargeTypeIcon,
+  getChargeTypeInputValue,
+  getChargeTypeName,
+  type ChargeType,
+} from '@/helpers/index.js';
+import {
   FetchMultipleChargesDocument,
   type FetchMultipleChargesQuery,
   type UpdateChargeInput,
@@ -119,11 +123,11 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
         ownerId: selectedOwner.value,
       };
     }
-    if (selectedType && selectedType.value !== mainCharge.type) {
+    if (selectedType && selectedType.value !== mainCharge.__typename) {
       fields ??= {};
       fields = {
         ...fields,
-        type: selectedType.value,
+        type: getChargeTypeInputValue(selectedType.value),
       };
     }
     if (selectedDecreasedVAT && selectedDecreasedVAT.value !== mainCharge.decreasedVAT) {
@@ -241,7 +245,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         });
                         setSelectedType({
                           id: charge.id,
-                          value: charge.type,
+                          value: charge.__typename,
                         });
                         setSelectedDecreasedVAT({
                           id: charge.id,
@@ -316,11 +320,13 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                 <td key={charge.id}>
                   <button
                     className="w-full px-2"
-                    disabled={charge.type == null || charge.type === selectedType?.value}
+                    disabled={
+                      charge.__typename == null || charge.__typename === selectedType?.value
+                    }
                     onClick={(): void => {
                       setSelectedType({
                         id: charge.id,
-                        value: charge.type,
+                        value: charge.__typename,
                       });
                     }}
                   >

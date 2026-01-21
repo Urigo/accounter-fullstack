@@ -11,6 +11,7 @@ import {
 import {
   CHARGE_TYPE_NAME,
   EMPTY_UUID,
+  getChargeTypeInputValue,
   relevantDataPicker,
   type MakeBoolean,
   type TimelessDateString,
@@ -30,7 +31,7 @@ import {
 } from '../index.js';
 
 const chargeTypes = Object.entries(CHARGE_TYPE_NAME).map(([value, label]) => ({
-  value,
+  value: getChargeTypeInputValue(value as keyof typeof CHARGE_TYPE_NAME),
   label,
 }));
 
@@ -247,13 +248,13 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <Controller
                 name="type"
                 control={control}
-                defaultValue={charge.type}
+                defaultValue={getChargeTypeInputValue(charge.__typename)}
                 render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
                     data={chargeTypes}
                     value={field.value}
-                    label="ChargeType"
+                    label="Charge Type"
                     placeholder="Scroll to see all options"
                     maxDropdownHeight={160}
                     searchable

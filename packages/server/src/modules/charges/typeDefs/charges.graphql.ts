@@ -26,8 +26,6 @@ export default gql`
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "
   interface Charge {
     id: UUID!
-    " charge type "
-    type: ChargeType!
     " calculated field based on the actual ledger records, optional because not all charges has VAT "
     vat: FinancialAmount
     " withholding tax "
@@ -61,7 +59,6 @@ export default gql`
   " common charge "
   type CommonCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -81,7 +78,6 @@ export default gql`
   " charge with conversion transactions "
   type ConversionCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -101,7 +97,6 @@ export default gql`
   " charge with conversion transactions "
   type SalaryCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -121,7 +116,6 @@ export default gql`
   " charge of internal transfer "
   type InternalTransferCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -141,7 +135,6 @@ export default gql`
   " charge of dividends "
   type DividendCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -161,7 +154,6 @@ export default gql`
   " charge of dividends "
   type BusinessTripCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -181,7 +173,6 @@ export default gql`
   " charge of monthly VAT payment "
   type MonthlyVatCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -201,7 +192,6 @@ export default gql`
   " charge of bank deposits "
   type BankDepositCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -221,7 +211,6 @@ export default gql`
   " charge of foreign securities "
   type ForeignSecuritiesCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount
@@ -241,7 +230,6 @@ export default gql`
   " charge of creditcard over bank account "
   type CreditcardBankCharge implements Charge {
     id: UUID!
-    type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount
     totalAmount: FinancialAmount

@@ -12,6 +12,7 @@ import {
   TrendingUpDown,
   Wallet,
 } from 'lucide-react';
+import type { ChargeType as ChargeTypeInput } from '@/gql/graphql';
 
 export type ChargeType =
   | 'CommonCharge'
@@ -59,3 +60,32 @@ const ICON_MAP: Record<ChargeType, ReactElement> = {
 
 export const getChargeTypeIcon = (type?: ChargeType): ReactElement =>
   !type || !(type in ICON_MAP) ? <Coins /> : ICON_MAP[type];
+
+export function getChargeTypeInputValue(type: ChargeType): ChargeTypeInput {
+  switch (type) {
+    case 'CommonCharge':
+      return 'COMMON';
+    case 'BusinessTripCharge':
+      return 'BUSINESS_TRIP';
+    case 'DividendCharge':
+      return 'DIVIDEND';
+    case 'ConversionCharge':
+      return 'CONVERSION';
+    case 'SalaryCharge':
+      return 'PAYROLL';
+    case 'InternalTransferCharge':
+      return 'INTERNAL';
+    case 'MonthlyVatCharge':
+      return 'VAT';
+    case 'BankDepositCharge':
+      return 'BANK_DEPOSIT';
+    case 'ForeignSecuritiesCharge':
+      return 'FOREIGN_SECURITIES';
+    case 'CreditcardBankCharge':
+      return 'CREDITCARD_BANK';
+    case 'FinancialCharge':
+      return 'FINANCIAL';
+    default:
+      throw new Error(`Unsupported charge type: ${type}`);
+  }
+}

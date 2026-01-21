@@ -14,7 +14,6 @@ import { DragFile, ListCapsule } from '../../common/index.js';
       documentsCount
       ledgerCount
       miscExpensesCount
-      isSalary
       ... on ChargeMetadata @defer {
         invalidLedger
       }
