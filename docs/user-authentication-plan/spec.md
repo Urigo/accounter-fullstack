@@ -7,6 +7,7 @@
 *   **Tenant isolation leakage via pooled connections**: The implementation must use `BEGIN; SET LOCAL app.current_business_id = ...; SET LOCAL app.current_user_id = ...; COMMIT;` for every request. Any query executed outside a transaction is forbidden.
 *   **Ambiguous business ownership**: The implementation must define deterministic backfill rules for legacy tables that do not carry a `business_id` (see Transition State Management). Rows without resolvable ownership must be quarantined and excluded by RLS.
 *   **Singleton provider cache leakage**: The implementation must ensure all providers caching tenant-specific data use `Scope.Operation` or tenant-prefixed cache keys to prevent cross-tenant data exposure (see Provider Cache Isolation Strategy).
+*   **Connection pool exhaustion**: With one connection held per GraphQL operation, ensure adequate pool sizing (50-100 connections for production) and implement query timeouts to prevent pool starvation. Note: RLS policies do NOT create table-level locks; PostgreSQL's MVCC ensures concurrent operations remain non-blocking.
 
 ### 1. Overview
 
@@ -131,17 +132,49 @@ import type { PoolClient, QueryResult } from 'pg';
   scope: Scope.Operation, // Request-scoped: one instance per GraphQL operation
 })
 export class TenantAwareDBClient {
+  private activeClient: PoolClient | null = null;
+  private transactionDepth = 0;
+
   constructor(
     private dbProvider: DBProvider,      // Singleton pool manager
     private authContext: AuthContext,    // Request-scoped auth context
   ) {}
 
   async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
+    // Reuse existing transaction if within a GraphQL operation
+    if (this.activeClient) {
+      return this.activeClient.query<T>(queryText, params);
+    }
+    
+    // Otherwise create a new transaction for this single query
     return this.transaction(async (client) => client.query<T>(queryText, params));
   }
 
   async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    // Support nested transactions (use savepoints)
+    const isNested = this.transactionDepth > 0;
+    
+    if (isNested) {
+      this.transactionDepth++;
+      const savepointName = `sp_${this.transactionDepth}`;
+      await this.activeClient!.query(`SAVEPOINT ${savepointName}`);
+      try {
+        const result = await fn(this.activeClient!);
+        await this.activeClient!.query(`RELEASE SAVEPOINT ${savepointName}`);
+        this.transactionDepth--;
+        return result;
+      } catch (error) {
+        await this.activeClient!.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+        this.transactionDepth--;
+        throw error;
+      }
+    }
+    
+    // Start a new top-level transaction
     const client = await this.dbProvider.pool.connect();
+    this.activeClient = client;
+    this.transactionDepth = 1;
+    
     try {
       await client.query('BEGIN');
       
@@ -163,7 +196,20 @@ export class TenantAwareDBClient {
       await client.query('ROLLBACK');
       throw error;
     } finally {
+      this.transactionDepth = 0;
+      this.activeClient = null;
       client.release();
+    }
+  }
+
+  // Cleanup hook for GraphQL context disposal
+  async dispose() {
+    if (this.activeClient) {
+      try {
+        await this.activeClient.query('ROLLBACK');
+      } catch {}
+      this.activeClient.release();
+      this.activeClient = null;
     }
   }
 }
@@ -173,6 +219,14 @@ export class TenantAwareDBClient {
         *   `DBProvider` (Singleton): Manages the connection pool, used for system-level operations (migrations, background jobs that bypass RLS)
         *   `TenantAwareDBClient` (Request-scoped): Wraps `DBProvider.pool` with tenant isolation, the ONLY DB client allowed in GraphQL resolvers
         *   **ESLint Enforcement**: Configure rule to prevent direct `DBProvider` imports in resolver files
+
+    *   **Performance & Scalability Considerations**:
+        *   **Transaction Reuse**: The `TenantAwareDBClient` maintains a single active transaction per GraphQL operation, avoiding transaction overhead for multi-query operations
+        *   **Connection Pool Sizing**: With one connection per concurrent request, ensure pool size ≥ expected concurrent users. Recommended: `max_connections = (core_count * 2) + effective_spindle_count`, typically 50-100 for production
+        *   **Long-Running Queries**: Operations exceeding 5 seconds should be moved to background jobs to avoid pool exhaustion
+        *   **Read Replicas** (Future): Read-only queries can bypass RLS by routing to replicas with tenant filtering in application layer, reducing primary DB load
+        *   **PostgreSQL MVCC**: Row-Level Security policies do NOT create table locks; concurrent transactions can read/write independently without blocking
+        *   **Monitoring**: Track `pg_stat_activity` for connection pool saturation and `pg_stat_statements` for slow RLS-protected queries
 
     *   **Bypass**:
         *   System-level maintenance tasks can use a "super user" connection that bypasses RLS, but standard application connections must perform as the limited user.
