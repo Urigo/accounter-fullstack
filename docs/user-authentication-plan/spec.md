@@ -6,7 +6,7 @@
 
 *   **Tenant isolation leakage via pooled connections**: The implementation must use `BEGIN; SET LOCAL app.current_business_id = ...; SET LOCAL app.current_user_id = ...; COMMIT;` for every request. Any query executed outside a transaction is forbidden.
 *   **Ambiguous business ownership**: The implementation must define deterministic backfill rules for legacy tables that do not carry a `business_id` (see Transition State Management). Rows without resolvable ownership must be quarantined and excluded by RLS.
-*   **Refresh token single point of failure**: The implementation must replace the single `refresh_token_hash` field with a multi-session token table to avoid global logout and to enable rotation and reuse detection.
+*   **Singleton provider cache leakage**: The implementation must ensure all providers caching tenant-specific data use `Scope.Operation` or tenant-prefixed cache keys to prevent cross-tenant data exposure (see Provider Cache Isolation Strategy).
 
 ### 1. Overview
 
@@ -198,6 +198,90 @@ $$;
 *   **Data Leakage Vectors**: The implementation must create DataLoaders per request, must never share caches across requests, and must enforce RLS for all tenant tables and views.
 *   **Architectural Debt**: The implementation must support an explicit `active_business_id` per session and must avoid embedding immutable permissions without rotation safeguards.
 
+#### 3.2.1.1. Provider Cache Isolation Strategy
+
+**Current Risk**: Singleton providers with shared caches (e.g., `BusinessesProvider`) leak data across tenants because cache keys lack tenant context.
+
+**Required Changes**:
+
+1. **Change Provider Scope** (Recommended):
+```typescript
+// BEFORE: Singleton with global cache (UNSAFE)
+@Injectable({ scope: Scope.Singleton })
+export class BusinessesProvider {
+  cache = getCacheInstance({ stdTTL: 60 * 5 }); // Shared across all requests!
+}
+
+// AFTER: Operation-scoped with request-isolated cache (SAFE)
+@Injectable({ scope: Scope.Operation })
+export class BusinessesProvider {
+  cache = getCacheInstance({ stdTTL: 60 * 5 }); // One cache per request
+  
+  constructor(
+    private dbProvider: DBProvider,
+    private authContext: AuthContext, // Inject tenant context
+  ) {}
+}
+```
+
+2. **Alternative - Tenant-Prefixed Cache Keys** (for performance-critical singletons):
+```typescript
+@Injectable({ scope: Scope.Singleton })
+export class BusinessesProvider {
+  cache = getCacheInstance({ stdTTL: 60 * 5 });
+  
+  constructor(private dbProvider: DBProvider) {}
+  
+  // Tenant context must be passed explicitly to cache-using methods
+  public getBusinessByIdLoader(tenantId: string) {
+    return new DataLoader(
+      (ids: readonly string[]) => this.batchBusinessesByIds(ids, tenantId),
+      {
+        cacheKeyFn: id => `tenant:${tenantId}:business:${id}`, // CRITICAL: Tenant prefix
+        cacheMap: this.cache,
+      },
+    );
+  }
+  
+  public async getAllBusinesses(tenantId: string) {
+    const cacheKey = `tenant:${tenantId}:all-businesses`;
+    const cached = this.cache.get(cacheKey);
+    // ...
+  }
+}
+```
+
+3. **Migration Checklist for All Providers**:
+   - [ ] Audit all `@Injectable({ scope: Scope.Singleton })` providers
+   - [ ] Identify which providers cache tenant-specific data
+   - [ ] Convert to `Scope.Operation` OR add tenant prefixing
+   - [ ] Providers that can remain Singleton:
+     - System configuration providers (non-tenant data)
+     - Pure utility services with no state
+     - External API clients (if tenant context passed per-method)
+   - [ ] Add integration tests verifying cache isolation between tenants
+
+4. **DataLoader Instance Creation**:
+```typescript
+// In GraphQL context creation (per-request):
+export const createGraphQLContext = async (request, pool, auth) => {
+  const db = new TenantAwareDBClient(new DBProvider(pool), auth);
+  
+  // Create fresh DataLoader instances per request
+  const businessesProvider = new BusinessesProvider(db, auth);
+  const chargesProvider = new ChargesProvider(db, auth);
+  
+  return {
+    db,
+    auth,
+    dataloaders: {
+      businesses: businessesProvider.getBusinessByIdLoader,
+      charges: chargesProvider.getChargeByIdLoader,
+    },
+  };
+};
+```
+
 #### 3.2.2. Database Execution Blueprint (Multi-Tenant Migration)
 
 *   **Tables that must carry `business_id`**:
@@ -284,7 +368,34 @@ FROM accounter_schema.users u
 JOIN accounter_schema.legacy_business_users lbu ON u.name = lbu.name;
 ```
 
-*   **Refresh Token Rotation Service** (with reuse detection):
+#### 3.3. GraphQL API (`packages/server`)
+
+A new `auth` module will be created under `packages/server/src/modules`.
+
+*   **Schema (`schema.graphql`)**:
+    *   **Audit Service**: Implement a dedicated `AuditService` to handle log ingestion.
+        *   Should be called asynchronously to avoid blocking user requests.
+        *   Must be integrated into critical flows: `login`, `logout`, `inviteUser`, `acceptInvitation`, `generateApiKey`, `revokeApiKey`.
+        *   Should be reusable by other modules for business logic events (e.g., `createInvoice`).
+    *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
+    *   **Mutations**:
+        *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
+        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookies (Access & Refresh).
+        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
+        *   `refreshToken`: AuthPayload! - Uses the Refresh Token cookie to generate a new Access Token.
+        *   `logout`: Invalidates the session by clearing the cookies and removing the refresh token from the DB.
+        *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
+        *   `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
+*   **Services and Resolvers**:
+    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions`, and a short expiration (`exp`).
+    *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
+    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
+    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
+    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
+    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
+        *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
+        *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
+    *   **Refresh Token Rotation Service** (with reuse detection):
 
 ```typescript
 export class RefreshTokenService {
@@ -357,7 +468,21 @@ export class RefreshTokenService {
 }
 ```
 
-*   **Critical**: The `adminContextPlugin` MUST be refactored to use `auth.tenant.businessId` instead of the legacy `currentUser.userId` pattern:
+    *   **API Key Management**:
+        *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to create a unique 64-character key. Hash it with `bcrypt` before storing in `api_keys.key_hash`.
+        *   **Return Value**: Return the plain key to the user **only once** on creation. Display a warning that it cannot be retrieved again.
+        *   **Validation**: On each API request with an `X-API-Key` header, hash the provided key and query `api_keys` for a match. If found and not revoked, attach the corresponding `businessId` and `roleId` to the context.
+        *   **Audit**: Log key generation and usage in `audit_logs`.
+    *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
+    *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
+*   **Authorization Directive (`@auth`)**:
+    *   Create a GraphQL schema directive `@auth(requires: Permission!)` to protect individual fields or mutations.
+    *   The directive's implementation will check the user's permissions (pre-populated by the JWT plugin) against the `@auth` directive's requirements.
+
+#### 3.3.1. Middleware & Resolver Hardening
+
+*   **Context Binding**: The implementation must derive `businessId` exclusively from JWT or API key validation. Any `businessId` argument provided by the client must be treated as data, not as authorization.
+    *   **Critical**: The `adminContextPlugin` MUST be refactored to use `auth.tenant.businessId` instead of the legacy `currentUser.userId` pattern:
 
 ```typescript
 export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = () =>
@@ -384,39 +509,6 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
 
 *   **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT` block to avoid connection pool leakage.
     *   **GraphQL Context**: Must provide `db: TenantAwareDBClient` instead of raw `pool: pg.Pool`
-*   **Implementation Strategy** (Client Recreation for Zero Cache Leakage):
-
-```typescript
-// packages/client/src/providers/business-context.tsx
-export function BusinessProvider({ children }: { children: ReactNode }) {
-  const [businessId, setBusinessId] = useState<string | null>(null);
-  const [urqlClient, setUrqlClient] = useState<Client>(() => getUrqlClient(null));
-
-  const switchBusiness = (newBusinessId: string) => {
-    // 1. Clear existing client (triggers garbage collection)
-    setUrqlClient(null as any);
-    
-    // 2. Create fresh client with empty cache
-    const newClient = getUrqlClient(newBusinessId);
-    setUrqlClient(newClient);
-    
-    // 3. Update business context
-    setBusinessId(newBusinessId);
-    
-    // Urql automatically refetches when client changes
-  };
-
-  return (
-    <BusinessContext.Provider value={{ businessId, switchBusiness, urqlClient }}>
-      <UrqlProvider value={urqlClient}>
-        {children}
-      </UrqlProvider>
-    </BusinessContext.Provider>
-  );
-}
-```
-
-*   **Alternative** (Future Optimization): Cache key prefixing with `business:${businessId}:${typename}:${id}` to avoid client recreation overhead
     *   **ESLint Rule**: Enforce no direct `pool.query()` usage in resolvers
 *   **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id` automatically. Any raw query access must be disallowed in GraphQL resolvers.
 *   **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and must rely on RLS-protected base tables.
@@ -428,51 +520,6 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     *   `employees`: (business_id, employee_id)
     *   `business_users`: PRIMARY KEY (user_id, business_id)
     *   `invitations`: (business_id, email)
-
-#### 3.3. GraphQL API (`packages/server`)
-
-A new `auth` module will be created under `packages/server/src/modules`.
-
-*   **Schema (`schema.graphql`)**:
-    *   **Audit Service**: Implement a dedicated `AuditService` to handle log ingestion.
-        *   Should be called asynchronously to avoid blocking user requests.
-        *   Must be integrated into critical flows: `login`, `logout`, `inviteUser`, `acceptInvitation`, `generateApiKey`, `revokeApiKey`.
-        *   Should be reusable by other modules for business logic events (e.g., `createInvoice`).
-    *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
-    *   **Mutations**:
-        *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
-        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookies (Access & Refresh).
-        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
-        *   `refreshToken`: AuthPayload! - Uses the Refresh Token cookie to generate a new Access Token.
-        *   `logout`: Invalidates the session by clearing the cookies and removing the refresh token from the DB.
-        *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
-        *   `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
-*   **Services and Resolvers**:
-    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions`, and a short expiration (`exp`).
-    *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
-    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
-    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
-    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
-    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
-        *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
-        *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
-    *   **API Key Management**:
-        *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to create a unique 64-character key. Hash it with `bcrypt` before storing in `api_keys.key_hash`.
-        *   **Return Value**: Return the plain key to the user **only once** on creation. Display a warning that it cannot be retrieved again.
-        *   **Validation**: On each API request with an `X-API-Key` header, hash the provided key and query `api_keys` for a match. If found and not revoked, attach the corresponding `businessId` and `roleId` to the context.
-        *   **Audit**: Log key generation and usage in `audit_logs`.
-    *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
-    *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
-*   **Authorization Directive (`@auth`)**:
-    *   Create a GraphQL schema directive `@auth(requires: Permission!)` to protect individual fields or mutations.
-    *   The directive's implementation will check the user's permissions (pre-populated by the JWT plugin) against the `@auth` directive's requirements.
-
-#### 3.3.1. Middleware & Resolver Hardening
-
-*   **Context Binding**: The implementation must derive `businessId` exclusively from JWT or API key validation. Any `businessId` argument provided by the client must be treated as data, not as authorization.
-*   **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT` block to avoid connection pool leakage.
-*   **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id` automatically. Any raw query access must be disallowed in GraphQL resolvers.
-*   **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and must rely on RLS-protected base tables.
 
 #### 3.4. Client Application (`packages/client`)
 
