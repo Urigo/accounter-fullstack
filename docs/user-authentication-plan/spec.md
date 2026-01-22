@@ -241,6 +241,12 @@ export class TenantAwareDBClient {
         *   **PostgreSQL MVCC**: Row-Level Security policies do NOT create table locks; concurrent transactions can read/write independently without blocking
         *   **Monitoring**: Track `pg_stat_activity` for connection pool saturation and `pg_stat_statements` for slow RLS-protected queries
 
+    *   **Why RLS is the Primary Security Boundary**:
+        *   **Defense in Depth**: Even if application-layer auth has bugs, RLS prevents data leaks
+        *   **Automatic Enforcement**: All queries (including raw SQL, ORMs, manual queries) are filtered
+        *   **No Bypass Possible**: Unless using system-level superuser connection
+        *   **Application-layer auth is supplementary**: Provides better UX (early failures) and business logic enforcement
+
     *   **Bypass**:
         *   System-level maintenance tasks can use a "super user" connection that bypasses RLS, but standard application connections must perform as the limited user.
     *   **RLS Function**:
@@ -446,7 +452,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   Should be reusable by other modules for business logic events (e.g., `createInvoice`).
     *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
     *   **Mutations**:
-        *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
+        *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Authorization checked in service layer (requires `manage:users` permission + verified email).
         *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user, **auto-verifies their email** (sets `email_verified_at = NOW()`), and sets the JWT cookies (Access & Refresh).
         *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
         *   `requestEmailVerification`: String! - Generates a verification token for the current user's email. Returns success message. Requires authentication.
@@ -548,12 +554,113 @@ export class RefreshTokenService {
         *   **Audit**: Log key generation and usage in `audit_logs`.
     *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
     *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
-*   **Authorization Directive (`@auth`)**:
-    *   Create a GraphQL schema directive `@auth(requires: Permission!, requiresVerifiedEmail: Boolean)` to protect individual fields or mutations.
-    *   The directive's implementation will check the user's permissions (pre-populated by the JWT plugin) against the `@auth` directive's requirements.
-    *   **Email Verification Enforcement**: When `requiresVerifiedEmail: true`, the directive checks `authContext.user.emailVerifiedAt` and returns `FORBIDDEN` if null. Critical mutations (issue documents, manage users, update business settings) must require verified email.
+*   **Authorization Strategy (Layered Defense)**:
+    *   **Layer 1 - Database RLS**: Primary security boundary. Automatically filters all queries by `business_id`.
+    *   **Layer 2 - GraphQL Directives**: Simple, static checks only.
+    *   **Layer 3 - Service Layer**: Complex, data-dependent authorization.
+
+*   **GraphQL Directives (Minimal Use)**:
+    *   `@requiresAuth`: Ensures user is authenticated (JWT valid). Use on all protected queries/mutations.
+    *   `@requiresVerifiedEmail`: Checks `authContext.user.emailVerifiedAt` is not null. Use on critical mutations (issue documents, manage users, financial operations).
+    *   `@requiresRole(role: String!)`: Simple role check (e.g., `@requiresRole(role: "business_owner")`). Use sparingly for admin-only operations.
+    *   **Do NOT use directives for**: Resource ownership checks, data-dependent permissions, complex business rules.
+
+*   **AuthorizationService Pattern** (Service Layer):
+    *   Create dedicated authorization services per domain:
+        *   `ChargesAuthService.canEdit(userId, chargeId)`: Checks charge ownership via RLS query
+        *   `DocumentsAuthService.canIssue(userId, businessId)`: Checks role permissions + email verification
+        *   `UsersAuthService.canManage(userId, targetUserId)`: Prevents self-role-changes, checks hierarchy
+    *   **Implementation Pattern**:
+
+```typescript
+@Injectable({ scope: Scope.Operation })
+export class ChargesAuthService {
+  constructor(
+    private db: TenantAwareDBClient,
+    private authContext: AuthContext,
+  ) {}
+
+  async canEdit(chargeId: string): Promise<void> {
+    // Email verification check
+    if (!this.authContext.user?.emailVerifiedAt) {
+      throw new GraphQLError('Email verification required', {
+        extensions: { code: 'EMAIL_NOT_VERIFIED' },
+      });
+    }
+
+    // RLS handles business_id filtering automatically
+    const { rows } = await this.db.query(
+      'SELECT id FROM accounter_schema.charges WHERE id = $1',
+      [chargeId]
+    );
+
+    if (rows.length === 0) {
+      throw new GraphQLError('Charge not found or access denied', {
+        extensions: { code: 'FORBIDDEN' },
+      });
+    }
+
+    // Additional business logic checks
+    if (!this.authContext.user.permissions.includes('edit:charges')) {
+      throw new GraphQLError('Insufficient permissions', {
+        extensions: { code: 'FORBIDDEN' },
+      });
+    }
+  }
+}
+```
+
+    *   **Resolver Integration**:
+
+```typescript
+export const resolvers: Resolvers = {
+  Mutation: {
+    updateCharge: async (_, { id, data }, { chargesAuthService, chargesService }) => {
+      // Authorization check (service layer)
+      await chargesAuthService.canEdit(id);
+      
+      // Business logic (RLS enforced automatically in queries)
+      return chargesService.updateCharge(id, data);
+    },
+  },
+};
+```
+
+*   **Permission Checks in Services** (Not Directives):
+    *   Store user permissions in JWT payload (from `role_permissions` table)
+    *   Check permissions in service methods, not resolvers:
+
+```typescript
+export class DocumentsService {
+  async issueInvoice(data: InvoiceInput) {
+    // Permission check
+    if (!this.authContext.user.permissions.includes('issue:docs')) {
+      throw new GraphQLError('Cannot issue documents', {
+        extensions: { code: 'FORBIDDEN', requiredPermission: 'issue:docs' },
+      });
+    }
+
+    // Email verification for critical operations
+    if (!this.authContext.user.emailVerifiedAt) {
+      throw new GraphQLError('Email verification required for document issuance', {
+        extensions: { code: 'EMAIL_NOT_VERIFIED' },
+      });
+    }
+
+    // RLS ensures business_id is automatically filtered
+    return this.db.query('INSERT INTO documents ...');
+  }
+}
+```
 
 #### 3.3.1. Middleware & Resolver Hardening
+
+*   **Authorization Architecture Principles**:
+    *   **Never trust client input for authorization**: `businessId` in mutations is data, not auth context
+    *   **RLS is the primary enforcement**: All tenant isolation happens at database level
+    *   **Directives for simple checks only**: Authentication, email verification, basic roles
+    *   **Service layer for complex authorization**: Resource ownership, data-dependent permissions, business rules
+    *   **Fail closed**: Deny access by default; explicit grants only
 
 *   **Context Binding**: The implementation must derive `businessId` exclusively from JWT or API key validation. Any `businessId` argument provided by the client must be treated as data, not as authorization.
     *   **Critical**: The `adminContextPlugin` MUST be refactored to use `auth.tenant.businessId` instead of the legacy `currentUser.userId` pattern:
@@ -641,7 +748,12 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
     *   Test **API Key authentication**: verify that a valid API key in the header authenticates the user, and an invalid one fails.
     *   Test the `auth-plugin`'s ability to correctly parse tokens and attach user context.
     *   Test **Audit Logging**: verify that critical actions (login, invite) create corresponding records in the `audit_logs` table.
+    *   Test **Authorization Services**:
+        *   Verify `ChargesAuthService.canEdit()` rejects charges from other businesses (RLS enforcement)
+        *   Verify `DocumentsAuthService.canIssue()` checks both permissions and email verification
+        *   Verify `UsersAuthService.canManage()` prevents privilege escalation
     *   Test the RBAC logic: ensure users can only access data and perform actions allowed by their roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific restrictions.
+    *   Test **Cross-Tenant Isolation**: Attempt to access resources from Business A while authenticated to Business B (must fail at RLS layer).
     *   Test **Email Verification Enforcement**: verify that unverified users are blocked from critical mutations (issue documents, manage users) with `EMAIL_NOT_VERIFIED` error.
 *   **Client (Component/E2E Tests)**:
     *   Test the login and invitation acceptance forms.
