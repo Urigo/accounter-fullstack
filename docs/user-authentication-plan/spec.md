@@ -25,7 +25,12 @@ This document outlines the implementation of a new user management system for th
     *   **API Keys**: Implement API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues.
 *   **User Onboarding**:
     *   New users must be invited to a business by an administrator (`business owner`).
-    *   The invitation process will be manual initially: an admin generates an invitation link and shares it with the use (later we’ll probably add email provider, not in the scope of this plan).
+    *   The invitation process will be manual initially: an admin generates an invitation link and shares it with the user (later we'll add email delivery, not in scope of this plan).
+    *   **Email Verification Strategy**:
+        *   **Invitation Flow**: Email is implicitly verified when user accepts invitation via unique token link (proves email ownership)
+        *   **Email Changes**: If a user updates their email, they must re-verify via a verification token sent to the new address
+        *   **Unverified Account Restrictions**: Users with unverified emails can view data but cannot perform critical actions (issue documents, manage users, etc.)
+        *   **Verification Token Expiry**: Email verification tokens expire after 24 hours to limit attack windows
 *   **Roles and Permissions**:
     *   The system must support the following roles:
         *   `business owner`: Full access, including user management.
@@ -55,6 +60,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `id`: `uuid`, primary key
     *   `name`: `text`, not null
     *   `email`: `text`, unique, not null
+    *   `email_verified_at`: `timestamptz`, nullable (NULL until email is verified)
     *   `created_at`, `updated_at`: `timestamptz`
 *   **`user-accounts`**: Stores authentication-related data, linked to a user.
     *   `id`: `uuid`, primary key
@@ -93,6 +99,13 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
     *   `expires_at`: `timestamptz`, not null
     *   `created_at`: `timestamptz`
+*   **`email_verification_tokens`**: Stores email verification tokens for existing users.
+    *   `id`: `uuid`, primary key
+    *   `user_id`: `uuid`, foreign key to `users.id`
+    *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
+    *   `expires_at`: `timestamptz`, not null (typically 24 hours from creation)
+    *   `created_at`: `timestamptz`
+    *   Note: Invitation acceptance automatically verifies email; this table is for re-verification or email changes
 *   **`api_keys`**: Stores API keys for the scraper role and other programatic access.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id` (API keys are linked to a business, not a specific human user)
@@ -434,8 +447,11 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
     *   **Mutations**:
         *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Restricted to users with `manage:users` permission.
-        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user and sets the JWT cookies (Access & Refresh).
+        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user, **auto-verifies their email** (sets `email_verified_at = NOW()`), and sets the JWT cookies (Access & Refresh).
         *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
+        *   `requestEmailVerification`: String! - Generates a verification token for the current user's email. Returns success message. Requires authentication.
+        *   `verifyEmail(token: String!): Boolean!` - Validates the verification token and sets `email_verified_at`. Returns true on success.
+        *   `updateEmail(newEmail: String!, password: String!): String!` - Updates user email, **clears `email_verified_at`**, generates verification token. Requires password confirmation.
         *   `refreshToken`: AuthPayload! - Uses the Refresh Token cookie to generate a new Access Token.
         *   `logout`: Invalidates the session by clearing the cookies and removing the refresh token from the DB.
         *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
@@ -445,7 +461,10 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
     *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
     *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
-    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables, links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
+    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables with `email_verified_at = NOW()` (invitation acceptance proves email ownership), links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
+    *   **`requestEmailVerification`**: Generates a secure verification token, stores it in `email_verification_tokens` with 24-hour expiry, returns success message (in future, will trigger email delivery).
+    *   **`verifyEmail`**: Validates token from `email_verification_tokens`, sets `users.email_verified_at = NOW()`, deletes the token.
+    *   **`updateEmail`**: Validates current password, updates `users.email`, sets `email_verified_at = NULL`, generates new verification token, returns success message.
     *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
         *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
         *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
@@ -530,8 +549,9 @@ export class RefreshTokenService {
     *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
     *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
 *   **Authorization Directive (`@auth`)**:
-    *   Create a GraphQL schema directive `@auth(requires: Permission!)` to protect individual fields or mutations.
+    *   Create a GraphQL schema directive `@auth(requires: Permission!, requiresVerifiedEmail: Boolean)` to protect individual fields or mutations.
     *   The directive's implementation will check the user's permissions (pre-populated by the JWT plugin) against the `@auth` directive's requirements.
+    *   **Email Verification Enforcement**: When `requiresVerifiedEmail: true`, the directive checks `authContext.user.emailVerifiedAt` and returns `FORBIDDEN` if null. Critical mutations (issue documents, manage users, update business settings) must require verified email.
 
 #### 3.3.1. Middleware & Resolver Hardening
 
@@ -603,17 +623,26 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
 
 *   **Authentication Errors**: The GraphQL API should return standard `UNAUTHENTICATED` errors if a user's token is missing, invalid, or expired. The client should catch this error and redirect to the login page.
 *   **Authorization Errors**: The API should return `FORBIDDEN` errors if a user attempts to perform an action they do not have permission for. The client should handle this gracefully, displaying an error message to the user.
+*   **Email Verification Errors**: The API should return `FORBIDDEN` with code `EMAIL_NOT_VERIFIED` when unverified users attempt protected actions. The client should display a prominent banner prompting email verification.
 *   **Invitation Errors**: The `acceptInvitation` mutation should handle cases where the token is invalid or expired, returning a clear error message.
+*   **Verification Token Errors**: The `verifyEmail` mutation should handle expired or invalid tokens with specific error codes (`TOKEN_EXPIRED`, `TOKEN_INVALID`) to guide user action.
 
 ### 5. Testing Plan
 
 *   **Backend (Unit/Integration Tests)**:
     *   Test the `inviteUser`, `acceptInvitation`, and `login` mutations with valid and invalid inputs.
+    *   Test **Email Verification Flow**:
+        *   Verify `acceptInvitation` sets `email_verified_at` automatically
+        *   Verify `requestEmailVerification` generates valid token with 24-hour expiry
+        *   Verify `verifyEmail` updates `email_verified_at` and deletes token
+        *   Verify expired tokens are rejected
+        *   Verify `updateEmail` clears verification status and generates new token
     *   Test password hashing and JWT generation/validation logic.
     *   Test **API Key authentication**: verify that a valid API key in the header authenticates the user, and an invalid one fails.
     *   Test the `auth-plugin`'s ability to correctly parse tokens and attach user context.
     *   Test **Audit Logging**: verify that critical actions (login, invite) create corresponding records in the `audit_logs` table.
     *   Test the RBAC logic: ensure users can only access data and perform actions allowed by their roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific restrictions.
+    *   Test **Email Verification Enforcement**: verify that unverified users are blocked from critical mutations (issue documents, manage users) with `EMAIL_NOT_VERIFIED` error.
 *   **Client (Component/E2E Tests)**:
     *   Test the login and invitation acceptance forms.
     *   Test that the JWT is correctly stored and sent with API requests.
@@ -644,6 +673,7 @@ export type AuthType = "jwt" | "apiKey" | "system";
 export interface AuthUser {
     userId: string;
     email: string;
+    emailVerifiedAt: number | null;  // Unix timestamp or null if unverified
     roles: string[];
     permissions: string[];
     permissionsVersion: number;
