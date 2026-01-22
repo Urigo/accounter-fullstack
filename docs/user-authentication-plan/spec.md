@@ -24,7 +24,7 @@ This document outlines the implementation of a new user management system for th
     *   **API Keys**: Implement API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues.
 *   **User Onboarding**:
     *   New users must be invited to a business by an administrator (`business owner`).
-    *   The invitation process will be manual initially: an admin generates an invitation link and shares it with the user.
+    *   The invitation process will be manual initially: an admin generates an invitation link and shares it with the use (later we’ll probably add email provider, not in the scope of this plan).
 *   **Roles and Permissions**:
     *   The system must support the following roles:
         *   `business owner`: Full access, including user management.
