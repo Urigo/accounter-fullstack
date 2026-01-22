@@ -1,5 +1,5 @@
 import { differenceInMonths } from 'date-fns';
-import Listr, { ListrTaskWrapper } from 'listr';
+import { Listr, type ListrTaskWrapper } from 'listr2';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -265,7 +265,7 @@ function normalizeForeignTransactionMetadata(
 
 async function normalizeForeignTransactionsForAccount(
   ctx: ForeignCurrenciesContext,
-  task: ListrTaskWrapper<unknown>,
+  task: ListrTaskWrapper<any, any, any>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
@@ -615,7 +615,7 @@ export async function getForeignTransactions(bankKey: string, account: ScrapedAc
     {
       title: `Save New Transactions`,
       skip: ctx =>
-        ctx[bankKey][foreignKey].newTransactions?.length === 0 ? 'No new transactions' : undefined,
+        ctx[bankKey][foreignKey].newTransactions?.length === 0 ? 'No new transactions' : false,
       task: async ctx => {
         const { newTransactions = [] } = ctx[bankKey][foreignKey];
         await insertTransactions(newTransactions, ctx.pool, ctx.logger);

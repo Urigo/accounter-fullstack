@@ -1,7 +1,7 @@
-import { MainContext } from 'index.js';
-import Listr, { type ListrTask } from 'listr';
+import { Listr, type ListrTask } from 'listr2';
 import { init } from '@accounter/modern-poalim-scraper';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
+import { MainContext } from '../../index.js';
 import { handlePoalimAccount } from './account.js';
 import { getPoalimAccounts, type ScrapedAccount } from './accounts.js';
 

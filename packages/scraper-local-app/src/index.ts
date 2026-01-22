@@ -1,4 +1,4 @@
-import Listr, { ListrTask } from 'listr';
+import { Listr, type ListrTask } from 'listr2';
 import pg, { type Pool as PgPool, type PoolConfig } from 'pg';
 import { init } from '@accounter/modern-poalim-scraper';
 import { config } from './env.js';

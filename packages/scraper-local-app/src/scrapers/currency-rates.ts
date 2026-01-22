@@ -1,7 +1,7 @@
 import { format } from 'date-fns';
 import { XMLParser } from 'fast-xml-parser';
 import { MainContext } from 'index.js';
-import Listr from 'listr';
+import { Listr } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type {
