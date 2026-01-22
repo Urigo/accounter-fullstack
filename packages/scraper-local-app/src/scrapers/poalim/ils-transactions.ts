@@ -1,5 +1,5 @@
 import { differenceInMonths } from 'date-fns';
-import { Listr, type ListrTaskWrapper } from 'listr2';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
@@ -188,7 +188,7 @@ function normalizeBeneficiaryDetailsData(
 
 async function normalizeIlsForAccount(
   ctx: Context,
-  task: ListrTaskWrapper<any, any, any>,
+  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],

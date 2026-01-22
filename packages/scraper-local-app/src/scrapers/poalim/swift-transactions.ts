@@ -1,4 +1,4 @@
-import { Listr, type ListrTaskWrapper } from 'listr2';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type {
@@ -124,7 +124,7 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
 
 async function fetchSwiftTransactions(
   ctx: SwiftContext,
-  task: ListrTaskWrapper<any, any, any>,
+  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   logger: Logger,

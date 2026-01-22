@@ -1,4 +1,4 @@
-import { Listr, type ListrTask } from 'listr2';
+import { Listr } from 'listr2';
 import { init } from '@accounter/modern-poalim-scraper';
 import type { IGetTableColumnsResult } from '../../helpers/types.js';
 import { MainContext } from '../../index.js';
@@ -52,14 +52,11 @@ export async function getPoalimData(initialContext: PoalimContext) {
       title: 'Handle Accounts',
       skip: ctx => ctx[KEY].accounts?.length === 0,
       task: async ctx => {
-        return new Listr(
-          ctx[KEY].accounts!.map(
-            account =>
-              ({
-                title: `Poalim Account ${account.branchNumber}:${account.accountNumber}`,
-                task: async () => handlePoalimAccount(account, KEY),
-              }) as ListrTask,
-          ),
+        return new Listr<PoalimUserContext>(
+          ctx[KEY].accounts!.map(account => ({
+            title: `Poalim Account ${account.branchNumber}:${account.accountNumber}`,
+            task: async () => handlePoalimAccount(account, KEY),
+          })),
           { concurrent: true },
         );
       },

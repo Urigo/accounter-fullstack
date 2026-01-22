@@ -1,5 +1,5 @@
 import { differenceInMonths } from 'date-fns';
-import { Listr, type ListrTaskWrapper } from 'listr2';
+import { Listr, ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -265,7 +265,7 @@ function normalizeForeignTransactionMetadata(
 
 async function normalizeForeignTransactionsForAccount(
   ctx: ForeignCurrenciesContext,
-  task: ListrTaskWrapper<any, any, any>,
+  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],

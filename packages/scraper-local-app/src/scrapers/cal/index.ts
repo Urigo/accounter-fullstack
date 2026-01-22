@@ -1,5 +1,5 @@
 import { addMonths, format, isBefore, subMonths } from 'date-fns';
-import { Listr, type ListrTask, type ListrTaskWrapper } from 'listr2';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { init } from '@accounter/modern-poalim-scraper';
 import type { FilteredColumns } from '../../helpers/types.js';
 import type { MainContext } from '../../index.js';
@@ -35,7 +35,7 @@ export type CalContext = MainContext & {
 
 export async function getCalData(
   credentials: CalCredentials,
-  parentTask: ListrTaskWrapper<any, any, any>,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const accountKey = credentials.last4Digits;
   return new Listr<CalContext>([
@@ -74,15 +74,11 @@ export async function getCalData(
           allMonthsToFetch.push(month);
         }
 
-        return new Listr(
-          allMonthsToFetch.map(
-            month =>
-              ({
-                title: format(month, 'MM-yyyy'),
-                task: async (_, task) =>
-                  await getMonthTransactions(month, credentials.nickname!, task),
-              }) as ListrTask,
-          ),
+        return new Listr<CalContext>(
+          allMonthsToFetch.map(month => ({
+            title: format(month, 'MM-yyyy'),
+            task: async (_, task) => await getMonthTransactions(month, credentials.nickname!, task),
+          })),
           { concurrent: true },
         );
       },

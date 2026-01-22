@@ -1,5 +1,5 @@
 import { differenceInMonths, format } from 'date-fns';
-import { Listr, type ListrTaskWrapper } from 'listr2';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { init } from '@accounter/modern-poalim-scraper';
@@ -418,7 +418,7 @@ async function insertTransactions(
 
 export async function getMaxData(
   credentials: MaxCredentials,
-  parentTask: ListrTaskWrapper<any, any, any>,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   accountKey: string,
 ) {
   return new Listr<MaxContext>([

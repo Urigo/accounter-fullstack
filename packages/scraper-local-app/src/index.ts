@@ -94,16 +94,13 @@ export async function scrape() {
         },
         task: async ctx => getCurrencyRates(ctx),
       },
-      ...(poalimContexts.map(
-        (creds, i) =>
-          ({
-            title: `Poalim Account ${creds.nickname ?? i + 1}`,
-            task: async () =>
-              await getPoalimData(creds).catch(e => {
-                logger.error(e);
-              }),
-          }) as ListrTask,
-      ) ?? []),
+      ...(poalimContexts.map((creds, i) => ({
+        title: `Poalim Account ${creds.nickname ?? i + 1}`,
+        task: async () =>
+          await getPoalimData(creds).catch(e => {
+            logger.error(e);
+          }),
+      })) ?? []),
       ...(config.discountAccounts?.map((creds, i) => {
         const nickname = `Discount ${creds.nickname ?? i + 1}`;
         return {
