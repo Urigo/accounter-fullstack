@@ -1,5 +1,5 @@
 import { addMonths, format, isBefore, subMonths } from 'date-fns';
-import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { init } from '@accounter/modern-poalim-scraper';
 import type { MainContext } from '../../index.js';
 import { getMonthTransactions } from './discount-month.js';
@@ -24,7 +24,7 @@ export type DiscountContext = MainContext & { [accountKey: string]: DiscountAcco
 
 export async function getDiscountData(
   credentials: DiscountCredentials,
-  parentTask: ListrTaskWrapper,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const accountKey = credentials.nickname!;
   return new Listr<DiscountContext>([
@@ -62,14 +62,10 @@ export async function getDiscountData(
         }
 
         return new Listr(
-          allMonthsToFetch.map(
-            month =>
-              ({
-                title: format(month, 'MM-yyyy'),
-                task: async (_, task) =>
-                  await getMonthTransactions(month, credentials.nickname!, task),
-              }) as ListrTask,
-          ),
+          allMonthsToFetch.map(month => ({
+            title: format(month, 'MM-yyyy'),
+            task: async (_, task) => await getMonthTransactions(month, credentials.nickname!, task),
+          })),
           { concurrent: true },
         );
       },

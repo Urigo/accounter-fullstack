@@ -1,5 +1,5 @@
 import { differenceInMonths, format } from 'date-fns';
-import Listr, { type ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { init } from '@accounter/modern-poalim-scraper';
@@ -418,7 +418,7 @@ async function insertTransactions(
 
 export async function getMaxData(
   credentials: MaxCredentials,
-  parentTask: ListrTaskWrapper,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   accountKey: string,
 ) {
   return new Listr<MaxContext>([
@@ -489,7 +489,7 @@ export async function getMaxData(
     },
     {
       title: 'Normalize Transactions',
-      skip: ctx => (ctx[accountKey].rawTransactions?.length === 0 ? 'No transactions' : undefined),
+      skip: ctx => (ctx[accountKey].rawTransactions?.length === 0 ? 'No transactions' : false),
       task: async (ctx, task) => {
         const { rawTransactions } = ctx[accountKey];
 
@@ -597,7 +597,7 @@ export async function getMaxData(
     {
       title: `Check for New Transactions`,
       skip: ctx =>
-        ctx[accountKey].normalizedTransactions?.length === 0 ? 'No transactions' : undefined,
+        ctx[accountKey].normalizedTransactions?.length === 0 ? 'No transactions' : false,
       task: async (ctx, task) => {
         try {
           const { normalizedTransactions = [] } = ctx[accountKey];

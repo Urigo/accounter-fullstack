@@ -1,5 +1,5 @@
 import { differenceInMonths, format } from 'date-fns';
-import Listr, { ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql, type TaggedQuery } from '@pgtyped/runtime';
 import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
@@ -463,7 +463,7 @@ async function insertTransactions(
 export async function getMonthTransactions(
   month: Date,
   accountKey: string,
-  parentTask: ListrTaskWrapper,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const monthKey = format(month, 'MM-yyyy');
   const originalTitle = parentTask.title;
@@ -573,7 +573,7 @@ export async function getMonthTransactions(
       {
         title: `Check for New Transactions`,
         skip: ctx =>
-          ctx[accountKey][monthKey]?.transactions?.length === 0 ? 'No transactions' : undefined,
+          ctx[accountKey][monthKey]?.transactions?.length === 0 ? 'No transactions' : false,
         task: async (ctx, task) => {
           try {
             const { transactions = [] } = ctx[accountKey][monthKey];

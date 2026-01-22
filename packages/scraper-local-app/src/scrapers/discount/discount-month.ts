@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import Listr, { ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
@@ -171,7 +171,7 @@ async function saveDiscountTransaction(
 export async function getMonthTransactions(
   month: Date,
   accountKey: string,
-  parentTask: ListrTaskWrapper,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const monthKey = format(month, 'MM-yyyy');
   const originalTitle = parentTask.title;

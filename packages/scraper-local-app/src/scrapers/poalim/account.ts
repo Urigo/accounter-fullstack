@@ -1,4 +1,4 @@
-import Listr from 'listr';
+import { Listr } from 'listr2';
 import type { ScrapedAccount } from './accounts.js';
 import { getForeignTransactions } from './foreign-transactions.js';
 import { getIlsTransactions } from './ils-transactions.js';

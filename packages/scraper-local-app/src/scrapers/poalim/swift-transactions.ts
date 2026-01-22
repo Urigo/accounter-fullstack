@@ -1,4 +1,4 @@
-import Listr, { type ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type {
@@ -124,7 +124,7 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
 
 async function fetchSwiftTransactions(
   ctx: SwiftContext,
-  task: ListrTaskWrapper<unknown>,
+  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   logger: Logger,
@@ -364,7 +364,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
         title: `Check for New Transactions`,
         enabled: ctx => !!ctx[bankKey][swiftKey]?.transactions,
         skip: ctx =>
-          ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : undefined,
+          ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : false,
         task: async (ctx, task) => {
           const { transactions = [] } = ctx[bankKey][swiftKey];
           const newTransactions: SwiftTransaction[] = [];
@@ -381,7 +381,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
         title: `Insert Transactions`,
         enabled: ctx => !!ctx[bankKey][swiftKey]?.newTransactions,
         skip: ctx =>
-          ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : undefined,
+          ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : false,
         task: async ctx => {
           try {
             const { newTransactions = [] } = ctx[bankKey][swiftKey];

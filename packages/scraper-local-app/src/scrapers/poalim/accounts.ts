@@ -1,4 +1,4 @@
-import Listr from 'listr';
+import { Listr } from 'listr2';
 import { sql } from '@pgtyped/runtime';
 import type { HapoalimAccountData } from '@accounter/modern-poalim-scraper';
 import { getTableColumns, insertFinancialAccount } from '../../helpers/sql.js';

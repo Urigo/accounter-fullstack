@@ -1,5 +1,5 @@
 import { addMonths, format, isBefore, startOfMonth, subYears } from 'date-fns';
-import Listr, { type ListrTask, type ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { init } from '@accounter/modern-poalim-scraper';
 import { getTableColumns } from '../../helpers/sql.js';
 import type { FilteredColumns } from '../../helpers/types.js';
@@ -45,7 +45,7 @@ export type IsracardAmexContext = MainContext & {
 export async function getIsracardAmexData(
   type: CreditcardType,
   credentials: IsracardCredentials,
-  parentTask: ListrTaskWrapper,
+  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const accountKey = `${type}_${credentials.ownerId.substring(5, 9)}`;
   return new Listr<IsracardAmexContext>([
@@ -120,13 +120,10 @@ export async function getIsracardAmexData(
         }
 
         return new Listr(
-          allMonthsToFetch.map(
-            month =>
-              ({
-                title: format(month, 'MM-yyyy'),
-                task: async (_, task) => await getMonthTransactions(month, accountKey, task),
-              }) as ListrTask,
-          ),
+          allMonthsToFetch.map(month => ({
+            title: format(month, 'MM-yyyy'),
+            task: async (_, task) => await getMonthTransactions(month, accountKey, task),
+          })),
           { concurrent: true },
         );
       },

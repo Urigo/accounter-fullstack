@@ -1,5 +1,5 @@
 import { differenceInMonths } from 'date-fns';
-import Listr, { type ListrTaskWrapper } from 'listr';
+import { Listr, type ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
@@ -188,7 +188,7 @@ function normalizeBeneficiaryDetailsData(
 
 async function normalizeIlsForAccount(
   ctx: Context,
-  task: ListrTaskWrapper<unknown>,
+  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
@@ -420,8 +420,7 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
     },
     {
       title: `Check for New Transactions`,
-      skip: ctx =>
-        ctx[bankKey][ilsKey].transactions?.length === 0 ? 'No transactions' : undefined,
+      skip: ctx => (ctx[bankKey][ilsKey].transactions?.length === 0 ? 'No transactions' : false),
       task: async (ctx, task) => {
         const { transactions = [] } = ctx[bankKey][ilsKey];
         const columns = ctx[bankKey].columns!.poalim_ils_account_transactions!.filter(
@@ -442,7 +441,7 @@ export async function getIlsTransactions(bankKey: string, account: ScrapedAccoun
     {
       title: `Save New Transactions`,
       skip: ctx =>
-        ctx[bankKey][ilsKey].newTransactions?.length === 0 ? 'No new transactions' : undefined,
+        ctx[bankKey][ilsKey].newTransactions?.length === 0 ? 'No new transactions' : false,
       task: async ctx => {
         const { newTransactions = [] } = ctx[bankKey][ilsKey];
         await insertTransactions(newTransactions, ctx.pool, ctx.logger);
