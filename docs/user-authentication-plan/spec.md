@@ -49,6 +49,19 @@ This document outlines the implementation of a new user management system for th
     *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
     *   **User-Level Multi-Tenancy**: While the database schema (`business_users`) supports users belonging to multiple businesses, the initial implementation will assume a 1:1 relationship or auto-select the first available business context upon login. Full multi-business UI switching is a future enhancement.
     *   **Multi-Factor Authentication (MFA)**: While out of scope for the initial implementation, the system should be designed with future MFA support (TOTP, etc.) in mind to enhance security for sensitive financial data.
+    *   **Granular Permissions (User & API Key Overrides)**:
+        *   **Initial Implementation**: Permissions derived purely from roles via `role_permissions` table
+        *   **Future Migration Path** (zero breaking changes):
+            1. Override tables (`user_permission_overrides`, `api_key_permission_overrides`) already exist from initial migration
+            2. Build admin UI to manage permission overrides per user or API key
+            3. `PermissionResolutionService` automatically merges overrides (implementation already complete)
+            4. No changes needed to authorization services (they check pre-resolved `authContext.user.permissions`)
+        *   **Use Cases Enabled**:
+            *   "This employee can view salaries for their department only" → Grant `view:salary` + add department filtering in service layer
+            *   "This API key can only read transactions, not create them" → Revoke `insert:transactions` from scraper role
+            *   "This accountant cannot approve invoices over $10k" → Create custom permission + enforce limit in business logic
+            *   "Temporarily grant this user extra permissions for a migration task" → Add grant with expiry (future enhancement)
+        *   **Parallel Treatment**: Both user accounts and API keys use the same override mechanism, ensuring consistent behavior
 
 ### 3. Architecture and Implementation Details
 
@@ -85,6 +98,23 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `role_id`: `text`, foreign key to `roles.id`
     *   `permission_id`: `text`, foreign key to `permissions.id`
     *   Primary key on (`role_id`, `permission_id`)
+*   **`user_permission_overrides`**: (Future) Stores user-specific permission grants/revokes.
+    *   `id`: `uuid`, primary key
+    *   `user_id`: `uuid`, foreign key to `users.id`
+    *   `business_id`: `uuid`, foreign key to `businesses.id`
+    *   `permission_id`: `text`, foreign key to `permissions.id`
+    *   `grant_type`: `grant_type_enum` (ENUM: 'grant', 'revoke')
+    *   `created_at`: `timestamptz`
+    *   Unique constraint on (`user_id`, `business_id`, `permission_id`)
+    *   Note: Not populated initially, but schema prepared for future granular permissions
+*   **`api_key_permission_overrides`**: (Future) Stores API-key-specific permission grants/revokes.
+    *   `id`: `uuid`, primary key
+    *   `api_key_id`: `uuid`, foreign key to `api_keys.id`
+    *   `permission_id`: `text`, foreign key to `permissions.id`
+    *   `grant_type`: `grant_type_enum` (ENUM: 'grant', 'revoke')
+    *   `created_at`: `timestamptz`
+    *   Unique constraint on (`api_key_id`, `permission_id`)
+    *   Note: Not populated initially, but schema prepared for future granular permissions
 *   **`business_users`**: The existing `users` table should be repurposed or replaced by this join table to link users, businesses, and roles.
     *   `user_id`: `uuid`, foreign key to `users.id`
     *   `business_id`: `uuid`, foreign key to `businesses.id`
@@ -463,8 +493,97 @@ A new `auth` module will be created under `packages/server/src/modules`.
         *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
         *   `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
 *   **Services and Resolvers**:
-    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions`, and a short expiration (`exp`).
+    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions` (resolved via `PermissionResolutionService`), and a short expiration (`exp`).
     *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
+    *   **Permission Resolution Service** (Future-Proof Design):
+        *   Create a unified `PermissionResolutionService` that works identically for both user JWT and API key authentication:
+
+```typescript
+@Injectable({ scope: Scope.Operation })
+export class PermissionResolutionService {
+  constructor(private db: TenantAwareDBClient) {}
+
+  /**
+   * Resolves effective permissions for any authenticated subject (user or API key)
+   * Resolution order: Base role permissions → Apply individual overrides → Return merged set
+   */
+  async resolvePermissions(subject: AuthSubject): Promise<string[]> {
+    const basePermissions = await this.getRolePermissions(subject.roleId);
+    
+    // Future: Apply user/API key specific overrides (tables exist but initially empty)
+    const overrides = await this.getPermissionOverrides(subject);
+    
+    return this.mergePermissions(basePermissions, overrides);
+  }
+
+  private async getRolePermissions(roleId: string): Promise<string[]> {
+    const { rows } = await this.db.query(`
+      SELECT p.id as permission_id
+      FROM accounter_schema.role_permissions rp
+      JOIN accounter_schema.permissions p ON rp.permission_id = p.id
+      WHERE rp.role_id = $1
+    `, [roleId]);
+    return rows.map(r => r.permission_id);
+  }
+
+  private async getPermissionOverrides(subject: AuthSubject): Promise<PermissionOverride[]> {
+    // Initial implementation: Tables exist but queries return empty results
+    // Future implementation: Admin UI populates these tables for granular control
+    if (subject.type === 'user') {
+      const { rows } = await this.db.query(`
+        SELECT permission_id, grant_type
+        FROM accounter_schema.user_permission_overrides
+        WHERE user_id = $1 AND business_id = $2
+      `, [subject.userId, subject.businessId]);
+      return rows;
+    } else if (subject.type === 'apiKey') {
+      const { rows } = await this.db.query(`
+        SELECT permission_id, grant_type
+        FROM accounter_schema.api_key_permission_overrides
+        WHERE api_key_id = $1
+      `, [subject.apiKeyId]);
+      return rows;
+    }
+    return [];
+  }
+
+  private mergePermissions(
+    basePermissions: string[],
+    overrides: PermissionOverride[]
+  ): string[] {
+    const permSet = new Set(basePermissions);
+    
+    // Apply overrides: grants ADD permissions, revokes REMOVE permissions
+    for (const override of overrides) {
+      if (override.grant_type === 'grant') {
+        permSet.add(override.permission_id);
+      } else if (override.grant_type === 'revoke') {
+        permSet.delete(override.permission_id);
+      }
+    }
+    
+    return Array.from(permSet);
+  }
+}
+
+// Unified auth subject type - works for both users and API keys
+type AuthSubject = 
+  | { type: 'user'; userId: string; businessId: string; roleId: string }
+  | { type: 'apiKey'; apiKeyId: string; businessId: string; roleId: string };
+
+interface PermissionOverride {
+  permission_id: string;
+  grant_type: 'grant' | 'revoke';
+}
+```
+
+    *   **Benefits of Unified Resolution**:
+        *   Both users and API keys use identical permission resolution logic
+        *   Adding granular permissions later only requires:
+            1. Populating override tables via admin UI
+            2. No code changes (service already queries override tables)
+        *   Permission checks in authorization services always reference `authContext.user.permissions` (pre-resolved)
+        *   Consistent behavior across all authentication methods
     *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
     *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
     *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables with `email_verified_at = NOW()` (invitation acceptance proves email ownership), links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
@@ -473,6 +592,7 @@ A new `auth` module will be created under `packages/server/src/modules`.
     *   **`updateEmail`**: Validates current password, updates `users.email`, sets `email_verified_at = NULL`, generates new verification token, returns success message.
     *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
         *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
+        *   Resolves permissions using `PermissionResolutionService.resolvePermissions({ type: 'user', userId, businessId, roleId })` and embeds them in JWT payload.
         *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
     *   **Refresh Token Rotation Service** (with reuse detection):
 
@@ -550,8 +670,12 @@ export class RefreshTokenService {
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to create a unique 64-character key. Hash it with `bcrypt` before storing in `api_keys.key_hash`.
         *   **Return Value**: Return the plain key to the user **only once** on creation. Display a warning that it cannot be retrieved again.
-        *   **Validation**: On each API request with an `X-API-Key` header, hash the provided key and query `api_keys` for a match. If found and not revoked, attach the corresponding `businessId` and `roleId` to the context.
+        *   **Validation**: On each API request with an `X-API-Key` header:
+            1. Hash the provided key and query `api_keys` for a match
+            2. If found and not revoked, resolve permissions via `PermissionResolutionService.resolvePermissions({ type: 'apiKey', apiKeyId, businessId, roleId })`
+            3. Attach the resolved `permissions`, `businessId`, and `roleId` to the GraphQL context (identical structure to JWT auth)
         *   **Audit**: Log key generation and usage in `audit_logs`.
+        *   **Future Granular Permissions**: API key owners can grant/revoke specific permissions via `api_key_permission_overrides` table, independently of the base role
     *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
     *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
 *   **Authorization Strategy (Layered Defense)**:
