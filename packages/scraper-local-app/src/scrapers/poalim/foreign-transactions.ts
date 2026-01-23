@@ -265,7 +265,11 @@ function normalizeForeignTransactionMetadata(
 
 async function normalizeForeignTransactionsForAccount(
   ctx: ForeignCurrenciesContext,
-  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
+  task: ListrTaskWrapper<
+    PoalimForeignTransactionsContext,
+    ListrRendererFactory,
+    ListrRendererFactory
+  >,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
@@ -559,15 +563,15 @@ type PoalimForeignCurrenciesContext = PoalimUserContext & {
   [bankKey: string]: { [foreignKey: string]: ForeignCurrenciesContext };
 };
 
+type PoalimForeignTransactionsContext = PoalimForeignCurrenciesContext & {
+  [bankKey: string]: {
+    newTransactions?: NormalizedForeignTransaction[];
+  };
+};
+
 export async function getForeignTransactions(bankKey: string, account: ScrapedAccount) {
   const foreignKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_foreign`;
-  return new Listr<
-    PoalimForeignCurrenciesContext & {
-      [bankKey: string]: {
-        newTransactions?: NormalizedForeignTransaction[];
-      };
-    }
-  >([
+  return new Listr<PoalimForeignTransactionsContext>([
     {
       title: `Get Transactions`,
       task: async (ctx, task) => {

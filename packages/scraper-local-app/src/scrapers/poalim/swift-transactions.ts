@@ -124,7 +124,11 @@ const insertSwiftTransaction = sql<IInsertSwiftTransactionQuery>`
 
 async function fetchSwiftTransactions(
   ctx: SwiftContext,
-  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
+  task: ListrTaskWrapper<
+    PoalimSwiftTransactionsContext,
+    ListrRendererFactory,
+    ListrRendererFactory
+  >,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   logger: Logger,
@@ -347,75 +351,68 @@ async function normalizeTransaction(
   }
 }
 
+type PoalimSwiftTransactionsContext = PoalimUserContext & {
+  [bankKey: string]: { [swiftKey: string]: SwiftContext };
+};
+
 export async function getSwiftTransactions(bankKey: string, account: ScrapedAccount) {
   const swiftKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_swift`;
-  return new Listr<PoalimUserContext & { [bankKey: string]: { [swiftKey: string]: SwiftContext } }>(
-    [
-      {
-        title: `Get Transactions`,
-        task: async (ctx, task) => {
-          const { scraper } = ctx[bankKey];
-          ctx[bankKey][swiftKey] = {} as SwiftContext;
-          await fetchSwiftTransactions(ctx[bankKey][swiftKey], task, scraper!, account, ctx.logger);
-          task.title = `${task.title} (Got ${ctx[bankKey][swiftKey].transactions?.length} deposits)`;
-        },
+  return new Listr<PoalimSwiftTransactionsContext>([
+    {
+      title: `Get Transactions`,
+      task: async (ctx, task) => {
+        const { scraper } = ctx[bankKey];
+        ctx[bankKey][swiftKey] = {} as SwiftContext;
+        await fetchSwiftTransactions(ctx[bankKey][swiftKey], task, scraper!, account, ctx.logger);
+        task.title = `${task.title} (Got ${ctx[bankKey][swiftKey].transactions?.length} deposits)`;
       },
-      {
-        title: `Check for New Transactions`,
-        enabled: ctx => !!ctx[bankKey][swiftKey]?.transactions,
-        skip: ctx =>
-          ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : false,
-        task: async (ctx, task) => {
-          const { transactions = [] } = ctx[bankKey][swiftKey];
-          const newTransactions: SwiftTransaction[] = [];
-          for (const transaction of transactions) {
-            if (await isTransactionNew(transaction, ctx.pool, ctx.logger)) {
-              newTransactions.push(transaction);
-            }
+    },
+    {
+      title: `Check for New Transactions`,
+      enabled: ctx => !!ctx[bankKey][swiftKey]?.transactions,
+      skip: ctx => (ctx[bankKey][swiftKey].transactions?.length === 0 ? 'No transactions' : false),
+      task: async (ctx, task) => {
+        const { transactions = [] } = ctx[bankKey][swiftKey];
+        const newTransactions: SwiftTransaction[] = [];
+        for (const transaction of transactions) {
+          if (await isTransactionNew(transaction, ctx.pool, ctx.logger)) {
+            newTransactions.push(transaction);
           }
-          ctx[bankKey][swiftKey].newTransactions = newTransactions;
-          task.title = `${task.title} (${ctx[bankKey][swiftKey].newTransactions?.length} new transactions)`;
-        },
+        }
+        ctx[bankKey][swiftKey].newTransactions = newTransactions;
+        task.title = `${task.title} (${ctx[bankKey][swiftKey].newTransactions?.length} new transactions)`;
       },
-      {
-        title: `Insert Transactions`,
-        enabled: ctx => !!ctx[bankKey][swiftKey]?.newTransactions,
-        skip: ctx =>
-          ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : false,
-        task: async ctx => {
-          try {
-            const { newTransactions = [] } = ctx[bankKey][swiftKey];
-            const insertableTransactions: IInsertSwiftTransactionParams['switfTransactions'][number][] =
-              [];
-            await Promise.all(
-              newTransactions.map(async transaction => {
-                insertableTransactions.push(
-                  await normalizeTransaction(
-                    transaction,
-                    account,
-                    ctx[bankKey].scraper!,
-                    ctx.logger,
-                  ),
-                );
-              }),
-            );
-
-            await insertSwiftTransaction.run(
-              { switfTransactions: insertableTransactions },
-              ctx.pool,
-            );
-
-            for (const transaction of insertableTransactions) {
-              ctx.logger.log(
-                `success in insert to Poalim Swift - ${transaction.bankNumber}:${transaction.branchNumber}:${transaction.accountNumber} - ${transaction.chargePartyName} - ${transaction.formattedStartDate} - ${transaction.swiftCurrencyInstructedAmount33B}`,
+    },
+    {
+      title: `Insert Transactions`,
+      enabled: ctx => !!ctx[bankKey][swiftKey]?.newTransactions,
+      skip: ctx =>
+        ctx[bankKey][swiftKey].newTransactions?.length === 0 ? 'No transactions' : false,
+      task: async ctx => {
+        try {
+          const { newTransactions = [] } = ctx[bankKey][swiftKey];
+          const insertableTransactions: IInsertSwiftTransactionParams['switfTransactions'][number][] =
+            [];
+          await Promise.all(
+            newTransactions.map(async transaction => {
+              insertableTransactions.push(
+                await normalizeTransaction(transaction, account, ctx[bankKey].scraper!, ctx.logger),
               );
-            }
-          } catch (error) {
-            ctx.logger.error(error);
-            throw new Error('Failed to insert swift transactions');
+            }),
+          );
+
+          await insertSwiftTransaction.run({ switfTransactions: insertableTransactions }, ctx.pool);
+
+          for (const transaction of insertableTransactions) {
+            ctx.logger.log(
+              `success in insert to Poalim Swift - ${transaction.bankNumber}:${transaction.branchNumber}:${transaction.accountNumber} - ${transaction.chargePartyName} - ${transaction.formattedStartDate} - ${transaction.swiftCurrencyInstructedAmount33B}`,
+            );
           }
-        },
+        } catch (error) {
+          ctx.logger.error(error);
+          throw new Error('Failed to insert swift transactions');
+        }
       },
-    ],
-  );
+    },
+  ]);
 }

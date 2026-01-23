@@ -189,7 +189,7 @@ async function saveCalTransaction(
 export async function getMonthTransactions(
   month: Date,
   accountKey: string,
-  parentTask: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
+  parentTask: ListrTaskWrapper<CalContext, ListrRendererFactory, ListrRendererFactory>,
 ) {
   const monthKey = format(month, 'MM-yyyy');
   const originalTitle = parentTask.title;

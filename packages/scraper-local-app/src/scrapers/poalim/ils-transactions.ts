@@ -188,7 +188,7 @@ function normalizeBeneficiaryDetailsData(
 
 async function normalizeIlsForAccount(
   ctx: Context,
-  task: ListrTaskWrapper<unknown, ListrRendererFactory, ListrRendererFactory>,
+  task: ListrTaskWrapper<PoalimIlsContext, ListrRendererFactory, ListrRendererFactory>,
   scraper: PoalimScraper,
   bankAccount: ScrapedAccount,
   knownAccountsNumbers: number[],
@@ -398,9 +398,11 @@ async function insertTransactions(
   }
 }
 
+type PoalimIlsContext = PoalimUserContext & { [bankKey: string]: { [ilsKey: string]: Context } };
+
 export async function getIlsTransactions(bankKey: string, account: ScrapedAccount) {
   const ilsKey = `${bankKey}_${account.branchNumber}_${account.accountNumber}_ils`;
-  return new Listr<PoalimUserContext & { [bankKey: string]: { [ilsKey: string]: Context } }>([
+  return new Listr<PoalimIlsContext>([
     {
       title: `Get Transactions`,
       task: async (ctx, task) => {
