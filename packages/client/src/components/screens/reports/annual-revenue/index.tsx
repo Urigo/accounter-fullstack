@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { ChevronRight, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useQuery } from 'urql';
 import { YearPickerInput } from '@mantine/dates';
 import { Button } from '@/components/ui/button.js';
@@ -175,10 +175,10 @@ export const AnnualRevenueReport = (): ReactElement => {
           {/* Main Content */}
           <main className="container mx-auto px-2 py-2 max-w-7xl">
             <div className="space-y-2">
-              <Card className="border border-border bg-blue-100">
+              <Card className="border border-border bg-accent/10">
                 {/* Country Header */}
 
-                <div className="w-full px-4 py-2 pl-12 hover:bg-accent/5 transition-colors flex items-center justify-between">
+                <div className="w-full px-4 py-2 pl-12 transition-colors flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1">
                     <div className="text-left">
                       <p className="font-semibold text-foreground text-lg">Total Revenue</p>
