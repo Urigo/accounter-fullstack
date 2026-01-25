@@ -1,5 +1,566 @@
 # @accounter/client
 
+## 0.0.10
+
+### Patch Changes
+
+- [#2798](https://github.com/Urigo/accounter-fullstack/pull/2798)
+  [`c8e135a`](https://github.com/Urigo/accounter-fullstack/commit/c8e135a062fb535cd057de18a3590160396844c1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.559.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.559.0) (from
+    `0.556.0`, in `dependencies`)
+
+- [#2812](https://github.com/Urigo/accounter-fullstack/pull/2812)
+  [`47954df`](https://github.com/Urigo/accounter-fullstack/commit/47954df12119c4ae122a0aee87a7a5549b71e089)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.560.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.560.0) (from
+    `0.559.0`, in `dependencies`)
+
+- [#2816](https://github.com/Urigo/accounter-fullstack/pull/2816)
+  [`6a9926c`](https://github.com/Urigo/accounter-fullstack/commit/6a9926c3948fa736e2c52ce93207b4f35e28f931)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`iconv-lite@0.7.1` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.1)
+    (from `0.7.0`, in `dependencies`)
+  - Updated dependency [`react@19.2.3` ↗︎](https://www.npmjs.com/package/react/v/19.2.3) (from
+    `19.2.1`, in `dependencies`)
+  - Updated dependency [`react-dom@19.2.3` ↗︎](https://www.npmjs.com/package/react-dom/v/19.2.3)
+    (from `19.2.1`, in `dependencies`)
+
+- [#2819](https://github.com/Urigo/accounter-fullstack/pull/2819)
+  [`6c90680`](https://github.com/Urigo/accounter-fullstack/commit/6c906803ab4337ed714e6de48866272f9937f9df)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.561.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.561.0) (from
+    `0.560.0`, in `dependencies`)
+
+- [#2824](https://github.com/Urigo/accounter-fullstack/pull/2824)
+  [`ca5e62b`](https://github.com/Urigo/accounter-fullstack/commit/ca5e62b91faaf33c99ac178575304797150efe1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.0` ↗︎](https://www.npmjs.com/package/zod/v/4.2.0) (from `4.1.13`, in
+    `dependencies`)
+
+- [#2829](https://github.com/Urigo/accounter-fullstack/pull/2829)
+  [`73b11ba`](https://github.com/Urigo/accounter-fullstack/commit/73b11ba1fd676a21b4ba44fe99e2bfd181e513dc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.1` ↗︎](https://www.npmjs.com/package/zod/v/4.2.1) (from `4.2.0`, in
+    `dependencies`)
+
+- [#2836](https://github.com/Urigo/accounter-fullstack/pull/2836)
+  [`0e30873`](https://github.com/Urigo/accounter-fullstack/commit/0e308732b83cc61559c49b4b96e80a2cc52367a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.11.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.11.0) (from
+    `7.10.1`, in `dependencies`)
+
+- [#2837](https://github.com/Urigo/accounter-fullstack/pull/2837)
+  [`091bd9a`](https://github.com/Urigo/accounter-fullstack/commit/091bd9aa67235398418fbfaf3f1a9addef767159)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@1.6.0` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.0) (from
+    `1.5.13`, in `dependencies`)
+
+- [#2841](https://github.com/Urigo/accounter-fullstack/pull/2841)
+  [`46c0ba6`](https://github.com/Urigo/accounter-fullstack/commit/46c0ba6fd7ab51e02053adb1759758a65789f37c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.562.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.562.0) (from
+    `0.561.0`, in `dependencies`)
+
+- [#2842](https://github.com/Urigo/accounter-fullstack/pull/2842)
+  [`d31c13f`](https://github.com/Urigo/accounter-fullstack/commit/d31c13f73223465bcda8d8d2ccc642f015e64b74)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.13.0` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.0) (from
+    `9.12.0`, in `dependencies`)
+
+- [#2846](https://github.com/Urigo/accounter-fullstack/pull/2846)
+  [`d06eb2e`](https://github.com/Urigo/accounter-fullstack/commit/d06eb2e55836213bb7254caf8418d9fc3eb13d0b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@1.6.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.1) (from
+    `1.6.0`, in `dependencies`)
+
+- [#2849](https://github.com/Urigo/accounter-fullstack/pull/2849)
+  [`9c65073`](https://github.com/Urigo/accounter-fullstack/commit/9c650731ea5d5eacb8728dbb0416ff7b02277370)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.69.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.69.0) (from
+    `7.68.0`, in `dependencies`)
+
+- [#2861](https://github.com/Urigo/accounter-fullstack/pull/2861)
+  [`ea231ba`](https://github.com/Urigo/accounter-fullstack/commit/ea231ba07a17fe9fa96ffe2ec7a5e10852ef389c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@1.6.2` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.2) (from
+    `1.6.1`, in `dependencies`)
+
+- [#2869](https://github.com/Urigo/accounter-fullstack/pull/2869)
+  [`d580df2`](https://github.com/Urigo/accounter-fullstack/commit/d580df28222730fa0d878c324d289f6c28d16ad0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.13` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.13)
+    (from `5.90.12`, in `dependencies`)
+
+- [#2871](https://github.com/Urigo/accounter-fullstack/pull/2871)
+  [`467022d`](https://github.com/Urigo/accounter-fullstack/commit/467022dff14b59d741f8db5ffde1ba6c19207951)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.14` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.14)
+    (from `5.90.13`, in `dependencies`)
+  - Updated dependency [`pdfjs-dist@5.4.530` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.530)
+    (from `5.4.449`, in `dependencies`)
+  - Updated dependency
+    [`react-error-boundary@6.0.1` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.0.1)
+    (from `6.0.0`, in `dependencies`)
+
+- [#2872](https://github.com/Urigo/accounter-fullstack/pull/2872)
+  [`d386b5a`](https://github.com/Urigo/accounter-fullstack/commit/d386b5a95499727802ae5d8d062412ec5a61ffab)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.15` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.15)
+    (from `5.90.14`, in `dependencies`)
+
+- [#2873](https://github.com/Urigo/accounter-fullstack/pull/2873)
+  [`eea8a89`](https://github.com/Urigo/accounter-fullstack/commit/eea8a89638a3893814fd9a341e0080922fc703a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.2` ↗︎](https://www.npmjs.com/package/zod/v/4.3.2) (from `4.2.1`, in
+    `dependencies`)
+
+- [#2876](https://github.com/Urigo/accounter-fullstack/pull/2876)
+  [`30eea05`](https://github.com/Urigo/accounter-fullstack/commit/30eea059168e41803441fbadbec53388c7778f6e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.16` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.16)
+    (from `5.90.15`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.3` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.3) (from
+    `1.6.2`, in `dependencies`)
+
+- [#2877](https://github.com/Urigo/accounter-fullstack/pull/2877)
+  [`1c209c8`](https://github.com/Urigo/accounter-fullstack/commit/1c209c8a6045bef747039bbff3780812c6b8678f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.4` ↗︎](https://www.npmjs.com/package/zod/v/4.3.4) (from `4.3.2`, in
+    `dependencies`)
+
+- [#2880](https://github.com/Urigo/accounter-fullstack/pull/2880)
+  [`3212262`](https://github.com/Urigo/accounter-fullstack/commit/321226222b20238ac3f1dd39615ae42fccc2329a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.70.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.70.0) (from
+    `7.69.0`, in `dependencies`)
+
+- [#2881](https://github.com/Urigo/accounter-fullstack/pull/2881)
+  [`bc3ab26`](https://github.com/Urigo/accounter-fullstack/commit/bc3ab260704b677363561ef1c9403eac704a29aa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.5` ↗︎](https://www.npmjs.com/package/zod/v/4.3.5) (from `4.3.4`, in
+    `dependencies`)
+
+- [#2889](https://github.com/Urigo/accounter-fullstack/pull/2889)
+  [`7d2944e`](https://github.com/Urigo/accounter-fullstack/commit/7d2944e493ec42ed2281f33f798811b7821554d0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-error-boundary@6.0.2` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.0.2)
+    (from `6.0.1`, in `dependencies`)
+
+- [#2894](https://github.com/Urigo/accounter-fullstack/pull/2894)
+  [`eca7a3a`](https://github.com/Urigo/accounter-fullstack/commit/eca7a3ae9eac93f4b3ed771ee15934d487c2ee3e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react-to-pdf@3.0.0` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.0.0)
+    (from `2.0.3`, in `dependencies`)
+
+- [#2901](https://github.com/Urigo/accounter-fullstack/pull/2901)
+  [`11ab66f`](https://github.com/Urigo/accounter-fullstack/commit/11ab66f5ae98d79f9435a7a8a9011f3d09c7bbf8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.12.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.12.0) (from
+    `7.11.0`, in `dependencies`)
+
+- [#2904](https://github.com/Urigo/accounter-fullstack/pull/2904)
+  [`17ae14f`](https://github.com/Urigo/accounter-fullstack/commit/17ae14f2482ad876e1adce23cdbc7cb173b88dfb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@7.3.7` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.3.7) (from `7.3.6`, in
+    `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.4` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.4) (from
+    `1.6.3`, in `dependencies`)
+  - Updated dependency [`iconv-lite@0.7.2` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.2)
+    (from `0.7.1`, in `dependencies`)
+  - Updated dependency
+    [`react-error-boundary@6.0.3` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.0.3)
+    (from `6.0.2`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.10` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.10) (from
+    `5.0.9`, in `dependencies`)
+
+- [#2905](https://github.com/Urigo/accounter-fullstack/pull/2905)
+  [`500503c`](https://github.com/Urigo/accounter-fullstack/commit/500503ca0d4a9e83179044f045543bda2294c1bd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.71.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.71.0) (from
+    `7.70.0`, in `dependencies`)
+
+- [#2914](https://github.com/Urigo/accounter-fullstack/pull/2914)
+  [`3a64674`](https://github.com/Urigo/accounter-fullstack/commit/3a64674117ca16d96697f6b8de61e60d354405f9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.17` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.17)
+    (from `5.90.16`, in `dependencies`)
+  - Updated dependency
+    [`react-hook-form@7.71.1` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.71.1) (from
+    `7.71.0`, in `dependencies`)
+
+- [#2928](https://github.com/Urigo/accounter-fullstack/pull/2928)
+  [`afab992`](https://github.com/Urigo/accounter-fullstack/commit/afab99296e6c4d0d25cce4a04cc14b6183c21067)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.19` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.19)
+    (from `5.90.17`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.5` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.5) (from
+    `1.6.4`, in `dependencies`)
+
+- [#2935](https://github.com/Urigo/accounter-fullstack/pull/2935)
+  [`c56d933`](https://github.com/Urigo/accounter-fullstack/commit/c56d933bb0368b2f76f7a4430ac44d1e7795ec49)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-error-boundary@6.1.0` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.1.0)
+    (from `6.0.3`, in `dependencies`)
+
+- [#2851](https://github.com/Urigo/accounter-fullstack/pull/2851)
+  [`e1b8941`](https://github.com/Urigo/accounter-fullstack/commit/e1b8941948cc947a25dd85cd60a67a95a42021bd)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Duplicate Contract Feature**:
+  Introduced the ability to duplicate existing contracts, allowing users to quickly create new
+  contracts based on an existing one's details.
+  - **User Interface Enhancements**: Added a dedicated 'Duplicate Contract' button to the contract
+    card and integrated a new option within the contract modification dialog to deactivate the
+    original contract upon duplication.
+  - **Backend Flexibility for Purchase Orders**: The `purchaseOrders` field in contract updates has
+    been made optional, both in the GraphQL input type and the resolver logic, to accommodate cases
+    where it might be empty or undefined.
+
+- [#2852](https://github.com/Urigo/accounter-fullstack/pull/2852)
+  [`2441e22`](https://github.com/Urigo/accounter-fullstack/commit/2441e22adb1426086db732646f3fc67d4c33f1f0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Enable Document Editing**: An 'edit'
+  column has been introduced to the `RecentBusinessDocs` table, allowing for document editing
+  functionality within the business documents tab.
+  - **UI Component Refactoring**: The `CloseDocumentButton` component has been refactored to utilize
+    a new custom UI `Tooltip` component structure, migrating away from the `@mantine/core` library
+    for this specific component.
+
+- [#2941](https://github.com/Urigo/accounter-fullstack/pull/2941)
+  [`d14f2e1`](https://github.com/Urigo/accounter-fullstack/commit/d14f2e157209a90315edf7676a8ab80c25726bd1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Table Refactoring**: The VAT report's
+  expenses and income tables have been refactored to utilize the `@tanstack/react-table` library,
+  replacing custom table rendering logic.
+  - **New Column Definitions**: Dedicated `columns.tsx` files were introduced for both expenses and
+    income sections, centralizing column configurations and enabling features like sorting and row
+    expansion.
+  - **Improved Table Functionality**: The refactoring introduces advanced table features such as
+    sorting, column visibility management, and expandable rows for detailed charge information.
+  - **GraphQL Schema Update**: The `VatReportRecord` GraphQL type and its resolver were updated to
+    include an `allocationNumber` field, which is now displayed in the tables.
+  - **Code Simplification**: The previous `expenses-row.tsx` and `income-row.tsx` components have
+    been removed, as their rendering logic is now handled directly within the `expenses-table.tsx`
+    and `income-table.tsx` components using `react-table`'s `flexRender`.
+
+- [#2831](https://github.com/Urigo/accounter-fullstack/pull/2831)
+  [`6136464`](https://github.com/Urigo/accounter-fullstack/commit/61364643eafac0c15ea5f444d3ecc9c33e854811)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New GraphQL Scalar for Country Codes**:
+  A new GraphQL scalar type, `CountryCode`, has been introduced to represent country codes. This
+  scalar includes validation to ensure that all country codes conform to the ISO 3166-1 alpha-3
+  standard.
+  - **Centralized CountryCode Enum**: The `CountryCode` enum definition has been moved from
+    `packages/server/src/modules/countries/types.ts` to a shared location at
+    `packages/server/src/shared/enums.ts`. This centralizes the enum, making it accessible across
+    different modules and ensuring consistency.
+  - **GraphQL Schema and Resolver Updates**: The GraphQL schema and various resolvers have been
+    updated to utilize the new `CountryCode` scalar and the shared enum. This includes changes in
+    `business-trips`, `countries`, and `financial-entities` modules to correctly handle country code
+    types.
+  - **Client-Side Component Adjustments**: Client-side components, specifically
+    `contact-info-section.tsx` and `accommodations-row.tsx`, have been modified to correctly query
+    and display country information, adapting to the new structured `Country` type and `CountryCode`
+    scalar.
+
+- [#2845](https://github.com/Urigo/accounter-fullstack/pull/2845)
+  [`1d1acc7`](https://github.com/Urigo/accounter-fullstack/commit/1d1acc7a228a9b162b26a25a70113e81d851e675)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Dialog State Management**: The
+  `ModifyContractDialog` component has been refactored to manage its own open/close state and form
+  data internally, reducing reliance on parent components.
+  - **Component Decoupling**: The `ContractsSection` component no longer maintains local state for
+    the contract being edited, simplifying its logic and improving component separation.
+  - **Form Initialization**: Enhanced form reset logic within `ModifyContractDialog` ensures that
+    the form is correctly populated with the relevant contract data upon opening or context changes,
+    preventing stale data issues.
+
+- [#2921](https://github.com/Urigo/accounter-fullstack/pull/2921)
+  [`cc1920e`](https://github.com/Urigo/accounter-fullstack/commit/cc1920ed93cdd5ccd70c1e5b2faeaaa3d94aca2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Navigation Enhancement**: Introduced a
+  new `ChargeNavigateButton` component to enable direct navigation to individual charge details from
+  both income and expense rows within the VAT monthly report.
+  - **UI Refinement**: Consolidated the `ToggleExpansionButton`, `ToggleMergeSelected`, and the new
+    `ChargeNavigateButton` into a single column for a more organized and cleaner user interface in
+    both income and expense report rows.
+  - **Data Visibility**: Added a new column to the expenses section of the VAT monthly report to
+    display the `taxReducedLocalAmount`, providing more detailed financial information at a glance.
+
+- [#2952](https://github.com/Urigo/accounter-fullstack/pull/2952)
+  [`460d270`](https://github.com/Urigo/accounter-fullstack/commit/460d27027ee7663b3fc1ace4239b77aa8e7f7f2b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Charge Type Refactoring**: Replaced the
+  boolean `isConversion` field with a comprehensive `ChargeType` enum across the application,
+  providing a more explicit and flexible way to categorize charges.
+  - **Database Migration**: A new database migration was added to enrich the
+    `accounter_schema.charge_type` enum with several new values, including 'BUSINESS_TRIP',
+    'COMMON', 'CREDITCARD_BANK', 'DIVIDEND', 'FOREIGN_SECURITIES', 'INTERNAL', and 'VAT'.
+  - **GraphQL Schema and Resolvers Update**: The GraphQL schema was updated to include the new
+    `ChargeType` enum and integrate it into the `Charge` input type.
+  - **Client-side UI Enhancements**: The UI for editing and merging charges was updated to replace
+    the 'Is Conversion' switch with a selectable dropdown for `ChargeType`, improving user
+    experience and data accuracy. Icons and names for charge types are now dynamically displayed
+    using helper functions.
+  - **Unified Charge Type Management**: Replaced disparate boolean flags (e.g., 'isConversion',
+    'isSalary') with a single, comprehensive 'ChargeType' enum across the application for better
+    categorization and extensibility.
+  - **Database Schema Evolution**: Introduced a new database migration to expand the
+    'accounter_schema.charge_type' enum with several new values, aligning the backend with the new
+    type system.
+  - **GraphQL API Modernization**: Updated the GraphQL schema to incorporate the new 'ChargeType'
+    enum, modifying input types for charge updates and ensuring all charge types expose their 'type'
+    via resolvers.
+  - **Enhanced User Interface for Charge Editing**: Revamped the client-side UI for editing and
+    merging charges, replacing simple boolean switches with a user-friendly dropdown selector for
+    'ChargeType', complete with dynamic icons and labels.
+  - **Streamlined Backend Logic**: Adjusted server-side helpers and resolvers to correctly handle
+    the new 'ChargeType' enum, ensuring consistent type assignment and retrieval throughout the
+    system.
+
+- [#2917](https://github.com/Urigo/accounter-fullstack/pull/2917)
+  [`09ae580`](https://github.com/Urigo/accounter-fullstack/commit/09ae5809b83f8d0f3d991380b9fef8e150081108)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Client UI Enhancement**: A new toggle
+  switch for "Is Decreased VAT" has been added to the `EditCharge` form, allowing users to directly
+  modify this status for individual charges.
+  - **Charge Merging Functionality**: The `MergeChargesSelectionForm` now supports viewing and
+    selecting the "Is Decreased VAT" status for charges during the merge process, enabling
+    consistent application of this attribute across merged charges.
+  - **GraphQL Schema Extension**: The GraphQL schema has been updated across various `Charge` and
+    `FinancialCharge` types to include a new `decreasedVAT: Boolean` field, and
+    `isDecreasedVAT: Boolean` in input types, to support this new attribute.
+  - **Server-Side Logic Update**: The server-side resolvers for `updateCharge`,
+    `batchUpdateCharges`, and `mergeCharges` have been modified to process the `isDecreasedVAT`
+    input. Notably, the `isDecreasedVAT` value is currently mapped to the `isProperty` field
+    (`is_property` attribute on `charges` DB table).
+
+- [#2918](https://github.com/Urigo/accounter-fullstack/pull/2918)
+  [`ea0db76`](https://github.com/Urigo/accounter-fullstack/commit/ea0db76fd29b339fbfff4e3e7140027c58177f80)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Feature Removal**: The entire 'Match
+  Document' feature, including its UI components, state management, and associated logic, has been
+  completely removed from the client application.
+  - **Codebase Cleanup**: Several files and components related to the legacy document matching
+    system, such as `DocumentsToChargeMatcher`, `SelectionHandler`, and `MatchDocumentModal`, have
+    been deleted.
+  - **Dependency Reduction**: Imports and props related to the removed feature have been cleaned up
+    across various components, simplifying their interfaces and reducing dependencies.
+
+- [#2858](https://github.com/Urigo/accounter-fullstack/pull/2858)
+  [`eaaa23e`](https://github.com/Urigo/accounter-fullstack/commit/eaaa23eedfe57d2db4a60a5d86066df586325071)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Business Entity Enrichment**: Added
+  'city' and 'zipCode' fields to the Business entity across the application to provide more detailed
+  address information.
+  - **Database Schema Update and Cleanup**: A new migration introduces 'city' (VARCHAR(50)) and
+    'zip_code' (VARCHAR(15)) columns to the 'businesses' table. Concurrently, numerous deprecated
+    and unused columns (e.g., 'password', 'tax_siduri_number_2021', 'wizcloud_token',
+    'bank_account_IBAN') have been removed from the 'businesses' table.
+  - **UI and API Integration**: The new fields are integrated into various client-side forms (e.g.,
+    ContactInfoSection, ClientForm, InsertBusiness modal) and GraphQL types/resolvers for both
+    querying and mutating business data.
+  - **Form Component Refactoring**: The 'insert-business-fields.tsx' and
+    'modify-business-fields.tsx' components were removed, indicating a potential consolidation or
+    simplification of business form logic.
+
+- [#2843](https://github.com/Urigo/accounter-fullstack/pull/2843)
+  [`afa7e80`](https://github.com/Urigo/accounter-fullstack/commit/afa7e80b27f16dcd2e4b62188e8462b1c8000637)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Direct Document Issuance from
+  Contracts**: A new feature has been implemented allowing users to issue documents directly from
+  individual contract cards, streamlining the workflow for generating contract-based documents.
+  - **Contract Sorting Enhancement**: The contracts displayed in the client section are now sorted
+    by their start date in descending order, ensuring that the most recent contracts are always
+    presented first for better visibility.
+  - **Document Editing Modal Refactoring**: The `EditIssueDocumentModal` has been refactored into
+    two distinct components (`EditIssueDocumentModal` and `EditIssueDocumentContent`) to improve
+    modularity, reusability, and maintainability across the application.
+
+- [#2929](https://github.com/Urigo/accounter-fullstack/pull/2929)
+  [`caae8ee`](https://github.com/Urigo/accounter-fullstack/commit/caae8eec352122b3dbcc1acbc628739898bf660b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Optional Charge ID**: The `chargeId`
+  prop has been made optional for both `EditChargeModal` and `InsertDocumentModal`, allowing these
+  components to be rendered without an initial charge ID.
+  - **EditChargeModal Refactoring**: The `EditChargeModalContent` component was merged into
+    `EditChargeModal`, simplifying the component structure. Data fetching within `EditChargeModal`
+    now uses `useQuery` with a `pause` option and a `useEffect` hook to dynamically fetch data only
+    when a `chargeId` is present.
+  - **Conditional Rendering**: Both modals now include early return statements to render `null` if
+    the `chargeId` is not provided, ensuring that content dependent on `chargeId` is only displayed
+    when available.
+  - **Default onChange Prop**: The `onChange` prop passed to the `EditCharge` sub-component now
+    defaults to an empty function if not explicitly provided, preventing potential runtime errors.
+
+- [#2832](https://github.com/Urigo/accounter-fullstack/pull/2832)
+  [`bc69d12`](https://github.com/Urigo/accounter-fullstack/commit/bc69d126abf0b594e0908bd924b42ffbefbfcecc)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Refactored Document Issuing Logic**:
+  The core document issuing and drafting functionalities have been extracted from the
+  `green-invoice` module and relocated to a new, dedicated `documents-issuing` module within the
+  `documents` domain. This enhances modularity and improves the separation of concerns.
+  - **Standardized Document Types**: Green Invoice specific enums like `GreenInvoiceDocumentLang`,
+    `GreenInvoiceVatType`, `GreenInvoiceDiscountType`, `GreenInvoicePaymentType`,
+    `GreenInvoicePaymentCardType`, and `GreenInvoiceLinkType` have been replaced with more generic
+    and reusable types such as `DocumentLanguage`, `DocumentVatType`, `DocumentDiscountType`,
+    `PaymentType`, `DocumentPaymentRecordCardType`, and `DocumentLinkType`. This change reduces
+    coupling to the Green Invoice API.
+  - **Standardized Country Codes**: A new `CountryCode` enum has been introduced in the client-side
+    helpers, replacing the Green Invoice specific country enum. This ensures consistent country
+    handling across the application.
+  - **Renamed Sync Functionality**: The `PullDocumentsModal` component and `useFetchIncomeDocuments`
+    hook have been renamed to `SyncDocumentsModal` and `useSyncGreenInvoiceDocuments` respectively,
+    to more accurately reflect their purpose of synchronizing documents with Green Invoice.
+  - **GraphQL Schema and Type Renames**: GraphQL types and fragments related to document drafting
+    have been renamed for clarity and consistency. `NewDocumentInfo` is now `DocumentDraft`, and
+    `NewDocumentInput` is `DocumentIssueInput`, with corresponding updates across queries and
+    mutations.
+
+- [#2903](https://github.com/Urigo/accounter-fullstack/pull/2903)
+  [`69b69b2`](https://github.com/Urigo/accounter-fullstack/commit/69b69b2a944b8b3ce1d295390043ff34baa0e181)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Transaction Download Feature**:
+  Introduced a new `DownloadCSV` component and integrated it into the `TransactionsSection` and
+  `ExtendedTransactionsCard` to allow users to download transaction data as a CSV file.
+  - **GraphQL Query Enhancements**: Updated GraphQL queries in relevant components to include a new
+    `TransactionToDownloadForTransactionsTableFields` fragment, ensuring all necessary data is
+    available for CSV export.
+  - **Financial Account Type Refactoring**: Standardized the handling of financial account types by
+    transitioning from `__typename` to the explicit `type` field in GraphQL queries and component
+    logic (e.g., `EditTransaction`, `SimilarTransactionsModal`).
+  - **Improved Account Display**: Enhanced the display of account types in transaction tables
+    (`cells-legacy/account.tsx`, `cells/account.tsx`) by using helper functions
+    (`getAccountTypeLabel`, `getAccountIcon`) and adding tooltips for better user experience.
+
+- [#2813](https://github.com/Urigo/accounter-fullstack/pull/2813)
+  [`ed96294`](https://github.com/Urigo/accounter-fullstack/commit/ed962940d2c677486913ef7ddd2fc1c0e1c897f0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Hook for Admin Businesses**:
+  Implemented a new React hook, `useGetAdminBusinesses`, to specifically fetch and manage admin
+  business data, replacing the more generic financial entities.
+  - **VAT Report Filter Update**: Updated the VAT monthly report filters to utilize the new
+    `useGetAdminBusinesses` hook and changed the UI label from 'Financial Entities' to 'Report
+    Issuer (Admin Business)' for clarity.
+  - **Conditional Data Fetching**: Modified the VAT monthly report component to pause data fetching
+    when no admin business ID (represented by `financialEntityId`) is selected, preventing
+    unnecessary queries and potential errors.
+  - **Server-side Environment Validation**: Added a defensive null check in the server's
+    `PubsubServiceProvider` to ensure the Gmail environment configuration is present, throwing an
+    explicit error if it's missing.
+
+- [#2868](https://github.com/Urigo/accounter-fullstack/pull/2868)
+  [`b2afb4d`](https://github.com/Urigo/accounter-fullstack/commit/b2afb4d3d4d6e622bed1960855216267fc8b5817)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Enhanced Deel Invoice Fetching**: The
+  system now fetches up to 500 Deel invoices by implementing pagination, ensuring a more
+  comprehensive retrieval of financial data.
+  - **Handling of Unlinked Invoices**: New logic has been introduced to automatically create charges
+    and corresponding records for Deel invoices that were previously unlinked or unmatched in the
+    system.
+  - **Refactored Invoice Processing**: The process for uploading Deel invoices and inserting their
+    records into the database has been centralized into a new helper function, improving code
+    modularity and error handling.
+  - **Improved Document Type Classification**: Refunded Deel invoices are now correctly identified
+    and classified as `CreditInvoice` documents, enhancing financial reporting accuracy.
+  - **Metadata Adjustment for Invoices**: The `description` and `remarks` fields for uploaded Deel
+    invoices have been swapped to provide more relevant information in the primary description
+    field.
+
+- [#2840](https://github.com/Urigo/accounter-fullstack/pull/2840)
+  [`05020a6`](https://github.com/Urigo/accounter-fullstack/commit/05020a647c4fca945fb4814fc239cce242d5d8ce)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Type Safety and State Management**:
+  Enhanced type safety and state management within the document generation and preview components,
+  including the use of `as const` and refined `useEffect` dependencies for object comparisons.
+  - **Improved User Experience for Country Selection**: Upgraded the country selection input in
+    client forms from a standard `Select` component to a more interactive `ComboBox`, improving
+    usability and search capabilities.
+  - **ComboBox Component Refinement**: Refactored the `ComboBox` component for better semantic
+    clarity by renaming types and variables, and added a visual `ChevronDownIcon` to its trigger for
+    improved user feedback.
+  - **Client Data Synchronization**: Implemented a new `useEffect` hook to ensure the
+    `selectedClientId` state accurately reflects changes in `formData.client?.id`, improving data
+    consistency.
+
+- [#2919](https://github.com/Urigo/accounter-fullstack/pull/2919)
+  [`1456e1d`](https://github.com/Urigo/accounter-fullstack/commit/1456e1ddf98fe0db5264f37d35775791bc0490e6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **UI/UX Enhancement for Accountant
+  Approval**: The `UpdateAccountantStatus` component has been significantly refactored from a basic
+  Mantine `Select` to a more interactive and visually appealing `DropdownMenu` with custom icons and
+  styling, improving the user experience for changing approval statuses.
+  - **Logic Centralization**: The state update logic for accountant approval, previously handled by
+    the parent `AccountantApproval` cell component, has been moved directly into the
+    `UpdateAccountantStatus` component. This makes the component more self-contained and simplifies
+    its usage.
+  - **Consistent Filter Display**: The `ChargesFilters` component has been updated to utilize the
+    new `accountantApprovalOptions` data structure and a custom `AccountantStatusMultiSelectItem`
+    for rendering options within its multi-select filter, ensuring a consistent visual
+    representation across the application.
+
+- [#2930](https://github.com/Urigo/accounter-fullstack/pull/2930)
+  [`092d89f`](https://github.com/Urigo/accounter-fullstack/commit/092d89f0d270f1cf023c48a414cfb0111413bd31)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Refactored Modal Handling**: The
+  `EditChargeModal` and `InsertDocumentModal` components have been moved from higher-level parent
+  components (like `ChargesLedgerValidation`, `AllCharges`, `VatMonthlyReport`, `Charge`, and
+  `MissingInfoCharges`) directly into the `ChargeActionsMenu` component. This centralizes their
+  state management and rendering.
+  - **Component Renaming**: The `ChargeExtendedInfoMenu` component has been renamed to
+    `ChargeActionsMenu` to better reflect its expanded functionality.
+  - **Expanded Charge Actions Menu**: The `ChargeActionsMenu` now directly includes 'Edit Charge'
+    and 'Insert Document' options, which trigger their respective modals using internal state,
+    simplifying the prop drilling previously required.
+  - **Simplified Parent Components**: Numerous parent components no longer need to manage the state
+    or pass down props related to `EditChargeModal` and `InsertDocumentModal`, leading to cleaner
+    and less coupled code.
+
+- [#2950](https://github.com/Urigo/accounter-fullstack/pull/2950)
+  [`b0a7a13`](https://github.com/Urigo/accounter-fullstack/commit/b0a7a130af4e6d0aa3ed3dcc98c4cc946dc1faaf)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **VAT Report Summary UI**: Introduced a
+  new summary section at the top of the VAT monthly report, providing a high-level overview of key
+  financial figures such as Taxable Sales Total, Taxable Sales VAT, Zero/Exempt Sales, Equipment
+  Inputs, and Total VAT Amount.
+  - **Detailed/Summarized View Toggle**: Added a toggle functionality to the Income and Expenses
+    tables, allowing users to switch between a detailed table view and a summarized view grouped by
+    'Record Type'.
+  - **Record Type Column**: Integrated a new 'Record Type' column into the detailed Income and
+    Expenses tables, displaying both the raw record type code and its human-readable name.
+  - **UI Component Refactoring**: Refactored several report components (Business Trips, Expenses,
+    Income, Misc, Missing Info) to wrap their content within a `Card` component, enhancing visual
+    consistency and structure across the report.
+  - **Backend and GraphQL Updates**: Extended the GraphQL schema and resolvers to include
+    `recordType` and `isProperty` fields for VAT report charges, supporting the new summary and
+    detailed views.
+
+- [#2855](https://github.com/Urigo/accounter-fullstack/pull/2855)
+  [`b6ad028`](https://github.com/Urigo/accounter-fullstack/commit/b6ad028230df89fb7c9d646b9407406456a52234)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Extension**: A new
+  migration has been added to the database to include 'description' and 'remarks' columns in the
+  'documents' table, allowing for more detailed document information storage.
+  - **Frontend UI Updates**: The user interface has been enhanced to display 'description' and
+    'remarks' in the recent business documents table and within document editing forms, providing
+    users with the ability to view and modify these new fields.
+  - **GraphQL API Integration**: The GraphQL schema, resolvers, and providers have been updated to
+    support the new 'description' and 'remarks' fields across various document types and input
+    operations (insert, update), ensuring API compatibility.
+  - **OCR and External Service Enhancements**: The OCR processing (Anthropic) and external
+    integrations (Gmail, Deel) have been modified to extract, capture, and store 'description' and
+    'remarks' automatically when new documents are processed or uploaded.
+
+- [#2964](https://github.com/Urigo/accounter-fullstack/pull/2964)
+  [`d13ab38`](https://github.com/Urigo/accounter-fullstack/commit/d13ab389e805ac08292ab0b3867c84e818a788a2)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Annual Report Summary Card**: A new
+  summary card has been added to the annual revenue report screen and CSV export, providing an
+  immediate overview of total clients and revenue.
+
 ## 0.0.9
 
 ### Patch Changes
