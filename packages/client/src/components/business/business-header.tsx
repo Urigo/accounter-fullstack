@@ -1,8 +1,8 @@
 import { format } from 'date-fns';
 import { Building2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge.js';
-import { BusinessHeaderFragmentDoc } from '@/gql/graphql.js';
-import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { BusinessHeaderFragmentDoc } from '../../gql/graphql.js';
+import { getFragmentData, type FragmentType } from '../../gql/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
