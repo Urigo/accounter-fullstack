@@ -78,7 +78,7 @@
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "pg": "8.17.2",
-    "prettier": "3.8.0",
+    "prettier": "3.8.1",
     "prettier-plugin-sql": "0.19.2",
     "rimraf": "6.1.2",
     "ts-node": "10.9.2",
