@@ -1,5 +1,104 @@
 # @accounter/modern-poalim-scraper
 
+## 0.10.4
+
+### Patch Changes
+
+- [#2817](https://github.com/Urigo/accounter-fullstack/pull/2817)
+  [`c0f92c5`](https://github.com/Urigo/accounter-fullstack/commit/c0f92c52dcf9a8533fd5fc82283d68d806563b69)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.33.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.33.0)
+    (from `24.32.1`, in `dependencies`)
+
+- [#2821](https://github.com/Urigo/accounter-fullstack/pull/2821)
+  [`2ff48f9`](https://github.com/Urigo/accounter-fullstack/commit/2ff48f94b7a3ae9d2964ff193ba51ed657cdfe2e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.1.0` ↗︎](https://www.npmjs.com/package/inquirer/v/13.1.0) (from
+    `13.0.2`, in `dependencies`)
+
+- [#2824](https://github.com/Urigo/accounter-fullstack/pull/2824)
+  [`ca5e62b`](https://github.com/Urigo/accounter-fullstack/commit/ca5e62b91faaf33c99ac178575304797150efe1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.0` ↗︎](https://www.npmjs.com/package/zod/v/4.2.0) (from `4.1.13`, in
+    `dependencies`)
+
+- [#2825](https://github.com/Urigo/accounter-fullstack/pull/2825)
+  [`7820649`](https://github.com/Urigo/accounter-fullstack/commit/7820649ce56fd2f5c980fcec47591ef115273bf0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Removed dependency [`ajv@8.17.1` ↗︎](https://www.npmjs.com/package/ajv/v/8.17.1) (from
+    `dependencies`)
+  - Removed dependency [`ajv-formats@3.0.1` ↗︎](https://www.npmjs.com/package/ajv-formats/v/3.0.1)
+    (from `dependencies`)
+
+- [#2829](https://github.com/Urigo/accounter-fullstack/pull/2829)
+  [`73b11ba`](https://github.com/Urigo/accounter-fullstack/commit/73b11ba1fd676a21b4ba44fe99e2bfd181e513dc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.1` ↗︎](https://www.npmjs.com/package/zod/v/4.2.1) (from `4.2.0`, in
+    `dependencies`)
+
+- [#2838](https://github.com/Urigo/accounter-fullstack/pull/2838)
+  [`8714356`](https://github.com/Urigo/accounter-fullstack/commit/87143565511953c4ccf72200c0a5862d75f66243)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.33.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.33.1)
+    (from `24.33.0`, in `dependencies`)
+
+- [#2847](https://github.com/Urigo/accounter-fullstack/pull/2847)
+  [`827634d`](https://github.com/Urigo/accounter-fullstack/commit/827634dfce2a661e8368990c60065c44e09a7502)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.34.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.34.0)
+    (from `24.33.1`, in `dependencies`)
+
+- [#2873](https://github.com/Urigo/accounter-fullstack/pull/2873)
+  [`eea8a89`](https://github.com/Urigo/accounter-fullstack/commit/eea8a89638a3893814fd9a341e0080922fc703a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.2` ↗︎](https://www.npmjs.com/package/zod/v/4.3.2) (from `4.2.1`, in
+    `dependencies`)
+
+- [#2877](https://github.com/Urigo/accounter-fullstack/pull/2877)
+  [`1c209c8`](https://github.com/Urigo/accounter-fullstack/commit/1c209c8a6045bef747039bbff3780812c6b8678f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.4` ↗︎](https://www.npmjs.com/package/zod/v/4.3.4) (from `4.3.2`, in
+    `dependencies`)
+
+- [#2881](https://github.com/Urigo/accounter-fullstack/pull/2881)
+  [`bc3ab26`](https://github.com/Urigo/accounter-fullstack/commit/bc3ab260704b677363561ef1c9403eac704a29aa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.5` ↗︎](https://www.npmjs.com/package/zod/v/4.3.5) (from `4.3.4`, in
+    `dependencies`)
+
+- [#2906](https://github.com/Urigo/accounter-fullstack/pull/2906)
+  [`727f27f`](https://github.com/Urigo/accounter-fullstack/commit/727f27fa505c57b8736941b34d903d50570749d6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.2.0` ↗︎](https://www.npmjs.com/package/inquirer/v/13.2.0) (from
+    `13.1.0`, in `dependencies`)
+
+- [#2909](https://github.com/Urigo/accounter-fullstack/pull/2909)
+  [`f95116f`](https://github.com/Urigo/accounter-fullstack/commit/f95116fabaa702e3cc0a8fe528dac97f26405ca8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.35.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.35.0)
+    (from `24.34.0`, in `dependencies`)
+
+- [#2946](https://github.com/Urigo/accounter-fullstack/pull/2946)
+  [`32fb7b4`](https://github.com/Urigo/accounter-fullstack/commit/32fb7b496fbe5a42badd5cddb8608f7e7f260cd3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.2.1` ↗︎](https://www.npmjs.com/package/inquirer/v/13.2.1) (from
+    `13.2.0`, in `dependencies`)
+
+- [#2825](https://github.com/Urigo/accounter-fullstack/pull/2825)
+  [`7820649`](https://github.com/Urigo/accounter-fullstack/commit/7820649ce56fd2f5c980fcec47591ef115273bf0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Schema Migration**: The project has
+  been migrated from using AJV (JSON Schema) for data validation to Zod, a TypeScript-first schema
+  declaration and validation library.
+  - **Dependency Removal**: The `ajv` and `ajv-formats` packages have been removed from the project
+    dependencies, streamlining the validation stack.
+  - **Schema File Refactoring**: All `.json` schema definition files have been removed and replaced
+    with new `.ts` files defining Zod schemas, improving type safety and developer experience.
+  - **Validation Logic Update**: Scraper modules now utilize Zod's `safeParse` method for data
+    validation, replacing the previous `validateSchema` utility.
+  - **Centralized Type Exports**: A new `types.ts` file has been introduced within the `zod-schemas`
+    directory to centralize the export of all Zod-generated types, simplifying type imports across
+    the application.
+
 ## 0.10.3
 
 ### Patch Changes

@@ -1,5 +1,51 @@
 # @accounter/shaam6111-generator
 
+## 0.1.6
+
+### Patch Changes
+
+- [#2816](https://github.com/Urigo/accounter-fullstack/pull/2816)
+  [`6a9926c`](https://github.com/Urigo/accounter-fullstack/commit/6a9926c3948fa736e2c52ce93207b4f35e28f931)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`iconv-lite@0.7.1` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.1)
+    (from `0.7.0`, in `dependencies`)
+
+- [#2824](https://github.com/Urigo/accounter-fullstack/pull/2824)
+  [`ca5e62b`](https://github.com/Urigo/accounter-fullstack/commit/ca5e62b91faaf33c99ac178575304797150efe1a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.0` ↗︎](https://www.npmjs.com/package/zod/v/4.2.0) (from `4.1.13`, in
+    `dependencies`)
+
+- [#2829](https://github.com/Urigo/accounter-fullstack/pull/2829)
+  [`73b11ba`](https://github.com/Urigo/accounter-fullstack/commit/73b11ba1fd676a21b4ba44fe99e2bfd181e513dc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.2.1` ↗︎](https://www.npmjs.com/package/zod/v/4.2.1) (from `4.2.0`, in
+    `dependencies`)
+
+- [#2873](https://github.com/Urigo/accounter-fullstack/pull/2873)
+  [`eea8a89`](https://github.com/Urigo/accounter-fullstack/commit/eea8a89638a3893814fd9a341e0080922fc703a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.2` ↗︎](https://www.npmjs.com/package/zod/v/4.3.2) (from `4.2.1`, in
+    `dependencies`)
+
+- [#2877](https://github.com/Urigo/accounter-fullstack/pull/2877)
+  [`1c209c8`](https://github.com/Urigo/accounter-fullstack/commit/1c209c8a6045bef747039bbff3780812c6b8678f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.4` ↗︎](https://www.npmjs.com/package/zod/v/4.3.4) (from `4.3.2`, in
+    `dependencies`)
+
+- [#2881](https://github.com/Urigo/accounter-fullstack/pull/2881)
+  [`bc3ab26`](https://github.com/Urigo/accounter-fullstack/commit/bc3ab260704b677363561ef1c9403eac704a29aa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.5` ↗︎](https://www.npmjs.com/package/zod/v/4.3.5) (from `4.3.4`, in
+    `dependencies`)
+
+- [#2904](https://github.com/Urigo/accounter-fullstack/pull/2904)
+  [`17ae14f`](https://github.com/Urigo/accounter-fullstack/commit/17ae14f2482ad876e1adce23cdbc7cb173b88dfb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`iconv-lite@0.7.2` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.2)
+    (from `0.7.1`, in `dependencies`)
+
 ## 0.1.5
 
 ### Patch Changes
