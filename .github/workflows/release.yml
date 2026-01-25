@@ -1,4 +1,12 @@
 name: Release
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
 on:
   push:
     branches:
@@ -22,11 +30,45 @@ jobs:
 
   stable:
     needs: resolve-node-version
-    uses: the-guild-org/shared-config/.github/workflows/release-stable.yml@efca92ebf0309a89e2e1bb69b1f52115ff8ee7d6
-    with:
-      releaseScript: release # script to run as part of publish command
-      nodeVersion: ${{ needs.resolve-node-version.outputs.node }}
-      packageManagerVersion: modern
-    secrets:
-      githubToken: ${{ secrets.GITHUB_TOKEN }}
-      npmToken: ${{ secrets.NPM_TOKEN }}
+    runs-on: ubuntu-24.04
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@85880fa0301c86cca9da44039ee3bb12d3bedbfa # 0.12.1
+        continue-on-error: true
+        with:
+          access_token: ${{ github.token }}
+
+      - name: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+
+      - name: Build packages
+        shell: bash
+        run: yarn build
+
+      - name: Set release date
+        id: vars
+        shell: bash
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: release / pull_request
+        id: changesets
+        uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e # v1.5.2
+        with:
+          publish: "yarn changeset publish"
+          version: "yarn changeset version"
+          commit: "chore(release): update monorepo packages versions"
+          title: "Upcoming Release Changes"
+          createGithubReleases: aggregate
+          githubReleaseName: ${{ steps.vars.outputs.date }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
