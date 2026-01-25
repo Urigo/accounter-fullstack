@@ -73,9 +73,9 @@ export default {
 
     CREATE TABLE accounter_schema.business_users (
       user_id UUID NOT NULL DEFAULT gen_random_uuid(),
-      auth0_user_id TEXT UNIQUE,
+      auth0_user_id TEXT,
       business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
-      role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id),
+      role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id) ON DELETE RESTRICT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (user_id, business_id)
@@ -122,7 +122,7 @@ export default {
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id UUID NOT NULL,
       business_id UUID NOT NULL,
-      permission_id TEXT NOT NULL REFERENCES accounter_schema.permissions(id),
+      permission_id TEXT NOT NULL REFERENCES accounter_schema.permissions(id) ON DELETE CASCADE,
       grant_type accounter_schema.grant_type_enum NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       FOREIGN KEY (user_id, business_id) REFERENCES accounter_schema.business_users(user_id, business_id) ON DELETE CASCADE,
@@ -149,7 +149,7 @@ export default {
 
     INSERT INTO accounter_schema.permissions (id, name, description) VALUES
       ('manage:users', 'Manage Users', 'Create, update, and delete user accounts and invitations'),
-      ('view:reports', 'View Reports', 'Access financial reports and analytics'),
+      ('view:payroll', 'View Payroll', 'Access payroll information and reports'),
       ('issue:docs', 'Issue Documents', 'Create and manage invoices, receipts, and other documents'),
       ('insert:transactions', 'Insert Transactions', 'Add new financial transactions');
 
@@ -161,16 +161,12 @@ export default {
     INSERT INTO accounter_schema.role_permissions (role_id, permission_id) VALUES
       -- Business Owner: all permissions
       ('business_owner', 'manage:users'),
-      ('business_owner', 'view:reports'),
+      ('business_owner', 'view:payroll'),
       ('business_owner', 'issue:docs'),
       ('business_owner', 'insert:transactions'),
       
       -- Accountant: reports and documents
-      ('accountant', 'view:reports'),
-      ('accountant', 'issue:docs'),
-      
-      -- Employee: view only
-      ('employee', 'view:reports'),
+      ('accountant', 'view:payroll'),
       
       -- Scraper: insert transactions only
       ('scraper', 'insert:transactions');
