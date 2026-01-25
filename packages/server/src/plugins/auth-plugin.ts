@@ -15,7 +15,7 @@ import type {
 
 const getUserByName = sql<IGetUserByNameQuery>`
   SELECT *
-  FROM accounter_schema.users
+  FROM accounter_schema.legacy_business_users
   WHERE name = $userName`;
 
 const cache = getCacheInstance({
