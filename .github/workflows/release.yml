@@ -7,29 +7,19 @@ env:
   POSTGRES_HOST: localhost
   POSTGRES_PORT: 5432
   POSTGRES_DB: accounter
+
 on:
   push:
     branches:
       - prod
 
-jobs:
-  resolve-node-version:
-    runs-on: ubuntu-latest
-    outputs:
-      node: ${{ steps.read-node.outputs.node }}
-    steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-      - id: read-node
-        name: Read Node version
-        run: |
-          node -e "const fs=require('node:fs'); const pkg=require('./package.json');
-          const path='.node-version';
-          const version=fs.existsSync(path)?fs.readFileSync(path,'utf8').trim():(pkg.engines&&pkg.engines.node);
-          if(!version) throw new Error('No Node version found'); 
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, 'node=' + version + '\n');"
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
 
+jobs:
   stable:
-    needs: resolve-node-version
     runs-on: ubuntu-24.04
     outputs:
       published: ${{ steps.changesets.outputs.published }}
