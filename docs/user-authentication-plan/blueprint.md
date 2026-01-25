@@ -1,10 +1,13 @@
-# User Authentication System - Implementation Blueprint
+# User Authentication System - Implementation Blueprint (Auth0 Integration)
 
 ## Overview
 
-This blueprint outlines the step-by-step implementation of a comprehensive user authentication and
-RBAC system for the Accounter application. The plan prioritizes incremental progress, strong
-testing, and minimal risk at each stage.
+This blueprint outlines the step-by-step implementation of a user authentication and RBAC system for
+the Accounter application using **Auth0 as the external identity provider**. Auth0 handles all
+authentication concerns (login, signup, password management, email verification, JWT issuance),
+while the application maintains full control over business authorization, roles, and permissions.
+
+The plan prioritizes incremental progress, strong testing, and minimal risk at each stage.
 
 ## Guiding Principles
 
@@ -12,6 +15,8 @@ testing, and minimal risk at each stage.
 - **Test-Driven**: Write tests before or alongside implementation
 - **Safety First**: Small, focused changes with validation at each stage
 - **Database-First Security**: RLS as primary boundary, application layer as UX enhancement
+- **Auth0 for Authentication, Local for Authorization**: Auth0 manages user credentials and
+  sessions; local system manages business access, roles, and permissions
 - **No Big Jumps**: Complexity increases gradually across phases
 
 ---
@@ -40,128 +45,126 @@ testing, and minimal risk at each stage.
 
 ---
 
-### Step 1.2: Core User Tables Migration
+### Step 1.2: Core User Tables Migration (Auth0 Schema)
 
-**Goal**: Create foundational user, authentication, and role tables
+**Goal**: Create foundational business-user mapping, roles, and permissions tables
 
 **Tasks**:
 
 - Create migration: `2026-01-21-create-core-user-tables.sql`
 - Create tables:
-  - `users` (id, name, email, email_verified_at, created_at, updated_at)
-  - `user_accounts` (id, user_id, provider, password_hash)
-  - `roles` (id, name) - seed with: business_owner, accountant, employee, scraper
-  - `permissions` (id, name) - seed with: manage:users, view:reports, issue:docs,
-    insert:transactions
-  - `role_permissions` (role_id, permission_id) - seed default mappings
-- Add proper indexes on email, user_id foreign keys
+  - **`business_users`** (user_id UUID PK, auth0_user_id TEXT UNIQUE NULLABLE, business_id UUID FK,
+    role_id TEXT FK, created_at, updated_at)
+    - `user_id` is generated on invitation creation (pre-registration)
+    - `auth0_user_id` is populated on first login after Auth0 account activation
+    - Composite primary key on (user_id, business_id) for M:N support
+  - **`roles`** (id TEXT PK, name TEXT UNIQUE) - seed with: business_owner, accountant, employee,
+    scraper
+  - **`permissions`** (id TEXT PK, name TEXT UNIQUE) - seed with: manage:users, view:reports,
+    issue:docs, insert:transactions (for future use, not initially enforced)
+  - **`role_permissions`** (role_id TEXT FK, permission_id TEXT FK) - seed default mappings (for
+    future use)
+- **Note**: No `users`, `user_accounts`, `user_refresh_tokens`, or `email_verification_tokens`
+  tables - these are managed by Auth0
+- Add proper indexes on auth0_user_id (for login lookups), business_id foreign keys
 - Add tests: Verify table creation, seed data, constraints
 
 **Validation**:
 
 - Tables exist with correct schema
 - Seed data loaded correctly
-- Unique constraints enforced (email uniqueness)
+- Unique constraints enforced (auth0_user_id uniqueness)
+- Foreign keys properly configured
 
 **Risk**: Low (standard DDL operations)
 
 ---
 
-### Step 1.3: Multi-Tenant Join Tables
+### Step 1.3: Invitations and API Keys Tables
 
-**Goal**: Create business-user relationships and invitation tables
+**Goal**: Create invitation management and API key authentication tables
 
 **Tasks**:
 
-- Create migration: `2026-01-22-create-business-user-tables.sql`
+- Create migration: `2026-01-22-create-invitations-apikeys-tables.sql`
 - Create tables:
-  - `business_users` (user_id, business_id, role_id) - M:N relationship
-  - `invitations` (id, business_id, email, role_id, token, expires_at, created_at)
-  - `email_verification_tokens` (id, user_id, token, expires_at, created_at)
-- Add composite primary key on `business_users` (user_id, business_id)
+  - **`invitations`** (id UUID PK, business_id UUID FK, email TEXT, role_id TEXT FK, token TEXT
+    UNIQUE, auth0_user_created BOOLEAN DEFAULT FALSE, auth0_user_id TEXT NULLABLE,
+    invited_by_user_id UUID FK to business_users.user_id, accepted_at TIMESTAMPTZ NULLABLE,
+    expires_at TIMESTAMPTZ, created_at)
+    - `auth0_user_created`: Tracks whether Auth0 Management API call succeeded
+    - `auth0_user_id`: Stores Auth0 user ID for cleanup of expired invitations
+    - `invited_by_user_id`: Tracks which admin created the invitation
+    - `accepted_at`: Single-use token tracking (NULL until accepted)
+  - **`api_keys`** (id UUID PK, business_id UUID FK, role_id TEXT FK, key_hash TEXT UNIQUE, name
+    TEXT, last_used_at TIMESTAMPTZ, created_at)
 - Add unique constraint on invitation token
+- Add indexes on business_id, expires_at (for cleanup job)
 - Add tests: Verify constraints, FK relationships
 
 **Validation**:
 
-- M:N relationship works correctly
+- Tables support pre-registration invitation flow
 - Token uniqueness enforced
+- API key structure ready for programmatic access
 - FK cascades configured properly
 
 **Risk**: Low
 
 ---
 
-### Step 1.4: API Keys and Audit Tables
+### Step 1.4: Audit Logs Table
 
-**Goal**: Create tables for API key authentication and audit logging
+**Goal**: Create audit logging table for security and compliance
 
 **Tasks**:
 
-- Create migration: `2026-01-23-create-apikeys-audit-tables.sql`
-- Create tables:
-  - `api_keys` (id, business_id, role_id, key_hash, name, last_used_at, created_at)
-  - `audit_logs` (id, business_id, user_id, action, entity, entity_id, details, ip_address,
-    created_at)
-- Add index on `api_keys.business_id`
-- Add index on `audit_logs` (business_id, created_at)
-- Add tests: Verify table structure and indexes
+- Create migration: `2026-01-23-create-audit-logs-table.sql`
+- Create table:
+  - **`audit_logs`** (id UUID PK, business_id UUID FK NULLABLE, user_id UUID FK to
+    business_users.user_id NULLABLE, auth0_user_id TEXT NULLABLE, action TEXT NOT NULL, entity TEXT
+    NULLABLE, entity_id TEXT NULLABLE, details JSONB NULLABLE, ip_address TEXT NULLABLE, created_at
+    TIMESTAMPTZ)
+    - `auth0_user_id`: Stores Auth0 identity for complete audit trail
+    - `user_id`: Local user_id for business context
+    - Both nullable to support system actions or failed logins
+- Add indexes on (business_id, created_at), action, user_id
+- Add tests: Verify table structure, indexes, JSONB column functionality
 
 **Validation**:
 
-- Tables created successfully
+- Table created successfully
 - Indexes exist and perform well
 - JSONB column in audit_logs works correctly
+- Support for both Auth0 and local user tracking
 
 **Risk**: Low
 
 ---
 
-### Step 1.5: Refresh Token Multi-Session Support
+### Step 1.5: Permission Override Tables (Future-Proofing)
 
-**Goal**: Replace single refresh token with multi-session storage
-
-**Tasks**:
-
-- Create migration: `2026-01-24-create-refresh-tokens-table.sql`
-- Create table:
-  - `user_refresh_tokens` (id, user_id, token_hash, created_at, expires_at, revoked_at,
-    replaced_by_token_id)
-- Add index on `user_id`
-- Add index on `token_hash` (for fast lookup)
-- Add tests: Verify rotation tracking via `replaced_by_token_id`
-
-**Validation**:
-
-- Table supports multiple concurrent sessions per user
-- Token rotation chain can be followed
-
-**Risk**: Low
-
----
-
-### Step 1.6: Permission Override Tables (Future-Proofing)
-
-**Goal**: Add tables for granular user/API key permission overrides
+**Goal**: Add tables for granular user/API key permission overrides (not used initially)
 
 **Tasks**:
 
-- Create migration: `2026-01-25-create-permission-overrides.sql`
+- Create migration: `2026-01-24-create-permission-overrides.sql`
 - Create ENUM: `grant_type_enum` ('grant', 'revoke')
 - Create tables:
-  - `user_permission_overrides` (id, user_id, business_id, permission_id, grant_type, created_at)
-  - `api_key_permission_overrides` (id, api_key_id, permission_id, grant_type, created_at)
-- Add unique constraints
+  - **`user_permission_overrides`** (id UUID PK, user_id UUID FK to business_users.user_id,
+    business_id UUID FK, permission_id TEXT FK, grant_type grant_type_enum, created_at TIMESTAMPTZ)
+  - **`api_key_permission_overrides`** (id UUID PK, api_key_id UUID FK, permission_id TEXT FK,
+    grant_type grant_type_enum, created_at TIMESTAMPTZ)
+- Add unique constraints on (user_id, business_id, permission_id), (api_key_id, permission_id)
 - Add tests: Verify ENUM enforcement, constraints
 
 **Validation**:
 
 - Tables exist but remain unpopulated initially
-- Schema ready for future granular permissions feature
+- Schema ready for future granular permissions feature (not in scope for current phase)
+- Authorization will use role-based checks only (e.g., `if roleId === 'business_owner'`)
 
-**Risk**: Very Low (tables not used yet)
-
----
+## **Risk**: Very Low (tables not used yet)
 
 ## Phase 2: Core Database Services (Week 3)
 
@@ -229,40 +232,50 @@ testing, and minimal risk at each stage.
 
 ---
 
-### Step 2.3: Auth Context Provider
+### Step 2.3: Auth Context Provider (Auth0 JWT Verification)
 
-**Goal**: Create request-scoped auth context from JWT/API key
+**Goal**: Create request-scoped auth context from Auth0 JWT or API key
 
 **Tasks**:
 
+- Install `jose` library for JWT verification
 - Create `packages/server/src/modules/auth/providers/auth-context.provider.ts`
 - Implement AuthContext interface:
   ```typescript
   interface AuthContext {
-    authType: 'jwt' | 'apiKey' | 'system'
-    user?: AuthUser
-    tenant: TenantContext
-    accessTokenExpiresAt?: number
+    authType: 'user' | 'apiKey' | 'system'
+    user?: {
+      userId: string // Local user_id from business_users
+      auth0UserId: string // Auth0 sub claim
+      businessId: string
+      roleId: string
+    }
+    tenant: {
+      businessId: string
+    }
   }
   ```
-- Implement provider:
-  - Extract JWT from Authorization header or cookie
-  - Validate token signature and expiration
-  - Parse payload into AuthUser
-  - Store in request-scoped injectable
+- Implement Auth0 JWT verification:
+  - Extract JWT from `Authorization: Bearer <token>` header
+  - Fetch Auth0 JWKS from `https://<tenant>.auth0.com/.well-known/jwks.json`
+  - Verify RS256 signature using `jose` library
+  - Validate claims: `iss` (issuer), `aud` (audience), `exp` (expiration)
+  - Extract `sub` claim (Auth0 user ID like `auth0|507f1f77bcf86cd799439011`)
+- Store in request-scoped injectable
 - Add tests:
-  - Valid JWT parsed correctly
+  - Valid Auth0 JWT parsed correctly (with real test JWT from Auth0 test tenant)
   - Expired JWT rejected
+  - Invalid signature rejected
+  - Missing/invalid claims rejected
   - Missing token results in null context
-  - API key support placeholder (implement later)
 
 **Validation**:
 
+- Auth0 JWT verification works correctly
 - AuthContext available in all resolvers
-- Token validation works
 - Context isolated per request
 
-**Risk**: Medium (foundational security component)
+**Risk**: Medium (foundational security component, requires Auth0 configuration)
 
 ---
 
@@ -520,257 +533,212 @@ testing, and minimal risk at each stage.
 
 ---
 
-## Phase 4: Authentication Implementation (Week 5)
+## Phase 4: Auth0 Integration & GraphQL Context Enrichment (Week 5)
 
-### Step 4.1: Password Hashing Service
+### Step 4.1: Auth0 Tenant Configuration
 
-**Goal**: Create secure password hashing utility
+**Goal**: Set up Auth0 tenant for the application
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/services/password.service.ts`
-- Implement using bcrypt:
-  - `hash(password: string): Promise<string>` (salt rounds: 10)
-  - `verify(password: string, hash: string): Promise<boolean>`
-- Add unit tests:
-  - Hash generates different values for same input
-  - Verify returns true for correct password
-  - Verify returns false for incorrect password
-  - Timing-safe comparison
+- Create Auth0 tenant (or use existing)
+- Create Auth0 Application (Regular Web Application type)
+- Configure application settings:
+  - Allowed Callback URLs: `http://localhost:5173/callback`, `https://app.example.com/callback`
+  - Allowed Logout URLs: `http://localhost:5173`, `https://app.example.com`
+  - Allowed Web Origins: `http://localhost:5173`, `https://app.example.com`
+- Enable Username-Password-Authentication connection
+- Configure JWT settings:
+  - Algorithm: RS256
+  - Access Token lifetime: 15 minutes
+  - Refresh Token rotation: Enabled
+  - Refresh Token expiration: 7 days (absolute)
+- Create Auth0 Machine-to-Machine Application for Management API
+  - Grant scopes: `create:users`, `update:users`, `delete:users`, `read:users`
+- Document configuration in `docs/user-authentication-plan/auth0-setup.md`:
+  - Domain
+  - Client ID (application)
+  - Client Secret (M2M application)
+  - Audience (API identifier)
 
 **Validation**:
 
-- Passwords hashed securely
-- Constant-time verification
-- No plaintext password storage
+- Auth0 tenant accessible
+- Universal Login page works
+- M2M credentials can access Management API
+- Configuration documented
 
-**Risk**: Low (standard bcrypt usage)
+**Risk**: Low (Auth0 UI configuration)
 
 ---
 
-### Step 4.2: JWT Plugin Configuration
+### Step 4.2: Auth0 Management API Service
 
-**Goal**: Set up GraphQL Yoga JWT plugin for token management
+**Goal**: Create service to interact with Auth0 Management API
 
 **Tasks**:
 
-- Install `@graphql-yoga/plugin-jwt`
-- Configure plugin in GraphQL server:
-  - Access token secret (from env)
-  - Refresh token secret (from env)
-  - Access token expiration: 15 minutes
-  - Refresh token expiration: 7 days
-- Create token signing functions:
-  - `signAccessToken(payload: AccessTokenPayload): string`
-  - `signRefreshToken(payload: RefreshTokenPayload): string`
+- Create `packages/server/src/modules/auth/services/auth0-management.service.ts`
+- Implement service methods:
+  - `getAccessToken()`: Use client credentials flow to obtain M2M access token (cache for 24 hours)
+  - `createUser(email: string, invitationMetadata: object)`: Call `POST /api/v2/users` with payload:
+    ```json
+    {
+      "email": "user@example.com",
+      "blocked": true,
+      "connection": "Username-Password-Authentication",
+      "app_metadata": {
+        "invitation_id": "uuid",
+        "business_id": "uuid",
+        "invited_by": "uuid"
+      }
+    }
+    ```
+  - `unblockUser(auth0UserId: string)`: Call `PATCH /api/v2/users/{id}` with payload
+    `{ "blocked": false }`
+  - `deleteUser(auth0UserId: string)`: Call `DELETE /api/v2/users/{id}` (for expired invitation
+    cleanup)
+- Implement rate limit handling:
+  - Detect 429 responses
+  - Extract `X-RateLimit-Reset` header
+  - Return user-friendly error with retry-after time
 - Add tests:
-  - Tokens sign correctly
-  - Tokens verify correctly
-  - Expired tokens rejected
+  - M2M token obtained successfully (integration test with real Auth0 test tenant)
+  - User creation works
+  - User unblocking works
+  - User deletion works
+  - Rate limit detection works (mock HTTP responses)
 
 **Validation**:
 
-- JWT plugin integrated
-- Token generation/verification works
-- Secrets loaded from environment
+- Auth0 Management API integration works
+- Rate limiting handled gracefully
+- Errors propagated with clear messages
 
-**Risk**: Low (using official plugin)
+**Risk**: Medium (external API dependency, requires Auth0 credentials)
 
 ---
 
-### Step 4.3: PermissionResolutionService
+### Step 4.3: Auth Context Enrichment Service
 
-**Goal**: Create unified permission resolver for users and API keys
+**Goal**: Map Auth0 user ID to local business/role data after JWT verification
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/services/permission-resolution.service.ts`
+- Create `packages/server/src/modules/auth/services/auth-context-enricher.service.ts`
 - Implement service:
-  - `resolvePermissions(subject: AuthSubject): Promise<string[]>`
-  - `getRolePermissions(roleId: string): Promise<string[]>`
-  - `getPermissionOverrides(subject: AuthSubject): Promise<PermissionOverride[]>`
-  - `mergePermissions(base: string[], overrides: PermissionOverride[]): string[]`
-- Support both user and API key subjects:
+
   ```typescript
-  type AuthSubject =
-    | { type: 'user'; userId: string; businessId: string; roleId: string }
-    | { type: 'apiKey'; apiKeyId: string; businessId: string; roleId: string }
-  ```
-- Add unit tests:
-  - Base role permissions resolved correctly
-  - Override tables queried correctly (even if empty)
-  - Merge logic correct (grant adds, revoke removes)
-- Add integration tests:
-  - Works for user auth
-  - Works for API key auth
-  - Handles missing role gracefully
+  @Injectable({ scope: Scope.Operation })
+  export class AuthContextEnricher {
+    constructor(private db: TenantAwareDBClient) {}
 
-**Validation**:
+    async enrichContext(auth0UserId: string): Promise<AuthContext> {
+      // Map Auth0 user ID to local user_id and fetch business/role data
+      const { rows } = await this.db.query(
+        `
+        SELECT user_id, business_id, role_id
+        FROM accounter_schema.business_users
+        WHERE auth0_user_id = $1
+        LIMIT 1
+      `,
+        [auth0UserId]
+      )
 
-- Service returns correct permissions for roles
-- Ready for future override population
+      if (rows.length === 0) {
+        throw new GraphQLError('User not linked to any business', {
+          extensions: { code: 'FORBIDDEN' }
+        })
+      }
 
-**Risk**: Low (straightforward business logic)
+      const { user_id, business_id, role_id } = rows[0]
 
----
-
-### Step 4.4: Login Mutation (Email/Password)
-
-**Goal**: Implement core authentication flow
-
-**Tasks**:
-
-- Create GraphQL schema:
-  ```graphql
-  type Mutation {
-    login(email: String!, password: String!): AuthPayload!
+      return {
+        authType: 'user',
+        user: {
+          userId: user_id,
+          auth0UserId: auth0UserId,
+          businessId: business_id,
+          roleId: role_id
+        },
+        tenant: {
+          businessId: business_id
+        }
+      }
+    }
   }
-  type AuthPayload {
-    accessToken: String!
-    user: User!
-  }
   ```
-- Create `packages/server/src/modules/auth/resolvers/login.resolver.ts`
-- Implement login flow:
-  1. Query `users` by email
-  2. Fetch `user_accounts` for provider='email'
-  3. Verify password using PasswordService
-  4. Check email_verified_at (reject if NULL)
-  5. Query `business_users` to get businessId and roleId
-  6. Call `PermissionResolutionService.resolvePermissions()`
-  7. Generate access token with payload:
-     ```typescript
-     {
-       ;(userId, email, businessId, roleId, permissions, exp)
-     }
-     ```
-  8. Generate refresh token
-  9. Store refresh token hash in `user_refresh_tokens`
-  10. Set refresh token as HttpOnly cookie
-  11. Log to audit_logs (action: 'USER_LOGIN')
-  12. Return { accessToken, user }
-- Add comprehensive tests:
-  - Successful login with correct credentials
-  - Failed login with wrong password
-  - Failed login for non-existent user
-  - Failed login for unverified email
-  - Refresh token stored correctly
-  - Audit log entry created
-- Add rate limiting (e.g., 5 attempts per 15 minutes per IP)
 
-**Validation**:
-
-- Users can authenticate successfully
-- Tokens issued correctly
-- HttpOnly cookie set
-- Audit trail captured
-
-**Risk**: Medium (core security flow, must be perfect)
-
----
-
-### Step 4.5: RefreshTokenService with Rotation
-
-**Goal**: Implement secure token refresh with reuse detection
-
-**Tasks**:
-
-- Create `packages/server/src/modules/auth/services/refresh-token.service.ts`
-- Implement methods:
-  - `generateRefreshToken(userId: string): Promise<{ token, tokenId }>`
-  - `rotateToken(oldTokenId: string): Promise<{ newToken, newTokenId }>`
-  - `validateAndRotate(token: string): Promise<AccessToken | null>`
-  - `revokeToken(tokenId: string): Promise<void>`
-  - `detectReuse(tokenId: string): Promise<boolean>` - checks if token has been replaced
-- Implement rotation flow:
-  1. Hash provided token
-  2. Query `user_refresh_tokens` by token_hash
-  3. Check if already replaced (reuse detection)
-  4. If reused: revoke entire token family, throw error
-  5. If valid: generate new token, update replaced_by_token_id
-  6. Return new access + refresh tokens
+- Integrate into GraphQL context creation:
+  - After Auth0 JWT verification extracts `sub` claim
+  - Call `authContextEnricher.enrichContext(sub)`
+  - Store enriched context in request-scoped provider
 - Add tests:
-  - Normal rotation succeeds
-  - Reused token detected and rejected
-  - Token family revoked on reuse
-  - Expired tokens rejected
+  - Valid Auth0 user mapped to local business/role
+  - User not in business_users throws FORBIDDEN
+  - Database query uses correct schema
 
 **Validation**:
 
-- Token rotation works correctly
-- Reuse detection prevents token theft
-- Revoked tokens cannot be used
+- Auth0 users linked to local business data
+- GraphQL resolvers have access to businessId, roleId, userId
+- Error handling clear
 
-**Risk**: High (security-critical, complex logic)
+**Risk**: Medium (critical for request-scoped tenant isolation)
 
 ---
 
-### Step 4.6: Refresh Token Mutation
+### Step 4.4: API Key Authentication (Parallel to Auth0)
 
-**Goal**: Allow clients to obtain new access tokens
+**Goal**: Support API key authentication for scraper role
 
 **Tasks**:
 
-- Add to schema:
-  ```graphql
-  type Mutation {
-    refreshToken: AuthPayload!
-  }
-  ```
-- Create resolver:
-  - Read refresh token from HttpOnly cookie
-  - Call `RefreshTokenService.validateAndRotate()`
-  - If reuse detected: return UNAUTHENTICATED error
-  - Generate new access token (same payload as login)
-  - Set new refresh token cookie
-  - Return new access token
+- Update `AuthContextProvider` (Step 2.3) to support dual authentication:
+  - Check for `Authorization: Bearer <jwt>` → Auth0 verification
+  - Else check for `X-API-Key: <key>` → API key verification
+- Implement API key verification:
+  - Hash provided API key with SHA-256
+  - Query `api_keys` table by `key_hash`
+  - Fetch associated `business_id` and `role_id`
+  - Build AuthContext:
+    ```typescript
+    {
+      authType: 'apiKey',
+      user: {
+        userId: null,          // API keys not linked to user_id
+        auth0UserId: null,
+        businessId: business_id,
+        roleId: role_id
+      },
+      tenant: {
+        businessId: business_id
+      }
+    }
+    ```
+  - Update `last_used_at` asynchronously (hourly batching to avoid write amplification)
 - Add tests:
-  - Valid refresh succeeds
-  - Expired refresh fails
-  - Reused token detected
-  - New tokens issued correctly
+  - Valid API key authenticates correctly
+  - Invalid API key rejected
+  - API key provides business and role context
+  - `last_used_at` updated (integration test)
 
 **Validation**:
 
-- Clients can obtain new access tokens seamlessly
-- Security maintained through rotation
+- API keys work alongside Auth0 JWT
+- Same authorization flow for both auth types
+- Scraper role can use API keys
 
-**Risk**: Medium
-
----
-
-### Step 4.7: Logout Mutation
-
-**Goal**: Allow users to invalidate tokens
-
-**Tasks**:
-
-- Add to schema:
-  ```graphql
-  type Mutation {
-    logout: Boolean!
-  }
-  ```
-- Create resolver:
-  - Extract refresh token from cookie
-  - Mark token as revoked in `user_refresh_tokens`
-  - Clear HttpOnly cookie
-  - Log to audit_logs (action: 'USER_LOGOUT')
-- Add tests:
-  - Logout succeeds for authenticated user
-  - Refresh token cannot be reused after logout
-  - Cookie cleared
-
-**Validation**:
-
-- Users can log out successfully
-- Tokens invalidated properly
-
-**Risk**: Low
+**Risk**: Low (standard API key pattern)
 
 ---
 
-## Phase 5: Role-Based Access Control (Week 6)
+## Phase 5: Role-Based Authorization (Week 6)
+
+**Note**: Permissions infrastructure (tables, PermissionResolutionService) is out of scope for this
+phase. Authorization checks use role-based logic only (e.g.,
+`if (authContext.roleId === 'business_owner')`). Permission-based authorization is a future
+enhancement.
 
 ### Step 5.1: GraphQL Directives (Simple Checks)
 
@@ -782,21 +750,19 @@ testing, and minimal risk at each stage.
 - Implement `@requiresAuth` directive:
   - Check if `context.auth.user` exists
   - If not: throw UNAUTHENTICATED error
-- Implement `@requiresVerifiedEmail` directive:
-  - Check if `context.auth.user.emailVerified === true`
-  - If not: throw FORBIDDEN error with code 'EMAIL_NOT_VERIFIED'
 - Implement `@requiresRole(role: String!)` directive:
   - Check if `context.auth.user.roleId === role`
-  - If not: throw FORBIDDEN error
+  - If not: throw FORBIDDEN error with message "Requires role: {role}"
 - Add tests:
   - Each directive enforces correctly
-  - Error codes correct
+  - Error codes correct (UNAUTHENTICATED, FORBIDDEN)
   - Directives compose correctly
 
 **Validation**:
 
 - Directives work as schema guards
 - Error messages clear
+- No permission resolution needed (role checks only)
 
 **Risk**: Low
 
@@ -810,6 +776,7 @@ testing, and minimal risk at each stage.
 
 - Create `packages/server/src/modules/auth/services/authorization.service.ts`
 - Implement base class:
+
   ```typescript
   @Injectable({ scope: Scope.Operation })
   export class AuthorizationService {
@@ -819,26 +786,44 @@ testing, and minimal risk at each stage.
     ) {}
 
     protected requireAuth(): AuthUser {
-      /* ... */
+      if (!this.authContext.user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' }
+        })
+      }
+      return this.authContext.user
     }
-    protected requireVerifiedEmail(): void {
-      /* ... */
+
+    protected requireRole(allowedRoles: string[]): void {
+      const user = this.requireAuth()
+      if (!allowedRoles.includes(user.roleId)) {
+        throw new GraphQLError(`Requires one of roles: ${allowedRoles.join(', ')}`, {
+          extensions: { code: 'FORBIDDEN' }
+        })
+      }
     }
-    protected requirePermission(permission: string): void {
-      /* ... */
-    }
-    protected requireOwnership(resourceOwnerId: string): Promise<void> {
-      /* ... */
+
+    protected async requireOwnership(resourceOwnerId: string): Promise<void> {
+      const user = this.requireAuth()
+      if (user.businessId !== resourceOwnerId) {
+        throw new GraphQLError('Access denied: resource ownership mismatch', {
+          extensions: { code: 'FORBIDDEN' }
+        })
+      }
     }
   }
   ```
+
 - Add tests:
-  - Base methods work correctly
+  - `requireAuth` throws when user null
+  - `requireRole` throws when role not in allowed list
+  - `requireOwnership` throws when business mismatch
   - Can be extended by domain services
 
 **Validation**:
 
 - Reusable authorization patterns established
+- Role-based checks only (no permission resolution)
 
 **Risk**: Low
 
@@ -852,30 +837,58 @@ testing, and minimal risk at each stage.
 
 - Create `packages/server/src/modules/charges/services/charges-auth.service.ts`
 - Extend AuthorizationService:
+
   ```typescript
   export class ChargesAuthService extends AuthorizationService {
     async canUpdateCharge(chargeId: string): Promise<void> {
       this.requireAuth()
-      this.requireVerifiedEmail()
+
+      // Only business_owner and accountant can update charges
+      this.requireRole(['business_owner', 'accountant'])
 
       // Check ownership via RLS-protected query
-      const charge = await this.db.query('SELECT id FROM charges WHERE id = $1', [chargeId])
+      const charge = await this.db.query('SELECT id FROM accounter_schema.charges WHERE id = $1', [
+        chargeId
+      ])
+
       if (!charge.rows.length) {
-        throw new ForbiddenError('Charge not found or access denied')
+        throw new GraphQLError('Charge not found or access denied', {
+          extensions: { code: 'FORBIDDEN' }
+        })
+      }
+    }
+
+    async canDeleteCharge(chargeId: string): Promise<void> {
+      this.requireAuth()
+
+      // Only business_owner can delete charges
+      this.requireRole(['business_owner'])
+
+      const charge = await this.db.query('SELECT id FROM accounter_schema.charges WHERE id = $1', [
+        chargeId
+      ])
+
+      if (!charge.rows.length) {
+        throw new GraphQLError('Charge not found or access denied', {
+          extensions: { code: 'FORBIDDEN' }
+        })
       }
     }
   }
   ```
-- Update charge update resolver to call `chargesAuthService.canUpdateCharge()`
+
+- Update charge update/delete resolvers to call authorization methods
 - Add tests:
-  - Authorized users can update
-  - Unauthorized users blocked
-  - RLS enforced
+  - business_owner can update and delete
+  - accountant can update but not delete
+  - employee cannot update or delete
+  - RLS enforced (queries only return business-owned charges)
 
 **Validation**:
 
 - Pattern demonstrated clearly
 - RLS + service layer work together
+- Role-based authorization functional
 
 **Risk**: Low
 
@@ -889,198 +902,242 @@ testing, and minimal risk at each stage.
 
 - Audit all mutations in codebase
 - Add `@requiresAuth` to protected queries/mutations
-- Add `@requiresVerifiedEmail` to critical mutations:
-  - Document issuance
-  - User management
-  - Salary operations
+- Add role-based checks to critical mutations:
+  - Document issuance: requires `business_owner` or `accountant`
+  - User management (invitations): requires `business_owner`
+  - Salary operations: requires `business_owner`
+  - Transaction insertion: requires `scraper` (API key) or `business_owner`/`accountant` (user)
 - Add service-layer checks for:
-  - Resource ownership (update/delete operations)
-  - Complex permissions (e.g., accountant can view but not delete)
+  - Resource ownership (update/delete operations) - rely on RLS
+  - Complex role logic (e.g., accountant can view but not issue certain document types)
 - Add integration tests:
   - Each mutation tested with different roles
   - Verify correct access granted/denied
+  - Verify error messages clear
 
 **Validation**:
 
 - All mutations protected appropriately
 - Authorization matrix documented and tested
+- No permission resolution logic (future enhancement)
 
 **Risk**: High (requires touching many resolvers, error-prone)
 
-**Note**: Break into sub-steps per module
+**Note**: Break into sub-steps per module in detailed implementation
 
 ---
 
-## Phase 6: Invitation & Email Verification (Week 7)
+## Phase 6: Invitation Flow (Auth0 Pre-Registration) (Week 7)
 
-### Step 6.1: Invitation Creation Mutation
+### Step 6.1: Invitation Creation Mutation (with Auth0 Management API)
 
-**Goal**: Allow business owners to invite users
+**Goal**: Allow business owners to invite users with Auth0 pre-registration
 
 **Tasks**:
 
 - Add to schema:
   ```graphql
   type Mutation {
-    inviteUser(email: String!, roleId: String!): Invitation! @requiresAuth @requiresVerifiedEmail
+    createInvitation(email: String!, roleId: String!): InvitationPayload! @requiresAuth
+  }
+  type InvitationPayload {
+    invitationUrl: String!
+    email: String!
+    expiresAt: String!
   }
   ```
-- Create resolver:
-  - Verify caller has `manage:users` permission
-  - Check if email already exists in `users` or `invitations`
-  - Generate cryptographically secure token (64 chars)
-  - Insert into `invitations` table
-  - Set expires_at to 7 days from now
-  - Return invitation object
-  - (Future: Send email notification - not in scope)
+- Create resolver `packages/server/src/modules/auth/resolvers/create-invitation.resolver.ts`:
+  1. Verify caller has `business_owner` role (role-based check, no permission resolution)
+  2. Check if email already exists in `business_users` for this business
+  3. Generate cryptographically secure token (64 chars using `crypto.randomBytes`)
+  4. Generate local `user_id` UUID
+  5. **Call Auth0 Management API** (`auth0ManagementService.createUser(email, metadata)`):
+     - Metadata includes `invitation_id`, `business_id`, `invited_by`
+     - Auth0 automatically sends password setup email (no custom email service needed)
+  6. Insert into `invitations` table:
+     - Set `auth0_user_created: true` on success
+     - Store `auth0_user_id` returned from Auth0
+     - Set `invited_by_user_id` to caller's `user_id`
+     - Set `expires_at` to 7 days from now
+  7. Insert into `business_users` table:
+     - `user_id`: generated UUID
+     - `auth0_user_id`: NULL (populated on first login)
+     - `business_id`, `role_id` from invitation
+  8. Log to `audit_logs` (action: 'INVITATION_CREATED', include `auth0_user_id`)
+  9. Return invitation URL: `https://app.example.com/accept-invitation/{token}`
+- **Error Handling**:
+  - Detect Auth0 rate limit (429) → return user-friendly error with retry-after time
+  - Detect Auth0 user already exists → return error "User already exists in Auth0"
+  - On any Auth0 error → rollback transaction, delete local invitation record
 - Add tests:
-  - Business owner can invite
-  - Employee cannot invite (FORBIDDEN)
-  - Duplicate email rejected
-  - Token generated correctly
+  - Business owner can create invitation successfully
+  - Auth0 Management API called correctly (integration test with test tenant)
+  - Duplicate email for same business rejected
+  - Employee cannot create invitation (FORBIDDEN)
+  - Auth0 rate limit handled gracefully (mocked)
+  - Token generated securely
 
 **Validation**:
 
-- Invitations created successfully
-- Permissions enforced
+- Invitations created with Auth0 user pre-registration
+- Auth0 sends password setup email automatically
+- Local database tracks invitation state
+- Permissions enforced (business_owner only)
 
-**Risk**: Low
+**Risk**: Medium (Auth0 API integration, requires transaction management)
 
 ---
 
-### Step 6.2: Accept Invitation Mutation
+### Step 6.2: Accept Invitation Mutation (Auth0 Session Required)
 
-**Goal**: Allow new users to create accounts via invitation
+**Goal**: Allow invited users to accept invitations and link Auth0 account to business
 
 **Tasks**:
 
 - Add to schema:
   ```graphql
   type Mutation {
-    acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!
+    acceptInvitation(token: String!): Boolean! @requiresAuth
   }
   ```
 - Create resolver:
-  1. Query `invitations` by token
-  2. Verify token not expired
-  3. Begin transaction: a. Create `users` record (email from invitation, set email_verified_at to
-     NOW) b. Create `user_accounts` record with hashed password c. Create `business_users` record
-     (link to business and role) d. Delete invitation e. Resolve permissions via
-     PermissionResolutionService f. Generate access + refresh tokens g. Store refresh token h. Log
-     to audit_logs (action: 'USER_CREATED')
-  4. Commit transaction
-  5. Return AuthPayload
+  1. **Require authenticated session**: Verify `authContext.user` exists (user must be logged in via
+     Auth0)
+  2. Query `invitations` by token
+  3. Verify token not expired (`expires_at > NOW()`)
+  4. Verify token not already used (`accepted_at IS NULL`)
+  5. Begin transaction: a. **Check if this is first acceptance** (is `authContext.user.auth0UserId`
+     already linked to local user_id?):
+     - If not linked yet (first invitation acceptance):
+       - Call `auth0ManagementService.unblockUser(invitation.auth0_user_id)`
+       - Update `business_users` SET `auth0_user_id = authContext.user.auth0UserId` WHERE
+         `user_id = invitation.user_id`
+     - If already linked (subsequent business invitation): \* Insert new row into `business_users`
+       (user_id from existing link, new business_id/role_id) b. Mark invitation as accepted: SET
+       `accepted_at = NOW()` c. Log to `audit_logs` (action: 'INVITATION_ACCEPTED', user_id,
+       auth0_user_id, business_id)
+  6. Commit transaction
+  7. Return true
+- **Error Handling**:
+  - Token invalid → return error with code 'TOKEN_INVALID'
+  - Token expired → return error with code 'TOKEN_EXPIRED'
+  - Token already used → return error 'Invitation already accepted'
+  - Auth0 unblock fails → rollback transaction, return error
 - Add tests:
-  - Valid invitation accepted successfully
-  - Expired token rejected
-  - Invalid token rejected
-  - User created correctly
-  - Email automatically verified
-  - Tokens issued
-
-**Validation**:
-
-- New users can join via invitation
-- Email verified implicitly
-- Atomic transaction succeeds
-
-**Risk**: Medium (multi-step transaction, must be atomic)
-
----
-
-### Step 6.3: Email Verification Token Generation
-
-**Goal**: Allow users to request email verification
-
-**Tasks**:
-
-- Add to schema:
-  ```graphql
-  type Mutation {
-    requestEmailVerification: Boolean! @requiresAuth
-  }
-  ```
-- Create resolver:
-  - Check if user already verified (skip if yes)
-  - Delete any existing tokens for user
-  - Generate cryptographically secure token (64 chars)
-  - Insert into `email_verification_tokens` (expires_at: 24 hours)
-  - (Future: Send email - not in scope)
-  - Return true
-- Add tests:
-  - Token generated successfully
-  - Old tokens replaced
-  - Already-verified users handled gracefully
-
-**Validation**:
-
-- Verification tokens created correctly
-
-**Risk**: Low
-
----
-
-### Step 6.4: Email Verification Mutation
-
-**Goal**: Allow users to verify their email
-
-**Tasks**:
-
-- Add to schema:
-  ```graphql
-  type Mutation {
-    verifyEmail(token: String!): Boolean!
-  }
-  ```
-- Create resolver:
-  1. Query `email_verification_tokens` by token
-  2. Check expiration
-  3. Update `users.email_verified_at = NOW()`
-  4. Delete token
-  5. Log to audit_logs (action: 'EMAIL_VERIFIED')
-  6. Return true
-- Add tests:
-  - Valid token verifies email
+  - Valid invitation accepted successfully (first time - user unblocked)
+  - Second invitation for same user accepted (no Auth0 unblock call)
   - Expired token rejected with TOKEN_EXPIRED code
   - Invalid token rejected with TOKEN_INVALID code
-  - Verified status persists
+  - Already-accepted token rejected
+  - User immediately gains business access (authContext updated on next request)
+  - Auth0 user unblocked successfully (integration test)
 
 **Validation**:
 
-- Users can verify email successfully
-- Error codes clear for UX
+- New users can join via invitation after Auth0 password setup
+- Auth0 account unblocked on first acceptance
+- Multi-business support works (same Auth0 user, multiple business_users rows)
+- Atomic transaction succeeds
+- **No custom email verification needed** (Auth0 handles this during password setup)
 
-**Risk**: Low
+**Risk**: Medium (multi-step transaction, Auth0 API dependency)
 
 ---
 
-### Step 6.5: Email Verification Enforcement
+### Step 6.3: Invitation Cleanup Background Job
 
-**Goal**: Block critical operations for unverified users
+**Goal**: Delete expired invitations and associated unused Auth0 accounts
 
 **Tasks**:
 
-- Add `@requiresVerifiedEmail` directive to mutations:
-  - Document issuance (createInvoice, etc.)
-  - User management (inviteUser)
-  - Financial operations (createSalaryRecord)
-- Update frontend to detect EMAIL_NOT_VERIFIED error
-- Display banner prompting verification
-- Add integration tests:
-  - Unverified users blocked from critical ops
-  - Error code returned correctly
-  - Verified users proceed normally
+- Create background job script: `packages/server/src/jobs/cleanup-expired-invitations.ts`
+- Implement cleanup logic:
+  1. Query invitations WHERE `accepted_at IS NULL` AND `expires_at < NOW()`
+  2. For each expired invitation: a. If `auth0_user_created = true` AND `auth0_user_id` exists:
+     - Call `auth0ManagementService.deleteUser(auth0_user_id)`
+     - Log any Auth0 API errors but continue (user might already be deleted) b. Delete invitation
+       record from database c. Delete orphaned `business_users` row (WHERE
+       `user_id = invitation.user_id` AND `auth0_user_id IS NULL`)
+  3. Log cleanup results to audit_logs (action: 'INVITATION_CLEANUP', details: count deleted)
+- Schedule job to run daily at 2am (use cron or task scheduler)
+- Add tests:
+  - Expired invitations deleted correctly
+  - Auth0 users deleted via Management API (integration test)
+  - Orphaned business_users rows cleaned up
+  - Job handles Auth0 API errors gracefully
 
 **Validation**:
 
-- Email verification required for sensitive actions
-- UX clear and helpful
+- Expired invitations don't accumulate
+- Unused Auth0 accounts cleaned up (avoid Auth0 user quota issues)
+- Background job runs reliably
+
+**Risk**: Low (background job, non-critical path)
+
+---
+
+### Step 6.4: Audit Log Service Integration
+
+**Goal**: Centralize audit logging for security events
+
+**Tasks**:
+
+- Create `packages/server/src/modules/auth/services/audit.service.ts`
+- Implement async logging service:
+
+  ```typescript
+  @Injectable({ scope: Scope.Operation })
+  export class AuditService {
+    constructor(private db: TenantAwareDBClient) {}
+
+    async log(event: AuditEvent): Promise<void> {
+      // Non-blocking insert (fire-and-forget or queue-based)
+      await this.db.query(
+        `
+        INSERT INTO accounter_schema.audit_logs
+        (business_id, user_id, auth0_user_id, action, entity, entity_id, details, ip_address)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `,
+        [
+          event.businessId,
+          event.userId,
+          event.auth0UserId,
+          event.action,
+          event.entity,
+          event.entityId,
+          JSON.stringify(event.details),
+          event.ipAddress
+        ]
+      )
+    }
+  }
+  ```
+
+- Integrate into critical flows:
+  - Invitation creation (action: 'INVITATION_CREATED')
+  - Invitation acceptance (action: 'INVITATION_ACCEPTED')
+  - API key generation (action: 'API_KEY_CREATED')
+  - API key revocation (action: 'API_KEY_REVOKED')
+  - Business logic events (e.g., 'INVOICE_CREATED', 'SALARY_UPDATED')
+- Add tests:
+  - Audit logs inserted correctly
+  - Async logging doesn't block mutations
+  - Both user_id and auth0_user_id logged
+
+**Validation**:
+
+- Complete audit trail for security events
+- Logging doesn't impact mutation performance
+- Compliance-ready
 
 **Risk**: Low
 
 ---
 
-## Phase 7: API Key Authentication (Week 8)
+## Phase 7: API Key Management (Week 8)
+
+**Note**: API key authentication middleware was implemented in Phase 4, Step 4.4. This phase covers
+GraphQL mutations for creating and managing API keys.
 
 ### Step 7.1: API Key Generation Mutation
 
@@ -1091,286 +1148,450 @@ testing, and minimal risk at each stage.
 - Add to schema:
   ```graphql
   type Mutation {
-    generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
-      @requiresAuth
-      @requiresVerifiedEmail
+    generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload! @requiresAuth
   }
   type GenerateApiKeyPayload {
     apiKey: String! # Only shown once
     apiKeyRecord: ApiKey!
   }
+  type ApiKey {
+    id: ID!
+    name: String!
+    roleId: String!
+    lastUsedAt: String
+    createdAt: String!
+  }
   ```
 - Create resolver:
-  - Verify caller has `manage:users` permission
-  - Generate cryptographically secure key (128 chars)
+  - Verify caller has `business_owner` role (role-based check, no permission resolution)
+  - Validate roleId is one of: `scraper`, `accountant`, `employee` (business_owner not allowed for
+    API keys)
+  - Generate cryptographically secure key (128 chars using `crypto.randomBytes`)
   - Hash key using SHA-256
-  - Insert into `api_keys` table
-  - Log to audit_logs (action: 'API_KEY_CREATED')
+  - Insert into `api_keys` table (business_id from authContext, role_id, key_hash, name)
+  - Log to audit_logs (action: 'API_KEY_CREATED', entity: 'ApiKey', entity_id: key_id)
   - Return plaintext key (only time it's visible) + record
 - Add tests:
-  - Business owner can generate
-  - Key generated securely
-  - Hash stored correctly
+  - Business owner can generate API keys
+  - Employee cannot generate API keys (FORBIDDEN)
+  - Key generated securely (128 random bytes)
+  - Hash stored correctly (SHA-256)
   - Plaintext key returned only once
+  - Audit log entry created
 
 **Validation**:
 
 - API keys created successfully
 - Secure generation and storage
+- Only business_owner can create
 
 **Risk**: Low
 
 ---
 
-### Step 7.2: API Key Validation Middleware
+### Step 7.2: API Key Management Mutations
 
-**Goal**: Support API key authentication in GraphQL context
-
-**Tasks**:
-
-- Update AuthContextProvider:
-  - Check for `X-API-Key` header
-  - If present:
-    1. Hash provided key
-    2. Query `api_keys` by key_hash
-    3. Verify key exists and not revoked
-    4. Fetch business_id and role_id
-    5. Call PermissionResolutionService.resolvePermissions({ type: 'apiKey', ... })
-    6. Set AuthContext:
-       ```typescript
-       {
-         authType: 'apiKey',
-         tenant: { businessId },
-         user: { roleId, permissions, emailVerified: true }
-       }
-       ```
-    7. Update last_used_at (hourly, async to avoid write amplification)
-- Add tests:
-  - Valid API key authenticates
-  - Invalid key rejected
-  - Permissions resolved correctly
-  - last_used_at updated
-
-**Validation**:
-
-- API keys work alongside JWT
-- Same permission system for both auth types
-
-**Risk**: Medium (extends auth flow)
-
----
-
-### Step 7.3: API Key Management Mutations
-
-**Goal**: Allow management of API keys
+**Goal**: Allow listing and revoking API keys
 
 **Tasks**:
 
 - Add to schema:
   ```graphql
-  type Mutation {
+  type Query {
     listApiKeys: [ApiKey!]! @requiresAuth
+  }
+  type Mutation {
     revokeApiKey(id: ID!): Boolean! @requiresAuth
   }
   ```
 - Create resolvers:
-  - listApiKeys: query by business_id (from auth context)
-  - revokeApiKey: delete from api_keys, check ownership
+  - **listApiKeys**:
+    - Require `business_owner` role
+    - Query `api_keys` WHERE `business_id = authContext.businessId`
+    - Return all keys for business (excluding key_hash)
+  - **revokeApiKey**:
+    - Require `business_owner` role
+    - Verify API key belongs to caller's business
+    - DELETE from `api_keys` WHERE `id = $1` AND `business_id = authContext.businessId`
+    - Log to audit_logs (action: 'API_KEY_REVOKED')
+    - Return true
 - Add tests:
-  - Keys listed for correct business only
+  - business_owner can list keys for their business only
+  - business_owner can revoke keys
+  - Employee cannot list or revoke (FORBIDDEN)
   - Revoke works and logs audit trail
+  - Cannot revoke API key from different business
 
 **Validation**:
 
 - API key lifecycle manageable
+- Business isolation enforced
 
 **Risk**: Low
 
 ---
 
-### Step 7.4: Scraper Role Integration Test
+### Step 7.3: Scraper Role Integration Test
 
 **Goal**: Verify scraper can insert transactions via API key
 
 **Tasks**:
 
 - Create integration test:
-  1. Generate API key with role='scraper'
-  2. Call insertTransaction mutation with X-API-Key header
-  3. Verify transaction inserted
-  4. Verify RLS enforced (scraper cannot access other business data)
-  5. Verify permissions limited (scraper cannot issue documents)
+  1. Generate API key with role='scraper' (as business_owner)
+  2. Call `insertTransaction` mutation with `X-API-Key` header
+  3. Verify transaction inserted successfully
+  4. Verify RLS enforced (scraper cannot access other business data via separate query)
+  5. Verify role limitations (scraper cannot call `createInvitation` or other admin mutations)
 - Add end-to-end test with actual scraper service
 
 **Validation**:
 
 - Scraper role works as designed
-- Limited permissions enforced
+- Role-based authorization enforced
+- API keys provide business context correctly
 
 **Risk**: Low
 
 ---
 
-## Phase 8: Frontend Integration (Week 9)
+## Phase 8: Frontend Integration (Auth0 SDK) (Week 9)
 
-### Step 8.1: Update Login Page
+### Step 8.1: Install and Configure Auth0 React SDK
 
-**Goal**: Integrate login mutation into existing login page
+**Goal**: Set up Auth0 authentication in the React client
+
+**Tasks**:
+
+- Install `@auth0/auth0-react`
+- Create `packages/client/src/config/auth0-config.ts`:
+  ```typescript
+  export const auth0Config = {
+    domain: import.meta.env.VITE_AUTH0_DOMAIN, // e.g., 'your-tenant.auth0.com'
+    clientId: import.meta.env.VITE_AUTH0_CLIENT_ID, // Application Client ID
+    audience: import.meta.env.VITE_AUTH0_AUDIENCE, // API identifier
+    redirectUri: window.location.origin + '/callback',
+    cacheLocation: 'localstorage' as const // For refresh token persistence
+  }
+  ```
+- Wrap app with Auth0Provider in `packages/client/src/main.tsx`:
+
+  ```typescript
+  import { Auth0Provider } from '@auth0/auth0-react';
+  import { auth0Config } from './config/auth0-config';
+
+  <Auth0Provider {...auth0Config}>
+    <App />
+  </Auth0Provider>
+  ```
+
+- Add environment variables to `.env`:
+  ```
+  VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+  VITE_AUTH0_CLIENT_ID=your-client-id
+  VITE_AUTH0_AUDIENCE=https://api.accounter.example.com
+  ```
+- Add tests:
+  - Auth0Provider wraps app correctly
+  - Config loaded from environment
+
+**Validation**:
+
+- Auth0 SDK initialized
+- Configuration accessible
+
+**Risk**: Low
+
+---
+
+### Step 8.2: Login Flow (Auth0 Universal Login)
+
+**Goal**: Implement login via Auth0 Universal Login
 
 **Tasks**:
 
 - Update `packages/client/src/pages/login-page.tsx`:
-  - Change form field from `username` to `email`
-  - Call `login` mutation with email/password
-  - Store access token in React context
-  - Handle errors:
-    - Invalid credentials
-    - Unverified email (show verification banner)
-  - Redirect to dashboard on success
-- Add tests:
-  - Form submits correctly
-  - Errors displayed
-  - Successful login redirects
+  - Remove custom email/password form
+  - Add "Log In" button that calls `loginWithRedirect()` from `useAuth0()` hook:
 
-**Validation**:
+    ```typescript
+    import { useAuth0 } from '@auth0/auth0-react';
 
-- Users can log in via UI
+    function LoginPage() {
+      const { loginWithRedirect } = useAuth0();
 
-**Risk**: Low
+      return (
+        <div>
+          <h1>Accounter Login</h1>
+          <button onClick={() => loginWithRedirect()}>
+            Log In with Auth0
+          </button>
+        </div>
+      );
+    }
+    ```
 
----
+  - Auth0 handles redirect to Universal Login page
+  - After successful authentication, Auth0 redirects back to `/callback`
 
-### Step 8.2: Auth Context Provider (React)
+- Create callback handler `packages/client/src/pages/callback-page.tsx`:
 
-**Goal**: Manage authentication state in client
-
-**Tasks**:
-
-- Create `packages/client/src/contexts/auth-context.tsx`
-- Implement context:
   ```typescript
-  interface AuthContextValue {
-    isAuthenticated: boolean
-    currentUser: User | null
-    login: (email: string, password: string) => Promise<void>
-    logout: () => Promise<void>
-    refreshToken: () => Promise<void>
+  import { useAuth0 } from '@auth0/auth0-react';
+  import { useEffect } from 'react';
+  import { useNavigate } from 'react-router-dom';
+
+  function CallbackPage() {
+    const { isLoading, error, isAuthenticated } = useAuth0();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      if (!isLoading) {
+        if (error) {
+          navigate('/login?error=' + error.message);
+        } else if (isAuthenticated) {
+          navigate('/dashboard');
+        }
+      }
+    }, [isLoading, error, isAuthenticated, navigate]);
+
+    return <div>Loading...</div>;
   }
   ```
-- Implement provider:
-  - Store access token in memory (not localStorage - XSS risk)
-  - Refresh token automatic (before expiry)
-  - Handle UNAUTHENTICATED errors globally
+
+- Add route for `/callback` in router
 - Add tests:
-  - Auth state managed correctly
-  - Auto-refresh works
-  - Logout clears state
+  - Login button triggers Auth0 redirect
+  - Callback page handles success/error correctly
 
 **Validation**:
 
-- Auth state available throughout app
+- Users can log in via Auth0 Universal Login
+- Redirect flow works correctly
+- No custom login forms needed
 
 **Risk**: Low
 
 ---
 
-### Step 8.3: Protected Route Component
+### Step 8.3: Protected Routes Component
 
-**Goal**: Restrict unauthenticated access
+**Goal**: Restrict unauthenticated access to app routes
 
 **Tasks**:
 
-- Create `packages/client/src/components/protected-route.tsx`
-- Implement component:
-  - Check `authContext.isAuthenticated`
-  - If false: redirect to /login
-  - If true: render children
-- Wrap protected pages with component
+- Create `packages/client/src/components/protected-route.tsx`:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react';
+  import { Navigate } from 'react-router-dom';
+
+  interface ProtectedRouteProps {
+    children: React.ReactNode;
+  }
+
+  export function ProtectedRoute({ children }: ProtectedRouteProps) {
+    const { isAuthenticated, isLoading } = useAuth0();
+
+    if (isLoading) {
+      return <div>Loading...</div>;
+    }
+
+    if (!isAuthenticated) {
+      return <Navigate to="/login" replace />;
+    }
+
+    return <>{children}</>;
+  }
+  ```
+
+- Wrap protected pages with `<ProtectedRoute>`:
+  ```typescript
+  <Route path="/dashboard" element={
+    <ProtectedRoute>
+      <DashboardPage />
+    </ProtectedRoute>
+  } />
+  ```
 - Add tests:
   - Authenticated users see content
-  - Unauthenticated users redirected
+  - Unauthenticated users redirected to login
+  - Loading state shown during auth check
 
 **Validation**:
 
 - Routes protected correctly
+- No authenticated state leakage
 
 **Risk**: Low
 
 ---
 
-### Step 8.4: Urql Client Configuration
+### Step 8.4: Urql Client Configuration (Auth0 Access Token)
 
-**Goal**: Configure GraphQL client for cookie-based auth
+**Goal**: Configure GraphQL client to send Auth0 access tokens
 
 **Tasks**:
 
-- Update Urql client setup:
-  - Set `credentials: 'include'` (send cookies)
-  - Add error exchange:
-    - Catch UNAUTHENTICATED errors
-    - Attempt token refresh
-    - Retry original request
-    - If refresh fails: redirect to login
-  - Add auth exchange (if needed for Authorization header)
+- Update Urql client setup in `packages/client/src/graphql/client.ts`:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react'
+  import { authExchange } from '@urql/exchange-auth'
+
+  const getAuth = async ({ getToken }) => {
+    const token = await getToken()
+    if (!token) return null
+    return { token }
+  }
+
+  const addAuthToOperation = ({ authState, operation }) => {
+    if (!authState || !authState.token) return operation
+
+    return makeOperation(operation.kind, operation, {
+      ...operation.context,
+      fetchOptions: {
+        ...operation.context.fetchOptions,
+        headers: {
+          ...operation.context.fetchOptions?.headers,
+          Authorization: `Bearer ${authState.token}`
+        }
+      }
+    })
+  }
+
+  export function useUrqlClient() {
+    const { getAccessTokenSilently } = useAuth0()
+
+    return useMemo(
+      () =>
+        createClient({
+          url: import.meta.env.VITE_GRAPHQL_URL,
+          exchanges: [
+            dedupExchange,
+            cacheExchange,
+            authExchange({
+              getAuth: async () => {
+                try {
+                  const token = await getAccessTokenSilently()
+                  return { token }
+                } catch {
+                  return null
+                }
+              },
+              addAuthToOperation,
+              didAuthError: ({ error }) => {
+                return error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHENTICATED')
+              },
+              willAuthError: ({ authState }) => {
+                return !authState || !authState.token
+              }
+            }),
+            fetchExchange
+          ]
+        }),
+      [getAccessTokenSilently]
+    )
+  }
+  ```
+
+- Add automatic token refresh handling (Auth0 SDK handles this automatically via
+  `getAccessTokenSilently`)
 - Add tests:
-  - Cookies sent with requests
-  - Auto-refresh on 401
-  - Redirect on refresh failure
+  - Access token sent in Authorization header
+  - Token automatically refreshed when expired
+  - UNAUTHENTICATED errors trigger re-authentication
 
 **Validation**:
 
-- Client maintains authenticated session
+- Client sends Auth0 access tokens correctly
+- Tokens refreshed automatically (Auth0 SDK manages this)
+- Error handling works
 
 **Risk**: Low
 
 ---
 
-### Step 8.5: Email Verification Banner
+### Step 8.5: Logout Flow
 
-**Goal**: Prompt unverified users to verify email
+**Goal**: Allow users to log out from Auth0
 
 **Tasks**:
 
-- Create `packages/client/src/components/email-verification-banner.tsx`
-- Show banner when:
-  - User authenticated but emailVerified === false
-  - Mutation fails with EMAIL_NOT_VERIFIED error
-- Banner actions:
-  - "Resend Verification Email" button
-  - Dismiss (but show again on next mutation error)
+- Add logout button to app header/menu:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react';
+
+  function Header() {
+    const { logout, user } = useAuth0();
+
+    return (
+      <header>
+        <span>Welcome, {user?.email}</span>
+        <button onClick={() => logout({ returnTo: window.location.origin })}>
+          Log Out
+        </button>
+      </header>
+    );
+  }
+  ```
+
+- Auth0 SDK handles:
+  - Clearing local tokens from localStorage
+  - Redirecting to Auth0 logout endpoint
+  - Redirecting back to specified `returnTo` URL
 - Add tests:
-  - Banner appears for unverified users
-  - Resend works
-  - Banner dismisses
+  - Logout button triggers Auth0 logout
+  - User redirected to home page after logout
+  - Local tokens cleared
 
 **Validation**:
 
-- Users guided to verify email
+- Users can log out successfully
+- Auth0 session terminated
+- Tokens cleared from client
 
 **Risk**: Low
 
 ---
 
-### Step 8.6: Invitation Acceptance Flow
+### Step 8.6: Invitation Acceptance UI Flow
 
-**Goal**: Allow users to accept invitations via UI
+**Goal**: Allow users to accept invitations after Auth0 setup
 
 **Tasks**:
 
-- Create `/accept-invitation/:token` route
-- Create accept invitation page:
-  - Pre-fill email from invitation (fetch via query)
-  - Form for name and password
-  - Call acceptInvitation mutation
-  - On success: redirect to dashboard (logged in automatically)
+- Create `/accept-invitation/:token` route and page
+- Implement acceptance flow:
+  1. **If user NOT authenticated**:
+     - Display message: "Please log in or create your account to accept this invitation"
+     - Provide "Log In / Sign Up" button that calls `loginWithRedirect({ invitation_token: token })`
+     - Store token in localStorage or query params to persist through Auth0 redirect
+  2. **If user authenticated**:
+     - Display invitation details (business name, role)
+     - Provide "Accept Invitation" button
+     - On click:
+       - Call `acceptInvitation(token)` GraphQL mutation
+       - On success: redirect to dashboard with success message
+       - On error: display error (expired token, already accepted, etc.)
+- Handle first-time vs. additional business scenarios:
+  - For new users (first invitation): They complete Auth0 password setup → log in → redirected to
+    accept invitation page → accept → access granted
+  - For existing users (additional business): They log in (already have Auth0 account) → accept
+    invitation → new business added to their account
 - Add tests:
-  - Valid token shows form
-  - Invalid/expired token shows error
-  - Successful acceptance logs user in
+  - Unauthenticated user prompted to login
+  - Authenticated user can accept invitation
+  - Success/error states handled correctly
+  - Valid invitation accepted and user redirected
+  - Expired/invalid token shows error
 
 **Validation**:
 
-- Invitation flow complete
+- Invitation flow complete end-to-end
+- Works for both new and existing users
+- Clear UX for different states
 
 **Risk**: Low
 
@@ -1442,18 +1663,19 @@ testing, and minimal risk at each stage.
 **Tasks**:
 
 - Implement rate limiting for sensitive mutations:
-  - Login: 5 attempts per 15 minutes per IP
+  - createInvitation: 10 invitations per hour per business
   - acceptInvitation: 10 attempts per hour per IP
-  - requestEmailVerification: 3 requests per hour per user
-- Use Redis for distributed rate limiting (if multi-instance)
+  - generateApiKey: 5 keys per hour per business
+- Use Redis for distributed rate limiting (if multi-instance deployment)
 - Add tests:
   - Rate limits enforced
   - Limits reset after window
-  - Error messages clear
+  - Error messages clear ("Rate limit exceeded, try again in X minutes")
 
 **Validation**:
 
 - Brute-force attacks mitigated
+- Auth0 rate limits complemented by local limits
 
 **Risk**: Low
 
@@ -1466,24 +1688,37 @@ testing, and minimal risk at each stage.
 **Tasks**:
 
 - Create read-only queries for audit logs:
-  - Recent logins per business
-  - Failed login attempts
-  - Permission changes
-  - Sensitive data access
+  - Recent invitation creation/acceptance events
+  - API key generation/revocation events
+  - Failed authentication attempts (from Auth0 logs if available)
+  - Business-sensitive actions (invoice creation, salary updates)
 - Add GraphQL query:
   ```graphql
   type Query {
-    auditLogs(businessId: ID, userId: ID, action: String, limit: Int): [AuditLog!]! @requiresAuth
+    auditLogs(
+      businessId: ID
+      userId: ID
+      auth0UserId: String
+      action: String
+      limit: Int
+      offset: Int
+    ): AuditLogConnection! @requiresAuth
+  }
+  type AuditLogConnection {
+    nodes: [AuditLog!]!
+    totalCount: Int!
   }
   ```
-- (Optional) Create admin dashboard page
+- (Optional) Create admin dashboard page showing recent logs
 - Add tests:
   - Queries return correct logs
   - RLS enforced (users see only their business logs)
+  - Pagination works
 
 **Validation**:
 
 - Audit trail useful for compliance and investigations
+- Business owners can review security events
 
 **Risk**: Low
 
@@ -1495,25 +1730,33 @@ testing, and minimal risk at each stage.
 
 **Tasks**:
 
-- [ ] All passwords hashed with bcrypt (min 10 rounds)
-- [ ] JWT secrets strong and rotated (min 256-bit)
-- [ ] Refresh tokens stored as hashes only
-- [ ] API keys stored as hashes only
-- [ ] HttpOnly, Secure, SameSite cookies configured
-- [ ] CORS configured correctly (whitelist origins)
-- [ ] Rate limiting on all public endpoints
+- [ ] Auth0 tenant configured correctly:
+  - [ ] RS256 algorithm enforced
+  - [ ] Access token lifetime: 15 minutes
+  - [ ] Refresh token rotation enabled
+  - [ ] Refresh token expiration: 7 days
+  - [ ] Callback URLs whitelisted
+  - [ ] MFA available (optional, can be enabled per-user later)
+- [ ] API keys stored as SHA-256 hashes only
+- [ ] Auth0 access tokens verified with JWKS (no hardcoded secrets)
+- [ ] CORS configured correctly (whitelist origins, not `*`)
+- [ ] Rate limiting on all invitation/API key mutations
 - [ ] RLS enabled on all tenant tables
 - [ ] ESLint rule prevents direct pool access in resolvers
-- [ ] All GraphQL mutations have authorization checks
-- [ ] Audit logs capture all security events
-- [ ] Error messages don't leak sensitive info (e.g., "user not found" vs "invalid credentials")
+- [ ] All GraphQL mutations have role-based authorization checks
+- [ ] Audit logs capture all security events (invitation, API keys, critical actions)
+- [ ] Error messages don't leak sensitive info (e.g., "Invalid credentials" not "User not found")
 - [ ] SQL injection prevented (parameterized queries only)
-- [ ] XSS prevented (no dangerouslySetInnerHTML, CSP headers)
-- [ ] Dependencies audited (`npm audit`, Dependabot)
+- [ ] XSS prevented (no dangerouslySetInnerHTML, CSP headers configured)
+- [ ] Dependencies audited (`npm audit`, Dependabot enabled)
+- [ ] Auth0 Management API credentials stored in secure environment variables (not in code)
+- [ ] Invitation cleanup job scheduled (daily)
+- [ ] HTTPS enforced in production
 
 **Validation**:
 
 - Security checklist 100% complete
+- No Auth0-specific vulnerabilities (token verification bypasses, etc.)
 
 **Risk**: N/A (validation step)
 
@@ -1531,112 +1774,63 @@ testing, and minimal risk at each stage.
   - Measure: p50, p95, p99 latency
 - Establish baselines:
   - GraphQL query latency: < 100ms (p95)
-  - Login mutation: < 500ms (p95)
+  - createInvitation mutation: < 800ms (p95) - includes Auth0 API call
+  - acceptInvitation mutation: < 800ms (p95) - includes Auth0 API call
   - Database query time: < 50ms (p95)
   - RLS overhead: < 20% vs non-RLS
+  - Auth0 JWT verification: < 10ms (JWKS cached)
 - Set up ongoing monitoring:
   - Application metrics (Prometheus/Grafana)
   - Database metrics (pg_stat_statements)
-  - Error rate tracking
+  - Auth0 Management API latency tracking
+  - Error rate tracking (Auth0 rate limits, API failures)
   - Alerts for degradation
 
 **Validation**:
 
 - Performance meets SLAs
+- Auth0 integration doesn't introduce significant latency
 - Monitoring captures issues
 
 **Risk**: Low
 
 ---
 
-## Phase 10: Migration from Legacy System (Week 11-12)
-
-### Step 10.1: Dual-Write Period
-
-**Goal**: Maintain backward compatibility during migration
-
-**Tasks**:
-
-- Implement dual-write for user operations:
-  - Writes go to both new `users` and legacy `legacy_business_users`
-  - Reads prefer new tables, fallback to legacy
-- Add feature flag: `USE_NEW_AUTH_SYSTEM` (default: false)
-- Gradual rollout:
-  - Week 1: Enable for internal users
-  - Week 2: Enable for 10% of businesses
-  - Week 3: Enable for 50% of businesses
-  - Week 4: Enable for 100% of businesses
-- Monitor for issues
-
-**Validation**:
-
-- No data inconsistencies
-- Both systems functional
-
-**Risk**: Medium (data synchronization complexity)
-
----
-
-### Step 10.2: Data Reconciliation
-
-**Goal**: Verify new system matches legacy
-
-**Tasks**:
-
-- Create reconciliation script:
-  - Compare user counts (legacy vs new)
-  - Compare business associations
-  - Flag discrepancies
-- Run daily during dual-write period
-- Fix any inconsistencies found
-
-**Validation**:
-
-- New system complete and accurate
-
-**Risk**: Low
-
----
-
-### Step 10.3: Legacy System Deprecation
-
-**Goal**: Turn off old authentication
-
-**Tasks**:
-
-- Once `USE_NEW_AUTH_SYSTEM` at 100% for 2 weeks:
-  - Stop dual-writes
-  - Archive legacy auth code (don't delete yet)
-  - Update documentation
-- Monitor for 1 week
-- If stable: delete legacy code in follow-up PR
-
-**Validation**:
-
-- New system fully operational
-- No rollback needed
-
-**Risk**: Low (by this point, new system proven)
-
----
-
 ## Summary Metrics
 
-**Total Timeline**: 12 weeks (can be parallelized in some areas)
+**Total Timeline**: 10 weeks (Auth0 integration reduces complexity vs. self-hosted auth)
 
-**Steps**: 60+ individual steps across 10 phases
+**Phases**:
+
+1. **Foundation & Database Schema** (Weeks 1-2): Auth0-compatible database schema with
+   business_users mapping
+2. **Core Database Services** (Week 3): RLS-enforcing DB client and connection pooling
+3. **Row-Level Security** (Week 4): Multi-tenant data isolation at database level
+4. **Auth0 Integration & Context Enrichment** (Week 5): Auth0 Management API, JWT verification,
+   enrichment service
+5. **Role-Based Authorization** (Week 6): Authorization services and GraphQL directives (role-based,
+   no permissions initially)
+6. **Invitation Flow** (Week 7): Pre-registration invitations with Auth0 Management API, cleanup
+   jobs, audit logging
+7. **API Key Management** (Week 8): Generate/list/revoke API keys (independent of Auth0)
+8. **Frontend Integration** (Week 9): Auth0 React SDK, Universal Login, protected routes
+9. **Production Hardening** (Week 10): Cache isolation, rate limiting, security review, performance
+   baseline
+
+**Steps**: 50+ individual steps across 9 phases
 
 **Risk Distribution**:
 
-- Low Risk: 35 steps
-- Medium Risk: 18 steps
-- High Risk: 7 steps
+- Low Risk: 32 steps
+- Medium Risk: 15 steps
+- High Risk: 3 steps (Provider scope audit, Wire authorization into resolvers, Enable RLS on all
+  tables)
 
 **Testing Coverage**:
 
 - Unit tests: Every service/utility function
-- Integration tests: All GraphQL mutations/queries
-- E2E tests: Critical user flows (login, invitation, permissions)
+- Integration tests: All GraphQL mutations/queries, Auth0 Management API interactions
+- E2E tests: Critical user flows (Auth0 login, invitation acceptance, API key usage)
 - Load tests: Production readiness validation
 
 **Key Success Metrics**:
@@ -1646,6 +1840,28 @@ testing, and minimal risk at each stage.
 - 100% security checklist completion
 - All migrations reversible with rollback plans
 - Comprehensive audit trail for all security events
+- Auth0 JWT verification < 10ms (p95)
+- Auth0 Management API calls < 500ms (p95)
+
+**Auth0 Benefits vs. Self-Hosted Auth**:
+
+- **Eliminated Complexity**: No password hashing, JWT signing, email verification, refresh token
+  rotation, password reset flows
+- **Reduced Attack Surface**: Auth0 handles credential storage, eliminating local password breach
+  risk
+- **Built-in Features**: MFA, social logins, breach password detection, anomaly detection available
+  via Auth0 configuration
+- **Compliance**: Auth0 is SOC 2, GDPR, HIPAA compliant out-of-the-box
+- **Email Delivery**: Auth0 handles transactional emails (password setup, verification, reset)
+- **Reduced Timeline**: Estimated 10 weeks vs. 12 weeks for self-hosted solution
+
+**Trade-offs**:
+
+- **External Dependency**: Auth0 downtime affects authentication (mitigated by Auth0's 99.99% SLA)
+- **Cost**: Auth0 pricing based on MAU (Monthly Active Users) - evaluate cost vs. development time
+  savings
+- **Limited Customization**: Email templates, login UI customizable but constrained by Auth0's
+  framework
 
 ---
 
@@ -1657,3 +1873,5 @@ This blueprint should be transformed into:
 2. **Implementation Prompts**: Detailed prompts for LLM code generation (see `prompt_plan.md`)
 3. **Test Plan**: Comprehensive test scenarios for QA
 4. **Deployment Plan**: Staging → Production rollout strategy
+5. **Auth0 Tenant Setup**: Complete Auth0 configuration before starting development
+6. **Documentation**: Auth0 setup guide, troubleshooting, user onboarding flows

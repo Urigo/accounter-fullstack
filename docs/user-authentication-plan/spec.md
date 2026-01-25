@@ -13,55 +13,57 @@
 
 This document outlines the implementation of a new user management system for the Accounter application. The new system will replace the current basic authentication with a robust, secure, and scalable solution featuring personal user accounts, an invitation-based workflow, and granular role-based access control (RBAC).
 
+**Authentication Strategy**: The system uses **Auth0** as an external identity provider for user authentication, handling email/password credentials, JWT token management, session handling, email verification, and future enhancements like MFA and social logins. All user-facing authentication (login, signup, password reset) is delegated to Auth0's Universal Login, while **business authorization, permissions, and API key management remain fully local** to maintain control over multi-tenant access policies and compliance requirements.
+
 ### 2. Requirements
 
-*   **Personal User Accounts**: Users must be able to create and manage their own accounts, separate from business entities.
+*   **Personal User Accounts**: Users must be able to create and manage their own accounts via Auth0, separate from business entities.
 *   **Authentication**:
-    *   Implement email/password-based authentication.
-    *   Use JSON Web Tokens (JWT) for session management.
-    *   **Token Strategy**:
-        *   **Access Token**: Short-lived (e.g., 15 minutes), used for API requests.
-        *   **Refresh Token**: Long-lived (e.g., 7 days), securely stored (HttpOnly cookie) and used to obtain new access tokens. The implementation must store refresh tokens in a dedicated table to support multi-device sessions, rotation, and reuse detection.
-    *   **API Keys**: Implement API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues.
+    *   **Auth0 Integration**: Email/password authentication, credential storage, and user session management are handled by Auth0.
+    *   **JWT Verification**: The GraphQL server must verify Auth0-issued JWTs (RS256 signature) and extract user identity from the `sub` claim.
+    *   **Token Strategy** (Auth0-managed):
+        *   **Access Token**: Short-lived (15 minutes), issued by Auth0, sent by client in `Authorization: Bearer <token>` header, verified by server for API requests. Stored in memory by Auth0 SDK (not in cookies).
+        *   **Refresh Token**: Long-lived (7 days), stored by Auth0 SDK in browser localStorage, used automatically to obtain new access tokens when they expire. Supports multi-device sessions and automatic rotation.
+    *   **API Keys**: Implement local API Key authentication for the `scraper` role to support long-running, automated processes without expiration issues. API keys are fully local and independent of Auth0, sent in `X-API-Key` header.
 *   **User Onboarding**:
     *   New users must be invited to a business by an administrator (`business owner`).
-    *   The invitation process will be manual initially: an admin generates an invitation link and shares it with the user (later we'll add email delivery, not in scope of this plan).
-    *   **Email Verification Strategy**:
-        *   **Invitation Flow**: Email is implicitly verified when user accepts invitation via unique token link (proves email ownership)
-        *   **Email Changes**: If a user updates their email, they must re-verify via a verification token sent to the new address
-        *   **Unverified Account Restrictions**: Users with unverified emails can view data but cannot perform critical actions (issue documents, manage users, etc.)
-        *   **Verification Token Expiry**: Email verification tokens expire after 24 hours to limit attack windows
+    *   **Pre-Registration Invitation Flow**:
+        1. Admin creates invitation → Server generates local user UUID and calls Auth0 Management API to create user with `blocked: true` status
+        2. Auth0 sends password setup email to invited user (Auth0-managed email delivery)
+        3. User sets password via Auth0 link → User attempts login → Auth0 redirects to application
+        4. Server verifies invitation token (single-use), unblocks Auth0 user, links Auth0 ID to local business/role in `business_users` table
+        5. User gains immediate business access upon first login
+    *   **Multi-Business Support**: If user is invited to additional businesses after initial activation, they accept invitations while authenticated, linking new business/role to existing Auth0 account (no additional Auth0 user creation)
+    *   **Email Verification**: Fully managed by Auth0 during password setup flow. Email changes are handled via Auth0's user profile management (out of scope for initial implementation)
+    *   **Invitation Token Security**: Tokens are single-use (marked with `accepted_at` timestamp) and expire after 7 days. Expired invitations trigger cleanup job to delete unused blocked Auth0 accounts
 *   **Roles and Permissions**:
-    *   The system must support the following roles:
+    *   **Roles (In Scope)**: The system must support the following roles with role-based authorization:
         *   `business owner`: Full access, including user management.
         *   `employee`: View-only access to main business info. No access to payroll or other sensitive data. Cannot perform actions/changes.
         *   `accountant`: Almost full access, but cannot issue documents (e.g., invoices).
         *   `scraper`: Can only insert transactions.
-    *   The system must support at least the following permissions, with a design that allows for more to be added easily:
-        *   `manage:users`
-        *   `issue:docs`
-        *   `view:salary`
-        *   `insert:transactions`
+    *   **Granular Permissions (Future Work)**: Detailed permission-based authorization (e.g., `manage:users`, `issue:docs`, `view:salary`, `insert:transactions`) will be implemented in a later phase. The initial implementation uses role-based checks only. However, the database schema includes `permissions`, `role_permissions`, and override tables to support future migration without breaking changes.
 *   **Data-Level Security**: The system must enforce data access restrictions based on the user's role. For example, an `employee` should not be able to view salary information.
     *   **Row-Level Security (RLS)**: Must be implemented at the database level to strictly isolate data between businesses.
 *   **Audit Logging**: The system must verify and record critical security and business actions (e.g., login, user creation, sensitive data access) for compliance and security monitoring.
 *   **Future-Proofing**:
-    *   The architecture should allow for future additions, such as social logins (Google, GitHub) and automated email notifications for invitations.
-    *   **User-Level Multi-Tenancy**: While the database schema (`business_users`) supports users belonging to multiple businesses, the initial implementation will assume a 1:1 relationship or auto-select the first available business context upon login. Full multi-business UI switching is a future enhancement.
-    *   **Multi-Factor Authentication (MFA)**: While out of scope for the initial implementation, the system should be designed with future MFA support (TOTP, etc.) in mind to enhance security for sensitive financial data.
-    *   **Granular Permissions (User & API Key Overrides)**:
-        *   **Initial Implementation**: Permissions derived purely from roles via `role_permissions` table
+    *   **Social Logins**: Auth0 provides built-in support for social identity providers (Google, GitHub, Microsoft, etc.). Enabling social logins requires only Auth0 tenant configuration with zero code changes.
+    *   **Multi-Factor Authentication (MFA)**: Auth0 supports MFA (TOTP, SMS, Push notifications) out of the box. Enabling MFA for high-security accounts requires only Auth0 tenant configuration.
+    *   **Email Customization**: Auth0 email templates can be customized for branding consistency (future enhancement, not in scope for initial implementation).
+    *   **User-Level Multi-Tenancy**: While the database schema (`business_users`) supports users belonging to multiple businesses, the initial implementation provides direct dashboard access to the invited business on first login. Full multi-business UI switching is a future enhancement.
+    *   **Granular Permissions (Future Phase - Not in Current Scope)**:
+        *   **Current Implementation**: Authorization is purely role-based. Authorization services check `authContext.roleId` to determine access rights.
         *   **Future Migration Path** (zero breaking changes):
-            1. Override tables (`user_permission_overrides`, `api_key_permission_overrides`) already exist from initial migration
-            2. Build admin UI to manage permission overrides per user or API key
-            3. `PermissionResolutionService` automatically merges overrides (implementation already complete)
-            4. No changes needed to authorization services (they check pre-resolved `authContext.user.permissions`)
-        *   **Use Cases Enabled**:
+            1. Database tables for permissions infrastructure already exist from initial migration (`permissions`, `role_permissions`, `user_permission_overrides`, `api_key_permission_overrides`)
+            2. Implement `PermissionResolutionService` to map roles to permissions and merge overrides
+            3. Build admin UI to manage permission grants/revokes per user or API key
+            4. Update authorization services to check `authContext.permissions` array instead of role names
+        *   **Use Cases Enabled (Future)**:
             *   "This employee can view salaries for their department only" → Grant `view:salary` + add department filtering in service layer
             *   "This API key can only read transactions, not create them" → Revoke `insert:transactions` from scraper role
             *   "This accountant cannot approve invoices over $10k" → Create custom permission + enforce limit in business logic
-            *   "Temporarily grant this user extra permissions for a migration task" → Add grant with expiry (future enhancement)
-        *   **Parallel Treatment**: Both user accounts and API keys use the same override mechanism, ensuring consistent behavior
+            *   "Temporarily grant this user extra permissions for a migration task" → Add grant with expiry
+        *   **Parallel Treatment**: Both user accounts and API keys will use the same permission resolution mechanism when implemented
 
 ### 3. Architecture and Implementation Details
 
@@ -69,38 +71,33 @@ This document outlines the implementation of a new user management system for th
 
 A new database migration will be created in `packages/migrations/src`. This migration will create the following tables:
 
-*   **`users`**: Stores personal user information.
-    *   `id`: `uuid`, primary key
-    *   `name`: `text`, not null
-    *   `email`: `text`, unique, not null
-    *   `email_verified_at`: `timestamptz`, nullable (NULL until email is verified)
-    *   `created_at`, `updated_at`: `timestamptz`
-*   **`user-accounts`**: Stores authentication-related data, linked to a user.
-    *   `id`: `uuid`, primary key
-    *   `user_id`: `uuid`, foreign key to `users.id`
-    *   `provider`: `provider_enum` (ENUM: 'email', 'google', 'github'), not null
-    *   `password_hash`: `text`, nullable (for non-password providers)
-*   **`user_refresh_tokens`**: Stores refresh tokens per device/session.
-    *   `id`: `uuid`, primary key
-    *   `user_id`: `uuid`, foreign key to `users.id`
-    *   `token_hash`: `text`, not null
+**Note**: User authentication data (`users`, `user_accounts`, `user_refresh_tokens`, `email_verification_tokens`) is fully managed by Auth0 and does not exist in the local database. Only the business-to-user mapping is stored locally.
+
+*   **`business_users`**: Links Auth0 users to businesses and roles (replaces the existing legacy `users` table concept).
+    *   `user_id`: `uuid`, primary key, generated when invitation is created
+    *   `auth0_user_id`: `text`, unique, nullable (populated after first login, stores Auth0 user identifier like `auth0|507f1f77bcf86cd799439011`)
+    *   `business_id`: `uuid`, foreign key to `businesses.id`
+    *   `role_id`: `text`, foreign key to `roles.id`
     *   `created_at`: `timestamptz`
-    *   `expires_at`: `timestamptz`
-    *   `revoked_at`: `timestamptz`, nullable
-    *   `replaced_by_token_id`: `uuid`, nullable (rotation tracking)
+    *   `updated_at`: `timestamptz`
+    *   *Note: This structure supports M:N relationships (one Auth0 user can be linked to multiple businesses). Initial application logic provides direct dashboard access to invited business on first login.*
+    *   Primary key on (`user_id`, `business_id`)
+    *   Unique constraint on `auth0_user_id` (one Auth0 identity maps to one local user_id)
 *   **`roles`**: Defines available roles.
     *   `id`: `text`, primary key (slug, e.g., 'business_owner', 'employee')
     *   `name`: `text`, unique, not null (Display name, e.g., 'Business Owner')
-*   **`permissions`**: Defines available permissions.
+*   **`permissions`**: (Future) Defines available permissions. Not populated initially - authorization uses role checks only.
     *   `id`: `text`, primary key (slug, e.g., 'manage:users', 'issue:docs')
     *   `name`: `text`, unique, not null (Display name, e.g., 'Manage Users')
-*   **`role_permissions`**: Maps permissions to roles.
+    *   Note: Table created in initial migration for future-proofing, but permission-based authorization is out of scope for this phase
+*   **`role_permissions`**: (Future) Maps permissions to roles. Not populated initially.
     *   `role_id`: `text`, foreign key to `roles.id`
     *   `permission_id`: `text`, foreign key to `permissions.id`
     *   Primary key on (`role_id`, `permission_id`)
+    *   Note: Table created in initial migration to avoid schema changes when implementing permission-based authorization later
 *   **`user_permission_overrides`**: (Future) Stores user-specific permission grants/revokes.
     *   `id`: `uuid`, primary key
-    *   `user_id`: `uuid`, foreign key to `users.id`
+    *   `user_id`: `uuid`, foreign key to `business_users.user_id`
     *   `business_id`: `uuid`, foreign key to `businesses.id`
     *   `permission_id`: `text`, foreign key to `permissions.id`
     *   `grant_type`: `grant_type_enum` (ENUM: 'grant', 'revoke')
@@ -115,38 +112,31 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `created_at`: `timestamptz`
     *   Unique constraint on (`api_key_id`, `permission_id`)
     *   Note: Not populated initially, but schema prepared for future granular permissions
-*   **`business_users`**: The existing `users` table should be repurposed or replaced by this join table to link users, businesses, and roles.
-    *   `user_id`: `uuid`, foreign key to `users.id`
-    *   `business_id`: `uuid`, foreign key to `businesses.id`
-    *   `role_id`: `text`, foreign key to `roles.id`
-    *   *Note: This structure supports M:N relationships, but initial application logic will enforce/assume a single active business context per user session.*
-    *   Primary key on (`user_id`, `business_id`)
 *   **`invitations`**: Stores pending user invitations.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id`
     *   `email`: `text`, not null
     *   `role_id`: `text`, foreign key to `roles.id`
     *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
-    *   `expires_at`: `timestamptz`, not null
+    *   `auth0_user_created`: `boolean`, default false (tracks whether Auth0 Management API call succeeded)
+    *   `auth0_user_id`: `text`, nullable (stores Auth0 user ID from pre-registration, used for cleanup)
+    *   `invited_by_user_id`: `uuid`, foreign key to `business_users.user_id` (tracks which admin created the invitation)
+    *   `accepted_at`: `timestamptz`, nullable (single-use token tracking, NULL until accepted)
+    *   `expires_at`: `timestamptz`, not null (typically 7 days from creation)
     *   `created_at`: `timestamptz`
-*   **`email_verification_tokens`**: Stores email verification tokens for existing users.
-    *   `id`: `uuid`, primary key
-    *   `user_id`: `uuid`, foreign key to `users.id`
-    *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
-    *   `expires_at`: `timestamptz`, not null (typically 24 hours from creation)
-    *   `created_at`: `timestamptz`
-    *   Note: Invitation acceptance automatically verifies email; this table is for re-verification or email changes
-*   **`api_keys`**: Stores API keys for the scraper role and other programatic access.
+*   **`api_keys`**: Stores API keys for the scraper role and other programmatic access.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id` (API keys are linked to a business, not a specific human user)
-    *   `role_id`: `text`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper_production')
+    *   `role_id`: `text`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper')
     *   `key_hash`: `text`, not null, unique (store hashed version of the key)
     *   `name`: `text` (e.g., "Production Scraper")
-    *   `last_used_at`: `timestamptz` (optional, for auditing - updated hourly, to prevent write amplification)
+    *   `last_used_at`: `timestamptz` (optional, for auditing - updated hourly to prevent write amplification)
+    *   `created_at`: `timestamptz`
 *   **`audit_logs`**: Stores a trail of critical actions for security and compliance.
     *   `id`: `uuid`, primary key
     *   `business_id`: `uuid`, foreign key to `businesses.id`, nullable
-    *   `user_id`: `uuid`, foreign key to `users.id`, nullable (nullable to support system actions or failed logins)
+    *   `user_id`: `uuid`, foreign key to `business_users.user_id`, nullable (nullable to support system actions or failed logins)
+    *   `auth0_user_id`: `text`, nullable (stores Auth0 identity for audit trail)
     *   `action`: `text`, not null (e.g., 'USER_LOGIN', 'INVOICE_UPDATE', 'PERMISSION_CHANGE')
     *   `entity`: `text`, nullable (e.g., 'Invoice', 'User')
     *   `entity_id`: `text`, nullable (ID of the affected record)
@@ -443,7 +433,7 @@ export const createGraphQLContext = async (request, pool, auth) => {
     *   **Total Downtime**: < 10 seconds per large table
 
 *   **Migration Naming Collision Resolution**:
-    *   The current `accounter_schema.users` table is actually a businesses table and MUST be renamed before creating the new personal users table:
+    *   The current `accounter_schema.users` table is actually a businesses table and MUST be renamed before creating the new `business_users` table:
 
 ```sql
 -- Pre-migration: 2026-01-20-rename-users-to-legacy-businesses.sql
@@ -451,52 +441,106 @@ ALTER TABLE accounter_schema.users RENAME TO legacy_business_users;
 -- Postgres automatically updates FK constraints
 
 -- Main migration: 2026-01-21-create-user-auth-system.sql
-CREATE TABLE accounter_schema.users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
+-- Note: No 'users' table created (managed by Auth0)
+CREATE TABLE accounter_schema.business_users (
+  user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auth0_user_id TEXT UNIQUE,  -- Populated on first login
+  business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id),
+  role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT business_users_pk PRIMARY KEY (user_id, business_id)
 );
--- ... other auth tables ...
+-- ... other tables (roles, permissions, invitations, api_keys, audit_logs) ...
 
 -- Post-migration: 2026-01-22-backfill-business-users.sql
-INSERT INTO accounter_schema.users (id, name, email, created_at)
-SELECT gen_random_uuid(), name, name || '@legacy.local', created
-FROM accounter_schema.legacy_business_users;
-
-INSERT INTO accounter_schema.business_users (user_id, business_id, role_id)
-SELECT u.id, lbu.id, 'business_owner'
-FROM accounter_schema.users u
-JOIN accounter_schema.legacy_business_users lbu ON u.name = lbu.name;
+-- Optional: Migrate existing legacy business owners to new system
+-- Note: This creates local user_id entries without Auth0 accounts
+-- Actual Auth0 accounts created when admins invite these users
+INSERT INTO accounter_schema.business_users (user_id, business_id, role_id, auth0_user_id)
+SELECT gen_random_uuid(), lbu.id, 'business_owner', NULL
+FROM accounter_schema.legacy_business_users lbu;
 ```
 
 #### 3.3. GraphQL API (`packages/server`)
 
 A new `auth` module will be created under `packages/server/src/modules`.
 
+**Note**: Authentication mutations (`login`, `signup`, `password reset`) are fully handled by Auth0 Universal Login and do not exist in the GraphQL API. The server's role is limited to JWT verification, Auth0 user pre-registration during invitations, and business/role authorization.
+
 *   **Schema (`schema.graphql`)**:
     *   **Audit Service**: Implement a dedicated `AuditService` to handle log ingestion.
         *   Should be called asynchronously to avoid blocking user requests.
-        *   Must be integrated into critical flows: `login`, `logout`, `inviteUser`, `acceptInvitation`, `generateApiKey`, `revokeApiKey`.
-        *   Should be reusable by other modules for business logic events (e.g., `createInvoice`).
-    *   **Types**: `AuthPayload { token: String! }`, `User`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`.
+        *   Must be integrated into critical flows: invitation creation, invitation acceptance, API key generation/revocation, and business logic events (e.g., `createInvoice`).
+        *   Should log both `user_id` (local UUID) and `auth0_user_id` (Auth0 identity) for complete audit trail.
+    *   **Types**: `User { id: ID!, email: String!, businesses: [BusinessRole!]! }`, `BusinessRole { businessId: ID!, businessName: String!, role: Role! }`, `Role`, `Permission`, `ApiKey { id: ID!, name: String!, lastUsedAt: String, createdAt: String! }`, `GenerateApiKeyPayload { apiKey: String! }`, `InvitationPayload { invitationUrl: String!, email: String!, expiresAt: String! }`.
     *   **Mutations**:
-        *   `inviteUser(email: String!, role: String!, businessId: ID!): String!` - Returns an invitation URL. Authorization checked in service layer (requires `manage:users` permission + verified email).
-        *   `acceptInvitation(token: String!, name: String!, password: String!): AuthPayload!` - Creates a new user, **auto-verifies their email** (sets `email_verified_at = NOW()`), and sets the JWT cookies (Access & Refresh).
-        *   `login(email: String!, password: String!): AuthPayload!` - Authenticates a user and sets the JWT cookies (Access & Refresh).
-        *   `requestEmailVerification`: String! - Generates a verification token for the current user's email. Returns success message. Requires authentication.
-        *   `verifyEmail(token: String!): Boolean!` - Validates the verification token and sets `email_verified_at`. Returns true on success.
-        *   `updateEmail(newEmail: String!, password: String!): String!` - Updates user email, **clears `email_verified_at`**, generates verification token. Requires password confirmation.
-        *   `refreshToken`: AuthPayload! - Uses the Refresh Token cookie to generate a new Access Token.
-        *   `logout`: Invalidates the session by clearing the cookies and removing the refresh token from the DB.
-        *   `generateApiKey(businessId: ID!, name: String!): GenerateApiKeyPayload!` - Generates a new API key for the `scraper` role linked to the specified business. Restricted to `business owner`.
+        *   `createInvitation(email: String!, role: String!, businessId: ID!): InvitationPayload!` - **Auth0 Integration**: (1) Generates secure invitation token and local `user_id` UUID, (2) Calls Auth0 Management API to create user with `blocked: true` and `app_metadata: { invitation_id, business_id, invited_by }`, (3) Stores invitation in DB with `auth0_user_created: true` and `auth0_user_id`, (4) Returns invitation URL. **Error Handling**: Detects Auth0 rate limits (429) and returns user-friendly error, fails immediately on other Auth0 errors with transaction rollback. Authorization: requires `manage:users` permission.
+        *   `acceptInvitation(token: String!): Boolean!` - **Auth0 Integration**: (1) Validates token is unused (`accepted_at IS NULL`) and not expired, (2) Marks token with `accepted_at = NOW()` (single-use), (3) Calls Auth0 Management API to unblock user (first acceptance only, subsequent invitations skip unblocking), (4) Updates `business_users.auth0_user_id` with Auth0 `sub` claim from authenticated context, (5) Returns success. **Must be called while authenticated** (user logged in via Auth0 after password setup). For first invitation: user completes Auth0 password setup → logs in → app calls this mutation. For additional businesses: authenticated user accepts invitation to link another business.
+        *   `generateApiKey(businessId: ID!, name: String!, roleId: String!): GenerateApiKeyPayload!` - Generates a new API key for programmatic access linked to the specified business. Restricted to `business owner`.
         *   `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
 *   **Services and Resolvers**:
-    *   **JWT Generation & Verification**: Use the `@graphql-yoga/plugin-jwt` for handling JWTs. This plugin will be configured to sign tokens on login/invitation acceptance and to verify them on every request. The Access Token payload should contain `userId`, `email`, `roles`, `permissions` (resolved via `PermissionResolutionService`), and a short expiration (`exp`).
-    *   **Password Hashing**: Use `bcrypt` to hash and compare passwords.
-    *   **Permission Resolution Service** (Future-Proof Design):
-        *   Create a unified `PermissionResolutionService` that works identically for both user JWT and API key authentication:
+    *   **Auth0 JWT Verification**: Use `jose` library to verify RS256-signed JWTs from Auth0. Configure middleware to:
+        1. Extract JWT from `Authorization: Bearer <token>` header
+        2. Verify signature using Auth0's JWKS endpoint (`https://<tenant>.auth0.com/.well-known/jwks.json`)
+        3. Validate `iss` (issuer), `aud` (audience), and `exp` (expiration) claims
+        4. Extract `sub` claim (Auth0 user ID like `auth0|507f1f77bcf86cd799439011`)
+    *   **Auth0 Management API Integration**: Create `Auth0ManagementService` to handle user lifecycle:
+        *   **Get M2M Access Token**: Use client credentials flow with Auth0 Management API to obtain access token (cache for 24 hours)
+        *   **Create User**: `POST /api/v2/users` with payload `{ email, blocked: true, connection: 'Username-Password-Authentication', app_metadata: { invitation_id, business_id, invited_by } }`
+        *   **Unblock User**: `PATCH /api/v2/users/{auth0_user_id}` with payload `{ blocked: false }`
+        *   **Delete User**: `DELETE /api/v2/users/{auth0_user_id}` (for expired invitations cleanup)
+        *   **Rate Limit Handling**: Detect 429 responses, extract `X-RateLimit-Reset` header, return user-friendly error with retry-after time
+    *   **GraphQL Context Enrichment**: After Auth0 JWT verification, enrich GraphQL context with local user data:
+
+```typescript
+@Injectable({ scope: Scope.Operation })
+export class AuthContextEnricher {
+  constructor(
+    private db: TenantAwareDBClient,
+    private permissionResolver: PermissionResolutionService
+  ) {}
+
+  async enrichContext(auth0UserId: string): Promise<AuthContext> {
+    // Map Auth0 user ID to local user_id and fetch business/role data
+    const { rows } = await this.db.query(`
+      SELECT user_id, business_id, role_id
+      FROM accounter_schema.business_users
+      WHERE auth0_user_id = $1
+      LIMIT 1
+    `, [auth0UserId]);
+
+    if (rows.length === 0) {
+      throw new GraphQLError('User not linked to any business', {
+        extensions: { code: 'FORBIDDEN' }
+      });
+    }
+
+    const { user_id, business_id, role_id } = rows[0];
+
+    // Note: Permission resolution is future work - current implementation uses role-based checks
+    // When permissions are implemented, add: permissions = await this.permissionResolver.resolvePermissions(...)
+
+    return {
+      auth0UserId: auth0UserId,
+      userId: user_id,
+      businessId: business_id,
+      roleId: role_id,
+      authType: 'user'
+    };
+  }
+}
+```
+
+    *   **API Key Authentication**: Remains fully local (no Auth0 involvement):
+        *   Extract API key from `X-API-Key` header
+        *   Hash and lookup in `api_keys` table
+        *   Fetch associated `business_id` and `role_id`
+        *   Set `authContext.authType = 'apiKey'`, `authContext.roleId = role_id`, `authContext.businessId = business_id`
+        *   Note: Permission resolution is future work - current implementation uses role-based checks
+    *   **Permission Resolution Service** (Future Implementation - Not in Current Scope):
+        *   When permission-based authorization is implemented in a future phase, create a unified `PermissionResolutionService` that works identically for both user JWT and API key authentication:
+        *   Note: For the initial implementation, authorization checks use `authContext.roleId` directly (e.g., `if (roleId === 'business_owner')` or `if (!['business_owner', 'accountant'].includes(roleId))`)
 
 ```typescript
 @Injectable({ scope: Scope.Operation })
@@ -577,122 +621,60 @@ interface PermissionOverride {
 }
 ```
 
-    *   **Benefits of Unified Resolution**:
-        *   Both users and API keys use identical permission resolution logic
+    *   **Benefits of Unified Resolution** (When Implemented):
+        *   Both users and API keys will use identical permission resolution logic
         *   Adding granular permissions later only requires:
-            1. Populating override tables via admin UI
-            2. No code changes (service already queries override tables)
-        *   Permission checks in authorization services always reference `authContext.user.permissions` (pre-resolved)
+            1. Implementing `PermissionResolutionService` to query permissions and override tables
+            2. Seeding initial permission data into `permissions` and `role_permissions` tables
+            3. Updating authorization services to check `authContext.permissions` array instead of `authContext.roleId`
+            4. Populating override tables via admin UI for edge cases
         *   Consistent behavior across all authentication methods
-    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. This token would have a strict expiration (72 hours) enforced by the database or application logic to prevent brute-force attacks.
-    *   **`inviteUser`**: Generates a cryptographically secure random token, stores it in the `invitations` table with an expiration (72 hours), and returns a URL like `/accept-invitation?token=...`.
-    *   **`acceptInvitation`**: Validates the token, checks for expiration, creates records in the `users` and `user-accounts` tables with `email_verified_at = NOW()` (invitation acceptance proves email ownership), links the user to the business in `business_users`, deletes the invitation, and sets the auth cookies.
-    *   **`requestEmailVerification`**: Generates a secure verification token, stores it in `email_verification_tokens` with 24-hour expiry, returns success message (in future, will trigger email delivery).
-    *   **`verifyEmail`**: Validates token from `email_verification_tokens`, sets `users.email_verified_at = NOW()`, deletes the token.
-    *   **`updateEmail`**: Validates current password, updates `users.email`, sets `email_verified_at = NULL`, generates new verification token, returns success message.
-    *   **`login`**: Authenticates credentials. On success, generates a generic Refresh Token (random string) and an Access Token (JWT).
-        *   *Context Note*: The login process identifies the user's associated business (via `business_users`). If multiple exist, it selects the first one default. The resulting JWT includes this specific `businessId`.
-        *   Resolves permissions using `PermissionResolutionService.resolvePermissions({ type: 'user', userId, businessId, roleId })` and embeds them in JWT payload.
-        *   Stores the hash of the Refresh Token in `user_refresh_tokens`. Sets both as `HttpOnly` cookies.
-    *   **Refresh Token Rotation Service** (with reuse detection):
-
-```typescript
-export class RefreshTokenService {
-  constructor(private dbProvider: DBProvider) {}
-  
-  async rotateToken(oldTokenHash: string, userId: string) {
-    const client = await this.dbProvider.pool.connect();
-    try {
-      await client.query('BEGIN');
-      
-      const { rows } = await client.query(`
-        SELECT id, revoked_at, replaced_by_token_id, expires_at
-        FROM accounter_schema.user_refresh_tokens
-        WHERE token_hash = $1 AND user_id = $2
-      `, [oldTokenHash, userId]);
-      
-      if (rows.length === 0 || new Date(rows[0].expires_at) < new Date()) {
-        await client.query('ROLLBACK');
-        return null; // Invalid or expired
-      }
-      
-      const oldToken = rows[0];
-      
-      // REUSE DETECTION: If token was already rotated, this is a replay attack
-      if (oldToken.replaced_by_token_id) {
-        console.error('[SECURITY] Token reuse detected for user', userId);
-        await client.query(`
-          UPDATE accounter_schema.user_refresh_tokens
-          SET revoked_at = NOW()
-          WHERE id = $1 OR id = $2
-        `, [oldToken.id, oldToken.replaced_by_token_id]);
-        await client.query('COMMIT');
-        return null; // Force re-login
-      }
-      
-      if (oldToken.revoked_at) {
-        await client.query('ROLLBACK');
-        return null;
-      }
-      
-      // Generate new token
-      const newRefreshToken = crypto.randomBytes(32).toString('hex');
-      const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
-      
-      const { rows: newRows } = await client.query(`
-        INSERT INTO accounter_schema.user_refresh_tokens
-          (user_id, token_hash, expires_at)
-        VALUES ($1, $2, NOW() + INTERVAL '7 days')
-        RETURNING id
-      `, [userId, newRefreshTokenHash]);
-      
-      // Mark old token as replaced (not revoked, for reuse detection)
-      await client.query(`
-        UPDATE accounter_schema.user_refresh_tokens
-        SET replaced_by_token_id = $1
-        WHERE id = $2
-      `, [newRows[0].id, oldToken.id]);
-      
-      await client.query('COMMIT');
-      
-      const newAccessToken = this.jwtService.sign({ sub: userId, /* ... */ });
-      return { newAccessToken, newRefreshToken };
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  }
-}
-```
-
+    *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. Tokens have a 7-day expiration enforced by database constraint.
+    *   **`createInvitation` Implementation**:
+        1. Validate email format and check for duplicate pending invitations
+        2. Generate local `user_id` UUID and secure invitation token
+        3. Call Auth0 Management API to create user with `blocked: true`, store `invitation_id` in `app_metadata`
+        4. Handle Auth0 errors: 429 rate limit → return retry-after message, other errors → rollback transaction
+        5. Insert invitation record with `auth0_user_created: true` and `auth0_user_id`
+        6. Return invitation URL: `/accept-invitation?token=...`
+    *   **`acceptInvitation` Implementation** (requires authenticated session):
+        1. Verify invitation token exists and `accepted_at IS NULL` (unused) and not expired
+        2. Extract `auth0_user_id` from GraphQL context (user already authenticated via Auth0)
+        3. Mark invitation as used: `UPDATE invitations SET accepted_at = NOW()`
+        4. Check if this is user's first invitation acceptance (query `business_users` for existing `auth0_user_id`)
+        5. If first acceptance: Call Auth0 Management API to unblock user (`PATCH /api/v2/users/{id}` with `blocked: false`)
+        6. Insert or update `business_users` row linking Auth0 ID to business/role
+        7. Return success
+    *   **Invitation Cleanup Job** (background task, runs daily):
+        1. Query expired invitations: `SELECT * FROM invitations WHERE auth0_user_created = true AND accepted_at IS NULL AND expires_at < NOW()`
+        2. For each expired invitation: Check if Auth0 user has any other valid invitations
+        3. If no valid invitations remain: Call Auth0 Management API `DELETE /api/v2/users/{auth0_user_id}`
+        4. Mark invitation as cleaned (or delete record)
     *   **API Key Management**:
         *   **Generation**: Use `crypto.randomBytes(32).toString('hex')` to create a unique 64-character key. Hash it with `bcrypt` before storing in `api_keys.key_hash`.
         *   **Return Value**: Return the plain key to the user **only once** on creation. Display a warning that it cannot be retrieved again.
         *   **Validation**: On each API request with an `X-API-Key` header:
             1. Hash the provided key and query `api_keys` for a match
-            2. If found and not revoked, resolve permissions via `PermissionResolutionService.resolvePermissions({ type: 'apiKey', apiKeyId, businessId, roleId })`
-            3. Attach the resolved `permissions`, `businessId`, and `roleId` to the GraphQL context (identical structure to JWT auth)
+            2. If found and not revoked, fetch associated `business_id` and `role_id`
+            3. Attach `roleId`, `businessId`, and `authType: 'apiKey'` to the GraphQL context
         *   **Audit**: Log key generation and usage in `audit_logs`.
-        *   **Future Granular Permissions**: API key owners can grant/revoke specific permissions via `api_key_permission_overrides` table, independently of the base role
-    *   **`refreshToken`**: Validates the Refresh Token from the cookie, generates a new Access Token, and optionally rotates the Refresh Token (security best practice).
-    *   **`logout`**: Clears the cookies and marks the current Refresh Token as revoked in `user_refresh_tokens`.
+        *   **Note**: Permission-based validation is future work - current implementation uses role-based checks
 *   **Authorization Strategy (Layered Defense)**:
     *   **Layer 1 - Database RLS**: Primary security boundary. Automatically filters all queries by `business_id`.
     *   **Layer 2 - GraphQL Directives**: Simple, static checks only.
-    *   **Layer 3 - Service Layer**: Complex, data-dependent authorization.
+    *   **Layer 3 - Service Layer**: Complex, data-dependent authorization and business rules.
+    *   **Note**: Granular permission-based authorization is future work. Current implementation uses role-based checks (`authContext.roleId`).
 
 *   **GraphQL Directives (Minimal Use)**:
-    *   `@requiresAuth`: Ensures user is authenticated (JWT valid). Use on all protected queries/mutations.
-    *   `@requiresVerifiedEmail`: Checks `authContext.user.emailVerifiedAt` is not null. Use on critical mutations (issue documents, manage users, financial operations).
-    *   `@requiresRole(role: String!)`: Simple role check (e.g., `@requiresRole(role: "business_owner")`). Use sparingly for admin-only operations.
-    *   **Do NOT use directives for**: Resource ownership checks, data-dependent permissions, complex business rules.
+    *   `@requiresAuth`: Ensures user is authenticated (Auth0 JWT valid or API key valid). Use on all protected queries/mutations.
+    *   `@requiresRole(role: String!)`: Role-based access check (e.g., `@requiresRole(role: "business_owner")`). Primary authorization mechanism for this phase.
+    *   **Do NOT use directives for**: Resource ownership checks, data-dependent business rules, complex authorization logic.
 
 *   **AuthorizationService Pattern** (Service Layer):
     *   Create dedicated authorization services per domain:
         *   `ChargesAuthService.canEdit(userId, chargeId)`: Checks charge ownership via RLS query
-        *   `DocumentsAuthService.canIssue(userId, businessId)`: Checks role permissions + email verification
+        *   `DocumentsAuthService.canIssue(userId, businessId)`: Checks role (e.g., `business_owner` or `accountant` only)
+        *   `UsersAuthService.canManage(userId)`: Checks role is `business_owner`
         *   `UsersAuthService.canManage(userId, targetUserId)`: Prevents self-role-changes, checks hierarchy
     *   **Implementation Pattern**:
 
@@ -705,10 +687,10 @@ export class ChargesAuthService {
   ) {}
 
   async canEdit(chargeId: string): Promise<void> {
-    // Email verification check
-    if (!this.authContext.user?.emailVerifiedAt) {
-      throw new GraphQLError('Email verification required', {
-        extensions: { code: 'EMAIL_NOT_VERIFIED' },
+    // Role-based authorization (permission-based checks are future work)
+    if (!['business_owner', 'accountant'].includes(this.authContext.roleId)) {
+      throw new GraphQLError('Insufficient privileges to edit charges', {
+        extensions: { code: 'FORBIDDEN' },
       });
     }
 
@@ -720,13 +702,6 @@ export class ChargesAuthService {
 
     if (rows.length === 0) {
       throw new GraphQLError('Charge not found or access denied', {
-        extensions: { code: 'FORBIDDEN' },
-      });
-    }
-
-    // Additional business logic checks
-    if (!this.authContext.user.permissions.includes('edit:charges')) {
-      throw new GraphQLError('Insufficient permissions', {
         extensions: { code: 'FORBIDDEN' },
       });
     }
@@ -765,12 +740,6 @@ export class DocumentsService {
     }
 
     // Email verification for critical operations
-    if (!this.authContext.user.emailVerifiedAt) {
-      throw new GraphQLError('Email verification required for document issuance', {
-        extensions: { code: 'EMAIL_NOT_VERIFIED' },
-      });
-    }
-
     // RLS ensures business_id is automatically filtered
     return this.db.query('INSERT INTO documents ...');
   }
@@ -782,7 +751,7 @@ export class DocumentsService {
 *   **Authorization Architecture Principles**:
     *   **Never trust client input for authorization**: `businessId` in mutations is data, not auth context
     *   **RLS is the primary enforcement**: All tenant isolation happens at database level
-    *   **Directives for simple checks only**: Authentication, email verification, basic roles
+    *   **Directives for simple checks only**: Authentication, basic roles
     *   **Service layer for complex authorization**: Resource ownership, data-dependent permissions, business rules
     *   **Fail closed**: Deny access by default; explicit grants only
 
@@ -828,22 +797,66 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
 
 #### 3.4. Client Application (`packages/client`)
 
+**Note**: All login, signup, and password management flows are handled by Auth0 Universal Login. The client application does not implement custom login forms.
+
+*   **Auth0 SDK Integration** (`@auth0/auth0-react`):
+    *   Wrap the application in `<Auth0Provider>` with configuration:
+        *   `domain`: Auth0 tenant domain (e.g., `accounter.auth0.com`)
+        *   `clientId`: Auth0 Application Client ID
+        *   `redirectUri`: Application callback URL (e.g., `http://localhost:3000/callback`)
+        *   `audience`: GraphQL API identifier configured in Auth0
+        *   `scope`: `openid profile email`
+        *   `cacheLocation`: `localstorage` for persistence across page reloads
+        *   `useRefreshTokens`: `true` for silent authentication
+    *   Use `useAuth0()` hook to access authentication state:
+        *   `isAuthenticated`: Boolean indicating login status
+        *   `user`: Auth0 user profile (email, name, sub)
+        *   `loginWithRedirect()`: Triggers Auth0 Universal Login
+        *   `logout()`: Clears Auth0 session and local state
+        *   `getAccessTokenSilently()`: Retrieves valid JWT for API requests
+
 *   **UI Components**:
-    *   Modify the existing `login-page.tsx` component. The form should be updated to use `email` instead of `username`, and the `onSubmit` handler should be adapted to call the new `login` GraphQL mutation.
-    *   Create a new screen/page for `Accept Invitation` (`/accept-invitation`).
-    *   Create a form for admins to invite new users.
-    *   **Admin Settings**: Add a section in the Business Settings for administrators (`business owner`) to manage API keys.
-        *   Allow generating new keys for the `scraper` role.
-        *   Display the generated key **only once**.
-        *   List active keys (showing name, creation date, last used) and allow revocation.
-*   **Token Storage & State Management**:
-    *   **Cookie-Based Auth**: The server will set the JWT in an `HttpOnly`, `Secure`, `SameSite` cookie upon successful login or invitation acceptance. This prevents client-side JavaScript from accessing the token, mitigating XSS attacks.
-    *   **CSRF Protection**: To counter Cross-Site Request Forgery (CSRF) attacks (which cookies are vulnerable to), the server's CSRF prevention plugin must be enabled and configured.
-    *   **Client State**: The client will use React Context to track the user's *authentication status* (e.g., `isLoggedIn`, `currentUser`), but it will **not** manage the raw JWT string.
-*   **Networking**:
-    *   The Urql client does not need to manually attach the `Authorization` header (since the cookie is sent automatically by the browser). Instead, ensure `credentials: 'include'` is set in the Urql configuration.
-*   **Routing**:
-    *   Implement a "protected route" component that wraps pages requiring authentication. If the user is not authenticated, they should be redirected to the `/login` page.
+    *   **Login Page** (`/login`): Simple page with "Login" button that calls `loginWithRedirect()`
+    *   **Callback Page** (`/callback`): Handles Auth0 redirect after login, completes authentication handshake, redirects to dashboard or invitation acceptance flow
+    *   **Accept Invitation Page** (`/accept-invitation?token=...`):
+        1. Check if user is authenticated via `useAuth0().isAuthenticated`
+        2. If not authenticated: Show "You've been invited to X" message with "Login to Accept" button that calls `loginWithRedirect({ appState: { returnTo: '/accept-invitation?token=...' } })`
+        3. If authenticated: Automatically call `acceptInvitation` mutation with token from URL, handle success/error
+        4. On success: Redirect to business dashboard with direct access (first-time login UX)
+    *   **Invite User Form** (Admin Settings): Form for `business owner` to create invitations (email, role selection), calls `createInvitation` mutation, displays invitation URL with copy button
+    *   **API Key Management** (Admin Settings):
+        *   Allow generating new keys for the `scraper` role
+        *   Display the generated key **only once** with copy button
+        *   List active keys (showing name, creation date, last used) and allow revocation
+
+*   **Token Management & GraphQL Integration**:
+    *   **Automatic Token Injection**: Configure Urql to automatically attach Auth0 JWT to requests:
+        ```typescript
+        const client = createClient({
+          url: '/graphql',
+          fetchOptions: async () => {
+            const token = await getAccessTokenSilently();
+            return {
+              headers: { Authorization: `Bearer ${token}` },
+              credentials: 'include'
+            };
+          }
+        });
+        ```
+    *   **Token Refresh**: Auth0 SDK handles automatic token refresh via refresh tokens stored in local storage (no manual refresh mutation needed)
+    *   **Session Persistence**: Auth0 SDK maintains session across page reloads using refresh tokens
+
+*   **Business Context Selection** (Multi-Business Support):
+    *   After successful login, query GraphQL API for user's businesses: `query { me { businesses { businessId, businessName, role } } }`
+    *   If user belongs to multiple businesses, show business selector UI
+    *   Store selected `businessId` in React Context (does NOT go into JWT - business context is server-side only)
+    *   On business switch, refetch all data to update UI with new business context
+
+*   **Routing & Protected Routes**:
+    *   Implement `<ProtectedRoute>` component that checks `useAuth0().isAuthenticated`
+    *   If not authenticated, redirect to `/login`
+    *   If authenticated but no business context, redirect to business selection
+    *   Wrap all authenticated pages (dashboard, reports, etc.) in `<ProtectedRoute>`
 
 #### 3.4.1. Frontend State & Cache Safety (Urql Graphcache)
 
@@ -852,37 +865,51 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
 
 ### 4. Error Handling
 
-*   **Authentication Errors**: The GraphQL API should return standard `UNAUTHENTICATED` errors if a user's token is missing, invalid, or expired. The client should catch this error and redirect to the login page.
+*   **Authentication Errors**: 
+    *   The GraphQL API returns `UNAUTHENTICATED` errors if Auth0 JWT is missing, invalid, expired, or signature verification fails
+    *   Client catches this error and calls `loginWithRedirect()` to trigger Auth0 login
 *   **Authorization Errors**: The API should return `FORBIDDEN` errors if a user attempts to perform an action they do not have permission for. The client should handle this gracefully, displaying an error message to the user.
-*   **Email Verification Errors**: The API should return `FORBIDDEN` with code `EMAIL_NOT_VERIFIED` when unverified users attempt protected actions. The client should display a prominent banner prompting email verification.
-*   **Invitation Errors**: The `acceptInvitation` mutation should handle cases where the token is invalid or expired, returning a clear error message.
-*   **Verification Token Errors**: The `verifyEmail` mutation should handle expired or invalid tokens with specific error codes (`TOKEN_EXPIRED`, `TOKEN_INVALID`) to guide user action.
+*   **Auth0 Integration Errors**:
+    *   **Rate Limit (429)**: Return error with `extensions: { code: 'AUTH0_RATE_LIMIT', retryAfter: seconds }`, client displays "Please try again in X seconds"
+    *   **Auth0 API Failure**: Return generic error "Unable to process invitation at this time", log details server-side
+    *   **User Already Exists**: Return error "User with this email already exists", client suggests using existing account
+*   **Invitation Errors**: 
+    *   The `acceptInvitation` mutation should handle cases where:
+        *   Token is invalid or not found: `INVITATION_NOT_FOUND`
+        *   Token already used (`accepted_at` not null): `INVITATION_ALREADY_USED`
+        *   Token expired: `INVITATION_EXPIRED`
+        *   User not authenticated: `UNAUTHENTICATED` with message "Please log in to accept invitation"
 
 ### 5. Testing Plan
 
 *   **Backend (Unit/Integration Tests)**:
-    *   Test the `inviteUser`, `acceptInvitation`, and `login` mutations with valid and invalid inputs.
-    *   Test **Email Verification Flow**:
-        *   Verify `acceptInvitation` sets `email_verified_at` automatically
-        *   Verify `requestEmailVerification` generates valid token with 24-hour expiry
-        *   Verify `verifyEmail` updates `email_verified_at` and deletes token
-        *   Verify expired tokens are rejected
-        *   Verify `updateEmail` clears verification status and generates new token
-    *   Test password hashing and JWT generation/validation logic.
+    *   Test the `createInvitation` and `acceptInvitation` mutations with valid and invalid inputs
+    *   **Auth0 Integration Tests** (with mocked Auth0 Management API):
+        *   Verify `createInvitation` calls Auth0 API with correct payload (`blocked: true`, email, `app_metadata`)
+        *   Verify `createInvitation` handles Auth0 rate limits (429) and returns user-friendly error
+        *   Verify `createInvitation` rollback on Auth0 API failure
+        *   Verify `acceptInvitation` calls Auth0 API to unblock user on first acceptance
+        *   Verify `acceptInvitation` skips unblock for subsequent business invitations
+        *   Verify invitation cleanup job deletes blocked Auth0 users for expired invitations
+    *   **Auth0 JWT Verification Tests**:
+        *   Verify middleware correctly validates RS256 signatures using JWKS
+        *   Verify middleware rejects expired tokens
+        *   Verify middleware rejects tokens with invalid `iss` or `aud` claims
+        *   Verify context enrichment maps Auth0 user ID to local `user_id` correctly
     *   Test **API Key authentication**: verify that a valid API key in the header authenticates the user, and an invalid one fails.
-    *   Test the `auth-plugin`'s ability to correctly parse tokens and attach user context.
-    *   Test **Audit Logging**: verify that critical actions (login, invite) create corresponding records in the `audit_logs` table.
+    *   Test **Audit Logging**: verify that critical actions (invitation creation/acceptance, API key generation) create corresponding records in the `audit_logs` table with both `user_id` and `auth0_user_id`.
     *   Test **Authorization Services**:
         *   Verify `ChargesAuthService.canEdit()` rejects charges from other businesses (RLS enforcement)
-        *   Verify `DocumentsAuthService.canIssue()` checks both permissions and email verification
+        *   Verify `DocumentsAuthService.canIssue()` checks permissions
         *   Verify `UsersAuthService.canManage()` prevents privilege escalation
     *   Test the RBAC logic: ensure users can only access data and perform actions allowed by their roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific restrictions.
     *   Test **Cross-Tenant Isolation**: Attempt to access resources from Business A while authenticated to Business B (must fail at RLS layer).
-    *   Test **Email Verification Enforcement**: verify that unverified users are blocked from critical mutations (issue documents, manage users) with `EMAIL_NOT_VERIFIED` error.
+    *   **Note**: Permission-based authorization tests are out of scope for this phase. Focus on role-based checks (e.g., verify `business_owner` can manage users, `employee` cannot).
 *   **Client (Component/E2E Tests)**:
-    *   Test the login and invitation acceptance forms.
-    *   Test that the JWT is correctly stored and sent with API requests.
-    *   Test the protected route logic, ensuring unauthorized users are redirected.
+    *   Test Auth0 login flow with mock Auth0 provider
+    *   Test invitation acceptance requiring authentication
+    *   Test that the Auth0 JWT is correctly attached to API requests via Authorization header
+    *   Test the protected route logic, ensuring unauthorized users trigger Auth0 login
     *   Test that UI elements for restricted actions (e.g., "Manage Users" button) are hidden for users without the necessary permissions.
 
 ### 6. Transition State Management (Dual-Write & Defaulting)
@@ -904,15 +931,15 @@ export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = 
 ### 7. Auth/Tenant Context Interfaces
 
 ```ts
-export type AuthType = "jwt" | "apiKey" | "system";
+export type AuthType = "user" | "apiKey" | "system";
 
 export interface AuthUser {
-    userId: string;
-    email: string;
-    emailVerifiedAt: number | null;  // Unix timestamp or null if unverified
-    roles: string[];
-    permissions: string[];
-    permissionsVersion: number;
+    userId: string;               // Local UUID from business_users table
+    auth0UserId: string;          // Auth0 identifier (e.g., "auth0|507f1f77...")
+    email: string;                // From Auth0 JWT
+    roles: string[];              // From business_users
+    permissions: string[];        // Resolved via PermissionResolutionService
+    permissionsVersion: number;   // For cache invalidation
 }
 
 export interface TenantContext {
@@ -924,7 +951,7 @@ export interface AuthContext {
     authType: AuthType;
     user?: AuthUser;
     tenant?: TenantContext;
-    accessTokenExpiresAt?: number;
+    accessTokenExpiresAt?: number;  // From Auth0 JWT 'exp' claim
 }
 
 export interface RequestContext {
@@ -938,4 +965,150 @@ export interface RequestContext {
     };
 }
 ```
+
+---
+
+## Appendix A: Auth0 Configuration Guide
+
+This appendix provides the required Auth0 tenant configuration for the Accounter application.
+
+### A.1. Create Auth0 Tenant
+
+1. Sign up for Auth0 at https://auth0.com (Free tier supports up to 7,000 monthly active users)
+2. Create a new tenant (e.g., `accounter` → domain will be `accounter.auth0.com`)
+3. Choose region closest to primary user base for optimal latency
+
+### A.2. Configure Application (Regular Web App)
+
+1. Navigate to **Applications** → **Create Application**
+2. Name: `Accounter Web App`
+3. Type: **Regular Web Application**
+4. **Settings** tab configuration:
+   - **Allowed Callback URLs**: `http://localhost:3000/callback, https://app.accounter.com/callback`
+   - **Allowed Logout URLs**: `http://localhost:3000, https://app.accounter.com`
+   - **Allowed Web Origins**: `http://localhost:3000, https://app.accounter.com`
+   - **Allowed Origins (CORS)**: `http://localhost:3000, https://app.accounter.com`
+   - **Application Login URI**: `http://localhost:3000/login` (for social connection redirects)
+5. **Advanced Settings** → **Grant Types**: Ensure `Authorization Code`, `Refresh Token` are enabled
+6. **Refresh Token Rotation**: Enabled
+7. **Refresh Token Expiration**: Absolute expiration after 7 days, Inactivity expiration after 3
+   days
+8. Save changes and note the **Domain**, **Client ID**, and **Client Secret**
+
+### A.3. Configure API (GraphQL Server)
+
+1. Navigate to **Applications** → **APIs** → **Create API**
+2. Name: `Accounter GraphQL API`
+3. Identifier: `https://api.accounter.com` (used as JWT `aud` claim)
+4. Signing Algorithm: **RS256** (asymmetric, more secure than HS256)
+5. **Settings** tab:
+   - **RBAC Settings**: Do NOT enable (permissions managed locally, not in Auth0)
+   - **Allow Skipping User Consent**: Enabled (first-party application)
+   - **Allow Offline Access**: Enabled (for refresh tokens)
+   - **Token Expiration**: Access Token 900 seconds (15 minutes)
+6. Save changes
+
+### A.4. Configure Management API Access (M2M)
+
+For server-side Auth0 Management API calls (user pre-registration, unblocking, deletion):
+
+1. Navigate to **Applications** → **Machine to Machine Applications** → **Authorize**
+2. Select **Auth0 Management API**
+3. Required scopes:
+   - `create:users` - Create users during invitation
+   - `update:users` - Unblock users after invitation acceptance
+   - `delete:users` - Clean up expired invitations
+   - `read:users` - Verify user status
+   - `update:users_app_metadata` - Store invitation tracking data
+   - `read:users_app_metadata` - Read invitation metadata
+4. Save and note the **Client ID** and **Client Secret** for M2M application
+
+### A.5. Database Connection Configuration
+
+1. Navigate to **Authentication** → **Database** → **Username-Password-Authentication**
+2. **Settings** tab:
+   - **Requires Username**: Disabled (use email only)
+   - **Disable Sign Ups**: **Enabled** (only invited users can create accounts via pre-registration)
+   - **Password Policy**: `Good` (8+ chars, 3 char types)
+   - **Password History**: 5 passwords (prevent reuse)
+   - **Password Dictionary**: Enabled (block common passwords)
+3. **Password Reset** tab:
+   - **Customization**: (Future enhancement - customize email templates)
+4. Save changes
+
+### A.6. Email Configuration
+
+Auth0 provides built-in email delivery for initial setup. For production:
+
+1. Navigate to **Branding** → **Email Provider**
+2. Configure custom SMTP (SendGrid, Mailgun, AWS SES) for:
+   - Branded sender address (e.g., `noreply@accounter.com`)
+   - Higher rate limits (Auth0 built-in email has strict limits)
+   - Deliverability control
+3. **Email Templates**:
+   - **Welcome Email**: Sent when Auth0 user is created during invitation (contains password setup
+     link)
+   - **Change Password**: For user-initiated password resets
+   - (Future enhancement: Customize templates to match Accounter branding)
+
+### A.7. Security Settings
+
+1. Navigate to **Security** → **Attack Protection**
+2. **Brute Force Protection**: Enabled (10 attempts, 15-minute lockout)
+3. **Suspicious IP Throttling**: Enabled (blocks IPs with excessive failures)
+4. **Breached Password Detection**: Enabled (blocks passwords from known breaches)
+
+### A.8. Rate Limits Reference
+
+Auth0 Management API rate limits (varies by plan):
+
+- **Free Tier**: 2 requests/second, burst 10
+- **Developer Pro**: 10 requests/second, burst 50
+- **Exceeded Limit Response**: `429 Too Many Requests` with `X-RateLimit-Reset` header
+
+**Implementation**: Detect 429 responses, extract retry-after time, return user-friendly error: "Too
+many invitations created. Please try again in X seconds."
+
+### A.9. Environment Variables
+
+Store Auth0 configuration in environment variables:
+
+**Client (`packages/client/.env`)**:
+
+```bash
+VITE_AUTH0_DOMAIN=accounter.auth0.com
+VITE_AUTH0_CLIENT_ID=<Application Client ID>
+VITE_AUTH0_AUDIENCE=https://api.accounter.com
+VITE_AUTH0_REDIRECT_URI=http://localhost:3000/callback
+```
+
+**Server (`packages/server/.env`)**:
+
+```bash
+AUTH0_DOMAIN=accounter.auth0.com
+AUTH0_AUDIENCE=https://api.accounter.com
+AUTH0_JWKS_URI=https://accounter.auth0.com/.well-known/jwks.json
+
+# Management API M2M credentials
+AUTH0_MGMT_CLIENT_ID=<M2M Application Client ID>
+AUTH0_MGMT_CLIENT_SECRET=<M2M Application Client Secret>
+AUTH0_MGMT_AUDIENCE=https://accounter.auth0.com/api/v2/
+```
+
+### A.10. Testing Auth0 Integration
+
+**Local Development**:
+
+1. Create test users manually in Auth0 Dashboard → **User Management** → **Users**
+2. Set initial password and unblock user for testing login flow
+3. Use Auth0's "Try Connection" feature to test email deliverability
+
+**Automated Testing**:
+
+- Mock Auth0 Management API responses in integration tests
+- Use Auth0's Test Tokens for JWT verification testing
+- Consider Auth0's
+  [Mock](https://github.com/auth0/node-auth0/blob/master/EXAMPLES.md#testing-with-mocks) library for
+  Node.js tests
+
 ---

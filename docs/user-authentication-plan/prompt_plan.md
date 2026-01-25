@@ -1,8 +1,26 @@
-# LLM Implementation Prompts - User Authentication System
+# LLM Implementation Prompts - User Authentication System (Auth0 Integration)
 
-This document contains step-by-step prompts for implementing the user authentication system using a
-code-generation LLM. Each prompt is designed to be self-contained, build on previous work, and
-result in fully integrated, tested code.
+**⚠️ UPDATE STATUS**: This prompt plan is being updated to reflect Auth0 integration.
+
+**Current Status**:
+
+- ✅ Phase 1 prompts (Foundation & Database Schema) - Updated for Auth0
+- ⚠️ Phases 2-10 - Still reference self-hosted auth, need comprehensive revision
+- 📘 See `blueprint.md` for the authoritative Auth0-integrated implementation plan
+
+**Recommendation for now**: Use `blueprint.md` as the primary implementation guide. Each blueprint
+step can be converted into an LLM prompt following the pattern established in the updated Phase 1
+prompts below. The remaining phases of this document will be updated in a subsequent pass.
+
+---
+
+This document contains step-by-step prompts for implementing the user authentication system using
+Auth0 as the external identity provider. Each prompt is designed to be self-contained, build on
+previous work, and result in fully integrated, tested code.
+
+**Authentication Strategy**: Auth0 handles all user authentication (login, signup, password
+management, email verification, JWT issuance). The local system handles business authorization,
+role-based access control, and API key management.
 
 ---
 
@@ -13,6 +31,7 @@ result in fully integrated, tested code.
 3. **Run tests** after each step to validate progress
 4. **Adjust as needed** if your codebase structure differs
 5. **Don't skip steps** - later prompts assume earlier work is complete
+6. **Auth0 Configuration Required**: Complete Auth0 tenant setup before starting Phase 4
 
 ---
 
@@ -22,7 +41,7 @@ result in fully integrated, tested code.
 
 ```
 CONTEXT:
-You are working on the Accounter application, a financial management system. The current database has a table called `accounter_schema.users` which actually stores business information, not user accounts. We need to rename this table to prepare for a new user authentication system.
+You are working on the Accounter application, a financial management system. The current database has a table called `accounter_schema.users` which actually stores business information, not user accounts. We need to rename this table to prepare for a new Auth0-based user authentication system.
 
 TASK:
 Create a PostgreSQL migration that renames the existing `users` table to `legacy_business_users`.
@@ -30,7 +49,7 @@ Create a PostgreSQL migration that renames the existing `users` table to `legacy
 REQUIREMENTS:
 1. Create a new migration file in `packages/migrations/src/` following the existing naming convention (timestamp + descriptive name)
 2. Use `ALTER TABLE accounter_schema.users RENAME TO legacy_business_users;`
-3. Add a comment explaining why this rename is necessary
+3. Add a comment explaining why this rename is necessary (preparing for Auth0 integration)
 4. PostgreSQL will automatically update all foreign key constraints - verify this with a comment in the migration
 5. Create a rollback migration that reverts the change
 6. Add an integration test that:
@@ -51,34 +70,29 @@ This migration must run before creating the new user authentication tables. Ensu
 
 ---
 
-### Prompt 1.2: Core User Tables Migration
+### Prompt 1.2: Core User Tables Migration (Auth0 Schema)
 
 ```
 CONTEXT:
-You've successfully renamed the legacy users table. Now we need to create the foundational tables for the new user authentication system. This includes personal user accounts, authentication methods, roles, and permissions.
+You've successfully renamed the legacy users table. Now we need to create the foundational tables for the new Auth0-integrated authentication system. This includes business-user mappings (Auth0 users to local businesses), roles, and permissions.
+
+**CRITICAL**: Auth0 manages user authentication data (email, password, email verification). We DO NOT create `users`, `user_accounts`, `user_refresh_tokens`, or `email_verification_tokens` tables. Only the business-to-user mapping is stored locally.
 
 TASK:
-Create a PostgreSQL migration that defines the core user authentication schema.
+Create a PostgreSQL migration that defines the core user authentication schema for Auth0 integration.
 
 REQUIREMENTS:
 1. Create migration file in `packages/migrations/src/` with timestamp naming
 2. Create the following tables with exact schema:
 
-**users table:**
-- id: UUID, primary key, default gen_random_uuid()
-- name: TEXT, not null
-- email: TEXT, unique, not null
-- email_verified_at: TIMESTAMPTZ, nullable
+**business_users table:**
+- user_id: UUID, primary key, default gen_random_uuid()
+- auth0_user_id: TEXT, unique, nullable (populated on first login after Auth0 account activation)
+- business_id: UUID, foreign key to businesses.id, not null, ON DELETE CASCADE
+- role_id: TEXT, foreign key to roles.id, not null
 - created_at: TIMESTAMPTZ, not null, default NOW()
 - updated_at: TIMESTAMPTZ, not null, default NOW()
-
-**user_accounts table:**
-- id: UUID, primary key, default gen_random_uuid()
-- user_id: UUID, foreign key to users.id, not null, ON DELETE CASCADE
-- provider: ENUM('email', 'google', 'github'), not null
-- password_hash: TEXT, nullable
-- created_at: TIMESTAMPTZ, not null, default NOW()
-- Unique constraint on (user_id, provider)
+- Composite primary key on (user_id, business_id) to support M:N relationships
 
 **roles table:**
 - id: TEXT, primary key
@@ -86,20 +100,20 @@ REQUIREMENTS:
 - description: TEXT
 - created_at: TIMESTAMPTZ, not null, default NOW()
 
-**permissions table:**
+**permissions table:** (for future use, not initially enforced)
 - id: TEXT, primary key
 - name: TEXT, unique, not null
 - description: TEXT
 - created_at: TIMESTAMPTZ, not null, default NOW()
 
-**role_permissions table:**
+**role_permissions table:** (for future use, not initially enforced)
 - role_id: TEXT, foreign key to roles.id, ON DELETE CASCADE
 - permission_id: TEXT, foreign key to permissions.id, ON DELETE CASCADE
 - Primary key on (role_id, permission_id)
 
 3. Add indexes:
-   - users.email (for login lookups)
-   - user_accounts.user_id (for joins)
+   - business_users.auth0_user_id (for login lookups)
+   - business_users.business_id (for joins)
 
 4. Seed data:
    - Roles: 'business_owner', 'accountant', 'employee', 'scraper'
@@ -110,15 +124,16 @@ REQUIREMENTS:
      * employee: view:reports
      * scraper: insert:transactions
 
-5. Add trigger for users.updated_at auto-update
+5. Add trigger for business_users.updated_at auto-update
 
 6. Create rollback migration
 
 7. Write integration tests:
    - Verify all tables created
    - Verify seed data loaded
-   - Verify constraints work (email uniqueness, FK cascades)
+   - Verify constraints work (auth0_user_id uniqueness, FK cascades)
    - Verify indexes exist
+   - Verify composite primary key works
 
 EXPECTED OUTPUT:
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-core-user-tables.sql`
@@ -128,33 +143,84 @@ EXPECTED OUTPUT:
 - Seed data query results documented in test output
 
 INTEGRATION:
-This migration builds on the table rename from Prompt 1.1. Ensure the migration runs after that one.
+This migration builds on the table rename from Prompt 1.1. Ensure the migration runs after that one. Note that `user_id` is generated on invitation creation (pre-registration), while `auth0_user_id` is populated after the user completes Auth0 password setup and logs in for the first time.
 ```
 
 ---
 
-### Prompt 1.3: Multi-Tenant Join Tables
+### Prompt 1.3: Invitations and API Keys Tables
 
 ```
 CONTEXT:
-The core user and role tables are now in place. Next, we need to create the tables that link users to businesses (multi-tenancy support) and handle user invitations.
+The core business-user mapping and roles tables are now in place. Next, we need to create tables for invitation management (Auth0 pre-registration) and API key authentication (independent of Auth0).
 
 TASK:
-Create a PostgreSQL migration for business-user relationships and invitation management.
+Create a PostgreSQL migration for invitations and API keys.
 
 REQUIREMENTS:
 1. Create migration file following the established pattern
 
 2. Create the following tables:
 
-**business_users table:**
-- user_id: UUID, foreign key to users.id, ON DELETE CASCADE
-- business_id: UUID, foreign key to businesses.id (assumes this table exists in legacy schema), ON DELETE CASCADE
+**invitations table:**
+- id: UUID, primary key, default gen_random_uuid()
+- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
+- email: TEXT, not null
+- role_id: TEXT, foreign key to roles.id, not null
+- token: TEXT, unique, not null (64-character cryptographically secure random string)
+- auth0_user_created: BOOLEAN, default FALSE (tracks whether Auth0 Management API call succeeded)
+- auth0_user_id: TEXT, nullable (stores Auth0 user ID from pre-registration, used for cleanup)
+- invited_by_user_id: UUID, foreign key to business_users.user_id, nullable (tracks which admin created the invitation)
+- accepted_at: TIMESTAMPTZ, nullable (single-use token tracking, NULL until accepted)
+- expires_at: TIMESTAMPTZ, not null (typically 7 days from creation)
+- created_at: TIMESTAMPTZ, not null, default NOW()
+
+**api_keys table:**
+- id: UUID, primary key, default gen_random_uuid()
+- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
+- role_id: TEXT, foreign key to roles.id, not null
+- key_hash: TEXT, not null, unique (SHA-256 hash of the key)
+- name: TEXT (e.g., "Production Scraper")
+- last_used_at: TIMESTAMPTZ (for auditing, updated hourly to prevent write amplification)
+- created_at: TIMESTAMPTZ, not null, default NOW()
+
+3. Add indexes:
+   - invitations.token (unique constraint already provides this)
+   - invitations.business_id
+   - invitations.expires_at (for cleanup job queries)
+   - api_keys.key_hash (unique constraint already provides this)
+   - api_keys.business_id
+
+4. Add comments to clarify Auth0 integration:
+   - Comment on invitations table: "Pre-registration flow: invitation created → Auth0 user created (blocked) → user sets password → accepts invitation → Auth0 user unblocked"
+   - Comment on api_keys table: "API keys are independent of Auth0, used for programmatic access (e.g., scraper role)"
+
+5. Create rollback migration
+
+6. Write integration tests:
+   - Verify tables created with correct schema
+   - Verify constraints work (token uniqueness, email format, FK cascades)
+   - Verify indexes exist
+   - Test invitation flow fields (auth0_user_created, auth0_user_id, accepted_at)
+
+EXPECTED OUTPUT:
+- Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-invitations-apikeys-tables.sql`
+- Rollback file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-invitations-apikeys-tables-rollback.sql`
+- Test file: `packages/migrations/src/__tests__/invitations-apikeys-tables.test.ts`
+- All tests passing
+
+INTEGRATION:
+This migration builds on the business_users and roles tables from Prompt 1.2. Invitations will be used to trigger Auth0 Management API calls to create users with blocked status. API keys provide authentication independent of Auth0 for automated processes.
+```
+
+- business_id: UUID, foreign key to businesses.id (assumes this table exists in legacy schema), ON
+  DELETE CASCADE
 - role_id: TEXT, foreign key to roles.id, ON DELETE RESTRICT
 - created_at: TIMESTAMPTZ, not null, default NOW()
 - Primary key on (user_id, business_id)
 
 **invitations table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
 - email: TEXT, not null
@@ -165,6 +231,7 @@ REQUIREMENTS:
 - Unique constraint on (business_id, email) to prevent duplicate invitations
 
 **email_verification_tokens table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - user_id: UUID, foreign key to users.id, ON DELETE CASCADE
 - token: TEXT, unique, not null
@@ -192,16 +259,17 @@ REQUIREMENTS:
    - Test that expired tokens are detectable (expires_at < NOW())
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-business-user-tables.sql`
 - Rollback file with DROP TABLE statements
 - Test file: `packages/migrations/src/__tests__/business-user-tables.test.ts`
 - All tests passing
 
-INTEGRATION:
-This migration depends on:
+INTEGRATION: This migration depends on:
+
 - The core user tables from Prompt 1.2
-- The existing `businesses` table in the legacy schema
-Ensure proper migration ordering.
+- The existing `businesses` table in the legacy schema Ensure proper migration ordering.
+
 ```
 
 ---
@@ -209,18 +277,20 @@ Ensure proper migration ordering.
 ### Prompt 1.4: API Keys and Audit Tables
 
 ```
-CONTEXT:
-User authentication tables are complete. Now we need to add support for API key authentication (for automated scrapers) and audit logging for security compliance.
 
-TASK:
-Create a PostgreSQL migration for API keys and audit logs.
+CONTEXT: User authentication tables are complete. Now we need to add support for API key
+authentication (for automated scrapers) and audit logging for security compliance.
+
+TASK: Create a PostgreSQL migration for API keys and audit logs.
 
 REQUIREMENTS:
+
 1. Create migration file following the established pattern
 
 2. Create the following tables:
 
 **api_keys table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE, not null
 - role_id: TEXT, foreign key to roles.id, ON DELETE RESTRICT, not null
@@ -231,6 +301,7 @@ REQUIREMENTS:
 - revoked_at: TIMESTAMPTZ, nullable
 
 **audit_logs table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - business_id: UUID, foreign key to businesses.id, ON DELETE SET NULL, nullable
 - user_id: UUID, foreign key to users.id, ON DELETE SET NULL, nullable
@@ -261,13 +332,14 @@ REQUIREMENTS:
    - Verify nullable fields work (system actions with no user_id)
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-apikeys-audit-tables.sql`
 - Rollback file
 - Test file: `packages/migrations/src/__tests__/apikeys-audit-tables.test.ts`
 - All tests passing
 
-INTEGRATION:
-Depends on previous migrations. Ensure migration ordering is correct.
+INTEGRATION: Depends on previous migrations. Ensure migration ordering is correct.
+
 ```
 
 ---
@@ -275,18 +347,20 @@ Depends on previous migrations. Ensure migration ordering is correct.
 ### Prompt 1.5: Refresh Token Multi-Session Support
 
 ```
-CONTEXT:
-The authentication system needs to support multiple concurrent sessions per user (e.g., web browser + mobile app). We also need token rotation and reuse detection for security.
 
-TASK:
-Create a PostgreSQL migration for refresh token storage with multi-session support.
+CONTEXT: The authentication system needs to support multiple concurrent sessions per user (e.g., web
+browser + mobile app). We also need token rotation and reuse detection for security.
+
+TASK: Create a PostgreSQL migration for refresh token storage with multi-session support.
 
 REQUIREMENTS:
+
 1. Create migration file following the established pattern
 
 2. Create the following table:
 
 **user_refresh_tokens table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - user_id: UUID, foreign key to users.id, ON DELETE CASCADE, not null
 - token_hash: TEXT, not null, unique
@@ -316,14 +390,16 @@ REQUIREMENTS:
    - Test cleanup of expired tokens
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-refresh-tokens-table.sql`
 - Rollback file
 - Test file: `packages/migrations/src/__tests__/refresh-tokens-table.test.ts`
 - All tests passing
 - Documentation of token rotation pattern in comments
 
-INTEGRATION:
-Depends on users table from Prompt 1.2. Will be used by authentication mutations in later phases.
+INTEGRATION: Depends on users table from Prompt 1.2. Will be used by authentication mutations in
+later phases.
+
 ```
 
 ---
@@ -331,13 +407,15 @@ Depends on users table from Prompt 1.2. Will be used by authentication mutations
 ### Prompt 1.6: Permission Override Tables
 
 ```
-CONTEXT:
-While the initial implementation will use role-based permissions only, we need to future-proof for granular user-level and API-key-level permission overrides. This allows special cases like "grant this specific user the ability to delete invoices" without creating a new role.
 
-TASK:
-Create a PostgreSQL migration for permission override tables.
+CONTEXT: While the initial implementation will use role-based permissions only, we need to
+future-proof for granular user-level and API-key-level permission overrides. This allows special
+cases like "grant this specific user the ability to delete invoices" without creating a new role.
+
+TASK: Create a PostgreSQL migration for permission override tables.
 
 REQUIREMENTS:
+
 1. Create migration file following the established pattern
 
 2. Create ENUM type:
@@ -346,6 +424,7 @@ REQUIREMENTS:
 3. Create the following tables:
 
 **user_permission_overrides table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - user_id: UUID, foreign key to users.id, ON DELETE CASCADE, not null
 - business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE, not null
@@ -355,6 +434,7 @@ REQUIREMENTS:
 - Unique constraint on (user_id, business_id, permission_id)
 
 **api_key_permission_overrides table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - api_key_id: UUID, foreign key to api_keys.id, ON DELETE CASCADE, not null
 - permission_id: TEXT, foreign key to permissions.id, ON DELETE CASCADE, not null
@@ -380,19 +460,21 @@ REQUIREMENTS:
    - Test FK cascades
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-permission-overrides.sql`
 - Rollback file
 - Test file: `packages/migrations/src/__tests__/permission-overrides.test.ts`
 - All tests passing
 
-INTEGRATION:
-Depends on:
+INTEGRATION: Depends on:
+
 - users table (Prompt 1.2)
 - permissions table (Prompt 1.2)
 - business_users table (Prompt 1.3)
 - api_keys table (Prompt 1.4)
 
 These tables will be used by PermissionResolutionService in Phase 4.
+
 ```
 
 ---
@@ -402,24 +484,27 @@ These tables will be used by PermissionResolutionService in Phase 4.
 ### Prompt 2.1: DBProvider Singleton Setup
 
 ```
-CONTEXT:
-You've created all the database tables. Now we need to set up the database connection layer. The application uses a connection pool pattern with two access levels:
+
+CONTEXT: You've created all the database tables. Now we need to set up the database connection
+layer. The application uses a connection pool pattern with two access levels:
+
 1. System-level (migrations, background jobs) - direct pool access
 2. Request-level (GraphQL operations) - tenant-aware with RLS enforcement
 
-TASK:
-Create a singleton DBProvider class that manages the PostgreSQL connection pool for system-level operations.
+TASK: Create a singleton DBProvider class that manages the PostgreSQL connection pool for
+system-level operations.
 
 REQUIREMENTS:
+
 1. Create file: `packages/server/src/shared/providers/db.provider.ts`
 
 2. Implement DBProvider class:
    - Use `@Injectable({ scope: Scope.Singleton })` from graphql-modules
    - Initialize pg.Pool in constructor with config from environment:
-     * Database URL from process.env.DATABASE_URL
-     * Pool size: 100 connections (production), 10 (test)
-     * Idle timeout: 30 seconds
-     * Connection timeout: 5 seconds
+     - Database URL from process.env.DATABASE_URL
+     - Pool size: 100 connections (production), 10 (test)
+     - Idle timeout: 30 seconds
+     - Connection timeout: 5 seconds
    - Expose public `pool` property for direct access
    - Implement `query<T>(text: string, params?: any[]): Promise<QueryResult<T>>` method
    - Implement `getClient(): Promise<PoolClient>` method
@@ -445,17 +530,19 @@ REQUIREMENTS:
    - Failed queries don't leak connections
 
 EXPECTED OUTPUT:
+
 - Implementation: `packages/server/src/shared/providers/db.provider.ts`
 - Tests: `packages/server/src/shared/providers/__tests__/db.provider.test.ts`
 - Environment example: Updated `.env.example` with DATABASE_URL
 - All tests passing
 - Documentation comments in code
 
-INTEGRATION:
-This provider will be:
+INTEGRATION: This provider will be:
+
 - Used directly by migrations and background jobs
 - Wrapped by TenantAwareDBClient for GraphQL operations (next prompt)
 - Registered as singleton in GraphQL modules
+
 ```
 
 ---
@@ -463,50 +550,44 @@ This provider will be:
 ### Prompt 2.2: TenantAwareDBClient (Request-Scoped)
 
 ```
-CONTEXT:
-You've created the DBProvider for system-level database access. Now we need a request-scoped wrapper that enforces Row-Level Security (RLS) by setting PostgreSQL session variables for every GraphQL operation. This is the PRIMARY security boundary of the application.
 
-TASK:
-Create a TenantAwareDBClient class that wraps database access with automatic RLS context setting.
+CONTEXT: You've created the DBProvider for system-level database access. Now we need a
+request-scoped wrapper that enforces Row-Level Security (RLS) by setting PostgreSQL session
+variables for every GraphQL operation. This is the PRIMARY security boundary of the application.
+
+TASK: Create a TenantAwareDBClient class that wraps database access with automatic RLS context
+setting.
 
 REQUIREMENTS:
+
 1. Create file: `packages/server/src/shared/helpers/tenant-db-client.ts`
 
 2. Implement TenantAwareDBClient class:
    - Use `@Injectable({ scope: Scope.Operation })` (one instance per GraphQL request)
    - Constructor dependencies:
-     * DBProvider (singleton, provides pool access)
-     * AuthContext (request-scoped, provides tenant/user info)
+     - DBProvider (singleton, provides pool access)
+     - AuthContext (request-scoped, provides tenant/user info)
 
 3. Implement transaction management:
    - Private properties:
-     * activeClient: PoolClient | null
-     * transactionDepth: number (for savepoint tracking)
+     - activeClient: PoolClient | null
+     - transactionDepth: number (for savepoint tracking)
 
    - query<T>(text: string, params?: any[]): Promise<QueryResult<T>>
-     * If no active transaction, start one
-     * Execute query using active client
-     * Return result
+     - If no active transaction, start one
+     - Execute query using active client
+     - Return result
 
    - transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T>
-     * If no active transaction:
-       a. Get client from pool
-       b. BEGIN
-       c. SET LOCAL app.current_business_id = $1
-       d. SET LOCAL app.current_user_id = $2
-       e. SET LOCAL app.auth_type = $3
-       f. Execute fn(client)
-       g. COMMIT
-       h. Release client
-     * If already in transaction (nested):
-       a. Create savepoint (SAVEPOINT sp_${transactionDepth})
-       b. Execute fn(client)
-       c. RELEASE SAVEPOINT
-       d. On error: ROLLBACK TO SAVEPOINT, then rethrow
+     - If no active transaction: a. Get client from pool b. BEGIN c. SET LOCAL
+       app.current_business_id = $1 d. SET LOCAL app.current_user_id = $2 e. SET LOCAL app.auth_type
+       = $3 f. Execute fn(client) g. COMMIT h. Release client
+     - If already in transaction (nested): a. Create savepoint (SAVEPOINT sp\_${transactionDepth})
+       b. Execute fn(client) c. RELEASE SAVEPOINT d. On error: ROLLBACK TO SAVEPOINT, then rethrow
 
    - dispose(): Promise<void>
-     * If activeClient exists: rollback and release
-     * Called automatically by GraphQL context cleanup
+     - If activeClient exists: rollback and release
+     - Called automatically by GraphQL context cleanup
 
 4. RLS variable setting:
    - Extract businessId from authContext.tenant.businessId
@@ -531,59 +612,66 @@ REQUIREMENTS:
    - Load test: 100 concurrent requests don't leak connections
 
 EXPECTED OUTPUT:
+
 - Implementation: `packages/server/src/shared/helpers/tenant-db-client.ts`
 - Tests: `packages/server/src/shared/helpers/__tests__/tenant-db-client.test.ts`
 - All tests passing
 - Comprehensive JSDoc comments explaining RLS enforcement
 
-INTEGRATION:
-This class will be:
+INTEGRATION: This class will be:
+
 - Instantiated per GraphQL request
 - Injected into all service classes
 - The ONLY way resolvers should access the database
 - Enforces that all queries run with proper tenant context
 
 Next prompt will create the AuthContext that this depends on.
+
 ```
 
 ---
 
 ### Prompt 2.3: Auth Context Provider
 
-````
-CONTEXT:
-The TenantAwareDBClient needs an AuthContext to know which tenant/user is making the request. We need to extract this from JWT tokens or API keys in the request headers.
+```
 
-TASK:
-Create an AuthContext provider that parses authentication from request headers and makes it available to all services.
+CONTEXT: The TenantAwareDBClient needs an AuthContext to know which tenant/user is making the
+request. We need to extract this from JWT tokens or API keys in the request headers.
+
+TASK: Create an AuthContext provider that parses authentication from request headers and makes it
+available to all services.
 
 REQUIREMENTS:
+
 1. Create file: `packages/server/src/modules/auth/providers/auth-context.provider.ts`
 
 2. Define TypeScript interfaces in `packages/server/src/modules/auth/types.ts`:
+
    ```typescript
-   export type AuthType = 'jwt' | 'apiKey' | 'system';
+   export type AuthType = 'jwt' | 'apiKey' | 'system'
 
    export interface AuthUser {
-     userId: string;
-     email: string;
-     roleId: string;
-     permissions: string[];
-     emailVerified: boolean;
-     permissionsVersion: number;
+     userId: string
+     email: string
+     roleId: string
+     permissions: string[]
+     emailVerified: boolean
+     permissionsVersion: number
    }
 
    export interface TenantContext {
-     businessId: string;
-     businessName?: string;
+     businessId: string
+     businessName?: string
    }
 
    export interface AuthContext {
-     authType: AuthType;
-     user?: AuthUser;
-     tenant: TenantContext;
-     accessTokenExpiresAt?: number;
+     authType: AuthType
+     user?: AuthUser
+     tenant: TenantContext
+     accessTokenExpiresAt?: number
    }
+   ```
+
 ````
 
 3. Implement AuthContextProvider:
@@ -1571,16 +1659,16 @@ REQUIREMENTS:
      private async getPermissionOverrides(subject: AuthSubject): Promise<PermissionOverride[]> {
        if (subject.type === 'user') {
          const result = await this.db.query<PermissionOverride>(
-           `SELECT permission_id, grant_type 
-            FROM accounter_schema.user_permission_overrides 
+           `SELECT permission_id, grant_type
+            FROM accounter_schema.user_permission_overrides
             WHERE user_id = $1 AND business_id = $2`,
            [subject.userId, subject.businessId]
          )
          return result.rows
        } else {
          const result = await this.db.query<PermissionOverride>(
-           `SELECT permission_id, grant_type 
-            FROM accounter_schema.api_key_permission_overrides 
+           `SELECT permission_id, grant_type
+            FROM accounter_schema.api_key_permission_overrides
             WHERE api_key_id = $1`,
            [subject.apiKeyId]
          )
@@ -1696,7 +1784,7 @@ REQUIREMENTS:
 
      // 2. Get password hash
      const accountResult = await context.db.query<{ password_hash: string }>(
-       `SELECT password_hash FROM accounter_schema.user_accounts 
+       `SELECT password_hash FROM accounter_schema.user_accounts
         WHERE user_id = $1 AND provider = 'email'`,
        [user.id]
      )
@@ -1817,7 +1905,7 @@ REQUIREMENTS:
        ipAddress?: string
      }): Promise<void> {
        await this.db.query(
-         `INSERT INTO accounter_schema.audit_logs 
+         `INSERT INTO accounter_schema.audit_logs
           (business_id, user_id, action, entity, entity_id, details, ip_address)
           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
          [
@@ -1968,3 +2056,4 @@ Each prompt:
 
 **Total implementation time**: 10-12 weeks with 2-3 developers working in parallel.
 ```
+````
