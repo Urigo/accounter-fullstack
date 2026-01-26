@@ -318,67 +318,7 @@ INTEGRATION: Depends on previous migrations. Ensure migration ordering is correc
 
 ---
 
-### Prompt 1.5: Refresh Token Multi-Session Support
-
-``
-
-CONTEXT: The authentication system needs to support multiple concurrent sessions per user (e.g., web
-browser + mobile app). We also need token rotation and reuse detection for security.
-
-TASK: Create a PostgreSQL migration for refresh token storage with multi-session support.
-
-REQUIREMENTS:
-
-1. Create migration file following the established pattern
-
-2. Create the following table:
-
-**user_refresh_tokens table:**
-
-- id: UUID, primary key, default gen_random_uuid()
-- user_id: UUID, foreign key to users.id, ON DELETE CASCADE, not null
-- token_hash: TEXT, not null, unique
-- created_at: TIMESTAMPTZ, not null, default NOW()
-- expires_at: TIMESTAMPTZ, not null
-- revoked_at: TIMESTAMPTZ, nullable
-- replaced_by_token_id: UUID, foreign key to user_refresh_tokens.id, ON DELETE SET NULL, nullable
-
-3. Add indexes:
-   - user_refresh_tokens.user_id (for listing user sessions)
-   - user_refresh_tokens.token_hash (for fast lookups during refresh)
-   - user_refresh_tokens.expires_at (for cleanup jobs)
-
-4. Add check constraints:
-   - expires_at > created_at
-   - revoked_at IS NULL OR revoked_at > created_at
-
-5. Add a comment explaining the token rotation chain via replaced_by_token_id
-
-6. Create rollback migration
-
-7. Write integration tests:
-   - Insert multiple tokens for same user (multi-session)
-   - Create token rotation chain (A replaced by B replaced by C)
-   - Verify chain can be followed via replaced_by_token_id
-   - Test that revoked tokens are detectable
-   - Test cleanup of expired tokens
-
-EXPECTED OUTPUT:
-
-- Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-refresh-tokens-table.sql`
-- Rollback file
-- Test file: `packages/migrations/src/__tests__/refresh-tokens-table.test.ts`
-- All tests passing
-- Documentation of token rotation pattern in comments
-
-INTEGRATION: Depends on users table from Prompt 1.2. Will be used by authentication mutations in
-later phases.
-
-``
-
----
-
-### Prompt 1.6: Permission Override Tables
+### Prompt 1.5: Permission Override Tables
 
 ``
 
