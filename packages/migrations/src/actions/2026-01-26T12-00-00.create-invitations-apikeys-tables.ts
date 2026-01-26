@@ -33,6 +33,7 @@ export default {
       auth0_user_created BOOLEAN NOT NULL DEFAULT FALSE,
       auth0_user_id TEXT,
       invited_by_user_id UUID,
+      invited_by_business_id UUID,
       accepted_at TIMESTAMPTZ,
       expires_at TIMESTAMPTZ NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -47,22 +48,26 @@ export default {
     COMMENT ON COLUMN accounter_schema.invitations.auth0_user_created IS 'Tracks whether Auth0 Management API call succeeded';
     COMMENT ON COLUMN accounter_schema.invitations.auth0_user_id IS 'Auth0 user ID from pre-registration (e.g., ''auth0|507f1f77bcf86cd799439011''), used for cleanup';
     COMMENT ON COLUMN accounter_schema.invitations.invited_by_user_id IS 'User ID of the admin who created this invitation';
+    COMMENT ON COLUMN accounter_schema.invitations.invited_by_business_id IS 'Business ID context of the admin who created this invitation (should match business_id)';
     COMMENT ON COLUMN accounter_schema.invitations.accepted_at IS 'Timestamp when invitation was accepted (NULL until accepted, single-use token tracking)';
     COMMENT ON COLUMN accounter_schema.invitations.expires_at IS 'Invitation expiration timestamp (typically 7 days from creation)';
     COMMENT ON COLUMN accounter_schema.invitations.created_at IS 'Timestamp when invitation was created';
 
-    -- Create foreign key constraint for invited_by_user_id
-    -- Note: References the first part of business_users composite primary key
+    -- Create composite foreign key constraint for invited_by (user + business context)
+    -- This enforces that the inviter is a valid member of the business
     ALTER TABLE accounter_schema.invitations
-      ADD CONSTRAINT invitations_invited_by_user_id_fkey
-      FOREIGN KEY (invited_by_user_id)
-      REFERENCES accounter_schema.business_users(user_id)
+      ADD CONSTRAINT invitations_invited_by_fkey
+      FOREIGN KEY (invited_by_user_id, invited_by_business_id)
+      REFERENCES accounter_schema.business_users(user_id, business_id)
       ON DELETE SET NULL;
 
     -- Create indexes for efficient lookups and cleanup queries
     CREATE INDEX idx_invitations_business_id ON accounter_schema.invitations(business_id);
     CREATE INDEX idx_invitations_expires_at ON accounter_schema.invitations(expires_at);
     CREATE INDEX idx_invitations_email ON accounter_schema.invitations(email);
+
+    -- Ensure only one pending invitation exists per user per business
+    CREATE UNIQUE INDEX idx_invitations_unique_pending ON accounter_schema.invitations(business_id, email) WHERE accepted_at IS NULL;
 
     -- ========================================================================
     -- TABLE: api_keys
@@ -153,14 +158,5 @@ export default {
     CREATE INDEX idx_audit_logs_user_id ON accounter_schema.audit_logs(user_id);
     CREATE INDEX idx_audit_logs_action ON accounter_schema.audit_logs(action);
     CREATE INDEX idx_audit_logs_created_at ON accounter_schema.audit_logs(created_at DESC);
-
-    -- Add foreign key constraint for user_id
-    -- Note: References the first part of business_users composite primary key
-    -- ON DELETE SET NULL to preserve audit logs even after user deletion
-    ALTER TABLE accounter_schema.audit_logs
-      ADD CONSTRAINT audit_logs_user_id_fkey
-      FOREIGN KEY (user_id)
-      REFERENCES accounter_schema.business_users(user_id)
-      ON DELETE SET NULL;
   `,
 } satisfies MigrationExecutor;
