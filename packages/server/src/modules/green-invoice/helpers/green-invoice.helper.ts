@@ -35,6 +35,7 @@ import { DocumentsProvider } from '../../documents/providers/documents.provider.
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 
 export function normalizeGreenInvoiceDocumentType(
@@ -1269,19 +1270,18 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     } else {
       emails.push(...(greenInvoiceClient.emails ?? []));
     }
-    // TODO: use local values
     client = {
       id: greenInvoiceClient.id,
-      country: greenInvoiceClient.country,
-      name: greenInvoiceClient.name,
-      phone: greenInvoiceClient.phone,
-      taxId: greenInvoiceClient.taxId,
+      country: countryCodeToGreenInvoiceCountry(initialInput.client.country as CountryCode),
+      name: initialInput.client.name,
+      phone: initialInput.client.phone,
+      taxId: initialInput.client.taxId,
       self: false,
-      address: greenInvoiceClient.address,
-      city: greenInvoiceClient.city,
-      zip: greenInvoiceClient.zip,
-      fax: greenInvoiceClient.fax,
-      mobile: greenInvoiceClient.mobile,
+      address: initialInput.client.address,
+      city: initialInput.client.city,
+      zip: initialInput.client.zipCode,
+      fax: initialInput.client.fax,
+      mobile: initialInput.client.mobile,
       emails,
     };
   }
