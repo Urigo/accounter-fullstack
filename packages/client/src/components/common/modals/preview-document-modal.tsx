@@ -333,7 +333,7 @@ export function PreviewDocumentModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {(!setExternalOpen || !!trigger) && (
-        <DialogTrigger>
+        <DialogTrigger onClick={e => e.stopPropagation()}>
           <Tooltip>
             <TooltipTrigger>
               {trigger ?? (
