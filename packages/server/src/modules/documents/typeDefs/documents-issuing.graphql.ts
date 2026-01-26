@@ -185,7 +185,7 @@ export default gql`
     self: Boolean
     address: String
     city: String
-    zip: String
+    zipCode: String
     fax: String
     mobile: String
     add: Boolean
