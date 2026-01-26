@@ -99,7 +99,6 @@ export default {
 
     -- Create indexes for efficient lookups
     CREATE INDEX idx_api_keys_business_id ON accounter_schema.api_keys(business_id);
-    CREATE INDEX idx_api_keys_key_hash ON accounter_schema.api_keys(key_hash);
 
     -- ========================================================================
     -- TABLE: api_key_permission_overrides
@@ -137,7 +136,7 @@ export default {
       entity TEXT,
       entity_id TEXT,
       details JSONB,
-      ip_address TEXT,
+      ip_address INET,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -158,5 +157,14 @@ export default {
     CREATE INDEX idx_audit_logs_user_id ON accounter_schema.audit_logs(user_id);
     CREATE INDEX idx_audit_logs_action ON accounter_schema.audit_logs(action);
     CREATE INDEX idx_audit_logs_created_at ON accounter_schema.audit_logs(created_at DESC);
+
+    -- Create composite foreign key constraint for user + business context
+    -- This enforces that the user is a valid member of the business for business-scoped actions
+    -- If business_id is NULL (system actions), the constraint is not enforced (MATCH SIMPLE default)
+    ALTER TABLE accounter_schema.audit_logs
+      ADD CONSTRAINT audit_logs_user_business_fkey
+      FOREIGN KEY (user_id, business_id)
+      REFERENCES accounter_schema.business_users(user_id, business_id)
+      ON DELETE SET NULL;
   `,
 } satisfies MigrationExecutor;
