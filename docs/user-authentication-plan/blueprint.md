@@ -470,7 +470,7 @@ The plan prioritizes incremental progress, strong testing, and minimal risk at e
 - Add foreign keys with NOT VALID (non-blocking):
   ```sql
   ALTER TABLE charges ADD CONSTRAINT fk_charges_business
-    FOREIGN KEY (business_id) REFERENCES businesses(id) NOT VALID;
+    FOREIGN KEY (business_id) REFERENCES businesses_admin(id) NOT VALID;
   ```
 - Validate foreign keys in separate step:
   ```sql

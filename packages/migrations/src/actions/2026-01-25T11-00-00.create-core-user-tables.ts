@@ -74,7 +74,7 @@ export default {
     CREATE TABLE accounter_schema.business_users (
       user_id UUID NOT NULL DEFAULT gen_random_uuid(),
       auth0_user_id TEXT,
-      business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
+      business_id UUID NOT NULL REFERENCES accounter_schema.businesses_admin(id) ON DELETE CASCADE,
       role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id) ON DELETE RESTRICT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

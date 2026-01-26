@@ -141,6 +141,8 @@ import migration_2026_01_13T12_00_49_add_property_vat_to_user_context from './ac
 import migration_2026_01_21T12_17_15_enrich_charges_types from './actions/2026-01-21T12-17-15.enrich-charges-types.js';
 import migration_2026_01_21T18_29_15_enhance_poalim_fees_recognition_foreign_securities from './actions/2026-01-21T18-29-15.enhance-poalim-fees-recognition-foreign-securities.js';
 import migration_2026_01_25T10_00_00_rename_users_to_legacy_business_users from './actions/2026-01-25T10-00-00.rename-users-to-legacy-business-users.js';
+import migration_2026_01_25T11_00_00_create_core_user_tables from './actions/2026-01-25T11-00-00.create-core-user-tables.js';
+import migration_2026_01_26T12_00_00_create_invitations_apikeys_tables from './actions/2026-01-26T12-00-00.create-invitations-apikeys-tables.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -286,6 +288,8 @@ export const MIGRATIONS = [
   migration_2026_01_21T12_17_15_enrich_charges_types,
   migration_2026_01_21T18_29_15_enhance_poalim_fees_recognition_foreign_securities,
   migration_2026_01_25T10_00_00_rename_users_to_legacy_business_users,
+  migration_2026_01_25T11_00_00_create_core_user_tables,
+  migration_2026_01_26T12_00_00_create_invitations_apikeys_tables,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

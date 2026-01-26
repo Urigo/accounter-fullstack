@@ -76,7 +76,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
 *   **`business_users`**: Links Auth0 users to businesses and roles (replaces the existing legacy `users` table concept).
     *   `user_id`: `uuid`, primary key, generated when invitation is created
     *   `auth0_user_id`: `text`, unique, nullable (populated after first login, stores Auth0 user identifier like `auth0|507f1f77bcf86cd799439011`)
-    *   `business_id`: `uuid`, foreign key to `businesses.id`
+    *   `business_id`: `uuid`, foreign key to `businesses_admin.id`
     *   `role_id`: `text`, foreign key to `roles.id`
     *   `created_at`: `timestamptz`
     *   `updated_at`: `timestamptz`
@@ -98,7 +98,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
 *   **`user_permission_overrides`**: (Future) Stores user-specific permission grants/revokes.
     *   `id`: `uuid`, primary key
     *   `user_id`: `uuid`, foreign key to `business_users.user_id`
-    *   `business_id`: `uuid`, foreign key to `businesses.id`
+    *   `business_id`: `uuid`, foreign key to `businesses_admin.id`
     *   `permission_id`: `text`, foreign key to `permissions.id`
     *   `grant_type`: `grant_type_enum` (ENUM: 'grant', 'revoke')
     *   `created_at`: `timestamptz`
@@ -114,7 +114,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   Note: Not populated initially, but schema prepared for future granular permissions
 *   **`invitations`**: Stores pending user invitations.
     *   `id`: `uuid`, primary key
-    *   `business_id`: `uuid`, foreign key to `businesses.id`
+    *   `business_id`: `uuid`, foreign key to `businesses_admin.id`
     *   `email`: `text`, not null
     *   `role_id`: `text`, foreign key to `roles.id`
     *   `token`: `text`, unique, not null (a cryptographically secure 64-character random string)
@@ -126,7 +126,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `created_at`: `timestamptz`
 *   **`api_keys`**: Stores API keys for the scraper role and other programmatic access.
     *   `id`: `uuid`, primary key
-    *   `business_id`: `uuid`, foreign key to `businesses.id` (API keys are linked to a business, not a specific human user)
+    *   `business_id`: `uuid`, foreign key to `businesses_admin.id` (API keys are linked to a business, not a specific human user)
     *   `role_id`: `text`, foreign key to `roles.id` (The role assigned to this key, e.g., 'scraper')
     *   `key_hash`: `text`, not null, unique (store hashed version of the key)
     *   `name`: `text` (e.g., "Production Scraper")
@@ -134,7 +134,7 @@ A new database migration will be created in `packages/migrations/src`. This migr
     *   `created_at`: `timestamptz`
 *   **`audit_logs`**: Stores a trail of critical actions for security and compliance.
     *   `id`: `uuid`, primary key
-    *   `business_id`: `uuid`, foreign key to `businesses.id`, nullable
+    *   `business_id`: `uuid`, foreign key to `businesses_admin.id`, nullable
     *   `user_id`: `uuid`, foreign key to `business_users.user_id`, nullable (nullable to support system actions or failed logins)
     *   `auth0_user_id`: `text`, nullable (stores Auth0 identity for audit trail)
     *   `action`: `text`, not null (e.g., 'USER_LOGIN', 'INVOICE_UPDATE', 'PERMISSION_CHANGE')
@@ -445,7 +445,7 @@ ALTER TABLE accounter_schema.users RENAME TO legacy_business_users;
 CREATE TABLE accounter_schema.business_users (
   user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   auth0_user_id TEXT UNIQUE,  -- Populated on first login
-  business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id),
+  business_id UUID NOT NULL REFERENCES accounter_schema.businesses_admin(id),
   role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
