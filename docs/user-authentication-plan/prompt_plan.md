@@ -39,18 +39,24 @@ role-based access control, and API key management.
 
 ### Prompt 1.1: Pre-Migration Table Rename
 
-```
-CONTEXT:
-You are working on the Accounter application, a financial management system. The current database has a table called `accounter_schema.users` which actually stores business information, not user accounts. We need to rename this table to prepare for a new Auth0-based user authentication system.
+``
 
-TASK:
-Create a PostgreSQL migration that renames the existing `users` table to `legacy_business_users`.
+CONTEXT: You are working on the Accounter application, a financial management system. The current
+database has a table called`accounter_schema.users` which actually stores business information, not
+user accounts. We need to rename this table to prepare for a new Auth0-based user authentication
+system.
+
+TASK: Create a PostgreSQL migration that renames the existing `users` table to
+`legacy_business_users`.
 
 REQUIREMENTS:
-1. Create a new migration file in `packages/migrations/src/` following the existing naming convention (timestamp + descriptive name)
+
+1. Create a new migration file in `packages/migrations/src/` following the existing naming
+   convention (timestamp + descriptive name)
 2. Use `ALTER TABLE accounter_schema.users RENAME TO legacy_business_users;`
 3. Add a comment explaining why this rename is necessary (preparing for Auth0 integration)
-4. PostgreSQL will automatically update all foreign key constraints - verify this with a comment in the migration
+4. PostgreSQL will automatically update all foreign key constraints - verify this with a comment in
+   the migration
 5. Create a rollback migration that reverts the change
 6. Add an integration test that:
    - Runs the migration
@@ -59,33 +65,42 @@ REQUIREMENTS:
    - Runs the rollback and verifies the original state
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-rename-users-to-legacy-businesses.sql`
-- Rollback file: `packages/migrations/src/YYYY-MM-DD-HH-MM-rename-users-to-legacy-businesses-rollback.sql`
+- Rollback file:
+  `packages/migrations/src/YYYY-MM-DD-HH-MM-rename-users-to-legacy-businesses-rollback.sql`
 - Test file: `packages/migrations/src/__tests__/rename-users-migration.test.ts`
 - All tests passing
 
-INTEGRATION:
-This migration must run before creating the new user authentication tables. Ensure it's ordered correctly in the migration sequence.
-```
+INTEGRATION: This migration must run before creating the new user authentication tables. Ensure it's
+ordered correctly in the migration sequence.
+
+``
 
 ---
 
 ### Prompt 1.2: Core User Tables Migration (Auth0 Schema)
 
-```
-CONTEXT:
-You've successfully renamed the legacy users table. Now we need to create the foundational tables for the new Auth0-integrated authentication system. This includes business-user mappings (Auth0 users to local businesses), roles, and permissions.
+``
 
-**CRITICAL**: Auth0 manages user authentication data (email, password, email verification). We DO NOT create `users`, `user_accounts`, `user_refresh_tokens`, or `email_verification_tokens` tables. Only the business-to-user mapping is stored locally.
+CONTEXT: You've successfully renamed the legacy users table. Now we need to create the foundational
+tables for the new Auth0-integrated authentication system. This includes business-user mappings
+(Auth0 users to local businesses), roles, and permissions.
 
-TASK:
-Create a PostgreSQL migration that defines the core user authentication schema for Auth0 integration.
+**CRITICAL**: Auth0 manages user authentication data (email, password, email verification). We DO
+NOT create `users`, `user_accounts`, `user_refresh_tokens`, or `email_verification_tokens` tables.
+Only the business-to-user mapping is stored locally.
+
+TASK: Create a PostgreSQL migration that defines the core user authentication schema for Auth0
+integration.
 
 REQUIREMENTS:
+
 1. Create migration file in `packages/migrations/src/` with timestamp naming
 2. Create the following tables with exact schema:
 
 **business_users table:**
+
 - user_id: UUID, primary key, default gen_random_uuid()
 - auth0_user_id: TEXT, unique, nullable (populated on first login after Auth0 account activation)
 - business_id: UUID, foreign key to businesses.id, not null, ON DELETE CASCADE
@@ -95,18 +110,21 @@ REQUIREMENTS:
 - Composite primary key on (user_id, business_id) to support M:N relationships
 
 **roles table:**
+
 - id: TEXT, primary key
 - name: TEXT, unique, not null
 - description: TEXT
 - created_at: TIMESTAMPTZ, not null, default NOW()
 
 **permissions table:** (for future use, not initially enforced)
+
 - id: TEXT, primary key
 - name: TEXT, unique, not null
 - description: TEXT
 - created_at: TIMESTAMPTZ, not null, default NOW()
 
 **role_permissions table:** (for future use, not initially enforced)
+
 - role_id: TEXT, foreign key to roles.id, ON DELETE CASCADE
 - permission_id: TEXT, foreign key to permissions.id, ON DELETE CASCADE
 - Primary key on (role_id, permission_id)
@@ -119,10 +137,10 @@ REQUIREMENTS:
    - Roles: 'business_owner', 'accountant', 'employee', 'scraper'
    - Permissions: 'manage:users', 'view:reports', 'issue:docs', 'insert:transactions'
    - Default role_permissions mappings:
-     * business_owner: all permissions
-     * accountant: view:reports, issue:docs
-     * employee: view:reports
-     * scraper: insert:transactions
+     - business_owner: all permissions
+     - accountant: view:reports, issue:docs
+     - employee: view:reports
+     - scraper: insert:transactions
 
 5. Add trigger for business_users.updated_at auto-update
 
@@ -136,33 +154,40 @@ REQUIREMENTS:
    - Verify composite primary key works
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-core-user-tables.sql`
 - Rollback file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-core-user-tables-rollback.sql`
 - Test file: `packages/migrations/src/__tests__/core-user-tables.test.ts`
 - All tests passing
 - Seed data query results documented in test output
 
-INTEGRATION:
-This migration builds on the table rename from Prompt 1.1. Ensure the migration runs after that one. Note that `user_id` is generated on invitation creation (pre-registration), while `auth0_user_id` is populated after the user completes Auth0 password setup and logs in for the first time.
-```
+INTEGRATION: This migration builds on the table rename from Prompt 1.1. Ensure the migration runs
+after that one. Note that `user_id` is generated on invitation creation (pre-registration), while
+`auth0_user_id` is populated after the user completes Auth0 password setup and logs in for the first
+time.
+
+``
 
 ---
 
 ### Prompt 1.3: Invitations and API Keys Tables
 
-```
-CONTEXT:
-The core business-user mapping and roles tables are now in place. Next, we need to create tables for invitation management (Auth0 pre-registration) and API key authentication (independent of Auth0).
+``
 
-TASK:
-Create a PostgreSQL migration for invitations and API keys.
+CONTEXT: The core business-user mapping and roles tables are now in place. Next, we need to create
+tables for invitation management (Auth0 pre-registration) and API key authentication (independent of
+Auth0).
+
+TASK: Create a PostgreSQL migration for invitations and API keys.
 
 REQUIREMENTS:
+
 1. Create migration file following the established pattern
 
 2. Create the following tables:
 
 **invitations table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
 - email: TEXT, not null
@@ -170,12 +195,14 @@ REQUIREMENTS:
 - token: TEXT, unique, not null (64-character cryptographically secure random string)
 - auth0_user_created: BOOLEAN, default FALSE (tracks whether Auth0 Management API call succeeded)
 - auth0_user_id: TEXT, nullable (stores Auth0 user ID from pre-registration, used for cleanup)
-- invited_by_user_id: UUID, foreign key to business_users.user_id, nullable (tracks which admin created the invitation)
+- invited_by_user_id: UUID, foreign key to business_users.user_id, nullable (tracks which admin
+  created the invitation)
 - accepted_at: TIMESTAMPTZ, nullable (single-use token tracking, NULL until accepted)
 - expires_at: TIMESTAMPTZ, not null (typically 7 days from creation)
 - created_at: TIMESTAMPTZ, not null, default NOW()
 
 **api_keys table:**
+
 - id: UUID, primary key, default gen_random_uuid()
 - business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
 - role_id: TEXT, foreign key to roles.id, not null
@@ -192,8 +219,10 @@ REQUIREMENTS:
    - api_keys.business_id
 
 4. Add comments to clarify Auth0 integration:
-   - Comment on invitations table: "Pre-registration flow: invitation created → Auth0 user created (blocked) → user sets password → accepts invitation → Auth0 user unblocked"
-   - Comment on api_keys table: "API keys are independent of Auth0, used for programmatic access (e.g., scraper role)"
+   - Comment on invitations table: "Pre-registration flow: invitation created → Auth0 user created
+     (blocked) → user sets password → accepts invitation → Auth0 user unblocked"
+   - Comment on api_keys table: "API keys are independent of Auth0, used for programmatic access
+     (e.g., scraper role)"
 
 5. Create rollback migration
 
@@ -204,79 +233,24 @@ REQUIREMENTS:
    - Test invitation flow fields (auth0_user_created, auth0_user_id, accepted_at)
 
 EXPECTED OUTPUT:
+
 - Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-invitations-apikeys-tables.sql`
-- Rollback file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-invitations-apikeys-tables-rollback.sql`
+- Rollback file:
+  `packages/migrations/src/YYYY-MM-DD-HH-MM-create-invitations-apikeys-tables-rollback.sql`
 - Test file: `packages/migrations/src/__tests__/invitations-apikeys-tables.test.ts`
 - All tests passing
 
-INTEGRATION:
-This migration builds on the business_users and roles tables from Prompt 1.2. Invitations will be used to trigger Auth0 Management API calls to create users with blocked status. API keys provide authentication independent of Auth0 for automated processes.
-```
+INTEGRATION: This migration builds on the business_users and roles tables from Prompt 1.2.
+Invitations will be used to trigger Auth0 Management API calls to create users with blocked status.
+API keys provide authentication independent of Auth0 for automated processes.
 
-- business_id: UUID, foreign key to businesses.id (assumes this table exists in legacy schema), ON
-  DELETE CASCADE
-- role_id: TEXT, foreign key to roles.id, ON DELETE RESTRICT
-- created_at: TIMESTAMPTZ, not null, default NOW()
-- Primary key on (user_id, business_id)
-
-**invitations table:**
-
-- id: UUID, primary key, default gen_random_uuid()
-- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
-- email: TEXT, not null
-- role_id: TEXT, foreign key to roles.id, ON DELETE RESTRICT
-- token: TEXT, unique, not null
-- expires_at: TIMESTAMPTZ, not null
-- created_at: TIMESTAMPTZ, not null, default NOW()
-- Unique constraint on (business_id, email) to prevent duplicate invitations
-
-**email_verification_tokens table:**
-
-- id: UUID, primary key, default gen_random_uuid()
-- user_id: UUID, foreign key to users.id, ON DELETE CASCADE
-- token: TEXT, unique, not null
-- expires_at: TIMESTAMPTZ, not null
-- created_at: TIMESTAMPTZ, not null, default NOW()
-
-3. Add indexes:
-   - business_users.business_id
-   - business_users.user_id
-   - invitations.token (for fast lookups)
-   - invitations.email
-   - email_verification_tokens.token
-
-4. Add check constraints:
-   - invitations.expires_at > created_at
-   - email_verification_tokens.expires_at > created_at
-
-5. Create rollback migration
-
-6. Write integration tests:
-   - Verify M:N relationship works (user can belong to multiple businesses)
-   - Verify unique constraints (no duplicate invitations)
-   - Verify FK cascades (deleting user removes business_users entries)
-   - Verify token uniqueness
-   - Test that expired tokens are detectable (expires_at < NOW())
-
-EXPECTED OUTPUT:
-
-- Migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-business-user-tables.sql`
-- Rollback file with DROP TABLE statements
-- Test file: `packages/migrations/src/__tests__/business-user-tables.test.ts`
-- All tests passing
-
-INTEGRATION: This migration depends on:
-
-- The core user tables from Prompt 1.2
-- The existing `businesses` table in the legacy schema Ensure proper migration ordering.
-
-```
+``
 
 ---
 
-### Prompt 1.4: API Keys and Audit Tables
+### Prompt 1.4: Audit Logs Table
 
-```
+``
 
 CONTEXT: User authentication tables are complete. Now we need to add support for API key
 authentication (for automated scrapers) and audit logging for security compliance.
@@ -340,13 +314,13 @@ EXPECTED OUTPUT:
 
 INTEGRATION: Depends on previous migrations. Ensure migration ordering is correct.
 
-```
+``
 
 ---
 
 ### Prompt 1.5: Refresh Token Multi-Session Support
 
-```
+``
 
 CONTEXT: The authentication system needs to support multiple concurrent sessions per user (e.g., web
 browser + mobile app). We also need token rotation and reuse detection for security.
@@ -400,13 +374,13 @@ EXPECTED OUTPUT:
 INTEGRATION: Depends on users table from Prompt 1.2. Will be used by authentication mutations in
 later phases.
 
-```
+``
 
 ---
 
 ### Prompt 1.6: Permission Override Tables
 
-```
+``
 
 CONTEXT: While the initial implementation will use role-based permissions only, we need to
 future-proof for granular user-level and API-key-level permission overrides. This allows special
@@ -475,7 +449,7 @@ INTEGRATION: Depends on:
 
 These tables will be used by PermissionResolutionService in Phase 4.
 
-```
+``
 
 ---
 
@@ -483,7 +457,7 @@ These tables will be used by PermissionResolutionService in Phase 4.
 
 ### Prompt 2.1: DBProvider Singleton Setup
 
-```
+``
 
 CONTEXT: You've created all the database tables. Now we need to set up the database connection
 layer. The application uses a connection pool pattern with two access levels:
@@ -543,13 +517,13 @@ INTEGRATION: This provider will be:
 - Wrapped by TenantAwareDBClient for GraphQL operations (next prompt)
 - Registered as singleton in GraphQL modules
 
-```
+``
 
 ---
 
 ### Prompt 2.2: TenantAwareDBClient (Request-Scoped)
 
-```
+``
 
 CONTEXT: You've created the DBProvider for system-level database access. Now we need a
 request-scoped wrapper that enforces Row-Level Security (RLS) by setting PostgreSQL session
@@ -627,13 +601,13 @@ INTEGRATION: This class will be:
 
 Next prompt will create the AuthContext that this depends on.
 
-```
+``
 
 ---
 
 ### Prompt 2.3: Auth Context Provider
 
-```
+``
 
 CONTEXT: The TenantAwareDBClient needs an AuthContext to know which tenant/user is making the
 request. We need to extract this from JWT tokens or API keys in the request headers.
@@ -671,8 +645,6 @@ REQUIREMENTS:
      accessTokenExpiresAt?: number
    }
    ```
-
-````
 
 3. Implement AuthContextProvider:
    - Use `@Injectable({ scope: Scope.Operation })`
@@ -722,13 +694,13 @@ INTEGRATION: This provider will be:
 
 Next prompt will wire this into the GraphQL server.
 
-```
+``
 
 ---
 
 ### Prompt 2.4: Wire TenantAwareDBClient into GraphQL Context
 
-```
+``
 
 CONTEXT: You've created the DBProvider, TenantAwareDBClient, and AuthContext. Now we need to wire
 them into the GraphQL server so they're available in all resolvers, and create an ESLint rule to
@@ -806,7 +778,7 @@ NEXT STEPS:
 - Phase 4 will add authentication mutations
 - Remaining modules will be migrated gradually
 
-```
+``
 
 ---
 
@@ -814,7 +786,7 @@ NEXT STEPS:
 
 ### Prompt 3.1: RLS Helper Function
 
-```
+``
 
 CONTEXT: The TenantAwareDBClient sets PostgreSQL session variables (app.current_business_id, etc.)
 for every request. Now we need to create a SQL function that RLS policies can use to read these
@@ -875,13 +847,13 @@ EXPECTED OUTPUT:
 INTEGRATION: This function will be used by RLS policies in the next prompts. It's the bridge between
 application-level auth and database-level security.
 
-```
+``
 
 ---
 
 ### Prompt 3.2: Enable RLS on Pilot Table (charges)
 
-```
+``
 
 CONTEXT: The RLS helper function is ready. Now we'll enable Row-Level Security on ONE high-value
 table as a pilot to validate the approach before rolling out to all tables. We're starting with
@@ -909,17 +881,18 @@ REQUIREMENTS:
    ```
 
 4. Add comments:
-   - FOR ALL: applies to SELECT, INSERT, UPDATE, DELETE
-   - USING: filter for SELECT and UPDATE
-   - WITH CHECK: validation for INSERT and UPDATE
-   - Why owner_id is used (will be replaced with business_id in later migration)
+
+- FOR ALL: applies to SELECT, INSERT, UPDATE, DELETE
+- USING: filter for SELECT and UPDATE
+- WITH CHECK: validation for INSERT and UPDATE
+- Why owner_id is used (will be replaced with business_id in later migration)
 
 5. Grant superuser bypass (for migrations):
 
-   ```sql
-   ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
-   -- Comment: Even superuser must respect RLS (except in single-user mode)
-   ```
+```sql
+ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
+-- Comment: Even superuser must respect RLS (except in single-user mode)
+```
 
 6. Create rollback:
 
@@ -961,13 +934,13 @@ If successful, we'll roll out to all tables in later prompts.
 
 ROLLBACK PLAN: If production issues occur, run rollback migration to disable RLS on charges.
 
-```
+``
 
 ---
 
 ### Prompt 3.3: Add business_id Columns (Nullable)
 
-```
+``
 
 CONTEXT: The RLS pilot on charges was successful. However, charges uses owner_id as the tenant
 field. We need a consistent business_id column across all tables. This is a multi-phase migration to
@@ -1024,13 +997,13 @@ INTEGRATION: This prepares for:
 - Phase 4: Add indexes and foreign keys
 - Phase 5: Update RLS policies to use business_id
 
-```
+``
 
 ---
 
 ### Prompt 3.4: Backfill business_id Values
 
-```
+``
 
 CONTEXT: All tables now have a nullable business_id column. Now we need to populate it using
 deterministic rules based on foreign key relationships.
@@ -1103,13 +1076,13 @@ MONITORING: Watch for:
 - Database CPU/memory usage
 - Replication lag (if using replicas)
 
-```
+``
 
 ---
 
 ### Prompt 3.5: Make business_id NOT NULL
 
-```
+``
 
 CONTEXT: The backfill job has completed successfully and all business_id columns are populated. Now
 we need to enforce the NOT NULL constraint to prevent future invalid data.
@@ -1174,13 +1147,13 @@ INTEGRATION: After this migration:
 - Ready for indexes and foreign keys (next prompt)
 - Cannot insert data without business_id
 
-```
+``
 
 ---
 
 ### Prompt 3.6: Add Indexes and Foreign Keys
 
-```
+``
 
 CONTEXT: All business_id columns are now NOT NULL. We need to add indexes for RLS query performance
 and foreign keys for referential integrity.
@@ -1266,13 +1239,13 @@ DEPLOYMENT: Can run during business hours (non-blocking). Monitor:
 - pg_stat_progress_create_index for progress
 - Lock waits (should be minimal)
 
-```
+``
 
 ---
 
 ### Prompt 3.7: Roll Out RLS to All Tables
 
-```
+``
 
 CONTEXT: The pilot RLS on charges was successful, and all tables now have indexed business_id
 columns. Time to enable RLS across the entire database.
@@ -1401,7 +1374,7 @@ ROLLBACK PLAN: Script ready to disable RLS per table if issues found:
 npm run disable-rls-table -- --table=charges
 ```
 
-```
+``
 
 ---
 
@@ -1409,7 +1382,7 @@ npm run disable-rls-table -- --table=charges
 
 ### Prompt 4.1: Password Hashing Service
 
-```
+``
 
 CONTEXT: The database and RLS are fully configured. Now we start building authentication. First, we
 need secure password hashing.
@@ -1463,13 +1436,13 @@ INTEGRATION: This service will be used by:
 - Accept invitation mutation (hash new password)
 - Future: change password mutation
 
-```
+``
 
 ---
 
 ### Prompt 4.2: JWT Plugin Configuration
 
-```
+``
 
 CONTEXT: Password hashing is ready. Now we need to configure JWT tokens for authentication. We'll
 use the official GraphQL Yoga JWT plugin.
@@ -1600,13 +1573,13 @@ INTEGRATION: TokenService will be used by:
 - Refresh mutation (rotate tokens)
 - AuthContext (verify tokens)
 
-```
+``
 
 ---
 
 ### Prompt 4.3: PermissionResolutionService
 
-```
+``
 
 CONTEXT: JWT tokens need to include permissions for authorization. We need a service that resolves
 permissions from roles and (in the future) user/API key overrides.
@@ -1720,13 +1693,13 @@ INTEGRATION: This service will be called by:
 - API key validation (resolve API key permissions)
 - Future: admin UI for managing overrides
 
-```
+``
 
 ---
 
 ### Prompt 4.4: Login Mutation
 
-```
+``
 
 CONTEXT: All authentication components are ready: password hashing, JWT tokens, permission
 resolution. Now we implement the core login flow.
@@ -1970,7 +1943,7 @@ INTEGRATION: This is the core authentication flow. After this:
 - Tokens can be used for authenticated requests
 - Next: token refresh, logout
 
-```
+``
 
 (Due to length limits, I'll continue with the remaining prompts in a summary format)
 
@@ -1979,29 +1952,34 @@ INTEGRATION: This is the core authentication flow. After this:
 ## Remaining Prompts (Summarized)
 
 **Prompt 4.5: RefreshTokenService with Rotation**
+
 - Implement token rotation and reuse detection
 - Store token hashes in user_refresh_tokens table
 - Track rotation chain via replaced_by_token_id
 - Revoke entire family on reuse detection
 
 **Prompt 4.6: Refresh Token Mutation**
+
 - Read refresh token from cookie
 - Validate and rotate
 - Issue new access + refresh tokens
 - Handle reuse detection errors
 
 **Prompt 4.7: Logout Mutation**
+
 - Revoke current refresh token
 - Clear cookies
 - Audit log
 
 **Prompt 5.1-5.4: RBAC Implementation**
+
 - GraphQL directives (@requiresAuth, @requiresVerifiedEmail, @requiresRole)
 - AuthorizationService base class
 - Domain-specific authorization services (ChargesAuthService example)
 - Wire authorization into all mutations
 
 **Prompt 6.1-6.5: Invitation & Email Verification**
+
 - inviteUser mutation
 - acceptInvitation mutation
 - requestEmailVerification mutation
@@ -2009,12 +1987,14 @@ INTEGRATION: This is the core authentication flow. After this:
 - Enforce email verification on critical operations
 
 **Prompt 7.1-7.4: API Key Authentication**
+
 - generateApiKey mutation
 - API key validation middleware
 - API key management (list, revoke)
 - Scraper role integration test
 
 **Prompt 8.1-8.6: Frontend Integration**
+
 - Update login page component
 - Auth context provider (React)
 - Protected route component
@@ -2023,6 +2003,7 @@ INTEGRATION: This is the core authentication flow. After this:
 - Invitation acceptance flow
 
 **Prompt 9.1-9.6: Production Hardening**
+
 - Provider scope audit (fix cache leakage)
 - Connection pool optimization
 - Rate limiting
@@ -2031,6 +2012,7 @@ INTEGRATION: This is the core authentication flow. After this:
 - Performance baseline
 
 **Prompt 10.1-10.3: Legacy Migration**
+
 - Dual-write period
 - Data reconciliation
 - Legacy deprecation
@@ -2040,6 +2022,7 @@ INTEGRATION: This is the core authentication flow. After this:
 ## Summary
 
 This prompt plan provides **60+ detailed implementation prompts** covering:
+
 - Database migrations (12 prompts)
 - Backend services (25 prompts)
 - GraphQL API (15 prompts)
@@ -2048,6 +2031,7 @@ This prompt plan provides **60+ detailed implementation prompts** covering:
 - Migration from legacy (3 prompts)
 
 Each prompt:
+
 - Builds on previous work
 - Includes full code examples
 - Specifies testing requirements
@@ -2055,5 +2039,3 @@ Each prompt:
 - Provides expected output
 
 **Total implementation time**: 10-12 weeks with 2-3 developers working in parallel.
-```
-````
