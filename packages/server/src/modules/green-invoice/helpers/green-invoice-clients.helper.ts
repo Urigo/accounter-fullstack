@@ -33,9 +33,9 @@ function convertLocalClientToGreenInvoiceCreateClientInput(
     /** Street address */
     address: localBusiness.address,
     /** City name */
-    //   city: localBusiness.city,
+    city: localBusiness.city,
     /** Zip/postal code */
-    //   zip: localBusiness.zip_code,
+    zip: localBusiness.zip_code,
     country: countryCodeToGreenInvoiceCountry(localBusiness.country as CountryCode),
     /** Bank name */
     //   bankName: localBusiness.bank_name,

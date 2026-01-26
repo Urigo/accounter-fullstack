@@ -333,7 +333,7 @@ export function PreviewDocumentModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {(!setExternalOpen || !!trigger) && (
-        <DialogTrigger>
+        <DialogTrigger onClick={e => e.stopPropagation()}>
           <Tooltip>
             <TooltipTrigger>
               {trigger ?? (
@@ -348,7 +348,10 @@ export function PreviewDocumentModal({
           </Tooltip>
         </DialogTrigger>
       )}
-      <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle>Issue New Document</DialogTitle>
         </DialogHeader>

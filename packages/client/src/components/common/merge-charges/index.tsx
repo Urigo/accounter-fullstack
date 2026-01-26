@@ -56,7 +56,7 @@ export function MergeChargesButton(props: {
       </DialogTrigger>
       <DialogContent className="w-[90vw] sm:max-w-[95%] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Issue New Document</DialogTitle>
+          <DialogTitle>Merge Charges</DialogTitle>
         </DialogHeader>
         <MergeChargesSelectionForm
           chargeIds={Array.from(distinctIDs)}
