@@ -1,18 +1,21 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2026-01-26T12-00-00.create-invitations-apikeys-tables.sql',
+  name: '2026-01-26T12-00-00.create-invitations-apikeys-audit-tables.sql',
   run: ({ sql }) => sql`
-    -- Migration: Create Invitations and API Keys Tables
+    -- Migration: Create Invitations, API Keys, and Audit Logs Tables
     -- 
-    -- This migration creates tables for invitation management (Auth0 pre-registration)
-    -- and API key authentication (independent of Auth0).
+    -- This migration creates tables for:
+    -- 1. Invitation management (Auth0 pre-registration flow)
+    -- 2. API key authentication (independent of Auth0 for automated processes)
+    -- 3. Audit logging (security and compliance monitoring)
     --
     -- Key Design Decisions:
     -- 1. Invitations trigger Auth0 Management API calls to create blocked users
     -- 2. Auth0 user is unblocked only after user sets password and accepts invitation
     -- 3. API keys provide authentication independent of Auth0 for automated processes
     -- 4. API keys use SHA-256 hashed storage for security
+    -- 5. Audit logs preserve records even after user/business deletion (ON DELETE SET NULL)
 
     -- ========================================================================
     -- TABLE: invitations
@@ -72,9 +75,11 @@ export default {
       business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
       role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id) ON DELETE RESTRICT,
       key_hash TEXT UNIQUE NOT NULL,
-      name TEXT,
+      name TEXT NOT NULL,
       last_used_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT api_keys_revoked_at_check CHECK (revoked_at IS NULL OR revoked_at > created_at)
     );
 
     COMMENT ON TABLE accounter_schema.api_keys IS 'API keys are independent of Auth0, used for programmatic access (e.g., scraper role)';
@@ -84,10 +89,12 @@ export default {
     COMMENT ON COLUMN accounter_schema.api_keys.key_hash IS 'SHA-256 hash of the API key (never store plaintext keys)';
     COMMENT ON COLUMN accounter_schema.api_keys.name IS 'Descriptive name for this API key (e.g., ''Production Scraper'')';
     COMMENT ON COLUMN accounter_schema.api_keys.last_used_at IS 'Timestamp of last API key usage (updated hourly to prevent write amplification)';
+    COMMENT ON COLUMN accounter_schema.api_keys.revoked_at IS 'Timestamp when API key was revoked (NULL if active)';
     COMMENT ON COLUMN accounter_schema.api_keys.created_at IS 'Timestamp when API key was created';
 
     -- Create indexes for efficient lookups
     CREATE INDEX idx_api_keys_business_id ON accounter_schema.api_keys(business_id);
+    CREATE INDEX idx_api_keys_key_hash ON accounter_schema.api_keys(key_hash);
 
     -- ========================================================================
     -- TABLE: api_key_permission_overrides
@@ -109,5 +116,51 @@ export default {
     COMMENT ON COLUMN accounter_schema.api_key_permission_overrides.api_key_id IS 'API key this override applies to';
     COMMENT ON COLUMN accounter_schema.api_key_permission_overrides.permission_id IS 'Permission being granted or revoked';
     COMMENT ON COLUMN accounter_schema.api_key_permission_overrides.grant_type IS 'Whether this is a grant or revoke override';
+
+    -- ========================================================================
+    -- TABLE: audit_logs
+    -- ========================================================================
+    -- Stores a trail of critical actions for security and compliance monitoring.
+    -- Records user actions, system events, and security-relevant operations.
+
+    CREATE TABLE accounter_schema.audit_logs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      business_id UUID REFERENCES accounter_schema.businesses(id) ON DELETE SET NULL,
+      user_id UUID,
+      auth0_user_id TEXT,
+      action TEXT NOT NULL,
+      entity TEXT,
+      entity_id TEXT,
+      details JSONB,
+      ip_address TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    COMMENT ON TABLE accounter_schema.audit_logs IS 'Audit trail for critical security and business actions (e.g., login, user creation, sensitive data access)';
+    COMMENT ON COLUMN accounter_schema.audit_logs.id IS 'Unique audit log entry identifier';
+    COMMENT ON COLUMN accounter_schema.audit_logs.business_id IS 'Business associated with this action (NULL for system-wide actions or failed logins)';
+    COMMENT ON COLUMN accounter_schema.audit_logs.user_id IS 'Local user identifier (from business_users table) who performed the action';
+    COMMENT ON COLUMN accounter_schema.audit_logs.auth0_user_id IS 'Auth0 user identifier for audit trail (e.g., ''auth0|507f1f77bcf86cd799439011'')';
+    COMMENT ON COLUMN accounter_schema.audit_logs.action IS 'Action type (e.g., ''USER_LOGIN'', ''INVOICE_UPDATE'', ''PERMISSION_CHANGE'')';
+    COMMENT ON COLUMN accounter_schema.audit_logs.entity IS 'Entity type affected by the action (e.g., ''Invoice'', ''User'', ''Document'')';
+    COMMENT ON COLUMN accounter_schema.audit_logs.entity_id IS 'Identifier of the affected entity';
+    COMMENT ON COLUMN accounter_schema.audit_logs.details IS 'Additional action metadata (e.g., before/after state, error details)';
+    COMMENT ON COLUMN accounter_schema.audit_logs.ip_address IS 'IP address of the client that initiated the action';
+    COMMENT ON COLUMN accounter_schema.audit_logs.created_at IS 'Timestamp when the action occurred';
+
+    -- Create indexes for efficient audit log queries
+    CREATE INDEX idx_audit_logs_business_id_created_at ON accounter_schema.audit_logs(business_id, created_at DESC);
+    CREATE INDEX idx_audit_logs_user_id ON accounter_schema.audit_logs(user_id);
+    CREATE INDEX idx_audit_logs_action ON accounter_schema.audit_logs(action);
+    CREATE INDEX idx_audit_logs_created_at ON accounter_schema.audit_logs(created_at DESC);
+
+    -- Add foreign key constraint for user_id
+    -- Note: References the first part of business_users composite primary key
+    -- ON DELETE SET NULL to preserve audit logs even after user deletion
+    ALTER TABLE accounter_schema.audit_logs
+      ADD CONSTRAINT audit_logs_user_id_fkey
+      FOREIGN KEY (user_id)
+      REFERENCES accounter_schema.business_users(user_id)
+      ON DELETE SET NULL;
   `,
 } satisfies MigrationExecutor;
