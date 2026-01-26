@@ -35,7 +35,6 @@ import { DocumentsProvider } from '../../documents/providers/documents.provider.
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
-import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 
 export function normalizeGreenInvoiceDocumentType(

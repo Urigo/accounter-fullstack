@@ -133,7 +133,7 @@ export function GenerateDocument({ initialFormData, onDone, chargeId }: Generate
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4" onClick={e => e.stopPropagation()}>
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Generate Document</h1>
