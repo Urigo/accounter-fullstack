@@ -103,7 +103,7 @@ REQUIREMENTS:
 
 - user_id: UUID, primary key, default gen_random_uuid()
 - auth0_user_id: TEXT, unique, nullable (populated on first login after Auth0 account activation)
-- business_id: UUID, foreign key to businesses.id, not null, ON DELETE CASCADE
+- business_id: UUID, foreign key to businesses_admin.id, not null, ON DELETE CASCADE
 - role_id: TEXT, foreign key to roles.id, not null
 - created_at: TIMESTAMPTZ, not null, default NOW()
 - updated_at: TIMESTAMPTZ, not null, default NOW()
@@ -189,7 +189,7 @@ REQUIREMENTS:
 **invitations table:**
 
 - id: UUID, primary key, default gen_random_uuid()
-- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
+- business_id: UUID, foreign key to businesses_admin.id, ON DELETE CASCADE
 - email: TEXT, not null
 - role_id: TEXT, foreign key to roles.id, not null
 - token: TEXT, unique, not null (64-character cryptographically secure random string)
@@ -204,7 +204,7 @@ REQUIREMENTS:
 **api_keys table:**
 
 - id: UUID, primary key, default gen_random_uuid()
-- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE
+- business_id: UUID, foreign key to businesses_admin.id, ON DELETE CASCADE
 - role_id: TEXT, foreign key to roles.id, not null
 - key_hash: TEXT, not null, unique (SHA-256 hash of the key)
 - name: TEXT (e.g., "Production Scraper")
@@ -266,7 +266,7 @@ REQUIREMENTS:
 **api_keys table:**
 
 - id: UUID, primary key, default gen_random_uuid()
-- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE, not null
+- business_id: UUID, foreign key to businesses_admin.id, ON DELETE CASCADE, not null
 - role_id: TEXT, foreign key to roles.id, ON DELETE RESTRICT, not null
 - key_hash: TEXT, not null, unique
 - name: TEXT, not null (descriptive name like "Production Scraper")
@@ -277,7 +277,7 @@ REQUIREMENTS:
 **audit_logs table:**
 
 - id: UUID, primary key, default gen_random_uuid()
-- business_id: UUID, foreign key to businesses.id, ON DELETE SET NULL, nullable
+- business_id: UUID, foreign key to businesses_admin.id, ON DELETE SET NULL, nullable
 - user_id: UUID, foreign key to users.id, ON DELETE SET NULL, nullable
 - action: TEXT, not null (e.g., 'USER_LOGIN', 'INVOICE_UPDATE')
 - entity: TEXT, nullable (e.g., 'Invoice', 'User')
@@ -341,7 +341,7 @@ REQUIREMENTS:
 
 - id: UUID, primary key, default gen_random_uuid()
 - user_id: UUID, foreign key to users.id, ON DELETE CASCADE, not null
-- business_id: UUID, foreign key to businesses.id, ON DELETE CASCADE, not null
+- business_id: UUID, foreign key to businesses_admin.id, ON DELETE CASCADE, not null
 - permission_id: TEXT, foreign key to permissions.id, ON DELETE CASCADE, not null
 - grant_type: grant_type_enum, not null
 - created_at: TIMESTAMPTZ, not null, default NOW()
@@ -1127,7 +1127,7 @@ REQUIREMENTS:
    ```sql
    ALTER TABLE accounter_schema.charges
    ADD CONSTRAINT fk_charges_business
-   FOREIGN KEY (business_id) REFERENCES accounter_schema.businesses(id)
+   FOREIGN KEY (business_id) REFERENCES accounter_schema.businesses_admin(id)
    NOT VALID;
 
    -- Repeat for all tables

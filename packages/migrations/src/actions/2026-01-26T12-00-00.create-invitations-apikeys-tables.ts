@@ -26,7 +26,7 @@ export default {
 
     CREATE TABLE accounter_schema.invitations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
+      business_id UUID NOT NULL REFERENCES accounter_schema.businesses_admin(id) ON DELETE CASCADE,
       email TEXT NOT NULL,
       role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id) ON DELETE RESTRICT,
       token TEXT UNIQUE NOT NULL,
@@ -77,7 +77,7 @@ export default {
 
     CREATE TABLE accounter_schema.api_keys (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      business_id UUID NOT NULL REFERENCES accounter_schema.businesses(id) ON DELETE CASCADE,
+      business_id UUID NOT NULL REFERENCES accounter_schema.businesses_admin(id) ON DELETE CASCADE,
       role_id TEXT NOT NULL REFERENCES accounter_schema.roles(id) ON DELETE RESTRICT,
       key_hash TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
@@ -130,7 +130,7 @@ export default {
 
     CREATE TABLE accounter_schema.audit_logs (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      business_id UUID REFERENCES accounter_schema.businesses(id) ON DELETE SET NULL,
+      business_id UUID REFERENCES accounter_schema.businesses_admin(id) ON DELETE SET NULL,
       user_id UUID,
       auth0_user_id TEXT,
       action TEXT NOT NULL,
