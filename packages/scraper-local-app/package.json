@@ -24,7 +24,7 @@
     "dotenv": "17.2.3",
     "dotenv-cli": "11.0.0",
     "fast-xml-parser": "5.3.3",
-    "listr2": "10.0.0",
+    "listr2": "10.1.0",
     "pg": "8.17.2"
   },
   "devDependencies": {
