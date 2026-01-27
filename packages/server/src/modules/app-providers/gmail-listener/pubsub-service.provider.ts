@@ -10,7 +10,7 @@ import { GmailServiceProvider } from './gmail-service.provider.js';
 })
 export class PubsubServiceProvider {
   private static readonly RESTART_DELAY_MS = 5000;
-  private static readonly RESTART_RETRY_DELAY_MS = 30000;
+  private static readonly RESTART_RETRY_DELAY_MS = 30_000;
   private static readonly HEALTH_CHECK_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes
   private gmailEnv: NonNullable<Environment['gmail']>;
   private subscription: Subscription | null = null;
@@ -294,11 +294,11 @@ export class PubsubServiceProvider {
       );
 
       const isHealthy = await this.healthCheck();
-      if (!isHealthy) {
+      if (isHealthy) {
+        console.log(`[PubSub Health] Health check PASSED`);
+      } else {
         console.error(`[PubSub Health] Health check FAILED! Attempting restart...`);
         await this.restartListening();
-      } else {
-        console.log(`[PubSub Health] Health check PASSED`);
       }
     }, PubsubServiceProvider.HEALTH_CHECK_INTERVAL_MS);
 
