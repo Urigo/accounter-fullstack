@@ -9,6 +9,9 @@ import { GmailServiceProvider } from './gmail-service.provider.js';
   global: true,
 })
 export class PubsubServiceProvider {
+  private static readonly RESTART_DELAY_MS = 5000;
+  private static readonly RESTART_RETRY_DELAY_MS = 30000;
+  private static readonly HEALTH_CHECK_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes
   private gmailEnv: NonNullable<Environment['gmail']>;
   private subscription: Subscription | null = null;
   private topic: Topic | null = null;
@@ -214,14 +217,16 @@ export class PubsubServiceProvider {
         const data = JSON.parse(message.data.toString());
         console.log(
           `[PubSub] <<<< Received notification #${this.messageCount} at ${this.lastMessageReceived.toISOString()}:`,
-          data,
+          { historyId: data.historyId },
         );
 
         // Check if this is a new message notification
         if (data.emailAddress && data.historyId) {
           await this.handleGmailNotification(data.historyId);
         } else {
-          console.warn(`[PubSub] Notification missing expected fields:`, data);
+          console.warn(`[PubSub] Notification missing expected fields:`, {
+            historyId: data.historyId,
+          });
         }
 
         message.ack();
@@ -258,12 +263,12 @@ export class PubsubServiceProvider {
     try {
       this.stopListening();
       // Wait a bit before restarting
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, PubsubServiceProvider.RESTART_DELAY_MS));
       await this.startListening();
     } catch (error) {
       console.error(`[PubSub] Failed to restart listener:`, error);
       // Retry after delay
-      setTimeout(() => this.restartListening(), 30000);
+      setTimeout(() => this.restartListening(), PubsubServiceProvider.RESTART_RETRY_DELAY_MS);
     }
   }
 
@@ -273,32 +278,29 @@ export class PubsubServiceProvider {
     }
 
     // Check health every 10 minutes
-    this.healthCheckInterval = setInterval(
-      async () => {
-        const now = new Date();
-        const timeSinceLastMessage = this.lastMessageReceived
-          ? (now.getTime() - this.lastMessageReceived.getTime()) / 1000 / 60
-          : null;
+    this.healthCheckInterval = setInterval(async () => {
+      const now = new Date();
+      const timeSinceLastMessage = this.lastMessageReceived
+        ? (now.getTime() - this.lastMessageReceived.getTime()) / 1000 / 60
+        : null;
 
-        console.log(
-          `[PubSub Health] Status Check at ${now.toISOString()}:\n` +
-            `  Listening: ${this.isListening}\n` +
-            `  Messages received: ${this.messageCount}\n` +
-            `  Last message: ${this.lastMessageReceived?.toISOString() || 'Never'}\n` +
-            `  Time since last: ${timeSinceLastMessage ? `${timeSinceLastMessage.toFixed(1)} minutes` : 'N/A'}\n` +
-            `  History ID: ${this.historyId || 'Not set'}`,
-        );
+      console.log(
+        `[PubSub Health] Status Check at ${now.toISOString()}:\n` +
+          `  Listening: ${this.isListening}\n` +
+          `  Messages received: ${this.messageCount}\n` +
+          `  Last message: ${this.lastMessageReceived?.toISOString() || 'Never'}\n` +
+          `  Time since last: ${timeSinceLastMessage ? `${timeSinceLastMessage.toFixed(1)} minutes` : 'N/A'}\n` +
+          `  History ID: ${this.historyId || 'Not set'}`,
+      );
 
-        const isHealthy = await this.healthCheck();
-        if (!isHealthy) {
-          console.error(`[PubSub Health] Health check FAILED! Attempting restart...`);
-          await this.restartListening();
-        } else {
-          console.log(`[PubSub Health] Health check PASSED`);
-        }
-      },
-      10 * 60 * 1000,
-    ); // Every 10 minutes
+      const isHealthy = await this.healthCheck();
+      if (!isHealthy) {
+        console.error(`[PubSub Health] Health check FAILED! Attempting restart...`);
+        await this.restartListening();
+      } else {
+        console.log(`[PubSub Health] Health check PASSED`);
+      }
+    }, PubsubServiceProvider.HEALTH_CHECK_INTERVAL_MS);
 
     console.log(`[PubSub] Health monitoring started (10-minute intervals)`);
   }
