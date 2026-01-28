@@ -33,7 +33,7 @@ describe('DBProvider', () => {
 
     it('should throw error if pool is missing in constructor', () => {
       expect(() => new DBProvider(null as unknown as postgres.Pool)).toThrow(
-        'DBPoolProvider: Pool instance is required',
+        'DBProvider: Pool instance is required',
       );
     });
   });

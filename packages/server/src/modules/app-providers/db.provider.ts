@@ -49,7 +49,7 @@ export class DBProvider {
    */
   constructor(public pool: postgres.Pool) {
     if (!pool) {
-      throw new Error('DBPoolProvider: Pool instance is required');
+      throw new Error('DBProvider: Pool instance is required');
     }
   }
 
