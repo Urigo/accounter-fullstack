@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type postgres from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { DBProvider } from '../db.provider.js';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
 
 describe('TenantAwareDBClient', () => {
-  let mockPoolClient: any;
-  let mockPool: any;
+  let mockPoolClient: PoolClient;
+  let mockPool: Pool;
   let mockDBProvider: DBProvider;
   let mockAuthContext: AuthContext;
   let tenantDBClient: TenantAwareDBClient;
@@ -16,12 +16,12 @@ describe('TenantAwareDBClient', () => {
     mockPoolClient = {
       query: vi.fn(),
       release: vi.fn(),
-    };
+    } as unknown as PoolClient;
 
     // Mock Pool
     mockPool = {
       connect: vi.fn().mockResolvedValue(mockPoolClient),
-    };
+    } as unknown as Pool;
 
     // Mock DBProvider
     mockDBProvider = {
@@ -50,7 +50,7 @@ describe('TenantAwareDBClient', () => {
 
   describe('query', () => {
     it('should start a transaction if none exists', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
       await tenantDBClient.query('SELECT 1');
 
@@ -64,7 +64,7 @@ describe('TenantAwareDBClient', () => {
     });
 
     it('should reuse existing transaction', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
       await tenantDBClient.transaction(async () => {
         await tenantDBClient.query('SELECT 1');
@@ -81,7 +81,7 @@ describe('TenantAwareDBClient', () => {
 
   describe('transaction', () => {
     it('should handle nested transactions with savepoints', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
       await tenantDBClient.transaction(async () => {
         await tenantDBClient.transaction(async () => {
@@ -94,7 +94,7 @@ describe('TenantAwareDBClient', () => {
     });
 
     it('should fallback nested transaction on error', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
       const error = new Error('nested error');
 
       await expect(tenantDBClient.transaction(async () => {
@@ -107,7 +107,7 @@ describe('TenantAwareDBClient', () => {
     });
 
     it('should rollback top-level transaction on error', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
       const error = new Error('top error');
 
       await expect(tenantDBClient.transaction(async () => {
@@ -149,7 +149,7 @@ describe('TenantAwareDBClient', () => {
 
     it('should release client even if rollback fails', async () => {
       const rollbackError = new Error('Rollback failed');
-      mockPoolClient.query.mockRejectedValueOnce(rollbackError);
+      vi.mocked(mockPoolClient.query).mockRejectedValueOnce(rollbackError);
       (tenantDBClient as any).activeClient = mockPoolClient;
 
       await tenantDBClient.dispose();
@@ -162,7 +162,7 @@ describe('TenantAwareDBClient', () => {
 
   describe('RLS variables', () => {
     it('should set correct RLS variables', async () => {
-      mockPoolClient.query.mockResolvedValue({ rows: [] });
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
       await tenantDBClient.query('SELECT 1');
 
@@ -173,12 +173,12 @@ describe('TenantAwareDBClient', () => {
       ];
       
       // Find the call that sets variables
-      const setCall = mockPoolClient.query.mock.calls.find((call: any[]) => 
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) => 
         call[0].includes("set_config('app.current_business_id', $1, true)")
       );
       
       expect(setCall).toBeDefined();
-      expect(setCall[1]).toEqual(expectedVars);
+      expect(setCall![1]).toEqual(expectedVars);
     });
 
     it('should throw if businessId is missing', async () => {
