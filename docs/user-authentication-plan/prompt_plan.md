@@ -840,7 +840,7 @@ REQUIREMENTS:
    import type { AuthContext } from './types/auth'
 
    // Keep existing tokens (AUTH_CONTEXT, ENVIRONMENT, etc.) unchanged
-   export const AUTH_CONTEXT_V2 = new InjectionToken<AuthContext | null>('AuthContextV2')
+   export const AUTH_CONTEXT_V2 = new InjectionToken<AuthContext | null>('AUTH_CONTEXT_V2')
    ```
 
 1. **DO NOT** update `modules-app.ts` providers yet:
@@ -861,7 +861,7 @@ REQUIREMENTS:
    describe('AUTH_CONTEXT_V2 Token', () => {
      it('should be defined', () => {
        expect(AUTH_CONTEXT_V2).toBeDefined()
-       expect(AUTH_CONTEXT_V2.toString()).toContain('AuthContextV2')
+       expect(AUTH_CONTEXT_V2.toString()).toContain('AUTH_CONTEXT_V2')
      })
    })
    ```
