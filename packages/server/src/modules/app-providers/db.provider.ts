@@ -88,7 +88,7 @@ export class DBProvider {
     try {
       const result = await this.pool.query('SELECT 1 as health');
       return result.rows[0]?.health === 1;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
