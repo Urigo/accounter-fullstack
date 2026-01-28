@@ -1,5 +1,92 @@
 # @accounter/server
 
+## 0.0.11
+
+### Patch Changes
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@3.0.23` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/3.0.23) (from
+    `3.0.17`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-hive/yoga@0.47.1` ↗︎](https://www.npmjs.com/package/@graphql-hive/yoga/v/0.47.1) (from
+    `0.47.0`, in `dependencies`)
+  - Updated dependency [`ai@6.0.49` ↗︎](https://www.npmjs.com/package/ai/v/6.0.49) (from `6.0.42`, in
+    `dependencies`)
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#2962](https://github.com/Urigo/accounter-fullstack/pull/2962)
+  [`8dca87f`](https://github.com/Urigo/accounter-fullstack/commit/8dca87f957b5cbb1ee3c4683a8e785fa442d44bb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.58.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.58.0)
+    (from `1.57.0`, in `dependencies`)
+
+- [#2968](https://github.com/Urigo/accounter-fullstack/pull/2968)
+  [`1ad4fa1`](https://github.com/Urigo/accounter-fullstack/commit/1ad4fa10d74628abade8ce175ad4b35c8f63eb70)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Table Duplication**: A new
+  migration duplicate the `accounter_schema.users` table to
+  `accounter_schema.legacy_business_users`, as a step of renaming the users table. This change is
+  crucial for distinguishing between business entities and future personal user accounts.
+  - **Authentication Query Update**: The `auth-plugin.ts` file is updated to reflect the new table,
+    modifying the `getUserByName` SQL query to target the `legacy_business_users` table.
+  - **Core User Authentication Tables**: Introduced foundational database tables for user
+    authentication and authorization, including `roles`, `permissions`, `role_permissions`,
+    `business_users`, and `user_permission_overrides`.
+  - **Auth0 Integration Readiness**: The `business_users` table is designed to link external Auth0
+    user IDs with internal business and role assignments, preparing the system for Auth0
+    integration.
+  - **Role-Based Access Control (RBAC)**: Implemented a role-based access control system with
+    predefined roles (e.g., business owner, accountant) and permissions, with provisions for future
+    granular permission management.
+  - **Initial Seed Data**: The migration script includes seed data for initial roles, permissions,
+    and their mappings, providing a ready-to-use access control setup.
+
+- [#2980](https://github.com/Urigo/accounter-fullstack/pull/2980)
+  [`1930e65`](https://github.com/Urigo/accounter-fullstack/commit/1930e653c898afa7d41676d40e0be60e8f9f0611)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Enhanced Reliability with
+  Auto-Restart**: Implemented an automatic restart mechanism for the Gmail Pub/Sub listener. Upon
+  encountering subscription errors or health check failures, the listener will now attempt to stop
+  and restart itself, improving resilience and ensuring continuous operation.
+  - **Comprehensive Health Monitoring**: Introduced a periodic health check system that runs every
+    10 minutes. This system verifies the listener's active state, tracks message reception, and
+    confirms Gmail API connectivity. If any check fails, an auto-restart is triggered to restore
+    service.
+  - **Extensive and Structured Logging**: Significantly improved logging across the Pub/Sub service.
+    Log messages now include clear prefixes (e.g., "[PubSub]", "[Gmail]", "[PubSub Health]") and
+    provide more detailed information on topic/subscription creation, message processing, error
+    handling, and Gmail watch renewals, aiding in debugging and operational visibility.
+  - **Improved Error Handling for Message Processing**: Modified the message processing logic to
+    acknowledge messages even if an error occurs during their handling. This prevents messages from
+    being infinitely redelivered and allows for better error recovery strategies.
+  - **Robust Topic and Subscription Management**: Updated the logic for validating and creating
+    Pub/Sub topics and subscriptions to explicitly check for their existence using the `exists()`
+    method and provide more informative logging during creation or error scenarios.
+
+- [#2975](https://github.com/Urigo/accounter-fullstack/pull/2975)
+  [`4b37fc8`](https://github.com/Urigo/accounter-fullstack/commit/4b37fc85d294571c0a209901e64f7b4a1c7dc5ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **GraphQL Schema Update**: The 'zip'
+  field in the 'ClientInput' GraphQL type has been renamed to 'zipCode' for better clarity and
+  consistency across the system.
+  - **Green Invoice Client Data Mapping**: The logic for converting local client data to Green
+    Invoice client input has been updated to correctly use 'city' and 'zip_code' from local business
+    data and to ensure all client details are sourced from the initial input, resolving potential
+    data discrepancies.
+  - **UI Event Propagation Prevention**: The 'stopPropagation' method has been added to key UI
+    elements in document generation and preview modals to prevent unintended click event bubbling,
+    improving user interaction and preventing unexpected behavior.
+  - **UI Text Refinement**: A dialog title in the merge charges component has been updated from
+    'Issue New Document' to 'Merge Charges' for improved clarity and accuracy.
+- Updated dependencies
+  [[`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b),
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b),
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)]:
+  - @accounter/pcn874-generator@0.6.6
+  - @accounter/shaam-uniform-format-generator@0.2.5
+  - @accounter/shaam6111-generator@0.1.7
+
 ## 0.0.10
 
 ### Patch Changes
