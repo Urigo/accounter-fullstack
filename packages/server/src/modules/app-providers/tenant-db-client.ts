@@ -28,6 +28,7 @@ export class TenantAwareDBClient implements OnDestroy {
   private activeClient: PoolClient | null = null;
   private transactionDepth = 0;
   private isDisposed = false;
+  private initializationPromise: Promise<void> | null = null;
 
   constructor(
     private dbProvider: DBProvider,
@@ -61,41 +62,96 @@ export class TenantAwareDBClient implements OnDestroy {
   public async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     this.ensureNotDisposed();
 
-    if (this.activeClient) {
-      // Nested transaction
-      this.transactionDepth++;
-      const savepointName = `sp_${this.transactionDepth}`;
+    // 1. Wait for initialization if in progress
+    if (this.initializationPromise) {
       try {
-        await this.activeClient.query(`SAVEPOINT ${savepointName}`);
-        const result = await fn(this.activeClient);
-        await this.activeClient.query(`RELEASE SAVEPOINT ${savepointName}`);
-        return result;
+        await this.initializationPromise;
       } catch (error) {
-        await this.activeClient.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
-        throw error;
-      } finally {
-        this.transactionDepth--;
+        // Initialization failed.
+        // We proceed to check (!this.activeClient) which will re-attempt or fail.
       }
     }
 
-    // Top-level transaction
-    const client = await this.dbProvider.pool.connect();
-    this.activeClient = client;
+    // 2. Initialize if needed
+    if (!this.activeClient) {
+      this.initializationPromise = (async () => {
+        const client = await this.dbProvider.pool.connect();
+        try {
+          await client.query('BEGIN');
+          await this.setRLSVariables(client);
+          this.activeClient = client;
+        } catch (error) {
+          client.release();
+          throw error;
+        }
+      })();
+
+      try {
+        await this.initializationPromise;
+      } finally {
+        this.initializationPromise = null;
+      }
+    }
+
+    // Guard: activeClient must be set by now
+    if (!this.activeClient) {
+      throw new Error('Failed to initialize database client');
+    }
+
+    const client = this.activeClient;
+    this.transactionDepth++;
+    let success = false;
 
     try {
-      await client.query('BEGIN');
-      await this.setRLSVariables(client);
+      let result: T;
 
-      const result = await fn(client);
+      // Use a savepoint for all nested scopes (depth > 1) to isolate failures
+      // and allow partial success/failure within the shared transaction.
+      if (this.transactionDepth > 1) {
+        const savepointName = `sp_${this.transactionDepth}`;
+        try {
+          await client.query(`SAVEPOINT ${savepointName}`);
+          result = await fn(client);
+          await client.query(`RELEASE SAVEPOINT ${savepointName}`);
+        } catch (error) {
+          await client.query(`ROLLBACK TO SAVEPOINT ${savepointName}`);
+          throw error;
+        }
+      } else {
+        // Root scope (depth === 1) runs directly in the main transaction
+        result = await fn(client);
+      }
 
-      await client.query('COMMIT');
+      success = true;
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      // If we are the last active scope and an error occurred, we deliberately ROLLBACK.
+      // Note: If depth > 1, the inner try/catch already handled the savepoint rollback,
+      // so this block only handles the root transaction failure or unhandled critical errors.
+      if (this.transactionDepth === 1) {
+        // Ensure we don't try to rollback if already disposed or closed
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          // Ignore rollback errors (e.g. if connection closed)
+        }
+      }
       throw error;
     } finally {
-      client.release();
-      this.activeClient = null;
+      this.transactionDepth--;
+
+      // If we are the last scope to exit, we are responsible for cleanup.
+      if (this.transactionDepth === 0) {
+        if (success && !this.isDisposed) {
+          try {
+            await client.query('COMMIT');
+          } catch (commitError) {
+            console.error('Failed to commit transaction:', commitError);
+          }
+        }
+        client.release();
+        this.activeClient = null;
+      }
     }
   }
 
@@ -117,9 +173,10 @@ export class TenantAwareDBClient implements OnDestroy {
 
     await client.query(
       `
-      SET LOCAL app.current_business_id = $1;
-      SET LOCAL app.current_user_id = $2;
-      SET LOCAL app.auth_type = $3;
+      SELECT
+        set_config('app.current_business_id', $1, true),
+        set_config('app.current_user_id', $2, true),
+        set_config('app.auth_type', $3, true);
       `,
       [tenant.businessId, userIdValue, authType],
     );
@@ -141,10 +198,10 @@ export class TenantAwareDBClient implements OnDestroy {
     if (this.activeClient) {
       try {
         await this.activeClient.query('ROLLBACK');
-        this.activeClient.release();
       } catch (error) {
         console.error('Error disposing TenantAwareDBClient:', error);
       } finally {
+        this.activeClient.release();
         this.activeClient = null;
       }
     }

@@ -57,7 +57,7 @@ describe('TenantAwareDBClient', () => {
       // Check transaction flow
       expect(mockPool.connect).toHaveBeenCalled();
       expect(mockPoolClient.query).toHaveBeenCalledWith('BEGIN');
-      expect(mockPoolClient.query).toHaveBeenCalledWith(expect.stringContaining('SET LOCAL app.current_business_id'), expect.anything());
+      expect(mockPoolClient.query).toHaveBeenCalledWith(expect.stringContaining("set_config('app.current_business_id', $1, true)"), expect.anything());
       expect(mockPoolClient.query).toHaveBeenCalledWith('SELECT 1', undefined);
       expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
       expect(mockPoolClient.release).toHaveBeenCalled();
@@ -89,8 +89,8 @@ describe('TenantAwareDBClient', () => {
         });
       });
 
-      expect(mockPoolClient.query).toHaveBeenCalledWith('SAVEPOINT sp_1');
-      expect(mockPoolClient.query).toHaveBeenCalledWith('RELEASE SAVEPOINT sp_1');
+      expect(mockPoolClient.query).toHaveBeenCalledWith('SAVEPOINT sp_2');
+      expect(mockPoolClient.query).toHaveBeenCalledWith('RELEASE SAVEPOINT sp_2');
     });
 
     it('should fallback nested transaction on error', async () => {
@@ -103,7 +103,7 @@ describe('TenantAwareDBClient', () => {
         });
       })).rejects.toThrow(error);
 
-      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK TO SAVEPOINT sp_1');
+      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK TO SAVEPOINT sp_2');
     });
 
     it('should rollback top-level transaction on error', async () => {
@@ -146,6 +146,18 @@ describe('TenantAwareDBClient', () => {
 
       expect(mockPoolClient.release).toHaveBeenCalledTimes(1);
     });
+
+    it('should release client even if rollback fails', async () => {
+      const rollbackError = new Error('Rollback failed');
+      mockPoolClient.query.mockRejectedValueOnce(rollbackError);
+      (tenantDBClient as any).activeClient = mockPoolClient;
+
+      await tenantDBClient.dispose();
+
+      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockPoolClient.release).toHaveBeenCalled();
+      expect((tenantDBClient as any).activeClient).toBeNull();
+    });
   });
 
   describe('RLS variables', () => {
@@ -162,7 +174,7 @@ describe('TenantAwareDBClient', () => {
       
       // Find the call that sets variables
       const setCall = mockPoolClient.query.mock.calls.find((call: any[]) => 
-        call[0].includes('SET LOCAL app.current_business_id')
+        call[0].includes("set_config('app.current_business_id', $1, true)")
       );
       
       expect(setCall).toBeDefined();
@@ -172,7 +184,7 @@ describe('TenantAwareDBClient', () => {
     it('should throw if businessId is missing', async () => {
       (tenantDBClient as any).authContext = { ...mockAuthContext, tenant: {} };
 
-      await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId');
+      await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
     });
   });
 });
