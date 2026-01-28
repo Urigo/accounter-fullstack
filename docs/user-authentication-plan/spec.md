@@ -15,6 +15,11 @@ This document outlines the implementation of a new user management system for th
 
 **Authentication Strategy**: The system uses **Auth0** as an external identity provider for user authentication, handling email/password credentials, JWT token management, session handling, email verification, and future enhancements like MFA and social logins. All user-facing authentication (login, signup, password reset) is delegated to Auth0's Universal Login, while **business authorization, permissions, and API key management remain fully local** to maintain control over multi-tenant access policies and compliance requirements.
 
+**Migration Strategy**: The Auth0 integration follows a **parallel build and safe cutover** approach to ensure zero-downtime migration:
+*   **Phase 1-3** (Infrastructure): Build Auth0 verification infrastructure alongside existing authentication (files named with `-v2` suffix). Existing auth remains fully functional.
+*   **Phase 4** (Activation): Test Auth0 in parallel using feature flags, then perform controlled cutover with immediate rollback capability. Maintenance window: 15 minutes.
+*   **Phase 5** (Cleanup): Remove deprecated authentication code after 7 days of stability, rename v2 files to standard names.
+
 ### 2. Requirements
 
 *   **Personal User Accounts**: Users must be able to create and manage their own accounts via Auth0, separate from business entities.
@@ -249,7 +254,7 @@ export class TenantAwareDBClient {
 ```
 
     *   **Architectural Separation**:
-        *   `DBProvider` (Singleton): Manages the connection pool, used for system-level operations (migrations, background jobs that bypass RLS)
+        *   `DBProvider` (Singleton): **Already exists** at `packages/server/src/modules/app-providers/db.provider.ts`. Manages the connection pool, exposes public `pool` property for system-level operations (migrations, background jobs that bypass RLS). Includes `healthCheck()` method for connection validation.
         *   `TenantAwareDBClient` (Request-scoped): Wraps `DBProvider.pool` with tenant isolation, the ONLY DB client allowed in GraphQL resolvers
         *   **ESLint Enforcement**: Configure rule to prevent direct `DBProvider` imports in resolver files
 
@@ -353,6 +358,36 @@ export class BusinessesProvider {
      - Pure utility services with no state
      - External API clients (if tenant context passed per-method)
    - [ ] Add integration tests verifying cache isolation between tenants
+
+**Known Providers Requiring Audit** (based on current codebase):
+
+*   `packages/server/src/modules/financial-entities/providers/businesses.provider.ts` - Check if Singleton with cache
+*   `packages/server/src/modules/financial-entities/providers/financial-entities.provider.ts` - Check if Singleton with cache
+*   `packages/server/src/plugins/admin-context-plugin.ts` - Currently uses global cache (UNSAFE), must be refactored
+*   Any provider with `DataLoader` - Must be `Scope.Operation` (DataLoaders are already request-scoped if provider is Operation-scoped)
+
+**Cache Isolation Test Pattern**:
+
+```typescript
+// packages/server/src/modules/__tests__/cache-isolation.integration.test.ts
+import { describe, it, expect } from 'vitest';
+import { createTestContext } from '../test-utils';
+
+describe('Cache Isolation', () => {
+  it('should not leak data between tenants', async () => {
+    // Create two authenticated contexts for different businesses
+    const context1 = await createTestContext({ businessId: 'business-a' });
+    const context2 = await createTestContext({ businessId: 'business-b' });
+    
+    // Access same resource via provider
+    const result1 = await context1.injector.get(SomeProvider).getData('entity-123');
+    const result2 = await context2.injector.get(SomeProvider).getData('entity-123');
+    
+    // Verify results are isolated by tenant
+    expect(result1).not.toEqual(result2);
+  });
+});
+```
 
 4. **DataLoader Instance Creation**:
 ```typescript
@@ -462,7 +497,102 @@ SELECT gen_random_uuid(), lbu.id, 'business_owner', NULL
 FROM accounter_schema.legacy_business_users lbu;
 ```
 
-#### 3.3. GraphQL API (`packages/server`)
+#### 3.3. GraphQL Yoga + Modules Architecture
+
+**Integration Pattern**: The server uses GraphQL Yoga as the execution layer and GraphQL Modules for dependency injection and modular organization. Understanding their interaction is critical for proper authentication implementation.
+
+**Context Flow (4 Layers)**:
+
+1. **Yoga Initial Context**: Created by Yoga for each HTTP request, contains `request`, `params`, `env`, `pool`
+2. **Plugin Context Extension**: Plugins use `useExtendContext()` to add raw auth data (`rawAuth: { authType, token }`)
+3. **Modules DI Processing**: Operation-scoped providers (like `AuthContextProvider`) process raw auth and create structured `AuthContext`
+4. **Injection Tokens**: Provide typed access to auth context across all modules via `AUTH_CONTEXT` token
+
+**Key Architecture Principles**:
+
+*   **Separation of Concerns**: Plugins handle HTTP-level concerns (header parsing), Providers handle business logic (JWT verification, permission resolution)
+*   **Operation Scope**: Auth-related providers MUST use `Scope.Operation` to ensure request isolation and prevent data leakage
+*   **Injection Tokens**: Use `InjectionToken` for cross-module access to auth context (e.g., `AUTH_CONTEXT`, `ADMIN_CONTEXT`)
+*   **No Direct Pool Access**: Resolvers MUST NOT access `pool` directly; use `TenantAwareDBClient` injected via DI
+*   **Parallel Migration**: New auth infrastructure built alongside existing (v2 files) until safe cutover in Phase 4
+
+**Plugin Order** (Critical for Correctness):
+
+```typescript
+const yoga = createYoga({
+  plugins: [
+    authPlugin(),              // 1. Parse auth headers → add rawAuth to Yoga context
+    useGraphQLModules(app),    // 2. Modules DI processes AuthContextProvider
+    adminContextPlugin(),      // 3. Load business-specific config (uses AUTH_CONTEXT)
+    useDeferStream(),
+    useHive(/* ... */),
+  ],
+});
+```
+
+**Auth Plugin Responsibilities** (Minimal - Delegates to Modules):
+
+*   Extract `Authorization: Bearer <token>` or `X-API-Key` from headers
+*   Add `rawAuth: { authType: 'jwt' | 'apiKey', token: string }` to Yoga context
+*   **Does NOT**: Verify JWT, query database, or resolve permissions (delegated to `AuthContextProvider`)
+
+**Migration Note**: During Phase 2-3, new auth plugin created as `auth-plugin-v2.ts` alongside existing auth plugin. Existing plugin remains active until Phase 4 cutover.
+
+**AuthContextProvider Responsibilities** (Core Auth Logic):
+
+*   Verify JWT signature using `jose` library and Auth0 JWKS endpoint
+*   Extract Auth0 user ID (`sub` claim) and map to local `user_id` via database lookup
+*   Fetch user's business/role associations from `business_users` table
+*   Return structured `AuthContext` object with `{ authType, user, tenant, accessTokenExpiresAt }`
+*   Injected as `AUTH_CONTEXT` token for use across all modules
+
+**Migration Note**: During Phase 2-3, new provider created as `AuthContextV2Provider` with `AUTH_CONTEXT_V2` token. Not registered in DI until Phase 4. Existing auth provider remains active.
+
+**Injection Token Provisioning** (in `modules-app.ts`):
+
+```typescript
+export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
+  return createApplication({
+    modules: [/* ... all modules */],
+    providers: [
+      // ... existing providers
+      {
+        provide: AUTH_CONTEXT,
+        scope: Scope.Operation,
+        useFactory: async (context: any, authProvider: AuthContextProvider) => {
+          return authProvider.getAuthContext(); // Returns AuthContext | null
+        },
+        deps: [CONTEXT, AuthContextProvider],
+      },
+    ],
+  });
+}
+```
+
+**Usage in Resolvers/Services**:
+
+```typescript
+@Injectable({ scope: Scope.Operation })
+export class ChargesService {
+  constructor(
+    @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
+    private db: TenantAwareDBClient,
+  ) {}
+
+  async createCharge(input: ChargeInput) {
+    if (!this.auth?.tenant?.businessId) {
+      throw new GraphQLError('Unauthenticated', {
+        extensions: { code: 'UNAUTHENTICATED' },
+      });
+    }
+    
+    // db.query automatically uses auth.tenant.businessId for RLS
+    return this.db.query(/* ... */);
+  }
+}
+```
+
+#### 3.4. GraphQL API (`packages/server`)
 
 A new `auth` module will be created under `packages/server/src/modules`.
 
@@ -756,213 +886,407 @@ export class DocumentsService {
     *   **Fail closed**: Deny access by default; explicit grants only
 
 *   **Context Binding**: The implementation must derive `businessId` exclusively from JWT or API key validation. Any `businessId` argument provided by the client must be treated as data, not as authorization.
-    *   **Critical**: The `adminContextPlugin` MUST be refactored to use `auth.tenant.businessId` instead of the legacy `currentUser.userId` pattern:
+
+#### 3.3.2. AdminContext Migration from Plugin to Provider
+
+**Current Issue**: The existing `adminContextPlugin` uses Yoga's plugin system, which creates problems:
+1. Cannot properly use GraphQL Modules dependency injection
+2. Risk of global cache leakage between requests/tenants
+3. Cannot inject `AUTH_CONTEXT` or `TenantAwareDBClient` properly
+
+**Required Migration**: Convert to Operation-scoped provider following the same pattern as `AuthContextProvider`.
+
+**Implementation**:
 
 ```typescript
-export const adminContextPlugin: () => Plugin<{ adminContext: AdminContext }> = () =>
-  useExtendContext(
-    async (contextSoFar: { 
-      env: Environment; 
-      auth: AuthContext;  // Use auth.tenant.businessId
-      db: TenantAwareDBClient;
-    }) => {
-      if (!contextSoFar.auth.tenant?.businessId) {
-        throw new Error('No business context available');
+// packages/server/src/modules/admin-context/providers/admin-context.provider.ts
+import { Injectable, Scope, Inject } from 'graphql-modules';
+import { GraphQLError } from 'graphql';
+import { AUTH_CONTEXT } from '../../../shared/tokens.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import type { AuthContext } from '../../../shared/types/auth.js';
+
+@Injectable({ scope: Scope.Operation })
+export class AdminContextProvider {
+  private cachedContext: AdminContext | null = null;
+
+  constructor(
+    @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
+    private db: TenantAwareDBClient,
+  ) {}
+
+  async getAdminContext(): Promise<AdminContext> {
+    if (!this.cachedContext) {
+      if (!this.auth?.tenant?.businessId) {
+        throw new GraphQLError('Unauthenticated', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
       }
       
-      const rawContext = await fetchContext(
-        contextSoFar.auth.tenant.businessId,  // Correct: Use businessId from auth context
-        contextSoFar.db,
+      // Use TenantAwareDBClient - RLS enforced automatically
+      // businessId is derived from validated auth context, never from client input
+      const [rawContext] = await getAdminBusinessContext.run(
+        { adminBusinessId: this.auth.tenant.businessId },
+        this.db
       );
       
-      const adminContext = normalizeContext(rawContext);
-      return { adminContext };
-    },
-  );
+      if (!rawContext) {
+        throw new Error('Admin business context not found');
+      }
+      
+      this.cachedContext = normalizeContext(rawContext);
+    }
+    return this.cachedContext;
+  }
+}
+
+// In modules-app.ts, provide via injection token:
+import { ADMIN_CONTEXT } from './shared/tokens.js';
+
+// Add to providers array:
+{
+  provide: ADMIN_CONTEXT,
+  scope: Scope.Operation,
+  useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
+  deps: [AdminContextProvider],
+}
 ```
 
+**Migration Steps**:
+1. Create `AdminContextProvider` in `packages/server/src/modules/admin-context/providers/` (Phase 2, Step 2.7)
+2. Add `ADMIN_CONTEXT` injection token to `packages/server/src/shared/tokens.ts`
+3. Register provider in `modules-app.ts` providers array
+4. Update resolvers to inject `@Inject(ADMIN_CONTEXT) private adminContext: AdminContext`
+5. Remove `adminContextPlugin` from Yoga plugins array in `index.ts`
+6. Delete `packages/server/src/plugins/admin-context-plugin.ts`
+
+**Timing**: This migration happens in Phase 2 (Core Database Services), before Auth0 activation. It uses existing auth context, not Auth0 context.
+
+**Benefits**:
+- Proper DI integration (no async context access required)
+- Request-scoped caching (no cross-tenant leakage risk)
+- Type-safe injection via `ADMIN_CONTEXT` token
+- Automatically uses `TenantAwareDBClient` for RLS enforcement
+- Consistent with `AuthContextProvider` pattern
+
 *   **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT` block to avoid connection pool leakage.
+
+---
+
+### 4. Auth0 Migration Strategy
+
+**Objective**: Migrate from existing authentication to Auth0 without service disruption or breaking
+existing functionality.
+
+#### 4.1. Parallel Build Approach (Phase 2-3)
+
+**Principle**: Build Auth0 infrastructure alongside existing authentication. Existing auth remains
+fully functional.
+
+**Implementation**:
+
+- New auth components created with `-v2` suffix:
+  - `auth-plugin-v2.ts` (not registered in plugin array yet)
+  - `AuthContextV2Provider` (not registered in DI yet)
+  - `AUTH_CONTEXT_V2` token (defined but not used yet)
+- Environment flag added: `USE_AUTH0: boolean` (default: false)
+- All Phase 2-3 work uses EXISTING auth context (not Auth0)
+- Server remains fully functional throughout infrastructure build
+
+**Validation**: After each step, verify existing auth still works. Run full integration test suite.
+
+#### 4.2. Parallel Testing (Phase 4, Steps 4.1-4.5)
+
+**Objective**: Test Auth0 authentication in parallel with existing auth before cutover.
+
+**Approach**:
+
+1. **Environment Configuration** (Step 4.1): Add Auth0 config to environment (doesn't activate Auth0
+   yet)
+2. **Auth0 Tenant Setup** (Step 4.2): Configure Auth0 tenant, applications, Management API
+3. **Management API Service** (Step 4.3): Build Auth0 integration service (tested in isolation)
+4. **Parallel Testing** (Step 4.4):
+   - Conditionally register Auth0 providers based on `USE_AUTH0` flag
+   - Create test endpoint to verify Auth0 works
+   - Test both auth systems independently
+5. **Migration Test Users** (Step 4.5): Create test users in Auth0, link to local business users
+
+**Validation**: Both auth systems work independently. No conflicts. Can toggle between systems via
+flag.
+
+#### 4.3. Safe Cutover (Phase 4, Step 4.6)
+
+**Prerequisites Checklist**:
+
+- [ ] Auth0 tenant fully configured
+- [ ] Auth0 Management API working
+- [ ] Parallel testing successful (Step 4.4)
+- [ ] Test users migrated successfully (Step 4.5)
+- [ ] All Phase 1-3 tests passing
+- [ ] Staging deployment successful with Auth0 enabled
+- [ ] Rollback plan documented and tested
+
+**Cutover Process**:
+
+1. **Maintenance Window**: Schedule 15-minute window
+2. **Code Changes**:
+   - Replace `authPlugin()` with `authPluginV2()` in plugins array
+   - Replace `AUTH_CONTEXT` provider registration to use `AuthContextV2Provider`
+   - Update `TenantAwareDBClient` to inject new `AUTH_CONTEXT`
+3. **Deploy to Staging**: Full validation with Auth0 active
+4. **Deploy to Production**: Monitor error rates, ready to rollback
+5. **Monitor First Hour**: Login success rates, JWT verification errors, Auth0 API latency
+
+**Rollback Plan**:
+
+```bash
+# If issues occur within first hour:
+1. Set USE_AUTH0=false in environment
+2. Restart server (reverts to old auth)
+3. Verify old auth working
+4. Investigate Auth0 issues offline
+5. Fix and redeploy when ready
+```
+
+**Risk Mitigation**:
+
+- Immediate rollback capability (toggle environment flag)
+- Monitoring alerts for auth failures
+- 24/7 on-call during first week
+- User communication plan if extended downtime needed
+
+#### 4.4. Post-Migration Cleanup (Phase 5)
+
+**Timing**: After 7 days of stability in production
+
+**Tasks**:
+
+1. Delete old authentication files
+2. Rename v2 files to standard names (`auth-plugin-v2.ts` → `auth-plugin.ts`)
+3. Remove `USE_AUTH0` feature flag
+4. Update documentation
+5. Remove old auth tests
+
+**Validation**: Clean codebase, no deprecated code, all tests pass.
+
+---
+
+### 5. Implementation Phases
+
     *   **GraphQL Context**: Must provide `db: TenantAwareDBClient` instead of raw `pool: pg.Pool`
     *   **ESLint Rule**: Enforce no direct `pool.query()` usage in resolvers
-*   **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id` automatically. Any raw query access must be disallowed in GraphQL resolvers.
-*   **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and must rely on RLS-protected base tables.
-*   **Composite Uniqueness**: All business-scoped unique constraints must include `business_id`:
-    *   `documents`: (business_id, serial_number)
-    *   `financial_entities`: (business_id, name)
-    *   `tags`: (business_id, name)
-    *   `tax_categories`: (business_id, code)
-    *   `employees`: (business_id, employee_id)
-    *   `business_users`: PRIMARY KEY (user_id, business_id)
-    *   `invitations`: (business_id, email)
+
+- **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id`
+  automatically. Any raw query access must be disallowed in GraphQL resolvers.
+- **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and
+  must rely on RLS-protected base tables.
+- **Composite Uniqueness**: All business-scoped unique constraints must include `business_id`:
+  - `documents`: (business_id, serial_number)
+  - `financial_entities`: (business_id, name)
+  - `tags`: (business_id, name)
+  - `tax_categories`: (business_id, code)
+  - `employees`: (business_id, employee_id)
+  - `business_users`: PRIMARY KEY (user_id, business_id)
+  - `invitations`: (business_id, email)
 
 #### 3.4. Client Application (`packages/client`)
 
-**Note**: All login, signup, and password management flows are handled by Auth0 Universal Login. The client application does not implement custom login forms.
+**Note**: All login, signup, and password management flows are handled by Auth0 Universal Login. The
+client application does not implement custom login forms.
 
-*   **Auth0 SDK Integration** (`@auth0/auth0-react`):
-    *   Wrap the application in `<Auth0Provider>` with configuration:
-        *   `domain`: Auth0 tenant domain (e.g., `accounter.auth0.com`)
-        *   `clientId`: Auth0 Application Client ID
-        *   `redirectUri`: Application callback URL (e.g., `http://localhost:3000/callback`)
-        *   `audience`: GraphQL API identifier configured in Auth0
-        *   `scope`: `openid profile email`
-        *   `cacheLocation`: `localstorage` for persistence across page reloads
-        *   `useRefreshTokens`: `true` for silent authentication
-    *   Use `useAuth0()` hook to access authentication state:
-        *   `isAuthenticated`: Boolean indicating login status
-        *   `user`: Auth0 user profile (email, name, sub)
-        *   `loginWithRedirect()`: Triggers Auth0 Universal Login
-        *   `logout()`: Clears Auth0 session and local state
-        *   `getAccessTokenSilently()`: Retrieves valid JWT for API requests
+- **Auth0 SDK Integration** (`@auth0/auth0-react`):
+  - Wrap the application in `<Auth0Provider>` with configuration:
+    - `domain`: Auth0 tenant domain (e.g., `accounter.auth0.com`)
+    - `clientId`: Auth0 Application Client ID
+    - `redirectUri`: Application callback URL (e.g., `http://localhost:3000/callback`)
+    - `audience`: GraphQL API identifier configured in Auth0
+    - `scope`: `openid profile email`
+    - `cacheLocation`: `localstorage` for persistence across page reloads
+    - `useRefreshTokens`: `true` for silent authentication
+  - Use `useAuth0()` hook to access authentication state:
+    - `isAuthenticated`: Boolean indicating login status
+    - `user`: Auth0 user profile (email, name, sub)
+    - `loginWithRedirect()`: Triggers Auth0 Universal Login
+    - `logout()`: Clears Auth0 session and local state
+    - `getAccessTokenSilently()`: Retrieves valid JWT for API requests
 
-*   **UI Components**:
-    *   **Login Page** (`/login`): Simple page with "Login" button that calls `loginWithRedirect()`
-    *   **Callback Page** (`/callback`): Handles Auth0 redirect after login, completes authentication handshake, redirects to dashboard or invitation acceptance flow
-    *   **Accept Invitation Page** (`/accept-invitation?token=...`):
-        1. Check if user is authenticated via `useAuth0().isAuthenticated`
-        2. If not authenticated: Show "You've been invited to X" message with "Login to Accept" button that calls `loginWithRedirect({ appState: { returnTo: '/accept-invitation?token=...' } })`
-        3. If authenticated: Automatically call `acceptInvitation` mutation with token from URL, handle success/error
-        4. On success: Redirect to business dashboard with direct access (first-time login UX)
-    *   **Invite User Form** (Admin Settings): Form for `business owner` to create invitations (email, role selection), calls `createInvitation` mutation, displays invitation URL with copy button
-    *   **API Key Management** (Admin Settings):
-        *   Allow generating new keys for the `scraper` role
-        *   Display the generated key **only once** with copy button
-        *   List active keys (showing name, creation date, last used) and allow revocation
+- **UI Components**:
+  - **Login Page** (`/login`): Simple page with "Login" button that calls `loginWithRedirect()`
+  - **Callback Page** (`/callback`): Handles Auth0 redirect after login, completes authentication
+    handshake, redirects to dashboard or invitation acceptance flow
+  - **Accept Invitation Page** (`/accept-invitation?token=...`):
+    1. Check if user is authenticated via `useAuth0().isAuthenticated`
+    2. If not authenticated: Show "You've been invited to X" message with "Login to Accept" button
+       that calls `loginWithRedirect({ appState: { returnTo: '/accept-invitation?token=...' } })`
+    3. If authenticated: Automatically call `acceptInvitation` mutation with token from URL, handle
+       success/error
+    4. On success: Redirect to business dashboard with direct access (first-time login UX)
+  - **Invite User Form** (Admin Settings): Form for `business owner` to create invitations (email,
+    role selection), calls `createInvitation` mutation, displays invitation URL with copy button
+  - **API Key Management** (Admin Settings):
+    - Allow generating new keys for the `scraper` role
+    - Display the generated key **only once** with copy button
+    - List active keys (showing name, creation date, last used) and allow revocation
 
-*   **Token Management & GraphQL Integration**:
-    *   **Automatic Token Injection**: Configure Urql to automatically attach Auth0 JWT to requests:
-        ```typescript
-        const client = createClient({
-          url: '/graphql',
-          fetchOptions: async () => {
-            const token = await getAccessTokenSilently();
-            return {
-              headers: { Authorization: `Bearer ${token}` },
-              credentials: 'include'
-            };
-          }
-        });
-        ```
-    *   **Token Refresh**: Auth0 SDK handles automatic token refresh via refresh tokens stored in local storage (no manual refresh mutation needed)
-    *   **Session Persistence**: Auth0 SDK maintains session across page reloads using refresh tokens
+- **Token Management & GraphQL Integration**:
+  - **Automatic Token Injection**: Configure Urql to automatically attach Auth0 JWT to requests:
+    ```typescript
+    const client = createClient({
+      url: '/graphql',
+      fetchOptions: async () => {
+        const token = await getAccessTokenSilently()
+        return {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include'
+        }
+      }
+    })
+    ```
+  - **Token Refresh**: Auth0 SDK handles automatic token refresh via refresh tokens stored in local
+    storage (no manual refresh mutation needed)
+  - **Session Persistence**: Auth0 SDK maintains session across page reloads using refresh tokens
 
-*   **Business Context Selection** (Multi-Business Support):
-    *   After successful login, query GraphQL API for user's businesses: `query { me { businesses { businessId, businessName, role } } }`
-    *   If user belongs to multiple businesses, show business selector UI
-    *   Store selected `businessId` in React Context (does NOT go into JWT - business context is server-side only)
-    *   On business switch, refetch all data to update UI with new business context
+- **Business Context Selection** (Multi-Business Support):
+  - After successful login, query GraphQL API for user's businesses:
+    `query { me { businesses { businessId, businessName, role } } }`
+  - If user belongs to multiple businesses, show business selector UI
+  - Store selected `businessId` in React Context (does NOT go into JWT - business context is
+    server-side only)
+  - On business switch, refetch all data to update UI with new business context
 
-*   **Routing & Protected Routes**:
-    *   Implement `<ProtectedRoute>` component that checks `useAuth0().isAuthenticated`
-    *   If not authenticated, redirect to `/login`
-    *   If authenticated but no business context, redirect to business selection
-    *   Wrap all authenticated pages (dashboard, reports, etc.) in `<ProtectedRoute>`
+- **Routing & Protected Routes**:
+  - Implement `<ProtectedRoute>` component that checks `useAuth0().isAuthenticated`
+  - If not authenticated, redirect to `/login`
+  - If authenticated but no business context, redirect to business selection
+  - Wrap all authenticated pages (dashboard, reports, etc.) in `<ProtectedRoute>`
 
 #### 3.4.1. Frontend State & Cache Safety (Urql Graphcache)
 
-*   **Cache Reset Triggers**: The implementation must hard-reset the Graphcache store on login, logout, invitation acceptance, business switch, and `UNAUTHENTICATED` responses.
-*   **Business Context Provider**: The implementation must maintain `activeBusinessId` in React context and must re-instantiate the Urql client on business changes to prevent stale entities from bleeding across tenants.
+- **Cache Reset Triggers**: The implementation must hard-reset the Graphcache store on login,
+  logout, invitation acceptance, business switch, and `UNAUTHENTICATED` responses.
+- **Business Context Provider**: The implementation must maintain `activeBusinessId` in React
+  context and must re-instantiate the Urql client on business changes to prevent stale entities from
+  bleeding across tenants.
 
 ### 4. Error Handling
 
-*   **Authentication Errors**: 
-    *   The GraphQL API returns `UNAUTHENTICATED` errors if Auth0 JWT is missing, invalid, expired, or signature verification fails
-    *   Client catches this error and calls `loginWithRedirect()` to trigger Auth0 login
-*   **Authorization Errors**: The API should return `FORBIDDEN` errors if a user attempts to perform an action they do not have permission for. The client should handle this gracefully, displaying an error message to the user.
-*   **Auth0 Integration Errors**:
-    *   **Rate Limit (429)**: Return error with `extensions: { code: 'AUTH0_RATE_LIMIT', retryAfter: seconds }`, client displays "Please try again in X seconds"
-    *   **Auth0 API Failure**: Return generic error "Unable to process invitation at this time", log details server-side
-    *   **User Already Exists**: Return error "User with this email already exists", client suggests using existing account
-*   **Invitation Errors**: 
-    *   The `acceptInvitation` mutation should handle cases where:
-        *   Token is invalid or not found: `INVITATION_NOT_FOUND`
-        *   Token already used (`accepted_at` not null): `INVITATION_ALREADY_USED`
-        *   Token expired: `INVITATION_EXPIRED`
-        *   User not authenticated: `UNAUTHENTICATED` with message "Please log in to accept invitation"
+- **Authentication Errors**:
+  - The GraphQL API returns `UNAUTHENTICATED` errors if Auth0 JWT is missing, invalid, expired, or
+    signature verification fails
+  - Client catches this error and calls `loginWithRedirect()` to trigger Auth0 login
+- **Authorization Errors**: The API should return `FORBIDDEN` errors if a user attempts to perform
+  an action they do not have permission for. The client should handle this gracefully, displaying an
+  error message to the user.
+- **Auth0 Integration Errors**:
+  - **Rate Limit (429)**: Return error with
+    `extensions: { code: 'AUTH0_RATE_LIMIT', retryAfter: seconds }`, client displays "Please try
+    again in X seconds"
+  - **Auth0 API Failure**: Return generic error "Unable to process invitation at this time", log
+    details server-side
+  - **User Already Exists**: Return error "User with this email already exists", client suggests
+    using existing account
+- **Invitation Errors**:
+  - The `acceptInvitation` mutation should handle cases where:
+    - Token is invalid or not found: `INVITATION_NOT_FOUND`
+    - Token already used (`accepted_at` not null): `INVITATION_ALREADY_USED`
+    - Token expired: `INVITATION_EXPIRED`
+    - User not authenticated: `UNAUTHENTICATED` with message "Please log in to accept invitation"
 
 ### 5. Testing Plan
 
-*   **Backend (Unit/Integration Tests)**:
-    *   Test the `createInvitation` and `acceptInvitation` mutations with valid and invalid inputs
-    *   **Auth0 Integration Tests** (with mocked Auth0 Management API):
-        *   Verify `createInvitation` calls Auth0 API with correct payload (`blocked: true`, email, `app_metadata`)
-        *   Verify `createInvitation` handles Auth0 rate limits (429) and returns user-friendly error
-        *   Verify `createInvitation` rollback on Auth0 API failure
-        *   Verify `acceptInvitation` calls Auth0 API to unblock user on first acceptance
-        *   Verify `acceptInvitation` skips unblock for subsequent business invitations
-        *   Verify invitation cleanup job deletes blocked Auth0 users for expired invitations
-    *   **Auth0 JWT Verification Tests**:
-        *   Verify middleware correctly validates RS256 signatures using JWKS
-        *   Verify middleware rejects expired tokens
-        *   Verify middleware rejects tokens with invalid `iss` or `aud` claims
-        *   Verify context enrichment maps Auth0 user ID to local `user_id` correctly
-    *   Test **API Key authentication**: verify that a valid API key in the header authenticates the user, and an invalid one fails.
-    *   Test **Audit Logging**: verify that critical actions (invitation creation/acceptance, API key generation) create corresponding records in the `audit_logs` table with both `user_id` and `auth0_user_id`.
-    *   Test **Authorization Services**:
-        *   Verify `ChargesAuthService.canEdit()` rejects charges from other businesses (RLS enforcement)
-        *   Verify `DocumentsAuthService.canIssue()` checks permissions
-        *   Verify `UsersAuthService.canManage()` prevents privilege escalation
-    *   Test the RBAC logic: ensure users can only access data and perform actions allowed by their roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific restrictions.
-    *   Test **Cross-Tenant Isolation**: Attempt to access resources from Business A while authenticated to Business B (must fail at RLS layer).
-    *   **Note**: Permission-based authorization tests are out of scope for this phase. Focus on role-based checks (e.g., verify `business_owner` can manage users, `employee` cannot).
-*   **Client (Component/E2E Tests)**:
-    *   Test Auth0 login flow with mock Auth0 provider
-    *   Test invitation acceptance requiring authentication
-    *   Test that the Auth0 JWT is correctly attached to API requests via Authorization header
-    *   Test the protected route logic, ensuring unauthorized users trigger Auth0 login
-    *   Test that UI elements for restricted actions (e.g., "Manage Users" button) are hidden for users without the necessary permissions.
+- **Backend (Unit/Integration Tests)**:
+  - Test the `createInvitation` and `acceptInvitation` mutations with valid and invalid inputs
+  - **Auth0 Integration Tests** (with mocked Auth0 Management API):
+    - Verify `createInvitation` calls Auth0 API with correct payload (`blocked: true`, email,
+      `app_metadata`)
+    - Verify `createInvitation` handles Auth0 rate limits (429) and returns user-friendly error
+    - Verify `createInvitation` rollback on Auth0 API failure
+    - Verify `acceptInvitation` calls Auth0 API to unblock user on first acceptance
+    - Verify `acceptInvitation` skips unblock for subsequent business invitations
+    - Verify invitation cleanup job deletes blocked Auth0 users for expired invitations
+  - **Auth0 JWT Verification Tests**:
+    - Verify middleware correctly validates RS256 signatures using JWKS
+    - Verify middleware rejects expired tokens
+    - Verify middleware rejects tokens with invalid `iss` or `aud` claims
+    - Verify context enrichment maps Auth0 user ID to local `user_id` correctly
+  - Test **API Key authentication**: verify that a valid API key in the header authenticates the
+    user, and an invalid one fails.
+  - Test **Audit Logging**: verify that critical actions (invitation creation/acceptance, API key
+    generation) create corresponding records in the `audit_logs` table with both `user_id` and
+    `auth0_user_id`.
+  - Test **Authorization Services**:
+    - Verify `ChargesAuthService.canEdit()` rejects charges from other businesses (RLS enforcement)
+    - Verify `DocumentsAuthService.canIssue()` checks permissions
+    - Verify `UsersAuthService.canManage()` prevents privilege escalation
+  - Test the RBAC logic: ensure users can only access data and perform actions allowed by their
+    roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific
+    restrictions.
+  - Test **Cross-Tenant Isolation**: Attempt to access resources from Business A while authenticated
+    to Business B (must fail at RLS layer).
+  - **Note**: Permission-based authorization tests are out of scope for this phase. Focus on
+    role-based checks (e.g., verify `business_owner` can manage users, `employee` cannot).
+- **Client (Component/E2E Tests)**:
+  - Test Auth0 login flow with mock Auth0 provider
+  - Test invitation acceptance requiring authentication
+  - Test that the Auth0 JWT is correctly attached to API requests via Authorization header
+  - Test the protected route logic, ensuring unauthorized users trigger Auth0 login
+  - Test that UI elements for restricted actions (e.g., "Manage Users" button) are hidden for users
+    without the necessary permissions.
 
 ### 6. Transition State Management (Dual-Write & Defaulting)
 
-*   **Dual-Write**: The implementation must write `business_id` for all tenant tables and continue writing legacy owner columns until migration completion.
-*   **Backfill Rules**:
-        *   `charges.business_id = charges.owner_id`
-        *   `ledger_records.business_id = ledger_records.owner_id`
-        *   `financial_entities.business_id = financial_entities.owner_id`
-        *   `user_context.business_id = user_context.owner_id`
-        *   `financial_accounts.business_id = financial_accounts.owner`
-        *   `documents.business_id = COALESCE(charges.owner_id, documents.debtor_id, documents.creditor_id)`
-        *   `documents_issued.business_id = documents.business_id`
-        *   `salaries.business_id = employees.business_id` via `employee_id`, fallback `charge_id -> charges.owner_id`
-        *   `charge_tags.business_id = charges.owner_id`
-        *   `tags.business_id = charge_tags.business_id`
-*   **Quarantine**: Rows that cannot be deterministically assigned must remain inaccessible by RLS until resolved.
+- **Dual-Write**: The implementation must write `business_id` for all tenant tables and continue
+  writing legacy owner columns until migration completion.
+- **Backfill Rules**:
+  - `charges.business_id = charges.owner_id`
+  - `ledger_records.business_id = ledger_records.owner_id`
+  - `financial_entities.business_id = financial_entities.owner_id`
+  - `user_context.business_id = user_context.owner_id`
+  - `financial_accounts.business_id = financial_accounts.owner`
+  - `documents.business_id = COALESCE(charges.owner_id, documents.debtor_id, documents.creditor_id)`
+  - `documents_issued.business_id = documents.business_id`
+  - `salaries.business_id = employees.business_id` via `employee_id`, fallback
+    `charge_id -> charges.owner_id`
+  - `charge_tags.business_id = charges.owner_id`
+  - `tags.business_id = charge_tags.business_id`
+- **Quarantine**: Rows that cannot be deterministically assigned must remain inaccessible by RLS
+  until resolved.
 
 ### 7. Auth/Tenant Context Interfaces
 
 ```ts
-export type AuthType = "user" | "apiKey" | "system";
+export type AuthType = 'user' | 'apiKey' | 'system'
 
 export interface AuthUser {
-    userId: string;               // Local UUID from business_users table
-    auth0UserId: string;          // Auth0 identifier (e.g., "auth0|507f1f77...")
-    email: string;                // From Auth0 JWT
-    roles: string[];              // From business_users
-    permissions: string[];        // Resolved via PermissionResolutionService
-    permissionsVersion: number;   // For cache invalidation
+  userId: string // Local UUID from business_users table
+  auth0UserId: string // Auth0 identifier (e.g., "auth0|507f1f77...")
+  email: string // From Auth0 JWT
+  roles: string[] // From business_users
+  permissions: string[] // Resolved via PermissionResolutionService
+  permissionsVersion: number // For cache invalidation
 }
 
 export interface TenantContext {
-    businessId: string;
-    businessName?: string;
+  businessId: string
+  businessName?: string
 }
 
 export interface AuthContext {
-    authType: AuthType;
-    user?: AuthUser;
-    tenant?: TenantContext;
-    accessTokenExpiresAt?: number;  // From Auth0 JWT 'exp' claim
+  authType: AuthType
+  user?: AuthUser
+  tenant?: TenantContext
+  accessTokenExpiresAt?: number // From Auth0 JWT 'exp' claim
 }
 
 export interface RequestContext {
-    auth: AuthContext;
-    dbTenant: {
-        query<T>(sql: string, params?: unknown[]): Promise<T>;
-        transaction<T>(fn: () => Promise<T>): Promise<T>;
-    };
-    audit: {
-        log(action: string, entity?: string, entityId?: string, details?: Record<string, unknown>): void;
-    };
+  auth: AuthContext
+  dbTenant: {
+    query<T>(sql: string, params?: unknown[]): Promise<T>
+    transaction<T>(fn: () => Promise<T>): Promise<T>
+  }
+  audit: {
+    log(action: string, entity?: string, entityId?: string, details?: Record<string, unknown>): void
+  }
 }
 ```
 
