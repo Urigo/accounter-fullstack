@@ -1,5 +1,15 @@
 # @accounter-toolkit/israeli-vat-scraper
 
+## 0.1.11
+
+### Patch Changes
+
+- [#2959](https://github.com/Urigo/accounter-fullstack/pull/2959)
+  [`e537756`](https://github.com/Urigo/accounter-fullstack/commit/e53775641982f103baa9f02a250d2a05b36acd8f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.36.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.36.0)
+    (from `24.35.0`, in `dependencies`)
+
 ## 0.1.10
 
 ### Patch Changes

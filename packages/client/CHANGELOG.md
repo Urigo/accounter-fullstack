@@ -1,5 +1,50 @@
 # @accounter/client
 
+## 0.0.11
+
+### Patch Changes
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.20` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.20)
+    (from `5.90.19`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.6` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.6) (from
+    `1.6.5`, in `dependencies`)
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#2961](https://github.com/Urigo/accounter-fullstack/pull/2961)
+  [`ec845a7`](https://github.com/Urigo/accounter-fullstack/commit/ec845a705ca5e1a5992c5899055d18ebe561ae3e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.563.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.563.0) (from
+    `0.562.0`, in `dependencies`)
+
+- [#2963](https://github.com/Urigo/accounter-fullstack/pull/2963)
+  [`e528d48`](https://github.com/Urigo/accounter-fullstack/commit/e528d48225c7b9bf6b620bcfa970c226a7c4e754)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.13.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.0) (from
+    `7.12.0`, in `dependencies`)
+
+- [#2975](https://github.com/Urigo/accounter-fullstack/pull/2975)
+  [`4b37fc8`](https://github.com/Urigo/accounter-fullstack/commit/4b37fc85d294571c0a209901e64f7b4a1c7dc5ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **GraphQL Schema Update**: The 'zip'
+  field in the 'ClientInput' GraphQL type has been renamed to 'zipCode' for better clarity and
+  consistency across the system.
+  - **Green Invoice Client Data Mapping**: The logic for converting local client data to Green
+    Invoice client input has been updated to correctly use 'city' and 'zip_code' from local business
+    data and to ensure all client details are sourced from the initial input, resolving potential
+    data discrepancies.
+  - **UI Event Propagation Prevention**: The 'stopPropagation' method has been added to key UI
+    elements in document generation and preview modals to prevent unintended click event bubbling,
+    improving user interaction and preventing unexpected behavior.
+  - **UI Text Refinement**: A dialog title in the merge charges component has been updated from
+    'Issue New Document' to 'Merge Charges' for improved clarity and accuracy.
+
 ## 0.0.10
 
 ### Patch Changes
