@@ -40,9 +40,9 @@ export class TenantAwareDBClient implements OnDestroy {
    * If a transaction is already active, uses it.
    * If not, starts a new transaction/session, executes the query, and commits.
    */
-  public async query<T extends QueryResultRow = any>(
+  public async query<T extends QueryResultRow = QueryResultRow>(
     text: string,
-    params?: any[],
+    params?: unknown[],
   ): Promise<QueryResult<T>> {
     this.ensureNotDisposed();
 
@@ -66,7 +66,7 @@ export class TenantAwareDBClient implements OnDestroy {
     if (this.initializationPromise) {
       try {
         await this.initializationPromise;
-      } catch (error) {
+      } catch {
         // Initialization failed.
         // We proceed to check (!this.activeClient) which will re-attempt or fail.
       }
@@ -132,7 +132,7 @@ export class TenantAwareDBClient implements OnDestroy {
         // Ensure we don't try to rollback if already disposed or closed
         try {
           await client.query('ROLLBACK');
-        } catch (rollbackError) {
+        } catch {
           // Ignore rollback errors (e.g. if connection closed)
         }
       }
