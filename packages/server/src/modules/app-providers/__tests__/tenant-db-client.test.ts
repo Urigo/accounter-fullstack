@@ -38,6 +38,10 @@ describe('TenantAwareDBClient', () => {
       user: {
         userId: 'user-123',
         roleId: 'admin',
+        email: 'test@test.com',
+        permissions: [],
+        emailVerified: true,
+        permissionsVersion: 1,
       },
       tenant: {
         businessId: 'business-456',

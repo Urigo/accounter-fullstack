@@ -136,6 +136,23 @@ const DeelModel = zod.union([
   zod.void(),
 ]);
 
+const Auth0Model = zod.union([
+  zod
+    .object({
+      AUTH0_DOMAIN: zod.string().optional(),
+      AUTH0_AUDIENCE: zod.string().optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (!!data.AUTH0_DOMAIN !== !!data.AUTH0_AUDIENCE) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'AUTH0_DOMAIN and AUTH0_AUDIENCE must be provided together.',
+        });
+      }
+    }),
+  zod.void(),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
@@ -144,6 +161,7 @@ const configs = {
   hive: HiveModel.safeParse(process.env),
   googleDrive: GoogleDriveModel.safeParse(process.env),
   gmail: GmailModel.safeParse(process.env),
+  auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
 };
 
@@ -175,6 +193,7 @@ const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
 const gmail = extractConfig(configs.gmail);
+const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
 
 export const env = {
@@ -229,6 +248,12 @@ export const env = {
         appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS!,
         topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
         subscriptionName: gmail.PUBSUB_SUBSCRIPTION || 'gmail-notifications-sub',
+      }
+    : undefined,
+  auth0: auth0?.AUTH0_DOMAIN
+    ? {
+        domain: auth0.AUTH0_DOMAIN!,
+        audience: auth0.AUTH0_AUDIENCE!,
       }
     : undefined,
 } as const;
