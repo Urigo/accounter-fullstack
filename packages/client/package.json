@@ -63,10 +63,10 @@
     "lucide-react": "0.563.0",
     "next-themes": "0.4.6",
     "pdfjs-dist": "5.4.530",
-    "react": "19.2.3",
+    "react": "19.2.4",
     "react-day-picker": "9.13.0",
     "react-dnd": "16.0.1",
-    "react-dom": "19.2.3",
+    "react-dom": "19.2.4",
     "react-error-boundary": "6.1.0",
     "react-hook-form": "7.71.1",
     "react-number-format": "5.4.4",
@@ -95,7 +95,7 @@
     "vite-plugin-node-polyfills": "0.25.0"
   },
   "overrides": {
-    "react-is": "19.2.3"
+    "react-is": "19.2.4"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
