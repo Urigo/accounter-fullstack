@@ -229,4 +229,25 @@ export default [
       'promise/no-nesting': 1,
     },
   },
+  {
+    files: ['packages/server/src/modules/**/*.ts'],
+    ignores: ['packages/server/src/modules/app-providers/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['pg'],
+              message: 'Do not import "pg" directly. Use TenantAwareDBClient.',
+            },
+            {
+              group: ['**/app-providers/db.provider*'],
+              message: 'Do not import DBProvider directly. Use TenantAwareDBClient.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
