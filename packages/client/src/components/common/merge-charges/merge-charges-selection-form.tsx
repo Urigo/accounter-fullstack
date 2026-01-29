@@ -49,10 +49,14 @@ import { AccounterLoader, ListCapsule, Tooltip } from '../index.js';
 interface Props {
   chargeIds: string[];
   onDone: () => void;
-  resetMerge: () => void;
+  resetMergeList: () => void;
 }
 
-export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Props): ReactElement {
+export function MergeChargesSelectionForm({
+  chargeIds,
+  onDone,
+  resetMergeList,
+}: Props): ReactElement {
   const { mergeCharges, fetching: merging } = useMergeCharges();
   const distinctChargeIDs = Array.from(new Set(chargeIds));
   const [{ data, fetching }] = useQuery({
@@ -179,7 +183,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
       chargeIdsToMerge: distinctChargeIDs.filter(id => id !== mainCharge.id),
       fields,
     });
-    resetMerge();
+    resetMergeList();
     return onDone();
   }, [
     mainCharge,
@@ -193,7 +197,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     selectedCurrencyDiff,
     selectedTags,
     onDone,
-    resetMerge,
+    resetMergeList,
   ]);
 
   return (
@@ -551,7 +555,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
               type="button"
               className=" text-white bg-red-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-red-600 rounded-sm text-lg"
               onClick={(): void => {
-                resetMerge();
+                resetMergeList();
                 onDone();
               }}
             >
