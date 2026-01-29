@@ -263,20 +263,23 @@ export const authPlugin = (): Plugin => {
 
 ---
 
-### Step 2.3: TenantAwareDBClient (Request-Scoped)
+### Step 2.3: TenantAwareDBClient (Request-Scoped) - Preparatory
 
-**Goal**: Create RLS-enforcing database client for all GraphQL operations
+**Goal**: Create RLS-enforcing database client for FUTURE use (infrastructure only, not yet
+operational)
 
 **Tasks**:
 
-- Create `packages/server/src/shared/helpers/tenant-db-client.ts`
+- Create `packages/server/src/modules/app-providers/tenant-db-client.ts`
 - Implement `TenantAwareDBClient` class:
   - `@Injectable({ scope: Scope.Operation })`
-  - Constructor injects DBProvider (singleton) and AuthContext (request-scoped)
-  - `query()` method: wraps in transaction, sets RLS variables
+  - Constructor injects `DBProvider` (singleton) and
+    `@Inject(AUTH_CONTEXT) authContext: AuthContext | null`
+  - Handle null auth context gracefully (throw error or return empty results for now)
+  - `query()` method: wraps in transaction, sets RLS variables (when auth context exists)
   - `transaction()` method: supports nested transactions via savepoints
   - `dispose()` method: releases connection back to pool
-- Implement RLS variable setting:
+- Implement RLS variable setting (only when authContext is not null):
   ```sql
   SET LOCAL app.current_business_id = $1;
   SET LOCAL app.current_user_id = $2;
@@ -286,17 +289,17 @@ export const authPlugin = (): Plugin => {
   - Transaction reuse within single operation
   - Savepoint creation for nested transactions
   - Proper connection release on dispose
-  - RLS variables set correctly
-- Integration tests:
-  - Verify isolation between concurrent requests
+  - RLS variables set correctly (when auth context provided)
+  - **Null auth context handled gracefully** (throws descriptive error)
 
 **Validation**:
 
-- One transaction per GraphQL operation
-- RLS variables visible to all queries in transaction
-- No connection leaks
+- TenantAwareDBClient compiles successfully
+- Unit tests pass with mock auth context
+- Null auth handling works correctly (throws error with message "Auth context not available")
+- **NOT YET USED in resolvers** (infrastructure only)
 
-**Risk**: Medium (critical for security, needs careful testing)
+**Risk**: Low (preparatory code, not integrated into request flow yet)
 
 ---
 
@@ -390,37 +393,91 @@ export const authPlugin = (): Plugin => {
 
 ---
 
-### Step 2.6: Wire TenantAwareDBClient into GraphQL Context
+### Step 2.6: Register TenantAwareDBClient Provider
 
-**Goal**: Replace raw pool access with tenant-aware client in all resolvers (using EXISTING auth)
+**Goal**: Register TenantAwareDBClient as an Operation-scoped provider for dependency injection
 
 **Tasks**:
 
-- Update GraphQL context creation:
-  - Inject TenantAwareDBClient instead of raw pool
-  - Pass EXISTING AuthContext to client constructor (not Auth0 version yet)
-- Create ESLint rule:
-  - Prevent direct `DBProvider` imports in resolver files
-  - Allow only in migrations and background jobs
-- Update existing resolvers (gradual migration):
-  - Phase 1: Update one module (e.g., businesses)
-  - Add tests: Verify RLS variables set
-  - Phase 2: Update remaining modules incrementally
-- Add integration tests:
-  - Multi-tenant isolation verified
-  - Queries use active transaction
+**1. Register TenantAwareDBClient Provider** (`packages/server/src/modules-app.ts`):
+
+- Add `TenantAwareDBClient` to the `providers` array in `createApplication()`
+- Configure as `Scope.Operation` (request-scoped, one instance per GraphQL operation)
+- Inject `DBProvider` (singleton) and `AUTH_CONTEXT` (not yet active, will be null)
+- Example:
+  ```typescript
+  providers: [
+    DBProvider,
+    TenantAwareDBClient // Operation-scoped, available via DI
+    // ... other providers
+  ]
+  ```
+
+**2. Add Tests** (Provider registration validation):
+
+- Unit tests: Verify TenantAwareDBClient can be injected into other providers
+- Integration tests: Verify provider instantiation with null auth context
+- Mock tests: Verify provider works with mock AuthContext
+
+**Architecture Notes**:
+
+- **GraphQL Modules Providers** (see https://the-guild.dev/graphql/modules/docs/di/introduction):
+  - Registered in `modules-app.ts` via `createApplication({ providers: [...] })`
+  - `TenantAwareDBClient` is `Scope.Operation` (request-scoped)
+  - Injected into providers/services via constructor dependency injection
+  - **No Yoga context extension needed** - pure DI approach
+
+- **Dependency Injection Flow**:
+  ```
+  HTTP Request
+  → Yoga plugins (authPlugin, adminContextPlugin)
+  → GraphQL Modules (useGraphQLModules plugin)
+  → Operation-scoped providers instantiated
+  → TenantAwareDBClient injected into providers
+  → Providers injected into resolvers
+  → Resolvers delegate to providers
+  ```
+
+**Usage Pattern** (after Auth0 activation in Phase 4):
+
+```typescript
+// Providers inject TenantAwareDBClient
+@Injectable({ scope: Scope.Operation })
+class BusinessesProvider {
+  constructor(private db: TenantAwareDBClient) {}
+
+  async getBusinesses() {
+    return this.db.query('SELECT * FROM businesses')
+  }
+}
+
+// Resolvers delegate to providers
+@Resolver()
+class BusinessesResolver {
+  constructor(private businessesProvider: BusinessesProvider) {}
+
+  @Query()
+  getBusinesses() {
+    return this.businessesProvider.getBusinesses()
+  }
+}
+```
 
 **Validation**:
 
-- All resolver DB access goes through TenantAwareDBClient
-- ESLint catches violations
-- No direct pool.query() calls in resolvers
+- TenantAwareDBClient registered in providers array
+- Provider can be injected into other providers via DI
+- TenantAwareDBClient initializes without errors (even with null auth context)
+- **NO MODULES USING IT YET** - providers still use `DBProvider` or `context.pool` (unchanged)
+- Server starts successfully
+- All existing tests still pass (no functional changes)
 
-**Risk**: High (requires touching many files, must be gradual)
+**Risk**: Very Low (purely additive, no breaking changes)
 
-**Note**: This step will be broken into sub-steps per module in detailed implementation
-
----
+**Note**: This step ONLY registers the provider. TenantAwareDBClient exists but is UNUSED. Actual
+provider migration happens in Phase 4 AFTER Auth0 activation (Prompt 4.7), when AuthContext is
+properly populated. At this stage, TenantAwareDBClient won't function correctly without auth context
+(it will gracefully throw an error if called)
 
 ### Step 2.7: AdminContext Refactoring (Plugin → Provider)
 
@@ -1166,7 +1223,72 @@ careful validation at each stage. Existing authentication remains functional unt
 
 ---
 
-### Step 4.7: Auth Context Enrichment Service
+### Step 4.7: Pilot Provider Migration (Activate TenantAwareDBClient)
+
+**Goal**: Migrate one pilot provider to inject TenantAwareDBClient with RLS enforcement (NOW that
+Auth0 is active)
+
+**Prerequisites**:
+
+- Auth0 authentication active (Step 4.6 completed)
+- TenantAwareDBClient registered as provider (Step 2.6 completed) - AuthContext now properly
+  populated with Auth0 user data
+- RLS enabled on target tables (Phase 3 completed)
+
+**Tasks**:
+
+**1. Create ESLint Rule** (`eslint.config.mjs`):
+
+- Add `no-restricted-imports` rule to prevent direct `DBProvider` imports in provider/service files
+- Pattern: `**/providers/**` and `**/services/**` cannot import `DBProvider`
+- Exempt: `**/migrations/**`, `**/scripts/**`, and test files can import `DBProvider`
+- Custom error message: "Use TenantAwareDBClient injection instead of DBProvider for RLS
+  enforcement"
+
+**2. Pilot Provider Migration** (Update one provider: `BusinessesProvider`):
+
+- File: `packages/server/src/modules/financial-entities/providers/businesses.provider.ts`
+- Change constructor injection:
+
+  ```typescript
+  // BEFORE:
+  constructor(private dbProvider: DBProvider) {}
+
+  // AFTER:
+  constructor(private db: TenantAwareDBClient) {}
+  ```
+
+- Update all database queries to use `this.db` instead of `this.dbProvider`
+- Remove explicit WHERE business_id clauses (RLS handles tenant filtering automatically)
+- Verify TypeScript compilation succeeds
+- Add integration tests:
+  - Verify queries execute successfully through TenantAwareDBClient
+  - Verify RLS variables are set (monitor `pg_stat_activity` during test)
+  - Verify tenant isolation (provider with business A context cannot see business B data)
+  - Verify transaction reuse (single connection per provider operation)
+
+**3. Validation Testing**:
+
+- Run full test suite for businesses provider
+- Deploy to staging and verify functionality via GraphQL queries
+- Monitor RLS enforcement in database logs
+- Verify no cross-tenant data leaks
+
+**Validation**:
+
+- BusinessesProvider injects TenantAwareDBClient exclusively
+- ESLint prevents new `DBProvider` imports in providers
+- All tests pass
+- RLS enforced on all queries
+- No performance degradation (< 10% overhead)
+
+**Risk**: Medium (first operational use of TenantAwareDBClient in production)
+
+**Rollback Plan**: Revert provider constructor to inject `DBProvider` if issues occur
+
+---
+
+### Step 4.8: Auth Context Enrichment Service
 
 - `getAccessToken()`: Use client credentials flow to obtain M2M access token (cache for 24 hours)
 - `createUser(email: string, invitationMetadata: object)`: Call `POST /api/v2/users` with payload:
