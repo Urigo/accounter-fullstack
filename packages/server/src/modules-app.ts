@@ -11,6 +11,7 @@ import { GmailServiceProvider } from './modules/app-providers/gmail-listener/gma
 import { PubsubServiceProvider } from './modules/app-providers/gmail-listener/pubsub-service.provider.js';
 import { GoogleDriveProvider } from './modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
+import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
 import { bankDepositsModule } from './modules/bank-deposits/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesMatcherModule } from './modules/charges-matcher/index.js';
@@ -39,7 +40,7 @@ import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
 import type { AdminContext } from './plugins/admin-context-plugin.js';
 import type { UserType } from './plugins/auth-plugin.js';
-import { ENVIRONMENT } from './shared/tokens.js';
+import { AUTH_CONTEXT, ENVIRONMENT } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -93,6 +94,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         useFactory: () => pool,
       },
       DBProvider,
+      TenantAwareDBClient,
       CloudinaryProvider,
       DeelClientProvider,
       GreenInvoiceClientProvider,
@@ -104,6 +106,11 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         provide: ENVIRONMENT,
         useValue: env,
         scope: Scope.Singleton,
+      },
+      {
+        provide: AUTH_CONTEXT,
+        useValue: null,
+        scope: Scope.Operation,
       },
     ],
   });

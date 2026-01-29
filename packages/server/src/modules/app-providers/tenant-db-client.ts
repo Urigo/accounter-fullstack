@@ -1,3 +1,4 @@
+import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope, type OnDestroy } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { AUTH_CONTEXT } from '../../shared/tokens.js';
@@ -5,21 +6,36 @@ import type { AuthContext } from '../../shared/types/auth.js';
 import { DBProvider } from './db.provider.js';
 
 /**
- * TenantAwareDBClient - Request-scoped database client with RLS enforcement.
- *
- * This client manages a dedicated database connection for the lifecycle of a single
- * GraphQL operation. It ensures that all queries are executed within a transaction
- * context that has Row-Level Security (RLS) variables set.
- *
+ * TenantAwareDBClient enforces Row-Level Security (RLS) by setting PostgreSQL
+ * session variables for every database transaction.
+ 
+ * 
  * RLS Enforcement:
  * - app.current_business_id: Set to the authenticated user's active business
  * - app.current_user_id: Set to the authenticated user's ID (or NULL for API keys)
  * - app.auth_type: Set to 'jwt' or 'apiKey'
  *
+ * **Usage:**
+ * Inject into Operation-scoped providers via constructor DI:
+ *
+ * @example
+ * @Injectable({ scope: Scope.Operation })
+ * class BusinessesProvider {
+ *   constructor(private db: TenantAwareDBClient) {}
+ *
+ *   async getBusinesses() {
+ *     return this.db.query('SELECT * FROM businesses')
+ *   }
+ * }
+ *
  * Transaction Management:
  * - Supports nested transactions via SAVEPOINTs
  * - Automatically rolls back on error
  * - Automatically releases connection on dispose
+ *
+ * **DO NOT** access from Yoga context - use DI injection instead.
+ *
+ * @throws {GraphQLError} UNAUTHENTICATED if auth context is null
  */
 @Injectable({
   scope: Scope.Operation,
@@ -43,15 +59,26 @@ export class TenantAwareDBClient implements OnDestroy {
   public async query<T extends QueryResultRow = QueryResultRow>(
     text: string,
     params?: unknown[],
-  ): Promise<QueryResult<T>> {
+  ): Promise<QueryResult<T> & { rowCount: number }> {
     this.ensureNotDisposed();
 
+    if (!this.authContext) {
+      throw new GraphQLError(
+        'Auth context not available. TenantAwareDBClient requires active authentication.',
+        { extensions: { code: 'UNAUTHENTICATED' } },
+      );
+    }
+
     if (this.activeClient) {
-      return this.activeClient.query<T>(text, params);
+      return this.activeClient
+        .query<T>(text, params)
+        .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
     }
 
     return this.transaction(async client => {
-      return client.query<T>(text, params);
+      return client
+        .query<T>(text, params)
+        .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
     });
   }
 
@@ -61,6 +88,13 @@ export class TenantAwareDBClient implements OnDestroy {
    */
   public async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     this.ensureNotDisposed();
+
+    if (!this.authContext) {
+      throw new GraphQLError(
+        'Auth context not available. TenantAwareDBClient requires active authentication.',
+        { extensions: { code: 'UNAUTHENTICATED' } },
+      );
+    }
 
     // 1. Wait for initialization if in progress
     if (this.initializationPromise) {
@@ -160,7 +194,11 @@ export class TenantAwareDBClient implements OnDestroy {
    */
   private async setRLSVariables(client: PoolClient): Promise<void> {
     if (!this.authContext) {
-      throw new Error('Missing AuthContext');
+      throw new GraphQLError('Unauthenticated', {
+        extensions: {
+          code: 'UNAUTHENTICATED',
+        },
+      });
     }
 
     const { tenant, user, authType } = this.authContext;

@@ -53,6 +53,14 @@ describe('TenantAwareDBClient', () => {
   });
 
   describe('query', () => {
+    it('should throw if auth context is missing', async () => {
+      tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
+      
+      await expect(tenantDBClient.query('SELECT 1'))
+        .rejects
+        .toThrow('Auth context not available. TenantAwareDBClient requires active authentication.');
+    });
+
     it('should start a transaction if none exists', async () => {
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
@@ -84,6 +92,14 @@ describe('TenantAwareDBClient', () => {
   });
 
   describe('transaction', () => {
+    it('should throw if auth context is missing', async () => {
+        tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
+        
+        await expect(tenantDBClient.transaction(async () => {}))
+          .rejects
+          .toThrow('Auth context not available. TenantAwareDBClient requires active authentication.');
+      });
+
     it('should handle nested transactions with savepoints', async () => {
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
@@ -142,9 +158,29 @@ describe('TenantAwareDBClient', () => {
       expect((tenantDBClient as any).activeClient).toBeNull();
     });
 
+    it('should rollback and release active client2', async () => {
+      // Start a transaction first to initialize activeClient
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      
+      const transactionPromise = tenantDBClient.transaction(async () => {
+          // Pause here
+          await new Promise(resolve => setTimeout(resolve, 10));
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 0)); // Let transaction start
+      
+      await tenantDBClient.dispose();
+
+      // Transaction promise should fail or complete
+      try { await transactionPromise; } catch {}
+
+      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockPoolClient.release).toHaveBeenCalled();
+    });
+
     it('should be idempotent', async () => {
       (tenantDBClient as any).activeClient = mockPoolClient;
-      
+
       await tenantDBClient.dispose();
       await tenantDBClient.dispose();
 
@@ -161,7 +197,7 @@ describe('TenantAwareDBClient', () => {
       expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockPoolClient.release).toHaveBeenCalled();
       expect((tenantDBClient as any).activeClient).toBeNull();
-    });
+     });
   });
 
   describe('RLS variables', () => {
@@ -185,7 +221,7 @@ describe('TenantAwareDBClient', () => {
       expect(setCall![1]).toEqual(expectedVars);
     });
 
-    it('should throw if businessId is missing', async () => {
+    it('should throw if businessId is missing in auth context', async () => {
       (tenantDBClient as any).authContext = { ...mockAuthContext, tenant: {} };
 
       await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
