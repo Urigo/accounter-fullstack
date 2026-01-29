@@ -42,7 +42,7 @@ __metadata:
     dotenv: "npm:17.2.3"
     dotenv-cli: "npm:11.0.0"
     fast-xml-parser: "npm:5.3.3"
-    listr2: "npm:10.0.0"
+    listr2: "npm:10.1.0"
     pg: "npm:8.17.2"
     rimraf: "npm:6.1.2"
     tsup: "npm:8.5.1"
@@ -16062,9 +16062,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"listr2@npm:10.0.0":
-  version: 10.0.0
-  resolution: "listr2@npm:10.0.0"
+"listr2@npm:10.1.0":
+  version: 10.1.0
+  resolution: "listr2@npm:10.1.0"
   dependencies:
     cli-truncate: "npm:^5.0.0"
     colorette: "npm:^2.0.20"
@@ -16072,7 +16072,7 @@ __metadata:
     log-update: "npm:^7.0.2"
     rfdc: "npm:^1.4.1"
     wrap-ansi: "npm:^9.0.0"
-  checksum: 10c0/7b422e806580077666d65d17777f09c283720319f17e7bbb9e3d2458a62bf66c76f99d854c219e52c4fe0f6c4ebb76775b86c9ff035f9eeee1ad7eae3f228f77
+  checksum: 10c0/93245fd63dc1187cb816b9a4b90687bc5c8bacfaf951eb1b91867a5650d73afd75c068d0b387557498b04ca2be30e8ed9e0d58e269ed8a1fb0cf114b0acd5a00
   languageName: node
   linkType: hard
 
