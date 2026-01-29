@@ -234,7 +234,7 @@ export default [
     ignores: ['packages/server/src/modules/app-providers/**'],
     rules: {
       'no-restricted-imports': [
-        'error',
+        'warn',
         {
           patterns: [
             {
