@@ -229,7 +229,10 @@ export function ChargeActionsMenu({
       <EditChargeModal
         chargeId={editingCharge ? chargeId : undefined}
         close={() => setEditingCharge(false)}
-        onChange={onChange}
+        onChange={() => {
+          setEditingCharge(false);
+          onChange?.();
+        }}
       />
       <InsertDocumentModal
         chargeId={insertingDocument ? chargeId : undefined}

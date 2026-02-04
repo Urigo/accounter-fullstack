@@ -87,8 +87,13 @@ export function SimilarChargesByIdModal({
   }, [open, fetching, data, onClose]);
 
   const shouldShowModal = useMemo(() => {
+    if (open && !tagIds && !description) {
+      // if no criteria to search for similar charges, close the modal
+      onClose?.();
+      return false;
+    }
     return open && (!!tagIds || !!description) && data && data?.similarCharges.length > 0;
-  }, [open, tagIds, description, data]);
+  }, [open, tagIds, description, data, onClose]);
 
   return (
     <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
