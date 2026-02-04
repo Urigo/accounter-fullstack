@@ -16,6 +16,7 @@ export interface FinancialAccount {
   bankNumber?: number;
   branchNumber?: number;
   iban?: string;
+  swiftCode?: string;
   extendedBankNumber?: number;
   partyPreferredIndication?: number;
   partyAccountInvolvementCode?: number;

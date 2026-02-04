@@ -66,6 +66,7 @@ const financialAccountSchema = z.object({
   bankNumber: optionalInt,
   branchNumber: optionalInt,
   iban: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
+  swiftCode: z.preprocess(val => (val === '' ? undefined : val), z.string().optional()),
   extendedBankNumber: optionalInt,
   partyPreferredIndication: optionalInt,
   partyAccountInvolvementCode: optionalInt,
@@ -109,6 +110,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
         bankNumber: undefined,
         branchNumber: undefined,
         iban: undefined,
+        swiftCode: undefined,
         extendedBankNumber: undefined,
         partyPreferredIndication: undefined,
         partyAccountInvolvementCode: undefined,
@@ -169,6 +171,9 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                 branchNumber: values.branchNumber,
                 ...(values.iban !== undefined && {
                   iban: values.iban,
+                }),
+                ...(values.swiftCode !== undefined && {
+                  swiftCode: values.swiftCode,
                 }),
                 ...(values.extendedBankNumber !== undefined && {
                   extendedBankNumber: values.extendedBankNumber,
@@ -439,6 +444,20 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                       render={({ field }) => (
                         <FormItem className="space-y-2">
                           <FormLabel>IBAN</FormLabel>
+                          <FormControl>
+                            <Input value={field.value ?? ''} onChange={field.onChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={control}
+                      name="swiftCode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel>Swift Code</FormLabel>
                           <FormControl>
                             <Input value={field.value ?? ''} onChange={field.onChange} />
                           </FormControl>

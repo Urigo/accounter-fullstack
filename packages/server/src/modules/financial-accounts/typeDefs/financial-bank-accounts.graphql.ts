@@ -14,6 +14,7 @@ export default gql`
     bankNumber: Int!
     branchNumber: Int!
     iban: String
+    swiftCode: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int
@@ -34,6 +35,7 @@ export default gql`
     bankNumber: Int!
     branchNumber: Int!
     iban: String
+    swiftCode: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int
@@ -54,6 +56,7 @@ export default gql`
     bankNumber: Int
     branchNumber: Int
     iban: String
+    swiftCode: String
     extendedBankNumber: Int
     partyPreferredIndication: Int
     partyAccountInvolvementCode: Int

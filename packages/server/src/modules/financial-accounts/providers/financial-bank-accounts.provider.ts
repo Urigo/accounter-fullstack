@@ -20,6 +20,7 @@ const getFinancialBankAccountsByIds = sql<IGetFinancialBankAccountsByIdsQuery>`
     bank_number,
     branch_number,
     iban,
+    swift_code,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -41,6 +42,7 @@ const getAllFinancialBankAccounts = sql<IGetAllFinancialBankAccountsQuery>`
     bank_number,
     branch_number,
     iban,
+    swift_code,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -70,6 +72,10 @@ const updateBankAccount = sql<IUpdateBankAccountQuery>`
   iban =COALESCE(
     $iban,
     iban
+  ),
+  swift_code =COALESCE(
+    $swiftCode,
+    swift_code
   ),
   extended_bank_number =COALESCE(
     $extendedBankNumber,
@@ -133,6 +139,7 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
     bank_number,
     branch_number,
     iban,
+    swift_code,
     extended_bank_number,
     party_preferred_indication,
     party_account_involvement_code,
@@ -151,6 +158,7 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
     bankNumber,
     branchNumber,
     iban,
+    swiftCode,
     extendedBankNumber,
     partyPreferredIndication,
     partyAccountInvolvementCode,

@@ -38,6 +38,7 @@ import type { FinancialAccount } from '../../financial-accounts/types.js';
         bankNumber
         branchNumber
         iban
+        swiftCode
         extendedBankNumber
         partyPreferredIndication
         partyAccountInvolvementCode
@@ -75,6 +76,7 @@ function convertFinancialAccountDataToFormValues(
           bankNumber: account.bankNumber,
           branchNumber: account.branchNumber,
           iban: account.iban ?? undefined,
+          swiftCode: account.swiftCode ?? undefined,
           extendedBankNumber: account.extendedBankNumber ?? undefined,
           partyPreferredIndication: account.partyPreferredIndication ?? undefined,
           partyAccountInvolvementCode: account.partyAccountInvolvementCode ?? undefined,
