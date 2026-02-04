@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Indicator, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
+import { useGetFinancialAccounts } from '@/hooks/use-get-financial-accounts.js';
 import type { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
@@ -51,18 +52,24 @@ const balanceReportFilterSchema = z.object({
     Periods.SEMI_ANNUALLY,
     Periods.ANNUALLY,
   ]),
+  includedCounterparties: z.array(z.string()),
   excludedCounterparties: z.array(z.string()),
   includedTags: z.array(z.string()),
   excludedTags: z.array(z.string()),
+  includedAccounts: z.array(z.string()),
+  excludedAccounts: z.array(z.string()),
 });
 
 type BalanceReportFilterFormValues = z.infer<typeof balanceReportFilterSchema>;
 
 export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   period: Period;
+  includedCounterparties: string[];
   excludedCounterparties: string[];
   includedTags: string[];
   excludedTags: string[];
+  includedAccounts: string[];
+  excludedAccounts: string[];
 };
 
 function filterToFormValues(filter: BalanceReportFilter): BalanceReportFilterFormValues {
@@ -71,9 +78,12 @@ function filterToFormValues(filter: BalanceReportFilter): BalanceReportFilterFor
     fromDate: filter.fromDate,
     toDate: filter.toDate,
     period: filter.period ?? Periods.MONTHLY,
+    includedCounterparties: filter.includedCounterparties ?? [],
     excludedCounterparties: filter.excludedCounterparties ?? [],
     includedTags: filter.includedTags ?? [],
     excludedTags: filter.excludedTags ?? [],
+    includedAccounts: filter.includedAccounts ?? [],
+    excludedAccounts: filter.excludedAccounts ?? [],
   };
 }
 
@@ -97,6 +107,8 @@ function BalanceReportFiltersForm({
     useGetAdminBusinesses();
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
+  const { selectableFinancialAccounts: financialAccounts, fetching: financialAccountsFetching } =
+    useGetFinancialAccounts();
   const { selectableTags: allTags, fetching: tagsFetching } = useGetTags();
 
   const onSubmit: SubmitHandler<BalanceReportFilterFormValues> = data => {
@@ -104,16 +116,17 @@ function BalanceReportFiltersForm({
     closeModal();
   };
 
-  const excludedTags = form.watch('excludedTags');
-  const selectableIncludedTags = useMemo(
-    () => allTags.filter(tag => !excludedTags.includes(tag.value)),
-    [excludedTags, allTags],
+  const includedCounterparties = form.watch('includedCounterparties');
+  const shouldBlockExcludedCounterparties = useMemo(
+    () => includedCounterparties.length > 0,
+    [includedCounterparties],
   );
-
   const includedTags = form.watch('includedTags');
-  const selectableExcludedTags = useMemo(
-    () => allTags.filter(tag => !includedTags.includes(tag.value)),
-    [includedTags, allTags],
+  const shouldBlockExcludedTags = useMemo(() => includedTags.length > 0, [includedTags]);
+  const includedAccounts = form.watch('includedAccounts');
+  const shouldBlockExcludedAccounts = useMemo(
+    () => includedAccounts.length > 0,
+    [includedAccounts],
   );
   return (
     <Form {...form}>
@@ -210,10 +223,10 @@ function BalanceReportFiltersForm({
           />
           <FormField
             control={form.control}
-            name="excludedCounterparties"
+            name="includedCounterparties"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Excluded Counterparties</FormLabel>
+                <FormLabel>Included Counterparties</FormLabel>
                 <FormControl>
                   <MultiSelect
                     asChild
@@ -232,6 +245,72 @@ function BalanceReportFiltersForm({
           />
           <FormField
             control={form.control}
+            name="excludedCounterparties"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Excluded Counterparties</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    asChild
+                    options={financialEntities}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? []}
+                    value={field.value ?? []}
+                    placeholder="Scroll to see all options"
+                    variant="default"
+                    disabled={financialEntitiesFetching || shouldBlockExcludedCounterparties}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="includedAccounts"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Included Accounts</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    asChild
+                    options={financialAccounts}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? []}
+                    value={field.value ?? []}
+                    placeholder="Scroll to see all options"
+                    variant="default"
+                    disabled={financialAccountsFetching}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="excludedAccounts"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Excluded Accounts</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    asChild
+                    options={financialAccounts}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? []}
+                    value={field.value ?? []}
+                    placeholder="Scroll to see all options"
+                    variant="default"
+                    disabled={financialAccountsFetching || shouldBlockExcludedAccounts}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="includedTags"
             render={({ field }) => (
               <FormItem>
@@ -239,7 +318,7 @@ function BalanceReportFiltersForm({
                 <FormControl>
                   <MultiSelect
                     asChild
-                    options={selectableIncludedTags}
+                    options={allTags}
                     onValueChange={field.onChange}
                     defaultValue={field.value ?? []}
                     value={field.value ?? []}
@@ -261,13 +340,13 @@ function BalanceReportFiltersForm({
                 <FormControl>
                   <MultiSelect
                     asChild
-                    options={selectableExcludedTags}
+                    options={allTags}
                     onValueChange={field.onChange}
                     defaultValue={field.value ?? []}
                     value={field.value ?? []}
                     placeholder="Scroll to see all options"
                     variant="default"
-                    disabled={tagsFetching}
+                    disabled={tagsFetching || shouldBlockExcludedTags}
                   />
                 </FormControl>
                 <FormMessage />
