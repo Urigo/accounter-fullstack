@@ -120,7 +120,7 @@ __metadata:
     react-hook-form: "npm:7.71.1"
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.13.0"
-    react-to-pdf: "npm:3.0.0"
+    react-to-pdf: "npm:3.1.0"
     recharts: "npm:2.15.4"
     sonner: "npm:2.0.7"
     tailwind-merge: "npm:3.4.0"
@@ -19537,16 +19537,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-to-pdf@npm:3.0.0":
-  version: 3.0.0
-  resolution: "react-to-pdf@npm:3.0.0"
+"react-to-pdf@npm:3.1.0":
+  version: 3.1.0
+  resolution: "react-to-pdf@npm:3.1.0"
   dependencies:
     html2canvas: "npm:^1.4.1"
     jspdf: "npm:^4.0.0"
   peerDependencies:
     react: ">=16.8"
     react-dom: ">=16.8"
-  checksum: 10c0/5e13f574ce695331832d2860959daaafee87adc2e4c8210634a038bcd353f8a8c4b170db005b0d4bd67960185a8b2470a5a6b11f34e046edb16b8c0e7c5301e3
+  checksum: 10c0/c4628584e8417fc98116328e561e62b487fa55df031aa352fc37d98588f36a53ddedaf27284341b6e58b108fa0097bfd1c300e9eefccbe1aeb74ed7752550240
   languageName: node
   linkType: hard
 
