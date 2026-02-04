@@ -13,12 +13,14 @@ import { AllFinancialAccountsDocument, type AllFinancialAccountsQuery } from '..
   }
 `;
 
-type AllCountries = Array<NonNullable<AllFinancialAccountsQuery['allFinancialAccounts']>[number]>;
+type AllFinancialAccounts = Array<
+  NonNullable<AllFinancialAccountsQuery['allFinancialAccounts']>[number]
+>;
 
 type UseGetFinancialAccounts = {
   fetching: boolean;
   refresh: () => void;
-  financialAccounts: AllCountries;
+  financialAccounts: AllFinancialAccounts;
   selectableFinancialAccounts: Array<{ value: string; label: string }>;
 };
 
