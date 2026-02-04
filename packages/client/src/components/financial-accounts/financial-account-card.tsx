@@ -107,6 +107,10 @@ export function FinancialAccountCard({
                 <p className="font-medium">{account.iban}</p>
               </div>
               <div>
+                <span className="text-muted-foreground text-xs">Swift Code:</span>
+                <p className="font-medium">{account.swiftCode}</p>
+              </div>
+              <div>
                 <span className="text-muted-foreground text-xs">Party Preferred Indication:</span>
                 <p className="font-medium">{account.partyPreferredIndication}</p>
               </div>
