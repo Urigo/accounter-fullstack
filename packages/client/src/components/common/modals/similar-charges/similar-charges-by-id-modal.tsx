@@ -90,6 +90,13 @@ export function SimilarChargesByIdModal({
     return open && (!!tagIds || !!description) && data && data?.similarCharges.length > 0;
   }, [open, tagIds, description, data]);
 
+  useEffect(() => {
+    if (open && !tagIds && !description) {
+      // if no criteria to search for similar charges, close the modal
+      onClose?.();
+    }
+  }, [open, tagIds, description, onClose]);
+
   return (
     <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
       <DialogContent

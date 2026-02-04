@@ -65,7 +65,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
                       label="Year of relevance"
                       value={value ? new Date(value) : null}
                       error={fieldState.error?.message}
-                      popoverProps={{ withinPortal: true }}
+                      popoverProps={{ withinPortal: true, zIndex: 1002 }}
                       required
                       onChange={date => {
                         trigger(chargeSpreadPath as Path<T>);
