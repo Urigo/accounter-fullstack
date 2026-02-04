@@ -54,7 +54,7 @@ export function ComboBox({
     return (
       <div className="flex flex-col gap-1 w-full">
         <Popover modal open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild className="w-fit min-w-40">
+          <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
               placeholder={placeholder}
               selectedOption={selectedOption}
@@ -63,7 +63,7 @@ export function ComboBox({
               {...triggerProps}
             />
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0" align="start">
+          <PopoverContent className="w-full p-0" align="start">
             <OptionsList
               setOpen={setOpen}
               onChange={onChange}

@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { getFinancialAccountByTransactionId } from '../../financial-accounts/helpers/account-by-transaction.helper.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { BalanceReportProvider } from '../providers/balance-report.provider.js';
 import type { ReportsModule } from '../types.js';
@@ -57,6 +58,9 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
           }
           return res;
         });
+    },
+    account: (t, _, { injector, adminContext }) => {
+      return getFinancialAccountByTransactionId(t.id, injector, adminContext);
     },
   },
 };

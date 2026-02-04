@@ -46,6 +46,10 @@ import { ExtendedTransactionsCard } from './extended-transactions.jsx';
       counterparty {
         id
       }
+      account {
+        id
+        name
+      }
       isFee
       description
       charge {
@@ -140,9 +144,12 @@ export const BalanceReport = (): ReactElement => {
       toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
       period: Periods.MONTHLY,
       fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
+      includedCounterparties: [],
       excludedCounterparties: [],
       includedTags: [],
       excludedTags: [],
+      includedAccounts: [],
+      excludedAccounts: [],
     };
     const uriFilters = get(BALANCE_REPORT_FILTERS_QUERY_PARAM);
     if (uriFilters) {
@@ -208,7 +215,24 @@ export const BalanceReport = (): ReactElement => {
       }
     >();
     data.transactionsForBalanceReport.map(txn => {
-      if (txn.counterparty?.id) {
+      // filter by counterparty
+      if (filter.includedCounterparties?.length > 0) {
+        if (!txn.counterparty?.id) {
+          // filter out transactions without counterparties
+          return;
+        }
+        if (
+          !txn.isFee &&
+          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
+        ) {
+          // filter out internal transactions
+          return;
+        }
+        if (!filter.includedCounterparties.includes(txn.counterparty.id)) {
+          // filter out transactions without included counterparties
+          return;
+        }
+      } else if (txn.counterparty?.id) {
         if (
           !txn.isFee &&
           userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
@@ -221,7 +245,9 @@ export const BalanceReport = (): ReactElement => {
           return;
         }
       }
-      if (filter.includedTags.length > 0) {
+
+      // filter by tags
+      if (filter.includedTags?.length > 0) {
         if (!txn.charge?.tags || txn.charge.tags.length === 0) {
           // filter out transactions without tags
           return;
@@ -230,8 +256,7 @@ export const BalanceReport = (): ReactElement => {
           // filter out transactions without included tags
           return;
         }
-      }
-      if (
+      } else if (
         filter.excludedTags.length > 0 &&
         txn.charge?.tags.length &&
         txn.charge.tags.some(tag => filter.excludedTags.includes(tag.id))
@@ -239,6 +264,22 @@ export const BalanceReport = (): ReactElement => {
         // filter out transactions with excluded tags
         return;
       }
+
+      // filter by account
+      if (filter.includedAccounts?.length > 0) {
+        if (!txn.account?.id) {
+          // filter out transactions without accounts
+          return;
+        }
+        if (!filter.includedAccounts.includes(txn.account.id)) {
+          // filter out transactions without included accounts
+          return;
+        }
+      } else if (txn.account?.id && filter.excludedAccounts?.includes(txn.account.id)) {
+        // filter out excluded accounts
+        return;
+      }
+
       const key = getPeriodKey(txn.year, txn.month, filter.period);
       if (!periods.has(key)) {
         periods.set(key, {

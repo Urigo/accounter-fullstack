@@ -1,9 +1,9 @@
 import type { PrivateOrBusinessType } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
-import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { getFinancialAccountByTransactionId } from '../helpers/account-by-transaction.helper.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
-import type { FinancialAccountsModule, IGetFinancialAccountsByAccountIDsResult } from '../types.js';
+import type { FinancialAccountsModule } from '../types.js';
 
 function getPrivateOrBusinessType(privateOrBusiness: string): PrivateOrBusinessType {
   switch (privateOrBusiness) {
@@ -39,39 +39,8 @@ export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAcco
 export const commonTransactionFields:
   | FinancialAccountsModule.ConversionTransactionResolvers
   | FinancialAccountsModule.CommonTransactionResolvers = {
-  account: async (
-    transactionId,
-    _,
-    {
-      injector,
-      adminContext: {
-        defaultAdminBusinessId,
-        foreignSecurities: { foreignSecuritiesBusinessId },
-      },
-    },
-  ) => {
-    const transaction = await injector
-      .get(TransactionsProvider)
-      .transactionByIdLoader.load(transactionId);
-    if (!transaction.account_id) {
-      throw new Error(`Transaction ID="${transactionId}" is missing account_id`);
-    }
-
-    let account: IGetFinancialAccountsByAccountIDsResult | undefined = undefined;
-    if (!!foreignSecuritiesBusinessId && transaction.business_id === foreignSecuritiesBusinessId) {
-      const accounts = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountsByOwnerIdLoader.load(defaultAdminBusinessId);
-      account = accounts.find(account => account.type === 'FOREIGN_SECURITIES');
-    } else {
-      account = await injector
-        .get(FinancialAccountsProvider)
-        .getFinancialAccountByAccountIDLoader.load(transaction.account_id);
-    }
-    if (!account) {
-      throw new Error(`Account ID "${transaction.account_id}" is missing`);
-    }
-    return account;
+  account: async (transactionId, _, { injector, adminContext }) => {
+    return getFinancialAccountByTransactionId(transactionId, injector, adminContext);
   },
 };
 

@@ -22,5 +22,6 @@ export default gql`
     counterparty: FinancialEntity
     isFee: Boolean!
     description: String
+    account: FinancialAccount!
   }
 `;
