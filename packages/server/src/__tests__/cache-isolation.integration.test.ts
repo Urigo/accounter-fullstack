@@ -18,7 +18,6 @@ import { TagsProvider } from '../modules/tags/providers/tags.provider.js';
 import { ChargeTagsProvider } from '../modules/tags/providers/charge-tags.provider.js';
 import { DeelInvoicesProvider } from '../modules/deel/providers/deel-invoices.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
-import { GreenInvoiceClientProvider } from '../modules/app-providers/green-invoice-client.js';
 import { CryptoExchangeProvider } from '../modules/exchange-rates/providers/crypto-exchange.provider.js';
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { BusinessTripExpensesProvider } from '../modules/business-trips/providers/business-trips-expenses.provider.js';
@@ -68,7 +67,6 @@ describe('Cache Isolation Integration', () => {
       DeelContractsProvider,
       ChargesProvider,
       ChargeSpreadProvider,
-      GreenInvoiceClientProvider,
       CryptoExchangeProvider,
       LedgerProvider,
       AnnualRevenueReportProvider,
