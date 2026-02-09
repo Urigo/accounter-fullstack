@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
@@ -68,34 +67,35 @@ const insertClient = sql<IInsertClientQuery>`
     RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class ClientsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60 * 24, // 24 hours
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private allClientsPython: Promise<IGetAllClientsResult[]> | null = null;
   public async getAllClients() {
-    const cache = this.cache.get<IGetAllClientsResult[]>('all-clients');
-    if (cache) {
-      return Promise.resolve(cache);
+    if (this.allClientsPython) {
+      return this.allClientsPython;
     }
-    return getAllClients.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-clients', data);
-      data.map(client => {
-        this.cache.set(`client-id-${client.business_id}`, client);
+    this.allClientsPython = getAllClients.run(undefined, this.dbProvider).then(clients => {
+      clients.map(client => {
+        this.getClientByIdLoader.prime(client.business_id, client);
         try {
           const { greenInvoiceId } = validateClientIntegrations(client.integrations ?? {});
-          this.cache.set(`client-green-invoice-id-${greenInvoiceId}`, client);
+          if (greenInvoiceId) {
+            this.getClientByGreenInvoiceIdLoader.prime(greenInvoiceId, {
+              ...client,
+              green_invoice_business_id: greenInvoiceId,
+            });
+          }
         } catch {
           // swallow errors
         }
       });
-      return data;
+      return clients;
     });
+    return this.allClientsPython;
   }
 
   private async batchClientsByIds(ids: readonly string[]) {
@@ -109,12 +109,8 @@ export class ClientsProvider {
     }
   }
 
-  public getClientByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchClientsByIds(keys),
-    {
-      cacheKeyFn: key => `client-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getClientByIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchClientsByIds(keys),
   );
 
   private async batchClientsByGreenInvoiceIds(greenInvoiceIds: readonly string[]) {
@@ -123,6 +119,10 @@ export class ClientsProvider {
         { greenInvoiceBusinessIds: greenInvoiceIds },
         this.dbProvider,
       );
+
+      matches.map(match => {
+        this.getClientByIdLoader.prime(match.business_id, match);
+      });
 
       return greenInvoiceIds.map(id =>
         matches.find(match => match.green_invoice_business_id === id),
@@ -133,15 +133,14 @@ export class ClientsProvider {
     }
   }
 
-  public getClientByGreenInvoiceIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchClientsByGreenInvoiceIds(keys),
-    {
-      cacheKeyFn: key => `client-green-invoice-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getClientByGreenInvoiceIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchClientsByGreenInvoiceIds(keys),
   );
 
   public async updateClient(params: IUpdateClientParams) {
+    if (params.businessId) {
+      this.getClientByIdLoader.clear(params.businessId);
+    }
     this.clearCache();
     return updateClient.run(params, this.dbProvider);
   }
@@ -157,6 +156,8 @@ export class ClientsProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.allClientsPython = null;
+    this.getClientByIdLoader.clearAll();
+    this.getClientByGreenInvoiceIdLoader.clearAll();
   }
 }

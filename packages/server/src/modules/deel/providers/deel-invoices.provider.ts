@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetChargeIdsByPaymentIdsQuery,
@@ -128,14 +127,10 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DeelInvoicesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchInvoicesByIssueDates(issueDates: readonly Date[]) {
@@ -158,12 +153,8 @@ export class DeelInvoicesProvider {
     }
   }
 
-  public getInvoicesByIssueDateLoader = new DataLoader(
-    (dates: readonly Date[]) => this.batchInvoicesByIssueDates(dates),
-    {
-      cacheKeyFn: key => `invoices-issue-date-${key}`,
-      cacheMap: this.cache,
-    },
+  public getInvoicesByIssueDateLoader = new DataLoader((dates: readonly Date[]) =>
+    this.batchInvoicesByIssueDates(dates),
   );
 
   private async batchInvoicesByIds(ids: readonly string[]) {
@@ -171,12 +162,8 @@ export class DeelInvoicesProvider {
     return ids.map(id => invoices.find(invoice => invoice.id === id));
   }
 
-  public getInvoicesByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchInvoicesByIds(ids),
-    {
-      cacheKeyFn: key => `invoices-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getInvoicesByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchInvoicesByIds(ids),
   );
 
   private async batchChargeIdsByPaymentIds(paymentIds: readonly string[]) {
@@ -186,12 +173,8 @@ export class DeelInvoicesProvider {
     );
   }
 
-  public getChargeIdByPaymentIdLoader = new DataLoader(
-    (paymentIds: readonly string[]) => this.batchChargeIdsByPaymentIds(paymentIds),
-    {
-      cacheKeyFn: key => `charge-by-payment-${key}`,
-      cacheMap: this.cache,
-    },
+  public getChargeIdByPaymentIdLoader = new DataLoader((paymentIds: readonly string[]) =>
+    this.batchChargeIdsByPaymentIds(paymentIds),
   );
 
   public async getReceiptToCharge() {

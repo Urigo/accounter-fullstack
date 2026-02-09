@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
@@ -259,14 +258,10 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
     DELETE FROM accounter_schema.charges
     WHERE id IN $$chargeIds;`;
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class ChargesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60, // 1 hours
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
@@ -279,12 +274,8 @@ export class ChargesProvider {
     return ids.map(id => charges.find(charge => charge.id === id));
   }
 
-  public getChargeByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesByIds(keys),
-    {
-      cacheKeyFn: id => `charge-${id}`,
-      cacheMap: this.cache,
-    },
+  public getChargeByIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchChargesByIds(keys),
   );
 
   private async batchChargesByTransactionIds(transactionIds: readonly string[]) {
@@ -313,6 +304,9 @@ export class ChargesProvider {
   }
 
   public updateCharge(params: IUpdateChargeParams) {
+    if (params.chargeId) {
+      this.invalidateCharge(params.chargeId);
+    }
     return updateCharge.run(params, this.dbProvider).then(([newCharge]) => {
       if (newCharge) {
         this.invalidateCharge(newCharge.id);
@@ -323,10 +317,17 @@ export class ChargesProvider {
   }
 
   public batchUpdateCharges(params: IBatchUpdateChargesParams) {
-    return batchUpdateCharges.run(params, this.dbProvider).then(charges => {
-      charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
-      return charges;
-    });
+    {
+      params.chargeIds.map(chargeId => {
+        if (chargeId) {
+          this.invalidateCharge(chargeId);
+        }
+      });
+      return batchUpdateCharges.run(params, this.dbProvider).then(charges => {
+        charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+        return charges;
+      });
+    }
   }
 
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
@@ -416,6 +417,6 @@ export class ChargesProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getChargeByIdLoader.clearAll();
   }
 }

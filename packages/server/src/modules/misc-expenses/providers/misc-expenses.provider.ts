@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteExpenseParams,
@@ -99,14 +98,10 @@ const deleteExpense = sql<IDeleteExpenseQuery>`
   RETURNING id;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class MiscExpensesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
@@ -122,12 +117,8 @@ export class MiscExpensesProvider {
     return chargeIds.map(id => expensesByChargeId.get(id) ?? []);
   }
 
-  public getExpensesByChargeIdLoader = new DataLoader(
-    (chargeIds: readonly string[]) => this.batchExpensesByChargeIds(chargeIds),
-    {
-      cacheKeyFn: key => `misc-expenses-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getExpensesByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchExpensesByChargeIds(chargeIds),
   );
 
   private async batchExpensesByFinancialEntityIds(financialEntityIds: readonly string[]) {
@@ -154,10 +145,6 @@ export class MiscExpensesProvider {
   public getExpensesByFinancialEntityIdLoader = new DataLoader(
     (financialEntityIds: readonly string[]) =>
       this.batchExpensesByFinancialEntityIds(financialEntityIds),
-    {
-      cacheKeyFn: key => `misc-expenses-financial-entity-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchExpensesByIds(ids: readonly string[]) {
@@ -165,12 +152,8 @@ export class MiscExpensesProvider {
     return ids.map(id => expenses.find(expense => expense.id === id));
   }
 
-  public getExpensesByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchExpensesByIds(ids),
-    {
-      cacheKeyFn: key => `misc-expenses-${key}`,
-      cacheMap: this.cache,
-    },
+  public getExpensesByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchExpensesByIds(ids),
   );
 
   public async updateExpense(params: IUpdateExpenseParams) {
@@ -209,46 +192,30 @@ export class MiscExpensesProvider {
   }
 
   public async invalidateByChargeId(chargeId: string) {
-    try {
-      const expenses = await this.getExpensesByChargeIdLoader.load(chargeId);
-      await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
-      this.cache.delete(`misc-expenses-charge-${chargeId}`);
-    } catch (error) {
-      const message = `Error invalidating misc expense by charge id: ${chargeId}`;
-      console.error(`${message}: ${error}`);
-      throw new Error(message);
-    }
+    this.getExpensesByChargeIdLoader.clear(chargeId);
   }
 
   public async invalidateByFinancialEntityId(financialEntityId: string) {
-    try {
-      const expenses = await this.getExpensesByFinancialEntityIdLoader.load(financialEntityId);
-      await Promise.all(expenses.map(({ id }) => this.invalidateById(id)));
-      this.cache.delete(`misc-expenses-financial-entity-${financialEntityId}`);
-    } catch (error) {
-      const message = `Error invalidating misc expense by financial entity id: ${financialEntityId}`;
-      console.error(`${message}: ${error}`);
-      throw new Error(message);
-    }
+    this.getExpensesByFinancialEntityIdLoader.clear(financialEntityId);
   }
 
   public async invalidateById(id: string) {
-    try {
-      const expense = await this.getExpensesByIdLoader.load(id);
-      if (expense) {
-        this.cache.delete(`misc-expenses-charge-${expense.charge_id}`);
-        this.cache.delete(`misc-expenses-financial-entity-${expense.creditor_id}`);
-        this.cache.delete(`misc-expenses-financial-entity-${expense.debtor_id}`);
+    const expense = await this.getExpensesByIdLoader.load(id);
+    if (expense) {
+      this.getExpensesByChargeIdLoader.clear(expense.charge_id);
+      if (expense.creditor_id) {
+        this.getExpensesByFinancialEntityIdLoader.clear(expense.creditor_id);
       }
-      this.cache.delete(`misc-expenses-${id}`);
-    } catch (error) {
-      const message = `Error invalidating misc expense by id: ${id}`;
-      console.error(`${message}: ${error}`);
-      throw new Error(message);
+      if (expense.debtor_id) {
+        this.getExpensesByFinancialEntityIdLoader.clear(expense.debtor_id);
+      }
     }
+    this.getExpensesByIdLoader.clear(id);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getExpensesByIdLoader.clearAll();
+    this.getExpensesByChargeIdLoader.clearAll();
+    this.getExpensesByFinancialEntityIdLoader.clearAll();
   }
 }

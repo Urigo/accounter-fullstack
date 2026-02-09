@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
@@ -268,31 +267,24 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DocumentsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private allDocumentsCache: Promise<IGetAllDocumentsResult[]> | null = null;
   public async getAllDocuments(params: IGetAllDocumentsParams) {
-    const cached = this.cache.get<IGetAllDocumentsResult[]>('all-documents');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allDocumentsCache) {
+      return this.allDocumentsCache;
     }
-    return getAllDocuments.run(params, this.dbProvider).then(res => {
-      if (res) {
-        this.cache.set('all-documents', res);
-        res.map(doc => {
-          this.cache.set(`document-${doc.id}`, doc);
-          this.cache.delete(`document-by-charge-${doc.charge_id}`);
-        });
-      }
-      return res;
+    this.allDocumentsCache = getAllDocuments.run(params, this.dbProvider).then(docs => {
+      docs.map(doc => {
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
+      });
+      return docs;
     });
+    return this.allDocumentsCache;
   }
 
   private async batchDocumentsByChargeIds(chargeIds: readonly string[]) {
@@ -302,7 +294,7 @@ export class DocumentsProvider {
 
       return chargeIds.map(id =>
         docs.filter(doc => {
-          this.cache.set(`document-${doc.id}`, doc);
+          this.getDocumentsByIdLoader.prime(doc.id, doc);
           return doc.charge_id === id;
         }),
       );
@@ -312,12 +304,8 @@ export class DocumentsProvider {
     }
   }
 
-  public getDocumentsByChargeIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchDocumentsByChargeIds(keys),
-    {
-      cacheKeyFn: key => `document-by-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDocumentsByChargeIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchDocumentsByChargeIds(keys),
   );
 
   public getDocumentsByFilters(params: IGetAdjustedDocumentsByFiltersParams) {
@@ -333,12 +321,11 @@ export class DocumentsProvider {
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
     };
-    return getDocumentsByFilters.run(fullParams, this.dbProvider).then(res => {
-      res.map(doc => {
-        this.cache.set(`document-${doc.id}`, doc);
-        this.cache.delete(`document-by-charge-${doc.charge_id}`);
+    return getDocumentsByFilters.run(fullParams, this.dbProvider).then(docs => {
+      docs.map(doc => {
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
       });
-      return res;
+      return docs;
     });
   }
 
@@ -359,13 +346,7 @@ export class DocumentsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getDocumentsByExtendedFilters.run(fullParams, this.dbProvider).then(res => {
-      res.map(doc => {
-        this.cache.set(`document-${doc.id}`, doc);
-        this.cache.delete(`document-by-charge-${doc.charge_id}`);
-      });
-      return res;
-    });
+    return getDocumentsByExtendedFilters.run(fullParams, this.dbProvider);
   }
 
   private async batchDocumentsByIds(ids: readonly string[]) {
@@ -380,18 +361,18 @@ export class DocumentsProvider {
     }
   }
 
-  public getDocumentsByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchDocumentsByIds(keys),
-    {
-      cacheKeyFn: key => `document-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDocumentsByIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchDocumentsByIds(keys),
   );
 
   private async batchDocumentsByBusinessIds(businessIds: readonly string[]) {
     const uniqueIDs = [...new Set(businessIds)];
     try {
       const docs = await getDocumentsByBusinessIds.run({ Ids: uniqueIDs }, this.dbProvider);
+
+      docs.map(doc => {
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
+      });
 
       return businessIds.map(id =>
         docs.filter(doc => doc.creditor_id === id || doc.debtor_id === id),
@@ -402,12 +383,8 @@ export class DocumentsProvider {
     }
   }
 
-  public getDocumentsByBusinessIdLoader = new DataLoader(
-    (businessIds: readonly string[]) => this.batchDocumentsByBusinessIds(businessIds),
-    {
-      cacheKeyFn: key => `documents-by-business-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDocumentsByBusinessIdLoader = new DataLoader((businessIds: readonly string[]) =>
+    this.batchDocumentsByBusinessIds(businessIds),
   );
 
   private async batchDocumentsByHash(hashes: readonly number[]) {
@@ -418,6 +395,10 @@ export class DocumentsProvider {
         this.dbProvider,
       );
 
+      docs.map(doc => {
+        this.getDocumentsByIdLoader.prime(doc.id, doc);
+      });
+
       return hashes.map(hash => docs.find(doc => doc.file_hash === hash.toString()));
     } catch (e) {
       console.error(e);
@@ -425,12 +406,8 @@ export class DocumentsProvider {
     }
   }
 
-  public getDocumentByHash = new DataLoader(
-    (hashes: readonly number[]) => this.batchDocumentsByHash(hashes),
-    {
-      cacheKeyFn: hash => `document-hash-${hash}`,
-      cacheMap: this.cache,
-    },
+  public getDocumentByHash = new DataLoader((hashes: readonly number[]) =>
+    this.batchDocumentsByHash(hashes),
   );
 
   public async getDocumentsByMissingRequiredInfo() {
@@ -440,8 +417,8 @@ export class DocumentsProvider {
   public async updateDocument(params: IUpdateDocumentParams) {
     if (params.documentId) {
       const document = await this.getDocumentsByIdLoader.load(params.documentId);
-      if (document) {
-        this.cache.delete(`document-by-charge-${document.charge_id}`);
+      if (document?.charge_id) {
+        this.getDocumentsByChargeIdLoader.clear(document.charge_id);
       }
       this.invalidateById(params.documentId);
     }
@@ -451,8 +428,8 @@ export class DocumentsProvider {
   public async deleteDocument(params: IDeleteDocumentParams) {
     if (params.documentId) {
       const document = await this.getDocumentsByIdLoader.load(params.documentId);
-      if (document) {
-        this.cache.delete(`document-by-charge-${document.charge_id}`);
+      if (document?.charge_id) {
+        this.getDocumentsByChargeIdLoader.clear(document.charge_id);
       }
       this.invalidateById(params.documentId);
     }
@@ -481,27 +458,31 @@ export class DocumentsProvider {
   public async invalidateById(id: string) {
     const document = await this.getDocumentsByIdLoader.load(id);
     if (document) {
-      this.cache.delete(`document-by-charge-${document.charge_id}`);
-      this.cache.delete(`document-hash-${document.file_hash}`);
-      this.cache.delete(`documents-by-business-${document.debtor_id}`);
-      this.cache.delete(`documents-by-business-${document.creditor_id}`);
+      if (document.charge_id) this.getDocumentsByChargeIdLoader.clear(document.charge_id);
+      if (document.file_hash) this.getDocumentByHash.clear(Number(document.file_hash));
+      if (document.debtor_id) this.getDocumentsByBusinessIdLoader.clear(document.debtor_id);
+      if (document.creditor_id) this.getDocumentsByBusinessIdLoader.clear(document.creditor_id);
     }
-    this.cache.delete(`document-${id}`);
-    this.cache.delete('all-documents');
+    this.getDocumentsByIdLoader.clear(id);
+    this.allDocumentsCache = null;
   }
 
   public async invalidateByChargeId(chargeId: string) {
     const documents = await this.getDocumentsByChargeIdLoader.load(chargeId);
     documents.map(doc => {
-      this.cache.delete(`document-${doc.id}`);
-      this.cache.delete(`documents-by-business-${doc.debtor_id}`);
-      this.cache.delete(`documents-by-business-${doc.creditor_id}`);
+      this.getDocumentsByIdLoader.clear(doc.id);
+      if (doc.debtor_id) this.getDocumentsByBusinessIdLoader.clear(doc.debtor_id);
+      if (doc.creditor_id) this.getDocumentsByBusinessIdLoader.clear(doc.creditor_id);
     });
-    this.cache.delete(`document-by-charge-${chargeId}`);
-    this.cache.delete('all-documents');
+    this.getDocumentsByChargeIdLoader.clear(chargeId);
+    this.allDocumentsCache = null;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getDocumentsByIdLoader.clearAll();
+    this.getDocumentsByChargeIdLoader.clearAll();
+    this.getDocumentsByBusinessIdLoader.clearAll();
+    this.getDocumentByHash.clearAll();
+    this.allDocumentsCache = null;
   }
 }

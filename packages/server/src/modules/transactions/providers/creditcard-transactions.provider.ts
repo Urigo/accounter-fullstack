@@ -43,7 +43,7 @@ WHERE origin_transaction.charge_id in $$chargeIds
 group by (origin_transaction.charge_id, origin_transaction.amount)`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class CreditCardTransactionsProvider {

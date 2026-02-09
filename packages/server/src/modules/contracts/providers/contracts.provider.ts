@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type {
@@ -144,29 +143,27 @@ const insertContract = sql<IInsertContractQuery>`
   global: true,
 })
 export class ContractsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60, // 1 hours
-  });
-
   constructor(
     private dbProvider: DBProvider,
     private businessesProvider: BusinessesProvider,
   ) {}
 
+  private allOpenContractsCache: Promise<IGetAllOpenContractsResult[]> | null = null;
   public getAllOpenContracts() {
-    const cached = this.cache.get<IGetAllOpenContractsResult[]>('all-contracts');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allOpenContractsCache) {
+      return this.allOpenContractsCache;
     }
-    return getAllOpenContracts.run(undefined, this.dbProvider).then(contracts => {
-      if (contracts) {
-        this.cache.set('all-contracts', contracts);
-        contracts.map(contract => {
-          this.cache.set(`contract-${contract.id}`, contract);
-        });
-      }
-      return contracts;
-    });
+    this.allOpenContractsCache = getAllOpenContracts
+      .run(undefined, this.dbProvider)
+      .then(contracts => {
+        if (contracts) {
+          contracts.map(contract => {
+            this.getContractsByIdLoader.prime(contract.id, contract);
+          });
+        }
+        return contracts;
+      });
+    return this.allOpenContractsCache;
   }
 
   private async contractsByIds(ids: readonly string[]) {
@@ -174,12 +171,8 @@ export class ContractsProvider {
     return ids.map(id => contracts.find(contract => contract.id === id));
   }
 
-  public getContractsByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.contractsByIds(ids),
-    {
-      cacheKeyFn: id => `contract-${id}`,
-      cacheMap: this.cache,
-    },
+  public getContractsByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.contractsByIds(ids),
   );
 
   private async contractsByAdminBusinessIds(adminBusinessIds: readonly string[]) {
@@ -187,6 +180,11 @@ export class ContractsProvider {
       { adminBusinessIds },
       this.dbProvider,
     );
+
+    contracts.map(contract => {
+      this.getContractsByIdLoader.prime(contract.id, contract);
+    });
+
     return adminBusinessIds.map(adminBusinessId =>
       contracts.filter(contract => contract.owner_id === adminBusinessId),
     );
@@ -194,28 +192,23 @@ export class ContractsProvider {
 
   public getContractsByAdminBusinessIdLoader = new DataLoader(
     (adminBusinessIds: readonly string[]) => this.contractsByAdminBusinessIds(adminBusinessIds),
-    {
-      cacheKeyFn: adminBusinessId => `admin-business-${adminBusinessId}-contracts`,
-      cacheMap: this.cache,
-    },
   );
 
   private async contractsByClients(clientIds: readonly string[]) {
     const contracts = await getContractsByClientIds.run({ clientIds }, this.dbProvider);
+    contracts.map(contract => {
+      this.getContractsByIdLoader.prime(contract.id, contract);
+    });
     return clientIds.map(clientId => contracts.filter(contract => contract.client_id === clientId));
   }
 
-  public getContractsByClientIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.contractsByClients(ids),
-    {
-      cacheKeyFn: id => `client-contracts-${id}`,
-      cacheMap: this.cache,
-    },
+  public getContractsByClientIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.contractsByClients(ids),
   );
 
   public async createContract(params: IInsertContractParams) {
     const [newContract] = await insertContract.run(params, this.dbProvider);
-    this.cache.set(`contract-${newContract.id}`, newContract);
+    this.getContractsByIdLoader.prime(newContract.id, newContract);
 
     // Invalidate list caches
     this.getContractsByClientIdLoader.clear(newContract.client_id);
@@ -236,7 +229,7 @@ export class ContractsProvider {
     } else {
       this.clearCache();
     }
-    this.cache.set(`contract-${updatedContract.id}`, updatedContract);
+    this.getContractsByIdLoader.prime(updatedContract.id, updatedContract);
     return updatedContract;
   }
 
@@ -249,15 +242,19 @@ export class ContractsProvider {
   public async invalidateCacheForContract(contractId: string) {
     const contract = await this.getContractsByIdLoader.load(contractId);
     if (contract) {
-      this.cache.delete(`client-contracts-${contract.client_id}`);
+      this.getContractsByClientIdLoader.clear(contract.client_id);
       const business = await this.businessesProvider.getBusinessByIdLoader.load(contract.client_id);
       if (business?.owner_id) {
-        this.cache.delete(`admin-business-${business.owner_id}-contracts`);
+        this.getContractsByAdminBusinessIdLoader.clear(business.owner_id);
       }
     }
+    this.allOpenContractsCache = null;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getContractsByAdminBusinessIdLoader.clearAll();
+    this.getContractsByClientIdLoader.clearAll();
+    this.getContractsByIdLoader.clearAll();
+    this.allOpenContractsCache = null;
   }
 }

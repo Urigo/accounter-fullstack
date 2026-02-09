@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { adminBusinessUpdateSchema } from '../helpers/admin-businesses.helper.js';
 import type {
@@ -68,10 +67,6 @@ const updateAdminBusinesses = sql<IUpdateAdminBusinessesQuery>`
   global: true,
 })
 export class AdminBusinessesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchAdminBusinessesByIds(ids: readonly string[]) {
@@ -82,26 +77,30 @@ export class AdminBusinessesProvider {
       },
       this.dbProvider,
     );
+    adminBusinesses.map(adminBusiness => {
+      this.getAdminBusinessByIdLoader.prime(adminBusiness.id, adminBusiness);
+    });
     return ids.map(id => adminBusinesses.find(admin => admin.id === id));
   }
 
-  public getAdminBusinessByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchAdminBusinessesByIds(ids),
-    {
-      cacheKeyFn: id => `admin-business-${id}`,
-      cacheMap: this.cache,
-    },
+  public getAdminBusinessByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchAdminBusinessesByIds(ids),
   );
 
+  private allAdminBusinessesPromise: Promise<IGetAllAdminBusinessesResult[]> | null = null;
   public getAllAdminBusinesses() {
-    const data = this.cache.get<IGetAllAdminBusinessesResult[]>('all-admin-businesses');
-    if (data) {
-      return Promise.resolve(data);
+    if (this.allAdminBusinessesPromise) {
+      return this.allAdminBusinessesPromise;
     }
-    return getAllAdminBusinesses.run(undefined, this.dbProvider).then(result => {
-      this.cache.set('all-admin-businesses', result);
-      return result;
-    });
+    this.allAdminBusinessesPromise = getAllAdminBusinesses
+      .run(undefined, this.dbProvider)
+      .then(adminBusinesses => {
+        adminBusinesses.map(adminBusiness => {
+          this.getAdminBusinessByIdLoader.prime(adminBusiness.id, adminBusiness);
+        });
+        return adminBusinesses;
+      });
+    return this.allAdminBusinessesPromise;
   }
 
   public async updateAdminBusiness(
@@ -114,6 +113,7 @@ export class AdminBusinessesProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.allAdminBusinessesPromise = null;
+    this.getAdminBusinessByIdLoader.clearAll();
   }
 }

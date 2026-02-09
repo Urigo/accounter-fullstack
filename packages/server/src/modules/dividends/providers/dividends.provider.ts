@@ -1,10 +1,8 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
-  IGetAllDividendsParams,
   IGetAllDividendsQuery,
   IGetAllDividendsResult,
   IGetDividendsByBusinessIdsQuery,
@@ -34,27 +32,19 @@ const getDividendsByBusinessIds = sql<IGetDividendsByBusinessIdsQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DividendsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
-  public async getAllDividends(params: IGetAllDividendsParams) {
-    const cached = this.cache.get<IGetAllDividendsResult[]>('all-dividends');
-    if (cached) {
-      return Promise.resolve(cached);
+  private allDividendsCache: Promise<IGetAllDividendsResult[]> | null = null;
+  public getAllDividends() {
+    if (this.allDividendsCache) {
+      return this.allDividendsCache;
     }
-    return getAllDividends.run(params, this.dbProvider).then(res => {
-      if (res) {
-        this.cache.set('all-dividends', res);
-      }
-      return res;
-    });
+    this.allDividendsCache = getAllDividends.run(undefined, this.dbProvider);
+    return this.allDividendsCache;
   }
 
   private async batchDividendsByChargeIds(chargeIds: readonly string[]) {
@@ -68,12 +58,8 @@ export class DividendsProvider {
     }
   }
 
-  public getDividendsByChargeIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchDividendsByChargeIds(keys),
-    {
-      cacheKeyFn: key => `dividends-by-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDividendsByChargeIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchDividendsByChargeIds(keys),
   );
 
   private async batchDividendsByBusinessIds(businessIds: readonly string[]) {
@@ -87,15 +73,12 @@ export class DividendsProvider {
     }
   }
 
-  public getDividendsByBusinessIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchDividendsByBusinessIds(keys),
-    {
-      cacheKeyFn: key => `dividends-by-business-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDividendsByBusinessIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchDividendsByBusinessIds(keys),
   );
 
   public clearCache() {
-    this.cache.clear();
+    this.getDividendsByChargeIdLoader.clearAll();
+    this.getDividendsByBusinessIdLoader.clearAll();
   }
 }

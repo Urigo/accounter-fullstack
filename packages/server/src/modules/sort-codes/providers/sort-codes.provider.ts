@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetAllSortCodesQuery,
@@ -43,28 +42,24 @@ const updateSortCode = sql<IUpdateSortCodeQuery>`
   `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class SortCodesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private allSortCodesCache: Promise<IGetAllSortCodesResult[]> | null = null;
   public getAllSortCodes() {
-    const data = this.cache.get<IGetAllSortCodesResult[]>('all-sort-codes');
-    if (data) {
-      return Promise.resolve(data);
+    if (this.allSortCodesCache) {
+      return this.allSortCodesCache;
     }
-    return getAllSortCodes.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-sort-codes', data);
+    this.allSortCodesCache = getAllSortCodes.run(undefined, this.dbProvider).then(data => {
       data.map(sortCode => {
-        this.cache.set(`sortcode-${sortCode.key}`, sortCode);
+        this.getSortCodesByIdLoader.prime(sortCode.key, sortCode);
       });
       return data;
     });
+    return this.allSortCodesCache;
   }
 
   private async batchSortCodesByIds(sortCodesIds: readonly number[]) {
@@ -78,12 +73,8 @@ export class SortCodesProvider {
     return sortCodesIds.map(id => ledgerRecords.find(record => record.key === id));
   }
 
-  public getSortCodesByIdLoader = new DataLoader(
-    (keys: readonly number[]) => this.batchSortCodesByIds(keys),
-    {
-      cacheKeyFn: key => `sortcode-${key}`,
-      cacheMap: this.cache,
-    },
+  public getSortCodesByIdLoader = new DataLoader((keys: readonly number[]) =>
+    this.batchSortCodesByIds(keys),
   );
 
   public addSortCode(params: IInsertSortCodeParams) {
@@ -97,6 +88,7 @@ export class SortCodesProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getSortCodesByIdLoader.clearAll();
+    this.allSortCodesCache = null;
   }
 }

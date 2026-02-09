@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTripFlightsExpenseParams,
@@ -60,14 +59,10 @@ const deleteBusinessTripFlightsExpense = sql<IDeleteBusinessTripFlightsExpenseQu
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripFlightsExpensesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessTripsFlightsExpensesByBusinessTripIds(
@@ -86,10 +81,6 @@ export class BusinessTripFlightsExpensesProvider {
 
   public getBusinessTripsFlightsExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsFlightsExpensesByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-flights-expense-trip-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripsFlightsExpensesByIds(expenseIds: readonly string[]) {
@@ -102,12 +93,8 @@ export class BusinessTripFlightsExpensesProvider {
     return expenseIds.map(id => businessTripsFlightsExpenses.find(record => record.id === id));
   }
 
-  public getBusinessTripsFlightsExpensesByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsFlightsExpensesByIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-flights-expense-${key}`,
-      cacheMap: this.cache,
-    },
+  public getBusinessTripsFlightsExpensesByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchBusinessTripsFlightsExpensesByIds(ids),
   );
 
   public updateBusinessTripFlightsExpense(params: IUpdateBusinessTripFlightsExpenseParams) {
@@ -131,22 +118,23 @@ export class BusinessTripFlightsExpensesProvider {
 
   public async invalidateById(expenseId: string) {
     const expense = await this.getBusinessTripsFlightsExpensesByIdLoader.load(expenseId);
-    if (expense) {
-      this.cache.delete(`business-trip-flights-expense-trip-${expense.business_trip_id}`);
+    if (expense?.business_trip_id) {
+      this.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.clear(expense.business_trip_id);
     }
-    this.cache.delete(`business-trip-flights-expense-${expenseId}`);
+    this.getBusinessTripsFlightsExpensesByIdLoader.clear(expenseId);
   }
 
   public async invalidateByBusinessTripId(businessTripId: string) {
     const expenses =
       await this.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
-      this.cache.delete(`business-trip-flights-expense-${expense.id}`);
+      this.getBusinessTripsFlightsExpensesByIdLoader.clear(expense.id);
     }
-    this.cache.delete(`business-trip-flights-expense-trip-${businessTripId}`);
+    this.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.clear(businessTripId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsFlightsExpensesByBusinessTripIdLoader.clearAll();
+    this.getBusinessTripsFlightsExpensesByIdLoader.clearAll();
   }
 }

@@ -282,7 +282,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeId,
       };
       try {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
         const updatedCharge = await injector
           .get(ChargesProvider)
           .updateCharge({ ...adjustedFields })
@@ -422,9 +421,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         chargeIds,
       };
       try {
-        for (const chargeId of chargeIds) {
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(chargeId);
-        }
         const res = await injector
           .get(ChargesProvider)
           .batchUpdateCharges({ ...adjustedFields })
@@ -517,7 +513,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
           };
-          injector.get(ChargesProvider).getChargeByIdLoader.clear(baseChargeID);
           await injector
             .get(ChargesProvider)
             .updateCharge({ ...adjustedFields })

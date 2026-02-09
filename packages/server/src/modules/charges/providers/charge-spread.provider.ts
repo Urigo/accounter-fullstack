@@ -60,7 +60,7 @@ const deleteAllChargeSpreadByChargeIdAndYearOfRelevance = sql<IDeleteAllChargeSp
     AND year_of_relevance = $yearOfRelevance;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class ChargeSpreadProvider {
@@ -76,9 +76,8 @@ export class ChargeSpreadProvider {
     return ids.map(id => charges.filter(chargeSpread => chargeSpread.charge_id === id));
   }
 
-  public getChargeSpreadByChargeIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchChargesSpreadByChargeIds(keys),
-    { cache: false },
+  public getChargeSpreadByChargeIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchChargesSpreadByChargeIds(keys),
   );
 
   public updateChargeSpread(params: IUpdateChargeSpreadParams) {

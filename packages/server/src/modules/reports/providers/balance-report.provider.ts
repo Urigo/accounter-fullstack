@@ -1,7 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
-// import { getCacheInstance } from '../../../shared/helpers/index.js';
 import {
   IGetNormalizedBalanceTransactionsParams,
   IGetNormalizedBalanceTransactionsQuery,
@@ -66,14 +65,10 @@ AND t.debit_date BETWEEN $fromDate AND $toDate
 ORDER BY t.amount;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BalanceReportProvider {
-  //   cache = getCacheInstance({
-  //     stdTTL: 60 * 60 * 5,
-  //   });
-
   constructor(private dbProvider: DBProvider) {}
 
   public async getNormalizedBalanceTransactions(params: IGetNormalizedBalanceTransactionsParams) {

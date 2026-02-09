@@ -2,7 +2,6 @@ import DataLoader from 'dataloader';
 import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import {
   IGetReportByBusinessIdAndDatesQuery,
@@ -29,14 +28,10 @@ const insertReport = sql<IInsertReportQuery>`
   RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class VatReportProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchReportsByBusinessIdAndMonthDatesLoader(
@@ -73,10 +68,6 @@ export class VatReportProvider {
   public getReportByBusinessIdAndMonthDateLoader = new DataLoader(
     (businessAndDates: readonly [string, string][]) =>
       this.batchReportsByBusinessIdAndMonthDatesLoader(businessAndDates),
-    {
-      cacheKeyFn: ([businessId, monthDate]) => `pcn-${businessId}-${monthDate}`,
-      cacheMap: this.cache,
-    },
   );
 
   public async updateReport(params: IUpdateReportParams) {
@@ -100,10 +91,10 @@ export class VatReportProvider {
   }
 
   public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: string) {
-    this.cache.delete(`pcn-${businessId}-${monthDate}`);
+    this.getReportByBusinessIdAndMonthDateLoader.clear([businessId, monthDate]);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getReportByBusinessIdAndMonthDateLoader.clearAll();
   }
 }
