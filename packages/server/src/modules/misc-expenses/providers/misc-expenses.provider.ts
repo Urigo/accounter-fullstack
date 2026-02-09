@@ -200,6 +200,16 @@ export class MiscExpensesProvider {
   }
 
   public async invalidateById(id: string) {
+    const expense = await this.getExpensesByIdLoader.load(id);
+    if (expense) {
+      this.getExpensesByChargeIdLoader.clear(expense.charge_id);
+      if (expense.creditor_id) {
+        this.getExpensesByFinancialEntityIdLoader.clear(expense.creditor_id);
+      }
+      if (expense.debtor_id) {
+        this.getExpensesByFinancialEntityIdLoader.clear(expense.debtor_id);
+      }
+    }
     this.getExpensesByIdLoader.clear(id);
   }
 

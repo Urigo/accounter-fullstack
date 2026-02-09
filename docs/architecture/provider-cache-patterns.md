@@ -84,3 +84,15 @@ When auditing providers:
 2.  Look for `new DataLoader()`.
 3.  Look for `getCacheInstance()` or `new Map()`.
 4.  If Singleton + Cache + Tenant Data -> **Convert to Scope.Operation**.
+
+## Testing Cache Isolation
+
+Use the `cache-isolation.integration.test.ts` suite to verify that your provider is strictly scoped per operation.
+
+```typescript
+it('should reflect Operation Scope by creating unique loader instances', () => {
+  const instance1 = new MyProvider();
+  const instance2 = new MyProvider();
+  expect(instance1.loader).not.toBe(instance2.loader); // Must be different instances
+});
+```

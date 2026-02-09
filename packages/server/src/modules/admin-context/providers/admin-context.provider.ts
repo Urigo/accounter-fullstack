@@ -296,6 +296,10 @@ export class AdminContextProvider {
   }
 
   public async updateAdminContext(params: IUpdateAdminContextParams) {
+    const ownerId = this.context.currentUser?.userId;
+    if (!ownerId) {
+      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
+    }
     this.cachedContext = null;
     return updateAdminContext.run(params, this.dbProvider);
   }

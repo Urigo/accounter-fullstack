@@ -116,14 +116,17 @@ export class CorporateTaxesProvider {
   );
 
   public updateCorporateTax(params: IUpdateCorporateTaxParams) {
+    this.allCorporateTaxesCache = new Map();
     return updateCorporateTax.run(params, this.dbProvider);
   }
 
   public insertCorporateTax(params: IInsertCorporateTaxParams) {
+    this.allCorporateTaxesCache = new Map();
     return insertCorporateTax.run(params, this.dbProvider);
   }
 
   public deleteCorporateTax(params: IDeleteCorporateTaxParams) {
+    this.allCorporateTaxesCache = new Map();
     return deleteCorporateTax.run(params, this.dbProvider);
   }
 }

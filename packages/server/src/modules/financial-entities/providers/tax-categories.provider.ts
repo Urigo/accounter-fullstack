@@ -377,6 +377,12 @@ export class TaxCategoriesProvider {
   }
 
   public invalidateTaxCategoryById(taxCategoryId: string) {
+    this.taxCategoryByBusinessAndOwnerIDsLoader.clearAll();
+    this.taxCategoryByChargeIDsLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsLoader.clearAll();
+    this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
+    this.taxCategoriesBySortCodeLoader.clearAll();
     this.taxCategoryByIdLoader.clear(taxCategoryId);
   }
 
