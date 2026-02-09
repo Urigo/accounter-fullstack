@@ -1,6 +1,5 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetAllFundsParams,
@@ -24,50 +23,36 @@ const getAllFunds = sql<IGetAllFundsQuery>`
   SELECT * FROM accounter_schema.pension_funds;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class FundsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private pensionFundsCache: Promise<IGetAllTrainingFundsResult[]> | null = null;
   public getAllPensionFunds() {
-    const cached = this.cache.get<IGetAllTrainingFundsResult[]>('pension-funds');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.pensionFundsCache) {
+      return this.pensionFundsCache;
     }
-    return getAllPensionFunds.run(undefined, this.dbProvider).then(res => {
-      if (res) this.cache.set('pension-funds', res);
-      return res;
-    });
+    this.pensionFundsCache = getAllPensionFunds.run(undefined, this.dbProvider);
+    return this.pensionFundsCache;
   }
 
+  private trainingFundsCache: Promise<IGetAllTrainingFundsResult[]> | null = null;
   public getAllTrainingFunds() {
-    const cached = this.cache.get<IGetAllTrainingFundsResult[]>('training-funds');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.trainingFundsCache) {
+      return this.trainingFundsCache;
     }
-    return getAllTrainingFunds.run(undefined, this.dbProvider).then(res => {
-      if (res) this.cache.set('training-funds', res);
-      return res;
-    });
+    this.trainingFundsCache = getAllTrainingFunds.run(undefined, this.dbProvider);
+    return this.trainingFundsCache;
   }
 
+  private allFundsCache: Promise<IGetAllTrainingFundsResult[]> | null = null;
   public getAllFunds(params: IGetAllFundsParams) {
-    const cached = this.cache.get<IGetAllTrainingFundsResult[]>('all-funds');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allFundsCache) {
+      return this.allFundsCache;
     }
-    return getAllFunds.run(params, this.dbProvider).then(res => {
-      if (res) this.cache.set('all-funds', res);
-      return res;
-    });
-  }
-
-  public clearCache() {
-    this.cache.clear();
+    this.allFundsCache = getAllFunds.run(params, this.dbProvider);
+    return this.allFundsCache;
   }
 }

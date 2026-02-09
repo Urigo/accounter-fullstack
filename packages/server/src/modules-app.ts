@@ -101,7 +101,8 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       CoinMarketCapProvider,
       AnthropicProvider,
       GoogleDriveProvider,
-      ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
+      // TODO: add GmailListener back after required adjustments where made
+      // ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
       {
         provide: ENVIRONMENT,
         useValue: env,

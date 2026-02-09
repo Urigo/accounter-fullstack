@@ -7,6 +7,7 @@ import type {
 import {
   accommodationExpenseDataCollector,
   AttendeeInfo,
+  BusinessTripError,
   calculateTotalReportSummaryCategory,
   carRentalExpensesDataCollector,
   convertSummaryCategoryDataToRow,
@@ -20,12 +21,6 @@ import { BusinessTripAttendeesProvider } from '../providers/business-trips-atten
 import { BusinessTripExpensesProvider } from '../providers/business-trips-expenses.provider.js';
 import { BusinessTripTaxVariablesProvider } from '../providers/business-trips-tax-variables.provider.js';
 import type { BusinessTripProto } from '../types.js';
-
-export class BusinessTripError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
 
 export async function businessTripSummary(
   context: GraphQLModules.Context,

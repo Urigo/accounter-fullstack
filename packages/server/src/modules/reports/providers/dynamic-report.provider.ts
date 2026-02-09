@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import {
   IDeleteTemplateParams,
@@ -50,52 +49,38 @@ const deleteTemplate = sql<IDeleteTemplateQuery>`
   RETURNING name;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DynamicReportProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   public async getTemplate(params: IGetTemplateParams) {
     return getTemplate.run(params, this.dbProvider).then(res => {
       const [template] = res;
-      if (template) {
-        this.cache.set(`template-owner-${template.owner_id}-${template.name}`, template);
-      }
       return template;
     });
   }
 
   private async batchTemplatesByOwnerIdLoader(ownerIds: readonly string[]) {
     const templates = await getTemplatesByOwnerIds.run({ ownerIds }, this.dbProvider);
-    templates.map(template =>
-      this.cache.set(`template-owner-${template.owner_id}-${template.name}`, template),
-    );
     return ownerIds.map(id => templates.filter(template => template.owner_id === id));
   }
 
-  public getTemplatesByOwnerIdLoader = new DataLoader(
-    (ownerIds: readonly string[]) => this.batchTemplatesByOwnerIdLoader(ownerIds),
-    {
-      cacheKeyFn: id => `templates-owner-${id}`,
-      cacheMap: this.cache,
-    },
+  public getTemplatesByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>
+    this.batchTemplatesByOwnerIdLoader(ownerIds),
   );
 
   public async updateTemplate(params: IUpdateTemplateParams) {
     if (params.name && params.ownerId) {
-      await this.invalidateByNameAndOwnerId(params.name, params.ownerId);
+      this.invalidateByOwnerId(params.ownerId);
     }
     return updateTemplate.run(params, this.dbProvider);
   }
 
   public async updateTemplateName(params: IUpdateTemplateNameParams) {
     if (params.prevName && params.ownerId) {
-      await this.invalidateByNameAndOwnerId(params.prevName, params.ownerId);
+      this.invalidateByOwnerId(params.ownerId);
     }
     return updateTemplateName.run(params, this.dbProvider);
   }
@@ -109,23 +94,16 @@ export class DynamicReportProvider {
 
   public async deleteTemplate(params: IDeleteTemplateParams) {
     if (params.name && params.ownerId) {
-      await this.invalidateByNameAndOwnerId(params.name, params.ownerId);
+      this.invalidateByOwnerId(params.ownerId);
     }
     return deleteTemplate.run(params, this.dbProvider);
   }
 
   public async invalidateByOwnerId(ownerId: string) {
-    const templates = await this.getTemplatesByOwnerIdLoader.load(ownerId);
-    await Promise.all(templates.map(({ name }) => this.invalidateByNameAndOwnerId(name, ownerId)));
-    this.cache.delete(`templates-owner-${ownerId}`);
-  }
-
-  public async invalidateByNameAndOwnerId(name: string, ownerId: string) {
-    this.cache.delete(`templates-owner-${ownerId}`);
-    this.cache.delete(`template-owner-${ownerId}-${name}`);
+    this.getTemplatesByOwnerIdLoader.clear(ownerId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getTemplatesByOwnerIdLoader.clearAll();
   }
 }

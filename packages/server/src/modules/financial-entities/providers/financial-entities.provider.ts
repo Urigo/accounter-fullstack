@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteFinancialEntityQuery,
@@ -112,10 +111,6 @@ const replaceFinancialEntities = sql<IReplaceFinancialEntitiesQuery>`
   global: true,
 })
 export class FinancialEntitiesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(
     private dbProvider: DBProvider,
     private businessesProvider: BusinessesProvider,
@@ -133,26 +128,23 @@ export class FinancialEntitiesProvider {
     return ids.map(id => financialEntities.find(fe => fe.id === id));
   }
 
-  public getFinancialEntityByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialEntitiesByIds(keys),
-    {
-      cacheKeyFn: key => `financial-entity-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getFinancialEntityByIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchFinancialEntitiesByIds(keys),
   );
 
+  private allFinancialEntitiesCache: Promise<IGetAllFinancialEntitiesResult[]> | null = null;
   public getAllFinancialEntities() {
-    const data = this.cache.get('all-financial-entities');
-    if (data) {
-      return data as Array<IGetAllFinancialEntitiesResult>;
+    if (this.allFinancialEntitiesCache) {
+      return this.allFinancialEntitiesCache;
     }
-    return getAllFinancialEntities.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-financial-entities', data);
-      data.map(fe => {
-        this.cache.set(`financial-entity-id-${fe.id}`, fe);
+    const result = getAllFinancialEntities.run(undefined, this.dbProvider).then(entities => {
+      entities.map(entity => {
+        this.getFinancialEntityByIdLoader.prime(entity.id, entity);
       });
-      return data;
+      return entities;
     });
+    this.allFinancialEntitiesCache = result;
+    return result;
   }
 
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
@@ -165,7 +157,7 @@ export class FinancialEntitiesProvider {
   public insertFinancialEntity(
     params: IInsertFinancialEntitiesParams['financialEntities'][number],
   ) {
-    this.cache.delete('all-financial-entities');
+    this.allFinancialEntitiesCache = null;
     return insertFinancialEntities.run({ financialEntities: [params] }, this.dbProvider);
   }
 
@@ -276,13 +268,14 @@ export class FinancialEntitiesProvider {
   public invalidateFinancialEntityById(financialEntityId: string) {
     this.businessesProvider.invalidateBusinessById(financialEntityId);
     this.taxCategoriesProvider.invalidateTaxCategoryById(financialEntityId);
-    this.cache.delete('all-financial-entities');
-    this.cache.delete(`financial-entity-id-${financialEntityId}`);
+    this.allFinancialEntitiesCache = null;
+    this.getFinancialEntityByIdLoader.clear(financialEntityId);
   }
 
   public clearCache() {
     this.taxCategoriesProvider.clearCache();
     this.businessesProvider.clearCache();
-    this.cache.clear();
+    this.getFinancialEntityByIdLoader.clearAll();
+    this.allFinancialEntitiesCache = null;
   }
 }

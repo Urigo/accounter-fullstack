@@ -2,7 +2,6 @@ import { Injector } from 'graphql-modules';
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
-import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';
 import type {
   IGetAllTaxVariablesResult,
   IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
@@ -10,6 +9,7 @@ import type {
 } from '../types.js';
 import {
   AttendeeInfo,
+  BusinessTripError,
   getExpenseAmountsData,
   isIncreasedLimitDestination,
   SummaryCategoryData,

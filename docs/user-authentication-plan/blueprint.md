@@ -479,54 +479,83 @@ provider migration happens in Phase 4 AFTER Auth0 activation (Prompt 4.7), when 
 properly populated. At this stage, TenantAwareDBClient won't function correctly without auth context
 (it will gracefully throw an error if called)
 
-### Step 2.7: AdminContext Refactoring (Plugin → Provider)
+### Step 2.7: AdminContext Provider Refactoring (Preparatory - Plugin Remains Active)
 
-**Goal**: Convert `adminContextPlugin` to Operation-scoped provider for proper DI integration
+**Goal**: Refactor existing `AdminContextProvider` for DI integration (plugin remains active)
+
+**CRITICAL**: This is PREPARATORY work. Refactor provider but **DO NOT remove
+`adminContextPlugin`**. Existing users rely on the plugin. The switch happens in Phase 4 after Auth0
+is active.
+
+**Current Issues with AdminContextProvider**:
+
+- `Scope.Singleton` with instance-level cache - shared across all requests (tenant leakage risk)
+- Uses `DBProvider` directly - **will need TenantAwareDBClient in Phase 4** for RLS enforcement
+- DataLoader cache is instance-level - cross-tenant leakage risk
+- **No AUTH_CONTEXT integration** - required for Phase 4
+
+**Refactoring Strategy**:
+
+- **Phase 2.7** (now): Fix scope and cache issues, keep using `DBProvider`
+- **Phase 4.8** (later): Switch from `DBProvider` to `TenantAwareDBClient` after Auth0 is active
 
 **Tasks**:
 
-- Create `packages/server/src/modules/admin-context/providers/admin-context.provider.ts`:
+- **Refactor existing**
+  `packages/server/src/modules/admin-context/providers/admin-context.provider.ts`:
+
+  **Change scope from Singleton to Operation**:
 
   ```typescript
-  import { Injectable, Scope, Inject } from 'graphql-modules'
-  import { GraphQLError } from 'graphql'
-  import { AUTH_CONTEXT } from '../../../shared/tokens.js'
-  import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js'
-  import type { AuthContext, AdminContext } from '../../../shared/types/index.js'
+  // BEFORE: Singleton with shared cache
+  @Injectable({ scope: Scope.Singleton, global: true })
+  export class AdminContextProvider {
+    cache = getCacheInstance({ stdTTL: 60 * 5 }); // SHARED!
+    public getAdminContextLoader = new DataLoader(...)
+  }
 
+  // AFTER: Operation-scoped with request-level cache
   @Injectable({ scope: Scope.Operation })
   export class AdminContextProvider {
-    private cachedContext: AdminContext | null = null
-
-    constructor(
-      @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
-      private db: TenantAwareDBClient
-    ) {}
-
-    async getAdminContext(): Promise<AdminContext> {
-      if (!this.cachedContext) {
-        if (!this.auth?.tenant?.businessId) {
-          throw new GraphQLError('Unauthenticated', {
-            extensions: { code: 'UNAUTHENTICATED' }
-          })
-        }
-
-        // Use TenantAwareDBClient - RLS enforced automatically
-        // businessId is derived from validated auth context, never from client input
-        const [rawContext] = await getAdminBusinessContext.run(
-          { adminBusinessId: this.auth.tenant.businessId },
-          this.db
-        )
-
-        if (!rawContext) {
-          throw new Error('Admin business context not found')
-        }
-
-        this.cachedContext = normalizeContext(rawContext)
-      }
-      return this.cachedContext
-    }
+    private cachedContext: IGetAdminContextsQuery | null = null;
+    // No DataLoader needed for Operation scope
   }
+  ```
+
+  **Keep using DBProvider** (TenantAwareDBClient requires AUTH_CONTEXT, not available yet):
+
+  ```typescript
+  import { DBProvider } from '../../app-providers/db.provider.js'
+
+  constructor(
+    private dbProvider: DBProvider // Keep DBProvider for now
+  ) {}
+
+  async getAdminContext(): Promise<IGetAdminContextsQuery | null> {
+    if (this.cachedContext !== null) {
+      return this.cachedContext; // Safe per-request cache
+    }
+
+    // Use DBProvider directly - RLS not enforced yet
+    // Phase 4.8 will switch to TenantAwareDBClient
+    const contexts = await getAdminContexts.run(
+      { ownerIds: [/* businessId from current auth */] },
+      this.dbProvider // Still using DBProvider
+    );
+
+    this.cachedContext = contexts[0] || null;
+    return this.cachedContext;
+  }
+  ```
+
+  **Note**: The current implementation uses `owner_id` from `context.currentUser` (plugin-provided).
+  Keep this pattern for now. Phase 4.8 will refactor to use AUTH_CONTEXT.
+
+- **Create backup of existing implementation**:
+
+  ```bash
+  cp packages/server/src/modules/admin-context/providers/admin-context.provider.ts \
+    packages/server/src/modules/admin-context/providers/admin-context.provider.backup.ts
   ```
 
 - Add `ADMIN_CONTEXT` injection token to `packages/server/src/shared/tokens.ts`:
@@ -535,42 +564,35 @@ properly populated. At this stage, TenantAwareDBClient won't function correctly 
   export const ADMIN_CONTEXT = new InjectionToken<AdminContext>('ADMIN_CONTEXT')
   ```
 
-- Update `packages/server/src/modules-app.ts`:
-  - Add to providers array:
-    ```typescript
-    {
-      provide: ADMIN_CONTEXT,
-      scope: Scope.Operation,
-      useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
-      deps: [AdminContextProvider]
-    }
-    ```
+- **DO NOT register provider in `modules-app.ts` yet** (keeps plugin active)
+- **DO NOT update resolvers yet** (continue using `context.adminContext`)
+- **DO NOT remove `adminContextPlugin` from `index.ts`** (plugin stays active until Phase 4)
+- Add tests (isolated provider tests **without** AUTH_CONTEXT):
+  - AdminContext loads correctly (with mock DBProvider, not TenantAwareDBClient)
+  - Cache works within single request (multiple getAdminContext() calls)
+  - Mock verifies DBProvider.query() called
+  - updateAdminContext() clears cache and uses DBProvider
+  - **No AUTH_CONTEXT tests** (not available until Phase 4)
 
-- Update resolvers to inject `@Inject(ADMIN_CONTEXT) private adminContext: AdminContext`
-- Remove `adminContextPlugin` from `packages/server/src/index.ts` plugins array
-- Delete `packages/server/src/plugins/admin-context-plugin.ts`
-- Add tests:
-  - AdminContext loads correctly from auth context
-  - Unauthenticated requests rejected
-  - Business context isolated per request
-  - Cache works correctly within single request
+**Benefits** (when fully activated in Phase 4.8):
 
-**Benefits**:
-
-- Proper DI integration (no async context access required)
-- Request-scoped caching (no cross-tenant leakage risk)
-- Type-safe injection via `ADMIN_CONTEXT` token
-- Automatically uses `TenantAwareDBClient` for RLS enforcement
-- Consistent with `AuthContextProvider` pattern
+- ✅ Request-scoped caching (no cross-tenant leakage risk) - **ACHIEVED NOW**
+- ✅ No DataLoader complexity for Operation scope - **ACHIEVED NOW**
+- ⏳ Proper DI integration with AUTH_CONTEXT - **Phase 4.8**
+- ⏳ Type-safe injection via ADMIN_CONTEXT token - **Phase 4.8**
+- ⏳ Automatically uses TenantAwareDBClient (RLS enforced) - **Phase 4.8**
 
 **Validation**:
 
-- AdminContext available in all resolvers via injection
-- No plugin-based adminContext in Yoga context
-- RLS enforced on admin context queries
-- No global cache leakage
+- AdminContextProvider tests pass (with mock DBProvider)
+- **Still uses DBProvider** (TenantAwareDBClient switch happens in Phase 4.8)
+- **Existing admin context functionality unchanged**
+- **Server starts normally**
+- **Current users can access admin features**
+- **No AUTH_CONTEXT dependency** (server functional)
+- No breaking changes
 
-**Risk**: Medium (requires updating many resolver constructors)
+**Risk**: Very Low (scope change only, keeps DBProvider, server stays functional)
 
 ---
 
@@ -1440,6 +1462,83 @@ Auth0 is active)
 - Scraper role can use API keys
 
 **Risk**: Low (standard API key pattern)
+
+---
+
+### Step 4.8: AdminContext Switch (Plugin → Provider)
+
+**Goal**: Activate AdminContextProvider and remove adminContextPlugin
+
+**Prerequisites**:
+
+- Auth0 authentication active and stable (Step 4.6 complete)
+- AUTH_CONTEXT reliably populated
+- BusinessesProvider successfully migrated (Step 4.7 complete)
+
+**Tasks**:
+
+- Register `AdminContextProvider` in `packages/server/src/modules-app.ts`:
+
+  ```typescript
+  providers: [
+    DBProvider,
+    TenantAwareDBClient,
+    AdminContextProvider, // NEW
+    {
+      provide: ADMIN_CONTEXT,
+      useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
+      deps: [AdminContextProvider],
+      scope: Scope.Operation
+    }
+  ]
+  ```
+
+- Update all resolvers/providers using admin context:
+  - Find usages: `rg "context\.adminContext" packages/server/src`
+  - Replace with constructor injection:
+    ```typescript
+    @Injectable({ scope: Scope.Operation })
+    class SomeProvider {
+      constructor(@Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null) {}
+    }
+    ```
+
+- Remove `adminContextPlugin` from `packages/server/src/index.ts` plugins array
+
+- Delete `packages/server/src/plugins/admin-context-plugin.ts`
+
+- Add integration tests:
+  - Admin context loads via provider injection
+  - Cache isolated between concurrent requests
+  - RLS enforced on admin context queries
+  - All admin features work correctly
+
+**Validation**:
+
+- Server starts successfully
+- Admin context loads for authenticated requests
+- Unauthenticated requests get null admin context (no errors)
+- RLS enforced on business owner and financial entities queries
+- Cache works within request, isolated between requests
+- All business logic tests pass
+
+**Deployment**:
+
+1. Deploy during low-traffic window
+2. Monitor logs for "adminContext" errors
+3. Watch for RLS violations
+4. Verify admin features work
+5. Check response times
+
+**Rollback Plan**:
+
+If issues detected:
+
+1. Re-add adminContextPlugin to index.ts
+2. Revert resolver constructor changes
+3. Redeploy previous version
+
+**Risk**: Low (provider tested in Step 2.7, only activation changes)
 
 ---
 

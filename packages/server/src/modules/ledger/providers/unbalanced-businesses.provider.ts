@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteChargeUnbalancedBusinessesByBusinessIdQuery,
@@ -49,14 +48,10 @@ const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class UnbalancedBusinessesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchChargeUnbalancedBusinessesByChargeIds(chargeIds: readonly string[]) {
@@ -72,12 +67,8 @@ export class UnbalancedBusinessesProvider {
     );
   }
 
-  public getChargeUnbalancedBusinessesByChargeIds = new DataLoader(
-    (keys: readonly string[]) => this.batchChargeUnbalancedBusinessesByChargeIds(keys),
-    {
-      cacheKeyFn: key => `unbalanced-businesses-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getChargeUnbalancedBusinessesByChargeIds = new DataLoader((keys: readonly string[]) =>
+    this.batchChargeUnbalancedBusinessesByChargeIds(keys),
   );
 
   public insertChargeUnbalancedBusinesses(params: IInsertChargeUnbalancedBusinessesParams) {
@@ -117,10 +108,10 @@ export class UnbalancedBusinessesProvider {
   }
 
   public async invalidateByChargeId(chargeId: string) {
-    this.cache.delete(`unbalanced-businesses-charge-${chargeId}`);
+    this.getChargeUnbalancedBusinessesByChargeIds.clear(chargeId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getChargeUnbalancedBusinessesByChargeIds.clearAll();
   }
 }

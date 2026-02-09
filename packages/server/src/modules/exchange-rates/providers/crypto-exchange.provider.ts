@@ -4,7 +4,6 @@ import { GraphQLError } from 'graphql';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { Currency } from '../../../shared/enums.js';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { CoinMarketCapProvider } from '../../app-providers/coinmarketcap.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import {
@@ -40,9 +39,6 @@ const getCryptoCurrenciesBySymbol = sql<IGetCryptoCurrenciesBySymbolQuery>`
   global: true,
 })
 export class CryptoExchangeProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 60 * 24, // 24 hours
-  });
   fiatCurrency: Currency;
 
   constructor(
@@ -89,12 +85,8 @@ export class CryptoExchangeProvider {
     return symbols.map(symbol => currencies.find(currency => currency.symbol === symbol));
   }
 
-  private getCryptoCurrenciesBySymbolLoader = new DataLoader(
-    (symbols: readonly string[]) => this.getCryptoCurrenciesBySymbol(symbols),
-    {
-      cacheKeyFn: key => `crypto-currencies-by-symbol-${key}`,
-      cacheMap: this.cache,
-    },
+  private getCryptoCurrenciesBySymbolLoader = new DataLoader((symbols: readonly string[]) =>
+    this.getCryptoCurrenciesBySymbol(symbols),
   );
 
   private async getCryptoExchangeRatesFromAPI(currencySymbol: string, date: Date) {
@@ -187,11 +179,11 @@ export class CryptoExchangeProvider {
     {
       cacheKeyFn: ({ cryptoCurrency, date, against = this.fiatCurrency }) =>
         `${cryptoCurrency}-${date.getTime()}-${against}`,
-      cacheMap: this.cache,
     },
   );
 
   public clearCache() {
-    this.cache.clear();
+    this.getCryptoCurrenciesBySymbolLoader.clearAll();
+    this.getCryptoExchangeRateLoader.clearAll();
   }
 }

@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type { IGetAllTaxVariablesQuery } from '../types.js';
 
@@ -15,10 +14,6 @@ const getAllTaxVariables = sql<IGetAllTaxVariablesQuery>`
   global: true,
 })
 export class BusinessTripTaxVariablesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTaxVariablesByDates(dates: readonly Date[]) {
@@ -26,15 +21,11 @@ export class BusinessTripTaxVariablesProvider {
     return dates.map(date => taxVariables.find(record => date.getTime() >= record.date.getTime()));
   }
 
-  public getTaxVariablesByDateLoader = new DataLoader(
-    (dates: readonly Date[]) => this.batchTaxVariablesByDates(dates),
-    {
-      cacheKeyFn: date => date.getTime(),
-      cacheMap: this.cache,
-    },
+  public getTaxVariablesByDateLoader = new DataLoader((dates: readonly Date[]) =>
+    this.batchTaxVariablesByDates(dates),
   );
 
   public clearCache() {
-    this.cache.clear();
+    this.getTaxVariablesByDateLoader.clearAll();
   }
 }

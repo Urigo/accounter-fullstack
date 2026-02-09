@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetAllSalaryRecordsQuery,
@@ -262,14 +261,10 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class SalariesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchSalaryRecordsByMonths(months: readonly string[]) {
@@ -284,12 +279,8 @@ export class SalariesProvider {
     return months.map(month => salaries.filter(record => record.month === month));
   }
 
-  public getSalaryRecordsByMonthLoader = new DataLoader(
-    (months: readonly string[]) => this.batchSalaryRecordsByMonths(months),
-    {
-      cacheKeyFn: key => `salary-month-${key}`,
-      cacheMap: this.cache,
-    },
+  public getSalaryRecordsByMonthLoader = new DataLoader((months: readonly string[]) =>
+    this.batchSalaryRecordsByMonths(months),
   );
 
   public getSalaryRecordsByDates(params: IGetSalaryRecordsByDatesParams) {
@@ -301,24 +292,17 @@ export class SalariesProvider {
     return chargeIds.map(id => salaries.filter(record => record.charge_id === id));
   }
 
-  public getSalaryRecordsByChargeIdLoader = new DataLoader(
-    (chargeIds: readonly string[]) =>
-      this.batchGetSalaryRecordsByChargeIds(chargeIds as stringArray),
-    {
-      cacheKeyFn: key => `salary-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getSalaryRecordsByChargeIdLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchGetSalaryRecordsByChargeIds(chargeIds as stringArray),
   );
 
+  private allSalariesCache: Promise<IGetAllSalaryRecordsResult[]> | null = null;
   public getAllSalaryRecords() {
-    const cached = this.cache.get<IGetAllSalaryRecordsResult[]>('all-salaries');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allSalariesCache) {
+      return this.allSalariesCache;
     }
-    return getAllSalaryRecords.run(undefined, this.dbProvider).then(res => {
-      if (res) this.cache.set('all-salaries', res);
-      return res;
-    });
+    this.allSalariesCache = getAllSalaryRecords.run(undefined, this.dbProvider);
+    return this.allSalariesCache;
   }
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
@@ -332,6 +316,8 @@ export class SalariesProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getSalaryRecordsByMonthLoader.clearAll();
+    this.getSalaryRecordsByChargeIdLoader.clearAll();
+    this.allSalariesCache = null;
   }
 }

@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
@@ -52,14 +51,10 @@ const deleteBusinessTripTravelAndSubsistenceExpense = sql<IDeleteBusinessTripTra
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripTravelAndSubsistenceExpensesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIds(
@@ -81,10 +76,6 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
   public getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) =>
       this.batchBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-tns-expense-trip-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripsTravelAndSubsistenceExpensesByIds(expenseIds: readonly string[]) {
@@ -103,10 +94,6 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
 
   public getBusinessTripsTravelAndSubsistenceExpensesByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsTravelAndSubsistenceExpensesByIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-tns-expense-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   public updateBusinessTripTravelAndSubsistenceExpense(
@@ -137,8 +124,12 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
     const expense =
       await this.getBusinessTripsTravelAndSubsistenceExpensesByIdLoader.load(expenseId);
     if (expense) {
-      this.cache.delete(`business-trip-tns-expense-${expenseId}`);
-      this.cache.delete(`business-trip-tns-expense-trip-${expense.business_trip_id}`);
+      this.getBusinessTripsTravelAndSubsistenceExpensesByIdLoader.clear(expenseId);
+      if (expense.business_trip_id) {
+        this.getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.clear(
+          expense.business_trip_id,
+        );
+      }
     }
   }
 
@@ -148,12 +139,13 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
         businessTripId,
       );
     for (const expense of expenses ?? []) {
-      this.cache.delete(`business-trip-tns-expense-${expense.id}`);
+      this.getBusinessTripsTravelAndSubsistenceExpensesByIdLoader.clear(expense.id);
     }
-    this.cache.delete(`business-trip-tns-expense-trip-${businessTripId}`);
+    this.getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.clear(businessTripId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdLoader.clearAll();
+    this.getBusinessTripsTravelAndSubsistenceExpensesByIdLoader.clearAll();
   }
 }

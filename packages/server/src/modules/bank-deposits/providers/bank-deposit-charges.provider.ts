@@ -67,7 +67,7 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
     ORDER BY cbd.deposit_id, COALESCE(t.debit_date, t.event_date);`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BankDepositChargesProvider {
@@ -86,9 +86,8 @@ export class BankDepositChargesProvider {
     return depositIds.map(id => transactions.filter(t => t.deposit_id === id));
   }
 
-  public getTransactionsByBankDepositLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTransactionsByBankDeposits(keys),
-    { cache: false },
+  public getTransactionsByBankDepositLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTransactionsByBankDeposits(keys),
   );
 
   public getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {

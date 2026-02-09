@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
@@ -93,14 +92,10 @@ const deleteDepreciationRecordByChargeId = sql<IDeleteDepreciationRecordByCharge
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DepreciationProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchDepreciationRecordsByIds(depreciationRecordIds: readonly string[]) {
@@ -113,12 +108,8 @@ export class DepreciationProvider {
     return depreciationRecordIds.map(id => records.find(record => record.id === id));
   }
 
-  public getDepreciationRecordByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchDepreciationRecordsByIds(ids),
-    {
-      cacheKeyFn: key => `depreciation-record-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDepreciationRecordByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchDepreciationRecordsByIds(ids),
   );
 
   private async batchDepreciationRecordsByChargeIds(chargeIds: readonly string[]) {
@@ -128,19 +119,23 @@ export class DepreciationProvider {
       },
       this.dbProvider,
     );
+    records.map(record => {
+      this.getDepreciationRecordByIdLoader.prime(record.id, record);
+    });
     return chargeIds.map(id => records.filter(record => record.charge_id === id));
   }
 
-  public getDepreciationRecordsByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchDepreciationRecordsByChargeIds(ids),
-    {
-      cacheKeyFn: key => `depreciation-records-by-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getDepreciationRecordsByChargeIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchDepreciationRecordsByChargeIds(ids),
   );
 
   public getDepreciationRecordsByDates(params: IGetDepreciationRecordsByDatesParams) {
-    return getDepreciationRecordsByDates.run(params, this.dbProvider);
+    return getDepreciationRecordsByDates.run(params, this.dbProvider).then(records => {
+      records.map(record => {
+        this.getDepreciationRecordByIdLoader.prime(record.id, record);
+      });
+      return records;
+    });
   }
 
   public updateDepreciationRecord(params: IUpdateDepreciationRecordParams) {
@@ -164,6 +159,7 @@ export class DepreciationProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getDepreciationRecordByIdLoader.clearAll();
+    this.getDepreciationRecordsByChargeIdLoader.clearAll();
   }
 }

@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBankAccountParams,
@@ -182,14 +181,10 @@ const deleteBankAccount = sql<IDeleteBankAccountQuery>`
   `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class FinancialBankAccountsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialBankAccountsByIds(bankAccountIds: readonly string[]) {
@@ -202,26 +197,24 @@ export class FinancialBankAccountsProvider {
     return bankAccountIds.map(id => accounts.find(account => account.id === id));
   }
 
-  public getFinancialBankAccountByIdLoader = new DataLoader(
-    (bankAccountIds: readonly string[]) => this.batchFinancialBankAccountsByIds(bankAccountIds),
-    {
-      cacheKeyFn: key => `bank-account-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getFinancialBankAccountByIdLoader = new DataLoader((bankAccountIds: readonly string[]) =>
+    this.batchFinancialBankAccountsByIds(bankAccountIds),
   );
 
+  private allFinancialBankAccountsCache: Promise<IGetAllFinancialBankAccountsResult[]> | null =
+    null;
   public getAllFinancialBankAccounts() {
-    const cached = this.cache.get<IGetAllFinancialBankAccountsResult[]>('all-bank-accounts');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allFinancialBankAccountsCache) {
+      return this.allFinancialBankAccountsCache;
     }
-    return getAllFinancialBankAccounts.run(undefined, this.dbProvider).then(res => {
-      this.cache.set('all-bank-accounts', res);
-      res.map(account => {
+    const result = getAllFinancialBankAccounts.run(undefined, this.dbProvider).then(accounts => {
+      accounts.map(account => {
         this.getFinancialBankAccountByIdLoader.prime(account.id, account);
       });
-      return res;
+      return accounts;
     });
+    this.allFinancialBankAccountsCache = result;
+    return result;
   }
 
   public async updateBankAccount(params: IUpdateBankAccountParams) {
@@ -229,7 +222,6 @@ export class FinancialBankAccountsProvider {
     const updatedAccount = updatedAccounts[0];
     if (updatedAccount) {
       this.invalidateById(updatedAccount.id);
-      this.getFinancialBankAccountByIdLoader.prime(updatedAccount.id, updatedAccount);
     }
     return updatedAccount;
   }
@@ -242,16 +234,17 @@ export class FinancialBankAccountsProvider {
   }
 
   public async insertBankAccounts(params: IInsertBankAccountsParams) {
-    this.cache.delete('all-bank-accounts');
+    this.allFinancialBankAccountsCache = null;
     return insertBankAccounts.run(params, this.dbProvider);
   }
 
   public invalidateById(bankAccountId: string) {
-    this.cache.delete(`bank-account-id-${bankAccountId}`);
-    this.cache.delete('all-bank-accounts');
+    this.getFinancialBankAccountByIdLoader.clear(bankAccountId);
+    this.allFinancialBankAccountsCache = null;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getFinancialBankAccountByIdLoader.clearAll();
+    this.allFinancialBankAccountsCache = null;
   }
 }
