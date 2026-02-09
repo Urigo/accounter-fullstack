@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IAddNewTagParams,
@@ -60,29 +59,30 @@ const updateTagParent = sql<IUpdateTagParentQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class TagsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private allTagsCache: Promise<IGetAllTagsResult[]> | null = null;
   public getAllTags() {
-    const data = this.cache.get('all-tags');
-    if (data) {
-      return data as Array<IGetAllTagsResult>;
+    if (this.allTagsCache) {
+      return this.allTagsCache;
     }
-    return getAllTags.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-tags', data);
-      data.map(tag => {
-        if (tag.id) this.cache.set(`tag-id-${tag.id}`, tag);
-        if (tag.name) this.cache.set(`tag-name-${tag.name}`, tag);
+    this.allTagsCache = getAllTags.run(undefined, this.dbProvider).then(tags => {
+      // Prime the DataLoaders with the fetched tags
+      tags.map(tag => {
+        if (tag?.id) {
+          this.getTagByIDLoader.prime(tag.id, tag);
+        }
+        if (tag?.name) {
+          this.getTagByNameLoader.prime(tag.name, tag);
+        }
       });
-      return data;
+      return tags;
     });
+    return this.allTagsCache;
   }
 
   private async batchTagsByID(tagIDs: readonly string[]) {
@@ -90,22 +90,15 @@ export class TagsProvider {
     return tagIDs.map(id => tags.find(tag => tag.id === id));
   }
 
-  public getTagByIDLoader = new DataLoader((keys: readonly string[]) => this.batchTagsByID(keys), {
-    cacheKeyFn: key => `tag-id-${key}`,
-    cacheMap: this.cache,
-  });
+  public getTagByIDLoader = new DataLoader((keys: readonly string[]) => this.batchTagsByID(keys));
 
   private async batchTagsByNames(tagNames: readonly string[]) {
     const tags = await getTagsByNames.run({ tagNames }, this.dbProvider);
     return tagNames.map(name => tags.find(tag => tag.name === name));
   }
 
-  public getTagByNameLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTagsByNames(keys),
-    {
-      cacheKeyFn: key => `tag-name-${key}`,
-      cacheMap: this.cache,
-    },
+  public getTagByNameLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTagsByNames(keys),
   );
 
   public addNewTag(params: IAddNewTagParams) {
@@ -129,6 +122,7 @@ export class TagsProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getTagByIDLoader.clearAll();
+    this.getTagByNameLoader.clearAll();
   }
 }

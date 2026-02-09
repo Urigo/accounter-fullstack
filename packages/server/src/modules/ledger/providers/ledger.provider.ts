@@ -3,7 +3,6 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import type { Currency } from '../../../shared/enums.js';
 import { LedgerLockError } from '../../../shared/errors.js';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
@@ -237,9 +236,6 @@ const lockLedgerRecords = sql<ILockLedgerRecordsQuery>`
   global: true,
 })
 export class LedgerProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
   adminBusinessId: string;
   localCurrency: Currency;
 
@@ -262,12 +258,8 @@ export class LedgerProvider {
     return ids.map(id => ledgerRecords.find(record => record.id === id));
   }
 
-  public getLedgerRecordsByIdLoader = new DataLoader(
-    (ledgerIds: readonly string[]) => this.batchLedgerRecordsByIds(ledgerIds),
-    {
-      cacheKeyFn: key => `ledger-${key}`,
-      cacheMap: this.cache,
-    },
+  public getLedgerRecordsByIdLoader = new DataLoader((ledgerIds: readonly string[]) =>
+    this.batchLedgerRecordsByIds(ledgerIds),
   );
 
   private async batchLedgerRecordsByChargesIds(ids: readonly string[]) {
@@ -281,12 +273,8 @@ export class LedgerProvider {
     return ids.map(id => ledgerRecords.filter(record => record.charge_id === id));
   }
 
-  public getLedgerRecordsByChargesIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchLedgerRecordsByChargesIds(keys),
-    {
-      cacheKeyFn: key => `ledger-by-charge-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getLedgerRecordsByChargesIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchLedgerRecordsByChargesIds(keys),
   );
 
   private async batchLedgerRecordsByFinancialEntityIds(ids: readonly string[]) {
@@ -309,14 +297,9 @@ export class LedgerProvider {
     );
   }
 
-  public getLedgerRecordsByFinancialEntityIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchLedgerRecordsByFinancialEntityIds(keys),
-    {
-      cacheKeyFn: key => `ledger-by-financial-entity-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getLedgerRecordsByFinancialEntityIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchLedgerRecordsByFinancialEntityIds(keys),
   );
-
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
     return getLedgerRecordsByDates.run(
       { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
@@ -419,6 +402,8 @@ export class LedgerProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getLedgerRecordsByIdLoader.clearAll();
+    this.getLedgerRecordsByChargesIdLoader.clearAll();
+    this.getLedgerRecordsByFinancialEntityIdLoader.clearAll();
   }
 }

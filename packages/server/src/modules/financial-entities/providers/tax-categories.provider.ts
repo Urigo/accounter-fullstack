@@ -2,7 +2,6 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { Currency } from '../../../shared/enums.js';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTaxCategoryParams,
@@ -168,14 +167,10 @@ const replaceTaxCategories = sql<IReplaceTaxCategoriesQuery>`
   `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class TaxCategoriesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
@@ -202,9 +197,6 @@ export class TaxCategoriesProvider {
   public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
     (keys: readonly { businessId: string; ownerId: string }[]) =>
       this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
-    {
-      cache: false,
-    },
   );
 
   private async batchTaxCategoryByIDs(
@@ -219,11 +211,8 @@ export class TaxCategoriesProvider {
     return ids.map(id => taxCategories.find(tc => tc.id === id));
   }
 
-  public taxCategoryByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchTaxCategoryByIDs(ids),
-    {
-      cache: false,
-    },
+  public taxCategoryByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchTaxCategoryByIDs(ids),
   );
 
   private async batchTaxCategoriesBySortCodes(
@@ -238,11 +227,8 @@ export class TaxCategoriesProvider {
     return sortCodes.map(sortCode => taxCategories.filter(tc => tc.sort_code === sortCode));
   }
 
-  public taxCategoriesBySortCodeLoader = new DataLoader(
-    (sortCodes: readonly number[]) => this.batchTaxCategoriesBySortCodes(sortCodes),
-    {
-      cache: false,
-    },
+  public taxCategoriesBySortCodeLoader = new DataLoader((sortCodes: readonly number[]) =>
+    this.batchTaxCategoriesBySortCodes(sortCodes),
   );
 
   private async batchTaxCategoryByFinancialAccountIdsAndCurrencies(
@@ -270,9 +256,6 @@ export class TaxCategoriesProvider {
   public taxCategoryByFinancialAccountIdsAndCurrenciesLoader = new DataLoader(
     (keys: readonly { financialAccountId: string; currency: Currency }[]) =>
       this.batchTaxCategoryByFinancialAccountIdsAndCurrencies(keys),
-    {
-      cache: false,
-    },
   );
 
   private async batchTaxCategoryByFinancialAccountOwnerIds(ownerIds: readonly string[]) {
@@ -285,11 +268,8 @@ export class TaxCategoriesProvider {
     return ownerIds.map(id => taxCategories.filter(tc => tc.financial_account_owner_id === id));
   }
 
-  public taxCategoryByFinancialAccountOwnerIdsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTaxCategoryByFinancialAccountOwnerIds(keys),
-    {
-      cache: false,
-    },
+  public taxCategoryByFinancialAccountOwnerIdsLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTaxCategoryByFinancialAccountOwnerIds(keys),
   );
 
   private async batchTaxCategoryByFinancialAccountIds(financialAccountIds: readonly string[]) {
@@ -304,11 +284,8 @@ export class TaxCategoriesProvider {
     );
   }
 
-  public taxCategoryByFinancialAccountIdsLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTaxCategoryByFinancialAccountIds(keys),
-    {
-      cache: false,
-    },
+  public taxCategoryByFinancialAccountIdsLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTaxCategoryByFinancialAccountIds(keys),
   );
 
   private async batchTaxCategoryByChargeIDs(chargeIds: readonly string[]) {
@@ -321,25 +298,12 @@ export class TaxCategoriesProvider {
     return chargeIds.map(id => taxCategories.find(tc => tc.charge_id === id));
   }
 
-  public taxCategoryByChargeIDsLoader = new DataLoader(
-    (chargeIDs: readonly string[]) => this.batchTaxCategoryByChargeIDs(chargeIDs),
-    {
-      cache: false,
-    },
+  public taxCategoryByChargeIDsLoader = new DataLoader((chargeIDs: readonly string[]) =>
+    this.batchTaxCategoryByChargeIDs(chargeIDs),
   );
 
   public getAllTaxCategories() {
-    const data = this.cache.get<IGetAllTaxCategoriesResult[]>('all-tax-categories');
-    if (data) {
-      return Promise.resolve(data);
-    }
-    return getAllTaxCategories.run(undefined, this.dbProvider).then(data => {
-      this.cache.set('all-tax-categories', data);
-      data.map(taxCategory => {
-        this.cache.set(`tax-category-${taxCategory.id}`, taxCategory);
-      });
-      return data;
-    });
+    return getAllTaxCategories.run(undefined, this.dbProvider);
   }
 
   public updateTaxCategory(params: IUpdateTaxCategoryParams) {
@@ -356,7 +320,6 @@ export class TaxCategoriesProvider {
     if (!params.id) {
       throw new Error('Missing required parameters');
     }
-    this.cache.delete('all-tax-categories');
     return insertTaxCategory.run(params, this.dbProvider).catch(error => {
       console.error(`Failed to insert tax category: ${error.message}`);
       throw error;
@@ -364,12 +327,10 @@ export class TaxCategoriesProvider {
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
-    this.cache.delete('all-tax-categories');
     return insertBusinessTaxCategory.run(params, this.dbProvider);
   }
 
   public deleteBusinessTaxCategory(params: IDeleteBusinessTaxCategoryParams) {
-    this.cache.delete('all-tax-categories');
     return deleteBusinessTaxCategory.run(params, this.dbProvider);
   }
 
@@ -416,11 +377,22 @@ export class TaxCategoriesProvider {
   }
 
   public invalidateTaxCategoryById(taxCategoryId: string) {
-    this.cache.delete(`tax-category-${taxCategoryId}`);
-    this.cache.delete('all-tax-categories');
+    this.taxCategoryByBusinessAndOwnerIDsLoader.clearAll();
+    this.taxCategoryByChargeIDsLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsLoader.clearAll();
+    this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
+    this.taxCategoriesBySortCodeLoader.clearAll();
+    this.taxCategoryByIdLoader.clear(taxCategoryId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.taxCategoryByIdLoader.clearAll();
+    this.taxCategoriesBySortCodeLoader.clearAll();
+    this.taxCategoryByBusinessAndOwnerIDsLoader.clearAll();
+    this.taxCategoryByChargeIDsLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
+    this.taxCategoryByFinancialAccountIdsLoader.clearAll();
+    this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
   }
 }

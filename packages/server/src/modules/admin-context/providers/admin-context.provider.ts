@@ -1,7 +1,5 @@
-import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetAdminContextsQuery,
@@ -271,37 +269,42 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
-  global: true,
+  scope: Scope.Operation,
 })
 export class AdminContextProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
+  private cachedContext: IGetAdminContextsQuery['result'] | null = null;
 
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private dbProvider: DBProvider,
+  ) {}
 
-  private async batchAdminContextByID(ownerIds: readonly string[]) {
-    const contexts = await getAdminContexts.run({ ownerIds }, this.dbProvider);
-    return ownerIds.map(id => contexts.find(context => context.owner_id === id));
+  public async getAdminContext() {
+    if (this.cachedContext) {
+      return this.cachedContext;
+    }
+
+    const ownerId = this.context.currentUser?.userId;
+
+    if (!ownerId) {
+      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
+    }
+
+    const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.dbProvider);
+    this.cachedContext = contexts[0] ?? null;
+    return this.cachedContext;
   }
 
-  public getAdminContextLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchAdminContextByID(ids),
-    {
-      cacheKeyFn: id => `admin-context-${id}`,
-      cacheMap: this.cache,
-    },
-  );
-
-  public updateAdminContext(params: IUpdateAdminContextParams) {
-    if (params.ownerId) {
-      this.getAdminContextLoader.clear(params.ownerId);
+  public async updateAdminContext(params: IUpdateAdminContextParams) {
+    const ownerId = this.context.currentUser?.userId;
+    if (!ownerId) {
+      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
     }
+    this.cachedContext = null;
     return updateAdminContext.run(params, this.dbProvider);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.cachedContext = null;
   }
 }

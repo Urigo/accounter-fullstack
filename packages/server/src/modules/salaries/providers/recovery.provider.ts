@@ -1,6 +1,5 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type { IGetRecoveryDataQuery, IGetRecoveryDataResult } from '../types.js';
 
@@ -9,29 +8,23 @@ const getRecoveryData = sql<IGetRecoveryDataQuery>`
     FROM accounter_schema.recovery;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class RecoveryProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private recoveryDataCache: Promise<IGetRecoveryDataResult[]> | null = null;
   public getRecoveryData() {
-    const cached = this.cache.get<IGetRecoveryDataResult[]>('recovery');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.recoveryDataCache) {
+      return this.recoveryDataCache;
     }
 
-    return getRecoveryData.run(undefined, this.dbProvider).then(res => {
-      this.cache.set('recovery', res);
-      return res;
-    });
+    this.recoveryDataCache = getRecoveryData.run(undefined, this.dbProvider);
+    return this.recoveryDataCache;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.recoveryDataCache = null;
   }
 }

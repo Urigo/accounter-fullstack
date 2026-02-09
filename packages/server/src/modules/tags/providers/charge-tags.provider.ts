@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IClearAllChargeTagsParams,
@@ -45,14 +44,10 @@ const updateChargeTagPart = sql<IUpdateChargeTagPartQuery>`
       AND tag_id = $tagId;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class ChargeTagsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(
     private dbProvider: DBProvider,
     private tagsProvider: TagsProvider,
@@ -76,12 +71,8 @@ export class ChargeTagsProvider {
     return chargeIDs.map(id => tagsByChargeId.get(id) ?? []);
   }
 
-  public getTagsByChargeIDLoader = new DataLoader(
-    (chargeIds: readonly string[]) => this.batchTagsByChargeID(chargeIds),
-    {
-      cacheKeyFn: chargeId => `tags-charge-${chargeId}`,
-      cacheMap: this.cache,
-    },
+  public getTagsByChargeIDLoader = new DataLoader((chargeIds: readonly string[]) =>
+    this.batchTagsByChargeID(chargeIds),
   );
 
   public async clearChargeTags(params: IClearChargeTagsParams) {
@@ -113,10 +104,10 @@ export class ChargeTagsProvider {
   }
 
   public async invalidateTagsByChargeID(chargeId: string) {
-    this.cache.delete(`tags-charge-${chargeId}`);
+    this.getTagsByChargeIDLoader.clear(chargeId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getTagsByChargeIDLoader.clearAll();
   }
 }

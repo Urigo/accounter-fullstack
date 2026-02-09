@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   BusinessTripProto,
@@ -110,14 +109,10 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   public getAllBusinessTrips() {
@@ -137,10 +132,6 @@ export class BusinessTripsProvider {
   public getBusinessTripsByIdLoader = new DataLoader(
     (ids: readonly string[]) =>
       this.batchBusinessTripsByIds(ids) as Promise<(BusinessTripProto | undefined)[]>,
-    {
-      cacheKeyFn: key => `business-trip-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripByChargeIds(chargeIds: readonly string[]) {
@@ -153,12 +144,8 @@ export class BusinessTripsProvider {
     return chargeIds.map(id => businessTrips.find(record => record.charge_id === id));
   }
 
-  public getBusinessTripsByChargeIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripByChargeIds(ids),
-    {
-      cacheKeyFn: key => `business-trips-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getBusinessTripsByChargeIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchBusinessTripByChargeIds(ids),
   );
 
   private async batchChargeIdsByBusinessTripIds(businessTripsIds: readonly string[]) {
@@ -175,12 +162,8 @@ export class BusinessTripsProvider {
     );
   }
 
-  public getChargeIdsByBusinessTripIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchChargeIdsByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trips-${key}-charges`,
-      cacheMap: this.cache,
-    },
+  public getChargeIdsByBusinessTripIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchChargeIdsByBusinessTripIds(ids),
   );
 
   public getBusinessTripsByDates(params: IGetBusinessTripsByDatesParams) {
@@ -190,13 +173,13 @@ export class BusinessTripsProvider {
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
     const trip = await this.getBusinessTripsByChargeIdLoader.load(chargeId);
     if (trip) {
-      this.cache.delete(`business-trip-${trip.id}`);
-      this.cache.delete(`business-trips-${trip.id}-charges`);
+      this.getBusinessTripsByIdLoader.clear(trip.id);
+      this.getChargeIdsByBusinessTripIdLoader.clear(trip.id);
     }
-    this.cache.delete(`business-trips-charge-${chargeId}`);
+    this.getBusinessTripsByChargeIdLoader.clear(chargeId);
     if (businessTripId) {
-      this.cache.delete(`business-trip-${businessTripId}`);
-      this.cache.delete(`business-trips-${businessTripId}-charges`);
+      this.getBusinessTripsByIdLoader.clear(businessTripId);
+      this.getChargeIdsByBusinessTripIdLoader.clear(businessTripId);
       return updateChargeBusinessTrip.run({ chargeId, businessTripId }, this.dbProvider);
     }
     return deleteChargeBusinessTrip.run({ chargeId }, this.dbProvider);
@@ -206,9 +189,9 @@ export class BusinessTripsProvider {
     if (params.businessTripId) {
       const chargeIds = await this.getChargeIdsByBusinessTripIdLoader.load(params.businessTripId);
       if (chargeIds) {
-        chargeIds.map(chargeId => this.cache.delete(`business-trips-charge-${chargeId}`));
+        chargeIds.map(chargeId => this.getBusinessTripsByChargeIdLoader.clear(chargeId));
       }
-      this.cache.delete(`business-trip-${params.businessTripId}`);
+      this.getBusinessTripsByIdLoader.clear(params.businessTripId);
     }
     return updateBusinessTrip.run(params, this.dbProvider);
   }
@@ -221,14 +204,16 @@ export class BusinessTripsProvider {
     if (params.businessTripId) {
       const chargeIds = await this.getChargeIdsByBusinessTripIdLoader.load(params.businessTripId);
       if (chargeIds) {
-        chargeIds.map(chargeId => this.cache.delete(`business-trips-charge-${chargeId}`));
+        chargeIds.map(chargeId => this.getBusinessTripsByChargeIdLoader.clear(chargeId));
       }
-      this.cache.delete(`business-trip-${params.businessTripId}`);
+      this.getBusinessTripsByIdLoader.clear(params.businessTripId);
     }
     return updateAccountantApproval.run(params, this.dbProvider);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsByIdLoader.clearAll();
+    this.getBusinessTripsByChargeIdLoader.clearAll();
+    this.getChargeIdsByBusinessTripIdLoader.clearAll();
   }
 }

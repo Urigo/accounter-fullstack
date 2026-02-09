@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTripAccommodationsExpenseParams,
@@ -60,14 +59,10 @@ const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommoda
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripAccommodationsExpensesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessTripsAccommodationsExpensesByBusinessTripIds(
@@ -87,10 +82,6 @@ export class BusinessTripAccommodationsExpensesProvider {
 
   public getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-accommodation-expense-trip-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripsAccommodationsExpensesByIds(expenseIds: readonly string[]) {
@@ -108,10 +99,6 @@ export class BusinessTripAccommodationsExpensesProvider {
 
   public getBusinessTripsAccommodationsExpensesByIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-accommodation-expense-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   public updateBusinessTripAccommodationsExpense(
@@ -141,22 +128,25 @@ export class BusinessTripAccommodationsExpensesProvider {
 
   public async invalidateById(expenseId: string) {
     const expense = await this.getBusinessTripsAccommodationsExpensesByIdLoader.load(expenseId);
-    if (expense) {
-      this.cache.delete(`business-trip-accommodation-expense-trip-${expense.business_trip_id}`);
+    if (expense?.business_trip_id) {
+      this.getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.clear(
+        expense.business_trip_id,
+      );
     }
-    this.cache.delete(`business-trip-accommodation-expense-${expenseId}`);
+    this.getBusinessTripsAccommodationsExpensesByIdLoader.clear(expenseId);
   }
 
   public async invalidateByBusinessTripId(businessTripId: string) {
     const expenses =
       await this.getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
-      this.cache.delete(`business-trip-accommodation-expense-${expense.id}`);
+      this.getBusinessTripsAccommodationsExpensesByIdLoader.clear(expense.id);
     }
-    this.cache.delete(`business-trip-accommodation-expense-trip-${businessTripId}`);
+    this.getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.clear(businessTripId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsAccommodationsExpensesByBusinessTripIdLoader.clearAll();
+    this.getBusinessTripsAccommodationsExpensesByIdLoader.clearAll();
   }
 }

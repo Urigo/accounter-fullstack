@@ -1,14 +1,11 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
-import { suggestionDataSchema } from '../helpers/business-suggestion-data-schema.helper.js';
 import type {
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
   IGetBusinessByEmailQuery,
-  IGetBusinessByEmailResult,
   IGetBusinessesByIdsQuery,
   IInsertBusinessesParams,
   IInsertBusinessesQuery,
@@ -214,14 +211,10 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
@@ -235,32 +228,33 @@ export class BusinessesProvider {
     return ids.map(id => businesses.find(fe => fe.id === id));
   }
 
-  public getBusinessByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessesByIds(ids),
-    {
-      cacheKeyFn: id => `business-${id}`,
-      cacheMap: this.cache,
-    },
+  public getBusinessByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchBusinessesByIds(ids),
   );
 
+  private allBusinessesCache: Promise<IGetAllBusinessesResult[]> | null = null;
   public getAllBusinesses() {
-    const data = this.cache.get<IGetAllBusinessesResult[]>('all-businesses');
-    if (data) {
-      return Promise.resolve(data);
+    if (this.allBusinessesCache) {
+      return this.allBusinessesCache;
     }
-    return getAllBusinesses.run(undefined, this.dbProvider);
+    this.allBusinessesCache = getAllBusinesses.run(undefined, this.dbProvider).then(businesses => {
+      businesses.map(business => {
+        this.getBusinessByIdLoader.prime(business.id, business);
+      });
+      return businesses;
+    });
+    return this.allBusinessesCache;
   }
 
   public getBusinessByEmail(email: string) {
-    const cacheKey = `business-email-${email}`;
-    const cachedData = this.cache.get<IGetBusinessByEmailResult | null>(cacheKey);
-    if (cachedData !== undefined) {
-      return Promise.resolve(cachedData);
-    }
     return getBusinessByEmail.run({ email }, this.dbProvider).then(res => {
-      const business = res?.length ? res[0] : null;
-      this.cache.set(cacheKey, business);
-      return business;
+      if (res?.length) {
+        res.map(business => {
+          this.getBusinessByIdLoader.prime(business.id, business);
+        });
+        return res[0];
+      }
+      return null;
     });
   }
 
@@ -327,20 +321,12 @@ export class BusinessesProvider {
   }
 
   public async invalidateBusinessById(businessId: string) {
-    const business = await this.getBusinessByIdLoader.load(businessId);
-    if (business?.suggestion_data) {
-      const { data: suggestionData } = suggestionDataSchema.safeParse(business.suggestion_data);
-      if (suggestionData?.emails) {
-        for (const email of suggestionData.emails) {
-          this.cache.delete(`business-email-${email}`);
-        }
-      }
-    }
-    this.cache.delete('all-businesses');
-    this.cache.delete(`business-${businessId}`);
+    this.getBusinessByIdLoader.clear(businessId);
+    this.allBusinessesCache = null;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessByIdLoader.clearAll();
+    this.allBusinessesCache = null;
   }
 }

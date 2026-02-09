@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   DateOrString,
@@ -74,14 +73,10 @@ const removeBusinessTripAttendees = sql<IRemoveBusinessTripAttendeesQuery>`
   RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripAttendeesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(
     private dbProvider: DBProvider,
     private businessTripsProvider: BusinessTripsProvider,
@@ -137,10 +132,6 @@ export class BusinessTripAttendeesProvider {
 
   public getBusinessTripsAttendeesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsAttendeesByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-${key}-attendees`,
-      cacheMap: this.cache,
-    },
   );
 
   public getBusinessTripsByAttendeeId(attendeeId: string) {
@@ -156,26 +147,27 @@ export class BusinessTripAttendeesProvider {
 
   public addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
     if (params.businessTripId) {
-      this.cache.delete(`business-trip-${params.businessTripId}-attendees`);
+      this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
     return addBusinessTripAttendees.run(params, this.dbProvider);
   }
 
   public updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {
     if (params.businessTripId) {
-      this.cache.delete(`business-trip-${params.businessTripId}-attendees`);
+      this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
     return updateBusinessTripAttendee.run(params, this.dbProvider);
   }
 
   public removeBusinessTripAttendees(params: IRemoveBusinessTripAttendeesParams) {
     if (params.businessTripId) {
-      this.cache.delete(`business-trip-${params.businessTripId}-attendees`);
+      this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
     return removeBusinessTripAttendees.run(params, this.dbProvider);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsAttendeesByChargeIdLoader.clearAll();
+    this.getBusinessTripsAttendeesByBusinessTripIdLoader.clearAll();
   }
 }

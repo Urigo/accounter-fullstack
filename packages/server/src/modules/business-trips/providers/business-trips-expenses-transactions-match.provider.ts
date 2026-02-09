@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { stringArray } from '../../charges/types.js';
 import type {
@@ -42,14 +41,10 @@ const deleteSpecificBusinessTripExpenseMatch = sql<IDeleteSpecificBusinessTripEx
   RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripExpensesTransactionsMatchProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessTripsExpenseMatchesByTransactionIds(
@@ -66,10 +61,6 @@ export class BusinessTripExpensesTransactionsMatchProvider {
 
   public getBusinessTripsExpenseMatchesByTransactionIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByTransactionIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-expense-match-transaction-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripsExpenseMatchesByExpenseIds(expenseIds: readonly string[]) {
@@ -86,18 +77,14 @@ export class BusinessTripExpensesTransactionsMatchProvider {
 
   public getBusinessTripsExpenseMatchesByExpenseIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByExpenseIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-expense-${key}-match`,
-      cacheMap: this.cache,
-    },
   );
 
   public insertBusinessTripExpenseMatch(params: IInsertBusinessTripExpenseMatchParams) {
     if (params.businessTripExpenseId) {
-      this.cache.delete(`business-trip-expense-${params.businessTripExpenseId}-match`);
+      this.getBusinessTripsExpenseMatchesByExpenseIdLoader.clear(params.businessTripExpenseId);
     }
     if (params.transactionId) {
-      this.cache.delete(`business-trip-expense-match-transaction-${params.transactionId}`);
+      this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clear(params.transactionId);
     }
     return insertBusinessTripExpenseMatch.run(params, this.dbProvider);
   }
@@ -108,9 +95,9 @@ export class BusinessTripExpensesTransactionsMatchProvider {
         params.businessTripExpenseId,
       );
       expenses.map(expense => {
-        this.cache.delete(`business-trip-expense-match-transaction-${expense.transaction_id}`);
+        this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clear(expense.transaction_id);
       });
-      this.cache.delete(`business-trip-expense-${params.businessTripExpenseId}-match`);
+      this.getBusinessTripsExpenseMatchesByExpenseIdLoader.clear(params.businessTripExpenseId);
     }
 
     return deleteBusinessTripExpenseMatch.run(params, this.dbProvider);
@@ -120,15 +107,16 @@ export class BusinessTripExpensesTransactionsMatchProvider {
     params: IDeleteSpecificBusinessTripExpenseMatchParams,
   ) {
     if (params.businessTripExpenseId) {
-      this.cache.delete(`business-trip-expense-${params.businessTripExpenseId}-match`);
+      this.getBusinessTripsExpenseMatchesByExpenseIdLoader.clear(params.businessTripExpenseId);
     }
     if (params.transactionId) {
-      this.cache.delete(`business-trip-expense-match-transaction-${params.transactionId}`);
+      this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clear(params.transactionId);
     }
     return deleteSpecificBusinessTripExpenseMatch.run(params, this.dbProvider);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clearAll();
+    this.getBusinessTripsExpenseMatchesByExpenseIdLoader.clearAll();
   }
 }

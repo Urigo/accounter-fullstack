@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type { IGetEmployeesByEmployerQuery, IGetEmployeesByIdQuery } from '../types.js';
 
@@ -16,14 +15,10 @@ const getEmployeesById = sql<IGetEmployeesByIdQuery>`
     WHERE business_id in $$employeeIDs;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class EmployeesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchEmployeesByEmployerIDs(employerIDs: readonly string[]) {
@@ -37,12 +32,8 @@ export class EmployeesProvider {
     return [];
   }
 
-  public getEmployeesByEmployerLoader = new DataLoader(
-    (employerIDs: readonly string[]) => this.batchEmployeesByEmployerIDs(employerIDs),
-    {
-      cacheKeyFn: key => `salary-employer-${key}`,
-      cacheMap: this.cache,
-    },
+  public getEmployeesByEmployerLoader = new DataLoader((employerIDs: readonly string[]) =>
+    this.batchEmployeesByEmployerIDs(employerIDs),
   );
 
   private async batchEmployeesByIDs(employeeIDs: readonly string[]) {
@@ -56,15 +47,12 @@ export class EmployeesProvider {
     return [];
   }
 
-  public getEmployeesByIdLoader = new DataLoader(
-    (employeeIDs: readonly string[]) => this.batchEmployeesByIDs(employeeIDs),
-    {
-      cacheKeyFn: key => `employee-${key}`,
-      cacheMap: this.cache,
-    },
+  public getEmployeesByIdLoader = new DataLoader((employeeIDs: readonly string[]) =>
+    this.batchEmployeesByIDs(employeeIDs),
   );
 
   public clearCache() {
-    this.cache.clear();
+    this.getEmployeesByEmployerLoader.clearAll();
+    this.getEmployeesByIdLoader.clearAll();
   }
 }

@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
@@ -118,14 +117,10 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
 };
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class TransactionsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchTransactionsByIds(ids: readonly string[]) {
@@ -144,18 +139,14 @@ export class TransactionsProvider {
     });
   }
 
-  public transactionByIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTransactionsByIds(keys),
-    {
-      cacheKeyFn: id => `transaction-${id}`,
-      cacheMap: this.cache,
-    },
+  public transactionByIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTransactionsByIds(keys),
   );
 
   public async getTransactionsByMissingRequiredInfo() {
     return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider).then(res =>
       res.map(t => {
-        this.cache.set(`transaction-${t.id}`, t);
+        this.transactionByIdLoader.prime(t.id, t);
         return t;
       }),
     );
@@ -169,17 +160,13 @@ export class TransactionsProvider {
       this.dbProvider,
     );
     transactions.map(t => {
-      this.cache.set(`transaction-${t.id}`, t);
+      this.transactionByIdLoader.prime(t.id, t);
     });
     return chargeIds.map(id => transactions.filter(transaction => transaction.charge_id === id));
   }
 
-  public transactionsByChargeIDLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchTransactionsByChargeIDs(keys),
-    {
-      cacheKeyFn: id => `transactions-by-charge-${id}`,
-      cacheMap: this.cache,
-    },
+  public transactionsByChargeIDLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchTransactionsByChargeIDs(keys),
   );
 
   public getTransactionsByFilters(params: IGetAdjustedTransactionsByFiltersParams) {
@@ -237,6 +224,7 @@ export class TransactionsProvider {
   }
 
   public async invalidateTransactionByChargeID(chargeId: string) {
+    this.transactionsByChargeIDLoader.clear(chargeId);
     try {
       const transactions = await getTransactionsByChargeIds.run(
         {
@@ -244,14 +232,14 @@ export class TransactionsProvider {
         },
         this.dbProvider,
       );
-      transactions.map(transaction => this.cache.delete(`transaction-${transaction.id}`));
-      this.cache.delete(`transactions-by-charge-${chargeId}`);
+      transactions.map(t => this.transactionByIdLoader.clear(t.id));
     } catch (e) {
       console.error(`Error invalidating transaction by charge ID "${chargeId}":`, e);
     }
   }
 
   public async invalidateTransactionByID(id: string) {
+    this.transactionByIdLoader.clear(id);
     try {
       const [transaction] = await getTransactionsByIds.run(
         {
@@ -259,16 +247,16 @@ export class TransactionsProvider {
         },
         this.dbProvider,
       );
-      if (transaction) {
-        this.cache.delete(`transactions-by-charge-${transaction.charge_id}`);
+      if (transaction?.charge_id) {
+        this.transactionsByChargeIDLoader.clear(transaction.charge_id);
       }
-      this.cache.delete(`transaction-${id}`);
     } catch (e) {
       console.error(`Error invalidating transaction by ID "${id}":`, e);
     }
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.transactionByIdLoader.clearAll();
+    this.transactionsByChargeIDLoader.clearAll();
   }
 }

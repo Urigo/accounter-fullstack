@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteIssuedDocumentParams,
@@ -138,30 +137,24 @@ const insertIssuedDocuments = sql<IInsertIssuedDocumentsQuery>`
     RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class IssuedDocumentsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
+  private allIssuedDocumentsCache: Promise<IGetAllIssuedDocumentsResult[]> | null = null;
   public async getAllIssuedDocuments(params: IGetAllIssuedDocumentsParams) {
-    const cached = this.cache.get<IGetAllIssuedDocumentsResult[]>('all-issued-documents');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allIssuedDocumentsCache) {
+      return this.allIssuedDocumentsCache;
     }
-    return getAllIssuedDocuments.run(params, this.dbProvider).then(res => {
-      if (res) {
-        this.cache.set('all-issued-documents', res);
-        res.map(doc => {
-          this.cache.set(`issued-document-${doc.id}`, doc);
-        });
-      }
-      return res;
+    this.allIssuedDocumentsCache = getAllIssuedDocuments.run(params, this.dbProvider).then(docs => {
+      docs.map(doc => {
+        this.getIssuedDocumentsByIdLoader.prime(doc.id, doc);
+      });
+      return docs;
     });
+    return this.allIssuedDocumentsCache;
   }
 
   private async batchIssuedDocumentsByIds(ids: readonly string[]) {
@@ -176,12 +169,8 @@ export class IssuedDocumentsProvider {
     }
   }
 
-  public getIssuedDocumentsByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchIssuedDocumentsByIds(ids),
-    {
-      cacheKeyFn: id => `issued-document-${id}`,
-      cacheMap: this.cache,
-    },
+  public getIssuedDocumentsByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchIssuedDocumentsByIds(ids),
   );
 
   private async batchIssuedDocumentsByExternalIds(externalIds: readonly string[]) {
@@ -199,12 +188,8 @@ export class IssuedDocumentsProvider {
     }
   }
 
-  public getIssuedDocumentsByExternalIdLoader = new DataLoader(
-    (externalIds: readonly string[]) => this.batchIssuedDocumentsByExternalIds(externalIds),
-    {
-      cacheKeyFn: id => `issued-document-external-${id}`,
-      cacheMap: this.cache,
-    },
+  public getIssuedDocumentsByExternalIdLoader = new DataLoader((externalIds: readonly string[]) =>
+    this.batchIssuedDocumentsByExternalIds(externalIds),
   );
 
   private async batchIssuedDocumentsByClientIds(clientIds: readonly string[]) {
@@ -217,7 +202,7 @@ export class IssuedDocumentsProvider {
 
       return clientIds.map(id =>
         docs.filter(doc => {
-          this.cache.set(`issued-document-${doc.id}`, doc);
+          this.getIssuedDocumentsByIdLoader.prime(doc.id, doc);
           return doc.creditor_id === id || doc.debtor_id === id;
         }),
       );
@@ -232,8 +217,6 @@ export class IssuedDocumentsProvider {
     (clientIds: readonly string[]) => this.batchIssuedDocumentsByClientIds(clientIds),
     {
       cache: false,
-      cacheKeyFn: id => `issued-documents-client-${id}`,
-      cacheMap: this.cache,
     },
   );
 
@@ -261,19 +244,15 @@ export class IssuedDocumentsProvider {
     (chargeIds: readonly string[]) => this.batchIssuedDocumentsStatusByChargeIds(chargeIds),
     {
       cache: false,
-      cacheKeyFn: id => `issued-documents-by-charge-${id}`,
-      cacheMap: this.cache,
     },
   );
 
   public async getIssuedDocumentsByType(params: IGetIssuedDocumentsByTypeParams) {
-    return getIssuedDocumentsByType.run(params, this.dbProvider).then(res => {
-      if (res) {
-        res.map(doc => {
-          this.cache.set(`issued-document-${doc.id}`, doc);
-        });
-      }
-      return res;
+    return getIssuedDocumentsByType.run(params, this.dbProvider).then(docs => {
+      docs.map(doc => {
+        this.getIssuedDocumentsByIdLoader.prime(doc.id, doc);
+      });
+      return docs;
     });
   }
 
@@ -301,17 +280,21 @@ export class IssuedDocumentsProvider {
   }
 
   public async insertIssuedDocuments(params: IInsertIssuedDocumentsParams) {
-    this.cache.delete('all-issued-documents');
+    this.allIssuedDocumentsCache = null;
     return insertIssuedDocuments.run(params, this.dbProvider);
   }
 
   public async invalidateById(id: string) {
-    this.cache.delete([`issued-document-${id}`, 'all-issued-documents']);
-    // since no direct link between issued-documents and charges, on invalidation clear all:
+    this.getIssuedDocumentsByIdLoader.clear(id);
+    this.allIssuedDocumentsCache = null;
     this.getIssuedDocumentsStatusByChargeIdLoader.clearAll();
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getIssuedDocumentsByIdLoader.clearAll();
+    this.getIssuedDocumentsByExternalIdLoader.clearAll();
+    this.getIssuedDocumentsByClientIdLoader.clearAll();
+    this.getIssuedDocumentsStatusByChargeIdLoader.clearAll();
+    this.allIssuedDocumentsCache = null;
   }
 }
