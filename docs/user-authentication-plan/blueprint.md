@@ -164,7 +164,28 @@ The plan prioritizes incremental progress, strong testing, and minimal risk at e
 - Schema ready for future granular permissions feature (not in scope for current phase)
 - Authorization will use role-based checks only (e.g., `if roleId === 'business_owner'`)
 
-## **Risk**: Very Low (tables not used yet)
+**Risk**: Very Low (tables not used yet)
+
+---
+
+## Phase 1 Complete - System Functional Validation
+
+**Achievement**: New database schema created, legacy tables renamed
+
+**Critical Validation**:
+
+- ✅ **Existing functionality unchanged**: All application code continues to work
+- ✅ **Legacy `users` table accessible**: Renamed to `legacy_business_users`, all FK constraints
+  updated automatically
+- ✅ **New tables ready**: `business_users`, `roles`, `permissions`, `invitations`, `api_keys`,
+  `audit_logs` created
+- ✅ **All existing tests pass**: No application-level changes required
+- ✅ **Tables unpopulated**: New schema exists but is not yet used by application code
+
+**Production Readiness**: Safe to deploy Phase 1 to production - pure database schema changes, zero
+user impact
+
+---
 
 ## Phase 2: Core Database Services (Week 3)
 
@@ -669,62 +690,33 @@ between tenants
 
 ---
 
-### Step 2.9: Global Context Type Updates
+### Step 2.9: REMOVED - Moved to Phase 4
 
-**Goal**: Update GraphQL Modules global context interface to reflect new auth structure
+**Note**: Step 2.9 (Global Context Type Updates) has been moved to **Phase 4 (Step 4.9)** because
+updating GlobalContext during Phase 2 would break the server. This step requires Auth0 activation
+and plugin removal to be complete first.
 
-**Tasks**:
+See Step 4.9 for details.
 
-- Update `packages/server/src/modules-app.ts` global context declaration:
+---
 
-  ```typescript
-  declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace GraphQLModules {
-      interface GlobalContext {
-        env: Environment
-        rawAuth: RawAuth // From authPlugin
-        // Legacy fields removed:
-        // currentUser: UserType
-        // adminContext: AdminContext
-      }
-    }
-  }
-  ```
+## Phase 2 Complete - System Functional Validation
 
-- Update `packages/server/src/shared/types/index.ts`:
+**Achievement**: All Auth0 infrastructure is built and tested in isolation
 
-  ```typescript
-  import type { RawAuth } from '../plugins/auth-plugin.js'
+**Critical Validation**:
 
-  export type AccounterContext = YogaInitialContext & {
-    env: Environment
-    pool: pg.Pool // Legacy, will be replaced by TenantAwareDBClient via DI
-    rawAuth: RawAuth
-    // Removed:
-    // currentUser: UserType
-    // adminContext: AdminContext
-  }
-  ```
+- ✅ **Existing authentication fully functional**: All users can log in and access their data
+- ✅ **Server starts successfully**: No breaking changes introduced
+- ✅ **All existing tests pass**: No regressions in current functionality
+- ✅ **New infrastructure ready but inactive**:
+  - `authPluginV2` created but NOT registered (existing auth plugin active)
+  - `TenantAwareDBClient` registered but unused (providers still use `DBProvider` or `context.pool`)
+  - `AuthContextProvider` created but NOT registered (existing auth context active)
+  - `AdminContextProvider` refactored to Operation scope but plugin still active
+  - No resolvers/providers use new infrastructure yet
 
-- Search and replace legacy context access:
-  - Find: `context.currentUser`
-  - Replace with: Inject `@Inject(AUTH_CONTEXT)` in provider constructor
-  - Find: `context.adminContext`
-  - Replace with: Inject `@Inject(ADMIN_CONTEXT)` in provider constructor
-
-- Add tests:
-  - GlobalContext types compile correctly
-  - No legacy context access in resolvers
-  - Injection tokens work as expected
-
-**Validation**:
-
-- TypeScript compilation succeeds
-- No references to `currentUser` or `adminContext` in context object
-- All auth access via injection tokens
-
-**Risk**: Medium (requires updating many files)
+**Production Readiness**: Safe to deploy Phase 2 to production - zero user impact
 
 ---
 
@@ -950,10 +942,39 @@ between tenants
 
 ---
 
+## Phase 3 Complete - System Functional Validation
+
+**Achievement**: Database security hardened with RLS, ready for Auth0 integration
+
+**Critical Validation**:
+
+- ✅ **Existing authentication fully functional**: Users continue to access data normally
+- ✅ **RLS policies active**: Database enforces tenant isolation at engine level
+- ✅ **TenantAwareDBClient ready**: Can handle RLS variable setting when activated
+- ✅ **Performance acceptable**: RLS overhead < 20% on tenant queries
+- ✅ **All existing tests pass**: Application behavior unchanged from user perspective
+- ✅ **No Auth0 activation yet**: System still uses existing authentication
+
+**What's Different**:
+
+- All tenant tables now have `business_id` columns (NOT NULL with indexes and FKs)
+- RLS policies active on all tables (enforced when `app.current_business_id` is set)
+- `get_current_business_id()` function available for policy enforcement
+- Existing code unaffected (doesn't set RLS variables yet, so policies are bypassed for superuser
+  queries)
+
+**Production Readiness**: Safe to deploy Phase 3 to production - zero user impact, database security
+enhanced
+
+**Next Phase**: Auth0 activation (Phase 4) will switch to new authentication and begin using
+TenantAwareDBClient
+
+---
+
 ## Phase 4: Auth0 Integration & Authentication Migration (Week 5)
 
 **Critical Note**: This phase activates Auth0 authentication. Steps must be executed in order with
-careful validation at each stage. Existing authentication remains functional until Step 4.6.
+careful validation at each stage. Existing authentication remains functional until Step 4.7.
 
 ### Step 4.1: Environment Configuration for Auth0
 
@@ -1164,9 +1185,202 @@ careful validation at each stage. Existing authentication remains functional unt
 
 ---
 
-### Step 4.6: Activate Auth0 Authentication (The Switch)
+### Step 4.6: Frontend Auth0 Integration (CRITICAL - Before Backend Switch)
 
-**Goal**: Switch production server from old auth to Auth0 auth
+**Goal**: Implement Auth0 login UI BEFORE switching backend, ensuring users always have a login
+method
+
+**CRITICAL**: This step MUST be completed before Step 4.7 (backend switch). If backend switches to
+Auth0 without frontend support, ALL users will be locked out.
+
+**Tasks**:
+
+**A. Install and Configure Auth0 React SDK**:
+
+- Install dependencies:
+  ```bash
+  cd packages/client
+  yarn add @auth0/auth0-react
+  ```
+- Update `packages/client/src/main.tsx`:
+
+  ```typescript
+  import { Auth0Provider } from '@auth0/auth0-react'
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <Auth0Provider
+      domain={import.meta.env.VITE_AUTH0_DOMAIN}
+      clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
+      authorizationParams={{
+        redirect_uri: window.location.origin + '/callback',
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+      }}
+    >
+      <App />
+    </Auth0Provider>
+  )
+  ```
+
+- Add environment variables to `packages/client/.env`:
+  ```bash
+  VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+  VITE_AUTH0_CLIENT_ID=your-client-id
+  VITE_AUTH0_AUDIENCE=https://api.accounter.example.com
+  VITE_GRAPHQL_URL=http://localhost:4000/graphql
+  ```
+
+**B. Create Dual Login UI (Legacy + Auth0)**:
+
+- Update `packages/client/src/pages/login-page.tsx`:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react'
+
+  export function LoginPage() {
+    const { loginWithRedirect } = useAuth0()
+    const [useLegacyAuth, setUseLegacyAuth] = useState(true) // Default to legacy for now
+
+    if (useLegacyAuth) {
+      return (
+        <div>
+          <LegacyLoginForm /> {/* Existing email/password form */}
+          <button onClick={() => setUseLegacyAuth(false)}>
+            Switch to Auth0 Login
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div>
+        <h1>Log In with Auth0</h1>
+        <button onClick={() => loginWithRedirect()}>
+          Log In
+        </button>
+        <button onClick={() => setUseLegacyAuth(true)}>
+          Use Legacy Login (temporary)
+        </button>
+      </div>
+    )
+  }
+  ```
+
+**C. Callback Handler**:
+
+- Create `packages/client/src/pages/callback-page.tsx`:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react'
+  import { useEffect } from 'react'
+  import { useNavigate } from 'react-router-dom'
+
+  export function CallbackPage() {
+    const { isAuthenticated, isLoading, error } = useAuth0()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+      if (isAuthenticated) navigate('/dashboard')
+      if (error) navigate('/login?error=' + error.message)
+    }, [isAuthenticated, error])
+
+    if (isLoading) return <div>Processing login...</div>
+    return null
+  }
+  ```
+
+- Add route: `<Route path="/callback" element={<CallbackPage />} />`
+
+**D. Update Urql Client for Dual Auth**:
+
+- Update `packages/client/src/lib/urql-client.ts`:
+
+  ```typescript
+  import { useAuth0 } from '@auth0/auth0-react'
+
+  export function useUrqlClient() {
+    const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+
+    return useMemo(
+      () =>
+        createClient({
+          url: import.meta.env.VITE_GRAPHQL_URL,
+          exchanges: [
+            dedupExchange,
+            cacheExchange,
+            authExchange({
+              getAuth: async () => {
+                // Try Auth0 first (if authenticated via Auth0)
+                if (isAuthenticated) {
+                  try {
+                    const token = await getAccessTokenSilently()
+                    return { token, type: 'auth0' }
+                  } catch (err) {
+                    console.warn('Auth0 token fetch failed:', err)
+                  }
+                }
+
+                // Fallback to legacy token (from localStorage or cookie)
+                const legacyToken = localStorage.getItem('auth_token')
+                if (legacyToken) {
+                  return { token: legacyToken, type: 'legacy' }
+                }
+
+                return null
+              },
+              addAuthToOperation: ({ authState, operation }) => {
+                if (!authState?.token) return operation
+
+                return makeOperation(operation.kind, operation, {
+                  ...operation.context,
+                  fetchOptions: {
+                    ...operation.context.fetchOptions,
+                    headers: {
+                      ...operation.context.fetchOptions?.headers,
+                      Authorization: `Bearer ${authState.token}`
+                    }
+                  }
+                })
+              }
+            }),
+            fetchExchange
+          ]
+        }),
+      [isAuthenticated, getAccessTokenSilently]
+    )
+  }
+  ```
+
+**Validation**:
+
+- **Both login methods work**:
+  - Legacy login (email/password) → old auth token → backend accepts
+  - Auth0 login (Universal Login) → Auth0 JWT → backend accepts (via `USE_AUTH0=true`)
+- Users can switch between login methods
+- Callback page redirects correctly
+- GraphQL client sends correct token type
+- **Existing users can still log in via legacy method**
+- **New users can test Auth0 login**
+
+**Testing Checklist**:
+
+- [ ] Legacy login still works (default)
+- [ ] Auth0 login works (when selected)
+- [ ] Callback page handles success/error
+- [ ] GraphQL requests include correct auth header
+- [ ] User can switch between auth methods
+- [ ] No errors in browser console
+
+**Risk**: Medium (frontend changes, but both auth methods remain functional)
+
+**Note**: This creates a **dual-auth UI** that supports both legacy and Auth0 authentication. Step
+4.7 will switch the backend to require Auth0, but users will already have the Auth0 login UI
+available.
+
+---
+
+### Step 4.7: Activate Auth0 Authentication (The Switch)
+
+**Goal**: Switch production backend from old auth to Auth0 auth (frontend Auth0 UI already deployed)
 
 **Critical Prerequisites**:
 
@@ -1174,17 +1388,25 @@ careful validation at each stage. Existing authentication remains functional unt
 - [ ] Auth0 Management API working (Step 4.3)
 - [ ] Parallel testing successful (Step 4.4)
 - [ ] Test users migrated successfully (Step 4.5)
+- [ ] **Frontend Auth0 UI deployed and tested (Step 4.6)** ← CRITICAL
 - [ ] All Phase 1-3 tests passing
 - [ ] Staging deployment successful with Auth0 enabled
 - [ ] Rollback plan documented and tested
 
+**CRITICAL USER IMPACT**: After this step, users MUST log in via Auth0. Ensure Step 4.6 is fully
+deployed first.
+
 **Tasks**:
 
+- **Verify frontend Auth0 UI is live in production**:
+  - Test Auth0 login flow works on production frontend
+  - Verify callback page accessible
+  - Confirm users can see "Log in with Auth0" option
 - Update `packages/server/src/index.ts`:
   - Replace old `authPlugin()` with `authPluginV2()` in plugins array:
     ```typescript
     plugins: [
-      authPluginV2(), // NEW: Extracts Auth0 JWT
+      authPluginV2(), // NEW: Extracts Auth0 JWT (legacy auth removed)
       useGraphQLModules(schema),
       useDeferStream(),
       useHive(hiveConfig),
@@ -1202,6 +1424,12 @@ careful validation at each stage. Existing authentication remains functional unt
     ```
 - Update TenantAwareDBClient:
   - Inject AUTH_CONTEXT (now using Auth0 verification)
+- **Coordinated Deployment**:
+  - Deploy backend with Auth0-only authentication
+  - **Frontend already has Auth0 UI** (from Step 4.6)
+  - Users immediately see "Log in with Auth0" and can authenticate
+  - Monitor error rates closely
+
 - Deploy to staging:
   - Validate all existing functionality works with Auth0
   - Test user login via Auth0 Universal Login
@@ -1209,7 +1437,8 @@ careful validation at each stage. Existing authentication remains functional unt
   - Run full integration test suite
 - Deploy to production:
   - Schedule maintenance window (15 minutes)
-  - Deploy with `USE_AUTH0=true`
+  - Deploy backend with `USE_AUTH0=true`
+  - **Update frontend to default to Auth0 login** (make Auth0 the default, remove legacy option)
   - Monitor error rates
   - Verify user logins work
   - **Rollback immediately** if error rate > 1%
@@ -1218,8 +1447,8 @@ careful validation at each stage. Existing authentication remains functional unt
 
 ```bash
 # If issues occur within first hour:
-1. Set USE_AUTH0=false in environment
-2. Restart server
+1. Revert backend to old authPlugin (previous deployment)
+2. Revert frontend to show legacy login as default
 3. Verify old auth working
 4. Investigate Auth0 issues
 5. Fix and redeploy
@@ -1229,12 +1458,13 @@ careful validation at each stage. Existing authentication remains functional unt
 
 - Auth0 authentication active in production
 - User logins work via Auth0 Universal Login
-- Existing sessions remain valid (grace period)
+- Frontend shows Auth0 login UI by default
 - API key authentication unaffected
 - Error rates normal
 - All integration tests pass
+- **Zero downtime**: Users had Auth0 UI before backend switched
 
-**Risk**: High (production auth migration)
+**Risk**: Medium (production auth migration, but frontend already prepared)
 
 **Monitoring** (first 24 hours):
 
@@ -1243,16 +1473,22 @@ careful validation at each stage. Existing authentication remains functional unt
 - Auth0 API response times
 - User complaints
 
+**Communication**:
+
+- Email users 48 hours before: "We're upgrading to a more secure login system"
+- Provide Auth0 login instructions
+- Support team ready for login issues
+
 ---
 
-### Step 4.7: Pilot Provider Migration (Activate TenantAwareDBClient)
+### Step 4.8: Pilot Provider Migration (Activate TenantAwareDBClient)
 
 **Goal**: Migrate one pilot provider to inject TenantAwareDBClient with RLS enforcement (NOW that
 Auth0 is active)
 
 **Prerequisites**:
 
-- Auth0 authentication active (Step 4.6 completed)
+- Auth0 authentication active (Step 4.7 completed)
 - TenantAwareDBClient registered as provider (Step 2.6 completed) - AuthContext now properly
   populated with Auth0 user data
 - RLS enabled on target tables (Phase 3 completed)
@@ -1310,201 +1546,122 @@ Auth0 is active)
 
 ---
 
-### Step 4.8: Auth Context Enrichment Service
+### Step 4.9: AdminContext Switch (Plugin → Provider)
 
-- `getAccessToken()`: Use client credentials flow to obtain M2M access token (cache for 24 hours)
-- `createUser(email: string, invitationMetadata: object)`: Call `POST /api/v2/users` with payload:
-  ```json
-  {
-    "email": "user@example.com",
-    "blocked": true,
-    "connection": "Username-Password-Authentication",
-    "app_metadata": {
-      "invitation_id": "uuid",
-      "business_id": "uuid",
-      "invited_by": "uuid"
-    }
-  }
-  ```
-- `unblockUser(auth0UserId: string)`: Call `PATCH /api/v2/users/{id}` with payload
-  `{ "blocked": false }`
-- `deleteUser(auth0UserId: string)`: Call `DELETE /api/v2/users/{id}` (for expired invitation
-  cleanup)
-- Implement rate limit handling:
-  - Detect 429 responses
-  - Extract `X-RateLimit-Reset` header
-  - Return user-friendly error with retry-after time
-- Add tests:
-  - M2M token obtained successfully (integration test with real Auth0 test tenant)
-  - User creation works
-  - User unblocking works
-  - User deletion works
-  - Rate limit detection works (mock HTTP responses)
-
-**Validation**:
-
-- Auth0 Management API integration works
-- Rate limiting handled gracefully
-- Errors propagated with clear messages
-
-**Risk**: Medium (external API dependency, requires Auth0 credentials)
-
----
-
-### Step 4.4: Auth Context Enrichment Service
-
-**Goal**: Map Auth0 user ID to local business/role data after JWT verification
-
-**Tasks**:
-
-- Create `packages/server/src/modules/auth/services/auth-context-enricher.service.ts`
-- Implement service:
-
-  ```typescript
-  @Injectable({ scope: Scope.Operation })
-  export class AuthContextEnricher {
-    constructor(private db: TenantAwareDBClient) {}
-
-    async enrichContext(auth0UserId: string): Promise<AuthContext> {
-      // Map Auth0 user ID to local user_id and fetch business/role data
-      const { rows } = await this.db.query(
-        `
-        SELECT user_id, business_id, role_id
-        FROM accounter_schema.business_users
-        WHERE auth0_user_id = $1
-        LIMIT 1
-      `,
-        [auth0UserId]
-      )
-
-      if (rows.length === 0) {
-        throw new GraphQLError('User not linked to any business', {
-          extensions: { code: 'FORBIDDEN' }
-        })
-      }
-
-      const { user_id, business_id, role_id } = rows[0]
-
-      return {
-        authType: 'user',
-        user: {
-          userId: user_id,
-          auth0UserId: auth0UserId,
-          businessId: business_id,
-          roleId: role_id
-        },
-        tenant: {
-          businessId: business_id
-        }
-      }
-    }
-  }
-  ```
-
-- Integrate into GraphQL context creation:
-  - After Auth0 JWT verification extracts `sub` claim
-  - Call `authContextEnricher.enrichContext(sub)`
-  - Store enriched context in request-scoped provider
-- Add tests:
-  - Valid Auth0 user mapped to local business/role
-  - User not in business_users throws FORBIDDEN
-  - Database query uses correct schema
-
-**Validation**:
-
-- Auth0 users linked to local business data
-- GraphQL resolvers have access to businessId, roleId, userId
-- Error handling clear
-
-**Risk**: Medium (critical for request-scoped tenant isolation)
-
----
-
-### Step 4.5: API Key Authentication (Parallel to Auth0)
-
-**Goal**: Support API key authentication for scraper role
-
-**Tasks**:
-
-- Update `AuthContextProvider` (Step 2.3) to support dual authentication:
-  - Check for `Authorization: Bearer <jwt>` → Auth0 verification
-  - Else check for `X-API-Key: <key>` → API key verification
-- Implement API key verification:
-  - Hash provided API key with SHA-256
-  - Query `api_keys` table by `key_hash`
-  - Fetch associated `business_id` and `role_id`
-  - Build AuthContext:
-    ```typescript
-    {
-      authType: 'apiKey',
-      user: {
-        userId: null,          // API keys not linked to user_id
-        auth0UserId: null,
-        businessId: business_id,
-        roleId: role_id
-      },
-      tenant: {
-        businessId: business_id
-      }
-    }
-    ```
-  - Update `last_used_at` asynchronously (hourly batching to avoid write amplification)
-- Add tests:
-  - Valid API key authenticates correctly
-  - Invalid API key rejected
-  - API key provides business and role context
-  - `last_used_at` updated (integration test)
-
-**Validation**:
-
-- API keys work alongside Auth0 JWT
-- Same authorization flow for both auth types
-- Scraper role can use API keys
-
-**Risk**: Low (standard API key pattern)
-
----
-
-### Step 4.8: AdminContext Switch (Plugin → Provider)
-
-**Goal**: Activate AdminContextProvider and remove adminContextPlugin
+**Goal**: Complete AdminContext migration - update provider code and activate (Phase 2 of two-phase
+migration)
 
 **Prerequisites**:
 
-- Auth0 authentication active and stable (Step 4.6 complete)
+- Auth0 authentication active and stable (Step 4.7 complete)
 - AUTH_CONTEXT reliably populated
-- BusinessesProvider successfully migrated (Step 4.7 complete)
+- BusinessesProvider successfully migrated (Step 4.8 complete)
+- AdminContextProvider refactored in Phase 2.7 (Operation scope, uses DBProvider)
+
+**CRITICAL**: This completes the two-phase AdminContext migration:
+
+- **Phase 2.7** (Step 2.7): Refactored to Operation scope, kept DBProvider, plugin stayed active
+- **Phase 4.8** (this step): Switch to TenantAwareDBClient, register provider, remove plugin
 
 **Tasks**:
 
-- Register `AdminContextProvider` in `packages/server/src/modules-app.ts`:
+**1. Update AdminContextProvider Code**
+(`packages/server/src/modules/admin-context/providers/admin-context.provider.ts`):
+
+- Change constructor to inject AUTH_CONTEXT and TenantAwareDBClient:
 
   ```typescript
-  providers: [
-    DBProvider,
-    TenantAwareDBClient,
-    AdminContextProvider, // NEW
-    {
-      provide: ADMIN_CONTEXT,
-      useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
-      deps: [AdminContextProvider],
-      scope: Scope.Operation
+  // BEFORE (Phase 2.7 - Preparatory):
+  import { DBProvider } from '../../app-providers/db.provider.js'
+
+  @Injectable({ scope: Scope.Operation })
+  export class AdminContextProvider {
+    constructor(private dbProvider: DBProvider) {}
+
+    async getAdminContext(): Promise<AdminContext> {
+      // Uses DBProvider, gets businessId from plugin context
+      const contexts = await getAdminContexts.run(
+        {
+          ownerIds: [
+            /* from plugin */
+          ]
+        },
+        this.dbProvider
+      )
+      return contexts[0]
     }
-  ]
+  }
+
+  // AFTER (Phase 4.8 - Activation):
+  import { Injectable, Scope, Inject } from 'graphql-modules'
+  import { AUTH_CONTEXT } from '../../../shared/tokens.js'
+  import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js'
+  import type { AuthContext } from '../../../shared/types/auth.js'
+
+  @Injectable({ scope: Scope.Operation })
+  export class AdminContextProvider {
+    private cachedContext: AdminContext | null = null
+
+    constructor(
+      @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
+      private db: TenantAwareDBClient // Switch to TenantAwareDBClient
+    ) {}
+
+    async getAdminContext(): Promise<AdminContext> {
+      if (!this.cachedContext) {
+        if (!this.auth?.tenant?.businessId) {
+          throw new GraphQLError('Unauthenticated', {
+            extensions: { code: 'UNAUTHENTICATED' }
+          })
+        }
+
+        // Use TenantAwareDBClient - RLS enforced automatically
+        const [rawContext] = await getAdminBusinessContext.run(
+          { adminBusinessId: this.auth.tenant.businessId },
+          this.db // TenantAwareDBClient enforces RLS
+        )
+
+        if (!rawContext) {
+          throw new Error('Admin business context not found')
+        }
+
+        this.cachedContext = normalizeContext(rawContext)
+      }
+      return this.cachedContext
+    }
+  }
   ```
 
-- Update all resolvers/providers using admin context:
-  - Find usages: `rg "context\.adminContext" packages/server/src`
-  - Replace with constructor injection:
-    ```typescript
-    @Injectable({ scope: Scope.Operation })
-    class SomeProvider {
-      constructor(@Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null) {}
-    }
-    ```
+**2. Register Provider** in `packages/server/src/modules-app.ts`:
+
+```typescript
+providers: [
+  DBProvider,
+  TenantAwareDBClient,
+  AdminContextProvider, // NEW
+  {
+    provide: ADMIN_CONTEXT,
+    useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
+    deps: [AdminContextProvider],
+    scope: Scope.Operation
+  }
+]
+```
+
+**3. Update Resolvers/Providers**:
+
+- Find usages: `rg "context\.adminContext" packages/server/src`
+- Replace with constructor injection:
+  ```typescript
+  @Injectable({ scope: Scope.Operation })
+  class SomeProvider {
+    constructor(@Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null) {}
+  }
+  ```
+
+**4. Remove Plugin**:
 
 - Remove `adminContextPlugin` from `packages/server/src/index.ts` plugins array
-
 - Delete `packages/server/src/plugins/admin-context-plugin.ts`
 
 - Add integration tests:
@@ -1542,6 +1699,113 @@ If issues detected:
 
 ---
 
+### Step 4.10: Global Context Type Cleanup
+
+**Goal**: Remove legacy context properties now that Auth0 migration is complete
+
+**Prerequisites**:
+
+- Auth0 authentication active (Step 4.7)
+- All plugins removed (Steps 4.7, 4.9)
+- All providers migrated to DI injection (Steps 4.8, 4.9)
+
+**CRITICAL**: This step was originally Step 2.9 but was moved to Phase 4 because removing legacy
+context properties before Auth0 activation would break the server. This is the FINAL cleanup step.
+
+**Tasks**:
+
+- Update `packages/server/src/modules-app.ts` global context declaration:
+
+  ```typescript
+  export interface GlobalContext {
+    request: Request
+    rawAuth: RawAuth // From authPluginV2 (HTTP-level)
+    // Note: Do NOT add authContext or adminContext here
+    // These are accessed via injection tokens (AUTH_CONTEXT, ADMIN_CONTEXT)
+  }
+  ```
+
+- Update `packages/server/src/shared/types/index.ts`:
+
+  ```typescript
+  import type { RawAuth } from '@plugins/auth-plugin-v2'
+
+  export interface GraphQLContext {
+    request: Request
+    rawAuth: RawAuth
+  }
+
+  // Auth context accessed via injection tokens, not context object
+  ```
+
+- **Verify no legacy context access patterns remain**:
+
+  ```bash
+  # Find all references to old context properties
+  rg "context\.currentUser" packages/server/src
+  rg "context\.adminContext" packages/server/src
+  rg "context\.authContext" packages/server/src
+  ```
+
+  **Expected result**: No matches (all should have been migrated in Steps 4.7-4.8)
+
+- Add tests:
+  - GlobalContext types compile correctly
+  - rawAuth accessible from context
+  - Auth context NOT in context (accessed via injection tokens)
+  - All resolvers compile with new types
+  - **All existing integration tests still pass**
+
+**Validation**:
+
+- TypeScript compilation succeeds
+- **No references to legacy context properties** (verified with rg searches)
+- All auth access via injection tokens
+- Context types accurate and minimal
+- **All integration tests pass**
+
+**Benefits**:
+
+- ✅ Clear separation: HTTP context (rawAuth) vs business context (AUTH_CONTEXT)
+- ✅ Type-safe injection across modules
+- ✅ Consistent architecture (DI-first, not context-passing)
+- ✅ Prevents accidental context property access (TypeScript errors)
+
+**Risk**: **LOW** - Just type cleanup, all code already migrated in Steps 4.7-4.8
+
+---
+
+## Phase 4 Complete - Auth0 Migration Successful
+
+**Achievement**: Auth0 authentication fully active, all infrastructure switched
+
+**Critical Validation**:
+
+- ✅ **Auth0 authentication live**: Users log in via Auth0 Universal Login
+- ✅ **TenantAwareDBClient active**: All providers use RLS-enforced database client
+- ✅ **AdminContext via DI**: Provider-based admin context with proper caching
+- ✅ **Legacy auth removed**: Old auth plugin and context removed from server
+- ✅ **All tests passing**: Integration tests verify Auth0 flow end-to-end
+- ✅ **Production stable**: Error rates normal, users able to access their data
+- ✅ **RLS enforced**: Database policies active for all tenant queries
+
+**What Changed**:
+
+- Users now authenticate via Auth0 (email/password managed externally)
+- **Frontend has Auth0 login UI** (Universal Login integration complete)
+- JWTs verified using Auth0 JWKS endpoint
+- All GraphQL operations use AUTH_CONTEXT from Auth0 JWT
+- TenantAwareDBClient sets RLS variables for every query
+- AdminContext loaded via DI provider (Operation-scoped)
+- Global context simplified (only `rawAuth`, business context via injection tokens)
+- **Zero downtime migration**: Users had Auth0 UI before backend switched
+
+**Production Status**: System fully migrated to Auth0, monitoring for 7 days before cleanup
+
+**Next Phase**: Cleanup deprecated code after stability period
+
+---
+
 ## Phase 5: Post-Migration Cleanup (Week 6)
 
 ### Step 5.1: Remove Old Authentication Code
@@ -1550,7 +1814,7 @@ If issues detected:
 
 **Prerequisites**:
 
-- [ ] Auth0 authentication stable in production for 7+ days (Step 4.6)
+- [ ] Auth0 authentication stable in production for 7+ days (Step 4.7)
 - [ ] No auth-related incidents
 - [ ] All users successfully migrated or invited to Auth0
 - [ ] Monitoring shows 100% Auth0 JWT usage (no old auth attempts)
@@ -1560,6 +1824,8 @@ If issues detected:
 - Delete old authentication files:
   - `packages/server/src/plugins/auth-plugin.ts` (old version)
   - `packages/server/src/modules/auth/providers/auth-context.provider.ts` (old version)
+  - `packages/server/src/modules/admin-context/providers/admin-context.provider.backup.ts` (backup
+    from Step 2.7)
   - Any other old auth-related files
 - Rename new files to standard names:
   - `auth-plugin-v2.ts` → `auth-plugin.ts`
@@ -1569,10 +1835,21 @@ If issues detected:
   - Remove from environment configuration
   - Remove conditional logic in modules-app.ts
   - Update documentation
+- Remove temporary test infrastructure:
+  - Delete `testAuth0` query endpoint created in Step 4.4
+  - Remove `scripts/validate-auth0-migration.ts` script (migration validation no longer needed)
+  - Delete migration test users from Auth0 (created in Step 4.5) via Management API
+  - Clean up test user credentials from secure storage
 - Remove old auth-related database tables (if any were self-hosted):
   - **Note**: In this Auth0 design, there are no self-hosted auth tables to remove
 - Update all documentation references
 - Remove old auth tests
+- **Audit legacy database table usage**:
+  - Verify `legacy_business_users` table is no longer referenced in application code
+  - Check for remaining foreign key dependencies
+  - If fully unused: Create migration to drop `legacy_business_users` table
+  - If still referenced: Document remaining dependencies and create follow-up task
+  - Search codebase: `rg "legacy_business_users" packages/server/src`
 
 **Validation**:
 
@@ -1581,6 +1858,7 @@ If issues detected:
 - All tests pass
 - TypeScript compilation succeeds
 - Clean git history (no dead code)
+- `legacy_business_users` table either dropped or documented with clear retention reasoning
 
 **Risk**: Low (Auth0 proven stable at this point)
 
@@ -1593,7 +1871,7 @@ phase. Authorization checks use role-based logic only (e.g.,
 `if (authContext.roleId === 'business_owner')`). Permission-based authorization is a future
 enhancement.
 
-### Step 5.1: GraphQL Directives (Simple Checks)
+### Step 6.1: GraphQL Directives (Simple Checks)
 
 **Goal**: Implement minimal directive-based authorization
 
@@ -1621,7 +1899,7 @@ enhancement.
 
 ---
 
-### Step 5.2: Authorization Service Pattern
+### Step 6.2: Authorization Service Pattern
 
 **Goal**: Create service-layer authorization for complex checks
 
@@ -1682,7 +1960,7 @@ enhancement.
 
 ---
 
-### Step 5.3: Domain Authorization Service (Example - Charges)
+### Step 6.3: Domain Authorization Service (Example - Charges)
 
 **Goal**: Demonstrate service-layer authorization pattern
 
@@ -1747,7 +2025,7 @@ enhancement.
 
 ---
 
-### Step 5.4: Wire Authorization into Resolvers
+### Step 6.4: Wire Authorization into Resolvers
 
 **Goal**: Add authorization checks to all mutations
 
@@ -1780,9 +2058,9 @@ enhancement.
 
 ---
 
-## Phase 6: Invitation Flow (Auth0 Pre-Registration) (Week 7)
+## Phase 7: Invitation Flow (Auth0 Pre-Registration) (Week 7)
 
-### Step 6.1: Invitation Creation Mutation (with Auth0 Management API)
+### Step 7.1: Invitation Creation Mutation (with Auth0 Management API)
 
 **Goal**: Allow business owners to invite users with Auth0 pre-registration
 
@@ -1841,7 +2119,7 @@ enhancement.
 
 ---
 
-### Step 6.2: Accept Invitation Mutation (Auth0 Session Required)
+### Step 7.2: Accept Invitation Mutation (Auth0 Session Required)
 
 **Goal**: Allow invited users to accept invitations and link Auth0 account to business
 
@@ -1897,7 +2175,7 @@ enhancement.
 
 ---
 
-### Step 6.3: Invitation Cleanup Background Job
+### Step 7.3: Invitation Cleanup Background Job
 
 **Goal**: Delete expired invitations and associated unused Auth0 accounts
 
@@ -1929,7 +2207,7 @@ enhancement.
 
 ---
 
-### Step 6.4: Audit Log Service Integration
+### Step 7.4: Audit Log Service Integration
 
 **Goal**: Centralize audit logging for security events
 
@@ -1987,12 +2265,12 @@ enhancement.
 
 ---
 
-## Phase 7: API Key Management (Week 8)
+## Phase 8: API Key Management (Week 8)
 
 **Note**: API key authentication middleware was implemented in Phase 4, Step 4.4. This phase covers
 GraphQL mutations for creating and managing API keys.
 
-### Step 7.1: API Key Generation Mutation
+### Step 8.1: API Key Generation Mutation
 
 **Goal**: Allow business owners to create API keys
 
@@ -2042,7 +2320,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 7.2: API Key Management Mutations
+### Step 8.2: API Key Management Mutations
 
 **Goal**: Allow listing and revoking API keys
 
@@ -2084,7 +2362,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 7.3: Scraper Role Integration Test
+### Step 8.3: Scraper Role Integration Test
 
 **Goal**: Verify scraper can insert transactions via API key
 
@@ -2108,235 +2386,231 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-## Phase 8: Frontend Integration (Auth0 SDK) (Week 9)
+## Phase 9: Frontend Enhancement (Auth0 Features) (Week 9)
 
-### Step 8.1: Install and Configure Auth0 React SDK
+**Note**: Core Auth0 login integration was completed in Phase 4, Step 4.6 to ensure zero downtime
+during backend migration. This phase adds enhanced auth features and user experience improvements.
 
-**Goal**: Set up Auth0 authentication in the React client
+### Step 9.1: Protected Routes Component
 
-**Tasks**:
+**Goal**: Restrict unauthenticated access to app routes (beyond basic login check)
 
-- Install `@auth0/auth0-react`
-- Create `packages/client/src/config/auth0-config.ts`:
-  ```typescript
-  export const auth0Config = {
-    domain: import.meta.env.VITE_AUTH0_DOMAIN, // e.g., 'your-tenant.auth0.com'
-    clientId: import.meta.env.VITE_AUTH0_CLIENT_ID, // Application Client ID
-    audience: import.meta.env.VITE_AUTH0_AUDIENCE, // API identifier
-    redirectUri: window.location.origin + '/callback',
-    cacheLocation: 'localstorage' as const // For refresh token persistence
-  }
-  ```
-- Wrap app with Auth0Provider in `packages/client/src/main.tsx`:
+**Prerequisites**:
 
-  ```typescript
-  import { Auth0Provider } from '@auth0/auth0-react';
-  import { auth0Config } from './config/auth0-config';
-
-  <Auth0Provider {...auth0Config}>
-    <App />
-  </Auth0Provider>
-  ```
-
-- Add environment variables to `.env`:
-  ```
-  VITE_AUTH0_DOMAIN=your-tenant.auth0.com
-  VITE_AUTH0_CLIENT_ID=your-client-id
-  VITE_AUTH0_AUDIENCE=https://api.accounter.example.com
-  ```
-- Add tests:
-  - Auth0Provider wraps app correctly
-  - Config loaded from environment
-
-**Validation**:
-
-- Auth0 SDK initialized
-- Configuration accessible
-
-**Risk**: Low
-
----
-
-### Step 8.2: Login Flow (Auth0 Universal Login)
-
-**Goal**: Implement login via Auth0 Universal Login
-
-**Tasks**:
-
-- Update `packages/client/src/pages/login-page.tsx`:
-  - Remove custom email/password form
-  - Add "Log In" button that calls `loginWithRedirect()` from `useAuth0()` hook:
-
-    ```typescript
-    import { useAuth0 } from '@auth0/auth0-react';
-
-    function LoginPage() {
-      const { loginWithRedirect } = useAuth0();
-
-      return (
-        <div>
-          <h1>Accounter Login</h1>
-          <button onClick={() => loginWithRedirect()}>
-            Log In with Auth0
-          </button>
-        </div>
-      );
-    }
-    ```
-
-  - Auth0 handles redirect to Universal Login page
-  - After successful authentication, Auth0 redirects back to `/callback`
-
-- Create callback handler `packages/client/src/pages/callback-page.tsx`:
-
-  ```typescript
-  import { useAuth0 } from '@auth0/auth0-react';
-  import { useEffect } from 'react';
-  import { useNavigate } from 'react-router-dom';
-
-  function CallbackPage() {
-    const { isLoading, error, isAuthenticated } = useAuth0();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-      if (!isLoading) {
-        if (error) {
-          navigate('/login?error=' + error.message);
-        } else if (isAuthenticated) {
-          navigate('/dashboard');
-        }
-      }
-    }, [isLoading, error, isAuthenticated, navigate]);
-
-    return <div>Loading...</div>;
-  }
-  ```
-
-- Add route for `/callback` in router
-- Add tests:
-  - Login button triggers Auth0 redirect
-  - Callback page handles success/error correctly
-
-**Validation**:
-
-- Users can log in via Auth0 Universal Login
-- Redirect flow works correctly
-- No custom login forms needed
-
-**Risk**: Low
-
----
-
-### Step 8.3: Protected Routes Component
-
-**Goal**: Restrict unauthenticated access to app routes
+- Auth0 SDK installed and configured (completed in Phase 4, Step 4.6)
+- Login/callback flows working (completed in Phase 4, Step 4.6)
 
 **Tasks**:
 
 - Create `packages/client/src/components/protected-route.tsx`:
 
   ```typescript
-  import { useAuth0 } from '@auth0/auth0-react';
-  import { Navigate } from 'react-router-dom';
+  import { useAuth0 } from '@auth0/auth0-react'
+  import { Navigate } from 'react-router-dom'
 
-  interface ProtectedRouteProps {
-    children: React.ReactNode;
-  }
+  export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+    const { isAuthenticated, isLoading } = useAuth0()
 
-  export function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const { isAuthenticated, isLoading } = useAuth0();
+    if (isLoading) return <div>Loading...</div>
 
-    if (isLoading) {
-      return <div>Loading...</div>;
-    }
+    if (!isAuthenticated) return <Navigate to="/login" replace />
 
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
-
-    return <>{children}</>;
+    return <>{children}</>
   }
   ```
 
-- Wrap protected pages with `<ProtectedRoute>`:
+- Wrap protected routes in router:
   ```typescript
-  <Route path="/dashboard" element={
-    <ProtectedRoute>
-      <DashboardPage />
-    </ProtectedRoute>
-  } />
+  <Route
+    path="/dashboard"
+    element={
+      <ProtectedRoute>
+        <Dashboard />
+      </ProtectedRoute>
+    }
+  />
   ```
-- Add tests:
-  - Authenticated users see content
-  - Unauthenticated users redirected to login
-  - Loading state shown during auth check
 
 **Validation**:
 
-- Routes protected correctly
-- No authenticated state leakage
+- Unauthenticated users redirected to login
+- Authenticated users access protected routes
+- Loading state handled smoothly
 
 **Risk**: Low
 
 ---
 
-### Step 8.4: Urql Client Configuration (Auth0 Access Token)
+### Step 9.2: Enhanced Error Handling
 
-**Goal**: Configure GraphQL client to send Auth0 access tokens
+**Goal**: Improve user experience with better auth error messaging
+
+**Prerequisites**:
+
+- Basic Auth0 login working (Phase 4, Step 4.6)
+
+**Prerequisites**:
+
+- Basic Auth0 login working (Phase 4, Step 4.6)
 
 **Tasks**:
 
-- Update Urql client setup in `packages/client/src/graphql/client.ts`:
+- Enhance callback page with detailed error handling:
+
+  ```typescript
+  function CallbackPage() {
+    const { error, isAuthenticated, isLoading } = useAuth0()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+      if (!isLoading) {
+        if (error) {
+          // Map Auth0 errors to user-friendly messages
+          const errorMessages = {
+            'access_denied': 'Login was cancelled',
+            'unauthorized': 'Invalid credentials',
+            'consent_required': 'Additional permissions needed'
+          }
+          const message = errorMessages[error.error] || error.message
+          navigate(`/login?error=${encodeURIComponent(message)}`)
+        } else if (isAuthenticated) {
+          navigate('/dashboard')
+        }
+      }
+    }, [isLoading, error, isAuthenticated])
+
+    return <LoadingSpinner />
+  }
+  ```
+
+- Add error display on login page
+- Add retry logic for network failures
+
+**Validation**:
+
+- Auth errors displayed clearly to users
+- Network errors handled gracefully
+- Users can retry failed login attempts
+
+**Risk**: Low
+
+---
+
+### Step 9.3: User Profile Display
+
+**Goal**: Display authenticated user information in UI
+
+**Prerequisites**:
+
+- Auth0 authentication working (Phase 4, Step 4.6)
+
+**Tasks**:
+
+- Create user profile component:
 
   ```typescript
   import { useAuth0 } from '@auth0/auth0-react'
-  import { authExchange } from '@urql/exchange-auth'
 
-  const getAuth = async ({ getToken }) => {
-    const token = await getToken()
-    if (!token) return null
-    return { token }
+  export function UserProfile() {
+    const { user, isAuthenticated } = useAuth0()
+
+    if (!isAuthenticated || !user) return null
+
+    return (
+      <div className="user-profile">
+        <img src={user.picture} alt={user.name} />
+        <div>
+          <p>{user.name}</p>
+          <p>{user.email}</p>
+        </div>
+      </div>
+    )
   }
+  ```
 
-  const addAuthToOperation = ({ authState, operation }) => {
-    if (!authState || !authState.token) return operation
+- Add to app header/navbar
+- Add user menu dropdown with profile link and logout option
 
-    return makeOperation(operation.kind, operation, {
-      ...operation.context,
-      fetchOptions: {
-        ...operation.context.fetchOptions,
-        headers: {
-          ...operation.context.fetchOptions?.headers,
-          Authorization: `Bearer ${authState.token}`
-        }
+**Validation**:
+
+- User information displays correctly
+- Profile picture loaded from Auth0
+- User menu accessible
+
+**Risk**: Low
+
+---
+
+### Step 9.4: Enhanced Token Management
+
+**Goal**: Add token refresh and error recovery to GraphQL client
+
+**Prerequisites**:
+
+- Basic Urql Auth0 configuration complete (Phase 4, Step 4.6)
+
+**Prerequisites**:
+
+- Basic Urql Auth0 configuration complete (Phase 4, Step 4.6)
+
+**Tasks**:
+
+- Enhance Urql client with better error handling and token refresh:
+
+  ```typescript
+  authExchange({
+    getAuth: async () => {
+      try {
+        const token = await getAccessTokenSilently({
+          cacheMode: 'off' // Force fresh token on auth error
+        })
+        return { token }
+      } catch (error) {
+        console.error('Token fetch failed:', error)
+        return null
       }
-    })
-  }
+    },
+    addAuthToOperation: ({ authState, operation }) => {
+      if (!authState?.token) return operation
 
-  export function useUrqlClient() {
-    const { getAccessTokenSilently } = useAuth0()
+      return makeOperation(operation.kind, operation, {
+        ...operation.context,
+        fetchOptions: {
+          ...operation.context.fetchOptions,
+          headers: {
+            ...operation.context.fetchOptions?.headers,
+            Authorization: `Bearer ${authState.token}`
+          }
+        }
+      })
+    },
+    didAuthError: ({ error }) => {
+      // Detect UNAUTHENTICATED errors from server
+      return error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHENTICATED')
+    },
+    willAuthError: ({ authState }) => {
+      // Check if token is expired (optional)
+      return !authState || !authState.token
+    }
+  })
+  ```
 
-    return useMemo(
-      () =>
-        createClient({
-          url: import.meta.env.VITE_GRAPHQL_URL,
-          exchanges: [
-            dedupExchange,
-            cacheExchange,
-            authExchange({
-              getAuth: async () => {
-                try {
-                  const token = await getAccessTokenSilently()
-                  return { token }
-                } catch {
-                  return null
-                }
-              },
-              addAuthToOperation,
-              didAuthError: ({ error }) => {
-                return error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHENTICATED')
-              },
-              willAuthError: ({ authState }) => {
+- Add automatic retry on 401/UNAUTHENTICATED
+- Add user notification on persistent auth failures
+
+**Validation**:
+
+- Client sends Auth0 access tokens correctly
+- Tokens refreshed automatically (Auth0 SDK manages this)
+- UNAUTHENTICATED errors trigger re-authentication
+- Error handling works
+
+**Risk**: Medium (critical for secure API communication)
+
+---
+
+### Step 9.5: Logout Flow Enhancement
+
                 return !authState || !authState.token
               }
             }),
@@ -2345,15 +2619,17 @@ GraphQL mutations for creating and managing API keys.
         }),
       [getAccessTokenSilently]
     )
-  }
-  ```
+
+}
+
+````
 
 - Add automatic token refresh handling (Auth0 SDK handles this automatically via
-  `getAccessTokenSilently`)
+`getAccessTokenSilently`)
 - Add tests:
-  - Access token sent in Authorization header
-  - Token automatically refreshed when expired
-  - UNAUTHENTICATED errors trigger re-authentication
+- Access token sent in Authorization header
+- Token automatically refreshed when expired
+- UNAUTHENTICATED errors trigger re-authentication
 
 **Validation**:
 
@@ -2365,7 +2641,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 8.5: Logout Flow
+### Step 9.5: Logout Flow
 
 **Goal**: Allow users to log out from Auth0
 
@@ -2373,22 +2649,22 @@ GraphQL mutations for creating and managing API keys.
 
 - Add logout button to app header/menu:
 
-  ```typescript
-  import { useAuth0 } from '@auth0/auth0-react';
+```typescript
+import { useAuth0 } from '@auth0/auth0-react';
 
-  function Header() {
-    const { logout, user } = useAuth0();
+function Header() {
+  const { logout, user } = useAuth0();
 
-    return (
-      <header>
-        <span>Welcome, {user?.email}</span>
-        <button onClick={() => logout({ returnTo: window.location.origin })}>
-          Log Out
-        </button>
-      </header>
-    );
-  }
-  ```
+  return (
+    <header>
+      <span>Welcome, {user?.email}</span>
+      <button onClick={() => logout({ returnTo: window.location.origin })}>
+        Log Out
+      </button>
+    </header>
+  );
+}
+````
 
 - Auth0 SDK handles:
   - Clearing local tokens from localStorage
@@ -2409,7 +2685,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 8.6: Invitation Acceptance UI Flow
+### Step 9.6: Invitation Acceptance UI Flow
 
 **Goal**: Allow users to accept invitations after Auth0 setup
 
@@ -2450,9 +2726,9 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-## Phase 9: Production Hardening (Week 10)
+## Phase 10: Production Hardening (Week 10)
 
-### Step 9.1: Provider Scope Audit
+### Step 10.1: Provider Scope Audit
 
 **Goal**: Eliminate cache leakage across tenants
 
@@ -2479,7 +2755,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 9.2: Connection Pool Optimization
+### Step 10.2: Connection Pool Optimization
 
 **Goal**: Right-size pool for production load
 
@@ -2509,7 +2785,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 9.3: Rate Limiting
+### Step 10.3: Rate Limiting
 
 **Goal**: Prevent brute-force and DoS attacks
 
@@ -2534,7 +2810,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 9.4: Audit Log Analysis Dashboard
+### Step 10.4: Audit Log Analysis Dashboard
 
 **Goal**: Make audit logs actionable
 
@@ -2577,7 +2853,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 9.5: Security Hardening Checklist
+### Step 10.5: Security Hardening Checklist
 
 **Goal**: Final security review before production
 
@@ -2615,7 +2891,7 @@ GraphQL mutations for creating and managing API keys.
 
 ---
 
-### Step 9.6: Performance Baseline
+### Step 10.6: Performance Baseline
 
 **Goal**: Establish metrics for ongoing monitoring
 
@@ -2659,18 +2935,21 @@ GraphQL mutations for creating and managing API keys.
    business_users mapping
 2. **Core Database Services** (Week 3): RLS-enforcing DB client and connection pooling
 3. **Row-Level Security** (Week 4): Multi-tenant data isolation at database level
-4. **Auth0 Integration & Context Enrichment** (Week 5): Auth0 Management API, JWT verification,
-   enrichment service
-5. **Role-Based Authorization** (Week 6): Authorization services and GraphQL directives (role-based,
+4. **Auth0 Integration & Authentication Migration** (Week 5): Auth0 Management API, JWT
+   verification, **frontend Auth0 UI integration**, backend switch, zero-downtime migration
+5. **Post-Migration Cleanup** (Week 6): Remove old authentication code
+6. **Role-Based Authorization** (Week 6): Authorization services and GraphQL directives (role-based,
    no permissions initially)
-6. **Invitation Flow** (Week 7): Pre-registration invitations with Auth0 Management API, cleanup
+7. **Invitation Flow** (Week 7): Pre-registration invitations with Auth0 Management API, cleanup
    jobs, audit logging
-7. **API Key Management** (Week 8): Generate/list/revoke API keys (independent of Auth0)
-8. **Frontend Integration** (Week 9): Auth0 React SDK, Universal Login, protected routes
-9. **Production Hardening** (Week 10): Cache isolation, rate limiting, security review, performance
-   baseline
+8. **API Key Management** (Week 8): Generate/list/revoke API keys (independent of Auth0)
+9. **Frontend Enhancement** (Week 9): Enhanced error handling, user profile, token management,
+   invitation UI
+10. **Production Hardening** (Week 10): Cache isolation, rate limiting, security review, performance
+    baseline
 
-**Steps**: 50+ individual steps across 9 phases
+**Steps**: 55+ individual steps across 10 phases (includes critical frontend integration before
+backend switch)
 
 **Risk Distribution**:
 
