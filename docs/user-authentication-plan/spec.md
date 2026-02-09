@@ -35,10 +35,18 @@ to ensure zero-downtime migration:
 
 - **Phase 1-3** (Infrastructure): Build Auth0 verification infrastructure alongside existing
   authentication (files named with `-v2` suffix). Existing auth remains fully functional.
-- **Phase 4** (Activation): Test Auth0 in parallel using feature flags, then perform controlled
-  cutover with immediate rollback capability. Maintenance window: 15 minutes.
-- **Phase 5** (Cleanup): Remove deprecated authentication code after 7 days of stability, rename v2
-  files to standard names.
+- **Phase 4** (Activation): **Frontend Auth0 UI deployed first** (dual-auth support), then backend
+  switches to Auth0-only after frontend verified. **Zero downtime** - users always have Auth0 login
+  available before backend requires it.
+- **Phase 5** (Cleanup): Remove old authentication code after 7 days of stability, rename v2 files
+  to standard names.
+
+**Critical Sequencing for Zero-Downtime**:
+
+1. **Step 4.6** (Frontend First): Deploy Auth0 React SDK with dual-auth UI (users can choose legacy
+   or Auth0)
+2. **Step 4.7** (Backend Switch): Backend switches to Auth0-only **after** frontend verified working
+3. Result: Users have Auth0 login UI available before backend requires it - **no lockout window**
 
 ### 2. Requirements
 
@@ -254,8 +262,12 @@ export class TenantAwareDBClient {
 
   constructor(
     private dbProvider: DBProvider, // Singleton pool manager
-    private authContext: AuthContext // Request-scoped auth context
+    @Inject(AUTH_CONTEXT) private authContext: AuthContext | null = null // Request-scoped, nullable with default
   ) {}
+
+  // Note: AUTH_CONTEXT injection requires default null value because the token
+  // is not registered until Phase 4 (Auth0 activation). Phase 2 creates the
+  // infrastructure but doesn't activate it.
 
   async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
     // Reuse existing transaction if within a GraphQL operation
@@ -450,8 +462,11 @@ export class BusinessesProvider {
   Singleton with cache
 - `packages/server/src/modules/financial-entities/providers/financial-entities.provider.ts` - Check
   if Singleton with cache
-- `packages/server/src/plugins/admin-context-plugin.ts` - Currently uses global cache (UNSAFE), must
-  be refactored
+- `packages/server/src/modules/admin-context/providers/admin-context.provider.ts` - **Currently**
+  uses `Scope.Singleton` with shared cache (UNSAFE), **refactored in Phase 2.7** to
+  `Scope.Operation` with request-scoped cache
+- `packages/server/src/plugins/admin-context-plugin.ts` - Uses global cache (UNSAFE), removed in
+  Phase 4.9 when provider activated
 - Any provider with `DataLoader` - Must be `Scope.Operation` (DataLoaders are already request-scoped
   if provider is Operation-scoped)
 
@@ -655,8 +670,16 @@ existing auth plugin. Existing plugin remains active until Phase 4 cutover.
 - Return structured `AuthContext` object with `{ authType, user, tenant, accessTokenExpiresAt }`
 - Injected as `AUTH_CONTEXT` token for use across all modules
 
-**Migration Note**: During Phase 2-3, new provider created as `AuthContextV2Provider` with
-`AUTH_CONTEXT_V2` token. Not registered in DI until Phase 4. Existing auth provider remains active.
+**Migration Note**: During Phase 2-3, preparatory infrastructure is built alongside existing auth:
+
+- `authPluginV2.ts` created (not registered in plugin array yet)
+- `AuthContextProvider` created with `AUTH_CONTEXT` token (not registered in DI yet)
+- `TenantAwareDBClient` created with nullable `AUTH_CONTEXT` injection (registered but unused)
+- Existing auth provider remains fully active and functional
+- **Phase 4.6**: Frontend Auth0 UI deployed with dual-auth support (users can choose legacy or
+  Auth0)
+- **Phase 4.7**: Backend switches to Auth0-only (frontend already has Auth0 UI - zero downtime)
+- Result: Users always have a working login method throughout migration
 
 **Injection Token Provisioning** (in `modules-app.ts`):
 
@@ -1063,6 +1086,51 @@ problems:
 
 **Implementation**:
 
+**Phase 2.7 Code** (Preparatory - Infrastructure Only):
+
+```typescript
+// packages/server/src/modules/admin-context/providers/admin-context.provider.ts
+import { Injectable, Scope } from 'graphql-modules';
+import { GraphQLError } from 'graphql';
+import { DBProvider } from '../../app-providers/db.provider.js';
+
+@Injectable({ scope: Scope.Operation })
+export class AdminContextProvider {
+  private cachedContext: AdminContext | null = null;
+
+  constructor(
+    private dbProvider: DBProvider,  // Still using DBProvider in Phase 2.7
+  ) {}
+
+  async getAdminContext(): Promise<AdminContext> {
+    if (!this.cachedContext) {
+      // Phase 2.7: Uses existing auth from plugin context
+      // businessId comes from current request's auth context (plugin-provided)
+      // This is a preparatory refactor - fixes cache isolation only
+
+      // Use DBProvider directly - RLS not enforced yet
+      // Phase 4.9 will switch to TenantAwareDBClient
+      const [rawContext] = await getAdminBusinessContext.run(
+        { adminBusinessId: /* from current auth */ },
+        this.dbProvider
+      );
+
+      if (!rawContext) {
+        throw new Error('Admin business context not found');
+      }
+
+      this.cachedContext = normalizeContext(rawContext);
+    }
+    return this.cachedContext;
+  }
+}
+
+// Phase 2.7: Token defined but provider NOT registered yet
+// Phase 4.9: Provider registered in modules-app.ts
+```
+
+**Phase 4.9 Code** (Activation - After Auth0 and Frontend Integration):
+
 ```typescript
 // packages/server/src/modules/admin-context/providers/admin-context.provider.ts
 import { Injectable, Scope, Inject } from 'graphql-modules';
@@ -1077,7 +1145,7 @@ export class AdminContextProvider {
 
   constructor(
     @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
-    private db: TenantAwareDBClient,
+    private db: TenantAwareDBClient,  // Phase 4.9: Switch to TenantAwareDBClient
   ) {}
 
   async getAdminContext(): Promise<AdminContext> {
@@ -1088,11 +1156,11 @@ export class AdminContextProvider {
         });
       }
 
-      // Use TenantAwareDBClient - RLS enforced automatically
-      // businessId is derived from validated auth context, never from client input
+      // Phase 4.9: Use TenantAwareDBClient - RLS enforced automatically
+      // businessId is derived from validated Auth0 JWT, never from client input
       const [rawContext] = await getAdminBusinessContext.run(
         { adminBusinessId: this.auth.tenant.businessId },
-        this.db
+        this.db  // TenantAwareDBClient enforces RLS via SET LOCAL
       );
 
       if (!rawContext) {
@@ -1108,7 +1176,7 @@ export class AdminContextProvider {
 // In modules-app.ts, provide via injection token:
 import { ADMIN_CONTEXT } from './shared/tokens.js';
 
-// Add to providers array:
+// Add to providers array (Phase 4.9 only):
 {
   provide: ADMIN_CONTEXT,
   scope: Scope.Operation,
@@ -1119,24 +1187,65 @@ import { ADMIN_CONTEXT } from './shared/tokens.js';
 
 **Migration Steps**:
 
-1. Create `AdminContextProvider` in `packages/server/src/modules/admin-context/providers/` (Phase 2,
-   Step 2.7)
+**Phase 2.7** (Preparatory - Infrastructure):
+
+1. Refactor existing `AdminContextProvider` in
+   `packages/server/src/modules/admin-context/providers/`
+   - Change scope from `Scope.Singleton` to `Scope.Operation`
+   - Remove shared cache and DataLoader
+   - Add request-scoped cache
+   - **Keep using DBProvider** (TenantAwareDBClient not available yet)
 2. Add `ADMIN_CONTEXT` injection token to `packages/server/src/shared/tokens.ts`
-3. Register provider in `modules-app.ts` providers array
-4. Update resolvers to inject `@Inject(ADMIN_CONTEXT) private adminContext: AdminContext`
-5. Remove `adminContextPlugin` from Yoga plugins array in `index.ts`
-6. Delete `packages/server/src/plugins/admin-context-plugin.ts`
+3. Create backup file for rollback
+4. Write isolation tests with DBProvider mocks
+5. **DO NOT register provider yet** (plugin remains active)
+6. **DO NOT remove plugin yet** (existing users rely on it)
 
-**Timing**: This migration happens in Phase 2 (Core Database Services), before Auth0 activation. It
-uses existing auth context, not Auth0 context.
+**Phase 4.9** (Activation - After Auth0 and Frontend):
 
-**Benefits**:
+1. Update `AdminContextProvider` to inject `AUTH_CONTEXT` and use `TenantAwareDBClient`
+2. Register provider in `modules-app.ts` providers array
+3. Update all resolvers/providers to inject
+   `@Inject(ADMIN_CONTEXT) private adminContext: AdminContext`
+4. Remove `adminContextPlugin` from Yoga plugins array in `index.ts`
+5. Delete `packages/server/src/plugins/admin-context-plugin.ts`
+6. Verify all admin features work with provider-based approach
 
-- Proper DI integration (no async context access required)
-- Request-scoped caching (no cross-tenant leakage risk)
-- Type-safe injection via `ADMIN_CONTEXT` token
-- Automatically uses `TenantAwareDBClient` for RLS enforcement
-- Consistent with `AuthContextProvider` pattern
+**Migration Timing** (Two-Phase Approach):
+
+**Phase 2.7** (Preparatory - Infrastructure Only):
+
+- Refactor `AdminContextProvider` from `Scope.Singleton` to `Scope.Operation`
+- Remove shared cache (getCacheInstance) and DataLoader
+- Add request-scoped cache (private cachedContext)
+- **IMPORTANT**: Still uses `DBProvider` directly (not `TenantAwareDBClient`)
+- **IMPORTANT**: Does NOT inject `AUTH_CONTEXT` yet (not available until Phase 4)
+- Plugin remains active, refactored provider not registered
+- Purpose: Fix cache isolation vulnerability (tenant leakage risk)
+
+**Phase 4.9** (Activation - After Auth0 and Frontend Integration):
+
+- Switch from `DBProvider` to `TenantAwareDBClient` (RLS enforcement)
+- Add `AUTH_CONTEXT` injection
+- Register provider in `modules-app.ts`
+- Remove `adminContextPlugin`
+- Update all resolvers/providers to inject `ADMIN_CONTEXT` token
+
+**Why Two Phases?**
+
+- `TenantAwareDBClient` requires `AUTH_CONTEXT` injection
+- `AUTH_CONTEXT` not available until Auth0 is active (Phase 4)
+- Refactoring in Phase 2 fixes cache isolation issues immediately
+- Full DI integration waits for Auth0 activation
+
+**Benefits** (when fully activated in Phase 4.9):
+
+- ✅ Request-scoped caching (no cross-tenant leakage) - **Achieved in Phase 2.7**
+- ✅ No DataLoader complexity - **Achieved in Phase 2.7**
+- ⏳ Proper DI integration with AUTH_CONTEXT - **Phase 4.9**
+- ⏳ Type-safe injection via ADMIN_CONTEXT token - **Phase 4.9**
+- ⏳ Automatically uses TenantAwareDBClient (RLS enforcement) - **Phase 4.9**
+- ⏳ Consistent with AuthContextProvider pattern - **Phase 4.9**
 
 * **Transaction Scope**: All request DB access must run inside a `BEGIN ... SET LOCAL ... COMMIT`
   block to avoid connection pool leakage.
@@ -1155,13 +1264,16 @@ fully functional.
 
 **Implementation**:
 
-- New auth components created with `-v2` suffix:
+- New auth components created:
   - `auth-plugin-v2.ts` (not registered in plugin array yet)
-  - `AuthContextV2Provider` (not registered in DI yet)
-  - `AUTH_CONTEXT_V2` token (defined but not used yet)
+  - `AuthContextProvider` with `AUTH_CONTEXT` token (not registered in DI yet)
+  - `TenantAwareDBClient` with nullable `AUTH_CONTEXT` injection (registered but won't function
+    until Phase 4)
 - Environment flag added: `USE_AUTH0: boolean` (default: false)
 - All Phase 2-3 work uses EXISTING auth context (not Auth0)
 - Server remains fully functional throughout infrastructure build
+- Note: No "-v2" suffix for injection tokens - `AUTH_CONTEXT` is the standard token name from the
+  start
 
 **Validation**: After each step, verify existing auth still works. Run full integration test suite.
 
@@ -1184,10 +1296,32 @@ fully functional.
 **Validation**: Both auth systems work independently. No conflicts. Can toggle between systems via
 flag.
 
-#### 4.3. Safe Cutover (Phase 4, Step 4.6)
+#### 4.3. Safe Cutover (Phase 4, Steps 4.6-4.7)
+
+**CRITICAL**: Frontend Auth0 UI must be deployed BEFORE backend switch to ensure zero downtime.
+
+**Step 4.6 - Frontend First (Deploy Auth0 UI)**:
+
+**Prerequisites**:
+
+- [ ] Auth0 tenant fully configured (Step 4.2)
+- [ ] Auth0 Management API working (Step 4.3)
+- [ ] Parallel backend testing successful (Step 4.4)
+
+**Tasks**:
+
+1. Install `@auth0/auth0-react` in client package
+2. Implement dual-auth login page (users can choose legacy or Auth0)
+3. Create Auth0 callback handler
+4. Update Urql client to support both auth token types
+5. Deploy to production
+6. Verify Auth0 login works alongside legacy login
+
+**Step 4.7 - Backend Switch (Auth0-Only)**:
 
 **Prerequisites Checklist**:
 
+- [ ] **Frontend Auth0 UI deployed and tested (Step 4.6)** ← CRITICAL
 - [ ] Auth0 tenant fully configured
 - [ ] Auth0 Management API working
 - [ ] Parallel testing successful (Step 4.4)
@@ -1198,21 +1332,24 @@ flag.
 
 **Cutover Process**:
 
-1. **Maintenance Window**: Schedule 15-minute window
+1. **Verify Frontend Ready**: Confirm Auth0 login works in production
 2. **Code Changes**:
    - Replace `authPlugin()` with `authPluginV2()` in plugins array
    - Replace `AUTH_CONTEXT` provider registration to use `AuthContextV2Provider`
    - Update `TenantAwareDBClient` to inject new `AUTH_CONTEXT`
-3. **Deploy to Staging**: Full validation with Auth0 active
-4. **Deploy to Production**: Monitor error rates, ready to rollback
-5. **Monitor First Hour**: Login success rates, JWT verification errors, Auth0 API latency
+3. **Deploy Backend to Staging**: Full validation with Auth0 active
+4. **Deploy Backend to Production**: Monitor error rates, ready to rollback
+5. **Update Frontend**: Make Auth0 login default (remove legacy login option)
+6. **Monitor First 24 Hours**: Login success rates, JWT verification errors, Auth0 API latency
+
+**Result**: Zero downtime - users had Auth0 UI available before backend required it.
 
 **Rollback Plan**:
 
 ```bash
 # If issues occur within first hour:
-1. Set USE_AUTH0=false in environment
-2. Restart server (reverts to old auth)
+1. Revert backend to previous deployment (old authPlugin)
+2. Revert frontend to show legacy login as default
 3. Verify old auth working
 4. Investigate Auth0 issues offline
 5. Fix and redeploy when ready
@@ -1220,7 +1357,8 @@ flag.
 
 **Risk Mitigation**:
 
-- Immediate rollback capability (toggle environment flag)
+- Frontend-first deployment eliminates lockout risk
+- Immediate rollback capability for both frontend and backend
 - Monitoring alerts for auth failures
 - 24/7 on-call during first week
 - User communication plan if extended downtime needed
@@ -1240,24 +1378,6 @@ flag.
 **Validation**: Clean codebase, no deprecated code, all tests pass.
 
 ---
-
-### 5. Implementation Phases
-
-    *   **GraphQL Context**: Must provide `db: TenantAwareDBClient` instead of raw `pool: pg.Pool`
-    *   **ESLint Rule**: Enforce no direct `pool.query()` usage in resolvers
-
-- **Global Filter**: Resolvers must use a tenant-aware DB adapter that injects `business_id`
-  automatically. Any raw query access must be disallowed in GraphQL resolvers.
-- **RLS + Views**: Any `extended_*` view used by GraphQL must be defined as `security_barrier` and
-  must rely on RLS-protected base tables.
-- **Composite Uniqueness**: All business-scoped unique constraints must include `business_id`:
-  - `documents`: (business_id, serial_number)
-  - `financial_entities`: (business_id, name)
-  - `tags`: (business_id, name)
-  - `tax_categories`: (business_id, code)
-  - `employees`: (business_id, employee_id)
-  - `business_users`: PRIMARY KEY (user_id, business_id)
-  - `invitations`: (business_id, email)
 
 #### 3.4. Client Application (`packages/client`)
 
@@ -1338,7 +1458,7 @@ client application does not implement custom login forms.
   context and must re-instantiate the Urql client on business changes to prevent stale entities from
   bleeding across tenants.
 
-### 4. Error Handling
+### 5. Error Handling
 
 - **Authentication Errors**:
   - The GraphQL API returns `UNAUTHENTICATED` errors if Auth0 JWT is missing, invalid, expired, or
@@ -1362,7 +1482,7 @@ client application does not implement custom login forms.
     - Token expired: `INVITATION_EXPIRED`
     - User not authenticated: `UNAUTHENTICATED` with message "Please log in to accept invitation"
 
-### 5. Testing Plan
+### 6. Testing Plan
 
 - **Backend (Unit/Integration Tests)**:
   - Test the `createInvitation` and `acceptInvitation` mutations with valid and invalid inputs
@@ -1403,7 +1523,7 @@ client application does not implement custom login forms.
   - Test that UI elements for restricted actions (e.g., "Manage Users" button) are hidden for users
     without the necessary permissions.
 
-### 6. Transition State Management (Dual-Write & Defaulting)
+### 7. Transition State Management (Dual-Write & Defaulting)
 
 - **Dual-Write**: The implementation must write `business_id` for all tenant tables and continue
   writing legacy owner columns until migration completion.
@@ -1422,7 +1542,7 @@ client application does not implement custom login forms.
 - **Quarantine**: Rows that cannot be deterministically assigned must remain inaccessible by RLS
   until resolved.
 
-### 7. Auth/Tenant Context Interfaces
+### 8. Auth/Tenant Context Interfaces
 
 ```ts
 export type AuthType = 'user' | 'apiKey' | 'system'
