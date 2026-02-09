@@ -39,9 +39,9 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@types/pg": "npm:8.16.0"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     dotenv-cli: "npm:11.0.0"
-    fast-xml-parser: "npm:5.3.4"
+    fast-xml-parser: "npm:5.3.5"
     listr2: "npm:10.1.0"
     pg: "npm:8.18.0"
     rimraf: "npm:6.1.2"
@@ -88,7 +88,7 @@ __metadata:
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
-    "@types/react": "npm:19.2.11"
+    "@types/react": "npm:19.2.13"
     "@types/react-dom": "npm:19.2.3"
     "@urql/exchange-auth": "npm:3.0.0"
     "@vitejs/plugin-react": "npm:5.1.3"
@@ -102,7 +102,7 @@ __metadata:
     dayjs: "npm:1.11.19"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.12.0"
@@ -113,7 +113,7 @@ __metadata:
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:5.4.624"
     react: "npm:19.2.4"
-    react-day-picker: "npm:9.13.0"
+    react-day-picker: "npm:9.13.1"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.2.4"
     react-error-boundary: "npm:6.1.0"
@@ -143,7 +143,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.13"
     csv-parse: "npm:6.1.0"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     pg-promise: "npm:12.6.0"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -155,7 +155,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     pg-promise: "npm:12.6.0"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -209,7 +209,7 @@ __metadata:
     "@types/puppeteer": "npm:7.0.4"
     ajv: "npm:8.17.1"
     pino-pretty: "npm:13.1.3"
-    puppeteer: "npm:24.37.0"
+    puppeteer: "npm:24.37.2"
   languageName: unknown
   linkType: soft
 
@@ -219,7 +219,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     node-kraken-api: "npm:2.2.2"
     pg-promise: "npm:12.6.0"
     tsup: "npm:8.5.1"
@@ -239,7 +239,7 @@ __metadata:
     json-schema-to-typescript: "npm:15.0.4"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:3.1.11"
-    puppeteer: "npm:24.37.0"
+    puppeteer: "npm:24.37.2"
     typescript: "npm:5.9.3"
     uuid: "npm:13.0.0"
     zod: "npm:4.3.6"
@@ -283,7 +283,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.36"
+    "@ai-sdk/anthropic": "npm:3.0.39"
     "@envelop/generic-auth": "npm:11.1.0"
     "@envelop/graphql-modules": "npm:9.1.0"
     "@google-cloud/pubsub": "npm:5.2.2"
@@ -297,13 +297,13 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.70"
+    ai: "npm:6.0.77"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.9.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:171.3.0"
     graphql: "npm:16.12.0"
@@ -317,7 +317,7 @@ __metadata:
     nodemon: "npm:3.1.11"
     pg: "npm:8.18.0"
     pino-pretty: "npm:13.1.3"
-    playwright: "npm:1.58.1"
+    playwright: "npm:1.58.2"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.1.2"
     slonik: "npm:48.10.0"
@@ -353,50 +353,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.36":
-  version: 3.0.36
-  resolution: "@ai-sdk/anthropic@npm:3.0.36"
+"@ai-sdk/anthropic@npm:3.0.39":
+  version: 3.0.39
+  resolution: "@ai-sdk/anthropic@npm:3.0.39"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.7"
-    "@ai-sdk/provider-utils": "npm:4.0.13"
+    "@ai-sdk/provider": "npm:3.0.8"
+    "@ai-sdk/provider-utils": "npm:4.0.14"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/63b7dfa2403487a8a2bb96f52979248092d65321c7c95caf83e43cf213aa343a1d67dc133df2df754aa8cf3072da119c4c2833f4c6c06095a9b49cd0a8da78da
+  checksum: 10c0/d2ed00de30bd37e5df88f4c9651732132039d6ab79bc9f3d77802d2be6bbdfec6729c4d61e3eb72b134ac3a96566301ab8efc54bb1af757ea3c528281ed266a0
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.33":
-  version: 3.0.33
-  resolution: "@ai-sdk/gateway@npm:3.0.33"
+"@ai-sdk/gateway@npm:3.0.39":
+  version: 3.0.39
+  resolution: "@ai-sdk/gateway@npm:3.0.39"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.7"
-    "@ai-sdk/provider-utils": "npm:4.0.13"
+    "@ai-sdk/provider": "npm:3.0.8"
+    "@ai-sdk/provider-utils": "npm:4.0.14"
     "@vercel/oidc": "npm:3.1.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/3c0c01330878c98fe70a34ed4699c5de80e431a35e8d78a1971b86488e669dd214007ba7ad4f444c0b0d1d3f3b41b76d07c2eb7b6f9162047fbe5639568e6d82
+  checksum: 10c0/b7a8ea6b1b6aa13ab264b683efc06529cadf21ab5a857bbc624158a24a59f95cc6d432f31a0e3819666da7ca82355ee4f7094f5c6ebb2ad836ca647ad0d89b95
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.13":
-  version: 4.0.13
-  resolution: "@ai-sdk/provider-utils@npm:4.0.13"
+"@ai-sdk/provider-utils@npm:4.0.14":
+  version: 4.0.14
+  resolution: "@ai-sdk/provider-utils@npm:4.0.14"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.7"
+    "@ai-sdk/provider": "npm:3.0.8"
     "@standard-schema/spec": "npm:^1.1.0"
     eventsource-parser: "npm:^3.0.6"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/c63b12130475fddab4adc7f7897c2ad4d5bd689483a54e772282bf19391916226cc9a3200f6e2db3668aef1d3577e9198e30cd6a619d371e754fc1f7c82d8b72
+  checksum: 10c0/613ec8c9efb2b3a5fd0083319e0e54e66737c071a0a7957be8248a23533325ba7a26149393a850a8e38c01bf62fe706f776687e01c3513d7558475a2856ca06e
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:3.0.7":
-  version: 3.0.7
-  resolution: "@ai-sdk/provider@npm:3.0.7"
+"@ai-sdk/provider@npm:3.0.8":
+  version: 3.0.8
+  resolution: "@ai-sdk/provider@npm:3.0.8"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/2ff19daf26fb725857c5f1f28190c49878b84113aa5b551707814e98a8cddf104bd4549b2f491aa5ff07fe0cc2fd327429613f13fca5f83509775763a0474a9e
+  checksum: 10c0/c68637c0139a6ce8af17bac1d7d539f531860026237c5c971dcecda2daa8b1e42d8c05e1e664ece60c15edb325c0253fd5b091ee54d32f870a750a493acbb0b7
   languageName: node
   linkType: hard
 
@@ -8373,12 +8373,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:24.10.10":
-  version: 24.10.10
-  resolution: "@types/node@npm:24.10.10"
+"@types/node@npm:24.10.12":
+  version: 24.10.12
+  resolution: "@types/node@npm:24.10.12"
   dependencies:
     undici-types: "npm:~7.16.0"
-  checksum: 10c0/ae6871069373cf9ea2f9f9c6d42af6d0a66a213f8688c1b4ced6466cbcdd0f926e4603480a454b1df330feb1243d2ac50749895eddf5667e25e6873d3f8b9488
+  checksum: 10c0/fa39b88c8d82a2cec41544bee3426c4b78a13cc3c5ccf6fcb6c9528a68466ffcc73772833c612c7bb7e5fe1bc8e38002d1d543152e43b20b0600096cf6f210d1
   languageName: node
   linkType: hard
 
@@ -8478,12 +8478,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:19.2.11":
-  version: 19.2.11
-  resolution: "@types/react@npm:19.2.11"
+"@types/react@npm:19.2.13":
+  version: 19.2.13
+  resolution: "@types/react@npm:19.2.13"
   dependencies:
     csstype: "npm:^3.2.2"
-  checksum: 10c0/a02aa87853fa6ef82353dd58803f18744e367e05760845be9a35f9771031fb81077ef05fb5ef3e9d7bbd91d3f8394b47106a18a833ddfed81e6fbf0be55a3544
+  checksum: 10c0/e512dc53b805b9066f5c6ad42944372e1204290d618dbaec634d8bbd80d3aadcc1b8cdd7251329936bbdafae0425c02f531083213473bb370df903f20bb66e91
   languageName: node
   linkType: hard
 
@@ -9085,12 +9085,12 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:24.10.10"
+    "@types/node": "npm:24.10.12"
     "@types/pg": "npm:8.16.0"
     "@vitest/coverage-v8": "npm:4.0.18"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.1"
-    dotenv: "npm:17.2.3"
+    dotenv: "npm:17.2.4"
     eslint: "npm:9.39.2"
     eslint-config-flat-gitignore: "npm:2.1.0"
     eslint-plugin-unicorn: "npm:62.0.0"
@@ -9154,17 +9154,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.70":
-  version: 6.0.70
-  resolution: "ai@npm:6.0.70"
+"ai@npm:6.0.77":
+  version: 6.0.77
+  resolution: "ai@npm:6.0.77"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.33"
-    "@ai-sdk/provider": "npm:3.0.7"
-    "@ai-sdk/provider-utils": "npm:4.0.13"
+    "@ai-sdk/gateway": "npm:3.0.39"
+    "@ai-sdk/provider": "npm:3.0.8"
+    "@ai-sdk/provider-utils": "npm:4.0.14"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/de9fce71dedf3d808e839626098f3e297024133ea6556c31b7bb3b5ff7b3d77d10fb067a44af146eb55b7587088de1aeb3b31e32bffdc3f09556f364a3918b15
+  checksum: 10c0/b8ce30e26559dd2354a8ea37db547a705aeaf4033fe41fa1ae4f1769e044dd13102e2cda4698e58740b54aae09c3690dde842d1f1fc3c6779e997dba6d62d604
   languageName: node
   linkType: hard
 
@@ -10586,16 +10586,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chromium-bidi@npm:13.1.0":
-  version: 13.1.0
-  resolution: "chromium-bidi@npm:13.1.0"
+"chromium-bidi@npm:13.1.1":
+  version: 13.1.1
+  resolution: "chromium-bidi@npm:13.1.1"
   dependencies:
     mitt: "npm:^3.0.1"
-    puppeteer: "npm:^24.36.0"
     zod: "npm:^3.24.1"
   peerDependencies:
     devtools-protocol: "*"
-  checksum: 10c0/0a1848a4cfe634b86a983642efdfecd6e7b310ac3ff4c8511234ab284794c954517c46ca8136a0c29fd1b26ae7afa7aa00ad42703b62dbf2947bf1029ba01b19
+  checksum: 10c0/50f5fea90a61c8995b53e1e55179f3064033552a076349cf1ded8417c17c0e736851ccb0af5c22a2c4bd85b8523afd0e9725a6d0d2e6e7400aeb1eded2e6deba
   languageName: node
   linkType: hard
 
@@ -11879,10 +11878,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:17.2.3, dotenv@npm:^17.0.0, dotenv@npm:^17.1.0":
-  version: 17.2.3
-  resolution: "dotenv@npm:17.2.3"
-  checksum: 10c0/c884403209f713214a1b64d4d1defa4934c2aa5b0002f5a670ae298a51e3c3ad3ba79dfee2f8df49f01ae74290fcd9acdb1ab1d09c7bfb42b539036108bb2ba0
+"dotenv@npm:17.2.4":
+  version: 17.2.4
+  resolution: "dotenv@npm:17.2.4"
+  checksum: 10c0/901aeee9cb40860291bdb452f6ca66aada78438331a026b0bd86fd41b94a79752dbc6a8971f4f26e6cafef11b4a27bb12ea99c0cbe7dfa61791f194727f799e5
   languageName: node
   linkType: hard
 
@@ -11890,6 +11889,13 @@ __metadata:
   version: 16.6.1
   resolution: "dotenv@npm:16.6.1"
   checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^17.0.0, dotenv@npm:^17.1.0":
+  version: 17.2.3
+  resolution: "dotenv@npm:17.2.3"
+  checksum: 10c0/c884403209f713214a1b64d4d1defa4934c2aa5b0002f5a670ae298a51e3c3ad3ba79dfee2f8df49f01ae74290fcd9acdb1ab1d09c7bfb42b539036108bb2ba0
   languageName: node
   linkType: hard
 
@@ -13271,14 +13277,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:5.3.4":
-  version: 5.3.4
-  resolution: "fast-xml-parser@npm:5.3.4"
+"fast-xml-parser@npm:5.3.5":
+  version: 5.3.5
+  resolution: "fast-xml-parser@npm:5.3.5"
   dependencies:
-    strnum: "npm:^2.1.0"
+    strnum: "npm:^2.1.2"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10c0/d77866ca860ad185153e12f6ba12274d32026319ad8064e4681342b8a8e1ffad3f1f98daf04d77239fb12eb1d906ee7185fd328deda74529680e8dae0f3e9327
+  checksum: 10c0/ac6232de821c8292436c53a58fc583f073cc5a73d14310b956391512e325e1ef65b950a1d41f5f2715b0d4d363fac2e483d7df1748b344647ea7c7f219a5d2f4
   languageName: node
   linkType: hard
 
@@ -18777,27 +18783,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"playwright-core@npm:1.58.1":
-  version: 1.58.1
-  resolution: "playwright-core@npm:1.58.1"
+"playwright-core@npm:1.58.2":
+  version: 1.58.2
+  resolution: "playwright-core@npm:1.58.2"
   bin:
     playwright-core: cli.js
-  checksum: 10c0/2c12755579148cbd13811cc1a01e9693432f0e4595c76ebb02d2e1b4ee7286719c6769fdb26cda61f218bc49b7ddd4de5d856abbd034acde4ff3dbeee93e4773
+  checksum: 10c0/5aa15b2b764e6ffe738293a09081a6f7023847a0dbf4cd05fe10eed2e25450d321baf7482f938f2d2eb330291e197fa23e57b29a5b552b89927ceb791266225b
   languageName: node
   linkType: hard
 
-"playwright@npm:1.58.1":
-  version: 1.58.1
-  resolution: "playwright@npm:1.58.1"
+"playwright@npm:1.58.2":
+  version: 1.58.2
+  resolution: "playwright@npm:1.58.2"
   dependencies:
     fsevents: "npm:2.3.2"
-    playwright-core: "npm:1.58.1"
+    playwright-core: "npm:1.58.2"
   dependenciesMeta:
     fsevents:
       optional: true
   bin:
     playwright: cli.js
-  checksum: 10c0/29cb2b34ad80f9dc1b27d26d8cf56e0964d7787e0beb18b25fd9d087a09ce56a359779104d2a1717d08789c2f2713928ef59140b2905e6ef00b2cb6df58bb107
+  checksum: 10c0/d060d9b7cc124bd8b5dffebaab5e84f6b34654a553758fe7b19cc598dfbee93f6ecfbdc1832b40a6380ae04eade86ef3285ba03aa0b136799e83402246dc0727
   languageName: node
   linkType: hard
 
@@ -19183,18 +19189,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer-core@npm:24.37.0":
-  version: 24.37.0
-  resolution: "puppeteer-core@npm:24.37.0"
+"puppeteer-core@npm:24.37.2":
+  version: 24.37.2
+  resolution: "puppeteer-core@npm:24.37.2"
   dependencies:
     "@puppeteer/browsers": "npm:2.12.0"
-    chromium-bidi: "npm:13.1.0"
+    chromium-bidi: "npm:13.1.1"
     debug: "npm:^4.4.3"
     devtools-protocol: "npm:0.0.1566079"
     typed-query-selector: "npm:^2.12.0"
     webdriver-bidi-protocol: "npm:0.4.0"
     ws: "npm:^8.19.0"
-  checksum: 10c0/498e7a27bf53f6e14297c6cc39c481753ccad5a9569456a5a8b0d2b4d4822c5ed466f8816f6e269602b3575fe78558b1ed7aa2b2ba5c3c4000ca99d0c3055e81
+  checksum: 10c0/2effc9783f119acfd59a66ec66dc027ca9c601a05081e038ad29ac51e2bebb85d5c0aa70919b11f752c08d900f4b6573db5e7433a5d46f5633e31a99d72526de
   languageName: node
   linkType: hard
 
@@ -19214,19 +19220,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:24.37.0, puppeteer@npm:^24.36.0":
-  version: 24.37.0
-  resolution: "puppeteer@npm:24.37.0"
+"puppeteer@npm:24.37.2":
+  version: 24.37.2
+  resolution: "puppeteer@npm:24.37.2"
   dependencies:
     "@puppeteer/browsers": "npm:2.12.0"
-    chromium-bidi: "npm:13.1.0"
+    chromium-bidi: "npm:13.1.1"
     cosmiconfig: "npm:^9.0.0"
     devtools-protocol: "npm:0.0.1566079"
-    puppeteer-core: "npm:24.37.0"
+    puppeteer-core: "npm:24.37.2"
     typed-query-selector: "npm:^2.12.0"
   bin:
     puppeteer: lib/cjs/puppeteer/node/cli.js
-  checksum: 10c0/7194c060237272daf399663d2f047843015c7e35f5f7a0a3c268530b4aa4ac43012cfc2ae7f5fe4726a96183beedf80d2c6021cef1f1c323cb7f8ec081f2af26
+  checksum: 10c0/813c39cdf6aee37a5aa1292a7d941346b89fcb65cd42eccadb0f801027762d0c44ebc06ee246e10634d3574ebf78b087079e4047a445eab931888aa38cc53b3b
   languageName: node
   linkType: hard
 
@@ -19326,16 +19332,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-day-picker@npm:9.13.0":
-  version: 9.13.0
-  resolution: "react-day-picker@npm:9.13.0"
+"react-day-picker@npm:9.13.1":
+  version: 9.13.1
+  resolution: "react-day-picker@npm:9.13.1"
   dependencies:
     "@date-fns/tz": "npm:^1.4.1"
     date-fns: "npm:^4.1.0"
     date-fns-jalali: "npm:^4.1.0-0"
   peerDependencies:
     react: ">=16.8.0"
-  checksum: 10c0/e176309a24697f6552c80c7fde257f3dc06506a4e5ec22b11b55bf136bd452ab98d2ca9c2a17632092d67d23d08b3b35daf77d99e95a937ad290d3322abc745c
+  checksum: 10c0/7f5f78937da273aef628319175991b09c7cc873fb4cfd1b2b97f5e4da352374afdfba5d44eaf0e349e798c13a150c151930483569664d9c0be6e5ed4418491eb
   languageName: node
   linkType: hard
 
@@ -21332,7 +21338,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strnum@npm:^2.1.0":
+"strnum@npm:^2.1.2":
   version: 2.1.2
   resolution: "strnum@npm:2.1.2"
   checksum: 10c0/4e04753b793540d79cd13b2c3e59e298440477bae2b853ab78d548138385193b37d766d95b63b7046475d68d44fb1fca692f0a3f72b03f4168af076c7b246df9
