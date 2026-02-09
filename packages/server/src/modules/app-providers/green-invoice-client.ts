@@ -9,7 +9,7 @@ import {
   type Sdk,
 } from '@accounter/green-invoice-graphql';
 import type { Currency } from '../../shared/enums.js';
-import { dateToTimelessDateString, getCacheInstance } from '../../shared/helpers/index.js';
+import { dateToTimelessDateString } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 
@@ -25,9 +25,6 @@ export type ExpenseDraft = NonNullable<
 })
 export class GreenInvoiceClientProvider {
   localCurrency: Currency;
-  cache = getCacheInstance({
-    stdTTL: 60 * 5, // 5 minutes
-  });
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
@@ -183,7 +180,7 @@ export class GreenInvoiceClientProvider {
     const sdk = await this.getSDK();
     return sdk.searchDocuments_query(...params).then(res => {
       for (const doc of res.searchDocuments?.items ?? []) {
-        if (doc) this.cache.set(`document-${doc.id}`, doc);
+        if (doc) this.documentLoader.prime(doc.id, doc);
       }
 
       return res.searchDocuments;
@@ -215,7 +212,7 @@ export class GreenInvoiceClientProvider {
   private async _batchLoadByIds<T extends { id?: string | null }>(
     ids: readonly string[],
     fetcher: (sdk: Sdk, id: string) => Promise<T | null | undefined>,
-    cachePrefix: string,
+    primingFunction: (item: T) => void,
   ): Promise<(T | null)[]> {
     const sdk = await this.getSDK();
     const uniqueIds = Array.from(new Set(ids));
@@ -223,7 +220,7 @@ export class GreenInvoiceClientProvider {
       uniqueIds.map(async id =>
         fetcher(sdk, id).then(item => {
           if (item?.id) {
-            this.cache.set(`${cachePrefix}-${item.id}`, item);
+            primingFunction(item);
           }
           return item ?? undefined;
         }),
@@ -238,17 +235,11 @@ export class GreenInvoiceClientProvider {
     return this._batchLoadByIds(
       ids,
       (sdk, id) => sdk.getDocument_query({ id }).then(res => res.getDocument),
-      'document',
+      item => this.documentLoader.prime(item.id!, item),
     );
   }
 
-  public documentLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchDocumentsByIds(ids),
-    {
-      cacheKeyFn: id => `document-${id}`,
-      cacheMap: this.cache,
-    },
-  );
+  public documentLoader = new DataLoader((ids: readonly string[]) => this.batchDocumentsByIds(ids));
 
   public async closeDocument(documentId: string) {
     this.invalidateDocument(documentId);
@@ -257,7 +248,7 @@ export class GreenInvoiceClientProvider {
   }
 
   public async invalidateDocument(documentId: string) {
-    this.cache.delete(`document-${documentId}`);
+    this.documentLoader.clear(documentId);
   }
 
   /**
@@ -268,14 +259,11 @@ export class GreenInvoiceClientProvider {
     return this._batchLoadByIds(
       ids,
       (sdk, id) => sdk.getClient_query({ id }).then(res => res.getClient),
-      'client',
+      item => this.clientLoader.prime(item.id!, item),
     );
   }
 
-  public clientLoader = new DataLoader((ids: readonly string[]) => this.batchClientsByIds(ids), {
-    cacheKeyFn: id => `client-${id}`,
-    cacheMap: this.cache,
-  });
+  public clientLoader = new DataLoader((ids: readonly string[]) => this.batchClientsByIds(ids));
 
   public async createClient(
     input: _DOLLAR_defs_addClientRequest_Input,
@@ -291,7 +279,9 @@ export class GreenInvoiceClientProvider {
       }
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
-      this.cache.set(`client-${id}`, client);
+      if (id) {
+        this.clientLoader.prime(id, client as _DOLLAR_defs_getClientResponse);
+      }
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
       const message = 'Green Invoice Create Client error';
@@ -314,7 +304,9 @@ export class GreenInvoiceClientProvider {
       }
 
       const { id } = client as _DOLLAR_defs_getClientResponse;
-      this.cache.set(`client-${id}`, client);
+      if (id) {
+        this.clientLoader.prime(id, client as _DOLLAR_defs_getClientResponse);
+      }
       return client as _DOLLAR_defs_getClientResponse;
     } catch (error) {
       this.invalidateClient(args.id);
@@ -348,6 +340,6 @@ export class GreenInvoiceClientProvider {
   }
 
   public invalidateClient(clientId: string) {
-    this.cache.delete(`client-${clientId}`);
+    this.clientLoader.clear(clientId);
   }
 }

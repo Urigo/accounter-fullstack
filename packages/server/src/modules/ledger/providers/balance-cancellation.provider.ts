@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBalanceCancellationByBusinessIdQuery,
@@ -18,14 +17,10 @@ const deleteBalanceCancellationByBusinessId = sql<IDeleteBalanceCancellationByBu
     WHERE business_id = $businessId;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BalanceCancellationProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBalanceCancellationByChargesIds(ids: readonly string[]) {
@@ -38,12 +33,8 @@ export class BalanceCancellationProvider {
     return ids.map(id => ballanceCancellations.filter(record => record.charge_id === id));
   }
 
-  public getBalanceCancellationByChargesIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchBalanceCancellationByChargesIds(keys),
-    {
-      cacheKeyFn: key => `balance-cancellation-charge-${key}`,
-      cacheMap: this.cache,
-    },
+  public getBalanceCancellationByChargesIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchBalanceCancellationByChargesIds(keys),
   );
 
   public deleteBalanceCancellationByBusinessId(businessId: string) {
@@ -51,6 +42,6 @@ export class BalanceCancellationProvider {
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBalanceCancellationByChargesIdLoader.clearAll();
   }
 }

@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetEmployeeIDsByContractIdsQuery,
@@ -40,14 +39,10 @@ const insertDeelContract = sql<IInsertDeelContractQuery>`
       RETURNING *;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class DeelContractsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchEmployeeIDsByContractIds(contractIds: readonly string[]) {
@@ -61,24 +56,16 @@ export class DeelContractsProvider {
     });
   }
 
-  public getEmployeeIDByContractIdLoader = new DataLoader(
-    (contractIds: readonly string[]) => this.batchEmployeeIDsByContractIds(contractIds),
-    {
-      cacheKeyFn: key => `worker-contract-${key}`,
-      cacheMap: this.cache,
-    },
+  public getEmployeeIDByContractIdLoader = new DataLoader((contractIds: readonly string[]) =>
+    this.batchEmployeeIDsByContractIds(contractIds),
   );
   private async batchEmployeesByContractIds(contractIds: readonly string[]) {
     const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.dbProvider);
     return contractIds.map(id => contracts.find(contract => contract.contract_id === id));
   }
 
-  public getEmployeeByContractIdLoader = new DataLoader(
-    (contractIds: readonly string[]) => this.batchEmployeesByContractIds(contractIds),
-    {
-      cacheKeyFn: key => `worker-contract-full-${key}`,
-      cacheMap: this.cache,
-    },
+  public getEmployeeByContractIdLoader = new DataLoader((contractIds: readonly string[]) =>
+    this.batchEmployeesByContractIds(contractIds),
   );
 
   private async batchEmployeeIdsByDocumentIds(documentIds: readonly string[]) {
@@ -89,12 +76,8 @@ export class DeelContractsProvider {
     );
   }
 
-  public getEmployeeIdByDocumentIdLoader = new DataLoader(
-    (documentIds: readonly string[]) => this.batchEmployeeIdsByDocumentIds(documentIds),
-    {
-      cacheKeyFn: key => `employee-by-document-${key}`,
-      cacheMap: this.cache,
-    },
+  public getEmployeeIdByDocumentIdLoader = new DataLoader((documentIds: readonly string[]) =>
+    this.batchEmployeeIdsByDocumentIds(documentIds),
   );
 
   public async insertDeelContract(params: IInsertDeelContractParams) {

@@ -8,14 +8,14 @@ import type { AdminContextModule } from '../types.js';
 
 export const adminContextResolvers: AdminContextModule.Resolvers = {
   Query: {
-    adminContext: (_, { ownerId }, { injector, adminContext: { defaultAdminBusinessId } }) =>
+    adminContext: (_, __, { injector }) =>
       injector
         .get(AdminContextProvider)
-        .getAdminContextLoader.load(ownerId ?? defaultAdminBusinessId)
+        .getAdminContext()
         .then(res => {
           if (!res) {
             const message = 'Admin context not found';
-            console.error(`${message} for owner id "${ownerId}"`);
+            console.error(message);
             throw new GraphQLError(message);
           }
           return res;

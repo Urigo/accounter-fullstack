@@ -20,10 +20,6 @@ export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
         throw new Error(`Failed to update charge ID='${chargeId}'`);
       }
 
-      /* clear cache */
-      if (updatedCharge.id) {
-        injector.get(ChargesProvider).getChargeByIdLoader.clear(updatedCharge.id);
-      }
       return updatedCharge.accountant_status || 'UNAPPROVED';
     },
     updateBusinessTripAccountantApproval: async (

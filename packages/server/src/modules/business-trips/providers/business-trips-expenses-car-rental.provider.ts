@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTripCarRentalExpenseParams,
@@ -56,14 +55,10 @@ const deleteBusinessTripCarRentalExpense = sql<IDeleteBusinessTripCarRentalExpen
 `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class BusinessTripCarRentalExpensesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchBusinessTripsCarRentalExpensesByBusinessTripIds(
@@ -84,10 +79,6 @@ export class BusinessTripCarRentalExpensesProvider {
 
   public getBusinessTripsCarRentalExpensesByBusinessTripIdLoader = new DataLoader(
     (ids: readonly string[]) => this.batchBusinessTripsCarRentalExpensesByBusinessTripIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-car-rental-expenses-trip-${key}`,
-      cacheMap: this.cache,
-    },
   );
 
   private async batchBusinessTripsCarRentalExpensesByIds(expenseIds: readonly string[]) {
@@ -101,12 +92,8 @@ export class BusinessTripCarRentalExpensesProvider {
     return expenseIds.map(id => businessTripsCarRentalExpenses.find(record => record.id === id));
   }
 
-  public getBusinessTripsCarRentalExpensesByIdLoader = new DataLoader(
-    (ids: readonly string[]) => this.batchBusinessTripsCarRentalExpensesByIds(ids),
-    {
-      cacheKeyFn: key => `business-trip-car-rental-expense-${key}`,
-      cacheMap: this.cache,
-    },
+  public getBusinessTripsCarRentalExpensesByIdLoader = new DataLoader((ids: readonly string[]) =>
+    this.batchBusinessTripsCarRentalExpensesByIds(ids),
   );
 
   public updateBusinessTripCarRentalExpense(params: IUpdateBusinessTripCarRentalExpenseParams) {
@@ -129,22 +116,23 @@ export class BusinessTripCarRentalExpensesProvider {
 
   public async invalidateById(expenseId: string) {
     const expense = await this.getBusinessTripsCarRentalExpensesByIdLoader.load(expenseId);
-    if (expense) {
-      this.cache.delete(`business-trip-car-rental-expenses-trip-${expense.business_trip_id}`);
+    if (expense?.business_trip_id) {
+      this.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.clear(expense.business_trip_id);
     }
-    this.cache.delete(`business-trip-car-rental-expense-${expenseId}`);
+    this.getBusinessTripsCarRentalExpensesByIdLoader.clear(expenseId);
   }
 
   public async invalidateByBusinessTripId(businessTripId: string) {
     const expenses =
       await this.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.load(businessTripId);
     for (const expense of expenses ?? []) {
-      this.cache.delete(`business-trip-car-rental-expense-${expense.id}`);
+      this.getBusinessTripsCarRentalExpensesByIdLoader.clear(expense.id);
     }
-    this.cache.delete(`business-trip-car-rental-expenses-trip-${businessTripId}`);
+    this.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.clear(businessTripId);
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getBusinessTripsCarRentalExpensesByBusinessTripIdLoader.clearAll();
+    this.getBusinessTripsCarRentalExpensesByIdLoader.clearAll();
   }
 }

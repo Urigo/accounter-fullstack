@@ -373,11 +373,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
         }
 
-        if (record.chargeId) {
-          /* clear cache */
-          injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.clear(record.chargeId);
-        }
-
         return { document: res[0] };
       } catch (e) {
         return {

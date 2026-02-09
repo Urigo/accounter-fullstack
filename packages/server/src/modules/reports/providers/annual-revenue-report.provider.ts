@@ -1,7 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
-// import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { IGetNormalizedRevenueRecordsParams, IGetNormalizedRevenueRecordsQuery } from '../types.js';
 
 const getNormalizedRevenueRecords = sql<IGetNormalizedRevenueRecordsQuery>`
@@ -196,14 +195,10 @@ FROM
   ) lr2 ON nlr.date IS NOT NULL;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class AnnualRevenueReportProvider {
-  //   cache = getCacheInstance({
-  //     stdTTL: 60 * 60 * 5,
-  //   });
-
   constructor(private dbProvider: DBProvider) {}
 
   public async getNormalizedRevenueRecords(params: IGetNormalizedRevenueRecordsParams) {

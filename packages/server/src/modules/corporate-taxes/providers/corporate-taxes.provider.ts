@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
+import { AUTH_CONTEXT } from '../../../shared/tokens.js';
+import type { AuthContext } from '../../../shared/types/auth.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
@@ -57,37 +58,36 @@ const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`
   global: true,
 })
 export class CorporateTaxesProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-  adminBusinessId: string;
-
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private dbProvider: DBProvider,
-  ) {
-    this.adminBusinessId = this.context.currentUser.userId;
+    @Inject(AUTH_CONTEXT) private authContext: AuthContext,
+  ) {}
+
+  private get businessId() {
+    return this.authContext.tenant?.businessId;
   }
 
-  public getAllCorporateTaxes() {
-    const cached = this.cache.get<IGetCorporateTaxesByCorporateIdsResult[]>(
-      `corporate-taxes-${this.adminBusinessId}`,
-    );
-    if (cached) {
-      return Promise.resolve(cached);
+  private allCorporateTaxesCache = new Map<
+    string,
+    Promise<IGetCorporateTaxesByCorporateIdsResult[]>
+  >();
+  public getAllCorporateTaxes(corporateId: string) {
+    if (this.allCorporateTaxesCache.has(corporateId)) {
+      return this.allCorporateTaxesCache.get(corporateId)!;
     }
-    return getCorporateTaxesByCorporateIds
-      .run({ corporateIds: [this.adminBusinessId] }, this.dbProvider)
-      .then(res => {
-        this.cache.set(`corporate-taxes-${this.adminBusinessId}`, res);
-        return res;
-      });
+    this.allCorporateTaxesCache.set(
+      corporateId,
+      getCorporateTaxesByCorporateIds.run({ corporateIds: [corporateId] }, this.dbProvider),
+    );
+    return this.allCorporateTaxesCache.get(corporateId)!;
   }
 
   private async batchCorporateTaxesByDates(
     taxRates: readonly { date: TimelessDateString; corporateId: string }[],
   ) {
-    const rates = await this.getAllCorporateTaxes();
+    const corporateIds = [...new Set(taxRates.map(t => t.corporateId))];
+    const rates = (await Promise.all(corporateIds.map(id => this.getAllCorporateTaxes(id)))).flat();
+
     return taxRates.map(({ date, corporateId }) => {
       const time = new Date(date).getTime();
       return rates
@@ -97,46 +97,33 @@ export class CorporateTaxesProvider {
     });
   }
 
-  public getCorporateTaxesByDateLoader = new DataLoader(
-    (taxRates: readonly TimelessDateString[]) =>
-      this.batchCorporateTaxesByDates(
-        taxRates.map(date => ({ date, corporateId: this.adminBusinessId })),
-      ),
-    {
-      cacheKeyFn: date => `corporate-tax-${this.adminBusinessId}-${date}`,
-      cacheMap: this.cache,
-    },
-  );
+  public getCorporateTaxesByDateLoader = new DataLoader((dates: readonly TimelessDateString[]) => {
+    if (!this.businessId) {
+      throw new Error('Business ID is required for getCorporateTaxesByDateLoader');
+    }
+    return this.batchCorporateTaxesByDates(
+      dates.map(date => ({ date, corporateId: this.businessId! })),
+    );
+  });
 
   private async batchCorporateTaxesByCorporateIds(corporateIds: readonly string[]) {
     const taxes = await getCorporateTaxesByCorporateIds.run({ corporateIds }, this.dbProvider);
     return corporateIds.map(id => taxes.filter(expense => expense.corporate_id === id));
   }
 
-  public getCorporateTaxesByCorporateIdLoader = new DataLoader(
-    (corporateIds: readonly string[]) => this.batchCorporateTaxesByCorporateIds(corporateIds),
-    {
-      cacheKeyFn: corporateId => `corporate-taxes-${corporateId}`,
-      cacheMap: this.cache,
-    },
+  public getCorporateTaxesByCorporateIdLoader = new DataLoader((corporateIds: readonly string[]) =>
+    this.batchCorporateTaxesByCorporateIds(corporateIds),
   );
 
   public updateCorporateTax(params: IUpdateCorporateTaxParams) {
-    this.clearCache();
     return updateCorporateTax.run(params, this.dbProvider);
   }
 
   public insertCorporateTax(params: IInsertCorporateTaxParams) {
-    this.clearCache();
     return insertCorporateTax.run(params, this.dbProvider);
   }
 
   public deleteCorporateTax(params: IDeleteCorporateTaxParams) {
-    this.clearCache();
     return deleteCorporateTax.run(params, this.dbProvider);
-  }
-
-  public clearCache() {
-    this.cache.clear();
   }
 }

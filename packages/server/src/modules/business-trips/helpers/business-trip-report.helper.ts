@@ -8,7 +8,6 @@ import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provid
 import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByIdsResult } from '../../transactions/types.js';
-import { BusinessTripError } from '../resolvers/business-trip-summary.resolver.js';
 import type {
   flight_class,
   IGetAllTaxVariablesResult,
@@ -17,6 +16,12 @@ import type {
   IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult,
 } from '../types.js';
+
+export class BusinessTripError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 export type SummaryCategoryData = Partial<
   Record<Currency, { total: number; taxable: number; maxTaxable: number }>

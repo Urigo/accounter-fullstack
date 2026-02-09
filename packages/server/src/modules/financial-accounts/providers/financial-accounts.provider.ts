@@ -1,7 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getCacheInstance } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteFinancialAccountParams,
@@ -80,14 +79,10 @@ const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
       `;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class FinancialAccountsProvider {
-  cache = getCacheInstance({
-    stdTTL: 60 * 5,
-  });
-
   constructor(private dbProvider: DBProvider) {}
 
   private async batchFinancialAccountsByOwnerIds(ownerIds: readonly string[]) {
@@ -100,12 +95,8 @@ export class FinancialAccountsProvider {
     return ownerIds.map(ownerId => accounts.filter(charge => charge.owner === ownerId));
   }
 
-  public getFinancialAccountsByOwnerIdLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialAccountsByOwnerIds(keys),
-    {
-      cacheKeyFn: key => `account-by-owner-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getFinancialAccountsByOwnerIdLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchFinancialAccountsByOwnerIds(keys),
   );
 
   private async batchFinancialAccountsByAccountNumbers(accountNumbers: readonly string[]) {
@@ -120,12 +111,8 @@ export class FinancialAccountsProvider {
     );
   }
 
-  public getFinancialAccountByAccountNumberLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialAccountsByAccountNumbers(keys),
-    {
-      cacheKeyFn: key => `account-number-${key}`,
-      cacheMap: this.cache,
-    },
+  public getFinancialAccountByAccountNumberLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchFinancialAccountsByAccountNumbers(keys),
   );
 
   private async batchFinancialAccountsByAccountIDs(accountIDs: readonly string[]) {
@@ -138,28 +125,24 @@ export class FinancialAccountsProvider {
     return accountIDs.map(id => accounts.find(account => account.id === id));
   }
 
-  public getFinancialAccountByAccountIDLoader = new DataLoader(
-    (keys: readonly string[]) => this.batchFinancialAccountsByAccountIDs(keys),
-    {
-      cacheKeyFn: key => `account-id-${key}`,
-      cacheMap: this.cache,
-    },
+  public getFinancialAccountByAccountIDLoader = new DataLoader((keys: readonly string[]) =>
+    this.batchFinancialAccountsByAccountIDs(keys),
   );
 
+  private allFinancialAccountsCache: Promise<IGetAllFinancialAccountsResult[]> | null = null;
   public getAllFinancialAccounts() {
-    const cached = this.cache.get<IGetAllFinancialAccountsResult[]>('all-accounts');
-    if (cached) {
-      return Promise.resolve(cached);
+    if (this.allFinancialAccountsCache) {
+      return this.allFinancialAccountsCache;
     }
-    return getAllFinancialAccounts.run(undefined, this.dbProvider).then(res => {
-      this.cache.set('all-accounts', res);
-      res.map(account => {
-        this.getFinancialAccountByAccountNumberLoader.prime(account.account_number, account);
+    const result = getAllFinancialAccounts.run(undefined, this.dbProvider).then(accounts => {
+      accounts.map(account => {
         this.getFinancialAccountByAccountIDLoader.prime(account.id, account);
-        if (account.owner) this.getFinancialAccountsByOwnerIdLoader.clear(account.owner);
+        this.getFinancialAccountByAccountNumberLoader.prime(account.account_number, account);
       });
-      return res;
+      return accounts;
     });
+    this.allFinancialAccountsCache = result;
+    return result;
   }
 
   public async updateFinancialAccount(params: IUpdateFinancialAccountParams) {
@@ -167,36 +150,33 @@ export class FinancialAccountsProvider {
     const updatedAccount = updatedAccounts[0];
     if (updatedAccount) {
       this.invalidateById(updatedAccount.id);
-      this.getFinancialAccountByAccountIDLoader.prime(updatedAccount.id, updatedAccount);
     }
     return updatedAccount;
   }
 
   public async deleteFinancialAccount(params: IDeleteFinancialAccountParams) {
     if (params.financialAccountId) {
-      await this.invalidateById(params.financialAccountId);
+      this.invalidateById(params.financialAccountId);
     }
     return deleteFinancialAccount.run(params, this.dbProvider);
   }
 
   public async insertFinancialAccounts(params: IInsertFinancialAccountsParams) {
-    this.cache.delete('all-accounts');
+    this.allFinancialAccountsCache = null;
     return insertFinancialAccounts.run(params, this.dbProvider);
   }
 
-  public async invalidateById(financialAccountId: string) {
-    const account = await this.getFinancialAccountByAccountIDLoader.load(financialAccountId);
-    if (account) {
-      if (account.owner) {
-        this.getFinancialAccountsByOwnerIdLoader.clear(account.owner);
-      }
-      this.getFinancialAccountByAccountNumberLoader.clear(account.account_number);
-    }
-    this.cache.delete('all-accounts');
+  public invalidateById(financialAccountId: string) {
     this.getFinancialAccountByAccountIDLoader.clear(financialAccountId);
+    this.getFinancialAccountsByOwnerIdLoader.clearAll();
+    this.getFinancialAccountByAccountNumberLoader.clearAll();
+    this.allFinancialAccountsCache = null;
   }
 
   public clearCache() {
-    this.cache.clear();
+    this.getFinancialAccountsByOwnerIdLoader.clearAll();
+    this.getFinancialAccountByAccountNumberLoader.clearAll();
+    this.getFinancialAccountByAccountIDLoader.clearAll();
+    this.allFinancialAccountsCache = null;
   }
 }
