@@ -8,6 +8,7 @@ import { TransactionsTable } from '../../../transactions-table/index.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import type { PeriodInfo } from './index.js';
+import { PeriodSummary } from './period-summary.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -74,6 +75,7 @@ export const ExtendedTransactionsCard = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <PeriodSummary periodInfo={periodInfo} />
             <TransactionsTable transactionsProps={transactions} />
           </CardContent>
         </>
