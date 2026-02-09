@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement } from 'react';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import { X } from 'lucide-react';
 import { useQuery } from 'urql';
 import { DownloadCSV } from '@/components/transactions-table/download-csv.js';
@@ -7,6 +7,7 @@ import { AccounterLoader } from '../../../common/index.js';
 import { TransactionsTable } from '../../../transactions-table/index.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
+import type { PeriodInfo } from './index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -20,22 +21,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 `;
 
 type ExtendedTransactionsCardProps = {
-  period: string;
-  transactionIDs: string[];
+  periodInfo?: PeriodInfo;
   onCloseExtendedTransactions: () => void;
 };
 
 export const ExtendedTransactionsCard = ({
-  period,
-  transactionIDs,
+  periodInfo,
   onCloseExtendedTransactions,
 }: ExtendedTransactionsCardProps): ReactElement => {
-  const [{ data, fetching }] = useQuery({
+  const transactionIDs = useMemo(() => {
+    return periodInfo?.transactions.map(transaction => transaction.id) || [];
+  }, [periodInfo?.transactions]);
+
+  const [{ data, fetching }, refetchTransactions] = useQuery({
     query: BalanceReportExtendedTransactionsDocument,
     variables: {
       transactionIDs,
     },
+    pause: transactionIDs.length === 0,
   });
+
+  useEffect(() => {
+    if (transactionIDs.length > 0) {
+      refetchTransactions();
+    }
+  }, [transactionIDs, refetchTransactions]);
 
   const transactions = useMemo(() => {
     if (data?.transactionsByIDs) {
@@ -54,7 +64,7 @@ export const ExtendedTransactionsCard = ({
         <>
           <CardHeader>
             <CardTitle className="flex justify-between">
-              <span>{period} Transactions</span>
+              <span>{periodInfo?.period} Transactions</span>
               <div className="flex flex-row gap-2 items-center">
                 <DownloadCSV rawTransactions={transactions} />
                 <Button variant="link" onClick={onCloseExtendedTransactions}>
