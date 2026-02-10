@@ -239,17 +239,16 @@ Only the business-to-user mapping is stored locally.
     - Create policies that query a session variable (e.g., `app.current_business_id`) to compare
       against the row's `business_id`.
   - **Application Logic**:
-    - The GraphQL middleware (auth plugin) will set postgres configuration variables with
-      `SET LOCAL` inside a transaction: `app.current_business_id`, `app.current_user_id`, and
-      `app.auth_type`.
+    - The GraphQL middleware (`rlsContextPlugin`) will set postgres configuration variables with
+      `SET LOCAL` inside a transaction: `app.current_business_id` and `app.current_user_id`.
     - Any query attempted without this variable set (or with a mismatch) will return zero rows or be
       rejected.
     - **RLS Context Bridge (Phase 3-4 Transition)**:
       - RLS is enabled in Phase 3 (before Auth0 integration in Phase 4)
-      - Temporary solution: Existing auth plugin updated to set `app.current_business_id` via
-        `SET LOCAL` to support RLS during transition period
+      - Temporary solution: Dedicated `rlsContextPlugin` created to set `app.current_business_id`
+        via `SET LOCAL` to support RLS during transition period
       - Permanent solution: `TenantAwareDBClient` sets RLS context (activated in Phase 4.8)
-      - Cleanup: Temporary bridge code removed in Phase 4.8 when `TenantAwareDBClient` becomes
+      - Cleanup: Temporary plugin disabled/removed in Phase 4.8 when `TenantAwareDBClient` becomes
         active
     - **CRITICAL**: All database access MUST go through a `TenantAwareDBClient` that wraps queries
       in transactions:
