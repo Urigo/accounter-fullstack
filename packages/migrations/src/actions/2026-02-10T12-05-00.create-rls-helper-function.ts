@@ -9,6 +9,7 @@ export default {
     LANGUAGE plpgsql
     STABLE
     SECURITY DEFINER
+    SET search_path = pg_catalog
     AS $$
     DECLARE
       v_business_id UUID;
@@ -32,6 +33,7 @@ export default {
     LANGUAGE plpgsql
     STABLE
     SECURITY DEFINER
+    SET search_path = pg_catalog
     AS $$
     DECLARE
       v_user_id UUID;
@@ -47,6 +49,7 @@ export default {
     LANGUAGE plpgsql
     STABLE
     SECURITY DEFINER
+    SET search_path = pg_catalog
     AS $$
     DECLARE
       v_auth_type TEXT;
