@@ -40,6 +40,10 @@ import { ExtendedTransactionsCard } from './extended-transactions.jsx';
         formatted
         raw
       }
+      amount {
+        currency
+        raw
+      }
       date
       month
       year
@@ -134,6 +138,16 @@ function getPeriodLabel(key: string, period: Period): string {
 
 const formatter = getCurrencyFormatter(Currency.Usd);
 
+export type PeriodInfo = {
+  period: string;
+  income: number;
+  expense: number;
+  delta: number;
+  deltaInfo: Partial<{ [key in Currency]: number }>;
+  cumulative: number;
+  transactions: BalanceReportScreenQuery['transactionsForBalanceReport'];
+};
+
 export const BalanceReport = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
@@ -203,17 +217,9 @@ export const BalanceReport = (): ReactElement => {
     }));
   }, [userContext]);
 
-  const periods = useMemo(() => {
+  const periods = useMemo((): PeriodInfo[] => {
     if (!data?.transactionsForBalanceReport) return [];
-    const periods = new Map<
-      string,
-      {
-        income: number;
-        expense: number;
-        delta: number;
-        transactions: BalanceReportScreenQuery['transactionsForBalanceReport'];
-      }
-    >();
+    const periods = new Map<string, PeriodInfo>();
     data.transactionsForBalanceReport.map(txn => {
       // filter by counterparty
       if (filter.includedCounterparties?.length > 0) {
@@ -283,9 +289,12 @@ export const BalanceReport = (): ReactElement => {
       const key = getPeriodKey(txn.year, txn.month, filter.period);
       if (!periods.has(key)) {
         periods.set(key, {
+          period: key,
           income: 0,
           expense: 0,
           delta: 0,
+          deltaInfo: {},
+          cumulative: 0,
           transactions: [],
         });
       }
@@ -296,6 +305,8 @@ export const BalanceReport = (): ReactElement => {
         period.expense += txn.amountUsd.raw;
       }
       period.delta += txn.amountUsd.raw;
+      period.deltaInfo[txn.amount.currency] =
+        (period.deltaInfo[txn.amount.currency] || 0) + txn.amount.raw;
       period.transactions.push(txn);
     });
     let cumulativeBalance = 0;
@@ -308,6 +319,7 @@ export const BalanceReport = (): ReactElement => {
           income: value.income,
           expense: value.expense,
           delta: value.delta,
+          deltaInfo: value.deltaInfo,
           cumulative: cumulativeBalance,
           transactions: value.transactions.sort(
             (t1, t2) => Math.abs(t2.amountUsd.raw) - Math.abs(t1.amountUsd.raw),
@@ -317,10 +329,13 @@ export const BalanceReport = (): ReactElement => {
   }, [
     data,
     filter.period,
+    filter.includedCounterparties,
     filter.excludedCounterparties,
-    userContext?.context.financialAccountsBusinessesIds,
+    filter.includedAccounts,
+    filter.excludedAccounts,
     filter.includedTags,
     filter.excludedTags,
+    userContext?.context.financialAccountsBusinessesIds,
   ]);
 
   return (
@@ -402,13 +417,8 @@ export const BalanceReport = (): ReactElement => {
           </Card>
           {extendedPeriod && (
             <ExtendedTransactionsCard
-              period={extendedPeriod}
+              periodInfo={periods.find(period => period.period === extendedPeriod)}
               onCloseExtendedTransactions={() => setExtendedPeriod(undefined)}
-              transactionIDs={
-                periods
-                  .find(period => period.period === extendedPeriod)
-                  ?.transactions.map(t => t.id) ?? []
-              }
             />
           )}
         </>
