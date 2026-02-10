@@ -146,9 +146,7 @@ export const rlsContextPlugin = (): Plugin<AccounterContext> => {
                   context.rlsClient = undefined;
                   client = null;
                 }
-                return iterator.return
-                  ? await iterator.return()
-                  : { done: true, value: undefined };
+                return iterator.return ? await iterator.return() : { done: true, value: undefined };
               },
               async throw(error) {
                 if (client) {
