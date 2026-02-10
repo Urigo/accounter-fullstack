@@ -9,6 +9,7 @@ import { env } from './environment.js';
 import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
 import { authPlugin } from './plugins/auth-plugin.js';
+import { rlsContextPlugin } from './plugins/rls-context-plugin.js';
 import { AccounterContext } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -30,6 +31,7 @@ async function main() {
     plugins: [
       authPlugin(),
       adminContextPlugin(),
+      rlsContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
       useHive({

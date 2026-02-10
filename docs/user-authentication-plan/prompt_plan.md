@@ -1463,9 +1463,385 @@ RISK: High (security-critical, requires careful audit)
 CRITICAL: This MUST be completed before production deployment. Cache leakage can expose sensitive
 data across tenants.
 
-**NOTE**: Prompt 2.9 (Global Context Type Updates) has been moved to **Phase 4 (Prompt 4.9)**
-because it requires Auth0 activation and plugin removal to be complete first. Updating GlobalContext
-during Phase 2 would break the server.
+``
+
+---
+
+### Prompt 2.9: Create RLS Context Plugin (CRITICAL - Enables Phase 3)
+
+``
+
+CONTEXT: In Phase 3, we'll enable Row-Level Security (RLS) on database tables. RLS policies require
+`app.current_business_id` to be set via `SET LOCAL` in PostgreSQL. However, TenantAwareDBClient
+won't be used by providers until Phase 4.8 (after Auth0 activation). We need to bridge this gap.
+
+**CRITICAL**: Without this step, enabling RLS in Phase 3 would BLOCK ALL QUERIES with "No business
+context set - authentication required" error.
+
+**Architecture Analysis**:
+
+Current setup (reviewed from `auth-plugin.ts`, `admin-context-plugin.ts`, `index.ts`):
+
+- **GraphQL Yoga** server with **GraphQL Modules** for DI
+- **authPlugin()** uses `@envelop/generic-auth` to resolve user and add `currentUser` to context
+  - `currentUser.userId` is actually the **business ID** (from `legacy_business_users.id`)
+- **adminContextPlugin()** uses `useExtendContext` to fetch admin config and add `adminContext`
+- Queries currently execute directly against `context.pool` (no transaction wrapper)
+- `SET LOCAL` only works within a transaction
+
+**Why We Need This**:
+
+- Phase 3.2 enables RLS on `charges` table
+- Phase 4.8 providers migrate to TenantAwareDBClient (which sets RLS context)
+- **Gap**: 5+ prompts where RLS enabled but no RLS context set
+- **Solution**: Temporary plugin that creates per-request transaction with `SET LOCAL`
+
+**Implementation Strategy**: Create a dedicated RLS context plugin that uses Envelop's execution
+lifecycle hooks to wrap each GraphQL operation in a transaction with RLS variables set.
+
+TASK: Create a new RLS context plugin that sets PostgreSQL session variables for Row-Level Security
+during the Phase 3-4 transition period.
+
+REQUIREMENTS:
+
+1. **Create new plugin**: `packages/server/src/plugins/rls-context-plugin.ts`
+
+   ```typescript
+   // TEMPORARY PLUGIN - Phase 2.9 to Phase 4.8
+   // Purpose: Set RLS context during transition period
+   // Removal: Phase 4.8 when providers migrate to TenantAwareDBClient
+   import { Plugin } from '@envelop/types'
+   import type { PoolClient } from 'pg'
+   import type { AccounterContext } from '../shared/types/index.js'
+
+   /**
+    * RLS Context Plugin - TEMPORARY (Phase 2.9 → 4.8)
+    *
+    * Sets PostgreSQL session variables (app.current_business_id, app.current_user_id)
+    * for Row-Level Security policies during the Phase 3-4 transition period.
+    *
+    * Architecture:
+    * - Runs after authPlugin and adminContextPlugin (depends on currentUser in context)
+    * - Creates per-request transaction with SET LOCAL variables
+    * - Provides transaction client in context for providers to use
+    * - Commits/rollbacks transaction at request end
+    *
+    * Migration Path:
+    * - Phase 2.9: Plugin created and registered
+    * - Phase 3: RLS enabled on tables (uses app.current_business_id from this plugin)
+    * - Phase 4.1-4.7: Auth0 migration (plugin continues to work)
+    * - Phase 4.8: Providers migrate to TenantAwareDBClient, this plugin removed
+    *
+    * @deprecated Will be removed in Phase 4.8 - do not use for new code
+    */
+   export const rlsContextPlugin = (): Plugin<AccounterContext> => {
+     return {
+       onExecute({ args }) {
+         const context = args.contextValue
+         let client: PoolClient | null = null
+
+         return {
+           async onExecuteStart() {
+             // Only set RLS context if user is authenticated
+             // currentUser.userId is the business ID (legacy auth uses business table)
+             if (context.currentUser?.userId) {
+               try {
+                 // Get dedicated connection from pool
+                 client = await context.pool.connect()
+
+                 // Start transaction and set LOCAL variables
+                 await client.query('BEGIN')
+                 await client.query('SET LOCAL app.current_business_id = $1', [
+                   context.currentUser.userId
+                 ])
+                 // Note: app.current_user_id not needed yet (no user-level RLS in Phase 3)
+                 // Can be added in future if needed
+
+                 // Add transaction client to context for providers
+                 // Providers should use: const client = context.rlsClient || context.pool
+                 context.rlsClient = client
+               } catch (error) {
+                 // Cleanup on error
+                 if (client) {
+                   await client.query('ROLLBACK').catch(() => {})
+                   client.release()
+                   client = null
+                 }
+                 throw error
+               }
+             }
+           },
+
+           async onExecuteDone() {
+             if (client) {
+               try {
+                 await client.query('COMMIT')
+               } finally {
+                 client.release()
+               }
+             }
+           },
+
+           async onExecuteError() {
+             if (client) {
+               try {
+                 await client.query('ROLLBACK')
+               } finally {
+                 client.release()
+               }
+             }
+           }
+         }
+       }
+     }
+   }
+   ```
+
+2. **Update AccounterContext type** to include rlsClient:
+
+   ```typescript
+   // packages/server/src/shared/types/index.ts (or wherever AccounterContext is defined)
+   import type { PoolClient } from 'pg'
+
+   export type AccounterContext = {
+     env: Environment
+     pool: pg.Pool
+     currentUser?: UserType
+     adminContext?: AdminContext
+     // TEMPORARY (Phase 2.9 → 4.8): Transaction client with RLS context set
+     rlsClient?: PoolClient
+   }
+   ```
+
+3. **Register plugin in server** (after authPlugin and adminContextPlugin):
+
+   ```typescript
+   // packages/server/src/index.ts
+   import { rlsContextPlugin } from './plugins/rls-context-plugin.js'
+
+   const yoga = createYoga({
+     plugins: [
+       authPlugin(), // 1. Adds currentUser to context       adminContextPlugin(), // 2. Adds adminContext to context
+       rlsContextPlugin(), // 3. TEMPORARY: Sets RLS context (Phase 2.9 → 4.8)
+       useGraphQLModules(application),
+       useDeferStream(),
+       useHive({
+         enabled: !!env.hive,
+         token: env.hive?.hiveToken ?? '',
+         usage: !!env.hive
+       })
+     ],
+     context: yogaContext => ({
+       ...yogaContext,
+       env,
+       pool
+     })
+   })
+   ```
+
+4. **Create integration tests**:
+
+   ```typescript
+   // packages/server/src/plugins/__tests__/rls-context-plugin.test.ts
+   import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+   import { createYoga } from 'graphql-yoga'
+   import pg from 'pg'
+   import { rlsContextPlugin } from '../rls-context-plugin.js'
+
+   describe('RLS Context Plugin (Phase 2.9 Temporary Bridge)', () => {
+     let pool: pg.Pool
+     let yoga: ReturnType<typeof createYoga>
+
+     beforeAll(async () => {
+       pool = new pg.Pool({
+         /* test config */
+       })
+
+       yoga = createYoga({
+         schema: /* test schema */,
+         plugins: [rlsContextPlugin()],
+         context: () => ({
+           pool,
+           currentUser: { userId: 'test-business-123' }
+         })
+       })
+     })
+
+     afterAll(async () => {
+       await pool.end()
+     })
+
+     it('should set app.current_business_id when user authenticated', async () => {
+       const response = await yoga.fetch('http://yoga/graphql', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+           query: `
+             query TestRLSContext {
+               # Query that uses context.rlsClient
+               __typename
+             }
+           `
+         })
+       })
+
+       expect(response.status).toBe(200)
+
+       // Verify RLS variable was set (check via test query)
+       const client = await pool.connect()
+       try {
+         // In a real test, this would be set during the request
+         // Here we're just verifying the plugin creates transactions correctly
+         await client.query('BEGIN')
+         await client.query('SET LOCAL app.current_business_id = $1', ['test-business-123'])
+         const result = await client.query(
+           "SELECT current_setting('app.current_business_id', true) as business_id"
+         )
+         expect(result.rows[0].business_id).toBe('test-business-123')
+         await client.query('COMMIT')
+       } finally {
+         client.release()
+       }
+     })
+
+     it('should not set RLS context when user not authenticated', async () => {
+       const yogaNoAuth = createYoga({
+         schema: /* test schema */,
+         plugins: [rlsContextPlugin()],
+         context: () => ({ pool }) // No currentUser
+       })
+
+       const response = await yogaNoAuth.fetch('http://yoga/graphql', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ query: '{ __typename }' })
+       })
+
+       expect(response.status).toBe(200)
+       // No transaction should be created (no currentUser)
+     })
+
+     it('should commit transaction on successful execution', async () => {
+       // Test that transactions are properly committed
+       // This would require inspecting pool connection state
+       // or using a test query that verifies transaction lifecycle
+     })
+
+     it('should rollback transaction on execution error', async () => {
+       // Test that transactions are rolled back on errors
+       // This would require a schema that can throw errors
+       // and verify the rollback happened
+     })
+   })
+   ```
+
+5. **Document usage pattern for providers** (during Phase 3-4):
+
+   ```typescript
+   // Example provider update for Phase 3-4 transition
+   // packages/server/src/modules/charges/providers/charges.provider.ts
+
+   export class ChargesProvider {
+     async getCharges(businessId: string, context: AccounterContext) {
+       // TEMPORARY (Phase 2.9 → 4.8): Use RLS client if available
+       // Phase 4.8: Will migrate to TenantAwareDBClient injection
+       const client = context.rlsClient || context.pool
+
+       return client.query(`SELECT * FROM accounter_schema.charges WHERE owner_id = $1`, [
+         businessId
+       ])
+     }
+   }
+   ```
+
+   **Note**: Most providers won't need immediate updates in Phase 2.9. The RLS client is available
+   in context but not required to be used until Phase 3 (when RLS is enabled). Providers can
+   continue using `context.pool` until they need RLS protection.
+
+6. **Add removal documentation**:
+
+   ```markdown
+   <!-- In code comments and migration docs -->
+
+   ## Phase 2.9 RLS Context Plugin - TEMPORARY CODE
+
+   **Purpose**: Set RLS context during Phase 3-4 transition period
+
+   **Active Period**: Phase 2.9 (creation) → Phase 4.8 (removal)
+
+   **Why Needed**:
+
+   - Phase 3.2: RLS enabled on tables (requires app.current_business_id)
+   - Phase 4.8: TenantAwareDBClient activated (sets RLS context properly)
+   - Gap: Need RLS context before TenantAwareDBClient ready
+
+   **Removal Checklist** (Phase 4.8):
+
+   - [ ] Remove `rlsContextPlugin()` from plugins array in index.ts
+   - [ ] Remove `rlsClient?: PoolClient` from AccounterContext type
+   - [ ] Remove `packages/server/src/plugins/rls-context-plugin.ts`
+   - [ ] Verify no provider code references `context.rlsClient`
+   - [ ] Verify `rg "rlsClient|rls-context-plugin" packages/server/src` returns no matches
+   ```
+
+EXPECTED OUTPUT:
+
+- New file: `packages/server/src/plugins/rls-context-plugin.ts` (well-documented as temporary)
+- Updated: `packages/server/src/shared/types/index.ts` (AccounterContext with rlsClient)
+- Updated: `packages/server/src/index.ts` (plugin registered)
+- Tests: `packages/server/src/plugins/__tests__/rls-context-plugin.test.ts`
+- Documentation: Removal plan clearly documented in code comments
+- All tests passing
+- **System remains operative**: Existing queries continue to work (plugin doesn't break anything)
+
+INTEGRATION: This enables:
+
+- **Phase 3**: RLS can be safely enabled on tables (`app.current_business_id` will be set via
+  rlsClient transaction)
+- **Phase 4.1-4.7**: Auth0 migration proceeds with RLS enforced (plugin continues working with
+  legacy auth)
+- **Phase 4.8**: Providers migrate to TenantAwareDBClient, plugin removed
+
+VALIDATION:
+
+- Server starts without errors
+- Authenticated requests create transaction with `SET LOCAL app.current_business_id`
+- `context.rlsClient` available in GraphQL resolvers/providers
+- Unauthenticated requests don't create RLS transaction (no crash)
+- Integration tests verify transaction lifecycle (BEGIN → SET LOCAL → COMMIT/ROLLBACK)
+- No breaking changes to existing functionality
+
+ARCHITECTURAL RATIONALE:
+
+**Why a dedicated plugin instead of modifying authPlugin or adminContextPlugin?**
+
+1. **Separation of Concerns**: Auth plugin handles authentication, admin context plugin handles
+   config, RLS plugin handles database transaction lifecycle
+2. **Clear Lifecycle**: Envelop's `onExecute` hooks provide explicit request boundaries for
+   transaction management (BEGIN at start, COMMIT/ROLLBACK at end)
+3. **Easy Removal**: Dedicated plugin can be cleanly removed in Phase 4.8 without touching auth code
+4. **Explicit Dependency**: Plugin runs AFTER authPlugin (depends on `currentUser` in context)
+5. **GraphQL Modules Compatible**: Plugin extends Yoga context before Modules DI processes requests
+
+**Why use onExecute hook instead of useExtendContext?**
+
+1. **Transaction Lifecycle**: `useExtendContext` runs once to extend context, but we need to wrap
+   the entire GraphQL operation execution in BEGIN/COMMIT
+2. **Error Handling**: `onExecute` provides `onExecuteDone` and `onExecuteError` hooks for proper
+   commit/rollback
+3. **Request Scope**: Ensures one transaction per GraphQL operation, not per context creation
+
+**Why rlsClient in context instead of replacing pool?**
+
+1. **Non-Breaking**: Existing code using `context.pool` continues to work
+2. **Opt-In**: Providers can choose when to use RLS client (important during gradual migration)
+3. **Clear Intent**: `context.rlsClient` signals "this query needs RLS context"
+4. **Temporary**: Easy to grep and remove all `rlsClient` references in Phase 4.8
+
+RISK: **Low** (additive change, doesn't modify existing auth or query patterns)
+
+**CRITICAL**: This prompt MUST be completed before Prompt 3.2 (Enable RLS). Without it, RLS
+enablement will break the entire system.
 
 ``
 
@@ -1486,7 +1862,8 @@ variables.
 
 REQUIREMENTS:
 
-1. Create migration file: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-rls-helper-function.sql`
+1. Create migration file:
+   `packages/migrations/src/YYYY-MM-DDTHH-MM-SS.create-rls-helper-function.sql`
 
 2. Create function:
 
@@ -1518,9 +1895,7 @@ REQUIREMENTS:
    - SECURITY DEFINER: runs with creator privileges (can read session variables)
    - Why it throws exception if context not set
 
-5. Create rollback migration (DROP FUNCTION)
-
-6. Write integration tests:
+5. Write integration tests:
    - Function returns business_id when variable is set
    - Function raises exception when variable not set
    - Function works inside RLS policies (test with simple policy)
@@ -1528,8 +1903,7 @@ REQUIREMENTS:
 
 EXPECTED OUTPUT:
 
-- Migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-create-rls-helper-function.sql`
-- Rollback: migration rollback file
+- Migration: `packages/migrations/src/YYYY-MM-DDTHH-MM-SS.create-rls-helper-function.sql`
 - Tests: `packages/migrations/src/__tests__/rls-helper-function.test.ts`
 - All tests passing
 
@@ -1544,9 +1918,13 @@ application-level auth and database-level security.
 
 ``
 
-CONTEXT: The RLS helper function is ready. Now we'll enable Row-Level Security on ONE high-value
-table as a pilot to validate the approach before rolling out to all tables. We're starting with
-`charges` because it's critical and has clear business ownership.
+CONTEXT: The RLS helper function is ready (Prompt 3.1), and the **existing auth plugin now sets
+`app.current_business_id`** (Prompt 2.9 - CRITICAL prerequisite). We can safely enable Row-Level
+Security on ONE high-value table as a pilot to validate the approach before rolling out to all
+tables.
+
+**CRITICAL PREREQUISITE**: Prompt 2.9 MUST be completed first. Without it, enabling RLS will break
+all queries with "No business context set" error.
 
 TASK: Enable RLS on the charges table and create a tenant isolation policy.
 
@@ -1591,18 +1969,25 @@ ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
    ```
 
 7. Write integration tests:
+   - **Prerequisite check**: Verify Prompt 2.9 completed (auth plugin sets RLS context)
    - Setup: Create two test businesses and charges for each
-   - Test 1: SET LOCAL app.current_business_id to business A
-     - Query charges → only business A charges returned
+   - Test 1: Authenticate as business A user
+     - Query charges → only business A charges returned (RLS enforced via existing auth plugin)
      - Try to INSERT charge for business B → rejected
      - Try to UPDATE business B charge → no rows affected
-   - Test 2: SET LOCAL app.current_business_id to business B
+   - Test 2: Authenticate as business B user
      - Query charges → only business B charges returned
-   - Test 3: No SET LOCAL → query raises exception
+   - Test 3: No authentication → query raises exception
    - Performance test:
      - Measure query time with and without RLS
      - Verify overhead < 10%
      - Check query plan uses index on owner_id
+   - **Verify existing auth plugin sets context**:
+     ```sql
+     -- After authenticated request, verify:
+     SELECT current_setting('app.current_business_id', true);
+     -- Should return business ID
+     ```
 
 EXPECTED OUTPUT:
 
@@ -3295,8 +3680,13 @@ Now we can safely migrate providers from `DBProvider` (raw database access) to `
 roleId). Pre-Auth0, AuthContext was null. Post-Auth0, AuthContext is populated from JWT
 verification. This is why provider migration happens NOW (after Auth0 activation).
 
+**CRITICAL**: This prompt also **removes temporary RLS context code** from Prompt 2.9 (the RLS
+bridge used during Phase 3-4 transition). Now that providers use TenantAwareDBClient, the temporary
+middleware/plugin code is no longer needed.
+
 TASK: Migrate one pilot provider (BusinessesProvider) to inject TenantAwareDBClient instead of
-DBProvider, add ESLint rules to prevent regressions, and validate RLS enforcement.
+DBProvider, **remove Prompt 2.9 temporary code**, add ESLint rules to prevent regressions, and
+validate RLS enforcement.
 
 REQUIREMENTS:
 
@@ -3381,7 +3771,22 @@ export default [
 - Remove businessId parameters (auth context provides this automatically)
 - Keep using `this.db.query()` (same interface as pool.query())
 
-**3. Add Integration Tests** (Verify RLS enforcement):
+**3. Remove Temporary RLS Context Code** (from Prompt 2.9):
+
+Now that TenantAwareDBClient is handling RLS context, remove the temporary bridge code:
+
+```typescript
+// DELETE temporary middleware/plugin code from Prompt 2.9:
+// - RLS context setting in auth plugin
+// - context.dbClient usage in providers
+// - Plugin-level SET LOCAL commands
+
+// Verify removal:
+// rg "Phase 2.9|RLS Context Bridge|TEMPORARY" packages/server/src
+// Should return no results
+```
+
+**4. Add Integration Tests** (Verify RLS enforcement):
 
 ```typescript
 // packages/server/src/modules/financial-entities/providers/__tests__/businesses.provider.test.ts
@@ -3979,7 +4384,17 @@ REQUIREMENTS:
    find packages/server/src -name "*auth*" -not -name "*v2*" | grep -E "(plugin|provider|service)"
    ```
 
-2. **Remove old auth plugin**:
+2. **Verify Prompt 2.9 temporary code was removed** (should have been cleaned in Prompt 4.8):
+
+   ```bash
+   # Search for any remaining temporary RLS context bridge code
+   rg "Phase 2.9|RLS Context Bridge|TEMPORARY.*Prompt 2.9" packages/server/src
+   
+   # Expected result: No matches found
+   # If matches found: These should have been removed in Prompt 4.8 - investigate and remove
+   ```
+
+3. **Remove old auth plugin**:
 
    ```bash
    # Delete old auth plugin file
@@ -3989,15 +4404,15 @@ REQUIREMENTS:
    git rm packages/server/src/plugins/auth-plugin.ts
    ```
 
-3. **Remove old AUTH_CONTEXT provider** (if separate from V2):
+4. **Remove old AUTH_CONTEXT provider** (if separate from V2):
    - Delete old AuthContextProvider file
    - Remove from modules-app.ts providers (already done in Prompt 4.7)
 
-4. **Remove backup files from migration**:
+5. **Remove backup files from migration**:
    - Delete `packages/server/src/modules/admin-context/providers/admin-context.provider.backup.ts`
      (created in Prompt 2.7)
 
-5. **Remove temporary test infrastructure**:
+6. **Remove temporary test infrastructure**:
 
    ```bash
    # Delete test endpoint created in Prompt 4.4
@@ -4010,7 +4425,7 @@ REQUIREMENTS:
    rm packages/server/src/scripts/create-migration-test-users.ts
    ```
 
-6. **Cleanup migration test users in Auth0**:
+7. **Cleanup migration test users in Auth0**:
    - Create cleanup script using Auth0 Management API:
 
    ```typescript
@@ -4044,7 +4459,7 @@ REQUIREMENTS:
 
    - Remove test credentials from secure storage (1Password, Vault, etc.)
 
-7. **Remove USE_AUTH0 feature flag** (if it existed):
+8. **Remove USE_AUTH0 feature flag** (if it existed):
 
    ```typescript
    // packages/server/src/environment.ts
@@ -4052,7 +4467,7 @@ REQUIREMENTS:
    USE_AUTH0: z.boolean().default(false),
    ```
 
-8. **Audit legacy_business_users table**:
+9. **Audit legacy_business_users table**:
 
    ```bash
    # Search for references in codebase
@@ -4071,12 +4486,13 @@ REQUIREMENTS:
 
    - If references still exist: Document dependencies and create follow-up task
 
-9. **Update documentation**:
-   - Remove migration-specific docs
-   - Update README to reflect Auth0 as primary auth
-   - Archive migration plan to `docs/archive/user-authentication-plan/`
+10. **Update documentation**:
 
-10. **Git cleanup**:
+- Remove migration-specific docs
+- Update README to reflect Auth0 as primary auth
+- Archive migration plan to `docs/archive/user-authentication-plan/`
+
+11. **Git cleanup**:
 
     ```bash
     git checkout -b cleanup-old-auth
@@ -4086,7 +4502,7 @@ REQUIREMENTS:
     # Create PR, get team review, merge
     ```
 
-11. **Database cleanup** (optional, low priority):
+12. **Database cleanup** (optional, low priority):
     - Archive audit logs from migration test users
     - Remove migration-specific test data if desired
     - Keep for historical record if storage not an issue

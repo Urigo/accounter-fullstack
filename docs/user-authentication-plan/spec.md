@@ -244,6 +244,13 @@ Only the business-to-user mapping is stored locally.
       `app.auth_type`.
     - Any query attempted without this variable set (or with a mismatch) will return zero rows or be
       rejected.
+    - **RLS Context Bridge (Phase 3-4 Transition)**:
+      - RLS is enabled in Phase 3 (before Auth0 integration in Phase 4)
+      - Temporary solution: Existing auth plugin updated to set `app.current_business_id` via
+        `SET LOCAL` to support RLS during transition period
+      - Permanent solution: `TenantAwareDBClient` sets RLS context (activated in Phase 4.8)
+      - Cleanup: Temporary bridge code removed in Phase 4.8 when `TenantAwareDBClient` becomes
+        active
     - **CRITICAL**: All database access MUST go through a `TenantAwareDBClient` that wraps queries
       in transactions:
 
