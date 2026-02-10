@@ -1,8 +1,11 @@
 import type { YogaInitialContext } from 'graphql-yoga';
 import pg from 'pg';
+import type { PoolClient } from 'pg';
 import type { CorporateTaxRulingComplianceReport, Role } from '../../__generated__/types.js';
 import type { env } from '../../environment.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
+import type { AdminContext } from '../../plugins/admin-context-plugin.js';
+import type { UserType } from '../../plugins/auth-plugin.js';
 import type { Currency } from '../../shared/enums.js';
 
 export type Environment = typeof env;
@@ -60,6 +63,10 @@ export type AccounterContext = YogaInitialContext & {
   session?: {
     role?: Role;
   };
+  currentUser?: UserType;
+  adminContext?: AdminContext;
+  // TEMPORARY (Phase 2.9 → 4.8): Transaction client with RLS context set
+  rlsClient?: PoolClient;
 };
 
 type addZero<T> = T | 0;
