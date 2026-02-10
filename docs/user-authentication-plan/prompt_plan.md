@@ -1930,7 +1930,7 @@ TASK: Enable RLS on the charges table and create a tenant isolation policy.
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-enable-rls-charges-pilot.sql`
+1. Create migration: `packages/migrations/src/YYYY-MM-DDTHH-MM-SS-enable-rls-charges-pilot.sql`
 
 2. Enable RLS:
 
@@ -1961,14 +1961,7 @@ ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
 -- Comment: Even superuser must respect RLS (except in single-user mode)
 ```
 
-6. Create rollback:
-
-   ```sql
-   DROP POLICY tenant_isolation ON accounter_schema.charges;
-   ALTER TABLE accounter_schema.charges DISABLE ROW LEVEL SECURITY;
-   ```
-
-7. Write integration tests:
+6. Write integration tests:
    - **Prerequisite check**: Verify Prompt 2.9 completed (auth plugin sets RLS context)
    - Setup: Create two test businesses and charges for each
    - Test 1: Authenticate as business A user
@@ -1992,7 +1985,6 @@ ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
 EXPECTED OUTPUT:
 
 - Migration file
-- Rollback file
 - Tests: `packages/migrations/src/__tests__/rls-charges-pilot.test.ts`
 - All tests passing
 - Query plan analysis showing index usage
@@ -2024,7 +2016,7 @@ TASK: Add business_id column to all tenant tables as nullable (Phase 1 of 4).
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-add-business-id-nullable.sql`
+1. Create migration: `packages/migrations/src/YYYY-MM-DDTHH-MM-SS-add-business-id-nullable.sql`
 
 2. Add business_id to tables (from spec section 3.2.2):
    - Use pattern: `ALTER TABLE accounter_schema.{table_name} ADD COLUMN business_id UUID;`
