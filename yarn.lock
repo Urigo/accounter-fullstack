@@ -297,7 +297,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/pg": "npm:8.16.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.77"
+    ai: "npm:6.0.78"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.9.0"
@@ -9136,9 +9136,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.77":
-  version: 6.0.77
-  resolution: "ai@npm:6.0.77"
+"ai@npm:6.0.78":
+  version: 6.0.78
+  resolution: "ai@npm:6.0.78"
   dependencies:
     "@ai-sdk/gateway": "npm:3.0.39"
     "@ai-sdk/provider": "npm:3.0.8"
@@ -9146,7 +9146,7 @@ __metadata:
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/b8ce30e26559dd2354a8ea37db547a705aeaf4033fe41fa1ae4f1769e044dd13102e2cda4698e58740b54aae09c3690dde842d1f1fc3c6779e997dba6d62d604
+  checksum: 10c0/875c63ecb10e9f79644f9969b090a982cbe914d41f8af9888808bf2e354ad38071d1540d6c6c2cfcc79aa2766f8c5857ef70735f661a4e455cea329c712cc693
   languageName: node
   linkType: hard
 
