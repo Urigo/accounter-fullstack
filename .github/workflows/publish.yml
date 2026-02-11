@@ -1,5 +1,13 @@
 name: Publish Package
 
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
+
 on:
   workflow_call:
     inputs:
