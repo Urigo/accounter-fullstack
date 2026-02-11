@@ -64,7 +64,8 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "typescript": {
     "definition": "dist/typings/index.d.ts"

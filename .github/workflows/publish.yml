@@ -1,0 +1,69 @@
+name: Publish Package
+
+on:
+    workflow_call:
+        inputs:
+            type:
+                description: "Type of release (snapshot or stable)"
+                required: true
+                type: string
+            ref:
+                description: "Git ref to checkout"
+                required: false
+                type: string
+
+permissions:
+    contents: write
+    pull-requests: write
+    packages: write
+    id-token: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout
+              uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+              with:
+                  fetch-depth: 0
+                  ref: ${{ inputs.ref || github.sha }}
+
+            - name: setup environment
+              uses: ./.github/actions/setup
+
+            - name: Setup NPM Registry
+              run: npm config set registry https://registry.npmjs.org
+
+            - name: Build Packages
+              shell: bash
+              run: yarn build
+
+            - name: alpha release
+              if: ${{ inputs.type == 'snapshot' }}
+              id: changesets-snapshot
+              uses: the-guild-org/changesets-snapshot-action@12ae5b6781ea75c36ece2f2e3446cee6dc093e99 # v0.0.3
+              with:
+                  tag: alpha
+                  prepareScript: yarn run build
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Set release date
+              if: ${{ inputs.type == 'stable' }}
+              id: vars
+              shell: bash
+              run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+            - name: release / pull_request
+              if: ${{ inputs.type == 'stable' }}
+              id: changesets-stable
+              uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e # v1.5.2
+              with:
+                  publish: "yarn changeset publish"
+                  version: "yarn changeset version"
+                  commit: "chore(release): update monorepo packages versions"
+                  title: "Upcoming Release Changes"
+                  createGithubReleases: aggregate
+                  githubReleaseName: ${{ steps.vars.outputs.date }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
