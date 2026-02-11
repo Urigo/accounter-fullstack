@@ -268,12 +268,19 @@ export class TenantAwareDBClient {
 
   constructor(
     private dbProvider: DBProvider, // Singleton pool manager
-    @Inject(AUTH_CONTEXT) private authContext: AuthContext | null = null // Request-scoped, nullable with default
+    @Inject(AUTH_CONTEXT) private authContext: AuthContext | null = null, // Request-scoped, nullable with default
+    // TEMPORARY (Phase 3.2 → 4.8): Fallback to legacy auth during transition period
+    @Inject(CONTEXT) private context: AccounterContext
   ) {}
 
   // Note: AUTH_CONTEXT injection requires default null value because the token
   // is not registered until Phase 4 (Auth0 activation). Phase 2 creates the
   // infrastructure but doesn't activate it.
+  //
+  // TEMPORARY: During Phase 3-4, fallback to context.currentUser.userId when
+  // authContext is null. This enables providers to migrate directly to final
+  // pattern (inject TenantAwareDBClient) without intermediate workaround code.
+  // Cleanup: Remove @Inject(CONTEXT) and all fallback logic in Phase 4.8.
 
   async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
     // Reuse existing transaction if within a GraphQL operation
@@ -286,6 +293,11 @@ export class TenantAwareDBClient {
   }
 
   async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    // Auth verification with TEMPORARY fallback (Phase 3.2 → 4.8)
+    if (!this.authContext && !this.context.currentUser?.userId) {
+      throw new GraphQLError('Auth context not available for tenant-aware database access')
+    }
+
     // Support nested transactions (use savepoints)
     const isNested = this.transactionDepth > 0
 
@@ -314,16 +326,22 @@ export class TenantAwareDBClient {
       await client.query('BEGIN')
 
       // Set transaction-scoped RLS context
-      if (this.authContext.tenant?.businessId) {
-        await client.query('SET LOCAL app.current_business_id = $1', [
-          this.authContext.tenant.businessId
-        ])
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to legacy auth
+      const tenant = this.authContext?.tenant
+      const user = this.authContext?.user
+      const authType = this.authContext?.authType
+
+      // TEMPORARY: businessId fallback to context.currentUser.userId
+      const businessIdValue = tenant?.businessId ?? this.context.currentUser?.userId ?? null
+
+      if (businessIdValue) {
+        await client.query('SET LOCAL app.current_business_id = $1', [businessIdValue])
       }
-      if (this.authContext.user?.userId) {
-        await client.query('SET LOCAL app.current_user_id = $1', [this.authContext.user.userId])
+      if (user?.userId) {
+        await client.query('SET LOCAL app.current_user_id = $1', [user.userId])
       }
-      if (this.authContext.authType) {
-        await client.query('SET LOCAL app.auth_type = $1', [this.authContext.authType])
+      if (authType) {
+        await client.query('SET LOCAL app.auth_type = $1', [authType])
       }
 
       const result = await fn(client)

@@ -1,8 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { Inject, Injectable, Scope, type OnDestroy } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope, type OnDestroy } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { AUTH_CONTEXT } from '../../shared/tokens.js';
 import type { AuthContext } from '../../shared/types/auth.js';
+import type { AccounterContext } from '../../shared/types/index.js';
 import { DBProvider } from './db.provider.js';
 
 /**
@@ -49,6 +50,9 @@ export class TenantAwareDBClient implements OnDestroy {
   constructor(
     private dbProvider: DBProvider,
     @Inject(AUTH_CONTEXT) private authContext: AuthContext,
+    // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+    // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+    @Inject(CONTEXT) private context: AccounterContext,
   ) {}
 
   /**
@@ -62,7 +66,12 @@ export class TenantAwareDBClient implements OnDestroy {
   ): Promise<QueryResult<T> & { rowCount: number }> {
     this.ensureNotDisposed();
 
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError(
         'Auth context not available. TenantAwareDBClient requires active authentication.',
         { extensions: { code: 'UNAUTHENTICATED' } },
@@ -89,7 +98,12 @@ export class TenantAwareDBClient implements OnDestroy {
   public async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     this.ensureNotDisposed();
 
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError(
         'Auth context not available. TenantAwareDBClient requires active authentication.',
         { extensions: { code: 'UNAUTHENTICATED' } },
@@ -193,7 +207,12 @@ export class TenantAwareDBClient implements OnDestroy {
    * Set PostgreSQL session variables for Row-Level Security.
    */
   private async setRLSVariables(client: PoolClient): Promise<void> {
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError('Unauthenticated', {
         extensions: {
           code: 'UNAUTHENTICATED',
@@ -201,9 +220,13 @@ export class TenantAwareDBClient implements OnDestroy {
       });
     }
 
-    const { tenant, user, authType } = this.authContext;
+    const { tenant, user, authType } = this.authContext ?? {};
 
-    if (!tenant?.businessId) {
+    // TEMPORARY (Phase 3.2 → 4.8): Use currentUser.userId as businessId during legacy auth
+    // After Phase 4.7, authContext.tenant.businessId will be populated from Auth0 JWT
+    // Removal: Phase 4.8 - delete fallback, require authContext.tenant.businessId
+    const businessIdValue = tenant?.businessId ?? this.context?.currentUser?.userId ?? null;
+    if (!businessIdValue) {
       throw new Error('Missing businessId in AuthContext');
     }
 
@@ -216,7 +239,7 @@ export class TenantAwareDBClient implements OnDestroy {
         set_config('app.current_user_id', $2, true),
         set_config('app.auth_type', $3, true);
       `,
-      [tenant.businessId, userIdValue, authType],
+      [businessIdValue, userIdValue, authType],
     );
   }
 

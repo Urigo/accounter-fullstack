@@ -1,13 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { getRlsDbClient } from '../../../plugins/rls-context-plugin.js';
-import type {
-  AccounterContext,
-  Optional,
-  TimelessDateString,
-} from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   accountant_status,
   IBatchUpdateChargesParams,
@@ -267,13 +262,7 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
-  private tenantAwareDB: DBProvider;
-  constructor(
-    private dbProvider: DBProvider,
-    @Inject(CONTEXT) private context: AccounterContext,
-  ) {
-    this.tenantAwareDB = getRlsDbClient(this.context, this.dbProvider);
-  }
+  constructor(private tenantAwareDB: TenantAwareDBClient) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(

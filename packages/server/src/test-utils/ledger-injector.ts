@@ -1,6 +1,6 @@
 import type { Injector } from 'graphql-modules';
+import { TenantAwareDBClient } from 'modules/app-providers/tenant-db-client.js';
 import type { Pool } from 'pg';
-import { AccounterContext } from 'shared/types/index.js';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
@@ -23,6 +23,8 @@ import { TransactionsProvider } from '../modules/transactions/providers/transact
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
 import type { Currency } from '../shared/enums.js';
+import type { AuthContext } from '../shared/types/auth.js';
+import type { AccounterContext } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -68,6 +70,11 @@ export function createLedgerTestContext(options: {
   const { pool, adminContext, moduleId = 'test', env, currentUser, mockExchangeRates } = options;
 
   const dbProvider = new DBProvider(pool);
+  const tenantAwareDB = new TenantAwareDBClient(
+    dbProvider,
+    {} as AuthContext,
+    {} as AccounterContext,
+  );
 
   // placeholder for context; filled after injector is created
   const contextRef: { current?: ModuleContextLike } = {};
@@ -126,7 +133,7 @@ export function createLedgerTestContext(options: {
       case TaxCategoriesProvider:
         return new TaxCategoriesProvider(dbProvider);
       case ChargesProvider:
-        return new ChargesProvider(dbProvider, {} as AccounterContext);
+        return new ChargesProvider(tenantAwareDB);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
