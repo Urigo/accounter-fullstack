@@ -45,7 +45,7 @@ const insertDepreciationCategory = sql<IInsertDepreciationCategoryQuery>`
   RETURNING *`;
 
 const deleteDepreciationCategory = sql<IDeleteDepreciationCategoryQuery>`
-  DELETE FROM accounter_schema.depreciation
+  DELETE FROM accounter_schema.depreciation_categories
   WHERE id = $depreciationCategoryId
   RETURNING id;
 `;
