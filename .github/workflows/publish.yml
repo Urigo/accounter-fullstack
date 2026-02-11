@@ -7,6 +7,9 @@ env:
   POSTGRES_HOST: localhost
   POSTGRES_PORT: 5432
   POSTGRES_DB: accounter
+  CI: true
+  # Standardizing the build environment
+  NODE_ENV: production
 
 on:
   workflow_call:
@@ -28,7 +31,10 @@ permissions:
 
 jobs:
   publish:
+    name: Build and Publish to NPM
+    if: github.repository == 'Urigo/accounter-fullstack'
     runs-on: ubuntu-latest
+
     steps:
       - name: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -38,11 +44,17 @@ jobs:
 
       - name: setup environment
         uses: ./.github/actions/setup
+        with:
+          registryUrl: 'https://registry.npmjs.org'
 
-      - name: Setup NPM Registry
-        run: npm config set registry https://registry.npmjs.org
+      - name: Setup Yarn Auth
+        shell: bash
+        run: |
+          echo "YARN_NPM_AUTH_TOKEN=$NODE_AUTH_TOKEN" >> $GITHUB_ENV
 
-      - name: Snapshot Version
+      - name: Versioning - Calculate Alpha Snapshot
+        # This step uses the Changesets CLI to create a temporary version based on a timestamp
+        # It updates package.json files locally but does not commit them
         if: ${{ inputs.type == 'snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,12 +65,63 @@ jobs:
         shell: bash
         run: yarn build
 
-      - name: Snapshot Publish
+      - name: Snapshot Publish - Deploy to NPM
+        # Publishes the calculated snapshot to the registry under the 'alpha' tag
         if: ${{ inputs.type == 'snapshot' }}
         env:
+          # NODE_AUTH_TOKEN is the required env var for setup-node's registry authentication
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          yarn changeset publish --tag alpha --no-git-tag
+          # Capture output to file while still showing it in logs
+          set -o pipefail
+          yarn changeset publish --tag alpha --no-git-tag 2>&1 | tee publish-output.txt
+
+      - name: Post-Release Notification
+        # Providing a feedback loop directly on the Pull Request
+        if: ${{ inputs.type == 'snapshot' }}
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const output = fs.readFileSync('publish-output.txt', 'utf8');
+              const regex = /Publishing "(.*?)" at "(.*?)"/g;
+              let match;
+              let items = [];
+              
+              while ((match = regex.exec(output)) !== null) {
+                items.push({ package: match[1], version: match[2] });
+              }
+              
+              if (items.length > 0) {
+                 let message = '### 🦋 Snapshot Release\n\nThe following packages have been published to NPM:\n\n| Package | Version |\n|---|---|\n';
+                 items.forEach(item => {
+                   message += `| \`${item.package}\` | \`${item.version}\` |\n`;
+                 });
+                 message += '\n\nYou can install the snapshot version by running:\n```bash\nnpm install package-name@version\n```';
+
+                 // Attempt to find the PR number
+                 let prNumber = context.payload.pull_request ? context.payload.pull_request.number : undefined;
+                 if (!prNumber && context.payload.issue && context.payload.issue.number) {
+                    prNumber = context.payload.issue.number;
+                 }
+                 
+                 if (prNumber) {
+                   await github.rest.issues.createComment({
+                      issue_number: prNumber,
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      body: message
+                   });
+                 } else {
+                   console.log('No PR number found in context, skipping comment.');
+                   console.log(message);
+                 }
+              }
+            } catch (e) {
+              console.log('Error processing publish output for comment:', e);
+            }
 
       - name: Set release date
         if: ${{ inputs.type == 'stable' }}
