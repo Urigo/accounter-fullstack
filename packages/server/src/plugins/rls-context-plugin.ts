@@ -2,9 +2,24 @@
 // Purpose: Set RLS context during transition period
 // Removal: Phase 4.8 when providers migrate to TenantAwareDBClient
 import type { ExecutionResult } from 'graphql';
+import { DBProvider } from 'modules/app-providers/db.provider.js';
 import type { PoolClient } from 'pg';
 import type { Plugin } from '@envelop/types';
 import type { AccounterContext } from '../shared/types/index.js';
+
+export function getRlsDbClient(context: AccounterContext, dbProvider: DBProvider): DBProvider {
+  const rlsClient = context.rlsClient;
+  if (rlsClient) {
+    return {
+      query: <E extends import('pg').QueryResultRow>(queryText: string, values: unknown[]) => {
+        return rlsClient
+          .query<E>(queryText, values)
+          .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
+      },
+    } as DBProvider;
+  }
+  return dbProvider;
+}
 
 function isAsyncIterable<T>(value: unknown): value is AsyncIterable<T> {
   return (

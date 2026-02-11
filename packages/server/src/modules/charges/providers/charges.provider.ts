@@ -1,7 +1,12 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
+import { getRlsDbClient } from '../../../plugins/rls-context-plugin.js';
+import type {
+  AccounterContext,
+  Optional,
+  TimelessDateString,
+} from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   accountant_status,
@@ -262,14 +267,20 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  private tenantAwareDB: DBProvider;
+  constructor(
+    private dbProvider: DBProvider,
+    @Inject(CONTEXT) private context: AccounterContext,
+  ) {
+    this.tenantAwareDB = getRlsDbClient(this.context, this.dbProvider);
+  }
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(
       {
         chargeIds: ids,
       },
-      this.dbProvider,
+      this.tenantAwareDB,
     );
     return ids.map(id => charges.find(charge => charge.id === id));
   }
@@ -283,7 +294,7 @@ export class ChargesProvider {
       {
         transactionIds,
       },
-      this.dbProvider,
+      this.tenantAwareDB,
     );
     charges.map(c => this.getChargeByIdLoader.prime(c.id, c));
     return transactionIds.map(id => charges.find(charge => charge.transaction_id === id));
@@ -295,7 +306,7 @@ export class ChargesProvider {
   );
 
   public async getChargesByMissingRequiredInfo() {
-    return getChargesByMissingRequiredInfo.run(undefined, this.dbProvider).then(charges =>
+    return getChargesByMissingRequiredInfo.run(undefined, this.tenantAwareDB).then(charges =>
       charges.map(c => {
         this.getChargeByIdLoader.prime(c.id, c);
         return c;
@@ -307,7 +318,7 @@ export class ChargesProvider {
     if (params.chargeId) {
       this.invalidateCharge(params.chargeId);
     }
-    return updateCharge.run(params, this.dbProvider).then(([newCharge]) => {
+    return updateCharge.run(params, this.tenantAwareDB).then(([newCharge]) => {
       if (newCharge) {
         this.invalidateCharge(newCharge.id);
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
@@ -323,7 +334,7 @@ export class ChargesProvider {
           this.invalidateCharge(chargeId);
         }
       });
-      return batchUpdateCharges.run(params, this.dbProvider).then(charges => {
+      return batchUpdateCharges.run(params, this.tenantAwareDB).then(charges => {
         charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
         return charges;
       });
@@ -331,7 +342,7 @@ export class ChargesProvider {
   }
 
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
-    return updateAccountantApproval.run(params, this.dbProvider).then(([newCharge]) => {
+    return updateAccountantApproval.run(params, this.tenantAwareDB).then(([newCharge]) => {
       if (newCharge) {
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
       }
@@ -348,7 +359,7 @@ export class ChargesProvider {
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
-    return generateCharge.run(fullParams, this.dbProvider).then(([newCharge]) => {
+    return generateCharge.run(fullParams, this.tenantAwareDB).then(([newCharge]) => {
       if (newCharge) {
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
       }
@@ -391,14 +402,14 @@ export class ChargesProvider {
       withoutLedger: params.withoutLedger ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
     };
-    return getChargesByFilters.run(fullParams, this.dbProvider) as Promise<
+    return getChargesByFilters.run(fullParams, this.tenantAwareDB) as Promise<
       IGetChargesByFiltersResult[]
     >;
   }
 
   public async getSimilarCharges(params: IGetSimilarChargesParams) {
     try {
-      return getSimilarCharges.run(params, this.dbProvider) as Promise<
+      return getSimilarCharges.run(params, this.tenantAwareDB) as Promise<
         IGetChargesByFiltersResult[]
       >;
     } catch (error) {
@@ -409,7 +420,7 @@ export class ChargesProvider {
   }
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
-    return deleteChargesByIds.run(params, this.dbProvider);
+    return deleteChargesByIds.run(params, this.tenantAwareDB);
   }
 
   public async invalidateCharge(chargeId: string) {
