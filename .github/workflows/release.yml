@@ -17,48 +17,12 @@ permissions:
   contents: write
   pull-requests: write
   packages: write
+  id-token: write
 
 jobs:
   stable:
-    runs-on: ubuntu-24.04
-    outputs:
-      published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@3155a141048f8f89c06b4cdae32e7853e97536bc # 0.13.0
-        continue-on-error: true
-        with:
-          access_token: ${{ github.token }}
-
-      - name: checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: setup environment
-        uses: ./.github/actions/setup
-
-      - name: Build packages
-        shell: bash
-        run: yarn build
-
-      - name: Set release date
-        id: vars
-        shell: bash
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: release / pull_request
-        id: changesets
-        uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e # v1.5.2
-        with:
-          publish: 'yarn changeset publish'
-          version: 'yarn changeset version'
-          commit: 'chore(release): update monorepo packages versions'
-          title: 'Upcoming Release Changes'
-          createGithubReleases: aggregate
-          githubReleaseName: ${{ steps.vars.outputs.date }}
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    name: Stable Release
+    uses: ./.github/workflows/publish.yml
+    with:
+      type: stable
+    secrets: inherit

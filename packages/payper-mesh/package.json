@@ -70,7 +70,8 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "bob": {
     "build": {
