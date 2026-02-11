@@ -789,7 +789,45 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.3: Add business_id Columns (Phase 1 - Nullable)
+### Step 3.3: Update Providers for RLS-Protected Tables (Temporary Workaround)
+
+**Goal**: Bridge providers to RLS-enabled database during Phase 3-4 transition
+
+**Context**: Step 3.2 enabled RLS on charges table, but TenantAwareDBClient (proper RLS setter) not
+introduced until Step 4.8. Providers need temporary workaround to access RLS-protected tables.
+
+**Tasks**:
+
+- Use `getRlsDbClient` helper from Step 2.9 (already created in rls-context-plugin.ts)
+- Update all providers accessing charges table:
+  - Inject `@Inject(CONTEXT) private context: AccounterContext`
+  - Add: `private tenantAwareDB: DBProvider;`
+  - Initialize: `this.tenantAwareDB = getRlsDbClient(this.context, this.dbProvider);`
+  - Replace `this.dbProvider` with `this.tenantAwareDB` in all queries
+- Providers to update:
+  - `charges.provider.ts` (already updated by user)
+  - `tax-categories.provider.ts`
+  - `balance-report.provider.ts`
+  - `documents.provider.ts`
+  - `transactions.provider.ts`
+  - `bank-deposit-charges.provider.ts`
+- Add TEMPORARY comments pointing to Step 4.8 cleanup
+- Create tests: `rls-provider-workaround.test.ts`
+
+**Validation**:
+
+- All providers respect RLS policies
+- Queries return only current tenant's data
+- JOIN queries work correctly with RLS
+- Tests verify tenant isolation
+
+**Risk**: Low (fallback to regular pool if no RLS context)
+
+**Note**: TEMPORARY - All changes removed in Step 4.8
+
+---
+
+### Step 3.4: Add business_id Columns (Phase 1 - Nullable)
 
 **Goal**: Add business_id to all tenant tables as nullable columns
 
@@ -810,7 +848,7 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.4: Backfill business_id (Phase 2 - Background Job)
+### Step 3.5: Backfill business_id (Phase 2 - Background Job)
 
 **Goal**: Populate business_id columns using deterministic rules
 
@@ -837,7 +875,7 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.5: Make business_id NOT NULL (Phase 3)
+### Step 3.6: Make business_id NOT NULL (Phase 3)
 
 **Goal**: Enforce business_id constraint after backfill
 
@@ -864,7 +902,7 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.6: Add Indexes and Foreign Keys (Phase 4)
+### Step 3.7: Add Indexes and Foreign Keys (Phase 4)
 
 **Goal**: Optimize RLS queries and enforce referential integrity
 
@@ -898,7 +936,7 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.7: Roll Out RLS to All Tables
+### Step 3.8: Roll Out RLS to All Tables
 
 **Goal**: Enable RLS on all tenant tables with business_id
 
@@ -1525,12 +1563,36 @@ Auth0 is active)
   - Verify tenant isolation (provider with business A context cannot see business B data)
   - Verify transaction reuse (single connection per provider operation)
 
-**3. Validation Testing**:
+**3. Remove Temporary RLS Code** (from Steps 2.9 and 3.3):
+
+Now that TenantAwareDBClient handles RLS, remove ALL temporary bridge code:
+
+- Delete `rlsContextPlugin` function from `rls-context-plugin.ts`
+- Delete `getRlsDbClient` helper from `rls-context-plugin.ts`
+- Delete entire `rls-context-plugin.ts` file if no other exports
+- Unregister rlsContextPlugin from plugins array in server index
+- Revert ALL provider workarounds from Step 3.3:
+  - Remove CONTEXT injection
+  - Remove `private tenantAwareDB: DBProvider;` field
+  - Change constructor to inject `TenantAwareDBClient`
+  - Replace `this.tenantAwareDB` with `this.db` in all queries
+  - Affected providers: charges, tax-categories, balance-report, documents, transactions,
+    bank-deposit-charges
+- Remove `context.rlsClient` from AccounterContext type definition
+- Delete test file: `rls-provider-workaround.test.ts`
+- Verification:
+  ```bash
+  rg "getRlsDbClient|rlsContextPlugin|Phase 2.9|Phase 3.3" packages/server/src
+  # Should return NO matches
+  ```
+
+**4. Validation Testing**:
 
 - Run full test suite for businesses provider
 - Deploy to staging and verify functionality via GraphQL queries
 - Monitor RLS enforcement in database logs
 - Verify no cross-tenant data leaks
+- Verify all temporary code removed (no grep matches for "getRlsDbClient")
 
 **Validation**:
 
@@ -1539,10 +1601,13 @@ Auth0 is active)
 - All tests pass
 - RLS enforced on all queries
 - No performance degradation (< 10% overhead)
+- All temporary RLS bridge code removed (Steps 2.9 and 3.3 cleanup complete)
 
-**Risk**: Medium (first operational use of TenantAwareDBClient in production)
+**Risk**: Medium (first operational use of TenantAwareDBClient in production + removing temporary
+code)
 
-**Rollback Plan**: Revert provider constructor to inject `DBProvider` if issues occur
+**Rollback Plan**: Revert provider constructor to inject `DBProvider` if issues occur (can
+temporarily re-add getRlsDbClient helper if critical)
 
 ---
 
