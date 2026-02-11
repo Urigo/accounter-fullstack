@@ -42,25 +42,23 @@ jobs:
       - name: Setup NPM Registry
         run: npm config set registry https://registry.npmjs.org
 
+      - name: Snapshot Version
+        if: ${{ inputs.type == 'snapshot' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          yarn changeset version --snapshot alpha
+
       - name: Build Packages
         shell: bash
         run: yarn build
 
-      - name: alpha release
+      - name: Snapshot Publish
         if: ${{ inputs.type == 'snapshot' }}
-        id: changesets-snapshot
-        uses: the-guild-org/changesets-snapshot-action@12ae5b6781ea75c36ece2f2e3446cee6dc093e99 # v0.0.3
-        with:
-          tag: alpha
-          prepareScript: yarn run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: 'placeholder'
-        # run: |
-        #   npm config set registry https://registry.npmjs.org
-        #   yarn changeset version --snapshot alpha
-        #   yarn build
-        #   yarn changeset publish --tag alpha
+        run: |
+          yarn changeset publish --tag alpha --no-git-tag
 
       - name: Set release date
         if: ${{ inputs.type == 'stable' }}
@@ -81,4 +79,3 @@ jobs:
           githubReleaseName: ${{ steps.vars.outputs.date }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: 'placeholder'
