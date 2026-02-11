@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
+import { AccounterContext } from 'shared/types/index.js';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
@@ -125,7 +126,7 @@ export function createLedgerTestContext(options: {
       case TaxCategoriesProvider:
         return new TaxCategoriesProvider(dbProvider);
       case ChargesProvider:
-        return new ChargesProvider(dbProvider);
+        return new ChargesProvider(dbProvider, {} as AccounterContext);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
