@@ -2077,21 +2077,9 @@ REQUIREMENTS:
    - Run on low-traffic tables first to test
    - Monitor lock waits during deployment
 
-5. Create rollback:
-   - DROP COLUMN business_id for each table
-   - Note: Postgres makes this fast (no data rewrite)
-
-6. Write tests:
-   - Verify business_id column added to all tables
-   - Verify column is nullable
-   - Verify column is UUID type
-   - Verify existing data unaffected (row count same)
-
 EXPECTED OUTPUT:
 
 - Migration file with ~40 ALTER TABLE statements
-- Rollback file
-- Tests: `packages/migrations/src/__tests__/add-business-id-nullable.test.ts`
 - Deployment notes: Expected downtime < 10 seconds total
 
 INTEGRATION: This prepares for:
