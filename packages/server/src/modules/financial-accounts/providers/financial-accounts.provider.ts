@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteFinancialAccountParams,
   IDeleteFinancialAccountQuery,
@@ -83,14 +83,14 @@ const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
   global: true,
 })
 export class FinancialAccountsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchFinancialAccountsByOwnerIds(ownerIds: readonly string[]) {
     const accounts = await getFinancialAccountsByOwnerIds.run(
       {
         ownerIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return ownerIds.map(ownerId => accounts.filter(charge => charge.owner === ownerId));
   }
@@ -104,7 +104,7 @@ export class FinancialAccountsProvider {
       {
         accountNumbers,
       },
-      this.dbProvider,
+      this.db,
     );
     return accountNumbers.map(accountNumber =>
       accounts.find(charge => charge.account_number === accountNumber),
@@ -120,7 +120,7 @@ export class FinancialAccountsProvider {
       {
         accountIDs,
       },
-      this.dbProvider,
+      this.db,
     );
     return accountIDs.map(id => accounts.find(account => account.id === id));
   }
@@ -134,7 +134,7 @@ export class FinancialAccountsProvider {
     if (this.allFinancialAccountsCache) {
       return this.allFinancialAccountsCache;
     }
-    const result = getAllFinancialAccounts.run(undefined, this.dbProvider).then(accounts => {
+    const result = getAllFinancialAccounts.run(undefined, this.db).then(accounts => {
       accounts.map(account => {
         this.getFinancialAccountByAccountIDLoader.prime(account.id, account);
         this.getFinancialAccountByAccountNumberLoader.prime(account.account_number, account);
@@ -146,7 +146,7 @@ export class FinancialAccountsProvider {
   }
 
   public async updateFinancialAccount(params: IUpdateFinancialAccountParams) {
-    const updatedAccounts = await updateFinancialAccount.run(params, this.dbProvider);
+    const updatedAccounts = await updateFinancialAccount.run(params, this.db);
     const updatedAccount = updatedAccounts[0];
     if (updatedAccount) {
       this.invalidateById(updatedAccount.id);
@@ -158,12 +158,12 @@ export class FinancialAccountsProvider {
     if (params.financialAccountId) {
       this.invalidateById(params.financialAccountId);
     }
-    return deleteFinancialAccount.run(params, this.dbProvider);
+    return deleteFinancialAccount.run(params, this.db);
   }
 
   public async insertFinancialAccounts(params: IInsertFinancialAccountsParams) {
     this.allFinancialAccountsCache = null;
-    return insertFinancialAccounts.run(params, this.dbProvider);
+    return insertFinancialAccounts.run(params, this.db);
   }
 
   public invalidateById(financialAccountId: string) {

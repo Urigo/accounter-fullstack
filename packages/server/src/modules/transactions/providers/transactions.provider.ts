@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { Optional, TimelessDateString } from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetSimilarTransactionsParams,
   IGetSimilarTransactionsQuery,
@@ -121,14 +121,14 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
   global: true,
 })
 export class TransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchTransactionsByIds(ids: readonly string[]) {
     const transactions = await getTransactionsByIds.run(
       {
         transactionIds: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => {
       const transaction = transactions.find(transaction => transaction.id === id);
@@ -144,7 +144,7 @@ export class TransactionsProvider {
   );
 
   public async getTransactionsByMissingRequiredInfo() {
-    return getTransactionsByMissingRequiredInfo.run(undefined, this.dbProvider).then(res =>
+    return getTransactionsByMissingRequiredInfo.run(undefined, this.db).then(res =>
       res.map(t => {
         this.transactionByIdLoader.prime(t.id, t);
         return t;
@@ -157,7 +157,7 @@ export class TransactionsProvider {
       {
         chargeIds,
       },
-      this.dbProvider,
+      this.db,
     );
     transactions.map(t => {
       this.transactionByIdLoader.prime(t.id, t);
@@ -187,12 +187,12 @@ export class TransactionsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getTransactionsByFilters.run(fullParams, this.dbProvider);
+    return getTransactionsByFilters.run(fullParams, this.db);
   }
 
   public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
     try {
-      return getSimilarTransactions.run(params, this.dbProvider);
+      return getSimilarTransactions.run(params, this.db);
     } catch (error) {
       const message = 'Failed to fetch similar transactions';
       console.error(message, error);
@@ -207,7 +207,7 @@ export class TransactionsProvider {
     if (params.assertChargeID) {
       await this.invalidateTransactionByChargeID(params.assertChargeID);
     }
-    return replaceTransactionsChargeId.run(params, this.dbProvider);
+    return replaceTransactionsChargeId.run(params, this.db);
   }
 
   public async updateTransactions(params: IUpdateTransactionsParams) {
@@ -220,7 +220,7 @@ export class TransactionsProvider {
         }),
       );
     }
-    return updateTransactions.run(params, this.dbProvider);
+    return updateTransactions.run(params, this.db);
   }
 
   public async invalidateTransactionByChargeID(chargeId: string) {
@@ -230,7 +230,7 @@ export class TransactionsProvider {
         {
           chargeIds: [chargeId],
         },
-        this.dbProvider,
+        this.db,
       );
       transactions.map(t => this.transactionByIdLoader.clear(t.id));
     } catch (e) {
@@ -245,7 +245,7 @@ export class TransactionsProvider {
         {
           transactionIds: [id],
         },
-        this.dbProvider,
+        this.db,
       );
       if (transaction?.charge_id) {
         this.transactionsByChargeIDLoader.clear(transaction.charge_id);

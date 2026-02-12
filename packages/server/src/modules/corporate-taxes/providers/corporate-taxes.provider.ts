@@ -4,7 +4,7 @@ import { sql } from '@pgtyped/runtime';
 import { AUTH_CONTEXT } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteCorporateTaxParams,
   IDeleteCorporateTaxQuery,
@@ -59,7 +59,7 @@ const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`
 })
 export class CorporateTaxesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(AUTH_CONTEXT) private authContext: AuthContext,
   ) {}
 
@@ -77,7 +77,7 @@ export class CorporateTaxesProvider {
     }
     this.allCorporateTaxesCache.set(
       corporateId,
-      getCorporateTaxesByCorporateIds.run({ corporateIds: [corporateId] }, this.dbProvider),
+      getCorporateTaxesByCorporateIds.run({ corporateIds: [corporateId] }, this.db),
     );
     return this.allCorporateTaxesCache.get(corporateId)!;
   }
@@ -107,7 +107,7 @@ export class CorporateTaxesProvider {
   });
 
   private async batchCorporateTaxesByCorporateIds(corporateIds: readonly string[]) {
-    const taxes = await getCorporateTaxesByCorporateIds.run({ corporateIds }, this.dbProvider);
+    const taxes = await getCorporateTaxesByCorporateIds.run({ corporateIds }, this.db);
     return corporateIds.map(id => taxes.filter(expense => expense.corporate_id === id));
   }
 
@@ -117,16 +117,16 @@ export class CorporateTaxesProvider {
 
   public updateCorporateTax(params: IUpdateCorporateTaxParams) {
     this.allCorporateTaxesCache = new Map();
-    return updateCorporateTax.run(params, this.dbProvider);
+    return updateCorporateTax.run(params, this.db);
   }
 
   public insertCorporateTax(params: IInsertCorporateTaxParams) {
     this.allCorporateTaxesCache = new Map();
-    return insertCorporateTax.run(params, this.dbProvider);
+    return insertCorporateTax.run(params, this.db);
   }
 
   public deleteCorporateTax(params: IDeleteCorporateTaxParams) {
     this.allCorporateTaxesCache = new Map();
-    return deleteCorporateTax.run(params, this.dbProvider);
+    return deleteCorporateTax.run(params, this.db);
   }
 }

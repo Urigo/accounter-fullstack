@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetCreditCardTransactionsByChargeIdsQuery,
   IValidateCreditCardTransactionsAmountByChargeIdsQuery,
@@ -47,14 +47,14 @@ group by (origin_transaction.charge_id, origin_transaction.amount)`;
   global: true,
 })
 export class CreditCardTransactionsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchCreditCardTransactionsByChargeIds(ids: readonly string[]) {
     const transactions = await getCreditCardTransactionsByChargeIds.run(
       {
         chargeIds: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => transactions.filter(transaction => transaction.origin_charge_id === id));
   }
@@ -69,7 +69,7 @@ export class CreditCardTransactionsProvider {
       {
         chargeIds: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(
       id => validations.find(validation => validation.origin_charge_id === id)?.is_amount_match,

@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { format } from 'date-fns';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IGetReportByBusinessIdAndDatesQuery,
   IInsertReportParams,
@@ -32,7 +32,7 @@ const insertReport = sql<IInsertReportQuery>`
   global: true,
 })
 export class VatReportProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchReportsByBusinessIdAndMonthDatesLoader(
     businessAndDates: readonly [string, string][],
@@ -50,7 +50,7 @@ export class VatReportProvider {
         Array.from(businessIdsMap.entries()).map(async ([businessId, monthDates]) =>
           getReportByBusinessIdAndDates.run(
             { businessId, monthDates: Array.from(monthDates) },
-            this.dbProvider,
+            this.db,
           ),
         ),
       )
@@ -77,7 +77,7 @@ export class VatReportProvider {
         format(params.monthDate, 'yyyy-MM-dd'),
       );
     }
-    return updateReport.run(params, this.dbProvider);
+    return updateReport.run(params, this.db);
   }
 
   public async insertReport(params: IInsertReportParams) {
@@ -87,7 +87,7 @@ export class VatReportProvider {
         format(params.monthDate, 'yyyy-MM-dd'),
       );
     }
-    return insertReport.run(params, this.dbProvider);
+    return insertReport.run(params, this.db);
   }
 
   public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: string) {

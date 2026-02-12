@@ -262,14 +262,14 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
-  constructor(private tenantAwareDB: TenantAwareDBClient) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(
       {
         chargeIds: ids,
       },
-      this.tenantAwareDB,
+      this.db,
     );
     return ids.map(id => charges.find(charge => charge.id === id));
   }
@@ -283,7 +283,7 @@ export class ChargesProvider {
       {
         transactionIds,
       },
-      this.tenantAwareDB,
+      this.db,
     );
     charges.map(c => this.getChargeByIdLoader.prime(c.id, c));
     return transactionIds.map(id => charges.find(charge => charge.transaction_id === id));
@@ -295,7 +295,7 @@ export class ChargesProvider {
   );
 
   public async getChargesByMissingRequiredInfo() {
-    return getChargesByMissingRequiredInfo.run(undefined, this.tenantAwareDB).then(charges =>
+    return getChargesByMissingRequiredInfo.run(undefined, this.db).then(charges =>
       charges.map(c => {
         this.getChargeByIdLoader.prime(c.id, c);
         return c;
@@ -307,7 +307,7 @@ export class ChargesProvider {
     if (params.chargeId) {
       this.invalidateCharge(params.chargeId);
     }
-    return updateCharge.run(params, this.tenantAwareDB).then(([newCharge]) => {
+    return updateCharge.run(params, this.db).then(([newCharge]) => {
       if (newCharge) {
         this.invalidateCharge(newCharge.id);
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
@@ -323,7 +323,7 @@ export class ChargesProvider {
           this.invalidateCharge(chargeId);
         }
       });
-      return batchUpdateCharges.run(params, this.tenantAwareDB).then(charges => {
+      return batchUpdateCharges.run(params, this.db).then(charges => {
         charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
         return charges;
       });
@@ -331,7 +331,7 @@ export class ChargesProvider {
   }
 
   public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
-    return updateAccountantApproval.run(params, this.tenantAwareDB).then(([newCharge]) => {
+    return updateAccountantApproval.run(params, this.db).then(([newCharge]) => {
       if (newCharge) {
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
       }
@@ -348,7 +348,7 @@ export class ChargesProvider {
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
-    return generateCharge.run(fullParams, this.tenantAwareDB).then(([newCharge]) => {
+    return generateCharge.run(fullParams, this.db).then(([newCharge]) => {
       if (newCharge) {
         this.getChargeByIdLoader.prime(newCharge.id, newCharge);
       }
@@ -391,16 +391,12 @@ export class ChargesProvider {
       withoutLedger: params.withoutLedger ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
     };
-    return getChargesByFilters.run(fullParams, this.tenantAwareDB) as Promise<
-      IGetChargesByFiltersResult[]
-    >;
+    return getChargesByFilters.run(fullParams, this.db) as Promise<IGetChargesByFiltersResult[]>;
   }
 
   public async getSimilarCharges(params: IGetSimilarChargesParams) {
     try {
-      return getSimilarCharges.run(params, this.tenantAwareDB) as Promise<
-        IGetChargesByFiltersResult[]
-      >;
+      return getSimilarCharges.run(params, this.db) as Promise<IGetChargesByFiltersResult[]>;
     } catch (error) {
       const message = 'Failed to fetch similar charges';
       console.error(message, error);
@@ -409,7 +405,7 @@ export class ChargesProvider {
   }
 
   public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
-    return deleteChargesByIds.run(params, this.tenantAwareDB);
+    return deleteChargesByIds.run(params, this.db);
   }
 
   public async invalidateCharge(chargeId: string) {

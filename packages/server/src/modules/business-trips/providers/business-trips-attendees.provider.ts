@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   DateOrString,
   IAddBusinessTripAttendeesParams,
@@ -78,7 +78,7 @@ const removeBusinessTripAttendees = sql<IRemoveBusinessTripAttendeesQuery>`
 })
 export class BusinessTripAttendeesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private businessTripsProvider: BusinessTripsProvider,
   ) {}
 
@@ -123,7 +123,7 @@ export class BusinessTripAttendeesProvider {
       {
         businessTripIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return businessTripIds.map(id =>
       businessTrips.filter(record => record.business_trip_id === id),
@@ -135,35 +135,35 @@ export class BusinessTripAttendeesProvider {
   );
 
   public getBusinessTripsByAttendeeId(attendeeId: string) {
-    return getBusinessTripsByAttendeeId.run({ attendeeId }, this.dbProvider);
+    return getBusinessTripsByAttendeeId.run({ attendeeId }, this.db);
   }
 
   public getLastFlightByDateAndAttendeeId(params: {
     attendeeBusinessId: string;
     date: DateOrString;
   }) {
-    return getLastFlightByDateAndAttendeeId.run(params, this.dbProvider);
+    return getLastFlightByDateAndAttendeeId.run(params, this.db);
   }
 
   public addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
-    return addBusinessTripAttendees.run(params, this.dbProvider);
+    return addBusinessTripAttendees.run(params, this.db);
   }
 
   public updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
-    return updateBusinessTripAttendee.run(params, this.dbProvider);
+    return updateBusinessTripAttendee.run(params, this.db);
   }
 
   public removeBusinessTripAttendees(params: IRemoveBusinessTripAttendeesParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
-    return removeBusinessTripAttendees.run(params, this.dbProvider);
+    return removeBusinessTripAttendees.run(params, this.db);
   }
 
   public clearCache() {

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import { QueryResult, QueryResultRow } from 'pg';
-import { DBProvider } from 'modules/app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 
 type QueryResultWithRows<T extends QueryResultRow = QueryResultRow> = QueryResult<T> & {rowCount: number};
 
 describe('AdminContextProvider', () => {
   let provider: AdminContextProvider;
-  let dbProvider: Mocked<DBProvider>;
+  let dbProvider: Mocked<TenantAwareDBClient>;
   let context: GraphQLModules.GlobalContext;
 
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe('AdminContextProvider', () => {
       },
       healthCheck: vi.fn(),
       query: vi.fn(),
-    } as unknown as Mocked<DBProvider>;
+    } as unknown as Mocked<TenantAwareDBClient>;
     context = {
       currentUser: { userId: 'test-owner-id' },
     } as GraphQLModules.GlobalContext;

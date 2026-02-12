@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type { IGetRecoveryDataQuery, IGetRecoveryDataResult } from '../types.js';
 
 const getRecoveryData = sql<IGetRecoveryDataQuery>`
@@ -12,7 +12,7 @@ const getRecoveryData = sql<IGetRecoveryDataQuery>`
   global: true,
 })
 export class RecoveryProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private recoveryDataCache: Promise<IGetRecoveryDataResult[]> | null = null;
   public getRecoveryData() {
@@ -20,7 +20,7 @@ export class RecoveryProvider {
       return this.recoveryDataCache;
     }
 
-    this.recoveryDataCache = getRecoveryData.run(undefined, this.dbProvider);
+    this.recoveryDataCache = getRecoveryData.run(undefined, this.db);
     return this.recoveryDataCache;
   }
 

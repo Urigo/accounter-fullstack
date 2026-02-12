@@ -90,13 +90,13 @@ export function createLedgerTestContext(options: {
       case CryptoExchangeProvider:
         return new CryptoExchangeProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
           new CoinMarketCapProvider(),
         );
       case ExchangeProvider: {
         const crypto = new CryptoExchangeProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
           new CoinMarketCapProvider(),
         );
         const fiat = new FiatExchangeProvider(dbProvider);
@@ -114,36 +114,36 @@ export function createLedgerTestContext(options: {
       case LedgerProvider:
         return new LedgerProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
         );
       case UnbalancedBusinessesProvider:
-        return new UnbalancedBusinessesProvider(dbProvider);
+        return new UnbalancedBusinessesProvider(tenantAwareDB);
       case BalanceCancellationProvider:
-        return new BalanceCancellationProvider(dbProvider);
+        return new BalanceCancellationProvider(tenantAwareDB);
       case MiscExpensesProvider:
-        return new MiscExpensesProvider(dbProvider);
+        return new MiscExpensesProvider(tenantAwareDB);
       case DocumentsProvider:
-        return new DocumentsProvider(dbProvider);
+        return new DocumentsProvider(tenantAwareDB);
       case TransactionsProvider:
-        return new TransactionsProvider(dbProvider);
+        return new TransactionsProvider(tenantAwareDB);
       case BusinessesProvider:
-        return new BusinessesProvider(dbProvider);
+        return new BusinessesProvider(tenantAwareDB);
       case FinancialAccountsProvider:
-        return new FinancialAccountsProvider(dbProvider);
+        return new FinancialAccountsProvider(tenantAwareDB);
       case TaxCategoriesProvider:
-        return new TaxCategoriesProvider(dbProvider);
+        return new TaxCategoriesProvider(tenantAwareDB);
       case ChargesProvider:
         return new ChargesProvider(tenantAwareDB);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
-        const businessesProvider = new BusinessesProvider(dbProvider);
-        const taxCategoriesProvider = new TaxCategoriesProvider(dbProvider);
+        const businessesProvider = new BusinessesProvider(tenantAwareDB);
+        const taxCategoriesProvider = new TaxCategoriesProvider(tenantAwareDB);
         const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
           deleteBusinessById: async (_businessId: string) => {},
         };
         return new FinancialEntitiesProvider(
-          dbProvider,
+          tenantAwareDB,
           businessesProvider,
           businessesOperationStub as unknown as BusinessesOperationProvider,
           taxCategoriesProvider,
@@ -152,7 +152,7 @@ export function createLedgerTestContext(options: {
       case BusinessTripsProvider:
         return new BusinessTripsProvider(dbProvider);
       case ChargeSpreadProvider:
-        return new ChargeSpreadProvider(dbProvider);
+        return new ChargeSpreadProvider(tenantAwareDB);
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${

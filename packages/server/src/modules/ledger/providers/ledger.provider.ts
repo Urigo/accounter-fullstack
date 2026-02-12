@@ -4,7 +4,7 @@ import { sql } from '@pgtyped/runtime';
 import type { Currency } from '../../../shared/enums.js';
 import { LedgerLockError } from '../../../shared/errors.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
   IDeleteLedgerRecordsByChargeIdsQuery,
@@ -241,7 +241,7 @@ export class LedgerProvider {
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
   ) {
     this.adminBusinessId = this.context.adminContext.defaultAdminBusinessId;
     this.localCurrency = this.context.adminContext.defaultLocalCurrency;
@@ -253,7 +253,7 @@ export class LedgerProvider {
         ids,
         ownerId: this.adminBusinessId,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => ledgerRecords.find(record => record.id === id));
   }
@@ -268,7 +268,7 @@ export class LedgerProvider {
         chargeIds: ids,
         ownerId: this.adminBusinessId,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => ledgerRecords.filter(record => record.charge_id === id));
   }
@@ -283,7 +283,7 @@ export class LedgerProvider {
         financialEntityIds: ids,
         ownerId: this.adminBusinessId,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id =>
       ledgerRecords.filter(record =>
@@ -303,12 +303,12 @@ export class LedgerProvider {
   public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
     return getLedgerRecordsByDates.run(
       { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
-      this.dbProvider,
+      this.db,
     );
   }
 
   public getLedgerBalanceToDate(date: TimelessDateString) {
-    return getLedgerBalanceToDate.run({ date }, this.dbProvider);
+    return getLedgerBalanceToDate.run({ date }, this.db);
   }
 
   public async updateLedgerRecord(params: IUpdateLedgerRecordParams) {
@@ -323,7 +323,7 @@ export class LedgerProvider {
     this.clearCache();
     return updateLedgerRecord.run(
       { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
-      this.dbProvider,
+      this.db,
     );
   }
 
@@ -332,7 +332,7 @@ export class LedgerProvider {
 
     this.clearCache();
     params.ledgerRecords.map(record => validateLedgerRecordParams(record, this.localCurrency));
-    return insertLedgerRecords.run(params, this.dbProvider);
+    return insertLedgerRecords.run(params, this.db);
   }
 
   private async deleteLedgerRecordsByIds(ids: readonly string[]) {
@@ -353,7 +353,7 @@ export class LedgerProvider {
         ledgerRecordIds: ids,
         ownerId: this.adminBusinessId,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(_id => void 0);
   }
@@ -381,7 +381,7 @@ export class LedgerProvider {
         chargeIds,
         ownerId: this.adminBusinessId,
       },
-      this.dbProvider,
+      this.db,
     );
     return chargeIds.map(_id => void 0);
   }
@@ -393,12 +393,12 @@ export class LedgerProvider {
 
   public replaceLedgerRecordsChargeId(params: IReplaceLedgerRecordsChargeIdParams) {
     this.clearCache();
-    return replaceLedgerRecordsChargeId.run(params, this.dbProvider);
+    return replaceLedgerRecordsChargeId.run(params, this.db);
   }
 
   public lockLedgerRecords(date: TimelessDateString) {
     this.clearCache();
-    return lockLedgerRecords.run({ date }, this.dbProvider);
+    return lockLedgerRecords.run({ date }, this.db);
   }
 
   public clearCache() {

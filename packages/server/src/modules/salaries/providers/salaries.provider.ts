@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllSalaryRecordsQuery,
   IGetAllSalaryRecordsResult,
@@ -265,16 +265,16 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
   global: true,
 })
 export class SalariesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchSalaryRecordsByMonths(months: readonly string[]) {
     if (months.length === 1) {
-      return [await getSalaryRecordsByMonth.run({ month: months[0] }, this.dbProvider)];
+      return [await getSalaryRecordsByMonth.run({ month: months[0] }, this.db)];
     }
     const sortedMonths = [...months].sort();
     const salaries = await getSalaryRecordsByDates.run(
       { fromDate: sortedMonths[0], toDate: sortedMonths[sortedMonths.length - 1] },
-      this.dbProvider,
+      this.db,
     );
     return months.map(month => salaries.filter(record => record.month === month));
   }
@@ -284,11 +284,11 @@ export class SalariesProvider {
   );
 
   public getSalaryRecordsByDates(params: IGetSalaryRecordsByDatesParams) {
-    return getSalaryRecordsByDates.run(params, this.dbProvider);
+    return getSalaryRecordsByDates.run(params, this.db);
   }
 
   private async batchGetSalaryRecordsByChargeIds(chargeIds: stringArray) {
-    const salaries = await getSalaryRecordsByChargeIds.run({ chargeIds }, this.dbProvider);
+    const salaries = await getSalaryRecordsByChargeIds.run({ chargeIds }, this.db);
     return chargeIds.map(id => salaries.filter(record => record.charge_id === id));
   }
 
@@ -301,18 +301,18 @@ export class SalariesProvider {
     if (this.allSalariesCache) {
       return this.allSalariesCache;
     }
-    this.allSalariesCache = getAllSalaryRecords.run(undefined, this.dbProvider);
+    this.allSalariesCache = getAllSalaryRecords.run(undefined, this.db);
     return this.allSalariesCache;
   }
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
     this.clearCache();
-    return insertSalaryRecords.run(params, this.dbProvider);
+    return insertSalaryRecords.run(params, this.db);
   }
 
   public updateSalaryRecord(params: IUpdateSalaryRecordParams) {
     this.clearCache();
-    return updateSalaryRecord.run(params, this.dbProvider);
+    return updateSalaryRecord.run(params, this.db);
   }
 
   public clearCache() {

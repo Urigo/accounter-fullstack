@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteIssuedDocumentParams,
   IDeleteIssuedDocumentQuery,
@@ -141,14 +141,14 @@ const insertIssuedDocuments = sql<IInsertIssuedDocumentsQuery>`
   global: true,
 })
 export class IssuedDocumentsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private allIssuedDocumentsCache: Promise<IGetAllIssuedDocumentsResult[]> | null = null;
   public async getAllIssuedDocuments(params: IGetAllIssuedDocumentsParams) {
     if (this.allIssuedDocumentsCache) {
       return this.allIssuedDocumentsCache;
     }
-    this.allIssuedDocumentsCache = getAllIssuedDocuments.run(params, this.dbProvider).then(docs => {
+    this.allIssuedDocumentsCache = getAllIssuedDocuments.run(params, this.db).then(docs => {
       docs.map(doc => {
         this.getIssuedDocumentsByIdLoader.prime(doc.id, doc);
       });
@@ -160,7 +160,7 @@ export class IssuedDocumentsProvider {
   private async batchIssuedDocumentsByIds(ids: readonly string[]) {
     const uniqueIDs = [...new Set(ids)];
     try {
-      const docs = await getIssuedDocumentsByIds.run({ Ids: uniqueIDs }, this.dbProvider);
+      const docs = await getIssuedDocumentsByIds.run({ Ids: uniqueIDs }, this.db);
 
       return ids.map(id => docs.find(doc => doc.id === id));
     } catch (e) {
@@ -178,7 +178,7 @@ export class IssuedDocumentsProvider {
     try {
       const docs = await getIssuedDocumentsByExternalIds.run(
         { externalIds: uniqueExternalIDs },
-        this.dbProvider,
+        this.db,
       );
 
       return externalIds.map(id => docs.find(doc => doc.external_id === id));
@@ -195,10 +195,7 @@ export class IssuedDocumentsProvider {
   private async batchIssuedDocumentsByClientIds(clientIds: readonly string[]) {
     const uniqueClientIDs = [...new Set(clientIds)];
     try {
-      const docs = await getIssuedDocumentsByClientIds.run(
-        { clientIds: uniqueClientIDs },
-        this.dbProvider,
-      );
+      const docs = await getIssuedDocumentsByClientIds.run({ clientIds: uniqueClientIDs }, this.db);
 
       return clientIds.map(id =>
         docs.filter(doc => {
@@ -225,7 +222,7 @@ export class IssuedDocumentsProvider {
     try {
       const statuses = await getIssuedDocumentsStatusByChargeIds.run(
         { chargeIds: uniqueClientIDs },
-        this.dbProvider,
+        this.db,
       );
 
       return chargeIds.map(id =>
@@ -248,7 +245,7 @@ export class IssuedDocumentsProvider {
   );
 
   public async getIssuedDocumentsByType(params: IGetIssuedDocumentsByTypeParams) {
-    return getIssuedDocumentsByType.run(params, this.dbProvider).then(docs => {
+    return getIssuedDocumentsByType.run(params, this.db).then(docs => {
       docs.map(doc => {
         this.getIssuedDocumentsByIdLoader.prime(doc.id, doc);
       });
@@ -260,11 +257,11 @@ export class IssuedDocumentsProvider {
     if (params.documentId) {
       this.invalidateById(params.documentId);
     }
-    return updateIssuedDocument.run(params, this.dbProvider);
+    return updateIssuedDocument.run(params, this.db);
   }
 
   public async updateIssuedDocumentByExternalId(params: IUpdateIssuedDocumentByExternalIdParams) {
-    return updateIssuedDocumentByExternalId.run(params, this.dbProvider).then(res => {
+    return updateIssuedDocumentByExternalId.run(params, this.db).then(res => {
       if (res[0]?.id) {
         this.invalidateById(res[0].id);
       }
@@ -276,12 +273,12 @@ export class IssuedDocumentsProvider {
     if (params.documentId) {
       this.invalidateById(params.documentId);
     }
-    return deleteIssuedDocument.run(params, this.dbProvider);
+    return deleteIssuedDocument.run(params, this.db);
   }
 
   public async insertIssuedDocuments(params: IInsertIssuedDocumentsParams) {
     this.allIssuedDocumentsCache = null;
-    return insertIssuedDocuments.run(params, this.dbProvider);
+    return insertIssuedDocuments.run(params, this.db);
   }
 
   public async invalidateById(id: string) {

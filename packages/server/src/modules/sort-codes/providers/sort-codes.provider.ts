@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllSortCodesQuery,
   IGetAllSortCodesResult,
@@ -46,14 +46,14 @@ const updateSortCode = sql<IUpdateSortCodeQuery>`
   global: true,
 })
 export class SortCodesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private allSortCodesCache: Promise<IGetAllSortCodesResult[]> | null = null;
   public getAllSortCodes() {
     if (this.allSortCodesCache) {
       return this.allSortCodesCache;
     }
-    this.allSortCodesCache = getAllSortCodes.run(undefined, this.dbProvider).then(data => {
+    this.allSortCodesCache = getAllSortCodes.run(undefined, this.db).then(data => {
       data.map(sortCode => {
         this.getSortCodesByIdLoader.prime(sortCode.key, sortCode);
       });
@@ -68,7 +68,7 @@ export class SortCodesProvider {
         isSortCodesIds: sortCodesIds.length > 0 ? 1 : 0,
         sortCodesIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return sortCodesIds.map(id => ledgerRecords.find(record => record.key === id));
   }
@@ -79,12 +79,12 @@ export class SortCodesProvider {
 
   public addSortCode(params: IInsertSortCodeParams) {
     this.clearCache();
-    return insertSortCode.run(params, this.dbProvider);
+    return insertSortCode.run(params, this.db);
   }
 
   public async updateSortCode(params: IUpdateSortCodeParams) {
     this.clearCache();
-    return updateSortCode.run(params, this.dbProvider);
+    return updateSortCode.run(params, this.db);
   }
 
   public clearCache() {
