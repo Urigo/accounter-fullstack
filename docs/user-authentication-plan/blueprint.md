@@ -815,73 +815,94 @@ See Step 4.9 for details.
 
 ---
 
-### Step 3.3: Add business_id Columns (Phase 1 - Nullable)
+### Step 3.3: Add owner_id Columns (Phase 1 - Nullable)
 
-**Goal**: Add business_id to all tenant tables as nullable columns
+**Goal**: Add owner_id to tenant tables that don't already have it (nullable initially)
+
+**Context**: Many tables (charges, financial_entities, ledger_records, dividends,
+business_tax_category_match) already have owner_id. Tables with existing business_id columns use
+them for different purposes (counterparty references, etc.), so we add a separate owner_id column
+for RLS.
 
 **Tasks**:
 
-- Create migration: `2026-01-28-add-business-id-nullable.sql`
-- Add `business_id UUID` to all tables listed in spec section 3.2.2
-- Use `ALTER TABLE ... ADD COLUMN business_id UUID;` (acquires brief lock)
-- Add tests: Verify columns added successfully
+- Create migration: `2026-02-13T10-00-00.add-owner-id-nullable.ts`
+- Add `owner_id UUID` ONLY to tables that don't already have it (see spec section 3.2.2)
+- Skip tables that already have owner_id: charges, financial_entities, ledger_records, dividends,
+  business_tax_category_match, dynamic_report_templates, user_context
+- Use pattern: `ALTER TABLE accounter_schema.{table_name} ADD COLUMN IF NOT EXISTS owner_id UUID;`
+- Add tests: Verify columns added successfully, verify existing owner_id columns unchanged
 
 **Validation**:
 
-- All target tables have business_id column
-- Columns are nullable
+- All tenant tables have owner_id column (either pre-existing or newly added)
+- Existing owner_id columns unchanged
+- All new columns are nullable
 - Minimal downtime (< 1 second per table)
 
 **Risk**: Low (nullable columns don't break existing queries)
 
 ---
 
-### Step 3.4: Backfill business_id (Phase 2 - Background Job)
+### Step 3.4: Backfill owner_id Values
 
-**Goal**: Populate business_id columns using deterministic rules
+**Goal**: Populate owner_id columns using deterministic backfill rules (background job, no downtime)
 
 **Tasks**:
 
-- Create background job script: `scripts/backfill-business-id.ts`
-- Implement batch backfill (10,000 rows at a time):
-  - `charges.business_id = charges.owner_id`
-  - `documents.business_id = charges.business_id` (via FK)
-  - `transactions.business_id = charges.business_id` (via FK)
-  - etc. (see spec section 6 for full rules)
+- Create background job script: `scripts/backfill-owner-id.ts`
+- Implement batch backfill (10,000 rows at a time) with table-specific logic:
+  - Tables with existing owner_id: Skip (already populated)
+  - `documents.owner_id = charges.owner_id` (via charge_id FK)
+  - `transactions.owner_id = charges.owner_id` (via charge_id FK)
+  - `salaries.owner_id = businesses.id WHERE businesses.id = salaries.employer` (via employer FK)
+  - `business_trips.owner_id = ` (derive from attendees or transactions)
+  - `financial_accounts`: Rename `owner` to `owner_id` OR `owner_id = owner` (column already exists
+    with different name)
+  - etc. (see spec section 3.2.2 for complete backfill logic per table)
 - Add 1-second sleep between batches to avoid blocking
-- Add progress logging
-- Add validation query: `SELECT COUNT(*) WHERE business_id IS NULL`
-- Add tests: Verify backfill logic per table
+- Add progress logging per table
+- Add validation:
+  `SELECT table_name, COUNT(*) FROM information_schema.columns c JOIN tables t WHERE c.column_name = 'owner_id' AND t.owner_id IS NULL GROUP BY table_name`
+- Add tests: Verify backfill logic per table, verify foreign key traversal
 
 **Validation**:
 
-- 100% backfill completion
-- No NULL business_id values remain
+- 100% backfill completion across all tables
+- No NULL owner_id values remain (except tables where NULL is valid, like
+  financial_entities.owner_id for system entities)
 - No downtime during backfill
+- Existing owner_id values unchanged
 
-**Risk**: Medium (long-running, must be monitored)
+**Risk**: Medium (long-running job, complex FK traversal, must be monitored)
 
 ---
 
-### Step 3.5: Make business_id NOT NULL (Phase 3)
+### Step 3.5: Make owner_id NOT NULL (Phase 3)
 
-**Goal**: Enforce business_id constraint after backfill
+**Goal**: Enforce owner_id NOT NULL constraint after successful backfill
 
 **Tasks**:
 
-- Verify backfill completion (manual check)
-- Create migration: `2026-01-29-business-id-not-null.sql`
-- Add NOT NULL constraints:
+- Verify backfill completion:
+  `SELECT table_name, COUNT(*) as null_count FROM <tables> WHERE owner_id IS NULL` (must return 0
+  for all business tables)
+- Create migration: `2026-02-14T10-00-00.owner-id-not-null.ts`
+- Add NOT NULL constraints to tables where all rows should have owners:
   ```sql
   ALTER TABLE accounter_schema.charges ALTER COLUMN business_id SET NOT NULL;
   ```
-- Run on all tables (acquires brief ACCESS EXCLUSIVE lock per table)
-- Add tests: Verify constraint enforcement
+- Skip tables where owner_id should remain NULLABLE (e.g., financial_entities.owner_id for
+  system-level entities)
+- Run on appropriate tables (acquires brief ACCESS EXCLUSIVE lock per table)
+- Add tests: Verify constraints added, verify no NULL values exist
 
 **Validation**:
 
-- All business_id columns are NOT NULL
-- Inserts without business_id rejected
+- NOT NULL constraints successfully added to all appropriate tables (documents, transactions,
+  salaries, etc.)
+- Inserts without owner_id rejected on tables with NOT NULL constraint
+- Tables with nullable owner_id (by design) remain nullable (e.g., financial_entities)
 - Total downtime < 10 seconds per table
 
 **Risk**: Medium (requires ACCESS EXCLUSIVE lock, brief downtime)
@@ -892,79 +913,97 @@ See Step 4.9 for details.
 
 ### Step 3.6: Add Indexes and Foreign Keys (Phase 4)
 
-**Goal**: Optimize RLS queries and enforce referential integrity
+**Goal**: Optimize RLS queries and enforce referential integrity on owner_id
 
 **Tasks**:
 
-- Create migration: `2026-01-30-add-business-id-indexes.sql`
-- Create indexes CONCURRENTLY (non-blocking):
+- Create migration: `2026-02-15T10-00-00.add-owner-id-indexes.ts`
+- Create indexes CONCURRENTLY (non-blocking) for RLS performance:
   ```sql
-  CREATE INDEX CONCURRENTLY idx_charges_business_id ON charges(business_id);
-  CREATE INDEX CONCURRENTLY idx_documents_business_id ON documents(business_id);
+  -- Skip tables that already have owner_id indexes
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_documents_owner_id ON accounter_schema.documents(owner_id);
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_transactions_owner_id ON accounter_schema.transactions(owner_id);
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_salaries_owner_id ON accounter_schema.salaries(owner_id);
+  -- ... etc (see spec for full list)
   ```
-- Add foreign keys with NOT VALID (non-blocking):
+- Add foreign keys with NOT VALID (non-blocking) to enforce referential integrity:
   ```sql
-  ALTER TABLE charges ADD CONSTRAINT fk_charges_business
-    FOREIGN KEY (business_id) REFERENCES businesses_admin(id) NOT VALID;
+  ALTER TABLE accounter_schema.documents ADD CONSTRAINT fk_documents_owner_id
+    FOREIGN KEY (owner_id) REFERENCES accounter_schema.businesses(id) NOT VALID;
+  ALTER TABLE accounter_schema.transactions ADD CONSTRAINT fk_transactions_owner_id
+    FOREIGN KEY (owner_id) REFERENCES accounter_schema.businesses(id) NOT VALID;
   ```
-- Validate foreign keys in separate step:
+- Validate foreign keys in separate transaction (can take time):
   ```sql
-  ALTER TABLE charges VALIDATE CONSTRAINT fk_charges_business;
+  ALTER TABLE accounter_schema.documents VALIDATE CONSTRAINT fk_documents_owner_id;
+  ALTER TABLE accounter_schema.transactions VALIDATE CONSTRAINT fk_transactions_owner_id;
   ```
-- Add tests: Verify indexes used in query plans
+- Add tests: Verify indexes used in RLS query plans, verify FK constraints enforced
 
 **Validation**:
 
-- All indexes created successfully
-- FK constraints enforced
-- No production downtime
-- Query performance improved (< 50ms for tenant queries)
+- All owner_id indexes created successfully
+- FK constraints enforced (invalid owner_id values rejected)
+- No production downtime during concurrent index creation
+- Query performance improved (RLS checks use indexes)
 
-**Risk**: Low (concurrent operations don't block)
+**Risk**: Low (concurrent operations don't block, FK validation may take time but doesn't block
+writes)
 
 ---
 
 ### Step 3.7: Roll Out RLS to All Tables
 
-**Goal**: Enable RLS on all tenant tables with business_id
+**Goal**: Enable RLS on all tenant tables using owner_id column
+
+**Context**: charges table already has RLS enabled (Step 3.2). Now roll out to all remaining tenant
+tables.
 
 **Tasks**:
 
-- Create migration: `2026-01-31-enable-rls-all-tables.sql`
-- Enable RLS on all tables (incremental):
-  - Batch 1: Core tables (charges, documents, transactions)
-  - Batch 2: Secondary tables (ledger_records, salaries)
-  - Batch 3: Remaining tables
-- Create policies for each table:
+- Create migration: `2026-02-16T10-00-00.enable-rls-all-tables.ts`
+- Enable RLS on all tenant tables in batches (incremental rollout):
+  - **Batch 1** (already done): charges (completed in Step 3.2)
+  - **Batch 2**: Core tables (documents, transactions, ledger_records)
+  - **Batch 3**: Financial tables (financial_entities, financial_accounts, tax_categories)
+  - **Batch 4**: Business trip tables (business_trips, business_trips_transactions, etc.)
+  - **Batch 5**: Supporting tables (salaries, employees, tags, etc.)
+- Create RLS policies using owner_id:
+
   ```sql
-  CREATE POLICY tenant_isolation ON <table_name>
-    USING (business_id = accounter_schema.get_current_business_id());
+  -- Pattern for tables with direct owner_id column:
+  ALTER TABLE accounter_schema.documents ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY tenant_isolation ON accounter_schema.documents
+    USING (owner_id = accounter_schema.get_current_business_id());
+
+  ALTER TABLE accounter_schema.transactions ENABLE ROW LEVEL SECURITY;
+  CREATE POLICY tenant_isolation ON accounter_schema.transactions
+    USING (owner_id = accounter_schema.get_current_business_id());
   ```
-- For tables with FK-derived business_id (e.g., documents):
-  ```sql
-  CREATE POLICY tenant_isolation ON documents
-    USING (
-      EXISTS (
-        SELECT 1 FROM charges
-        WHERE charges.id = documents.charge_id
-        AND charges.business_id = accounter_schema.get_current_business_id()
-      )
-    );
-  ```
-- Add comprehensive integration tests:
-  - Test isolation across all tables
-  - Verify JOIN queries work correctly
-  - Load test to verify performance
+
+- Add comprehensive integration tests per batch:
+  - Test tenant isolation on each table
+  - Verify JOIN queries work correctly (e.g., documents JOIN charges)
+  - Test complex queries with multiple RLS-protected tables
+  - Load test to verify performance impact
 
 **Validation**:
 
 - All tenant tables protected by RLS
-- No cross-tenant data leaks
-- Performance within acceptable range (< 20% overhead)
+- No cross-tenant data leaks (integration tests verify isolation)
+- Performance within acceptable range (< 20% overhead vs. non-RLS queries)
+- Existing application functionality unchanged
 
-**Risk**: High (final security activation, requires extensive testing)
+**Risk**: High (security activation across all tables, requires extensive testing)
 
-**Rollback Plan**: Script to disable RLS per table if critical issues found
+**Rollback Plan**:
+
+```sql
+-- Script to disable RLS per table if critical issues found:
+ALTER TABLE accounter_schema.documents DISABLE ROW LEVEL SECURITY;
+ALTER TABLE accounter_schema.transactions DISABLE ROW LEVEL SECURITY;
+-- ... etc
+```
 
 ---
 
