@@ -1,8 +1,8 @@
 import type { Injector } from 'graphql-modules';
-import { TenantAwareDBClient } from 'modules/app-providers/tenant-db-client.js';
 import type { Pool } from 'pg';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
