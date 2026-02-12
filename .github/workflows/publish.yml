@@ -44,11 +44,14 @@ jobs:
 
       - name: setup environment
         uses: ./.github/actions/setup
+        with:
+          registryUrl: 'https://registry.npmjs.org'
 
       - name: Setup NPM Auth
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
         with:
           node-version-file: .node-version
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Update npm
         run: npm install -g npm@latest
