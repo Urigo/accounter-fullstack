@@ -83,7 +83,7 @@ export function createLedgerTestContext(options: {
   const tenantAwareDB = new TenantAwareDBClient(
     dbProvider,
     {} as AuthContext,
-    context as AccounterContext,
+    context as unknown as AccounterContext,
   );
 
   // placeholder for context; filled after injector is created
