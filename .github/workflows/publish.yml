@@ -78,6 +78,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
+          # FORCE npm to ignore any potential secret tokens
+          NODE_AUTH_TOKEN: ''
+          NPM_TOKEN: ''
         run: |
           # Capture output to file while still showing it in logs
           set -o pipefail
