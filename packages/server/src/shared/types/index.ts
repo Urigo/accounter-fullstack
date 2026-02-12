@@ -67,6 +67,7 @@ export type AccounterContext = YogaInitialContext & {
   adminContext?: AdminContext;
   // TEMPORARY (Phase 2.9 → 4.8): Transaction client with RLS context set
   rlsClient?: PoolClient;
+  dbClientsToDispose?: { dispose: () => Promise<void> }[];
 };
 
 type addZero<T> = T | 0;
