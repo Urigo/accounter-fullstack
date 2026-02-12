@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { adminBusinessUpdateSchema } from '../helpers/admin-businesses.helper.js';
 import type {
   IGetAdminBusinessesByIdsQuery,
@@ -67,7 +67,7 @@ const updateAdminBusinesses = sql<IUpdateAdminBusinessesQuery>`
   global: true,
 })
 export class AdminBusinessesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchAdminBusinessesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
@@ -75,7 +75,7 @@ export class AdminBusinessesProvider {
       {
         ids: uniqueIds,
       },
-      this.dbProvider,
+      this.db,
     );
     adminBusinesses.map(adminBusiness => {
       this.getAdminBusinessByIdLoader.prime(adminBusiness.id, adminBusiness);
@@ -93,7 +93,7 @@ export class AdminBusinessesProvider {
       return this.allAdminBusinessesPromise;
     }
     this.allAdminBusinessesPromise = getAllAdminBusinesses
-      .run(undefined, this.dbProvider)
+      .run(undefined, this.db)
       .then(adminBusinesses => {
         adminBusinesses.map(adminBusiness => {
           this.getAdminBusinessByIdLoader.prime(adminBusiness.id, adminBusiness);
@@ -107,7 +107,7 @@ export class AdminBusinessesProvider {
     params: IUpdateAdminBusinessesParams,
   ): Promise<IUpdateAdminBusinessesResult> {
     const inputParams = adminBusinessUpdateSchema.parse(params);
-    const [result] = await updateAdminBusinesses.run(inputParams, this.dbProvider);
+    const [result] = await updateAdminBusinesses.run(inputParams, this.db);
     this.clearCache();
     return result;
   }

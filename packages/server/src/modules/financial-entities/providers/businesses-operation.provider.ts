@@ -1,6 +1,6 @@
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { BusinessTripAttendeesProvider } from '../../business-trips/providers/business-trips-attendees.provider.js';
 import { DividendsProvider } from '../../dividends/providers/dividends.provider.js';
 import { BalanceCancellationProvider } from '../../ledger/providers/balance-cancellation.provider.js';
@@ -25,7 +25,7 @@ const deleteBusiness = sql<IDeleteBusinessQuery>`
 export class BusinessesOperationProvider {
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
     private taxCategoryProvider: TaxCategoriesProvider,
     private clientsProvider: ClientsProvider,
@@ -102,6 +102,6 @@ export class BusinessesOperationProvider {
     ]);
 
     // delete businesses
-    deleteBusiness.run({ businessId }, this.dbProvider);
+    deleteBusiness.run({ businessId }, this.db);
   }
 }

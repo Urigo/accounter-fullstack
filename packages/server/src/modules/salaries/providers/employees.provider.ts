@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type { IGetEmployeesByEmployerQuery, IGetEmployeesByIdQuery } from '../types.js';
 
 const getEmployeesByEmployer = sql<IGetEmployeesByEmployerQuery>`
@@ -19,12 +19,12 @@ const getEmployeesById = sql<IGetEmployeesByIdQuery>`
   global: true,
 })
 export class EmployeesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchEmployeesByEmployerIDs(employerIDs: readonly string[]) {
     if (employerIDs.length) {
       return getEmployeesByEmployer
-        .run({ employerIDs }, this.dbProvider)
+        .run({ employerIDs }, this.db)
         .then(res =>
           employerIDs.map(employerId => res.filter(employee => employee.employer === employerId)),
         );
@@ -39,7 +39,7 @@ export class EmployeesProvider {
   private async batchEmployeesByIDs(employeeIDs: readonly string[]) {
     if (employeeIDs.length) {
       return getEmployeesById
-        .run({ employeeIDs }, this.dbProvider)
+        .run({ employeeIDs }, this.db)
         .then(res =>
           employeeIDs.map(employeeId => res.find(employee => employee.business_id === employeeId)),
         );

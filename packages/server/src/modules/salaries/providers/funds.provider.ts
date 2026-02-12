@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllFundsParams,
   IGetAllFundsQuery,
@@ -27,14 +27,14 @@ const getAllFunds = sql<IGetAllFundsQuery>`
   global: true,
 })
 export class FundsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private pensionFundsCache: Promise<IGetAllTrainingFundsResult[]> | null = null;
   public getAllPensionFunds() {
     if (this.pensionFundsCache) {
       return this.pensionFundsCache;
     }
-    this.pensionFundsCache = getAllPensionFunds.run(undefined, this.dbProvider);
+    this.pensionFundsCache = getAllPensionFunds.run(undefined, this.db);
     return this.pensionFundsCache;
   }
 
@@ -43,7 +43,7 @@ export class FundsProvider {
     if (this.trainingFundsCache) {
       return this.trainingFundsCache;
     }
-    this.trainingFundsCache = getAllTrainingFunds.run(undefined, this.dbProvider);
+    this.trainingFundsCache = getAllTrainingFunds.run(undefined, this.db);
     return this.trainingFundsCache;
   }
 
@@ -52,7 +52,7 @@ export class FundsProvider {
     if (this.allFundsCache) {
       return this.allFundsCache;
     }
-    this.allFundsCache = getAllFunds.run(params, this.dbProvider);
+    this.allFundsCache = getAllFunds.run(params, this.db);
     return this.allFundsCache;
   }
 }

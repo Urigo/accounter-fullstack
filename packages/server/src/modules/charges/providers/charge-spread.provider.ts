@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceParams,
   IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceQuery,
@@ -64,14 +64,14 @@ const deleteAllChargeSpreadByChargeIdAndYearOfRelevance = sql<IDeleteAllChargeSp
   global: true,
 })
 export class ChargeSpreadProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchChargesSpreadByChargeIds(ids: readonly string[]) {
     const charges = await getChargesSpreadByChargeIds.run(
       {
         chargeIds: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => charges.filter(chargeSpread => chargeSpread.charge_id === id));
   }
@@ -81,20 +81,20 @@ export class ChargeSpreadProvider {
   );
 
   public updateChargeSpread(params: IUpdateChargeSpreadParams) {
-    return updateChargeSpread.run(params, this.dbProvider);
+    return updateChargeSpread.run(params, this.db);
   }
 
   public insertChargeSpread(params: IInsertChargeSpreadParams) {
-    return insertChargeSpread.run(params, this.dbProvider);
+    return insertChargeSpread.run(params, this.db);
   }
 
   public deleteAllChargeSpreadByChargeIds(params: IDeleteAllChargeSpreadByChargeIdsParams) {
-    return deleteAllChargeSpreadByChargeIds.run(params, this.dbProvider);
+    return deleteAllChargeSpreadByChargeIds.run(params, this.db);
   }
 
   public deleteAllChargeSpreadByChargeIdAndYearOfRelevance(
     params: IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceParams,
   ) {
-    return deleteAllChargeSpreadByChargeIdAndYearOfRelevance.run(params, this.dbProvider);
+    return deleteAllChargeSpreadByChargeIdAndYearOfRelevance.run(params, this.db);
   }
 }

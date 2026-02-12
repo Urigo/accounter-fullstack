@@ -4,7 +4,7 @@ import type { RawAuth } from '../../../plugins/auth-plugin-v2.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 
 // Global cache for JWKS functions to prevent re-fetching on every request
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -15,7 +15,7 @@ const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 export class AuthContextV2Provider {
   constructor(
     @Inject(RAW_AUTH) private rawAuth: RawAuth,
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(ENVIRONMENT) private env: Environment,
   ) {}
 
@@ -112,7 +112,7 @@ export class AuthContextV2Provider {
     `;
 
     try {
-      const result = await this.dbProvider.pool.query(query, [auth0UserId]);
+      const result = await this.db.query(query, [auth0UserId]);
       if (result.rowCount === 0) {
         return null;
       }

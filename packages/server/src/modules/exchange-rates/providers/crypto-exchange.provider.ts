@@ -5,7 +5,7 @@ import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { Currency } from '../../../shared/enums.js';
 import { CoinMarketCapProvider } from '../../app-providers/coinmarketcap.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IGetCryptoCurrenciesBySymbolQuery,
   IGetCryptoCurrenciesBySymbolResult,
@@ -43,19 +43,19 @@ export class CryptoExchangeProvider {
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.Context,
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private coinMarketCap: CoinMarketCapProvider,
   ) {
     this.fiatCurrency = this.context.adminContext.defaultCryptoConversionFiatCurrency;
   }
 
   private async getCryptoExchangeRatesFromDB(currency: string, date: Date) {
-    return getRateByCurrencyAndDate.run({ currency, date }, this.dbProvider);
+    return getRateByCurrencyAndDate.run({ currency, date }, this.db);
   }
 
   private async addRates(rates: IInsertRatesParams['rates']) {
     this.clearCache();
-    return insertRates.run({ rates }, this.dbProvider);
+    return insertRates.run({ rates }, this.db);
   }
 
   private addCryptoRateLoader = new DataLoader(
@@ -80,7 +80,7 @@ export class CryptoExchangeProvider {
       {
         currencySymbols: symbols,
       },
-      this.dbProvider,
+      this.db,
     );
     return symbols.map(symbol => currencies.find(currency => currency.symbol === symbol));
   }

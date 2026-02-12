@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
   IDeleteDepreciationRecordByChargeIdQuery,
@@ -96,14 +96,14 @@ const deleteDepreciationRecordByChargeId = sql<IDeleteDepreciationRecordByCharge
   global: true,
 })
 export class DepreciationProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchDepreciationRecordsByIds(depreciationRecordIds: readonly string[]) {
     const records = await getDepreciationRecordsByIds.run(
       {
         depreciationRecordIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return depreciationRecordIds.map(id => records.find(record => record.id === id));
   }
@@ -117,7 +117,7 @@ export class DepreciationProvider {
       {
         chargeIds,
       },
-      this.dbProvider,
+      this.db,
     );
     records.map(record => {
       this.getDepreciationRecordByIdLoader.prime(record.id, record);
@@ -130,7 +130,7 @@ export class DepreciationProvider {
   );
 
   public getDepreciationRecordsByDates(params: IGetDepreciationRecordsByDatesParams) {
-    return getDepreciationRecordsByDates.run(params, this.dbProvider).then(records => {
+    return getDepreciationRecordsByDates.run(params, this.db).then(records => {
       records.map(record => {
         this.getDepreciationRecordByIdLoader.prime(record.id, record);
       });
@@ -140,22 +140,22 @@ export class DepreciationProvider {
 
   public updateDepreciationRecord(params: IUpdateDepreciationRecordParams) {
     this.clearCache();
-    return updateDepreciationRecord.run(params, this.dbProvider);
+    return updateDepreciationRecord.run(params, this.db);
   }
 
   public insertDepreciationRecord(params: IInsertDepreciationRecordParams) {
     this.clearCache();
-    return insertDepreciationRecord.run(params, this.dbProvider);
+    return insertDepreciationRecord.run(params, this.db);
   }
 
   public deleteDepreciationRecord(params: IDeleteDepreciationRecordParams) {
     this.clearCache();
-    return deleteDepreciationRecord.run(params, this.dbProvider);
+    return deleteDepreciationRecord.run(params, this.db);
   }
 
   public deleteDepreciationRecordByChargeId(params: IDeleteDepreciationRecordByChargeIdParams) {
     this.clearCache();
-    return deleteDepreciationRecordByChargeId.run(params, this.dbProvider);
+    return deleteDepreciationRecordByChargeId.run(params, this.db);
   }
 
   public clearCache() {
