@@ -44,8 +44,12 @@ jobs:
 
       - name: setup environment
         uses: ./.github/actions/setup
+
+      - name: Setup NPM Auth
+        uses: actions/setup-node@v4
         with:
-          registryUrl: 'https://registry.npmjs.org'
+          node-version-file: .node-version
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Setup Yarn Auth
         shell: bash
@@ -73,7 +77,7 @@ jobs:
         run: |
           # Capture output to file while still showing it in logs
           set -o pipefail
-          yarn changeset publish --tag alpha --no-git-tag 2>&1 | tee publish-output.txt
+          yarn changeset publish --tag alpha --no-git-tag --access public 2>&1 | tee publish-output.txt
 
       - name: Post-Release Notification
         # Providing a feedback loop directly on the Pull Request
