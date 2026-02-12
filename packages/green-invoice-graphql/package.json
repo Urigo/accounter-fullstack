@@ -5,12 +5,12 @@
   "description": "Graphql proxy for Green Invoice API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
+    "url": "https://github.com/Urigo/accounter-toolkit.git",
     "repository": "packages/green-invoice-graphql"
   },
-  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/green-invoice-graphql#readme",
+  "homepage": "https://github.com/Urigo/accounter-toolkit/packages/green-invoice-graphql#readme",
   "bugs": {
-    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+    "url": "https://github.com/Urigo/accounter-toolkit/issues"
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
