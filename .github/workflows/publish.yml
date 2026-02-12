@@ -15,11 +15,11 @@ on:
   workflow_call:
     inputs:
       type:
-        description: 'Type of release (snapshot or stable)'
+        description: "Type of release (snapshot or stable)"
         required: true
         type: string
       ref:
-        description: 'Git ref to checkout'
+        description: "Git ref to checkout"
         required: false
         type: string
 
@@ -49,7 +49,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Setup Yarn Auth
         shell: bash
@@ -74,10 +77,11 @@ jobs:
         if: ${{ inputs.type == 'snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
         run: |
           # Capture output to file while still showing it in logs
           set -o pipefail
-          yarn changeset publish --tag alpha --no-git-tag --access public 2>&1 | tee publish-output.txt
+          npx changeset publish --tag alpha --no-git-tag --access public 2>&1 | tee publish-output.txt
 
       - name: Post-Release Notification
         # Providing a feedback loop directly on the Pull Request
@@ -136,10 +140,10 @@ jobs:
         id: changesets-stable
         uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e # v1.5.2
         with:
-          publish: 'yarn changeset publish'
-          version: 'yarn changeset version'
-          commit: 'chore(release): update monorepo packages versions'
-          title: 'Upcoming Release Changes'
+          publish: "npx changeset publish"
+          version: "yarn changeset version"
+          commit: "chore(release): update monorepo packages versions"
+          title: "Upcoming Release Changes"
           createGithubReleases: aggregate
           githubReleaseName: ${{ steps.vars.outputs.date }}
         env:
