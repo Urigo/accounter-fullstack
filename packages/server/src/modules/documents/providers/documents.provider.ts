@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDocumentParams,
   IDeleteDocumentQuery,
@@ -275,14 +275,14 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   global: true,
 })
 export class DocumentsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private allDocumentsCache: Promise<IGetAllDocumentsResult[]> | null = null;
   public async getAllDocuments(params: IGetAllDocumentsParams) {
     if (this.allDocumentsCache) {
       return this.allDocumentsCache;
     }
-    this.allDocumentsCache = getAllDocuments.run(params, this.dbProvider).then(docs => {
+    this.allDocumentsCache = getAllDocuments.run(params, this.db).then(docs => {
       docs.map(doc => {
         this.getDocumentsByIdLoader.prime(doc.id, doc);
       });
@@ -294,7 +294,7 @@ export class DocumentsProvider {
   private async batchDocumentsByChargeIds(chargeIds: readonly string[]) {
     const uniqueIDs = [...new Set(chargeIds)];
     try {
-      const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.dbProvider);
+      const docs = await getDocumentsByChargeId.run({ chargeIds: uniqueIDs }, this.db);
 
       return chargeIds.map(id =>
         docs.filter(doc => {
@@ -325,7 +325,7 @@ export class DocumentsProvider {
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
     };
-    return getDocumentsByFilters.run(fullParams, this.dbProvider).then(docs => {
+    return getDocumentsByFilters.run(fullParams, this.db).then(docs => {
       docs.map(doc => {
         this.getDocumentsByIdLoader.prime(doc.id, doc);
       });
@@ -350,13 +350,13 @@ export class DocumentsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
-    return getDocumentsByExtendedFilters.run(fullParams, this.dbProvider);
+    return getDocumentsByExtendedFilters.run(fullParams, this.db);
   }
 
   private async batchDocumentsByIds(ids: readonly string[]) {
     const uniqueIDs = [...new Set(ids)];
     try {
-      const docs = await getDocumentsByIds.run({ Ids: uniqueIDs }, this.dbProvider);
+      const docs = await getDocumentsByIds.run({ Ids: uniqueIDs }, this.db);
 
       return ids.map(id => docs.find(doc => doc.id === id));
     } catch (e) {
@@ -372,7 +372,7 @@ export class DocumentsProvider {
   private async batchDocumentsByBusinessIds(businessIds: readonly string[]) {
     const uniqueIDs = [...new Set(businessIds)];
     try {
-      const docs = await getDocumentsByBusinessIds.run({ Ids: uniqueIDs }, this.dbProvider);
+      const docs = await getDocumentsByBusinessIds.run({ Ids: uniqueIDs }, this.db);
 
       docs.map(doc => {
         this.getDocumentsByIdLoader.prime(doc.id, doc);
@@ -396,7 +396,7 @@ export class DocumentsProvider {
     try {
       const docs = await getDocumentsByHashes.run(
         { hashes: uniqueHashes.map(hash => hash.toString()) },
-        this.dbProvider,
+        this.db,
       );
 
       docs.map(doc => {
@@ -415,7 +415,7 @@ export class DocumentsProvider {
   );
 
   public async getDocumentsByMissingRequiredInfo() {
-    return getDocumentsByMissingRequiredInfo.run(undefined, this.dbProvider);
+    return getDocumentsByMissingRequiredInfo.run(undefined, this.db);
   }
 
   public async updateDocument(params: IUpdateDocumentParams) {
@@ -426,7 +426,7 @@ export class DocumentsProvider {
       }
       this.invalidateById(params.documentId);
     }
-    return updateDocument.run(params, this.dbProvider);
+    return updateDocument.run(params, this.db);
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {
@@ -437,7 +437,7 @@ export class DocumentsProvider {
       }
       this.invalidateById(params.documentId);
     }
-    return deleteDocument.run(params, this.dbProvider);
+    return deleteDocument.run(params, this.db);
   }
 
   public async insertDocuments(params: IInsertDocumentsParams) {
@@ -446,7 +446,7 @@ export class DocumentsProvider {
         if (doc.chargeId) this.invalidateByChargeId(doc.chargeId);
       });
     }
-    return insertDocuments.run(params, this.dbProvider);
+    return insertDocuments.run(params, this.db);
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {
@@ -456,7 +456,7 @@ export class DocumentsProvider {
     if (params.replaceChargeID) {
       this.invalidateByChargeId(params.replaceChargeID);
     }
-    return replaceDocumentsChargeId.run(params, this.dbProvider);
+    return replaceDocumentsChargeId.run(params, this.db);
   }
 
   public async invalidateById(id: string) {

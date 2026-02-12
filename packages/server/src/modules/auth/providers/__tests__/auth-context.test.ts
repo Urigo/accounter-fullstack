@@ -19,9 +19,7 @@ describe('AuthContextV2Provider', () => {
 
   beforeEach(() => {
     mockDBProvider = {
-      pool: {
-        query: vi.fn(),
-      },
+      query: vi.fn(),
     };
 
     mockEnv = {
@@ -65,7 +63,7 @@ describe('AuthContextV2Provider', () => {
 
        vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
 
-       mockDBProvider.pool.query.mockResolvedValue({
+       mockDBProvider.query.mockResolvedValue({
          rowCount: 1,
          rows: [{ user_id: 'u-1', business_id: 'b-1', role_id: 'admin' }],
        });
@@ -112,7 +110,7 @@ describe('AuthContextV2Provider', () => {
    
         vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
    
-        mockDBProvider.pool.query.mockResolvedValue({
+        mockDBProvider.query.mockResolvedValue({
           rowCount: 0,
           rows: [],
         });

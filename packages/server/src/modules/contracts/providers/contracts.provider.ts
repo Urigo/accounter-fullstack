@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type {
   IDeleteContractQuery,
@@ -144,7 +144,7 @@ const insertContract = sql<IInsertContractQuery>`
 })
 export class ContractsProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
   ) {}
 
@@ -153,21 +153,19 @@ export class ContractsProvider {
     if (this.allOpenContractsCache) {
       return this.allOpenContractsCache;
     }
-    this.allOpenContractsCache = getAllOpenContracts
-      .run(undefined, this.dbProvider)
-      .then(contracts => {
-        if (contracts) {
-          contracts.map(contract => {
-            this.getContractsByIdLoader.prime(contract.id, contract);
-          });
-        }
-        return contracts;
-      });
+    this.allOpenContractsCache = getAllOpenContracts.run(undefined, this.db).then(contracts => {
+      if (contracts) {
+        contracts.map(contract => {
+          this.getContractsByIdLoader.prime(contract.id, contract);
+        });
+      }
+      return contracts;
+    });
     return this.allOpenContractsCache;
   }
 
   private async contractsByIds(ids: readonly string[]) {
-    const contracts = await getContractsByIds.run({ ids }, this.dbProvider);
+    const contracts = await getContractsByIds.run({ ids }, this.db);
     return ids.map(id => contracts.find(contract => contract.id === id));
   }
 
@@ -176,10 +174,7 @@ export class ContractsProvider {
   );
 
   private async contractsByAdminBusinessIds(adminBusinessIds: readonly string[]) {
-    const contracts = await getContractsByAdminBusinessIds.run(
-      { adminBusinessIds },
-      this.dbProvider,
-    );
+    const contracts = await getContractsByAdminBusinessIds.run({ adminBusinessIds }, this.db);
 
     contracts.map(contract => {
       this.getContractsByIdLoader.prime(contract.id, contract);
@@ -195,7 +190,7 @@ export class ContractsProvider {
   );
 
   private async contractsByClients(clientIds: readonly string[]) {
-    const contracts = await getContractsByClientIds.run({ clientIds }, this.dbProvider);
+    const contracts = await getContractsByClientIds.run({ clientIds }, this.db);
     contracts.map(contract => {
       this.getContractsByIdLoader.prime(contract.id, contract);
     });
@@ -207,7 +202,7 @@ export class ContractsProvider {
   );
 
   public async createContract(params: IInsertContractParams) {
-    const [newContract] = await insertContract.run(params, this.dbProvider);
+    const [newContract] = await insertContract.run(params, this.db);
     this.getContractsByIdLoader.prime(newContract.id, newContract);
 
     // Invalidate list caches
@@ -223,7 +218,7 @@ export class ContractsProvider {
   }
 
   public async updateContract(params: IUpdateContractParams) {
-    const [updatedContract] = await updateContract.run(params, this.dbProvider);
+    const [updatedContract] = await updateContract.run(params, this.db);
     if (params.contractId) {
       this.invalidateCacheForContract(params.contractId);
     } else {
@@ -234,7 +229,7 @@ export class ContractsProvider {
   }
 
   public async deleteContract(contractId: string) {
-    await deleteContract.run({ id: contractId }, this.dbProvider);
+    await deleteContract.run({ id: contractId }, this.db);
     this.invalidateCacheForContract(contractId);
     return true;
   }

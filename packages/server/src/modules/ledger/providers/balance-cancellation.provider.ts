@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBalanceCancellationByBusinessIdQuery,
   IGetBalanceCancellationByChargesIdsQuery,
@@ -21,14 +21,14 @@ const deleteBalanceCancellationByBusinessId = sql<IDeleteBalanceCancellationByBu
   global: true,
 })
 export class BalanceCancellationProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchBalanceCancellationByChargesIds(ids: readonly string[]) {
     const ballanceCancellations = await getBalanceCancellationByChargesIds.run(
       {
         chargeIds: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => ballanceCancellations.filter(record => record.charge_id === id));
   }
@@ -38,7 +38,7 @@ export class BalanceCancellationProvider {
   );
 
   public deleteBalanceCancellationByBusinessId(businessId: string) {
-    return deleteBalanceCancellationByBusinessId.run({ businessId }, this.dbProvider);
+    return deleteBalanceCancellationByBusinessId.run({ businessId }, this.db);
   }
 
   public clearCache() {

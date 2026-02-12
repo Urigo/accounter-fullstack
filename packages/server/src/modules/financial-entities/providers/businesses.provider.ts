@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
@@ -215,7 +215,7 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
   global: true,
 })
 export class BusinessesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
@@ -223,7 +223,7 @@ export class BusinessesProvider {
       {
         ids: uniqueIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => businesses.find(fe => fe.id === id));
   }
@@ -237,7 +237,7 @@ export class BusinessesProvider {
     if (this.allBusinessesCache) {
       return this.allBusinessesCache;
     }
-    this.allBusinessesCache = getAllBusinesses.run(undefined, this.dbProvider).then(businesses => {
+    this.allBusinessesCache = getAllBusinesses.run(undefined, this.db).then(businesses => {
       businesses.map(business => {
         this.getBusinessByIdLoader.prime(business.id, business);
       });
@@ -247,7 +247,7 @@ export class BusinessesProvider {
   }
 
   public getBusinessByEmail(email: string) {
-    return getBusinessByEmail.run({ email }, this.dbProvider).then(res => {
+    return getBusinessByEmail.run({ email }, this.db).then(res => {
       if (res?.length) {
         res.map(business => {
           this.getBusinessByIdLoader.prime(business.id, business);
@@ -262,7 +262,7 @@ export class BusinessesProvider {
     params: Omit<IUpdateBusinessParams, 'businessId'> & { businessId: string },
   ) {
     if (params.businessId) await this.invalidateBusinessById(params.businessId);
-    return updateBusiness.run(params, this.dbProvider);
+    return updateBusiness.run(params, this.db);
   }
 
   private async batchInsertBusinesses(
@@ -279,7 +279,7 @@ export class BusinessesProvider {
       {
         businesses: newBusinesses,
       },
-      this.dbProvider,
+      this.db,
     );
     return newBusinesses.map(nb => businesses.find(b => b.id === nb.id) ?? null);
   }
@@ -312,7 +312,7 @@ export class BusinessesProvider {
         targetBusinessId,
         businessIdToReplace,
       },
-      this.dbProvider,
+      this.db,
     );
 
     // TODO: convert when owner: financial entities, charges, business-tax-category, ledger

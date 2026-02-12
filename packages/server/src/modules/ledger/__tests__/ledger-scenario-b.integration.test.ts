@@ -49,6 +49,11 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     const client = await db.getPool().connect();
     try {
       const chargeId = makeUUID('charge', 'charge-consulting-services');
+      const adminId = makeUUID('business', 'admin-business-usd');
+      
+      // Set context to allow deletion of protected rows
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
+
       await client.query(
         `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
         [chargeId],
@@ -107,7 +112,16 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       // Build AdminContext from database
       const adminContext = await buildAdminContextFromDb(insertClient);
 
+      // Explicitly set context on the insertion client to match the owner of the charge we are about to insert
+      // The charge owner is 'admin-business-usd' per fixture definition
+      const fixtureOwnerId = makeUUID('business', 'admin-business-usd');
+      await insertClient.query("SELECT set_config('app.current_business_id', $1, false)", [fixtureOwnerId]);
+
       await insertFixture(insertClient, expenseScenarioB, adminContext.defaultAdminBusinessId);
+      
+      // Reset RLS context to charge owner for verification
+      // (insertFixture might leave it set to the last inserted entity's owner)
+      await insertClient.query("SELECT set_config('app.current_business_id', $1, true)", [fixtureOwnerId]);
 
       const chargeId = makeUUID('charge', 'charge-consulting-services');
 
@@ -146,6 +160,9 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
+      const adminId = makeUUID('business', 'admin-business-usd');
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
+
       const chargeId = makeUUID('charge', 'charge-consulting-services');
       const chargeResult = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -158,11 +175,11 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
 
       const mockUser: UserType = {
         username: 'test-admin-usd',
-        userId: adminContext.defaultAdminBusinessId,
+        userId: adminId,
         role: 'ADMIN',
       };
-
-      // Create context with mocked exchange rate: 3.5 ILS per USD
+      
+// Create context with mocked exchange rate: 3.5 ILS per USD
       const context = createLedgerTestContext({
         pool: db.getPool(),
         adminContext,
@@ -226,6 +243,9 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     const client = await db.getPool().connect();
     try {
       const chargeId = makeUUID('charge', 'charge-consulting-services');
+      const adminId = makeUUID('business', 'admin-business-usd');
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
+
       // Ensure fixture inserted if absent
       const existingCharge = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -245,7 +265,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       const charge = chargeResult.rows[0];
       const mockUser: UserType = {
         username: 'test-admin-usd',
-        userId: adminContext.defaultAdminBusinessId,
+        userId: adminId,
         role: 'ADMIN',
       };
       const context = createLedgerTestContext({

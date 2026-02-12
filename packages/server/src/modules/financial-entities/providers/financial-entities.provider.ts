@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteFinancialEntityQuery,
   IGetAllFinancialEntitiesQuery,
@@ -112,7 +112,7 @@ const replaceFinancialEntities = sql<IReplaceFinancialEntitiesQuery>`
 })
 export class FinancialEntitiesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
     private businessesOperationProvider: BusinessesOperationProvider,
     private taxCategoriesProvider: TaxCategoriesProvider,
@@ -123,7 +123,7 @@ export class FinancialEntitiesProvider {
       {
         ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => financialEntities.find(fe => fe.id === id));
   }
@@ -137,7 +137,7 @@ export class FinancialEntitiesProvider {
     if (this.allFinancialEntitiesCache) {
       return this.allFinancialEntitiesCache;
     }
-    const result = getAllFinancialEntities.run(undefined, this.dbProvider).then(entities => {
+    const result = getAllFinancialEntities.run(undefined, this.db).then(entities => {
       entities.map(entity => {
         this.getFinancialEntityByIdLoader.prime(entity.id, entity);
       });
@@ -151,14 +151,14 @@ export class FinancialEntitiesProvider {
     if (params.financialEntityId) {
       this.invalidateFinancialEntityById(params.financialEntityId);
     }
-    return updateFinancialEntity.run(params, this.dbProvider);
+    return updateFinancialEntity.run(params, this.db);
   }
 
   public insertFinancialEntity(
     params: IInsertFinancialEntitiesParams['financialEntities'][number],
   ) {
     this.allFinancialEntitiesCache = null;
-    return insertFinancialEntities.run({ financialEntities: [params] }, this.dbProvider);
+    return insertFinancialEntities.run({ financialEntities: [params] }, this.db);
   }
 
   private async batchInsertFinancialEntities(
@@ -168,7 +168,7 @@ export class FinancialEntitiesProvider {
       {
         financialEntities: newFinancialEntities,
       },
-      this.dbProvider,
+      this.db,
     );
     return newFinancialEntities.map(fe => financialEntities.find(f => f.name === fe.name) ?? null);
   }
@@ -209,7 +209,7 @@ export class FinancialEntitiesProvider {
     // TODO: should remove ledger, misc expenses?
 
     // delete entity
-    deleteFinancialEntity.run({ financialEntityId }, this.dbProvider);
+    deleteFinancialEntity.run({ financialEntityId }, this.db);
   }
 
   public async replaceFinancialEntity(
@@ -237,7 +237,7 @@ export class FinancialEntitiesProvider {
     this.invalidateFinancialEntityById(targetEntityId);
 
     // convert ledger, misc expenses
-    await replaceFinancialEntities.run({ targetEntityId, entityIdToReplace }, this.dbProvider);
+    await replaceFinancialEntities.run({ targetEntityId, entityIdToReplace }, this.db);
 
     // convert business
     const businessReplacementPromise =

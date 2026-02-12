@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetEmployeeIDsByContractIdsQuery,
   IGetEmployeeIdsByDocumentIdsQuery,
@@ -43,10 +43,10 @@ const insertDeelContract = sql<IInsertDeelContractQuery>`
   global: true,
 })
 export class DeelContractsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchEmployeeIDsByContractIds(contractIds: readonly string[]) {
-    const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.dbProvider);
+    const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.db);
     return contractIds.map(id => {
       const businessId = contracts.find(contract => contract.contract_id === id)?.business_id;
       if (!businessId) {
@@ -60,7 +60,7 @@ export class DeelContractsProvider {
     this.batchEmployeeIDsByContractIds(contractIds),
   );
   private async batchEmployeesByContractIds(contractIds: readonly string[]) {
-    const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.dbProvider);
+    const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.db);
     return contractIds.map(id => contracts.find(contract => contract.contract_id === id));
   }
 
@@ -69,7 +69,7 @@ export class DeelContractsProvider {
   );
 
   private async batchEmployeeIdsByDocumentIds(documentIds: readonly string[]) {
-    const employeeMatches = await getEmployeeIdsByDocumentIds.run({ documentIds }, this.dbProvider);
+    const employeeMatches = await getEmployeeIdsByDocumentIds.run({ documentIds }, this.db);
     return documentIds.map(
       documentId =>
         employeeMatches.find(match => match.document_id === documentId)?.business_id ?? null,
@@ -83,7 +83,7 @@ export class DeelContractsProvider {
   public async insertDeelContract(params: IInsertDeelContractParams) {
     try {
       // invalidate cache
-      return insertDeelContract.run(params, this.dbProvider);
+      return insertDeelContract.run(params, this.db);
     } catch (e) {
       const message = `Error inserting Deel contract [${params.contractId}]`;
       console.error(`${message}: ${e}`);

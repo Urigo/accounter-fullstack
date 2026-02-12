@@ -975,11 +975,18 @@ export const application = createApplication({
 **2. Verify TenantAwareDBClient is Injectable**:
 
 - Ensure TenantAwareDBClient has `@Injectable({ scope: Scope.Operation })` decorator
-- Ensure it injects `DBProvider` and `@Inject(AUTH_CONTEXT) authContext: AuthContext | null = null`
-  (with default null value)
+- Ensure it injects:
+  - `DBProvider` (singleton)
+  - `@Inject(AUTH_CONTEXT) authContext: AuthContext | null = null` (with default null)
+  - `@Inject(CONTEXT) context: AccounterContext` (TEMPORARY - for Phase 3-4 fallback)
 - **CRITICAL**: AUTH_CONTEXT must be optional (default null) because it's not registered until Phase
   4
-- Constructor should handle null auth context gracefully (throw error if query() called)
+- **TEMPORARY FALLBACK (Phase 3-4)**: Constructor also injects GraphQL CONTEXT to access
+  `currentUser.userId` as fallback businessId during legacy auth period
+- **Benefits of Built-In Fallback**:
+  - Providers can migrate directly to `TenantAwareDBClient` (no intermediate workaround step)
+  - Single point of change for cleanup (remove fallback from TenantAwareDBClient only)
+  - Phase 4.8 cleanup simplified (no provider updates needed)
 
 **3. Write Tests** (Provider registration and injection):
 
@@ -1058,17 +1065,23 @@ Modules dependency injection:
 - **Resolver Pattern**: Resolvers → Providers → TenantAwareDBClient (clean separation)
 - **No Yoga Context Extension**: Pure DI approach, no bridging between Yoga and Modules
 
-**IMPORTANT NOTES**:
+**IMPORTANT NOTES**: TEMPORARY Fallback Built-In\*\*: TenantAwareDBClient has built-in fallback to
+`context.currentUser.userId` (legacy auth) during Phase 3-4 transition. This enables:
 
-1. **Provider Scope**: `TenantAwareDBClient` is `Scope.Operation` (per-request isolation)
-2. **No Shared State**: Each GraphQL operation gets its own `db` instance with isolated transaction
-3. **Non-Breaking Change**: TenantAwareDBClient registered but unused, providers still use old
+- **Direct provider migration** to TenantAwareDBClient in Phase 3 (no intermediate workaround)
+- **Simplified Phase 4.8 cleanup** (remove fallback from one file, not dozens of providers)
+- **Forward compatibility** (providers already use final pattern)
+
+6. **Auth Dependency**: During Phase 3-4, TenantAwareDBClient uses legacy auth
+   (`context.currentUser`). After Phase 4.7 (Auth0 activation), it uses AuthContext.
+7. **No Shared State**: Each GraphQL operation gets its own `db` instance with isolated transaction
+8. **Non-Breaking Change**: TenantAwareDBClient registered but unused, providers still use old
    patterns
-4. **AUTH_CONTEXT Not Yet Registered**: AUTH_CONTEXT is only a token at this stage - provider
+9. **AUTH_CONTEXT Not Yet Registered**: AUTH_CONTEXT is only a token at this stage - provider
    registered in Phase 4. TenantAwareDBClient uses default null value.
-5. **Auth Dependency**: TenantAwareDBClient won't function correctly until AuthContext is populated
-   (happens in Phase 4 after Auth0 activation)
-6. **No Context Extension**: Unlike typical patterns, we use pure DI - cleaner and more testable
+10. **Auth Dependency**: TenantAwareDBClient won't function correctly until AuthContext is populated
+    (happens in Phase 4 after Auth0 activation)
+11. **No Context Extension**: Unlike typical patterns, we use pure DI - cleaner and more testable
 
 NEXT STEPS:
 
@@ -1992,11 +2005,36 @@ EXPECTED OUTPUT:
 INTEGRATION: This is the FIRST table with RLS enabled. It validates:
 
 - The RLS enforcement mechanism works
-- TenantAwareDBClient sets variables correctly
+- TenantAwareDBClient sets variables correctly (via TEMPORARY fallback to context.currentUser)
 - Performance is acceptable
 - Policies written correctly
 
 If successful, we'll roll out to all tables in later prompts.
+
+**PROVIDER MIGRATION NOTE**: Now that RLS is enabled on charges table, providers can migrate
+DIRECTLY to `TenantAwareDBClient` (see example: `charges.provider.ts`). TenantAwareDBClient has a
+built-in TEMPORARY fallback to `context.currentUser.userId` for Phase 3-4 transition, so no
+intermediate workaround step is needed. Providers already use the final pattern - only
+TenantAwareDBClient internal implementation needs cleanup in Phase 4.8.
+
+**Migration Pattern** (optional for Phase 3, recommended for Phase 4):
+
+```typescript
+// Example: packages/server/src/modules/charges/providers/charges.provider.ts
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js'
+
+@Injectable({ scope: Scope.Operation, global: true })
+export class ChargesProvider {
+  constructor(private db: TenantAwareDBClient) {} // Direct injection - final pattern
+
+  async getCharges(params) {
+    return getChargesByIds.run(params, this.db) // RLS enforced automatically
+  }
+}
+```
+
+This pattern requires NO future updates - Phase 4.8 cleanup only touches TenantAwareDBClient
+internals.
 
 ROLLBACK PLAN: If production issues occur, run rollback migration to disable RLS on charges.
 
@@ -2004,230 +2042,7 @@ ROLLBACK PLAN: If production issues occur, run rollback migration to disable RLS
 
 ---
 
-### Prompt 3.3: Update Providers for RLS-Protected Tables (Temporary Workaround)
-
-``
-
-CONTEXT: Phase 3.2 enabled RLS on the charges table. However, the proper TenantAwareDBClient (which
-automatically sets RLS context for all queries) isn't introduced until Phase 4.8. During this
-transition period (Phases 3.3-4.7), providers accessing RLS-protected tables need a temporary
-workaround to use the RLS-enabled database connection.
-
-**DEPENDENCY**: This prompt uses the `getRlsDbClient` helper that was created in Prompt 2.9
-(exported from `rls-context-plugin.ts`).
-
-**TEMPORARY NATURE**: This is a bridge solution. All changes will be removed/replaced in Prompt 4.8
-when migrating to TenantAwareDBClient.
-
-TASK: Update all providers that query the charges table to use the RLS-enabled database client.
-
-REQUIREMENTS:
-
-1. **Understand the getRlsDbClient Helper** (already created in Prompt 2.9):
-
-   ```typescript
-   // From: packages/server/src/plugins/rls-context-plugin.ts
-   export function getRlsDbClient(context: AccounterContext, dbProvider: DBProvider): DBProvider {
-     const rlsClient = context.rlsClient
-     if (rlsClient) {
-       return {
-         query: <E extends import('pg').QueryResultRow>(queryText: string, values: unknown[]) => {
-           return rlsClient
-             .query<E>(queryText, values)
-             .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }))
-         }
-       } as DBProvider
-     }
-     return dbProvider
-   }
-   ```
-
-   - Returns RLS-enabled client from context if available
-   - Falls back to regular pool if no RLS context set
-   - Ensures queries respect RLS policies on charges table
-
-2. **Provider Update Pattern**:
-
-   For each provider that accesses the charges table:
-
-   a. Import dependencies:
-
-   ```typescript
-   import { CONTEXT, Inject } from 'graphql-modules'
-   import { getRlsDbClient } from '../../../plugins/rls-context-plugin.js'
-   import type { AccounterContext } from '../../../shared/types/index.js'
-   ```
-
-   b. Inject CONTEXT in constructor:
-
-   ```typescript
-   constructor(
-     private dbProvider: DBProvider,
-     @Inject(CONTEXT) private context: AccounterContext,
-   ) {
-     this.tenantAwareDB = getRlsDbClient(this.context, this.dbProvider);
-   }
-   ```
-
-   c. Add private field:
-
-   ```typescript
-   private tenantAwareDB: DBProvider;
-   ```
-
-   d. Replace `this.dbProvider` with `this.tenantAwareDB` in all query calls:
-
-   ```typescript
-   // Before:
-   await someQuery.run(params, this.dbProvider)
-
-   // After:
-   await someQuery.run(params, this.tenantAwareDB)
-   ```
-
-3. **Providers to Update** (search codebase for additional):
-
-   **Primary providers** (direct charges table queries):
-   - ✅ `packages/server/src/modules/charges/providers/charges.provider.ts` (already implemented)
-   - `packages/server/src/modules/financial-entities/providers/tax-categories.provider.ts`
-     - Uses: `UPDATE accounter_schema.charges`, `FROM extended_charges`
-
-   **Secondary providers** (JOIN charges table):
-   - `packages/server/src/modules/reports/providers/balance-report.provider.ts`
-     - Uses: `LEFT JOIN accounter_schema.charges c ON t.charge_id = c.id`
-   - `packages/server/src/modules/documents/providers/documents.provider.ts`
-     - Uses: `LEFT JOIN accounter_schema.extended_charges c ON c.id = d.charge_id`
-   - `packages/server/src/modules/transactions/providers/transactions.provider.ts`
-     - Uses: `LEFT JOIN accounter_schema.charges c`
-
-   **Junction table providers** (charges_bank_deposits):
-   - `packages/server/src/modules/bank-deposits/providers/bank-deposit-charges.provider.ts`
-     - Uses: `FROM accounter_schema.charges_bank_deposits`
-     - Note: May need update if JOIN to charges table added later
-
-   **Search command to find all providers**:
-
-   ```bash
-   rg "FROM accounter_schema\.(charges|extended_charges)|JOIN accounter_schema\.(charges|extended_charges)" \
-     packages/server/src/modules/**/providers/*.provider.ts
-   ```
-
-4. **Add Comment to Each Updated Provider**:
-
-   ```typescript
-   // TEMPORARY WORKAROUND (Phase 3.3 → 4.8)
-   // Using getRlsDbClient to access RLS-enabled charges table
-   // Will be replaced with TenantAwareDBClient in Phase 4.8
-   private tenantAwareDB: DBProvider;
-   ```
-
-5. **Write Integration Tests**:
-
-   Create: `packages/server/src/modules/charges/providers/__tests__/rls-provider-workaround.test.ts`
-
-   Test each updated provider:
-   - Test 1: Queries respect RLS (only return current user's charges)
-   - Test 2: Fallback works (if no rlsClient, uses regular pool)
-   - Test 3: JOIN queries work correctly with RLS
-   - Test 4: UPDATE/DELETE respect RLS policies
-
-   Example test structure:
-
-   ```typescript
-   describe('RLS Provider Workaround', () => {
-     it('ChargesProvider uses RLS client', async () => {
-       // Setup: Create charges for two businesses
-       // Authenticate as business A
-       // Query via ChargesProvider
-       // Assert: Only business A charges returned
-     })
-
-     it('TaxCategoriesProvider updates respect RLS', async () => {
-       // Setup: Create charges for two businesses
-       // Authenticate as business A
-       // Try to update business B charge
-       // Assert: Update rejected (no rows affected)
-     })
-
-     // ... tests for each updated provider
-   })
-   ```
-
-6. **Verification Steps**:
-
-   a. All identified providers updated:
-
-   ```bash
-   rg "getRlsDbClient" packages/server/src/modules/**/providers/*.provider.ts
-   ```
-
-   Expected: Match in all providers listed above
-
-   b. All updated providers inject CONTEXT:
-
-   ```bash
-   rg "@Inject\(CONTEXT\).*context.*AccounterContext" \
-     packages/server/src/modules/**/providers/*.provider.ts
-   ```
-
-   Expected: Match in same providers
-
-   c. No providers still use old pattern (direct charges queries without RLS):
-
-   ```bash
-   rg "FROM accounter_schema\.charges" packages/server/src/modules/**/providers/*.provider.ts
-   ```
-
-   Then verify each match uses `this.tenantAwareDB`, not `this.dbProvider`
-
-7. **Documentation**:
-
-   Add comment to `rls-context-plugin.ts` helper:
-
-   ```typescript
-   /**
-    * TEMPORARY HELPER (Phase 3.3 → 4.8)
-    *
-    * Provides RLS-enabled database client during transition period.
-    * Used by providers accessing RLS-protected tables (charges, etc.)
-    *
-    * REMOVAL: Phase 4.8 - all providers will inject TenantAwareDBClient instead
-    *
-    * @param context - Request context with rlsClient from rlsContextPlugin
-    * @param dbProvider - Fallback pool if no RLS context available
-    * @returns DBProvider using RLS-enabled client or fallback pool
-    */
-   ```
-
-EXPECTED OUTPUT:
-
-- All providers accessing charges table updated (5-10 files)
-- Integration tests: `rls-provider-workaround.test.ts`
-- All tests passing (both new tests and existing provider tests)
-- Verification commands confirm complete rollout
-- Comment added to getRlsDbClient helper
-
-INTEGRATION: This ensures:
-
-- RLS on charges table works correctly during Phase 3-4 transition
-- Queries are properly tenant-isolated
-- No breaking changes for existing functionality
-- Clean removal path in Phase 4.8
-
-ROLLBACK PLAN: Revert provider constructors:
-
-- Remove CONTEXT injection
-- Remove getRlsDbClient calls
-- Use this.dbProvider directly
-- Note: Only needed if RLS causes production issues
-
-**CRITICAL REMINDER**: Mark all changes with "TEMPORARY" comments pointing to Phase 4.8 removal.
-
-``
-
----
-
-### Prompt 3.4: Add business_id Columns (Nullable)
+### Prompt 3.3: Add business_id Columns (Nullable)
 
 ``
 
@@ -2290,7 +2105,7 @@ INTEGRATION: This prepares for:
 
 ---
 
-### Prompt 3.5: Backfill business_id Values
+### Prompt 3.4: Backfill business_id Values
 
 ``
 
@@ -2369,7 +2184,7 @@ MONITORING: Watch for:
 
 ---
 
-### Prompt 3.6: Make business_id NOT NULL
+### Prompt 3.5: Make business_id NOT NULL
 
 ``
 
@@ -2440,7 +2255,7 @@ INTEGRATION: After this migration:
 
 ---
 
-### Prompt 3.7: Add Indexes and Foreign Keys
+### Prompt 3.6: Add Indexes and Foreign Keys
 
 ``
 
@@ -2532,7 +2347,7 @@ DEPLOYMENT: Can run during business hours (non-blocking). Monitor:
 
 ---
 
-### Prompt 3.8: Roll Out RLS to All Tables
+### Prompt 3.7: Roll Out RLS to All Tables
 
 ``
 
@@ -3986,96 +3801,94 @@ export default [
 - Remove businessId parameters (auth context provides this automatically)
 - Keep using `this.db.query()` (same interface as pool.query())
 
-**3. Remove Temporary RLS Context Code** (from Prompts 2.9 and 3.3):
+**3. Remove Temporary RLS Fallback Code** (from Prompt 2.6 - TenantAwareDBClient):
 
-Now that TenantAwareDBClient is handling RLS context, remove ALL temporary bridge code:
+Now that Auth0 is active and AuthContext is reliably populated, remove the TEMPORARY fallback to
+`context.currentUser` from TenantAwareDBClient:
 
-a. **Remove rlsContextPlugin** (from Prompt 2.9):
+a. **Remove CONTEXT injection**:
 
-- File: `packages/server/src/plugins/rls-context-plugin.ts`
-- Delete the `rlsContextPlugin` function
-- Keep file for now (has getRlsDbClient - removed below)
-
-b. **Unregister rlsContextPlugin** from plugin array:
-
-- File: `packages/server/src/index.ts` (or wherever plugins are registered)
-- Remove: `rlsContextPlugin()` from plugins array
-- Verify plugin no longer runs
-
-c. **Remove getRlsDbClient helper** (from Prompt 3.3):
-
-- File: `packages/server/src/plugins/rls-context-plugin.ts`
-- Delete the `getRlsDbClient` function
-- Delete entire file if no other exports remain
-
-d. **Revert ALL provider workarounds** (from Prompt 3.3):
-
-For each provider updated in Prompt 3.3, revert changes:
+File: `packages/server/src/modules/app-providers/tenant-db-client.ts`
 
 ```typescript
-// REMOVE these imports:
-import { CONTEXT, Inject } from 'graphql-modules';
-import { getRlsDbClient } from '../../../plugins/rls-context-plugin.js';
-import type { AccounterContext } from '../../../shared/types/index.js';
+// REMOVE this constructor parameter:
+@Inject(CONTEXT) private context: AccounterContext,
 
-// REMOVE this field:
-private tenantAwareDB: DBProvider;
-
-// CHANGE constructor from this:
+// Constructor should only inject:
 constructor(
   private dbProvider: DBProvider,
-  @Inject(CONTEXT) private context: AccounterContext,
-) {
-  this.tenantAwareDB = getRlsDbClient(this.context, this.dbProvider);
-}
-
-// TO this (inject TenantAwareDBClient):
-constructor(private db: TenantAwareDBClient) {}
-
-// REPLACE all query calls:
-// Before: await someQuery.run(params, this.tenantAwareDB);
-// After:  await someQuery.run(params, this.db);
+  @Inject(AUTH_CONTEXT) private authContext: AuthContext,
+) {}
 ```
 
-Providers to revert (see Prompt 3.3 for complete list):
+b. **Remove fallback checks in authentication guards**:
 
-- `charges.provider.ts`
-- `tax-categories.provider.ts`
-- `balance-report.provider.ts`
-- `documents.provider.ts`
-- `transactions.provider.ts`
-- `bank-deposit-charges.provider.ts`
+Remove `|| !this.context.currentUser?.userId` fallback from three locations:
 
-e. **Remove context.rlsClient** type definition:
+- `query()` method auth check (lines ~68-73)
+- `transaction()` method auth check (lines ~101-106)
+- `setRLSVariables()` method auth check (lines ~209-214)
 
-- File: `packages/server/src/shared/types/index.ts`
-- Remove: `rlsClient?: PoolClient` from AccounterContext interface
+```typescript
+// BEFORE (with fallback):
+if (!this.authContext && !this.context.currentUser?.userId) {
+  throw new GraphQLError('Auth context not available...')
+}
 
-f. **Verification commands**:
+// AFTER (Auth0 only):
+if (!this.authContext) {
+  throw new GraphQLError('Auth context not available...')
+}
+```
+
+c. **Remove fallback in businessId calculation**:
+
+File: `packages/server/src/modules/app-providers/tenant-db-client.ts`, `setRLSVariables()` method
+
+```typescript
+// BEFORE (with fallback):
+const businessIdValue = tenant?.businessId ?? this.context.currentUser?.userId ?? null
+
+// AFTER (Auth0 only):
+const businessIdValue = tenant?.businessId
+if (!businessIdValue) {
+  throw new Error('Missing businessId in AuthContext')
+}
+```
+
+d. **Remove context.rlsClient type definition** (if it was added):
+
+File: `packages/server/src/shared/types/index.ts`
+
+```typescript
+// REMOVE if present:
+rlsClient?: PoolClient
+```
+
+From AccounterContext interface.
+
+e. **Verification commands**:
 
 ```bash
 # Should find NO matches after cleanup:
-rg "Phase 2.9|Phase 3.3|TEMPORARY.*RLS|getRlsDbClient|rlsContextPlugin" \
-  packages/server/src
+rg "Phase 2.6|Phase 3.2|TEMPORARY.*RLS|context\.currentUser\.userId" \
+  packages/server/src/modules/app-providers/tenant-db-client.ts
 
 # Should find NO matches:
 rg "@Inject\(CONTEXT\).*private context.*AccounterContext" \
-  packages/server/src/modules/**/providers/*.provider.ts
+  packages/server/src/modules/app-providers/tenant-db-client.ts
 
-# Should find NO matches:
-rg "tenantAwareDB.*getRlsDbClient" packages/server/src
-
-# All providers should inject TenantAwareDBClient:
+# All providers should use TenantAwareDBClient (no fallback logic):
 rg "constructor.*private db: TenantAwareDBClient" \
   packages/server/src/modules/**/providers/*.provider.ts
-# Expected: Many matches (all migrated providers)
+# Expected: Many matches (all migrated providers, including charges.provider.ts)
 ```
 
-g. **Delete test file** (from Prompt 3.3):
+f. **Provider Migration Note**:
 
-- File: `packages/server/src/modules/charges/providers/__tests__/rls-provider-workaround.test.ts`
-- This test file validated the temporary workaround
-- No longer needed after migration to TenantAwareDBClient
+Providers that were migrated to `TenantAwareDBClient` during Phase 3 (like `charges.provider.ts`)
+require **NO CHANGES** - they're already using the final pattern. Only TenantAwareDBClient's
+internal implementation is being cleaned up.
 
 **4. Add Integration Tests** (Verify RLS enforcement):
 
