@@ -5,7 +5,7 @@
   "description": "Fully typed application that generates, parses, and validates SHAAM uniform format tax reports (INI.TXT and BKMVDATA.TXT).",
   "repository": {
     "type": "git",
-    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "url": "git+https://github.com/urigo/accounter-fullstack.git",
     "directory": "packages/shaam-uniform-format-generator"
   },
   "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam-uniform-format-generator#readme",

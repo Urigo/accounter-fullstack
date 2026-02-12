@@ -5,7 +5,7 @@
   "description": "Graphql proxy for Green Invoice API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Urigo/accounter-toolkit.git",
+    "url": "git+https://github.com/Urigo/accounter-toolkit.git",
     "repository": "packages/green-invoice-graphql"
   },
   "homepage": "https://github.com/Urigo/accounter-toolkit/packages/green-invoice-graphql#readme",

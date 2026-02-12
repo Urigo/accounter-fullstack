@@ -5,7 +5,7 @@
   "description": "Fully typed application that generates, parses, and validates SHAAM 6111 tax reports.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "url": "git+https://github.com/urigo/accounter-fullstack.git",
     "directory": "packages/shaam6111-generator"
   },
   "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam6111-generator#readme",
