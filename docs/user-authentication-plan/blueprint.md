@@ -796,6 +796,7 @@ See Step 4.9 for details.
   - Replace all `this.dbProvider` references with `this.db`
   - No TEMPORARY workaround code needed (TenantAwareDBClient has built-in fallback)
   - No future cleanup needed in this provider (complete migration)
+
 - Add integration tests:
   - User from business A cannot see charges from business B
   - Queries without SET LOCAL fail
