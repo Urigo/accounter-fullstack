@@ -71,7 +71,7 @@
     "dotenv": "17.2.4",
     "eslint": "9.39.2",
     "eslint-config-flat-gitignore": "2.1.0",
-    "eslint-plugin-unicorn": "62.0.0",
+    "eslint-plugin-unicorn": "63.0.0",
     "glob": "13.0.1",
     "globals": "17.3.0",
     "graphql": "16.12.0",
