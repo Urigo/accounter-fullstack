@@ -70,14 +70,24 @@ export function createLedgerTestContext(options: {
   const { pool, adminContext, moduleId = 'test', env, currentUser, mockExchangeRates } = options;
 
   const dbProvider = new DBProvider(pool);
+
+  // Common context object shared between injector and TenantAwareDBClient
+  const context = {
+    injector: undefined as unknown as Injector,
+    adminContext,
+    moduleId,
+    env,
+    currentUser,
+  } as ModuleContextLike;
+
   const tenantAwareDB = new TenantAwareDBClient(
     dbProvider,
     {} as AuthContext,
-    {} as AccounterContext,
+    context as AccounterContext,
   );
 
   // placeholder for context; filled after injector is created
-  const contextRef: { current?: ModuleContextLike } = {};
+  const contextRef: { current?: ModuleContextLike } = { current: context };
 
   const injector = new SimpleInjector(token => {
     switch (token) {
@@ -162,13 +172,6 @@ export function createLedgerTestContext(options: {
     }
   });
 
-  const context: ModuleContextLike = {
-    injector,
-    adminContext,
-    moduleId,
-    env,
-    currentUser,
-  };
-  contextRef.current = context;
+  context.injector = injector;
   return context;
 }
