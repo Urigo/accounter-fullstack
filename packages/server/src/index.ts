@@ -23,6 +23,7 @@ async function main() {
     port: Number(env.postgres.port),
     database: env.postgres.db,
     ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
+    max: env.postgres.max, // maximum number of clients in the pool
   });
 
   const application = await createGraphQLApp(env, pool);
