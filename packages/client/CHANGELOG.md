@@ -1,5 +1,151 @@
 # @accounter/client
 
+## 0.0.11
+
+### Patch Changes
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.20` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.20)
+    (from `5.90.19`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.6` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.6) (from
+    `1.6.5`, in `dependencies`)
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#2961](https://github.com/Urigo/accounter-fullstack/pull/2961)
+  [`ec845a7`](https://github.com/Urigo/accounter-fullstack/commit/ec845a705ca5e1a5992c5899055d18ebe561ae3e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.563.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.563.0) (from
+    `0.562.0`, in `dependencies`)
+
+- [#2963](https://github.com/Urigo/accounter-fullstack/pull/2963)
+  [`e528d48`](https://github.com/Urigo/accounter-fullstack/commit/e528d48225c7b9bf6b620bcfa970c226a7c4e754)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.13.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.0) (from
+    `7.12.0`, in `dependencies`)
+
+- [#2978](https://github.com/Urigo/accounter-fullstack/pull/2978)
+  [`8f6d661`](https://github.com/Urigo/accounter-fullstack/commit/8f6d66108bd088388673e7cd53d1c1016d03c762)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react@19.2.4` ↗︎](https://www.npmjs.com/package/react/v/19.2.4) (from
+    `19.2.3`, in `dependencies`)
+  - Updated dependency [`react-dom@19.2.4` ↗︎](https://www.npmjs.com/package/react-dom/v/19.2.4)
+    (from `19.2.3`, in `dependencies`)
+
+- [#2982](https://github.com/Urigo/accounter-fullstack/pull/2982)
+  [`859a42a`](https://github.com/Urigo/accounter-fullstack/commit/859a42a4fd67574f9c45d5f721f83e2df93b921e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.4` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.4) (from
+    `17.2.3`, in `dependencies`)
+  - Updated dependency
+    [`react-day-picker@9.13.1` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.1) (from
+    `9.13.0`, in `dependencies`)
+
+- [#2988](https://github.com/Urigo/accounter-fullstack/pull/2988)
+  [`3c2df4f`](https://github.com/Urigo/accounter-fullstack/commit/3c2df4f4cb79ec90fc5cfe372f7cede5e56f27e7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@5.4.624` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.624)
+    (from `5.4.530`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.11` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.11) (from
+    `5.0.10`, in `dependencies`)
+
+- [#2995](https://github.com/Urigo/accounter-fullstack/pull/2995)
+  [`48b4897`](https://github.com/Urigo/accounter-fullstack/commit/48b48977e7bd74a58b49e984ca2d1a257614890a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react-to-pdf@3.1.0` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.1.0)
+    (from `3.0.0`, in `dependencies`)
+
+- [#2999](https://github.com/Urigo/accounter-fullstack/pull/2999)
+  [`1f9675e`](https://github.com/Urigo/accounter-fullstack/commit/1f9675e5ae7e516770b7a052a79bbcfcd758b748)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@5.4.624` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.624)
+    (from `5.4.530`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.11` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.11) (from
+    `5.0.10`, in `dependencies`)
+
+- [#3025](https://github.com/Urigo/accounter-fullstack/pull/3025)
+  [`0b5b2ea`](https://github.com/Urigo/accounter-fullstack/commit/0b5b2ea65abe31286a97615a46cad149da72f235)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.4` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.4) (from
+    `17.2.3`, in `dependencies`)
+  - Updated dependency
+    [`react-day-picker@9.13.1` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.1) (from
+    `9.13.0`, in `dependencies`)
+
+- [#3031](https://github.com/Urigo/accounter-fullstack/pull/3031)
+  [`211446a`](https://github.com/Urigo/accounter-fullstack/commit/211446a6757b501d71131f2b4689bcefcf46d580)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.13.2` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.2) (from
+    `9.13.1`, in `dependencies`)
+
+- [#3000](https://github.com/Urigo/accounter-fullstack/pull/3000)
+  [`653f97c`](https://github.com/Urigo/accounter-fullstack/commit/653f97cb5ed3a4d420023d22494452ac3e80b1ec)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Account Filtering for Balance Report**:
+  The 'Transactions Balance' report now supports filtering by financial accounts, allowing users to
+  include or exclude specific accounts from the report.
+  - **Frontend UI Enhancements**: The balance report filter form has been updated with new account
+    selection fields, improved form validation using Zod, and UI component adjustments for better
+    responsiveness.
+  - **Backend GraphQL Integration**: The GraphQL schema and resolvers have been extended to include
+    financial account data for transactions and to support the new account-based filtering logic.
+  - **Reusable Account Fetching Logic**: A new helper function and a client-side hook were
+    introduced to centralize and streamline the fetching and management of financial account data.
+
+- [#3003](https://github.com/Urigo/accounter-fullstack/pull/3003)
+  [`7809f6d`](https://github.com/Urigo/accounter-fullstack/commit/7809f6dc1a16373a205d76bdc2458d6132785e2c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Swift Code Integration**: This PR
+  introduces the 'swiftCode' field to financial bank accounts, enhancing the system's ability to
+  manage international banking details.
+  - **Schema and UI Updates**: The changes include updates to the financial account schema, UI
+    components, and database migrations to accommodate the new 'swiftCode' field.
+  - **Database Migration**: A new migration script is added to update the 'financial_bank_accounts'
+    table with a 'swift_code' column.
+
+- [#3030](https://github.com/Urigo/accounter-fullstack/pull/3030)
+  [`767bca6`](https://github.com/Urigo/accounter-fullstack/commit/767bca6a2080c2876766f4eb0f147e026450665b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Period Summary Component**: A new
+  component, `PeriodSummary`, has been introduced to display a detailed financial summary for each
+  period, including income, expense, delta, and cumulative balance.
+  - **Multi-Currency Delta Breakdown**: The `PeriodSummary` component now provides a breakdown of
+    the delta by individual currencies, offering more granular insights into financial movements.
+
+- [#2975](https://github.com/Urigo/accounter-fullstack/pull/2975)
+  [`4b37fc8`](https://github.com/Urigo/accounter-fullstack/commit/4b37fc85d294571c0a209901e64f7b4a1c7dc5ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **GraphQL Schema Update**: The 'zip'
+  field in the 'ClientInput' GraphQL type has been renamed to 'zipCode' for better clarity and
+  consistency across the system.
+  - **Green Invoice Client Data Mapping**: The logic for converting local client data to Green
+    Invoice client input has been updated to correctly use 'city' and 'zip_code' from local business
+    data and to ensure all client details are sourced from the initial input, resolving potential
+    data discrepancies.
+  - **UI Event Propagation Prevention**: The 'stopPropagation' method has been added to key UI
+    elements in document generation and preview modals to prevent unintended click event bubbling,
+    improving user interaction and preventing unexpected behavior.
+  - **UI Text Refinement**: A dialog title in the merge charges component has been updated from
+    'Issue New Document' to 'Merge Charges' for improved clarity and accuracy.
+
+- [#2999](https://github.com/Urigo/accounter-fullstack/pull/2999)
+  [`1f9675e`](https://github.com/Urigo/accounter-fullstack/commit/1f9675e5ae7e516770b7a052a79bbcfcd758b748)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Charge Editing Flow**: The
+  `EditChargeModal` now correctly closes itself and triggers the `onChange` callback when an edit
+  operation is completed, improving the user experience for charge modifications.
+  - **UI Layering Fix**: A `zIndex` property has been added to the 'Year of relevance' date picker
+    within the `ChargeSpreadInput` to ensure its popover renders above other UI elements, preventing
+    display issues.
+  - **Similar Charges Modal Logic**: The `SimilarChargesByIdModal` now includes logic to
+    automatically close if it's opened without any valid search criteria (i.e., `tagIds` or
+    `description`), preventing an empty or irrelevant modal from appearing.
+  - **Drawer Interaction**: An `onClick` event handler with `stopPropagation()` has been added to
+    the `DrawerContent` component to prevent clicks within the drawer from propagating to underlying
+    elements, enhancing interaction isolation.
+
 ## 0.0.10
 
 ### Patch Changes
