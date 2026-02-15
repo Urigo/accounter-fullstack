@@ -82,7 +82,9 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         processing_fee,
         "work",
         total_payment_currency,
-        payment_id)
+        payment_id,
+        deel_reference,
+        recipient_legal_entity_id)
       VALUES ($id,
         $documentId,
         $amount,
@@ -123,7 +125,9 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         $processingFee,
         $work,
         $totalPaymentCurrency,
-        $paymentId)
+        $paymentId,
+        $deelReference,
+        $recipientLegalEntityId)
       RETURNING *;`;
 
 @Injectable({

@@ -283,6 +283,7 @@ export function convertMatchToDeelInvoiceRecord(
     vatPercentage: nullifyEmptyStrings(match.vat_percentage),
     vatTotal: match.vat_total,
     work: match.breakdown_work,
+    recipientLegalEntityId: match.recipient_legal_entity_id,
   };
 }
 
@@ -397,6 +398,10 @@ export function getContractsFromPaymentBreakdowns(matches: DeelInvoiceMatch[]) {
     }
     const existing = contractsMap.get(match.contract_id);
     if (existing) {
+      if (match.breakdown_contractor_unique_identifier === '') {
+        // TODO: this is a temporary fix to handle fee invoices with alternative contractor info
+        continue;
+      }
       // verify consistency
       if (
         existing.contract_country !== match.breakdown_contract_country ||

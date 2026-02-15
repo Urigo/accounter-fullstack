@@ -103,6 +103,7 @@ const invoiceSchema = z
     vat_id: z.literal('').describe('VAT identification number related to the invoice.'), // example: "string",
     vat_percentage: z.literal('').describe('Percentage of VAT charged on the invoice.'), // example: "21",
     vat_total: z.literal('0.00').describe('Total amount of VAT charged on the invoice.'), // example: "210",
+    recipient_legal_entity_id: z.literal('1dee10b1-105b-4dc7-bcdb-5ed5c52ba868'), // TODO: replace with DB variable instead of hardcoding
   })
   .strict();
 
@@ -194,7 +195,11 @@ export const paymentReceiptsSchema = z
         })
         .strict(),
     ),
-    timezone: z.string(),
+    timezone: z
+      .string()
+      .nullable()
+      .describe('Timezone offset in ISO 8601 format (e.g., +02:00, -05:00).'),
+    deel_reference: z.string().nullable().describe('Deel reference identifier for the payment.'),
   })
   .strict();
 
@@ -206,6 +211,20 @@ export const retrievePaymentReceiptsSchema = z
       .object({
         rows: z.array(paymentReceiptsSchema),
         total: z.number().int().min(0),
+        next_cursor: z
+          .string()
+          .nullable()
+          .describe(
+            'A cursor for pagination. Use the value returned in the ‘next_cursor’ field to get the next page of results. If there are no more results, this will be null.',
+          ),
+        has_more: z
+          .boolean()
+          .nullable()
+          .describe('Inform if there are more entries to be fetched using next cursor.'),
+        total_count: z
+          .number()
+          .nullable()
+          .describe('The total number of payments matching the query'),
       })
       .strict(),
   })
