@@ -1,6 +1,5 @@
 import type { YogaInitialContext } from 'graphql-yoga';
 import pg from 'pg';
-import type { PoolClient } from 'pg';
 import type { CorporateTaxRulingComplianceReport, Role } from '../../__generated__/types.js';
 import type { env } from '../../environment.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
