@@ -478,6 +478,15 @@ export async function getMonthTransactions(
           try {
             const monthTransactions = await scraper!.getMonthTransactions(month);
 
+            if (!monthTransactions.data) {
+              task.skip('No data');
+              ctx[accountKey].processedData ??= {};
+              ctx[accountKey].processedData.transactions ??= 0;
+              parentTask.title = originalTitle + ' (No data)';
+              logger.error('No data received from scraper', { month: format(month, 'MM-yyyy') });
+              return;
+            }
+
             if (!monthTransactions.isValid) {
               if ('errors' in monthTransactions) {
                 logger.error(monthTransactions.errors);
@@ -485,14 +494,6 @@ export async function getMonthTransactions(
               throw new Error(
                 `Invalid transactions data for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
               );
-            }
-
-            if (!monthTransactions.data) {
-              task.skip('No data');
-              ctx[accountKey].processedData ??= {};
-              ctx[accountKey].processedData.transactions ??= 0;
-              parentTask.title = originalTitle + ' (No data)';
-              return;
             }
 
             if (monthTransactions?.data?.Header?.Status !== '1') {
