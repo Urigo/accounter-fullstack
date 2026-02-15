@@ -406,7 +406,22 @@ BEGIN
   RETURN v_business_id;
 END;
 $$;
+
+-- RLS Policy Pattern (example for charges table which already has owner_id):
+ALTER TABLE accounter_schema.charges ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON accounter_schema.charges
+  USING (owner_id = accounter_schema.get_current_business_id());
+
+-- For tables where owner_id is added, same pattern:
+-- CREATE POLICY tenant_isolation ON accounter_schema.documents
+--   USING (owner_id = accounter_schema.get_current_business_id());
 ```
+
+**Note**: The RLS function is named `get_current_business_id()` (unchanged from original plan), but
+policies compare the result against the `owner_id` column. This naming convention maintains semantic
+clarity: the function returns "which business owns this session" and the column indicates "which
+business owns this row."
 
 #### 3.2.1. Macro-Level Flaw Detection (Decisions)
 
@@ -541,60 +556,91 @@ export const createGraphQLContext = async (request, pool, auth) => {
 
 #### 3.2.2. Database Execution Blueprint (Multi-Tenant Migration)
 
-- **Tables that must carry `business_id`**:
-  - business_tax_category_match (owner_id)
-  - business_trip_charges (charge_id => charges)
-  - business_trips
-  - business_trips_attendees (business_trip_id => business_trips)
-  - business_trips_employee_payments (id => business_trips_transactions => business_trips)
-  - business_trips_transactions (business_trip_id => business_trips)
-  - business_trips_transactions_accommodations (id => business_trips_transactions => business_trips)
-  - business_trips_transactions_car_rental (id => business_trips_transactions => business_trips)
-  - business_trips_transactions_flights (id => business_trips_transactions => business_trips)
-  - business_trips_transactions_match (business_trips_transaction_id => business_trips_transactions
-    => business_trips)
-  - business_trips_transactions_other (id => business_trips_transactions => business_trips)
-  - business_trips_transactions_tns (id => business_trips_transactions => business_trips)
-  - businesses (id => financial_entities)
-  - businesses_admin (id => businesses => financial_entities)
-  - businesses_green_invoice_match (business_id => businesses => financial_entities)
-  - charge_balance_cancellation (charge_id => charges)
-  - charge_spread (charge_id => charges)
-  - charge_tags (charge_id => charges)
-  - charge_unbalanced_ledger_businesses (charge_id => charges)
-  - charges
-  - charges_bank_deposits (charge_id => charges)
-  - clients (business_id => businesses => financial_entities)
-  - clients_contracts (client_id => clients => businesses => financial_entities)
-  - corporate_tax_variables (corporate_id)
-  - deel_invoices (document_id => documents => charges)
-  - deel_workers (business_id => businesses => financial_entities)
-  - depreciation (charge_id => charges)
-  - dividends (business_id => businesses => financial_entities)
-  - documents (charge_id => charges)
-  - documents_issued (id => documents => charges)
-  - dynamic_report_templates (owner_id)
-  - employees (business_id => businesses => financial_entities)
-  - financial_accounts (owner)
-  - financial_accounts_tax_categories (financial_account_id => financial_accounts)
-  - financial_bank_accounts (id => financial_accounts)
-  - financial_entities (owner_id)
-  - ledger_records (charge_id => charges)
-  - misc_expenses (charge_id => charges)
-  - pcn874 (business_id)
-  - poalim_ils_account_transactions
-  - salaries (employer)
-  - tags
-  - tax_categories (id => financial_entities)
-  - transactions (charge_id => charges)
-  - user_context (owner_id)
+**RLS Column Strategy**: Use `owner_id` as the consistent RLS column across all tenant tables. Many
+tables already have `owner_id` (e.g., charges, financial_entities, ledger_records). Tables with
+`business_id` often use it for different semantic purposes (counterparty reference in transactions,
+participant reference, etc.), so using `owner_id` avoids conflicts.
+
+**RLS Function**: `get_current_business_id()` (name unchanged) returns `app.current_business_id`
+session variable value. RLS policies compare this against the `owner_id` column.
+
+**Tables that already have `owner_id`** (no column addition needed, just add RLS policies):
+
+- charges (owner_id NOT NULL) - RLS already enabled in Phase 3.2
+- financial_entities (owner_id NULLABLE)
+- ledger_records (owner_id NULLABLE)
+- dividends (owner_id NOT NULL)
+- business_tax_category_match (owner_id NOT NULL)
+- dynamic_report_templates (owner_id - needs verification)
+- user_context (owner_id)
+
+**Tables that need `owner_id` added** (with backfill strategy):
+
+- business_trip_charges (add owner_id, backfill: charge_id => charges.owner_id)
+- business_trips (add owner_id, backfill: derive from first attendee or transactions)
+- business_trips_attendees (add owner_id, backfill: business_trip_id => business_trips.owner_id)
+- business_trips_employee_payments (add owner_id, backfill: id => business_trips_transactions =>
+  business_trips.owner_id)
+- business_trips_transactions (add owner_id, backfill: business_trip_id => business_trips.owner_id)
+- business_trips_transactions_accommodations (add owner_id, backfill: id =>
+  business_trips_transactions.owner_id)
+- business_trips_transactions_car_rental (add owner_id, backfill: id =>
+  business_trips_transactions.owner_id)
+- business_trips_transactions_flights (add owner_id, backfill: id =>
+  business_trips_transactions.owner_id)
+- business_trips_transactions_match (add owner_id, backfill: business_trips_transaction_id =>
+  business_trips_transactions.owner_id)
+- business_trips_transactions_other (add owner_id, backfill: id =>
+  business_trips_transactions.owner_id)
+- business_trips_transactions_tns (add owner_id, backfill: id =>
+  business_trips_transactions.owner_id)
+- businesses (add owner_id, backfill: id => financial_entities.owner_id)
+- businesses_admin (add owner_id, backfill: id => businesses => financial_entities.owner_id)
+- businesses_green_invoice_match (add owner_id, backfill: business_id => businesses =>
+  financial_entities.owner_id)
+- charge_balance_cancellation (add owner_id, backfill: charge_id => charges.owner_id)
+- charge_spread (add owner_id, backfill: charge_id => charges.owner_id)
+- charge_tags (add owner_id, backfill: charge_id => charges.owner_id)
+- charge_unbalanced_ledger_businesses (add owner_id, backfill: charge_id => charges.owner_id)
+- charges_bank_deposits (add owner_id, backfill: charge_id => charges.owner_id)
+- clients (add owner_id, backfill: business_id => businesses => financial_entities.owner_id)
+- clients_contracts (add owner_id, backfill: client_id => clients.owner_id)
+- corporate_tax_variables (add owner_id, backfill: corporate_id => businesses =>
+  financial_entities.owner_id)
+- deel_invoices (add owner_id, backfill: document_id => documents.owner_id)
+- deel_workers (add owner_id, backfill: business_id => businesses => financial_entities.owner_id)
+- depreciation (add owner_id, backfill: charge_id => charges.owner_id)
+- documents (add owner_id, backfill: charge_id => charges.owner_id)
+- documents_issued (add owner_id, backfill: id => documents.owner_id)
+- employees (add owner_id, backfill: business_id => businesses => financial_entities.owner_id OR use
+  employer field)
+- financial_accounts (rename `owner` to `owner_id` OR add owner_id and backfill from `owner`)
+- financial_accounts_tax_categories (add owner_id, backfill: financial_account_id =>
+  financial_accounts.owner_id)
+- financial_bank_accounts (add owner_id, backfill: id => financial_accounts.owner_id)
+- misc_expenses (add owner_id, backfill: charge_id => charges.owner_id)
+- pcn874 (add owner_id, backfill: business_id => businesses => financial_entities.owner_id)
+- poalim_ils_account_transactions (add owner_id, backfill: account match to
+  financial_accounts.owner_id)
+- salaries (add owner_id, backfill: employer => businesses => financial_entities.owner_id)
+- tags (add owner_id, backfill: needs analysis - may be global or per-business)
+- tax_categories (add owner_id, backfill: id => financial_entities.owner_id)
+- transactions (add owner_id, backfill: charge_id => charges.owner_id)
+
+**Tables with `business_id` for different semantic purposes** (DO NOT rename or repurpose):
+
+- transactions.business_id (counterparty business in transaction, NOT the owner)
+- charge_unbalanced_ledger_businesses.business_id (participant business, NOT the owner)
+- charge_balance_cancellation.business_id (counterparty, NOT the owner)
+- business_trips_attendees.attendee_business_id (participant, NOT the owner)
+- Note: These tables will have BOTH owner_id (for RLS) AND business_id (for business logic)
 
 - **Locking Strategy** (5-Phase Low-Downtime Migration):
-  - **Phase 1**: Add `business_id` columns as nullable (acquires brief ACCESS EXCLUSIVE lock, < 1
+  - **Phase 1**: Add `owner_id` columns as nullable (acquires brief ACCESS EXCLUSIVE lock, < 1
     second)
   - **Phase 2**: Backfill in batches of 10,000 rows with 1-second sleep between batches (background
     job, no downtime)
-  - **Phase 3**: Validate 100% backfill completion (SELECT COUNT(\*) WHERE business_id IS NULL must
+  - **Phase 3**: Validate 100% backfill completion (SELECT COUNT(\*) WHERE owner_id IS NULL must
     = 0)
   - **Phase 4**: Add NOT NULL constraint (requires brief ACCESS EXCLUSIVE lock, < 5 seconds)
   - **Phase 5**: Create indexes `CONCURRENTLY` (2-10 minutes, non-blocking), then add foreign keys

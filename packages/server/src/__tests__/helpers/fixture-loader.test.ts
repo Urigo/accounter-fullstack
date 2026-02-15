@@ -232,9 +232,8 @@ describe('Fixture Loader', () => {
           },
           // No tax categories, accounts, charges, etc.
         };
-await client.query("SELECT set_config('app.current_business_id', $1, true)", [businessId]);
+        await client.query("SELECT set_config('app.current_business_id', $1, true)", [businessId]);
 
-        
         const idMap = await insertFixture(client, fixture);
 
         expect(idMap.get(businessId)).toBe(businessId);
