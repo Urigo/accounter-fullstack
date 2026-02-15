@@ -18,9 +18,7 @@ export default {
       USING (owner_id = accounter_schema.get_current_business_id())
       WITH CHECK (owner_id = accounter_schema.get_current_business_id());
 
-    -- Force RLS to ensure even table owners (if any) respect it, 
-    -- though superusers bypass it unless FORCE is used (wait, FORCE only affects table owners, superusers usually bypass anyway)
-    -- But documented as "Force Row Level Security" to ensure it applies to table owner.
+    -- Force RLS for the table owner. Superusers bypass RLS by default.
     ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
   `,
 } satisfies MigrationExecutor;
