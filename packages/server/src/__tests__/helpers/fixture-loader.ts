@@ -286,6 +286,7 @@ export async function insertFixture(
             await client.query("SELECT set_config('app.current_business_id', $1, true)", [charge.owner_id]);
           } catch (e) {
             // Ignore if function assumes string UUIDs but we have something else, or permission issues
+            console.warn('Failed to set RLS context for charge in fixture-loader:', e);
           }
         }
 
