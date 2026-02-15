@@ -324,7 +324,9 @@ export async function insertFixture(
         if (transaction.business_id) {
           try {
              await client.query("SELECT set_config('app.current_business_id', $1, true)", [transaction.business_id]);
-          } catch(e) {}
+          } catch(e) {
+            console.warn('Failed to set RLS context for transaction in fixture-loader:', e);
+          }
         }
         
         // If account_id looks like an account_number (not a UUID), look up the actual UUID
