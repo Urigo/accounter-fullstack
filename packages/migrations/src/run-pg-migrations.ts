@@ -145,6 +145,7 @@ import migration_2026_01_25T11_00_00_create_core_user_tables from './actions/202
 import migration_2026_01_26T12_00_00_create_invitations_apikeys_tables from './actions/2026-01-26T12-00-00.create-invitations-apikeys-tables.js';
 import migration_2026_02_04T15_16_41_swift_code_for_bank_accounts from './actions/2026-02-04T15-16-41.swift-code-for-bank-accounts.js';
 import migration_2026_02_10T12_05_00_create_rls_helper_function from './actions/2026-02-10T12-05-00.create-rls-helper-function.js';
+import migration_2026_02_15T12_00_00_enrich_deel_invoice_with_receipt_legal_entity from './actions/2026-02-15T12-00-00.enrich-deel-invoice-with-receipt-legal-entity.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -294,6 +295,7 @@ export const MIGRATIONS = [
   migration_2026_01_26T12_00_00_create_invitations_apikeys_tables,
   migration_2026_02_04T15_16_41_swift_code_for_bank_accounts,
   migration_2026_02_10T12_05_00_create_rls_helper_function,
+  migration_2026_02_15T12_00_00_enrich_deel_invoice_with_receipt_legal_entity,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
