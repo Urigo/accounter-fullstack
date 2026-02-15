@@ -479,6 +479,9 @@ export async function getMonthTransactions(
             const monthTransactions = await scraper!.getMonthTransactions(month);
 
             if (!monthTransactions.data) {
+              if ('errors' in monthTransactions && monthTransactions.errors) {
+                logger.error('Validation errors on month transactions', monthTransactions.errors);
+              }
               task.skip('No data');
               ctx[accountKey].processedData ??= {};
               ctx[accountKey].processedData.transactions ??= 0;
