@@ -202,7 +202,37 @@ describe('TenantAwareDBClient', () => {
       expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockPoolClient.release).toHaveBeenCalled();
       expect((tenantDBClient as any).activeClient).toBeNull();
-     });
+    });
+
+    it('should force dispose on timeout if mutex is held', async () => {
+      // Use fake timers to fast-forward the 5s timeout
+      vi.useFakeTimers();
+
+      // Mock active client
+      (tenantDBClient as any).activeClient = mockPoolClient;
+      
+      // Acquire mutex manually to simulate stuck transaction
+      // We need access to the mutex which is private.
+      // Casting to any allows access for testing.
+      const release = await (tenantDBClient as any).mutex.acquire();
+      
+      const disposePromise = tenantDBClient.dispose();
+      
+      // Advance timers by 5000ms + buffer (must handle async promise resolution)
+      await vi.advanceTimersByTimeAsync(6000);
+      
+      await disposePromise;
+      
+      // Cleanup
+      release();
+      vi.useRealTimers();
+      
+      // Assertions
+      // 1. Client should be released with true (force destroy) because we timed out
+      expect(mockPoolClient.release).toHaveBeenCalledWith(true);
+      // 2. isDisposed should be true
+      expect((tenantDBClient as any).isDisposed).toBe(true);
+    });
   });
 
   describe('RLS variables', () => {

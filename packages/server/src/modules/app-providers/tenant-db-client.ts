@@ -278,24 +278,58 @@ export class TenantAwareDBClient {
     if (this.isDisposed) return;
 
     // Use a timeout or race to prevent hanging indefinitely during disposal
-    const release = await this.mutex.acquire();
+    // If a query is stuck, we don't want to block the entire server request handler.
+    const TIMEOUT_MS = 5000;
+    let release: (() => void) | undefined;
+
+    try {
+      release = await Promise.race([
+        this.mutex.acquire(),
+        new Promise<() => void>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout acquiring mutex')), TIMEOUT_MS),
+        ),
+      ]);
+    } catch (e) {
+      console.warn(
+        'Timeout acquiring mutex during TenantAwareDBClient disposal. Forcing cleanup.',
+        e,
+      );
+      // We process cleanup even if we couldn't acquire the lock to prevent DoS.
+    }
 
     try {
       if (this.isDisposed) return;
 
       if (this.activeClient) {
         try {
-          await this.activeClient.query('ROLLBACK');
+          // Attempt rollback, but catch errors if connection is busy/closed
+          await Promise.race([
+            this.activeClient.query('ROLLBACK'),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Rollback timeout')), 1000),
+            ),
+          ]);
         } catch (error) {
-          console.error('Error disposing TenantAwareDBClient:', error);
+          console.error('Error disposing TenantAwareDBClient (rollback failed):', error);
         } finally {
-          this.activeClient.release();
+          try {
+            // Force release the client back to the pool (or destroy it if it was stuck)
+            // Ideally we'd destroy it if it was stuck, but `release(true)` isn't standard pg-pool API exposed via release?
+            // Standard pg `release()` usually takes a boolean `err`. If truthy, the client is removed from the pool.
+            // Since we had a timeout/error, we should probably treat it as an error state.
+            // But `release` signature in @types/pg is `release(err?: boolean | Error): void;`
+            this.activeClient.release(true);
+          } catch (e) {
+            console.error('Error releasing client during disposal:', e);
+          }
           this.activeClient = null;
         }
       }
       this.isDisposed = true;
     } finally {
-      release();
+      if (release) {
+        release();
+      }
     }
   }
 
