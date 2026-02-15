@@ -890,7 +890,7 @@ for RLS.
 - Create migration: `2026-02-14T10-00-00.owner-id-not-null.ts`
 - Add NOT NULL constraints to tables where all rows should have owners:
   ```sql
-  ALTER TABLE accounter_schema.charges ALTER COLUMN business_id SET NOT NULL;
+  ALTER TABLE accounter_schema.charges ALTER COLUMN owner_id SET NOT NULL;
   ```
 - Skip tables where owner_id should remain NULLABLE (e.g., financial_entities.owner_id for
   system-level entities)
