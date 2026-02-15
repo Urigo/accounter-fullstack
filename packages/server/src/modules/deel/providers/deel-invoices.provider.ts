@@ -83,7 +83,6 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         "work",
         total_payment_currency,
         payment_id,
-        deel_reference,
         recipient_legal_entity_id)
       VALUES ($id,
         $documentId,
@@ -126,7 +125,6 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         $work,
         $totalPaymentCurrency,
         $paymentId,
-        $deelReference,
         $recipientLegalEntityId)
       RETURNING *;`;
 
