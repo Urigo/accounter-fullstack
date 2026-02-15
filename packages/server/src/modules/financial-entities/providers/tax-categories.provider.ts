@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { Currency } from '../../../shared/enums.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTaxCategoryParams,
   IDeleteBusinessTaxCategoryQuery,
@@ -161,7 +161,7 @@ const replaceTaxCategories = sql<IReplaceTaxCategoriesQuery>`
   global: true,
 })
 export class TaxCategoriesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchTaxCategoryByBusinessAndOwnerIDs(
     entries: readonly { businessId: string; ownerId: string }[],
@@ -174,7 +174,7 @@ export class TaxCategoriesProvider {
         BusinessIds: BusinessIdsSet.size === 0 ? [null] : Array.from(BusinessIdsSet),
         OwnerIds: OwnerIdsSet.size === 0 ? [null] : Array.from(OwnerIdsSet),
       },
-      this.dbProvider,
+      this.db,
     );
     return entries.map(
       ({ businessId, ownerId }) =>
@@ -196,7 +196,7 @@ export class TaxCategoriesProvider {
       {
         Ids: ids,
       },
-      this.dbProvider,
+      this.db,
     );
     return ids.map(id => taxCategories.find(tc => tc.id === id));
   }
@@ -212,7 +212,7 @@ export class TaxCategoriesProvider {
       {
         sortCodes: [...sortCodes],
       },
-      this.dbProvider,
+      this.db,
     );
     return sortCodes.map(sortCode => taxCategories.filter(tc => tc.sort_code === sortCode));
   }
@@ -233,7 +233,7 @@ export class TaxCategoriesProvider {
           FinancialAccountIdsSet.size === 0 ? [null] : Array.from(FinancialAccountIdsSet),
         Currencies: CurrenciesSet.size === 0 ? [null] : Array.from(CurrenciesSet),
       },
-      this.dbProvider,
+      this.db,
     );
     return entries.map(
       ({ financialAccountId, currency }) =>
@@ -253,7 +253,7 @@ export class TaxCategoriesProvider {
       {
         ownerIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return ownerIds.map(id => taxCategories.filter(tc => tc.financial_account_owner_id === id));
   }
@@ -267,7 +267,7 @@ export class TaxCategoriesProvider {
       {
         financialAccountIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return financialAccountIds.map(id =>
       taxCategories.filter(tc => tc.financial_account_id === id),
@@ -279,35 +279,35 @@ export class TaxCategoriesProvider {
   );
 
   public getAllTaxCategories() {
-    return getAllTaxCategories.run(undefined, this.dbProvider);
+    return getAllTaxCategories.run(undefined, this.db);
   }
 
   public updateTaxCategory(params: IUpdateTaxCategoryParams) {
     if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
-    return updateTaxCategory.run(params, this.dbProvider);
+    return updateTaxCategory.run(params, this.db);
   }
 
   public updateBusinessTaxCategory(params: IUpdateBusinessTaxCategoryParams) {
     if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
-    return updateBusinessTaxCategory.run(params, this.dbProvider);
+    return updateBusinessTaxCategory.run(params, this.db);
   }
 
   public insertTaxCategory(params: IInsertTaxCategoryParams) {
     if (!params.id) {
       throw new Error('Missing required parameters');
     }
-    return insertTaxCategory.run(params, this.dbProvider).catch(error => {
+    return insertTaxCategory.run(params, this.db).catch(error => {
       console.error(`Failed to insert tax category: ${error.message}`);
       throw error;
     });
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
-    return insertBusinessTaxCategory.run(params, this.dbProvider);
+    return insertBusinessTaxCategory.run(params, this.db);
   }
 
   public deleteBusinessTaxCategory(params: IDeleteBusinessTaxCategoryParams) {
-    return deleteBusinessTaxCategory.run(params, this.dbProvider);
+    return deleteBusinessTaxCategory.run(params, this.db);
   }
 
   public async deleteTaxCategoryById(taxCategoryId: string) {
@@ -318,7 +318,7 @@ export class TaxCategoriesProvider {
     this.invalidateTaxCategoryById(taxCategoryId);
 
     // delete tax category
-    deleteTaxCategory.run({ taxCategoryId }, this.dbProvider);
+    deleteTaxCategory.run({ taxCategoryId }, this.db);
   }
 
   public async replaceTaxCategory(
@@ -344,7 +344,7 @@ export class TaxCategoriesProvider {
         targetTaxCategoryId,
         taxCategoryIdToReplace,
       },
-      this.dbProvider,
+      this.db,
     );
 
     if (deleteTaxCategory) {

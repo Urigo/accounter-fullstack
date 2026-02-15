@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripEmployeePaymentParams,
   IDeleteBusinessTripEmployeePaymentQuery,
@@ -82,14 +82,14 @@ const replaceBusinessTripsEmployeePaymentsChargeId = sql<IReplaceBusinessTripsEm
   global: true,
 })
 export class BusinessTripEmployeePaymentsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchBusinessTripEmployeePaymentsByChargeIds(chargeIds: readonly string[]) {
     const businessTrips = await getBusinessTripEmployeePaymentsByChargeIds.run(
       {
         chargeIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return chargeIds.map(id => businessTrips.filter(record => record.charge_id === id));
   }
@@ -100,7 +100,7 @@ export class BusinessTripEmployeePaymentsProvider {
 
   public async updateBusinessTripEmployeePayment(params: IUpdateBusinessTripEmployeePaymentParams) {
     // clear cache for old chargeId
-    const [payment] = await getBusinessTripEmployeePaymentById.run(params, this.dbProvider);
+    const [payment] = await getBusinessTripEmployeePaymentById.run(params, this.db);
     if (!payment) {
       throw new Error('Business trip employee payment not found');
     }
@@ -110,7 +110,7 @@ export class BusinessTripEmployeePaymentsProvider {
       this.getBusinessTripEmployeePaymentsByChargeIdLoader.clear(params.chargeId);
     }
 
-    return updateBusinessTripEmployeePayment.run(params, this.dbProvider);
+    return updateBusinessTripEmployeePayment.run(params, this.db);
   }
 
   public replaceBusinessTripsEmployeePaymentsChargeId(
@@ -122,24 +122,24 @@ export class BusinessTripEmployeePaymentsProvider {
     if (params.replaceChargeID) {
       this.getBusinessTripEmployeePaymentsByChargeIdLoader.clear(params.replaceChargeID);
     }
-    return replaceBusinessTripsEmployeePaymentsChargeId.run(params, this.dbProvider);
+    return replaceBusinessTripsEmployeePaymentsChargeId.run(params, this.db);
   }
 
   public insertBusinessTripEmployeePayment(params: IInsertBusinessTripEmployeePaymentParams) {
     if (params.chargeId) {
       this.getBusinessTripEmployeePaymentsByChargeIdLoader.clear(params.chargeId);
     }
-    return insertBusinessTripEmployeePayment.run(params, this.dbProvider);
+    return insertBusinessTripEmployeePayment.run(params, this.db);
   }
 
   public async deleteBusinessTripEmployeePayment(params: IDeleteBusinessTripEmployeePaymentParams) {
     // clear cache for old chargeId
-    const [payment] = await getBusinessTripEmployeePaymentById.run(params, this.dbProvider);
+    const [payment] = await getBusinessTripEmployeePaymentById.run(params, this.db);
     if (!payment) {
       throw new Error('Business trip employee payment not found');
     }
     this.getBusinessTripEmployeePaymentsByChargeIdLoader.clear(payment.charge_id);
-    return deleteBusinessTripEmployeePayment.run(params, this.dbProvider);
+    return deleteBusinessTripEmployeePayment.run(params, this.db);
   }
 
   public clearCache() {

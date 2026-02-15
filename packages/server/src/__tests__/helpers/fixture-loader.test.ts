@@ -71,6 +71,9 @@ describe('Fixture Loader', () => {
 
         const idMap = await insertFixture(client, fixture);
 
+        // Set context for RLS to allow reading back the inserted data
+        await client.query("SELECT set_config('app.current_business_id', $1, true)", [businessId]);
+
         // Verify ID mapping
         expect(idMap.size).toBeGreaterThan(0);
         expect(idMap.get(businessId)).toBe(businessId);
@@ -175,6 +178,9 @@ describe('Fixture Loader', () => {
         };
 
         const idMap = await insertFixture(client, fixture);
+        
+        // Set context for RLS to allow reading back the inserted data
+        await client.query("SELECT set_config('app.current_business_id', $1, true)", [customerId]);
 
         // Verify all IDs mapped
         expect(idMap.get(supplierId)).toBe(supplierId);
@@ -226,6 +232,7 @@ describe('Fixture Loader', () => {
           },
           // No tax categories, accounts, charges, etc.
         };
+        await client.query("SELECT set_config('app.current_business_id', $1, true)", [businessId]);
 
         const idMap = await insertFixture(client, fixture);
 
@@ -342,6 +349,9 @@ describe('Fixture Loader', () => {
 
         const idMap = await insertFixture(client, fixture);
 
+        await client.query("SELECT set_config('app.current_business_id', $1, false)", [biz1]);
+		// Force set context to allow reading back the inserted data
+        
         expect(idMap.size).toBe(6); // 2 businesses + 2 tax cats + 2 charges
 
         // Verify all charges reference correct businesses and tax categories
@@ -351,6 +361,8 @@ describe('Fixture Loader', () => {
         );
         expect(charge1Result.rows[0].owner_id).toBe(biz1);
         expect(charge1Result.rows[0].tax_category_id).toBe(tax1);
+
+        await client.query("SELECT set_config('app.current_business_id', $1, false)", [biz2]);
 
         const charge2Result = await client.query(
           `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,

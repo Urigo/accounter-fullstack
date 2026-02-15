@@ -3,6 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { DBProvider } from '../db.provider.js';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
+import type { AccounterContext } from '../../../shared/types/index.js';
 
 describe('TenantAwareDBClient', () => {
   let mockPoolClient: PoolClient;
@@ -49,12 +50,12 @@ describe('TenantAwareDBClient', () => {
       },
     };
 
-    tenantDBClient = new TenantAwareDBClient(mockDBProvider, mockAuthContext);
+    tenantDBClient = new TenantAwareDBClient(mockDBProvider, mockAuthContext, {} as AccounterContext);
   });
 
   describe('query', () => {
     it('should throw if auth context is missing', async () => {
-      tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
+      tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any, {} as any);
       
       await expect(tenantDBClient.query('SELECT 1'))
         .rejects
@@ -93,7 +94,7 @@ describe('TenantAwareDBClient', () => {
 
   describe('transaction', () => {
     it('should throw if auth context is missing', async () => {
-        tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
+        tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any, {} as any);
         
         await expect(tenantDBClient.transaction(async () => {}))
           .rejects
@@ -158,24 +159,28 @@ describe('TenantAwareDBClient', () => {
       expect((tenantDBClient as any).activeClient).toBeNull();
     });
 
-    it('should rollback and release active client2', async () => {
+    it('should wait for ongoing transaction to complete before disposing', async () => {
       // Start a transaction first to initialize activeClient
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
       
+      let transactionFinished = false;
       const transactionPromise = tenantDBClient.transaction(async () => {
-          // Pause here
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise(resolve => setTimeout(resolve, 50));
+          transactionFinished = true;
       });
 
-      await new Promise(resolve => setTimeout(resolve, 0)); // Let transaction start
+      // Ensure transaction started (mutex acquired)
+      await new Promise(resolve => setTimeout(resolve, 10));
       
+      // Call dispose. This should await the mutex (wait for transaction)
       await tenantDBClient.dispose();
 
-      // Transaction promise should fail or complete
-      try { await transactionPromise; } catch {}
-
-      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(transactionFinished).toBe(true);
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT'); // completed naturally
       expect(mockPoolClient.release).toHaveBeenCalled();
+      
+      // Verify subsequent calls fail
+      await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('TenantAwareDBClient is already disposed');
     });
 
     it('should be idempotent', async () => {
@@ -197,7 +202,37 @@ describe('TenantAwareDBClient', () => {
       expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
       expect(mockPoolClient.release).toHaveBeenCalled();
       expect((tenantDBClient as any).activeClient).toBeNull();
-     });
+    });
+
+    it('should force dispose on timeout if mutex is held', async () => {
+      // Use fake timers to fast-forward the 5s timeout
+      vi.useFakeTimers();
+
+      // Mock active client
+      (tenantDBClient as any).activeClient = mockPoolClient;
+      
+      // Acquire mutex manually to simulate stuck transaction
+      // We need access to the mutex which is private.
+      // Casting to any allows access for testing.
+      const release = await (tenantDBClient as any).mutex.acquire();
+      
+      const disposePromise = tenantDBClient.dispose();
+      
+      // Advance timers by 5000ms + buffer (must handle async promise resolution)
+      await vi.advanceTimersByTimeAsync(6000);
+      
+      await disposePromise;
+      
+      // Cleanup
+      release();
+      vi.useRealTimers();
+      
+      // Assertions
+      // 1. Client should be released with true (force destroy) because we timed out
+      expect(mockPoolClient.release).toHaveBeenCalledWith(true);
+      // 2. isDisposed should be true
+      expect((tenantDBClient as any).isDisposed).toBe(true);
+    });
   });
 
   describe('RLS variables', () => {

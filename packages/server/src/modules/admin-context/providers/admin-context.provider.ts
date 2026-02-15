@@ -1,6 +1,6 @@
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAdminContextsQuery,
   IUpdateAdminContextParams,
@@ -276,7 +276,7 @@ export class AdminContextProvider {
 
   constructor(
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
   ) {}
 
   public async getAdminContext() {
@@ -290,7 +290,7 @@ export class AdminContextProvider {
       throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
     }
 
-    const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.dbProvider);
+    const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
     this.cachedContext = contexts[0] ?? null;
     return this.cachedContext;
   }
@@ -301,7 +301,7 @@ export class AdminContextProvider {
       throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
     }
     this.cachedContext = null;
-    return updateAdminContext.run(params, this.dbProvider);
+    return updateAdminContext.run(params, this.db);
   }
 
   public clearCache() {

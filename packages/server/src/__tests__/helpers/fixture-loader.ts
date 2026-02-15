@@ -125,6 +125,25 @@ export async function insertFixture(
   // Validate fixture before insertion
   assertValidFixture(fixture);
 
+  // Set RLS context if possible to allow insertion into protected tables (e.g. charges)
+  const contextBusinessId = adminBusinessId || fixture.businesses?.businesses?.[0]?.id;
+  if (contextBusinessId) {
+    try {
+      await client.query(
+        `SELECT
+          set_config('app.current_business_id', $1, true),
+          set_config('app.current_user_id', $1, true),
+          set_config('app.auth_type', 'jwt', true)`,
+        [contextBusinessId],
+      );
+    } catch (error) {
+       // Ignore error if function doesn't exist (e.g. in some mock setups) 
+       // or if we can't set config for some reason.
+       // The insertion might still succeed if RLS isn't fully active or checks are loose.
+       console.warn('Failed to set RLS context in insertFixture:', error);
+    }
+  }
+
   const idMapping: FixtureIdMapping = new Map();
 
   // Helper to execute a section with savepoint protection
@@ -261,6 +280,16 @@ export async function insertFixture(
   if (fixture.charges?.charges && fixture.charges.charges.length > 0) {
     await executeSavepointSection('charges', async () => {
       for (const charge of fixture.charges!.charges) {
+        // Set RLS context for each charge to ensure policy compliance
+        if (charge.owner_id) {
+          try {
+            await client.query("SELECT set_config('app.current_business_id', $1, true)", [charge.owner_id]);
+          } catch (e) {
+            // Ignore if function assumes string UUIDs but we have something else, or permission issues
+            console.warn('Failed to set RLS context for charge in fixture-loader:', e);
+          }
+        }
+
         await client.query(
           `INSERT INTO ${qualifyTable('charges')} (
             id, owner_id, type, accountant_status, user_description,
@@ -291,6 +320,15 @@ export async function insertFixture(
   if (fixture.transactions?.transactions && fixture.transactions.transactions.length > 0) {
     await executeSavepointSection('transactions', async () => {
       for (const transaction of fixture.transactions!.transactions) {
+        // Set RLS context for each transaction
+        if (transaction.business_id) {
+          try {
+             await client.query("SELECT set_config('app.current_business_id', $1, true)", [transaction.business_id]);
+          } catch(e) {
+            console.warn('Failed to set RLS context for transaction in fixture-loader:', e);
+          }
+        }
+        
         // If account_id looks like an account_number (not a UUID), look up the actual UUID
         let accountId = transaction.account_id;
         if (accountId && !accountId.match(UUID_REGEX)) {

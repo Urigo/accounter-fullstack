@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBankAccountParams,
   IDeleteBankAccountQuery,
@@ -185,14 +185,14 @@ const deleteBankAccount = sql<IDeleteBankAccountQuery>`
   global: true,
 })
 export class FinancialBankAccountsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchFinancialBankAccountsByIds(bankAccountIds: readonly string[]) {
     const accounts = await getFinancialBankAccountsByIds.run(
       {
         bankAccountIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return bankAccountIds.map(id => accounts.find(account => account.id === id));
   }
@@ -207,7 +207,7 @@ export class FinancialBankAccountsProvider {
     if (this.allFinancialBankAccountsCache) {
       return this.allFinancialBankAccountsCache;
     }
-    const result = getAllFinancialBankAccounts.run(undefined, this.dbProvider).then(accounts => {
+    const result = getAllFinancialBankAccounts.run(undefined, this.db).then(accounts => {
       accounts.map(account => {
         this.getFinancialBankAccountByIdLoader.prime(account.id, account);
       });
@@ -218,7 +218,7 @@ export class FinancialBankAccountsProvider {
   }
 
   public async updateBankAccount(params: IUpdateBankAccountParams) {
-    const updatedAccounts = await updateBankAccount.run(params, this.dbProvider);
+    const updatedAccounts = await updateBankAccount.run(params, this.db);
     const updatedAccount = updatedAccounts[0];
     if (updatedAccount) {
       this.invalidateById(updatedAccount.id);
@@ -230,12 +230,12 @@ export class FinancialBankAccountsProvider {
     if (params.bankAccountId) {
       this.invalidateById(params.bankAccountId);
     }
-    return deleteBankAccount.run(params, this.dbProvider);
+    return deleteBankAccount.run(params, this.db);
   }
 
   public async insertBankAccounts(params: IInsertBankAccountsParams) {
     this.allFinancialBankAccountsCache = null;
-    return insertBankAccounts.run(params, this.dbProvider);
+    return insertBankAccounts.run(params, this.db);
   }
 
   public invalidateById(bankAccountId: string) {

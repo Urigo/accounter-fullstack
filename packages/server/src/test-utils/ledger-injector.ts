@@ -2,6 +2,7 @@ import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
@@ -22,6 +23,8 @@ import { TransactionsProvider } from '../modules/transactions/providers/transact
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
 import type { Currency } from '../shared/enums.js';
+import type { AuthContext } from '../shared/types/auth.js';
+import type { AccounterContext } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -68,8 +71,23 @@ export function createLedgerTestContext(options: {
 
   const dbProvider = new DBProvider(pool);
 
+  // Common context object shared between injector and TenantAwareDBClient
+  const context = {
+    injector: undefined as unknown as Injector,
+    adminContext,
+    moduleId,
+    env,
+    currentUser,
+  } as ModuleContextLike;
+
+  const tenantAwareDB = new TenantAwareDBClient(
+    dbProvider,
+    {} as AuthContext,
+    context as unknown as AccounterContext,
+  );
+
   // placeholder for context; filled after injector is created
-  const contextRef: { current?: ModuleContextLike } = {};
+  const contextRef: { current?: ModuleContextLike } = { current: context };
 
   const injector = new SimpleInjector(token => {
     switch (token) {
@@ -82,13 +100,13 @@ export function createLedgerTestContext(options: {
       case CryptoExchangeProvider:
         return new CryptoExchangeProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
           new CoinMarketCapProvider(),
         );
       case ExchangeProvider: {
         const crypto = new CryptoExchangeProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
           new CoinMarketCapProvider(),
         );
         const fiat = new FiatExchangeProvider(dbProvider);
@@ -106,36 +124,36 @@ export function createLedgerTestContext(options: {
       case LedgerProvider:
         return new LedgerProvider(
           contextRef.current as unknown as GraphQLModules.Context,
-          dbProvider,
+          tenantAwareDB,
         );
       case UnbalancedBusinessesProvider:
-        return new UnbalancedBusinessesProvider(dbProvider);
+        return new UnbalancedBusinessesProvider(tenantAwareDB);
       case BalanceCancellationProvider:
-        return new BalanceCancellationProvider(dbProvider);
+        return new BalanceCancellationProvider(tenantAwareDB);
       case MiscExpensesProvider:
-        return new MiscExpensesProvider(dbProvider);
+        return new MiscExpensesProvider(tenantAwareDB);
       case DocumentsProvider:
-        return new DocumentsProvider(dbProvider);
+        return new DocumentsProvider(tenantAwareDB);
       case TransactionsProvider:
-        return new TransactionsProvider(dbProvider);
+        return new TransactionsProvider(tenantAwareDB);
       case BusinessesProvider:
-        return new BusinessesProvider(dbProvider);
+        return new BusinessesProvider(tenantAwareDB);
       case FinancialAccountsProvider:
-        return new FinancialAccountsProvider(dbProvider);
+        return new FinancialAccountsProvider(tenantAwareDB);
       case TaxCategoriesProvider:
-        return new TaxCategoriesProvider(dbProvider);
+        return new TaxCategoriesProvider(tenantAwareDB);
       case ChargesProvider:
-        return new ChargesProvider(dbProvider);
+        return new ChargesProvider(tenantAwareDB);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
-        const businessesProvider = new BusinessesProvider(dbProvider);
-        const taxCategoriesProvider = new TaxCategoriesProvider(dbProvider);
+        const businessesProvider = new BusinessesProvider(tenantAwareDB);
+        const taxCategoriesProvider = new TaxCategoriesProvider(tenantAwareDB);
         const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
           deleteBusinessById: async (_businessId: string) => {},
         };
         return new FinancialEntitiesProvider(
-          dbProvider,
+          tenantAwareDB,
           businessesProvider,
           businessesOperationStub as unknown as BusinessesOperationProvider,
           taxCategoriesProvider,
@@ -144,7 +162,7 @@ export function createLedgerTestContext(options: {
       case BusinessTripsProvider:
         return new BusinessTripsProvider(dbProvider);
       case ChargeSpreadProvider:
-        return new ChargeSpreadProvider(dbProvider);
+        return new ChargeSpreadProvider(tenantAwareDB);
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${
@@ -154,13 +172,6 @@ export function createLedgerTestContext(options: {
     }
   });
 
-  const context: ModuleContextLike = {
-    injector,
-    adminContext,
-    moduleId,
-    env,
-    currentUser,
-  };
-  contextRef.current = context;
+  context.injector = injector;
   return context;
 }

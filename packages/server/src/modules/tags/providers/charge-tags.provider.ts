@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IClearAllChargeTagsParams,
   IClearAllChargeTagsQuery,
@@ -49,12 +49,12 @@ const updateChargeTagPart = sql<IUpdateChargeTagPartQuery>`
 })
 export class ChargeTagsProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private tagsProvider: TagsProvider,
   ) {}
 
   private async batchTagsByChargeID(chargeIDs: readonly string[]) {
-    const tagsMatches = await getTagIdsByChargeIDs.run({ chargeIDs }, this.dbProvider);
+    const tagsMatches = await getTagIdsByChargeIDs.run({ chargeIDs }, this.db);
     const tags = await this.tagsProvider.getTagByIDLoader
       .loadMany(tagsMatches.map(tag => tag.tag_id))
       .then(tags => tags.filter(tag => tag && !(tag instanceof Error)) as IGetTagsByIDsResult[]);
@@ -79,28 +79,28 @@ export class ChargeTagsProvider {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
-    return clearChargeTags.run(params, this.dbProvider);
+    return clearChargeTags.run(params, this.db);
   }
 
   public async clearAllChargeTags(params: IClearAllChargeTagsParams) {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
-    return clearAllChargeTags.run(params, this.dbProvider);
+    return clearAllChargeTags.run(params, this.db);
   }
 
   public async insertChargeTag(params: IInsertChargeTagParams) {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
-    return insertChargeTag.run(params, this.dbProvider);
+    return insertChargeTag.run(params, this.db);
   }
 
   public async updateChargeTagPart(params: IUpdateChargeTagPartParams) {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
-    return updateChargeTagPart.run(params, this.dbProvider);
+    return updateChargeTagPart.run(params, this.db);
   }
 
   public async invalidateTagsByChargeID(chargeId: string) {

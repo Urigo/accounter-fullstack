@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IDeleteTemplateParams,
   IDeleteTemplateQuery,
@@ -53,17 +53,17 @@ const deleteTemplate = sql<IDeleteTemplateQuery>`
   global: true,
 })
 export class DynamicReportProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   public async getTemplate(params: IGetTemplateParams) {
-    return getTemplate.run(params, this.dbProvider).then(res => {
+    return getTemplate.run(params, this.db).then(res => {
       const [template] = res;
       return template;
     });
   }
 
   private async batchTemplatesByOwnerIdLoader(ownerIds: readonly string[]) {
-    const templates = await getTemplatesByOwnerIds.run({ ownerIds }, this.dbProvider);
+    const templates = await getTemplatesByOwnerIds.run({ ownerIds }, this.db);
     return ownerIds.map(id => templates.filter(template => template.owner_id === id));
   }
 
@@ -75,28 +75,28 @@ export class DynamicReportProvider {
     if (params.name && params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return updateTemplate.run(params, this.dbProvider);
+    return updateTemplate.run(params, this.db);
   }
 
   public async updateTemplateName(params: IUpdateTemplateNameParams) {
     if (params.prevName && params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return updateTemplateName.run(params, this.dbProvider);
+    return updateTemplateName.run(params, this.db);
   }
 
   public insertTemplate(params: IInsertTemplateParams) {
     if (params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return insertTemplate.run(params, this.dbProvider);
+    return insertTemplate.run(params, this.db);
   }
 
   public async deleteTemplate(params: IDeleteTemplateParams) {
     if (params.name && params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return deleteTemplate.run(params, this.dbProvider);
+    return deleteTemplate.run(params, this.db);
   }
 
   public async invalidateByOwnerId(ownerId: string) {

@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { IGetNormalizedRevenueRecordsParams, IGetNormalizedRevenueRecordsQuery } from '../types.js';
 
 const getNormalizedRevenueRecords = sql<IGetNormalizedRevenueRecordsQuery>`
@@ -199,11 +199,11 @@ FROM
   global: true,
 })
 export class AnnualRevenueReportProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   public async getNormalizedRevenueRecords(params: IGetNormalizedRevenueRecordsParams) {
     try {
-      return getNormalizedRevenueRecords.run(params, this.dbProvider);
+      return getNormalizedRevenueRecords.run(params, this.db);
     } catch (error) {
       const message = 'Failed to get balance transactions';
       console.error(`${message}: ${error}`);

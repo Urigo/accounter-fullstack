@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
   IDeleteClientQuery,
@@ -71,14 +71,14 @@ const insertClient = sql<IInsertClientQuery>`
   global: true,
 })
 export class ClientsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private allClientsPython: Promise<IGetAllClientsResult[]> | null = null;
   public async getAllClients() {
     if (this.allClientsPython) {
       return this.allClientsPython;
     }
-    this.allClientsPython = getAllClients.run(undefined, this.dbProvider).then(clients => {
+    this.allClientsPython = getAllClients.run(undefined, this.db).then(clients => {
       clients.map(client => {
         this.getClientByIdLoader.prime(client.business_id, client);
         try {
@@ -100,7 +100,7 @@ export class ClientsProvider {
 
   private async batchClientsByIds(ids: readonly string[]) {
     try {
-      const matches = await getClientsByIds.run({ businessIds: ids }, this.dbProvider);
+      const matches = await getClientsByIds.run({ businessIds: ids }, this.db);
 
       return ids.map(id => matches.find(match => match.business_id === id));
     } catch (e) {
@@ -117,7 +117,7 @@ export class ClientsProvider {
     try {
       const matches = await getClientsByGreenInvoiceIds.run(
         { greenInvoiceBusinessIds: greenInvoiceIds },
-        this.dbProvider,
+        this.db,
       );
 
       matches.map(match => {
@@ -142,17 +142,17 @@ export class ClientsProvider {
       this.getClientByIdLoader.clear(params.businessId);
     }
     this.clearCache();
-    return updateClient.run(params, this.dbProvider);
+    return updateClient.run(params, this.db);
   }
 
   public async deleteClient(businessId: string) {
     this.clearCache();
-    return deleteClient.run({ businessId }, this.dbProvider);
+    return deleteClient.run({ businessId }, this.db);
   }
 
   public async insertClient(params: IInsertClientParams) {
     this.clearCache();
-    return insertClient.run(params, this.dbProvider);
+    return insertClient.run(params, this.db);
   }
 
   public clearCache() {

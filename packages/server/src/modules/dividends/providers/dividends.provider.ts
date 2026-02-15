@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllDividendsQuery,
   IGetAllDividendsResult,
@@ -36,20 +36,20 @@ const getDividendsByBusinessIds = sql<IGetDividendsByBusinessIdsQuery>`
   global: true,
 })
 export class DividendsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private allDividendsCache: Promise<IGetAllDividendsResult[]> | null = null;
   public getAllDividends() {
     if (this.allDividendsCache) {
       return this.allDividendsCache;
     }
-    this.allDividendsCache = getAllDividends.run(undefined, this.dbProvider);
+    this.allDividendsCache = getAllDividends.run(undefined, this.db);
     return this.allDividendsCache;
   }
 
   private async batchDividendsByChargeIds(chargeIds: readonly string[]) {
     try {
-      const dividends = await getDividendsByChargeId.run({ chargeIds }, this.dbProvider);
+      const dividends = await getDividendsByChargeId.run({ chargeIds }, this.db);
 
       return chargeIds.map(id => dividends.filter(dividend => dividend.charge_id === id));
     } catch (e) {
@@ -64,7 +64,7 @@ export class DividendsProvider {
 
   private async batchDividendsByBusinessIds(businessIds: readonly string[]) {
     try {
-      const dividends = await getDividendsByBusinessIds.run({ businessIds }, this.dbProvider);
+      const dividends = await getDividendsByBusinessIds.run({ businessIds }, this.db);
 
       return businessIds.map(id => dividends.filter(dividend => dividend.business_id === id));
     } catch (e) {

@@ -1,8 +1,11 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
-import { Inject, Injectable, Scope, type OnDestroy } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { AUTH_CONTEXT } from '../../shared/tokens.js';
 import type { AuthContext } from '../../shared/types/auth.js';
+import type { AccounterContext } from '../../shared/types/index.js';
 import { DBProvider } from './db.provider.js';
 
 /**
@@ -40,7 +43,9 @@ import { DBProvider } from './db.provider.js';
 @Injectable({
   scope: Scope.Operation,
 })
-export class TenantAwareDBClient implements OnDestroy {
+export class TenantAwareDBClient {
+  private mutex = new Mutex();
+  private storage = new AsyncLocalStorage<boolean>();
   private activeClient: PoolClient | null = null;
   private transactionDepth = 0;
   private isDisposed = false;
@@ -49,7 +54,21 @@ export class TenantAwareDBClient implements OnDestroy {
   constructor(
     private dbProvider: DBProvider,
     @Inject(AUTH_CONTEXT) private authContext: AuthContext,
-  ) {}
+    // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+    // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+    @Inject(CONTEXT) private context: AccounterContext,
+  ) {
+    if (this.context.dbClientsToDispose) {
+      this.context.dbClientsToDispose.push(this);
+    } else {
+      // Warning: if 'dbCleanupPlugin' is not loaded (e.g. in tests or misconfiguration),
+      // this client will NOT be automatically disposed, leading to connection leaks and potentially exhausted DB pool.
+      console.warn(
+        'TenantAwareDBClient initialized without dbCleanupPlugin context. ' +
+          'Automatic disposal is disabled, which may lead to connection leaks.',
+      );
+    }
+  }
 
   /**
    * Execute a query with RLS enforcement.
@@ -62,14 +81,19 @@ export class TenantAwareDBClient implements OnDestroy {
   ): Promise<QueryResult<T> & { rowCount: number }> {
     this.ensureNotDisposed();
 
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError(
         'Auth context not available. TenantAwareDBClient requires active authentication.',
         { extensions: { code: 'UNAUTHENTICATED' } },
       );
     }
 
-    if (this.activeClient) {
+    if (this.storage.getStore() && this.activeClient) {
       return this.activeClient
         .query<T>(text, params)
         .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
@@ -89,13 +113,31 @@ export class TenantAwareDBClient implements OnDestroy {
   public async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     this.ensureNotDisposed();
 
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError(
         'Auth context not available. TenantAwareDBClient requires active authentication.',
         { extensions: { code: 'UNAUTHENTICATED' } },
       );
     }
 
+    if (this.storage.getStore()) {
+      return this.executeTransactionInternal(fn);
+    }
+
+    return this.mutex.runExclusive(() => {
+      this.ensureNotDisposed();
+      return this.storage.run(true, () => {
+        return this.executeTransactionInternal(fn);
+      });
+    });
+  }
+
+  private async executeTransactionInternal<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     // 1. Wait for initialization if in progress
     if (this.initializationPromise) {
       try {
@@ -193,7 +235,12 @@ export class TenantAwareDBClient implements OnDestroy {
    * Set PostgreSQL session variables for Row-Level Security.
    */
   private async setRLSVariables(client: PoolClient): Promise<void> {
-    if (!this.authContext) {
+    if (
+      !this.authContext &&
+      // TEMPORARY (Phase 3.2 → 4.8): Fallback to context.currentUser during legacy auth period
+      // Removal: Phase 4.8 when Auth0 active and authContext reliably populated
+      !this.context?.currentUser?.userId
+    ) {
       throw new GraphQLError('Unauthenticated', {
         extensions: {
           code: 'UNAUTHENTICATED',
@@ -201,9 +248,13 @@ export class TenantAwareDBClient implements OnDestroy {
       });
     }
 
-    const { tenant, user, authType } = this.authContext;
+    const { tenant, user, authType } = this.authContext ?? {};
 
-    if (!tenant?.businessId) {
+    // TEMPORARY (Phase 3.2 → 4.8): Use currentUser.userId as businessId during legacy auth
+    // After Phase 4.7, authContext.tenant.businessId will be populated from Auth0 JWT
+    // Removal: Phase 4.8 - delete fallback, require authContext.tenant.businessId
+    const businessIdValue = tenant?.businessId ?? this.context?.currentUser?.userId ?? null;
+    if (!businessIdValue) {
       throw new Error('Missing businessId in AuthContext');
     }
 
@@ -216,15 +267,8 @@ export class TenantAwareDBClient implements OnDestroy {
         set_config('app.current_user_id', $2, true),
         set_config('app.auth_type', $3, true);
       `,
-      [tenant.businessId, userIdValue, authType],
+      [businessIdValue, userIdValue, authType],
     );
-  }
-
-  /**
-   * Cleanup method called by GraphQL Modules when the operation scope ends.
-   */
-  public async onDestroy(): Promise<void> {
-    await this.dispose();
   }
 
   /**
@@ -233,17 +277,60 @@ export class TenantAwareDBClient implements OnDestroy {
   public async dispose(): Promise<void> {
     if (this.isDisposed) return;
 
-    if (this.activeClient) {
-      try {
-        await this.activeClient.query('ROLLBACK');
-      } catch (error) {
-        console.error('Error disposing TenantAwareDBClient:', error);
-      } finally {
-        this.activeClient.release();
-        this.activeClient = null;
+    // Use a timeout or race to prevent hanging indefinitely during disposal
+    // If a query is stuck, we don't want to block the entire server request handler.
+    const TIMEOUT_MS = 5000;
+    let release: (() => void) | undefined;
+
+    try {
+      release = await Promise.race([
+        this.mutex.acquire(),
+        new Promise<() => void>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout acquiring mutex')), TIMEOUT_MS),
+        ),
+      ]);
+    } catch (e) {
+      console.warn(
+        'Timeout acquiring mutex during TenantAwareDBClient disposal. Forcing cleanup.',
+        e,
+      );
+      // We process cleanup even if we couldn't acquire the lock to prevent DoS.
+    }
+
+    try {
+      if (this.isDisposed) return;
+
+      if (this.activeClient) {
+        try {
+          // Attempt rollback, but catch errors if connection is busy/closed
+          await Promise.race([
+            this.activeClient.query('ROLLBACK'),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Rollback timeout')), 1000),
+            ),
+          ]);
+        } catch (error) {
+          console.error('Error disposing TenantAwareDBClient (rollback failed):', error);
+        } finally {
+          try {
+            // Force release the client back to the pool (or destroy it if it was stuck)
+            // Ideally we'd destroy it if it was stuck, but `release(true)` isn't standard pg-pool API exposed via release?
+            // Standard pg `release()` usually takes a boolean `err`. If truthy, the client is removed from the pool.
+            // Since we had a timeout/error, we should probably treat it as an error state.
+            // But `release` signature in @types/pg is `release(err?: boolean | Error): void;`
+            this.activeClient.release(true);
+          } catch (e) {
+            console.error('Error releasing client during disposal:', e);
+          }
+          this.activeClient = null;
+        }
+      }
+      this.isDisposed = true;
+    } finally {
+      if (release) {
+        release();
       }
     }
-    this.isDisposed = true;
   }
 
   private ensureNotDisposed() {

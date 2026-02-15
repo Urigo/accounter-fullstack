@@ -44,6 +44,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
     const client = await db.getPool().connect();
     try {
       const chargeId = makeUUID('charge', 'charge-office-supplies');
+      const adminId = makeUUID('business', 'admin-business-scenario-a');
+      
+      // Set context to allow deletion of protected rows
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
+
       await client.query(
         `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
         [chargeId]
@@ -102,6 +107,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
       const adminContext = await buildAdminContextFromDb(insertClient);
       await insertFixture(insertClient, expenseScenarioA, adminContext.defaultAdminBusinessId);
 
+      // Reset RLS context to the charge owner before verification 
+      // (insertFixture might leave it set to the last inserted entity's owner)
+      const chargeOwnerId = makeUUID('business', 'admin-business-scenario-a');
+      await insertClient.query("SELECT set_config('app.current_business_id', $1, true)", [chargeOwnerId]);
+
       const chargeId = makeUUID('charge', 'charge-office-supplies');
 
       // Verify inserts within the same transaction
@@ -138,6 +148,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
+      const adminContext = await buildAdminContextFromDb(client);
+      // Set context to allow reading protected rows
+      const fixtureOwnerId = makeUUID('business', 'admin-business-scenario-a');
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [fixtureOwnerId]);
+
       const chargeId = makeUUID('charge', 'charge-office-supplies');
       const chargeResult = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -145,12 +160,9 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       const charge = chargeResult.rows[0];
 
-      // Build AdminContext from database
-      const adminContext = await buildAdminContextFromDb(client);
-
       const mockUser: UserType = {
         username: 'test-admin',
-        userId: adminContext.defaultAdminBusinessId,
+        userId: fixtureOwnerId,
         role: 'ADMIN',
       };
 
@@ -214,6 +226,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
     const client = await db.getPool().connect();
     try {
       const chargeId = makeUUID('charge', 'charge-office-supplies');
+      const adminId = makeUUID('business', 'admin-business-scenario-a');
+      
+      // Set context to allow reading protected rows
+      await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
+
       // Ensure fixture inserted (if previous test did cleanup, reinsert minimal fixture)
       const existingCharge = await client.query(
         `SELECT * FROM ${qualifyTable('charges')} WHERE id = $1`,
@@ -234,7 +251,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       const charge = chargeResult.rows[0];
       const mockUser: UserType = {
         username: 'test-admin',
-        userId: adminContext.defaultAdminBusinessId,
+        userId: adminId,
         role: 'ADMIN',
       };
       const context = createLedgerTestContext({

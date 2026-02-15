@@ -975,11 +975,18 @@ export const application = createApplication({
 **2. Verify TenantAwareDBClient is Injectable**:
 
 - Ensure TenantAwareDBClient has `@Injectable({ scope: Scope.Operation })` decorator
-- Ensure it injects `DBProvider` and `@Inject(AUTH_CONTEXT) authContext: AuthContext | null = null`
-  (with default null value)
+- Ensure it injects:
+  - `DBProvider` (singleton)
+  - `@Inject(AUTH_CONTEXT) authContext: AuthContext | null = null` (with default null)
+  - `@Inject(CONTEXT) context: AccounterContext` (TEMPORARY - for Phase 3-4 fallback)
 - **CRITICAL**: AUTH_CONTEXT must be optional (default null) because it's not registered until Phase
   4
-- Constructor should handle null auth context gracefully (throw error if query() called)
+- **TEMPORARY FALLBACK (Phase 3-4)**: Constructor also injects GraphQL CONTEXT to access
+  `currentUser.userId` as fallback businessId during legacy auth period
+- **Benefits of Built-In Fallback**:
+  - Providers can migrate directly to `TenantAwareDBClient` (no intermediate workaround step)
+  - Single point of change for cleanup (remove fallback from TenantAwareDBClient only)
+  - Phase 4.8 cleanup simplified (no provider updates needed)
 
 **3. Write Tests** (Provider registration and injection):
 
@@ -1058,17 +1065,23 @@ Modules dependency injection:
 - **Resolver Pattern**: Resolvers → Providers → TenantAwareDBClient (clean separation)
 - **No Yoga Context Extension**: Pure DI approach, no bridging between Yoga and Modules
 
-**IMPORTANT NOTES**:
+**IMPORTANT NOTES**: TEMPORARY Fallback Built-In\*\*: TenantAwareDBClient has built-in fallback to
+`context.currentUser.userId` (legacy auth) during Phase 3-4 transition. This enables:
 
-1. **Provider Scope**: `TenantAwareDBClient` is `Scope.Operation` (per-request isolation)
-2. **No Shared State**: Each GraphQL operation gets its own `db` instance with isolated transaction
-3. **Non-Breaking Change**: TenantAwareDBClient registered but unused, providers still use old
+- **Direct provider migration** to TenantAwareDBClient in Phase 3 (no intermediate workaround)
+- **Simplified Phase 4.8 cleanup** (remove fallback from one file, not dozens of providers)
+- **Forward compatibility** (providers already use final pattern)
+
+6. **Auth Dependency**: During Phase 3-4, TenantAwareDBClient uses legacy auth
+   (`context.currentUser`). After Phase 4.7 (Auth0 activation), it uses AuthContext.
+7. **No Shared State**: Each GraphQL operation gets its own `db` instance with isolated transaction
+8. **Non-Breaking Change**: TenantAwareDBClient registered but unused, providers still use old
    patterns
-4. **AUTH_CONTEXT Not Yet Registered**: AUTH_CONTEXT is only a token at this stage - provider
+9. **AUTH_CONTEXT Not Yet Registered**: AUTH_CONTEXT is only a token at this stage - provider
    registered in Phase 4. TenantAwareDBClient uses default null value.
-5. **Auth Dependency**: TenantAwareDBClient won't function correctly until AuthContext is populated
-   (happens in Phase 4 after Auth0 activation)
-6. **No Context Extension**: Unlike typical patterns, we use pure DI - cleaner and more testable
+10. **Auth Dependency**: TenantAwareDBClient won't function correctly until AuthContext is populated
+    (happens in Phase 4 after Auth0 activation)
+11. **No Context Extension**: Unlike typical patterns, we use pure DI - cleaner and more testable
 
 NEXT STEPS:
 
@@ -1930,7 +1943,7 @@ TASK: Enable RLS on the charges table and create a tenant isolation policy.
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-enable-rls-charges-pilot.sql`
+1. Create migration: `packages/migrations/src/YYYY-MM-DDTHH-MM-SS-enable-rls-charges-pilot.sql`
 
 2. Enable RLS:
 
@@ -1961,14 +1974,7 @@ ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
 -- Comment: Even superuser must respect RLS (except in single-user mode)
 ```
 
-6. Create rollback:
-
-   ```sql
-   DROP POLICY tenant_isolation ON accounter_schema.charges;
-   ALTER TABLE accounter_schema.charges DISABLE ROW LEVEL SECURITY;
-   ```
-
-7. Write integration tests:
+6. Write integration tests:
    - **Prerequisite check**: Verify Prompt 2.9 completed (auth plugin sets RLS context)
    - Setup: Create two test businesses and charges for each
    - Test 1: Authenticate as business A user
@@ -1992,7 +1998,6 @@ ALTER TABLE accounter_schema.charges FORCE ROW LEVEL SECURITY;
 EXPECTED OUTPUT:
 
 - Migration file
-- Rollback file
 - Tests: `packages/migrations/src/__tests__/rls-charges-pilot.test.ts`
 - All tests passing
 - Query plan analysis showing index usage
@@ -2000,11 +2005,36 @@ EXPECTED OUTPUT:
 INTEGRATION: This is the FIRST table with RLS enabled. It validates:
 
 - The RLS enforcement mechanism works
-- TenantAwareDBClient sets variables correctly
+- TenantAwareDBClient sets variables correctly (via TEMPORARY fallback to context.currentUser)
 - Performance is acceptable
 - Policies written correctly
 
 If successful, we'll roll out to all tables in later prompts.
+
+**PROVIDER MIGRATION NOTE**: Now that RLS is enabled on charges table, providers can migrate
+DIRECTLY to `TenantAwareDBClient` (see example: `charges.provider.ts`). TenantAwareDBClient has a
+built-in TEMPORARY fallback to `context.currentUser.userId` for Phase 3-4 transition, so no
+intermediate workaround step is needed. Providers already use the final pattern - only
+TenantAwareDBClient internal implementation needs cleanup in Phase 4.8.
+
+**Migration Pattern** (optional for Phase 3, recommended for Phase 4):
+
+```typescript
+// Example: packages/server/src/modules/charges/providers/charges.provider.ts
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js'
+
+@Injectable({ scope: Scope.Operation, global: true })
+export class ChargesProvider {
+  constructor(private db: TenantAwareDBClient) {} // Direct injection - final pattern
+
+  async getCharges(params) {
+    return getChargesByIds.run(params, this.db) // RLS enforced automatically
+  }
+}
+```
+
+This pattern requires NO future updates - Phase 4.8 cleanup only touches TenantAwareDBClient
+internals.
 
 ROLLBACK PLAN: If production issues occur, run rollback migration to disable RLS on charges.
 
@@ -2012,33 +2042,40 @@ ROLLBACK PLAN: If production issues occur, run rollback migration to disable RLS
 
 ---
 
-### Prompt 3.3: Add business_id Columns (Nullable)
+### Prompt 3.3: Add owner_id Columns (Nullable)
 
 ``
 
-CONTEXT: The RLS pilot on charges was successful. However, charges uses owner_id as the tenant
-field. We need a consistent business_id column across all tables. This is a multi-phase migration to
-avoid downtime.
+CONTEXT: The RLS pilot on charges was successful using the owner_id column. Many tables already have
+owner_id (charges, financial_entities, ledger_records, dividends, business_tax_category_match), but
+many others don't. Tables with existing business_id columns often use them for different purposes
+(counterparty references in transactions, etc.), so we need to add a separate owner_id column for
+RLS. This is a multi-phase migration to avoid downtime.
 
-TASK: Add business_id column to all tenant tables as nullable (Phase 1 of 4).
+TASK: Add owner_id column to tenant tables that don't already have it (Phase 1 of 4 - Nullable).
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-add-business-id-nullable.sql`
+1. Create migration: `packages/migrations/src/2026-02-13T10-00-00.add-owner-id-nullable.ts`
 
-2. Add business_id to tables (from spec section 3.2.2):
-   - Use pattern: `ALTER TABLE accounter_schema.{table_name} ADD COLUMN business_id UUID;`
-   - Tables (partial list, see spec for complete):
-     - charges
+2. Add owner_id to tables that don't already have it (from spec section 3.2.2):
+   - Use pattern:
+     `ALTER TABLE accounter_schema.{table_name} ADD COLUMN IF NOT EXISTS owner_id UUID;`
+   - **Skip tables that already have owner_id**: charges, financial_entities, ledger_records,
+     dividends, business_tax_category_match, dynamic_report_templates, user_context
+   - **Add owner_id to tables that need it** (partial list, see spec for complete):
      - documents
-     - transactions
-     - ledger_records
+     - transactions (note: has business_id for counterparty, add separate owner_id)
      - salaries
-     - financial_accounts
+     - business_trips
+     - business_trips_transactions
+     - employees
+     - tags
      - ...etc (see spec section 3.2.2 for full list)
 
 3. Add comments:
    - Explain this is phase 1 (nullable)
+   - Note that tables already having owner_id are skipped
    - Reference backfill job (phase 2)
    - Will be made NOT NULL in phase 3
 
@@ -2047,56 +2084,52 @@ REQUIREMENTS:
    - Run on low-traffic tables first to test
    - Monitor lock waits during deployment
 
-5. Create rollback:
-   - DROP COLUMN business_id for each table
-   - Note: Postgres makes this fast (no data rewrite)
-
-6. Write tests:
-   - Verify business_id column added to all tables
-   - Verify column is nullable
-   - Verify column is UUID type
-   - Verify existing data unaffected (row count same)
-
 EXPECTED OUTPUT:
 
-- Migration file with ~40 ALTER TABLE statements
-- Rollback file
-- Tests: `packages/migrations/src/__tests__/add-business-id-nullable.test.ts`
+- Migration file with ~30-35 ALTER TABLE ADD COLUMN IF NOT EXISTS statements (only for tables
+  needing owner_id)
 - Deployment notes: Expected downtime < 10 seconds total
+- Verification step showing existing owner_id columns unchanged
 
 INTEGRATION: This prepares for:
 
-- Phase 2: Backfill business_id (next prompt)
+- Phase 2: Backfill owner_id (next prompt)
 - Phase 3: Make NOT NULL
 - Phase 4: Add indexes and foreign keys
-- Phase 5: Update RLS policies to use business_id
+- Phase 5: Roll out RLS policies to all tables (using owner_id)
 
 ``
 
 ---
 
-### Prompt 3.4: Backfill business_id Values
+### Prompt 3.4: Backfill owner_id Values
 
 ``
 
-CONTEXT: All tables now have a nullable business_id column. Now we need to populate it using
-deterministic rules based on foreign key relationships.
+CONTEXT: All tenant tables now have an owner_id column (either pre-existing or newly added). Now we
+need to populate the newly added ones using deterministic rules based on foreign key relationships.
 
-TASK: Create a background job script to backfill business_id columns in batches.
+TASK: Create a background job script to backfill owner_id columns in batches for tables where it was
+newly added.
 
 REQUIREMENTS:
 
-1. Create script: `packages/server/src/scripts/backfill-business-id.ts`
+1. Create script: `packages/server/src/scripts/backfill-owner-id.ts`
 
-2. Implement backfill logic per table (from spec section 6):
-   - charges: business_id = owner_id
-   - documents: business_id = (SELECT business_id FROM charges WHERE id = documents.charge_id)
-   - transactions: business_id = (SELECT business_id FROM charges WHERE id = transactions.charge_id)
-   - ledger_records: business_id = (SELECT business_id FROM charges WHERE id =
-     ledger_records.charge_id)
-   - financial_accounts: business_id = owner
-   - salaries: business_id = employer
-   - ...etc (see spec for full mapping)
+2. Implement backfill logic per table (from spec section 3.2.2):
+   - **Skip tables with pre-existing owner_id**: charges, financial_entities, ledger_records,
+     dividends, business_tax_category_match, dynamic_report_templates, user_context (already
+     populated)
+   - **Backfill tables with newly added owner_id**:
+     - documents: `owner_id = (SELECT owner_id FROM charges WHERE id = documents.charge_id)`
+     - transactions: `owner_id = (SELECT owner_id FROM charges WHERE id = transactions.charge_id)`
+     - salaries:
+       `owner_id = (SELECT fe.owner_id FROM financial_entities fe JOIN businesses b ON b.id = fe.id WHERE b.id = salaries.employer)`
+     - business_trips: Derive from business_trips_attendees or business_trips_transactions
+     - financial_accounts: `owner_id = owner` (column rename or copy from existing `owner` column)
+     - employees:
+       `owner_id = (SELECT fe.owner_id FROM financial_entities fe JOIN businesses b ON b.id = fe.id WHERE b.id = employees.business_id)`
+     - ...etc (see spec section 3.2.2 for complete backfill mapping)
 
 3. Batch processing:
    - Update 10,000 rows at a time
@@ -2111,13 +2144,13 @@ REQUIREMENTS:
 4. Validation:
    - After each table:
      ```sql
-     SELECT COUNT(*) FROM {table} WHERE business_id IS NULL;
+     SELECT COUNT(*) FROM {table} WHERE owner_id IS NULL;
      ```
-   - If count > 0: log warning (quarantine case)
+   - If count > 0: log warning (may be valid for some tables like financial_entities)
    - Final report:
-     - Total rows processed
+     - Total rows processed per table
      - Tables fully backfilled
-     - Tables with NULL values (quarantine)
+     - Tables with NULL values (expected for some like financial_entities.owner_id)
 
 5. Run as standalone script:
    - Connect using DBProvider (system-level access, bypass RLS)
@@ -2136,7 +2169,7 @@ EXPECTED OUTPUT:
 
 - Script: `packages/server/src/scripts/backfill-business-id.ts`
 - Tests: `packages/server/src/scripts/__tests__/backfill-business-id.test.ts`
-- Documentation: How to run script (`npm run backfill-business-id`)
+- Documentation: How to run script (`npm run backfill-owner-id`)
 - All tests passing
 
 INTEGRATION: Run this script AFTER deploying the nullable column migration (Prompt 3.3) and BEFORE
@@ -2154,34 +2187,43 @@ MONITORING: Watch for:
 
 ---
 
-### Prompt 3.5: Make business_id NOT NULL
+### Prompt 3.5: Make owner_id NOT NULL
 
 ``
 
-CONTEXT: The backfill job has completed successfully and all business_id columns are populated. Now
-we need to enforce the NOT NULL constraint to prevent future invalid data.
+CONTEXT: The backfill job has completed successfully and all newly added owner_id columns are
+populated. Now we need to enforce the NOT NULL constraint on tables where it makes sense (not all
+tables - some like financial_entities.owner_id should remain nullable for system entities).
 
-TASK: Create a migration to add NOT NULL constraints to all business_id columns.
+TASK: Create a migration to add NOT NULL constraints to owner_id columns (selectively).
 
 REQUIREMENTS:
 
 1. BEFORE running this migration:
-   - Manually verify backfill completion:
+   - Manually verify backfill completion for tables that will have NOT NULL:
      ```sql
-     -- Run this query for each table
+     -- Run this query for each table that will be NOT NULL
      SELECT '{table_name}' as table_name, COUNT(*) as null_count
      FROM {table_name}
-     WHERE business_id IS NULL;
+     WHERE owner_id IS NULL;
      ```
-   - All null_count values MUST be 0
+   - All null_count values MUST be 0 for tables where NOT NULL will be added
 
-2. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-business-id-not-null.sql`
+2. Create migration: `packages/migrations/src/2026-02-14T10-00-00.owner-id-not-null.ts`
 
-3. Add NOT NULL constraints:
+3. Add NOT NULL constraints to appropriate tables:
 
    ```sql
-   ALTER TABLE accounter_schema.charges ALTER COLUMN business_id SET NOT NULL;
-   -- Repeat for all tables
+   -- Add NOT NULL to tables where all rows must have an owner:
+   ALTER TABLE accounter_schema.documents ALTER COLUMN owner_id SET NOT NULL;
+   ALTER TABLE accounter_schema.transactions ALTER COLUMN owner_id SET NOT NULL;
+   ALTER TABLE accounter_schema.salaries ALTER COLUMN owner_id SET NOT NULL;
+   -- ... etc (see spec for full list)
+
+   -- DO NOT add NOT NULL to tables where NULL is valid:
+   -- financial_entities (system entities can have NULL owner_id)
+   -- ledger_records (may have system-level records)
+   -- ... etc
    ```
 
 4. Lock impact:
@@ -2198,28 +2240,30 @@ REQUIREMENTS:
 6. Create rollback:
 
    ```sql
-   ALTER TABLE accounter_schema.charges ALTER COLUMN business_id DROP NOT NULL;
-   -- Repeat for all tables
+   ALTER TABLE accounter_schema.documents ALTER COLUMN owner_id DROP NOT NULL;
+   -- Repeat for tables where constraint was added
    ```
 
 7. Write tests:
-   - Verify NOT NULL constraint enforced
-   - Attempt to INSERT row with NULL business_id → rejected
-   - Attempt to UPDATE business_id to NULL → rejected
+   - Verify NOT NULL constraint enforced on appropriate tables
+   - Verify nullable tables remain nullable (financial_entities, ledger_records)
+   - Attempt to INSERT row with NULL owner_id into NOT NULL table → rejected
+   - Attempt to UPDATE owner_id to NULL in NOT NULL table → rejected
 
 EXPECTED OUTPUT:
 
 - Migration file
 - Rollback file
-- Deployment checklist (verification steps)
-- Tests: `packages/migrations/src/__tests__/business-id-not-null.test.ts`
+- Deployment checklist (verification steps, list of which tables get NOT NULL)
+- Tests: `packages/migrations/src/__tests__/owner-id-not-null.test.ts`
 - All tests passing
 
 INTEGRATION: After this migration:
 
-- All tables have business_id NOT NULL
+- Most tenant tables have owner_id NOT NULL
+- Some tables retain nullable owner_id (by design)
 - Ready for indexes and foreign keys (next prompt)
-- Cannot insert data without business_id
+- Cannot insert business data without owner_id
 
 ``
 
@@ -2229,14 +2273,15 @@ INTEGRATION: After this migration:
 
 ``
 
-CONTEXT: All business_id columns are now NOT NULL. We need to add indexes for RLS query performance
-and foreign keys for referential integrity.
+CONTEXT: All tenant tables have owner_id columns (either pre-existing or newly added), with NOT NULL
+constraints where appropriate. We need to add indexes for RLS query performance and foreign keys for
+referential integrity.
 
-TASK: Create a migration to add indexes and foreign keys to business_id columns.
+TASK: Create a migration to add indexes and foreign keys to owner_id columns.
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-add-business-id-indexes.sql`
+1. Create migration: `packages/migrations/src/2026-02-15T10-00-00.add-owner-id-indexes.ts`
 
 2. Create indexes CONCURRENTLY (non-blocking):
 
@@ -2259,19 +2304,27 @@ REQUIREMENTS:
 4. Add foreign keys with NOT VALID (fast, non-blocking):
 
    ```sql
-   ALTER TABLE accounter_schema.charges
-   ADD CONSTRAINT fk_charges_business
-   FOREIGN KEY (business_id) REFERENCES accounter_schema.businesses_admin(id)
+   ALTER TABLE accounter_schema.documents
+   ADD CONSTRAINT fk_documents_owner_id
+   FOREIGN KEY (owner_id) REFERENCES accounter_schema.businesses(id)
    NOT VALID;
 
-   -- Repeat for all tables
+   ALTER TABLE accounter_schema.transactions
+   ADD CONSTRAINT fk_transactions_owner_id
+   FOREIGN KEY (owner_id) REFERENCES accounter_schema.businesses(id)
+   NOT VALID;
+
+   -- Repeat for all tables (reference businesses table which is a financial_entity)
    ```
 
 5. Validate foreign keys in separate step:
 
    ```sql
-   ALTER TABLE accounter_schema.charges
-   VALIDATE CONSTRAINT fk_charges_business;
+   ALTER TABLE accounter_schema.documents
+   VALIDATE CONSTRAINT fk_documents_owner_id;
+
+   ALTER TABLE accounter_schema.transactions
+   VALIDATE CONSTRAINT fk_transactions_owner_id;
 
    -- Repeat for all tables
    ```
@@ -2286,27 +2339,27 @@ REQUIREMENTS:
    - ALTER TABLE DROP CONSTRAINT for each FK
 
 8. Write tests:
-   - Verify all indexes created
-   - Verify indexes used in query plans (EXPLAIN)
-   - Verify FK constraints enforced
+   - Verify all owner_id indexes created
+   - Verify indexes used in query plans with RLS (EXPLAIN)
+   - Verify FK constraints enforced (cannot set invalid owner_id)
    - Test query performance improvement:
-     - Before index: table scan
-     - After index: index scan
-     - Speedup: > 10x for filtered queries
+     - Before index: table scan on owner_id filter
+     - After index: index scan on owner_id
+     - Speedup: > 10x for tenant-filtered queries
 
 EXPECTED OUTPUT:
 
 - Migration file
 - Rollback file
 - Performance comparison report
-- Tests: `packages/migrations/src/__tests__/business-id-indexes.test.ts`
+- Tests: `packages/migrations/src/__tests__/owner-id-indexes.test.ts`
 - All tests passing
 
 INTEGRATION: After this migration:
 
-- RLS policies will use indexed business_id (fast)
-- Cannot delete business if rows reference it (FK protection)
-- Ready to roll out RLS to all tables (next prompt)
+- RLS policies will use indexed owner_id (fast lookups)
+- Cannot delete business if rows reference it via owner_id (FK protection)
+- Ready to roll out RLS to all remaining tables (next prompt)
 
 DEPLOYMENT: Can run during business hours (non-blocking). Monitor:
 
@@ -2321,73 +2374,79 @@ DEPLOYMENT: Can run during business hours (non-blocking). Monitor:
 
 ``
 
-CONTEXT: The pilot RLS on charges was successful, and all tables now have indexed business_id
-columns. Time to enable RLS across the entire database.
+CONTEXT: The pilot RLS on charges was successful (Step 3.2), and all tables now have indexed
+owner_id columns with foreign keys to businesses. Time to enable RLS across all remaining tenant
+tables.
 
-TASK: Enable RLS on all tenant tables with comprehensive policies.
+TASK: Enable RLS on all tenant tables using owner_id column with comprehensive policies.
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/YYYY-MM-DD-HH-MM-enable-rls-all-tables.sql`
+1. Create migration: `packages/migrations/src/2026-02-16T10-00-00.enable-rls-all-tables.ts`
 
-2. Enable RLS in batches for safety:
+2. Enable RLS in batches for safety (charges already done in Step 3.2):
 
-   **Batch 1: Core transaction tables**
+   **Batch 1** (already complete):
+   - charges (RLS enabled in Step 3.2)
+
+   **Batch 2: Core business tables**
 
    ```sql
-   ALTER TABLE accounter_schema.charges ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.documents ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.transactions ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.ledger_records ENABLE ROW LEVEL SECURITY;
    ```
 
-   **Batch 2: Financial tables**
+   **Batch 3: Financial tables**
 
    ```sql
    ALTER TABLE accounter_schema.salaries ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.financial_accounts ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE accounter_schema.financial_entities ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.dividends ENABLE ROW LEVEL SECURITY;
    ```
 
-   **Batch 3: Supporting tables**
+   **Batch 4: Supporting tables**
 
    ```sql
    ALTER TABLE accounter_schema.clients ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.employees ENABLE ROW LEVEL SECURITY;
-   -- ...etc
+   ALTER TABLE accounter_schema.tags ENABLE ROW LEVEL SECURITY;
+   -- ...etc (see spec section 3.2.2 for full list)
    ```
 
-3. Create policies for each table:
+3. Create policies for each table using owner_id:
 
-   **Simple policy (direct business_id)**:
+   **Standard policy (direct owner_id column)**:
 
    ```sql
    CREATE POLICY tenant_isolation ON accounter_schema.{table}
      FOR ALL
-     USING (business_id = accounter_schema.get_current_business_id())
-     WITH CHECK (business_id = accounter_schema.get_current_business_id());
+     USING (owner_id = accounter_schema.get_current_business_id())
+     WITH CHECK (owner_id = accounter_schema.get_current_business_id());
    ```
 
-   **FK-derived policy (e.g., documents via charge_id)**:
+   **Example - documents table**:
 
    ```sql
    CREATE POLICY tenant_isolation ON accounter_schema.documents
      FOR ALL
-     USING (
-       EXISTS (
-         SELECT 1 FROM accounter_schema.charges
-         WHERE charges.id = documents.charge_id
-         AND charges.business_id = accounter_schema.get_current_business_id()
-       )
-     )
-     WITH CHECK (
-       EXISTS (
-         SELECT 1 FROM accounter_schema.charges
-         WHERE charges.id = documents.charge_id
-         AND charges.business_id = accounter_schema.get_current_business_id()
-       )
-     );
+     USING (owner_id = accounter_schema.get_current_business_id())
+     WITH CHECK (owner_id = accounter_schema.get_current_business_id());
    ```
+
+   **Example - transactions table**:
+
+   ```sql
+   CREATE POLICY tenant_isolation ON accounter_schema.transactions
+     FOR ALL
+     USING (owner_id = accounter_schema.get_current_business_id())
+     WITH CHECK (owner_id = accounter_schema.get_current_business_id());
+   ```
+
+   **Note**: All policies use owner_id column (not business_id). The RLS function
+   get_current_business_id() returns the session's business context, which is compared against
+   owner_id.
 
 4. Force RLS for all users:
 
@@ -3771,20 +3830,94 @@ export default [
 - Remove businessId parameters (auth context provides this automatically)
 - Keep using `this.db.query()` (same interface as pool.query())
 
-**3. Remove Temporary RLS Context Code** (from Prompt 2.9):
+**3. Remove Temporary RLS Fallback Code** (from Prompt 2.6 - TenantAwareDBClient):
 
-Now that TenantAwareDBClient is handling RLS context, remove the temporary bridge code:
+Now that Auth0 is active and AuthContext is reliably populated, remove the TEMPORARY fallback to
+`context.currentUser` from TenantAwareDBClient:
+
+a. **Remove CONTEXT injection**:
+
+File: `packages/server/src/modules/app-providers/tenant-db-client.ts`
 
 ```typescript
-// DELETE temporary middleware/plugin code from Prompt 2.9:
-// - RLS context setting in auth plugin
-// - context.dbClient usage in providers
-// - Plugin-level SET LOCAL commands
+// REMOVE this constructor parameter:
+@Inject(CONTEXT) private context: AccounterContext,
 
-// Verify removal:
-// rg "Phase 2.9|RLS Context Bridge|TEMPORARY" packages/server/src
-// Should return no results
+// Constructor should only inject:
+constructor(
+  private dbProvider: DBProvider,
+  @Inject(AUTH_CONTEXT) private authContext: AuthContext,
+) {}
 ```
+
+b. **Remove fallback checks in authentication guards**:
+
+Remove `|| !this.context.currentUser?.userId` fallback from three locations:
+
+- `query()` method auth check (lines ~68-73)
+- `transaction()` method auth check (lines ~101-106)
+- `setRLSVariables()` method auth check (lines ~209-214)
+
+```typescript
+// BEFORE (with fallback):
+if (!this.authContext && !this.context.currentUser?.userId) {
+  throw new GraphQLError('Auth context not available...')
+}
+
+// AFTER (Auth0 only):
+if (!this.authContext) {
+  throw new GraphQLError('Auth context not available...')
+}
+```
+
+c. **Remove fallback in businessId calculation**:
+
+File: `packages/server/src/modules/app-providers/tenant-db-client.ts`, `setRLSVariables()` method
+
+```typescript
+// BEFORE (with fallback):
+const businessIdValue = tenant?.businessId ?? this.context.currentUser?.userId ?? null
+
+// AFTER (Auth0 only):
+const businessIdValue = tenant?.businessId
+if (!businessIdValue) {
+  throw new Error('Missing businessId in AuthContext')
+}
+```
+
+d. **Remove context.rlsClient type definition** (if it was added):
+
+File: `packages/server/src/shared/types/index.ts`
+
+```typescript
+// REMOVE if present:
+rlsClient?: PoolClient
+```
+
+From AccounterContext interface.
+
+e. **Verification commands**:
+
+```bash
+# Should find NO matches after cleanup:
+rg "Phase 2.6|Phase 3.2|TEMPORARY.*RLS|context\.currentUser\.userId" \
+  packages/server/src/modules/app-providers/tenant-db-client.ts
+
+# Should find NO matches:
+rg "@Inject\(CONTEXT\).*private context.*AccounterContext" \
+  packages/server/src/modules/app-providers/tenant-db-client.ts
+
+# All providers should use TenantAwareDBClient (no fallback logic):
+rg "constructor.*private db: TenantAwareDBClient" \
+  packages/server/src/modules/**/providers/*.provider.ts
+# Expected: Many matches (all migrated providers, including charges.provider.ts)
+```
+
+f. **Provider Migration Note**:
+
+Providers that were migrated to `TenantAwareDBClient` during Phase 3 (like `charges.provider.ts`)
+require **NO CHANGES** - they're already using the final pattern. Only TenantAwareDBClient's
+internal implementation is being cleaned up.
 
 **4. Add Integration Tests** (Verify RLS enforcement):
 

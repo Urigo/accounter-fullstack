@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteExpenseParams,
   IDeleteExpenseQuery,
@@ -102,10 +102,10 @@ const deleteExpense = sql<IDeleteExpenseQuery>`
   global: true,
 })
 export class MiscExpensesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
-    const expenses = await getExpensesByChargeIds.run({ chargeIds }, this.dbProvider);
+    const expenses = await getExpensesByChargeIds.run({ chargeIds }, this.db);
     const expensesByChargeId = new Map<string, IGetExpensesByChargeIdsResult[]>();
     expenses.map(expense => {
       if (expensesByChargeId.has(expense.charge_id)) {
@@ -122,10 +122,7 @@ export class MiscExpensesProvider {
   );
 
   private async batchExpensesByFinancialEntityIds(financialEntityIds: readonly string[]) {
-    const expenses = await getExpensesByFinancialEntityIds.run(
-      { financialEntityIds },
-      this.dbProvider,
-    );
+    const expenses = await getExpensesByFinancialEntityIds.run({ financialEntityIds }, this.db);
     const expensesByFinancialEntityId = new Map<string, IGetExpensesByChargeIdsResult[]>();
     expenses.map(expense => {
       if (expensesByFinancialEntityId.has(expense.creditor_id)) {
@@ -148,7 +145,7 @@ export class MiscExpensesProvider {
   );
 
   private async batchExpensesByIds(ids: readonly string[]) {
-    const expenses = await getExpensesByIds.run({ ids }, this.dbProvider);
+    const expenses = await getExpensesByIds.run({ ids }, this.db);
     return ids.map(id => expenses.find(expense => expense.id === id));
   }
 
@@ -158,7 +155,7 @@ export class MiscExpensesProvider {
 
   public async updateExpense(params: IUpdateExpenseParams) {
     if (params.miscExpenseId) await this.invalidateById(params.miscExpenseId);
-    return updateExpense.run(params, this.dbProvider);
+    return updateExpense.run(params, this.db);
   }
 
   public async replaceMiscExpensesChargeId(params: IReplaceMiscExpensesChargeIdParams) {
@@ -168,12 +165,12 @@ export class MiscExpensesProvider {
     if (params.replaceChargeID) {
       await this.invalidateByChargeId(params.replaceChargeID);
     }
-    return replaceMiscExpensesChargeId.run(params, this.dbProvider);
+    return replaceMiscExpensesChargeId.run(params, this.db);
   }
 
   public async insertExpense(params: IInsertExpenseParams) {
     if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
-    return insertExpense.run(params, this.dbProvider);
+    return insertExpense.run(params, this.db);
   }
 
   public async insertExpenses(params: IInsertExpensesParams) {
@@ -183,12 +180,12 @@ export class MiscExpensesProvider {
     if (chargeIds.length) {
       await Promise.all(chargeIds.map(chargeId => this.invalidateByChargeId(chargeId)));
     }
-    return insertExpenses.run(params, this.dbProvider);
+    return insertExpenses.run(params, this.db);
   }
 
   public async deleteMiscExpense(params: IDeleteExpenseParams) {
     if (params.id) await this.invalidateById(params.id);
-    return deleteExpense.run(params, this.dbProvider);
+    return deleteExpense.run(params, this.db);
   }
 
   public async invalidateByChargeId(chargeId: string) {

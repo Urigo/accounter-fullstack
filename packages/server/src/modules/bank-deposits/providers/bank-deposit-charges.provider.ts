@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type {
@@ -72,7 +72,7 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
 })
 export class BankDepositChargesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     private transactionsProvider: TransactionsProvider,
   ) {}
 
@@ -81,7 +81,7 @@ export class BankDepositChargesProvider {
       {
         depositIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return depositIds.map(id => transactions.filter(t => t.deposit_id === id));
   }
@@ -91,15 +91,15 @@ export class BankDepositChargesProvider {
   );
 
   public getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
-    return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.dbProvider);
+    return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.db);
   }
 
   public insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
-    return insertOrUpdateBankDepositCharge.run(params, this.dbProvider);
+    return insertOrUpdateBankDepositCharge.run(params, this.db);
   }
 
   public async getAllDepositsWithMetadata() {
-    const rows = await getAllDepositsWithTransactions.run(undefined, this.dbProvider);
+    const rows = await getAllDepositsWithTransactions.run(undefined, this.db);
 
     // Group transactions by deposit_id
     const depositMap = new Map<
@@ -214,7 +214,7 @@ export class BankDepositChargesProvider {
   }
 
   public async deleteChargeDepositsByChargeIds(chargeIds: string[]) {
-    return deleteBankDepositChargesByChargeIds.run({ chargeIds }, this.dbProvider);
+    return deleteBankDepositChargesByChargeIds.run({ chargeIds }, this.db);
   }
 
   public async assignChargeToDeposit(chargeId: string, depositId: string) {
