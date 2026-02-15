@@ -23,9 +23,7 @@ async function main() {
     port: Number(env.postgres.port),
     database: env.postgres.db,
     ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
-    connectionTimeoutMillis: 50_000, // 50 seconds
-    idleTimeoutMillis: 100_000, // 100 seconds
-    max: 100, // maximum number of clients in the pool
+    max: env.postgres.max, // maximum number of clients in the pool
   });
 
   const application = await createGraphQLApp(env, pool);

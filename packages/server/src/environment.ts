@@ -35,6 +35,7 @@ const PostgresModel = zod.object({
   POSTGRES_DB: zod.string(),
   POSTGRES_USER: zod.string(),
   POSTGRES_PASSWORD: zod.string(),
+  POSTGRES_MAX_CLIENTS: emptyString(NumberFromString).optional().default(100),
 });
 
 const CloudinaryModel = zod.union([
@@ -204,6 +205,7 @@ export const env = {
     user: postgres.POSTGRES_USER,
     password: postgres.POSTGRES_PASSWORD,
     ssl: postgres.POSTGRES_SSL === '1',
+    max: postgres.POSTGRES_MAX_CLIENTS,
   },
   cloudinary: cloudinary?.CLOUDINARY_API_KEY
     ? {
