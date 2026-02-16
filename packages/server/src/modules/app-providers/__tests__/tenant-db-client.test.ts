@@ -204,7 +204,7 @@ describe('TenantAwareDBClient', () => {
       expect((tenantDBClient as any).activeClient).toBeNull();
     });
 
-    it('should force dispose on timeout if mutex is held', async () => {
+    it('should return early on timeout if mutex is held (avoid race condition)', async () => {
       // Use fake timers to fast-forward the 5s timeout
       vi.useFakeTimers();
 
@@ -228,10 +228,13 @@ describe('TenantAwareDBClient', () => {
       vi.useRealTimers();
       
       // Assertions
-      // 1. Client should be released with true (force destroy) because we timed out
-      expect(mockPoolClient.release).toHaveBeenCalledWith(true);
-      // 2. isDisposed should be true
-      expect((tenantDBClient as any).isDisposed).toBe(true);
+      // 1. Client should NOT be released because we return early to avoid destroying
+      //    an actively-used connection (prevents race condition)
+      expect(mockPoolClient.release).not.toHaveBeenCalled();
+      // 2. activeClient should still be set (not cleaned up)
+      expect((tenantDBClient as any).activeClient).toBe(mockPoolClient);
+      // 3. isDisposed should be false (dispose didn't complete)
+      expect((tenantDBClient as any).isDisposed).toBe(false);
     });
   });
 
