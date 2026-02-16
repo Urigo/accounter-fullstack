@@ -316,7 +316,7 @@ function ChargesFiltersForm({
                 <FormItem className="h-min">
                   <FormLabel>Free Text</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? undefined} />
+                    <Input {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
