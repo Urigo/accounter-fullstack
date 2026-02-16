@@ -110,11 +110,10 @@ export function GenerateDocument({
   const handleIssueClick = useCallback(() => {
     if (onDone) {
       onDone(formData);
-      onClose();
     } else {
       setIsIssueModalOpen(true);
     }
-  }, [onDone, formData, onClose]);
+  }, [onDone, formData]);
 
   const handleIssue = useCallback(
     async (issueData: IssueDocumentData) => {
@@ -262,8 +261,8 @@ export function GenerateDocument({
         <IssueDocumentModal
           isOpen={isIssueModalOpen}
           onClose={() => {
-            onClose();
             setIsIssueModalOpen(false);
+            onClose();
           }}
           onIssue={handleIssue}
           clientName={formData.client?.name}
