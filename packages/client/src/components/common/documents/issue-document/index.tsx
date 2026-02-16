@@ -26,6 +26,7 @@ import { RecentDocsOfSameType } from './recent-docs-of-same-type.js';
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
   onDone?: (draft: PreviewDocumentInput) => void;
+  onClose: () => void;
   chargeId?: string;
 }
 
@@ -43,7 +44,12 @@ const formDefaults: PreviewDocumentInput = {
   payment: [],
 } as const;
 
-export function GenerateDocument({ initialFormData, onDone, chargeId }: GenerateDocumentProps) {
+export function GenerateDocument({
+  initialFormData,
+  onDone,
+  onClose,
+  chargeId,
+}: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
     ...formDefaults,
     ...initialFormData,
@@ -254,7 +260,10 @@ export function GenerateDocument({ initialFormData, onDone, chargeId }: Generate
         {/* Issue Document Modal */}
         <IssueDocumentModal
           isOpen={isIssueModalOpen}
-          onClose={() => setIsIssueModalOpen(false)}
+          onClose={() => {
+            setIsIssueModalOpen(false);
+            onClose();
+          }}
           onIssue={handleIssue}
           clientName={formData.client?.name}
           clientEmails={formData.client?.emails}
