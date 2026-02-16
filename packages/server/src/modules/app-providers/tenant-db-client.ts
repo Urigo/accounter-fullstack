@@ -277,6 +277,21 @@ export class TenantAwareDBClient {
   public async dispose(): Promise<void> {
     if (this.isDisposed) return;
 
+    // In normal operation, activeClient should already be null because
+    // executeTransactionInternal's finally block releases it.
+    // If it's null, we can skip the expensive mutex acquisition.
+    if (!this.activeClient) {
+      this.isDisposed = true;
+      return;
+    }
+
+    // If we get here, activeClient is not null, which means the transaction
+    // didn't clean up properly. This is an abnormal situation (e.g., connection leak,
+    // error in finally block, or dispose called prematurely).
+    console.warn(
+      'TenantAwareDBClient.dispose() called with activeClient still set. Forcing cleanup.',
+    );
+
     // Use a timeout or race to prevent hanging indefinitely during disposal
     // If a query is stuck, we don't want to block the entire server request handler.
     const TIMEOUT_MS = 5000;
@@ -291,16 +306,20 @@ export class TenantAwareDBClient {
       ]);
     } catch (e) {
       console.warn(
-        'Timeout acquiring mutex during TenantAwareDBClient disposal. Forcing cleanup.',
+        'Timeout acquiring mutex during TenantAwareDBClient disposal. Connection may be in use.',
         e,
       );
-      // We process cleanup even if we couldn't acquire the lock to prevent DoS.
+      // Don't force cleanup - let executeTransactionInternal's finally block handle it.
+      // Forcing cleanup here creates a race condition where we destroy a connection
+      // that's actively being used, causing query failures.
+      return;
     }
 
     try {
       if (this.isDisposed) return;
 
       if (this.activeClient) {
+        let hadRollbackError = false;
         try {
           // Attempt rollback, but catch errors if connection is busy/closed
           await Promise.race([
@@ -310,15 +329,14 @@ export class TenantAwareDBClient {
             ),
           ]);
         } catch (error) {
+          hadRollbackError = true;
           console.error('Error disposing TenantAwareDBClient (rollback failed):', error);
         } finally {
           try {
-            // Force release the client back to the pool (or destroy it if it was stuck)
-            // Ideally we'd destroy it if it was stuck, but `release(true)` isn't standard pg-pool API exposed via release?
-            // Standard pg `release()` usually takes a boolean `err`. If truthy, the client is removed from the pool.
-            // Since we had a timeout/error, we should probably treat it as an error state.
-            // But `release` signature in @types/pg is `release(err?: boolean | Error): void;`
-            this.activeClient.release(true);
+            // Only destroy the connection (release(true)) if there was an error.
+            // For normal disposal, return it to the pool (release()) to avoid pool exhaustion.
+            // pg's release(true) removes the connection from the pool permanently.
+            this.activeClient.release(hadRollbackError);
           } catch (e) {
             console.error('Error releasing client during disposal:', e);
           }
