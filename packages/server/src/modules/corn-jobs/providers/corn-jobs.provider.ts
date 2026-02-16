@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   ICalculateCreditcardDebitDateParams,
   ICalculateCreditcardDebitDateQuery,
@@ -94,21 +94,21 @@ where at.id = t.id
   AND at.owner_id = $ownerId;`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class CornJobsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   public async getReferenceMergeCandidates(params: IGetReferenceMergeCandidatesParams) {
-    return getReferenceMergeCandidates.run(params, this.dbProvider);
+    return getReferenceMergeCandidates.run(params, this.db);
   }
 
   public async flagForeignFeeTransactions(params: IFlagForeignFeeTransactionsParams) {
-    return flagForeignFeeTransactions.run(params, this.dbProvider);
+    return flagForeignFeeTransactions.run(params, this.db);
   }
 
   public async calculateCreditcardDebitDate(params: ICalculateCreditcardDebitDateParams) {
-    return calculateCreditcardDebitDate.run(params, this.dbProvider);
+    return calculateCreditcardDebitDate.run(params, this.db);
   }
 }
