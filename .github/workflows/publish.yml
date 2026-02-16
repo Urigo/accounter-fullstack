@@ -47,14 +47,6 @@ jobs:
         with:
           registryUrl: 'https://registry.npmjs.org'
 
-      - name: Log npm version
-        shell: bash
-        run: |
-          echo "npm version: $(npm --version)"
-          if [ "$(npm --version | cut -d. -f1)" != "11" ]; then
-            echo "Warning: expected npm v11" >&2
-          fi
-
       - name: Versioning - Calculate Alpha Snapshot
         # This step uses the Changesets CLI to create a temporary version based on a timestamp
         # It updates package.json files locally but does not commit them
