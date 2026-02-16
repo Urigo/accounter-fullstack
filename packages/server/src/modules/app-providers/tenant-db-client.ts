@@ -312,6 +312,8 @@ export class TenantAwareDBClient {
       // Don't force cleanup - let executeTransactionInternal's finally block handle it.
       // Forcing cleanup here creates a race condition where we destroy a connection
       // that's actively being used, causing query failures.
+      // However, mark as disposed to prevent further usage of this instance.
+      this.isDisposed = true;
       return;
     }
 

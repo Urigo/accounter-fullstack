@@ -231,10 +231,10 @@ describe('TenantAwareDBClient', () => {
       // 1. Client should NOT be released because we return early to avoid destroying
       //    an actively-used connection (prevents race condition)
       expect(mockPoolClient.release).not.toHaveBeenCalled();
-      // 2. activeClient should still be set (not cleaned up)
+      // 2. activeClient should still be set (cleanup deferred to transaction's finally block)
       expect((tenantDBClient as any).activeClient).toBe(mockPoolClient);
-      // 3. isDisposed should be false (dispose didn't complete)
-      expect((tenantDBClient as any).isDisposed).toBe(false);
+      // 3. isDisposed SHOULD be true to prevent further usage of this instance
+      expect((tenantDBClient as any).isDisposed).toBe(true);
     });
   });
 
