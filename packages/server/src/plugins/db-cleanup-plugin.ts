@@ -11,7 +11,7 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
     },
     onExecute({ args }) {
       return {
-        onExecuteDone({ result }) {
+        async onExecuteDone({ result }) {
           // If the result is an async iterable (stream/defer), wrap it.
           // This allows us to defer cleanup until the entire stream is consumed or the connection is closed.
           // Standard onExecuteDone fires before the stream is completely consumed.
@@ -45,8 +45,9 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
             });
           } else {
             // Regular execution (single response), clean up immediately.
-            // onExecuteDone hooks run after the result is ready to be sent.
-            disposeClients(args.contextValue as AccounterContext);
+            // CRITICAL: Must await to ensure connections are released before response is sent.
+            // Without await, connections accumulate under load faster than they're freed.
+            await disposeClients(args.contextValue as AccounterContext);
           }
         },
       };

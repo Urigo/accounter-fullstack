@@ -35,7 +35,7 @@ const PostgresModel = zod.object({
   POSTGRES_DB: zod.string(),
   POSTGRES_USER: zod.string(),
   POSTGRES_PASSWORD: zod.string(),
-  POSTGRES_MAX_CLIENTS: emptyString(NumberFromString).optional().default(100),
+  POSTGRES_MAX_CLIENTS: emptyString(NumberFromString).optional().default(20),
 });
 
 const CloudinaryModel = zod.union([
