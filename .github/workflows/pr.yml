@@ -77,12 +77,16 @@ jobs:
       - name: setup environment
         uses: ./.github/actions/setup
 
-      - name: alpha release
-        id: changesets
-        uses: the-guild-org/changesets-snapshot-action@12ae5b6781ea75c36ece2f2e3446cee6dc093e99 # v0.0.3
-        with:
-          tag: alpha
-          prepareScript: yarn run build
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Packages
+        shell: bash
+        run: yarn run build
+
+      # - name: alpha release
+      #   id: changesets
+      #   uses: the-guild-org/changesets-snapshot-action@12ae5b6781ea75c36ece2f2e3446cee6dc093e99 # v0.0.3
+      #   with:
+      #     tag: alpha
+      #     prepareScript: yarn run build
+      #   env:
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
