@@ -5,7 +5,7 @@ import { PageLayout } from '../../layout/page-layout.js';
 export const IssueDocumentScreen = (): ReactElement => {
   return (
     <PageLayout title="New Document" description="Issue a document for a client">
-      <GenerateDocument />
+      <GenerateDocument onClose={() => {}} />
     </PageLayout>
   );
 };

@@ -232,7 +232,7 @@ type Props = {
   documentType?: DocumentType;
   onDone?: (draft: PreviewDocumentInput) => void;
   trigger?: ReactElement;
-} & ComponentProps<typeof GenerateDocument>;
+} & Omit<ComponentProps<typeof GenerateDocument>, 'onClose'>;
 
 export function PreviewDocumentModal({
   open: externalOpen = false,
@@ -368,6 +368,7 @@ export function PreviewDocumentModal({
                   }
                 : undefined
             }
+            onClose={() => setOpen(false)}
             chargeId={chargeId}
           />
         )}
