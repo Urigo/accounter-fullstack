@@ -279,6 +279,8 @@ export default gql`
     byBusinesses: [UUID!]
     " Include only charges with those tags "
     byTags: [String!]
+    " Include only charges with user description | transactions description / reference | documents description / remarks / serial that contains this text "
+    freeText: String
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
     accountantStatus: [AccountantStatus!]

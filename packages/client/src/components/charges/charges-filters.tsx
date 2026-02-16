@@ -28,7 +28,8 @@ import {
   SelectTagItem,
 } from '../common/index.js';
 import { Button } from '../ui/button.js';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../ui/form.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
+import { Input } from '../ui/input.js';
 import { Label } from '../ui/label.js';
 import { Switch } from '../ui/switch.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
@@ -303,6 +304,22 @@ function ChargesFiltersForm({
                   error={fieldState.error?.message}
                   withinPortal
                 />
+              )}
+            />
+            <FormField
+              name="freeText"
+              control={control}
+              rules={{
+                minLength: { value: 2, message: 'Must be at least 2 characters' },
+              }}
+              render={({ field }) => (
+                <FormItem className="h-min">
+                  <FormLabel>Free Text</FormLabel>
+                  <FormControl>
+                    <Input {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
 
