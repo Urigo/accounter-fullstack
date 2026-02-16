@@ -15,11 +15,11 @@ on:
   workflow_call:
     inputs:
       type:
-        description: 'Type of release (snapshot or stable)'
+        description: "Type of release (snapshot or stable)"
         required: true
         type: string
       ref:
-        description: 'Git ref to checkout'
+        description: "Git ref to checkout"
         required: false
         type: string
 
@@ -45,7 +45,7 @@ jobs:
       - name: setup environment
         uses: ./.github/actions/setup
         with:
-          registryUrl: 'https://registry.npmjs.org'
+          registryUrl: "https://registry.npmjs.org"
 
       - name: Log npm version
         shell: bash
@@ -73,7 +73,6 @@ jobs:
         if: ${{ inputs.type == 'snapshot' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
         run: |
           # Capture output to file while still showing it in logs
           set -o pipefail
@@ -136,12 +135,11 @@ jobs:
         id: changesets-stable
         uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e # v1.5.2
         with:
-          publish: 'npx changeset publish'
-          version: 'yarn changeset version'
-          commit: 'chore(release): update monorepo packages versions'
-          title: 'Upcoming Release Changes'
+          publish: "npx changeset publish"
+          version: "yarn changeset version"
+          commit: "chore(release): update monorepo packages versions"
+          title: "Upcoming Release Changes"
           createGithubReleases: aggregate
           githubReleaseName: ${{ steps.vars.outputs.date }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'

@@ -60,6 +60,7 @@
   },
   "publishConfig": {
     "directory": "dist",
+    "registry": "https://registry.npmjs.org",
     "access": "public",
     "provenance": true
   },

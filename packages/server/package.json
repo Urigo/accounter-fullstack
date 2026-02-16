@@ -81,6 +81,7 @@
     "typescript": "5.9.3"
   },
   "publishConfig": {
+    "directory": "dist",
     "registry": "https://registry.npmjs.org",
     "access": "public",
     "provenance": true

@@ -103,6 +103,7 @@
     "react-is": "19.2.4"
   },
   "publishConfig": {
+    "directory": "dist",
     "registry": "https://registry.npmjs.org",
     "access": "public",
     "provenance": true
