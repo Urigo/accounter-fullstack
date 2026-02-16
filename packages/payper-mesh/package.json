@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Urigo/accounter-fullstack.git",
-    "repository": "packages/payper-mesh"
+    "directory": "packages/payper-mesh"
   },
   "homepage": "https://github.com/Urigo/accounter-fullstack/packages/payper-mesh#readme",
   "bugs": {

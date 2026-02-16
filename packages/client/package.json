@@ -2,6 +2,11 @@
   "name": "@accounter/client",
   "version": "0.0.10",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/client"
+  },
   "license": "MIT",
   "scripts": {
     "build": "tsc && vite build",

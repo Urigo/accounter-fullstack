@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Urigo/accounter-fullstack.git",
-    "repository": "packages/pcn874-generator"
+    "directory": "packages/pcn874-generator"
   },
   "homepage": "https://github.com/Urigo/accounter-fullstack/packages/pcn874-generator#readme",
   "bugs": {

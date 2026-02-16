@@ -5,12 +5,12 @@
   "description": "Fully typed application that generates, parses, and validates SHAAM 6111 tax reports.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/urigo/accounter-fullstack.git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
     "directory": "packages/shaam6111-generator"
   },
-  "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam6111-generator#readme",
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/shaam6111-generator#readme",
   "bugs": {
-    "url": "https://github.com/urigo/accounter-fullstack/issues"
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",

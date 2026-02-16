@@ -6,7 +6,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Urigo/accounter-toolkit.git",
-    "repository": "packages/green-invoice-graphql"
+    "directory": "packages/green-invoice-graphql"
   },
   "homepage": "https://github.com/Urigo/accounter-toolkit/packages/green-invoice-graphql#readme",
   "bugs": {
