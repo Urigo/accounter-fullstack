@@ -24,7 +24,7 @@ __metadata:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch"
     "@types/pg": "npm:8.16.0"
     pg-promise: "npm:12.6.1"
-    slonik: "npm:48.10.3"
+    slonik: "npm:48.10.0"
     tslib: "npm:2.8.1"
     zod: "npm:4.3.6"
   languageName: unknown
@@ -323,7 +323,7 @@ __metadata:
     playwright: "npm:1.58.2"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.1.3"
-    slonik: "npm:48.10.3"
+    slonik: "npm:48.10.0"
     strip-indent: "npm:4.1.1"
     tsc-alias: "npm:1.8.16"
     tsx: "npm:4.21.0"
@@ -7850,7 +7850,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^48.10.0, @slonik/driver@npm:^48.10.3":
+"@slonik/driver@npm:^48.10.0":
   version: 48.10.3
   resolution: "@slonik/driver@npm:48.10.3"
   dependencies:
@@ -7893,25 +7893,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:^48.10.3":
-  version: 48.10.3
-  resolution: "@slonik/pg-driver@npm:48.10.3"
-  dependencies:
-    "@slonik/driver": "npm:^48.10.3"
-    "@slonik/errors": "npm:^48.10.3"
-    "@slonik/sql-tag": "npm:^48.10.3"
-    "@slonik/types": "npm:^48.10.3"
-    "@slonik/utilities": "npm:^48.10.3"
-    pg: "npm:^8.18.0"
-    pg-query-stream: "npm:^4.12.0"
-    pg-types: "npm:^4.1.0"
-    postgres-array: "npm:^3.0.4"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/920ae2c00c0b51666f41378b070b3d5b4ad449d059e9955e5dc59ea43af5a400a5f589b56b25a926b41d9a6e3b8be2aa68139bf412a223b284ff743960bad756
-  languageName: node
-  linkType: hard
-
 "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch":
   version: 48.10.0
   resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch::version=48.10.0&hash=7afe8f"
@@ -7931,7 +7912,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/sql-tag@npm:^48.10.0, @slonik/sql-tag@npm:^48.10.3":
+"@slonik/sql-tag@npm:^48.10.0":
   version: 48.10.3
   resolution: "@slonik/sql-tag@npm:48.10.3"
   dependencies:
@@ -18954,7 +18935,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-query-stream@npm:^4.10.3, pg-query-stream@npm:^4.12.0":
+"pg-query-stream@npm:^4.10.3":
   version: 4.12.0
   resolution: "pg-query-stream@npm:4.12.0"
   dependencies:
@@ -18993,7 +18974,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.18.0, pg@npm:^8.17.1, pg@npm:^8.18.0":
+"pg@npm:8.18.0, pg@npm:^8.17.1":
   version: 8.18.0
   resolution: "pg@npm:8.18.0"
   dependencies:
@@ -21133,16 +21114,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:48.10.3":
-  version: 48.10.3
-  resolution: "slonik@npm:48.10.3"
+"slonik@npm:48.10.0":
+  version: 48.10.0
+  resolution: "slonik@npm:48.10.0"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
-    "@slonik/driver": "npm:^48.10.3"
-    "@slonik/errors": "npm:^48.10.3"
-    "@slonik/pg-driver": "npm:^48.10.3"
-    "@slonik/sql-tag": "npm:^48.10.3"
-    "@slonik/utilities": "npm:^48.10.3"
+    "@slonik/driver": "npm:^48.10.0"
+    "@slonik/errors": "npm:^48.10.0"
+    "@slonik/pg-driver": "npm:^48.10.0"
+    "@slonik/sql-tag": "npm:^48.10.0"
+    "@slonik/utilities": "npm:^48.10.0"
     "@standard-schema/spec": "npm:^1.0.0"
     get-stack-trace: "npm:^3.1.1"
     iso8601-duration: "npm:^2.1.3"
@@ -21151,8 +21132,8 @@ __metadata:
     roarr: "npm:^7.21.4"
     serialize-error: "npm:^12.0.0"
     strict-event-emitter-types: "npm:^2.0.0"
-    zod: "npm:^4.3.6"
-  checksum: 10c0/f7b5f33468efaa04fabd87ae2f8323d636aa2815b47ee92c1a373c099e9d4c36afb124fc71fa8c58b466468244e60a8b76987ff53182569580a1db5f779d1880
+    zod: "npm:^4.3.5"
+  checksum: 10c0/317a49f67a11d325f175d9eeb5e139eaed43435030f51c460db420fba099ca688b0dba36ebcfe982a16742b064910f9907e626ad8e21aac29edb15e5eef89f7d
   languageName: node
   linkType: hard
 
@@ -23716,7 +23697,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod@npm:4.3.6, zod@npm:^4.3.6":
+"zod@npm:4.3.6, zod@npm:^4.3.5, zod@npm:^4.3.6":
   version: 4.3.6
   resolution: "zod@npm:4.3.6"
   checksum: 10c0/860d25a81ab41d33aa25f8d0d07b091a04acb426e605f396227a796e9e800c44723ed96d0f53a512b57be3d1520f45bf69c0cb3b378a232a00787a2609625307
