@@ -56,11 +56,6 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
 
-      - name: Setup Yarn Auth
-        shell: bash
-        run: |
-          echo "YARN_NPM_AUTH_TOKEN=$NODE_AUTH_TOKEN" >> $GITHUB_ENV
-
       - name: Versioning - Calculate Alpha Snapshot
         # This step uses the Changesets CLI to create a temporary version based on a timestamp
         # It updates package.json files locally but does not commit them
