@@ -5,7 +5,7 @@
   "description": "",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Urigo/accounter-toolkit.git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
     "directory": "packages/modern-poalim-scraper"
   },
   "license": "MIT",
