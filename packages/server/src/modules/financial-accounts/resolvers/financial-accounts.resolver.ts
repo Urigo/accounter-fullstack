@@ -1,9 +1,12 @@
 import { GraphQLError } from 'graphql';
+import type { Writeable } from '../../../shared/types/index.js';
+import { FinancialAccountsTaxCategoriesProvider } from '../providers/financial-accounts-tax-categories.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../providers/financial-bank-accounts.provider.js';
 import type {
   FinancialAccountsModule,
   IInsertFinancialAccountsParams,
+  IInsertFinancialAccountTaxCategoriesParams,
   IUpdateFinancialAccountParams,
 } from '../types.js';
 import {
@@ -83,6 +86,18 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           });
         }
 
+        if (input.currencies && input.currencies.length > 0) {
+          await injector
+            .get(FinancialAccountsTaxCategoriesProvider)
+            .insertFinancialAccountTaxCategories({
+              financialAccountsTaxCategories: input.currencies.map(c => ({
+                financial_account_id: account.id,
+                currency: c.currency,
+                tax_category_id: c.taxCategoryId,
+              })),
+            });
+        }
+
         return account;
       } catch (error) {
         const message = 'Failed to create financial account';
@@ -127,6 +142,86 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
             productLabel: fields.bankAccountDetails.productLabel,
             serviceAuthorizationDesc: fields.bankAccountDetails.serviceAuthorizationDesc,
           });
+        }
+
+        if (fields.currencies && fields.currencies.length > 0) {
+          const currentTaxCategories = await injector
+            .get(FinancialAccountsTaxCategoriesProvider)
+            .getFinancialAccountTaxCategoriesByFinancialAccountIdLoader.load(account.id);
+
+          if (currentTaxCategories.length > 0) {
+            const updateTaxCategories: Promise<unknown>[] = [];
+
+            // check for tax categories to delete - those that exist currently but are not included in the input
+            const taxCategoriesToDelete = currentTaxCategories.filter(
+              ctc =>
+                !fields.currencies!.some(
+                  inputTaxCategory => inputTaxCategory.currency === ctc.currency,
+                ),
+            );
+            if (taxCategoriesToDelete.length > 0) {
+              updateTaxCategories.push(
+                injector
+                  .get(FinancialAccountsTaxCategoriesProvider)
+                  .deleteFinancialAccountTaxCategories({
+                    financialAccountId: account.id,
+                    currencies: taxCategoriesToDelete.map(tc => tc.currency),
+                  }),
+              );
+            }
+
+            const taxCategoriesToInsert: Writeable<
+              IInsertFinancialAccountTaxCategoriesParams['financialAccountsTaxCategories']
+            > = [];
+            fields.currencies.map(inputTaxCategory => {
+              const currentTaxCategory = currentTaxCategories.find(
+                ctc => ctc.currency === inputTaxCategory.currency,
+              );
+              if (currentTaxCategory) {
+                if (currentTaxCategory.tax_category_id !== inputTaxCategory.taxCategoryId) {
+                  // tax category changed for this currency, update it
+                }
+                updateTaxCategories.push(
+                  injector
+                    .get(FinancialAccountsTaxCategoriesProvider)
+                    .updateFinancialAccountTaxCategory({
+                      financialAccountId: account.id,
+                      currency: inputTaxCategory.currency,
+                      taxCategoryId: inputTaxCategory.taxCategoryId,
+                    }),
+                );
+              } else {
+                // new tax category for this account, insert it
+                taxCategoriesToInsert.push({
+                  financial_account_id: account.id,
+                  currency: inputTaxCategory.currency,
+                  tax_category_id: inputTaxCategory.taxCategoryId,
+                });
+              }
+            });
+            if (taxCategoriesToInsert.length > 0) {
+              updateTaxCategories.push(
+                injector
+                  .get(FinancialAccountsTaxCategoriesProvider)
+                  .insertFinancialAccountTaxCategories({
+                    financialAccountsTaxCategories: taxCategoriesToInsert,
+                  }),
+              );
+            }
+
+            await Promise.all(updateTaxCategories);
+          } else {
+            // none existing,insert all
+            await injector
+              .get(FinancialAccountsTaxCategoriesProvider)
+              .insertFinancialAccountTaxCategories({
+                financialAccountsTaxCategories: fields.currencies.map(c => ({
+                  financial_account_id: account.id,
+                  currency: c.currency,
+                  tax_category_id: c.taxCategoryId,
+                })),
+              });
+          }
         }
 
         return account;

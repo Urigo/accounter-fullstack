@@ -88,6 +88,7 @@ export default gql`
     type: FinancialAccountType!
     privateOrBusiness: PrivateOrBusinessType!
     bankAccountDetails: BankAccountInsertInput
+    currencies: [FinancialAccountCurrencyInput!]
   }
 
   " input type for updating a financial account "
@@ -98,6 +99,7 @@ export default gql`
     type: FinancialAccountType
     privateOrBusiness: PrivateOrBusinessType
     bankAccountDetails: BankAccountUpdateInput
+    currencies: [FinancialAccountCurrencyInput!]
   }
 
   extend interface Transaction {
@@ -138,5 +140,11 @@ export default gql`
   enum PrivateOrBusinessType {
     PRIVATE
     BUSINESS
+  }
+
+  " input type for financial account currency and tax category "
+  input FinancialAccountCurrencyInput {
+    currency: Currency!
+    taxCategoryId: UUID!
   }
 `;

@@ -33,16 +33,15 @@ import {
 import { Switch } from '@/components/ui/switch.js';
 import { Currency, FinancialAccountType, PrivateOrBusinessType } from '@/gql/graphql.js';
 import { useCreateFinancialAccount } from '@/hooks/use-create-financial-account.js';
+import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
 import { useUpdateFinancialAccount } from '@/hooks/use-update-financial-account.js';
+import { ComboBox } from '../common/index.js';
 import type { FinancialAccount } from './types.js';
 import { getAccountTypeLabel } from './utils.js';
 
 const currencyTaxCategorySchema = z.object({
   currency: z.enum(Object.values(Currency), 'Currency is required'),
-  taxCategory: z.object({
-    id: z.uuid('Tax category ID is required'),
-    name: z.string().min(1, 'Tax category name is required'),
-  }),
+  taxCategoryId: z.uuid('Tax category ID is required'),
 });
 
 // Helper to coerce empty strings to undefined for optional numeric fields
@@ -82,6 +81,37 @@ const financialAccountSchema = z.object({
   productLabel: z.string().optional(),
 });
 
+function convertToFinancialAccountForm(account: FinancialAccount): FinancialAccountForm {
+  return {
+    name: account.name,
+    number: account.number,
+    isBusiness: account.isBusiness,
+    type: account.type,
+    currencies:
+      account.currencies?.map(curr => ({
+        currency: curr.currency,
+        taxCategoryId: curr.taxCategory.id,
+      })) ?? [],
+    bankNumber: account.bankNumber,
+    branchNumber: account.branchNumber,
+    iban: account.iban,
+    swiftCode: account.swiftCode,
+    extendedBankNumber: account.extendedBankNumber,
+    partyPreferredIndication: account.partyPreferredIndication,
+    partyAccountInvolvementCode: account.partyAccountInvolvementCode,
+    accountDealDate: account.accountDealDate,
+    accountUpdateDate: account.accountUpdateDate,
+    metegDoarNet: account.metegDoarNet,
+    kodHarshaatPeilut: account.kodHarshaatPeilut,
+    accountClosingReasonCode: account.accountClosingReasonCode,
+    accountAgreementOpeningDate: account.accountAgreementOpeningDate,
+    serviceAuthorizationDesc: account.serviceAuthorizationDesc,
+    branchTypeCode: account.branchTypeCode,
+    mymailEntitlementSwitch: account.mymailEntitlementSwitch,
+    productLabel: account.productLabel,
+  };
+}
+
 type FinancialAccountForm = z.infer<typeof financialAccountSchema>;
 
 interface ModalProps {
@@ -99,6 +129,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const [editingAccount, setEditingAccount] = useState<FinancialAccount | null>(null);
     const { createFinancialAccount, creating } = useCreateFinancialAccount();
     const { updateFinancialAccount, updating } = useUpdateFinancialAccount();
+    const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
     const form = useForm<FinancialAccountForm>({
       resolver: zodResolver(financialAccountSchema) as Resolver<FinancialAccountForm>,
       defaultValues: {
@@ -133,7 +164,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     const handleOpenModal = (account?: FinancialAccount): void => {
       if (account) {
         setEditingAccount(account);
-        reset(account);
+        reset(convertToFinancialAccountForm(account));
       } else {
         setEditingAccount(null);
         reset();
@@ -154,6 +185,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     };
 
     const onSubmit = async (values: FinancialAccountForm): Promise<void> => {
+      console.log('Submitting form with values:', values);
       try {
         const privateOrBusiness = values.isBusiness
           ? PrivateOrBusinessType.Business
@@ -222,6 +254,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
               type: values.type,
               privateOrBusiness,
               bankAccountDetails,
+              currencies: values.currencies,
             },
           });
         } else {
@@ -244,7 +277,7 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
     };
 
     const addCurrency = (): void => {
-      currenciesFieldArray.append({ currency: Currency.Usd, taxCategory: { id: '', name: '' } });
+      currenciesFieldArray.append({ currency: Currency.Usd, taxCategoryId: '' });
     };
 
     const removeCurrency = (index: number): void => {
@@ -362,21 +395,38 @@ export const ModifyFinancialAccountModal = forwardRef<ModifyFinancialAccountModa
                           control={control}
                           name={`currencies.${index}.currency`}
                           render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Input placeholder="Currency (e.g., ILS, USD)" {...field} />
-                              </FormControl>
+                            <FormItem className="space-y-2">
+                              <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger id={`currencies.${index}.currency`}>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(Currency).map(([key, value]) => (
+                                    <SelectItem key={key} value={value}>
+                                      {value}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+
                         <FormField
-                          control={control}
-                          name={`currencies.${index}.taxCategory.id`}
+                          control={form.control}
+                          name={`currencies.${index}.taxCategoryId`}
                           render={({ field }) => (
                             <FormItem>
                               <FormControl>
-                                <Input placeholder="Tax Category ID" {...field} />
+                                <ComboBox
+                                  data={selectableTaxCategories}
+                                  disabled={fetchingTaxCategories}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Scroll to see all options"
+                                  formPart
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

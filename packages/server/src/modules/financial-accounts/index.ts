@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { FinancialAccountsTaxCategoriesProvider } from './providers/financial-accounts-tax-categories.provider.js';
 import { FinancialAccountsProvider } from './providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from './providers/financial-bank-accounts.provider.js';
 import { financialAccountsResolvers } from './resolvers/financial-accounts.resolver.js';
@@ -13,7 +14,11 @@ export const financialAccountsModule = createModule({
   dirname: __dirname,
   typeDefs: [financialAccounts, financialBankAccounts],
   resolvers: [financialAccountsResolvers, financialBankAccountsResolvers],
-  providers: () => [FinancialAccountsProvider, FinancialBankAccountsProvider],
+  providers: () => [
+    FinancialAccountsProvider,
+    FinancialBankAccountsProvider,
+    FinancialAccountsTaxCategoriesProvider,
+  ],
 });
 
 export * as FinancialAccountsTypes from './types.js';
