@@ -68,7 +68,7 @@ jobs:
         run: |
           # Capture output to file while still showing it in logs
           set -o pipefail
-          npx changeset publish --tag alpha --no-git-tag --access public 2>&1 | tee publish-output.txt
+          yarn changeset publish --tag alpha --no-git-tag --access public 2>&1 | tee publish-output.txt
 
       - name: Post-Release Notification
         # Providing a feedback loop directly on the Pull Request
