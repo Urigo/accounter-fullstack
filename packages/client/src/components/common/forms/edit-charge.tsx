@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -54,16 +54,30 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
     | undefined
   >(undefined);
 
-  const formManager = useForm<UpdateChargeInput>({
-    defaultValues: {
-      ...charge,
+  const chargeInputData: UpdateChargeInput = useMemo(
+    () => ({
+      counterpartyId: charge.counterparty?.id,
+      businessTripID: 'businessTrip' in charge ? charge.businessTrip?.id : undefined,
+      defaultTaxCategoryID: charge.taxCategory?.id,
+      isDecreasedVAT: charge.decreasedVAT,
+      isInvoicePaymentDifferentCurrency: charge.isInvoicePaymentDifferentCurrency,
+      optionalDocuments: charge.optionalDocuments,
+      optionalVAT: charge.optionalVAT,
+      ownerId: charge.owner?.id,
+      type: getChargeTypeInputValue(charge.__typename),
+      userDescription: charge.userDescription,
       yearsOfRelevance: charge.yearsOfRelevance
         ?.map(record => ({
           year: record.year as TimelessDateString,
           amount: record.amount,
         }))
         .sort((a, b) => (a.year > b.year ? 1 : -1)),
-    },
+    }),
+    [charge],
+  );
+
+  const formManager = useForm<UpdateChargeInput>({
+    defaultValues: chargeInputData,
   });
 
   const {
@@ -74,10 +88,6 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   } = formManager;
 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = async data => {
-    if (!charge) {
-      return;
-    }
-
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       await updateCharge({
@@ -95,7 +105,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
           description?: string;
         } = {};
         if (dataToUpdate.tags) {
-          const suggestedTags = charge.missingInfoSuggestions?.tags ?? [];
+          const suggestedTags = charge?.missingInfoSuggestions?.tags ?? [];
           const suggestedTagIds = new Set(suggestedTags.map(t => t.id));
           const updatedTagIds = new Set(dataToUpdate.tags.map(t => t.id));
 
@@ -169,7 +179,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <FormField
                 name="userDescription"
                 control={control}
-                defaultValue={charge.userDescription}
+                defaultValue={chargeInputData.userDescription}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Must be at least 2 characters' },
@@ -187,7 +197,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <Controller
                 name="ownerId"
                 control={control}
-                defaultValue={charge.owner?.id}
+                defaultValue={chargeInputData.ownerId}
                 rules={{
                   required: 'Required',
                   minLength: { value: 2, message: 'Minimum 2 characters' },
@@ -209,7 +219,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <Controller
                 name="defaultTaxCategoryID"
                 control={control}
-                defaultValue={charge.taxCategory?.id}
+                defaultValue={chargeInputData.defaultTaxCategoryID}
                 render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
@@ -227,7 +237,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <Controller
                 name="businessTripID"
                 control={control}
-                defaultValue={'businessTrip' in charge ? charge.businessTrip?.id : undefined}
+                defaultValue={chargeInputData.businessTripID}
                 render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
@@ -248,7 +258,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <Controller
                 name="type"
                 control={control}
-                defaultValue={getChargeTypeInputValue(charge.__typename)}
+                defaultValue={chargeInputData.type}
                 render={({ field, fieldState }): ReactElement => (
                   <Select
                     {...field}
@@ -266,7 +276,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <FormField
                 name="isInvoicePaymentDifferentCurrency"
                 control={control}
-                defaultValue={charge.isInvoicePaymentDifferentCurrency}
+                defaultValue={chargeInputData.isInvoicePaymentDifferentCurrency}
                 render={({ field }) => (
                   <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
@@ -282,7 +292,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <FormField
                 name="isDecreasedVAT"
                 control={control}
-                defaultValue={charge.decreasedVAT}
+                defaultValue={chargeInputData.isDecreasedVAT}
                 render={({ field }) => (
                   <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
@@ -298,7 +308,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <FormField
                 name="optionalVAT"
                 control={control}
-                defaultValue={charge.optionalVAT ?? false}
+                defaultValue={chargeInputData.optionalVAT ?? false}
                 render={({ field }) => (
                   <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
@@ -314,7 +324,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
               <FormField
                 name="optionalDocuments"
                 control={control}
-                defaultValue={charge.optionalDocuments ?? false}
+                defaultValue={chargeInputData.optionalDocuments ?? false}
                 render={({ field }) => (
                   <FormItem className="flex flex-row h-fit items-center justify-between rounded-lg border p-3 shadow-sm">
                     <div className="space-y-0.5">
