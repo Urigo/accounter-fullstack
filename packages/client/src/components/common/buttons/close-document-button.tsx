@@ -31,16 +31,16 @@ export function CloseDocumentButton({
         onConfirm={onFinallyClose}
         title="Are you sure you want to close this document?"
       >
-        <Tooltip>
-          <TooltipTrigger>
-            <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
+        <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
+          <Tooltip>
+            <TooltipTrigger>
               <CircleX className="size-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Close Document</p>
-          </TooltipContent>
-        </Tooltip>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Close Document</p>
+            </TooltipContent>
+          </Tooltip>
+        </Button>
       </ConfirmationModal>
     );
   }
