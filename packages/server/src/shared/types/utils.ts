@@ -8,3 +8,5 @@ export type OptionalToNullable<O> = {
 
 export type Optional<T, Keys extends keyof T> = Omit<T, Keys> &
   OptionalToNullable<Partial<Pick<T, Keys>>>;
+
+export type Writeable<T> = { -readonly [P in keyof T]: T[P] };
