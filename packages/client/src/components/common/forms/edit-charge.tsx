@@ -63,7 +63,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
       isInvoicePaymentDifferentCurrency: charge.isInvoicePaymentDifferentCurrency,
       optionalDocuments: charge.optionalDocuments,
       optionalVAT: charge.optionalVAT,
-      ownerId: charge.owner.id,
+      ownerId: charge.owner?.id,
       type: getChargeTypeInputValue(charge.__typename),
       userDescription: charge.userDescription,
       yearsOfRelevance: charge.yearsOfRelevance
@@ -88,10 +88,6 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   } = formManager;
 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = async data => {
-    if (!chargeInputData) {
-      return;
-    }
-
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
       await updateCharge({
@@ -109,7 +105,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
           description?: string;
         } = {};
         if (dataToUpdate.tags) {
-          const suggestedTags = charge?.tags ?? [];
+          const suggestedTags = charge?.missingInfoSuggestions?.tags ?? [];
           const suggestedTagIds = new Set(suggestedTags.map(t => t.id));
           const updatedTagIds = new Set(dataToUpdate.tags.map(t => t.id));
 
