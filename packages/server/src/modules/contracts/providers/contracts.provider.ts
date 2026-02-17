@@ -220,7 +220,7 @@ export class ContractsProvider {
   public async updateContract(params: IUpdateContractParams) {
     const [updatedContract] = await updateContract.run(params, this.db);
     if (params.contractId) {
-      this.invalidateCacheForContract(params.contractId);
+      await this.invalidateCacheForContract(params.contractId);
     } else {
       this.clearCache();
     }
@@ -230,7 +230,7 @@ export class ContractsProvider {
 
   public async deleteContract(contractId: string) {
     await deleteContract.run({ id: contractId }, this.db);
-    this.invalidateCacheForContract(contractId);
+    await this.invalidateCacheForContract(contractId);
     return true;
   }
 
