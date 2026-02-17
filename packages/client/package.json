@@ -7,7 +7,9 @@
     "url": "git+https://github.com/Urigo/accounter-fullstack.git",
     "directory": "packages/client"
   },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
+  "main": "dist/index.html",
   "scripts": {
     "build": "tsc && vite build",
     "client:build": "yarn build",

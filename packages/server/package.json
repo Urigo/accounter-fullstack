@@ -9,7 +9,7 @@
     "directory": "packages/server"
   },
   "license": "MIT",
-  "main": "./src/index.mts",
+  "main": "dist/server/src/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
