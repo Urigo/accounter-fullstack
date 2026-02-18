@@ -30,25 +30,20 @@ export function ChargesSection({ businessId }: Props) {
   const [activePageIndex, setActivePageIndex] = useState(0);
   const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
 
-  const toggleMergeCharge = useCallback(
-    (chargeId: string) => {
-      if (mergeSelectedCharges.includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(id => id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, chargeId]);
-      }
-    },
-    [mergeSelectedCharges],
-  );
+  const toggleMergeCharge = useCallback((chargeId: string) => {
+    setMergeSelectedCharges(prev =>
+      prev.includes(chargeId) ? prev.filter(id => id !== chargeId) : [...prev, chargeId],
+    );
+  }, []);
 
   const mergeSelectedChargesSet = useMemo(
     () => new Set(mergeSelectedCharges),
     [mergeSelectedCharges],
   );
 
-  function onResetMerge(): void {
+  const onResetMerge = useCallback((): void => {
     setMergeSelectedCharges([]);
-  }
+  }, []);
 
   const [{ data, fetching }, refetchCharges] = useQuery({
     query: BusinessChargesSectionDocument,
@@ -98,7 +93,7 @@ export function ChargesSection({ businessId }: Props) {
             selected={mergeSelectedCharges.map(id => ({
               id,
               onChange: (): void => {
-                refetchCharges();
+                refetchCharges({ requestPolicy: 'cache-and-network' });
               },
             }))}
             resetMerge={onResetMerge}
