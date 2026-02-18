@@ -50,7 +50,7 @@ export function ChargesSection({ businessId }: Props) {
     setMergeSelectedCharges([]);
   }
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetchCharges] = useQuery({
     query: BusinessChargesSectionDocument,
     variables: {
       filters: {
@@ -69,9 +69,9 @@ export function ChargesSection({ businessId }: Props) {
   });
 
   const totalPages = data?.allCharges?.pageInfo.totalPages ?? 1;
-  const charges = data?.allCharges?.nodes ?? [];
+  const charges = useMemo(() => data?.allCharges?.nodes ?? [], [data]);
 
-  if (fetching) {
+  if (fetching && !charges.length) {
     return <div>Loading charges...</div>;
   }
 
@@ -98,7 +98,7 @@ export function ChargesSection({ businessId }: Props) {
             selected={mergeSelectedCharges.map(id => ({
               id,
               onChange: (): void => {
-                return;
+                refetchCharges();
               },
             }))}
             resetMerge={onResetMerge}
