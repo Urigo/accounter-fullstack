@@ -1,10 +1,10 @@
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessChargesSectionDocument, ChargeSortByField } from '@/gql/graphql.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { ChargesTable } from '../charges/charges-table';
-import { Pagination } from '../common/index.js';
+import { MergeChargesButton, Pagination } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -28,8 +28,24 @@ interface Props {
 export function ChargesSection({ businessId }: Props) {
   const { userContext } = useContext(UserContext);
   const [activePageIndex, setActivePageIndex] = useState(0);
+  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
 
-  const [{ data, fetching }] = useQuery({
+  const toggleMergeCharge = useCallback((chargeId: string) => {
+    setMergeSelectedCharges(prev =>
+      prev.includes(chargeId) ? prev.filter(id => id !== chargeId) : [...prev, chargeId],
+    );
+  }, []);
+
+  const mergeSelectedChargesSet = useMemo(
+    () => new Set(mergeSelectedCharges),
+    [mergeSelectedCharges],
+  );
+
+  const onResetMerge = useCallback((): void => {
+    setMergeSelectedCharges([]);
+  }, []);
+
+  const [{ data, fetching }, refetchCharges] = useQuery({
     query: BusinessChargesSectionDocument,
     variables: {
       filters: {
@@ -48,9 +64,9 @@ export function ChargesSection({ businessId }: Props) {
   });
 
   const totalPages = data?.allCharges?.pageInfo.totalPages ?? 1;
-  const charges = data?.allCharges?.nodes ?? [];
+  const charges = useMemo(() => data?.allCharges?.nodes ?? [], [data]);
 
-  if (fetching) {
+  if (fetching && !charges.length) {
     return <div>Loading charges...</div>;
   }
 
@@ -63,18 +79,35 @@ export function ChargesSection({ businessId }: Props) {
             <CardDescription>Recurring and one-time charges for this business</CardDescription>
           </div>
         </div>
-        {totalPages > 1 && (
-          <Pagination
-            className="flex-fit w-fit mx-0"
-            currentPageIndex={activePageIndex}
-            onChange={setActivePageIndex}
-            totalPages={totalPages}
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <Pagination
+              className="flex-fit w-fit mx-0"
+              currentPageIndex={activePageIndex}
+              onChange={setActivePageIndex}
+              totalPages={totalPages}
+            />
+          )}
+
+          <MergeChargesButton
+            selected={mergeSelectedCharges.map(id => ({
+              id,
+              onChange: (): void => {
+                refetchCharges({ requestPolicy: 'cache-and-network' });
+              },
+            }))}
+            resetMerge={onResetMerge}
           />
-        )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <ChargesTable data={charges} isAllOpened={false} />
+          <ChargesTable
+            data={charges}
+            isAllOpened={false}
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={mergeSelectedChargesSet}
+          />
         </div>
       </CardContent>
     </Card>
