@@ -3,6 +3,7 @@ import { config as dotenv } from 'dotenv';
 import pg from 'pg';
 import { env } from '../environment.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
+import { EMPTY_UUID, UUID_REGEX } from '../shared/constants.js';
 
 dotenv({
   path: '../../.env',
@@ -21,7 +22,11 @@ type BackfillConfig = {
   Backfill Rules from Spec 3.2.2.
 */
 
-const DEFAULT_ADMIN_ID = `'${process.env.DEFAULT_ADMIN_ID || '00000000-0000-0000-0000-000000000000'}'`;
+const defaultAdminId = process.env.DEFAULT_ADMIN_ID || EMPTY_UUID;
+if (!UUID_REGEX.test(defaultAdminId)) {
+  throw new Error(`Invalid DEFAULT_ADMIN_ID: ${defaultAdminId} is not a valid UUID.`);
+}
+const DEFAULT_ADMIN_ID = `'${defaultAdminId}'`;
 
 const configs: BackfillConfig[] = [
   // --- Standard Charge Links ---
@@ -250,6 +255,26 @@ export async function backfillOwnerId(db: DBProvider) {
 
     for (const config of configs) {
       console.log(`Processing table: ${config.table}`);
+
+      if (config.dependsOn?.length) {
+        let dependenciesMet = true;
+        for (const depTable of config.dependsOn) {
+          const depCountRes = await db.pool.query(
+            `SELECT COUNT(*) as count FROM ${depTable} WHERE owner_id IS NULL`,
+          );
+          const depCount = parseInt(depCountRes.rows[0].count, 10);
+          if (depCount > 0) {
+            console.warn(
+              `  Skipping ${config.table} because dependency ${depTable} still has ${depCount} NULLs.`,
+            );
+            dependenciesMet = false;
+            break;
+          }
+        }
+        if (!dependenciesMet) {
+          continue;
+        }
+      }
 
       // Initial count check
       const initialCountRes = await db.pool.query(
