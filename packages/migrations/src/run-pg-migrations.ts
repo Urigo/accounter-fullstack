@@ -149,6 +149,7 @@ import migration_2026_02_10T12_10_00_enable_rls_charges_pilot from './actions/20
 import migration_2026_02_15T12_00_00_enrich_deel_invoice_with_receipt_legal_entity from './actions/2026-02-15T12-00-00.enrich-deel-invoice-with-receipt-legal-entity.js';
 import migration_2026_02_16T11_00_00_enhance_poalim_fees_recognition_foreign_securities_fix from './actions/2026-02-16T11-00-00.enhance-poalim-fees-recognition-foreign-securities-fix.js';
 import migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search from './actions/2026-02-16T19-00-00.enrich-extended-charges-with-text-search.js';
+import migration_2026_02_18T10_00_00_add_owner_id_nullable from './actions/2026-02-18T10-00-00.add-owner-id-nullable.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -302,6 +303,7 @@ export const MIGRATIONS = [
   migration_2026_02_15T12_00_00_enrich_deel_invoice_with_receipt_legal_entity,
   migration_2026_02_16T11_00_00_enhance_poalim_fees_recognition_foreign_securities_fix,
   migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search,
+  migration_2026_02_18T10_00_00_add_owner_id_nullable,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
