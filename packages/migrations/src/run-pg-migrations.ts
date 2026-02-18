@@ -151,6 +151,7 @@ import migration_2026_02_16T11_00_00_enhance_poalim_fees_recognition_foreign_sec
 import migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search from './actions/2026-02-16T19-00-00.enrich-extended-charges-with-text-search.js';
 import migration_2026_02_18T10_00_00_add_owner_id_nullable from './actions/2026-02-18T10-00-00.add-owner-id-nullable.js';
 import migration_2026_02_18T15_00_00_make_ledger_owner_non_nullable from './actions/2026-02-18T15-00-00.make-ledger-owner-non-nullable.js';
+import migration_2026_02_18T16_00_00_owner_id_not_null from './actions/2026-02-18T16-00-00.owner-id-not-null.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -305,6 +306,7 @@ export const MIGRATIONS = [
   migration_2026_02_16T11_00_00_enhance_poalim_fees_recognition_foreign_securities_fix,
   migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search,
   migration_2026_02_18T10_00_00_add_owner_id_nullable,
+  migration_2026_02_18T16_00_00_owner_id_not_null,
   migration_2026_02_18T15_00_00_make_ledger_owner_non_nullable,
 ] as const;
 
