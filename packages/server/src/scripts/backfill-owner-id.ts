@@ -272,8 +272,8 @@ export async function backfillOwnerId(db: DBProvider) {
 
         const idCol = config.idColumn || 'id';
         const selectCols = Array.isArray(idCol) ? idCol.join(', ') : idCol;
-        const whereClause = Array.isArray(idCol) 
-          ? idCol.map((col) => `t.${col} = b.${col}`).join(' AND ')
+        const whereClause = Array.isArray(idCol)
+          ? idCol.map(col => `t.${col} = b.${col}`).join(' AND ')
           : `t.${idCol} = b.${idCol}`;
 
         // Construct the update query dynamically
@@ -294,7 +294,7 @@ export async function backfillOwnerId(db: DBProvider) {
 
         const result = await db.pool.query(updateQuery);
         const batchCount = result.rowCount;
-        processed += batchCount;
+        processed += batchCount ?? 0;
 
         if (batchCount === 0) {
           hasMore = false;
@@ -302,7 +302,9 @@ export async function backfillOwnerId(db: DBProvider) {
           console.log(`  Updated ${batchCount} rows...`);
 
           // Check for unresolvable rows (owner_id became NULL)
-          const nulls = result.rows.filter((r: any) => r.owner_id === null);
+          const nulls = result.rows.filter(
+            (r: unknown) => (r as { owner_id: unknown }).owner_id === null,
+          );
           if (nulls.length === batchCount && batchCount > 0) {
             console.warn(
               `  Warning: All ${batchCount} rows in batch updated to NULL (logic failed to resolve). Breaking loop for this table.`,
@@ -351,6 +353,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     try {
       await backfillOwnerId(db);
     } catch (e) {
+      console.error('Fatal error during backfill:', e);
       process.exit(1);
     } finally {
       await db.shutdown();
