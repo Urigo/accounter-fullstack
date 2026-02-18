@@ -1,7 +1,7 @@
 import { type MigrationExecutor } from '../pg-migrator.js';
 
 export default {
-  name: '2026-02-18T12-00-00.owner-id-not-null.sql',
+  name: '2026-02-18T16-00-00.owner-id-not-null.sql',
   run: ({ sql }) => sql`
     -- Phase 3 of 4: Make owner_id NOT NULL
     -- This enforces that all rows must belong to a business (tenant isolation)
