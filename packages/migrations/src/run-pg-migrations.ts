@@ -306,8 +306,8 @@ export const MIGRATIONS = [
   migration_2026_02_16T11_00_00_enhance_poalim_fees_recognition_foreign_securities_fix,
   migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search,
   migration_2026_02_18T10_00_00_add_owner_id_nullable,
-  migration_2026_02_18T16_00_00_owner_id_not_null,
   migration_2026_02_18T15_00_00_make_ledger_owner_non_nullable,
+  migration_2026_02_18T16_00_00_owner_id_not_null,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
