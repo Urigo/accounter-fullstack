@@ -1,13 +1,7 @@
 import { fileURLToPath } from 'node:url';
-import { config as dotenv } from 'dotenv';
 import pg from 'pg';
 import { env } from '../environment.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
-import { EMPTY_UUID, UUID_REGEX } from '../shared/constants.js';
-
-dotenv({
-  path: '../../.env',
-});
 
 const { Pool } = pg;
 
@@ -21,12 +15,7 @@ type BackfillConfig = {
 /*
   Backfill Rules from Spec 3.2.2.
 */
-
-const defaultAdminId = process.env.DEFAULT_ADMIN_ID || EMPTY_UUID;
-if (!UUID_REGEX.test(defaultAdminId)) {
-  throw new Error(`Invalid DEFAULT_ADMIN_ID: ${defaultAdminId} is not a valid UUID.`);
-}
-const DEFAULT_ADMIN_ID = `'${defaultAdminId}'`;
+const DEFAULT_ADMIN_ID = `'${env.authorization.adminBusinessId}'`;
 
 const configs: BackfillConfig[] = [
   // --- Standard Charge Links ---
