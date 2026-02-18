@@ -1,5 +1,15 @@
 # @accounter/shaam-uniform-format-generator
 
+## 0.2.5
+
+### Patch Changes
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
 ## 0.2.4
 
 ### Patch Changes
