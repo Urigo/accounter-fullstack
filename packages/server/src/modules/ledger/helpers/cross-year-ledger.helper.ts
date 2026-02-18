@@ -159,6 +159,7 @@ export async function handleCrossYearLedgerEntries(
       !spreadRecords.some(r => r.year_of_relevance.getFullYear() === documentsMinDate.getFullYear())
     ) {
       spreadRecords.push({
+        owner_id: charge.owner_id,
         charge_id: charge.id,
         year_of_relevance: documentsMinDate,
         amount: null,

@@ -49,7 +49,7 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
 `;
 
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
-    SELECT t.*, c.owner_id
+    SELECT t.id, t.account_id, t.charge_id, t.source_id, t.source_description, t.currency, t.event_date, t.debit_date, t.amount, t.current_balance, t.business_id, t.created_at, t.updated_at, t.debit_date_override, t.is_fee, t.source_reference, t.source_origin, t.counter_account, t.debit_timestamp, t.currency_rate, t.origin_key, c.owner_id
     FROM accounter_schema.transactions t
     LEFT JOIN accounter_schema.charges c
       ON t.charge_id = c.id

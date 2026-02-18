@@ -14,6 +14,7 @@ import type { currency, document_type } from '../../documents/types.js';
 export function createMockTransaction(overrides: Partial<Transaction> = {}): Transaction {
   const defaultTransaction: Transaction = {
     id: `tx-${Math.random()}`,
+    owner_id: 'owner-1',
     account_id: 'account-1',
     charge_id: 'charge-1',
     source_id: 'source-1',
@@ -45,6 +46,7 @@ export function createMockTransaction(overrides: Partial<Transaction> = {}): Tra
 export function createMockDocument(overrides: Partial<Document> = {}): Document {
   const defaultDocument: Document = {
     id: `doc-${Math.random()}`,
+    owner_id: 'owner-1',
     charge_id: 'charge-1',
     creditor_id: 'business-a',
     debtor_id: 'user-123',

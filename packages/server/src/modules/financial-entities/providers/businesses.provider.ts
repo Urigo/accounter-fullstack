@@ -15,20 +15,20 @@ import type {
 } from '../types.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
-    SELECT *
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id)
     WHERE b.id IN $$ids;`;
 
 const getAllBusinesses = sql<IGetAllBusinessesQuery>`
-    SELECT *
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
 
 const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
-    SELECT *
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id)
