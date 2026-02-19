@@ -474,11 +474,6 @@ $$
         name text                           not null
     );
 
-    insert into accounter_schema.tags (name)
-    values 
-        ('business'),
-        ('financial');
-
     alter table accounter_schema.charge_tags
         add tag_id uuid;
 
