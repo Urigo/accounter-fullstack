@@ -45,6 +45,7 @@ describe('Fixture Loader', () => {
               createBusiness({
                 id: businessId,
                 name: 'Test Business',
+                ownerId: businessId,
               }),
             ],
           },
@@ -53,6 +54,7 @@ describe('Fixture Loader', () => {
               createTaxCategory({
                 id: taxCategoryId,
                 name: 'Test Tax Category 1',
+                ownerId: businessId,
               }),
             ],
           },
@@ -119,6 +121,7 @@ describe('Fixture Loader', () => {
         const fixture: Fixture = {
           businesses: {
             businesses: [
+              createBusiness({ id: ownerId, name: 'Owner', ownerId }),
               createBusiness({ id: supplierId, name: 'Supplier Ltd', ownerId }),
               createBusiness({ id: customerId, name: 'Customer Inc', ownerId }),
             ],
@@ -231,7 +234,7 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, name: 'Lonely Business' })],
+            businesses: [createBusiness({ id: businessId, name: 'Lonely Business', ownerId: businessId })],
           },
           // No tax categories, accounts, charges, etc.
         };
@@ -332,14 +335,14 @@ describe('Fixture Loader', () => {
         const fixture: Fixture = {
           businesses: {
             businesses: [
-              createBusiness({ id: biz1, name: 'Business 1' }),
-              createBusiness({ id: biz2, name: 'Business 2' }),
+              createBusiness({ id: biz1, name: 'Business 1', ownerId: biz1 }),
+              createBusiness({ id: biz2, name: 'Business 2', ownerId: biz1 }),
             ],
           },
           taxCategories: {
             taxCategories: [
-              createTaxCategory({ id: tax1, name: 'Tax 1' }),
-              createTaxCategory({ id: tax2, name: 'Tax 2' }),
+              createTaxCategory({ id: tax1, name: 'Tax 1', ownerId: biz1 }),
+              createTaxCategory({ id: tax2, name: 'Tax 2', ownerId: biz2 }),
             ],
           },
           charges: {
@@ -381,7 +384,7 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, name: 'Original Name' })],
+            businesses: [createBusiness({ id: businessId, name: 'Original Name', ownerId: businessId })],
           },
         };
 
@@ -391,7 +394,7 @@ describe('Fixture Loader', () => {
         // Insert again (should not error due to ON CONFLICT DO NOTHING)
         const fixtureModified: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, name: 'Modified Name' })],
+            businesses: [createBusiness({ id: businessId, name: 'Modified Name', ownerId: businessId })],
           },
         };
 

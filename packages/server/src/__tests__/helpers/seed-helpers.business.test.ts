@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { ensureFinancialEntity, ensureBusinessForEntity } from './seed-helpers.js';
+import { ensureFinancialEntity, ensureBusinessForEntity, setAdminEntity } from './seed-helpers.js';
 import { qualifyTable } from './test-db-config.js';
 import { EntityValidationError } from './seed-errors.js';
 import { TestDatabase } from './db-setup.js';
@@ -18,14 +18,17 @@ describe('ensureBusinessForEntity', () => {
 
   it('should create a new business for a financial entity', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+    
       // Create a financial entity first
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Test Business Entity',
         type: 'business',
+        ownerId,
       });
 
       // Ensure business for this entity
-      await ensureBusinessForEntity(client, entityId);
+      await ensureBusinessForEntity(client, entityId, { ownerId });
 
       // Verify business exists
       const result = await client.query(
@@ -40,16 +43,19 @@ describe('ensureBusinessForEntity', () => {
 
   it('should be idempotent - repeated calls do not create duplicates', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+    
       // Create a financial entity first
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Test Business Entity 2',
         type: 'business',
+        ownerId,
       });
 
       // Call ensureBusinessForEntity multiple times
-      await ensureBusinessForEntity(client, entityId);
-      await ensureBusinessForEntity(client, entityId);
-      await ensureBusinessForEntity(client, entityId);
+      await ensureBusinessForEntity(client, entityId, { ownerId });
+      await ensureBusinessForEntity(client, entityId, { ownerId });
+      await ensureBusinessForEntity(client, entityId, { ownerId });
 
       // Verify only one business exists
       const result = await client.query(
@@ -63,14 +69,17 @@ describe('ensureBusinessForEntity', () => {
 
   it('should support noInvoicesRequired option', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+    
       // Create a financial entity first
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Test Business Entity 3',
         type: 'business',
+        ownerId,
       });
 
       // Ensure business with noInvoicesRequired set to true
-      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: true });
+      await ensureBusinessForEntity(client, entityId, { ownerId, isDocumentsOptional: true });
 
       // Verify business has correct option set
       const result = await client.query(
@@ -85,14 +94,17 @@ describe('ensureBusinessForEntity', () => {
 
   it('should default noInvoicesRequired to false when not specified', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+    
       // Create a financial entity first
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Test Business Entity 4',
         type: 'business',
+        ownerId,
       });
 
       // Ensure business without specifying options
-      await ensureBusinessForEntity(client, entityId);
+      await ensureBusinessForEntity(client, entityId, { ownerId });
 
       // Verify business has default value
       const result = await client.query(
@@ -106,17 +118,20 @@ describe('ensureBusinessForEntity', () => {
 
   it('should not modify existing business when called again', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+    
       // Create a financial entity first
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Test Business Entity 5',
         type: 'business',
+        ownerId,
       });
 
       // Create business with isDocumentsOptional = true
-      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: true });
+      await ensureBusinessForEntity(client, entityId, { ownerId, isDocumentsOptional: true });
 
       // Call again with different options (should be no-op)
-      await ensureBusinessForEntity(client, entityId, { isDocumentsOptional: false });
+      await ensureBusinessForEntity(client, entityId, { ownerId, isDocumentsOptional: false });
 
       // Verify original value is preserved
       const result = await client.query(
