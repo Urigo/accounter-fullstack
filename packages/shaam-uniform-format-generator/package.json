@@ -5,12 +5,12 @@
   "description": "Fully typed application that generates, parses, and validates SHAAM uniform format tax reports (INI.TXT and BKMVDATA.TXT).",
   "repository": {
     "type": "git",
-    "url": "https://github.com/urigo/accounter-fullstack.git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
     "directory": "packages/shaam-uniform-format-generator"
   },
-  "homepage": "https://github.com/urigo/accounter-fullstack/packages/shaam-uniform-format-generator#readme",
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/shaam-uniform-format-generator#readme",
   "bugs": {
-    "url": "https://github.com/urigo/accounter-fullstack/issues"
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
@@ -68,7 +68,9 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "access": "public"
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "provenance": true
   },
   "typescript": {
     "definition": "dist/typings/index.d.ts"

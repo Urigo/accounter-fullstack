@@ -3,6 +3,11 @@
   "version": "0.10.4",
   "type": "module",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/modern-poalim-scraper"
+  },
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +40,8 @@
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
-    "access": "public"
+    "access": "public",
+    "provenance": true
   },
   "lint-staged": {
     "*.--write": "prettier --write"

@@ -5,12 +5,12 @@
   "description": "Scraper app for fetching Israeli VAT data",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
-    "repository": "packages/israeli-vat-scraper"
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/israeli-vat-scraper"
   },
-  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/israeli-vat-scraper#readme",
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/israeli-vat-scraper#readme",
   "bugs": {
-    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
   },
   "author": "gilgardosh <gilgardosh@gmail.com>",
   "license": "MIT",
@@ -63,7 +63,9 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "access": "public"
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "provenance": true
   },
   "typescript": {
     "definition": "dist/typings/index.d.ts"

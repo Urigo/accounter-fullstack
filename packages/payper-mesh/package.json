@@ -5,12 +5,12 @@
   "description": "Graphql proxy for Payper API",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gilgardosh/accounter-toolkit.git",
-    "repository": "packages/payper-mesh"
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/payper-mesh"
   },
-  "homepage": "https://github.com/gilgardosh/accounter-toolkit/packages/payper-mesh#readme",
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/payper-mesh#readme",
   "bugs": {
-    "url": "https://github.com/gilgardosh/accounter-toolkit/issues"
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
@@ -70,7 +70,9 @@
   },
   "publishConfig": {
     "directory": "dist",
-    "access": "public"
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "provenance": true
   },
   "bob": {
     "build": {

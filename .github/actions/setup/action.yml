@@ -20,6 +20,10 @@ inputs:
   workingDirectory:
     description: Working dir
     default: ${{ github.workspace }}
+  registryUrl:
+    description: 'Registry URL for publishing'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -29,11 +33,12 @@ runs:
       with:
         node-version-file: .node-version
         cache: ${{ inputs.installDependencies == 'true' && 'yarn' }}
+        registry-url: ${{ inputs.registryUrl }}
 
     - name: Install Dependencies
       shell: bash
       if: ${{ inputs.installDependencies == 'true' }}
-      run: yarn install
+      run: yarn install --frozen-lockfile
 
     - name: Cache ESLint
       uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3

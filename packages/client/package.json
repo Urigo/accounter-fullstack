@@ -2,7 +2,14 @@
   "name": "@accounter/client",
   "version": "0.0.10",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/client"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
+  "main": "dist/index.html",
   "scripts": {
     "build": "tsc && vite build",
     "client:build": "yarn build",
@@ -98,7 +105,9 @@
     "react-is": "19.2.4"
   },
   "publishConfig": {
+    "directory": "dist",
     "registry": "https://registry.npmjs.org",
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
