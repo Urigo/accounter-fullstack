@@ -82,10 +82,11 @@ export async function createAndConnectStore(options: { connectionString: string;
           END IF;
 
           -- create new transaction
-          INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+          INSERT INTO ${options.schema}.transactions (owner_id, account_id, charge_id, source_id, source_description, currency,
                                                     event_date, debit_date, amount, current_balance, is_fee,
                                                     source_reference, source_origin, counter_account, origin_key)
-          VALUES (account_id_var,
+          VALUES (owner_id_var,
+                  account_id_var,
                   charge_id_var,
                   merged_id,
                   CONCAT(NEW.description, (
