@@ -47,6 +47,7 @@ export interface FixtureBusinesses {
     pcn874RecordTypeOverride?: unknown | null,
     isReceiptEnough?: boolean | null,
     isDocumentsOptional?: boolean | null;
+    ownerId: string;
   }>;
 }
 
@@ -67,6 +68,7 @@ export interface FixtureTaxCategories {
     name: string;
     hashavshevetName?: string | null;
     taxExcluded?: boolean | null;
+    ownerId: string;
   }>;
 }
 
@@ -112,6 +114,11 @@ export interface FinancialAccountTaxCategoryMapping {
    * Tax category ID to use for this account + currency combination
    */
   taxCategoryId: string;
+
+  /**
+   * Owner ID for this mapping (used for multi-tenant scenarios)
+   */
+  ownerId: string;
 }
 
 /**
@@ -232,6 +239,11 @@ export interface LedgerExpectation {
    * Exchange rate used for conversion (foreign → local)
    */
   exchangeRate?: number;
+
+  /**
+   * Owner ID for this ledger expectation (used for multi-tenant scenarios)
+   */
+  ownerId: string;
 }
 
 /**

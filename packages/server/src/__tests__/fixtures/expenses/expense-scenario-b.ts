@@ -30,6 +30,8 @@ import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
 import { CountryCode, Currency } from '../../../shared/enums.js';
 
+const ADMIN_ID = makeUUID('business', 'admin-business-usd');
+
 /**
  * Expense Scenario B: USD Invoice Expense
  *
@@ -66,7 +68,7 @@ export const expenseScenarioB: Fixture = {
     businesses: [
       // Admin business (owner of the expense)
       createBusiness({
-        id: makeUUID('business', 'admin-business-usd'),
+        id: ADMIN_ID,
         name: 'Accounter Admin',
         country: CountryCode.Israel,
       }),
@@ -86,10 +88,12 @@ export const expenseScenarioB: Fixture = {
       createTaxCategory({
         id: makeUUID('tax-category', 'expense-consulting'),
         name: 'Consulting Expenses',
+        ownerId: ADMIN_ID,
       }),
       createTaxCategory({
         id: makeUUID('tax-category', 'usd-account-tax-category'),
         name: 'Foreign Currency Account',
+        ownerId: ADMIN_ID,
       }),
     ],
   },
@@ -99,7 +103,7 @@ export const expenseScenarioB: Fixture = {
       createFinancialAccount({
         accountNumber: 'USD-ACCOUNT-001',
         type: 'BANK_ACCOUNT',
-        ownerId: makeUUID('business', 'admin-business-usd'),
+        ownerId: ADMIN_ID,
       }),
     ],
   },
@@ -110,6 +114,7 @@ export const expenseScenarioB: Fixture = {
         accountNumber: 'USD-ACCOUNT-001',
           currency: Currency.Usd,
         taxCategoryId: makeUUID('tax-category', 'usd-account-tax-category'),
+        ownerId: ADMIN_ID,
       },
     ],
   },
@@ -118,7 +123,7 @@ export const expenseScenarioB: Fixture = {
     charges: [
       createCharge(
         {
-          owner_id: makeUUID('business', 'admin-business-usd'),
+          owner_id: ADMIN_ID,
           tax_category_id: makeUUID('tax-category', 'expense-consulting'),
           user_description: 'Consulting services from US vendor',
         },
@@ -139,6 +144,7 @@ export const expenseScenarioB: Fixture = {
             currency: Currency.Usd,
           event_date: '2024-01-20',
           is_fee: false,
+        owner_id: ADMIN_ID,
         },
         {
           id: makeUUID('transaction', 'transaction-consulting-payment'),
@@ -157,11 +163,12 @@ export const expenseScenarioB: Fixture = {
         {
           charge_id: makeUUID('charge', 'charge-consulting-services'),
           creditor_id: makeUUID('business', 'supplier-us-vendor-llc'), // Supplier is creditor
-          debtor_id: makeUUID('business', 'admin-business-usd'), // Admin is debtor
+          debtor_id: ADMIN_ID, // Admin is debtor
           type: 'INVOICE',
           total_amount: 200.0, // Amount in USD
             currency_code: Currency.Usd,
           date: '2024-01-20', // Invoice date matches transaction
+          owner_id: ADMIN_ID,
         },
         {
           id: makeUUID('document', 'document-consulting-invoice'),
@@ -187,6 +194,7 @@ export const expenseScenarioB: Fixture = {
           foreignCurrency: Currency.Usd,
         foreignAmount: 200.0,
         exchangeRate: 3.5, // Mocked deterministic rate
+        ownerId: ADMIN_ID,
       },
     ],
   },

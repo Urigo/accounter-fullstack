@@ -104,8 +104,8 @@ describe('DB Test Harness Bootstrap', () => {
       );
       const entityId = insertResult.rows[0].id;
       await client.query(
-        `INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`,
-        [entityId],
+        `INSERT INTO ${qualifyTable('businesses')} (id, owner_id) VALUES ($1, $2)`,
+        [entityId, entityId],
       );
       const selectInTx = await client.query(
         `SELECT COUNT(*) FROM ${qualifyTable('financial_entities')} WHERE name = $1`,

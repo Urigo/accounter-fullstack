@@ -114,16 +114,17 @@ describe('Fixture Loader', () => {
         const chargeId = makeUUID('charge', 'charge-1');
         const transactionId = makeUUID('transaction', 'tx-1');
         const documentId = makeUUID('document', 'doc-1');
+        const ownerId = makeUUID('user', 'admin-user');
 
         const fixture: Fixture = {
           businesses: {
             businesses: [
-              createBusiness({ id: supplierId, name: 'Supplier Ltd' }),
-              createBusiness({ id: customerId, name: 'Customer Inc' }),
+              createBusiness({ id: supplierId, name: 'Supplier Ltd', ownerId }),
+              createBusiness({ id: customerId, name: 'Customer Inc', ownerId }),
             ],
           },
           taxCategories: {
-            taxCategories: [createTaxCategory({ id: taxCategoryId, name: 'Tax Category 1' })],
+            taxCategories: [createTaxCategory({ id: taxCategoryId, name: 'Tax Category 1', ownerId })],
           },
           accounts: {
             accounts: [
@@ -151,6 +152,7 @@ describe('Fixture Loader', () => {
                   amount: '-500.00',
                   currency: 'ILS',
                   event_date: '2024-01-15',
+                  owner_id: ownerId,
                 },
                 {
                   id: transactionId,
@@ -170,6 +172,7 @@ describe('Fixture Loader', () => {
                   total_amount: 500.0,
                   currency_code: 'ILS',
                   date: '2024-01-15',
+                  owner_id: ownerId,
                 },
                 { id: documentId },
               ),
@@ -414,10 +417,10 @@ describe('Fixture Loader', () => {
 
         const fixture: Fixture = {
           businesses: {
-            businesses: [createBusiness({ id: businessId, name: 'Biz Tx' })],
+            businesses: [createBusiness({ id: businessId, name: 'Biz Tx', ownerId: businessId })],
           },
           taxCategories: {
-            taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Tx' })],
+            taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Tx', ownerId: businessId })],
           },
           accounts: {
             accounts: [
@@ -440,6 +443,7 @@ describe('Fixture Loader', () => {
                   amount: '100.00',
                   currency: 'USD',
                   event_date: '2024-02-01',
+                  owner_id: businessId,
                 },
                 {
                   id: transactionId,

@@ -35,6 +35,7 @@ export interface TransactionInsertParams {
   business_id?: string | null;
   is_fee?: boolean | null;
   currency_rate?: number | null;
+  owner_id: string;
 }
 
 /**
@@ -106,6 +107,7 @@ export function createTransaction(
     currency: string;
     event_date: string | Date;
     is_fee?: boolean;
+    owner_id: string;
   },
   overrides?: Partial<TransactionInsertParams>,
 ): TransactionInsertParams {
@@ -125,6 +127,7 @@ export function createTransaction(
     current_balance: '0',
     business_id: params.business_id,
     is_fee: params.is_fee ?? false,
+    owner_id: params.owner_id,
     ...overrides,
   };
 }

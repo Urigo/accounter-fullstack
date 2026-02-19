@@ -185,7 +185,7 @@ export async function insertFixture(
         const {id: businessId, ...options } = business;
 
         // Insert business details - note: vat_number column maps to governmentId field
-        await ensureBusinessForEntity(client, entityId, options)
+        await ensureBusinessForEntity(client, entityId, {...options, ownerId: adminBusinessId ?? options.ownerId});
 
         idMapping.set(business.id!, entityId);
       }
@@ -209,6 +209,7 @@ export async function insertFixture(
           name: taxCategory.name,
           hashavshevetName: taxCategory.hashavshevetName,
           taxExcluded: taxCategory.taxExcluded,
+          ownerId: adminBusinessId ?? taxCategory.ownerId,
         });
 
         idMapping.set(taxCategory.id!, entityId);
@@ -222,9 +223,9 @@ export async function insertFixture(
       for (const account of fixture.accounts!.accounts) {
         const result = await client.query(
           `INSERT INTO ${qualifyTable('financial_accounts')} (
-            account_number, account_name, private_business, owner, type
+            account_number, account_name, private_business, owner, type, owner_id
           )
-          VALUES ($1, $2, $3, $4, $5)
+          VALUES ($1, $2, $3, $4, $5, $6)
           RETURNING id, account_number`,
           [
             account.accountNumber,
@@ -232,6 +233,7 @@ export async function insertFixture(
             account.privateBusiness,
             account.ownerId,
             account.type,
+            account.ownerId,
           ],
         );
 
@@ -265,12 +267,13 @@ export async function insertFixture(
 
         await client.query(
           `INSERT INTO ${qualifyTable('financial_accounts_tax_categories')} (
-            financial_account_id, currency, tax_category_id
+            financial_account_id, currency, tax_category_id, owner_id
           )
-          VALUES ($1, $2, $3)
+          VALUES ($1, $2, $3, $4)
           ON CONFLICT (financial_account_id, currency) DO UPDATE
-            SET tax_category_id = EXCLUDED.tax_category_id`,
-          [accountId, mapping.currency, mapping.taxCategoryId],
+            SET tax_category_id = EXCLUDED.tax_category_id,
+                owner_id = EXCLUDED.owner_id`,
+          [accountId, mapping.currency, mapping.taxCategoryId, mapping.ownerId],
         );
       }
     });
@@ -361,9 +364,9 @@ export async function insertFixture(
             id, account_id, charge_id, source_id, source_description,
             currency, event_date, debit_date, amount, current_balance,
             business_id, is_fee, source_reference, source_origin, origin_key,
-            currency_rate, created_at, updated_at
+            currency_rate, owner_id, created_at, updated_at
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
           ON CONFLICT (id) DO NOTHING`,
           [
             transaction.id,
@@ -382,6 +385,7 @@ export async function insertFixture(
             'TEST', // source_origin (NOT NULL)
             dummyEtherscanId, // origin_key (NOT NULL) - must match etherscan_id in raw list
             transaction.currency_rate ?? 1,
+            transaction.owner_id,
           ],
         );
 
@@ -399,9 +403,9 @@ export async function insertFixture(
             id, image_url, file_url, type, serial_number, date,
             total_amount, currency_code, vat_amount, charge_id,
             debtor_id, creditor_id, vat_report_date_override,
-            no_vat_amount, allocation_number, exchange_rate_override, file_hash
+            no_vat_amount, allocation_number, exchange_rate_override, file_hash, owner_id
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
           ON CONFLICT (id) DO NOTHING`,
           [
             document.id,
@@ -421,6 +425,7 @@ export async function insertFixture(
             document.allocation_number,
             document.exchange_rate_override,
             document.file_hash,
+            document.owner_id,
           ],
         );
 

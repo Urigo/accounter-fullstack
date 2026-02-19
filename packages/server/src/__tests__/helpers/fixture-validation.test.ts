@@ -12,7 +12,7 @@ import { assertValidFixture, validateFixture } from './fixture-validation.js';
 describe('Fixture Validation', () => {
   describe('validateFixture', () => {
     it('should validate a complete valid fixture', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const supplierId = makeUUID('business', 'supplier');
       const taxCatId = makeUUID('tax-category', 'tax-cat');
       const chargeId = makeUUID('charge', 'charge');
@@ -21,7 +21,7 @@ describe('Fixture Validation', () => {
       const fixture: Fixture = {
         businesses: {
           businesses: [
-            createBusiness({ id: adminId, name: 'Admin' }),
+            createBusiness({ id: ownerId, name: 'Admin' }),
             createBusiness({ id: supplierId, name: 'Supplier' }),
           ],
         },
@@ -29,11 +29,11 @@ describe('Fixture Validation', () => {
           taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         accounts: {
-          accounts: [createFinancialAccount({ accountNumber: accountId, ownerId: adminId })],
+          accounts: [createFinancialAccount({ accountNumber: accountId, ownerId: ownerId })],
         },
         charges: {
           charges: [
-            createCharge({ owner_id: adminId }, { id: chargeId, tax_category_id: taxCatId }),
+            createCharge({ owner_id: ownerId }, { id: chargeId, tax_category_id: taxCatId }),
           ],
         },
         transactions: {
@@ -44,6 +44,7 @@ describe('Fixture Validation', () => {
               amount: '-100.00',
               currency: 'ILS',
               event_date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -52,11 +53,12 @@ describe('Fixture Validation', () => {
             createDocument({
               charge_id: chargeId,
               creditor_id: supplierId,
-              debtor_id: adminId,
+              debtor_id: ownerId,
               type: 'RECEIPT',
               total_amount: 100.0,
               currency_code: 'ILS',
               date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -67,20 +69,20 @@ describe('Fixture Validation', () => {
     });
 
     it('should validate a minimal fixture with just charges', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
       const taxCatId = makeUUID('tax-category', 'tax-cat');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         taxCategories: {
           taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         charges: {
           charges: [
-            createCharge({ owner_id: adminId }, { id: chargeId, tax_category_id: taxCatId }),
+            createCharge({ owner_id: ownerId }, { id: chargeId, tax_category_id: taxCatId }),
           ],
         },
       };
@@ -90,13 +92,13 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when transaction references non-existent charge', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const supplierId = makeUUID('business', 'supplier');
       const nonExistentChargeId = makeUUID('charge', 'non-existent-charge');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         transactions: {
           transactions: [
@@ -106,6 +108,7 @@ describe('Fixture Validation', () => {
               amount: '-100.00',
               currency: 'ILS',
               event_date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -121,24 +124,25 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when document references non-existent charge', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const supplierId = makeUUID('business', 'supplier');
       const nonExistentChargeId = makeUUID('charge', 'non-existent-charge');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         documents: {
           documents: [
             createDocument({
               charge_id: nonExistentChargeId,
               creditor_id: supplierId,
-              debtor_id: adminId,
+              debtor_id: ownerId,
               type: 'INVOICE',
               total_amount: 100.0,
               currency_code: 'ILS',
               date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -175,18 +179,18 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when charge references non-existent tax category', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
       const nonExistentTaxCatId = makeUUID('tax-category', 'non-existent-tax-cat');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
           charges: [
             createCharge(
-              { owner_id: adminId },
+              { owner_id: ownerId },
               { id: chargeId, tax_category_id: nonExistentTaxCatId },
             ),
           ],
@@ -203,16 +207,16 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when transaction references non-existent business', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
       const nonExistentBusinessId = makeUUID('business', 'non-existent-business');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
-          charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
+          charges: [createCharge({ owner_id: ownerId }, { id: chargeId })],
         },
         transactions: {
           transactions: [
@@ -222,6 +226,7 @@ describe('Fixture Validation', () => {
               amount: '-100.00',
               currency: 'ILS',
               event_date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -237,27 +242,28 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when document references non-existent creditor', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
       const nonExistentCreditorId = makeUUID('business', 'non-existent-creditor');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
-          charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
+          charges: [createCharge({ owner_id: ownerId }, { id: chargeId })],
         },
         documents: {
           documents: [
             createDocument({
               charge_id: chargeId,
               creditor_id: nonExistentCreditorId,
-              debtor_id: adminId,
+              debtor_id: ownerId,
               type: 'INVOICE',
               total_amount: 100.0,
               currency_code: 'ILS',
               date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -273,17 +279,17 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when document references non-existent debtor', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const supplierId = makeUUID('business', 'supplier');
       const chargeId = makeUUID('charge', 'charge');
       const nonExistentDebtorId = makeUUID('business', 'non-existent-debtor');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' }), createBusiness({ id: supplierId, name: 'Supplier' })],
         },
         charges: {
-          charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
+          charges: [createCharge({ owner_id: ownerId }, { id: chargeId })],
         },
         documents: {
           documents: [
@@ -295,6 +301,7 @@ describe('Fixture Validation', () => {
               total_amount: 100.0,
               currency_code: 'ILS',
               date: '2024-01-15',
+              owner_id: ownerId,
             }),
           ],
         },
@@ -337,15 +344,15 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when transaction is missing required fields', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
-          charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
+          charges: [createCharge({ owner_id: ownerId }, { id: chargeId })],
         },
         transactions: {
           transactions: [
@@ -360,6 +367,7 @@ describe('Fixture Validation', () => {
               current_balance: '0',
               business_id: null, // Missing
               is_fee: false,
+              owner_id: ownerId,
             },
           ],
         },
@@ -379,15 +387,15 @@ describe('Fixture Validation', () => {
     });
 
     it('should fail when document is missing required fields', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
-          charges: [createCharge({ owner_id: adminId }, { id: chargeId })],
+          charges: [createCharge({ owner_id: ownerId }, { id: chargeId })],
         },
         documents: {
           documents: [
@@ -409,6 +417,7 @@ describe('Fixture Validation', () => {
               allocation_number: null,
               exchange_rate_override: null,
               file_hash: null,
+              owner_id: ownerId,
             },
           ],
         },
@@ -449,17 +458,17 @@ describe('Fixture Validation', () => {
     });
 
     it('should detect duplicate charge IDs', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const duplicateChargeId = makeUUID('charge', 'duplicate-charge');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         charges: {
           charges: [
-            createCharge({ owner_id: adminId }, { id: duplicateChargeId }),
-            createCharge({ owner_id: adminId }, { id: duplicateChargeId }), // Duplicate
+            createCharge({ owner_id: ownerId }, { id: duplicateChargeId }),
+            createCharge({ owner_id: ownerId }, { id: duplicateChargeId }), // Duplicate
           ],
         },
       };
@@ -508,20 +517,20 @@ describe('Fixture Validation', () => {
 
   describe('assertValidFixture', () => {
     it('should not throw for valid fixture', () => {
-      const adminId = makeUUID('business', 'admin');
+      const ownerId = makeUUID('business', 'admin');
       const chargeId = makeUUID('charge', 'charge');
       const taxCatId = makeUUID('tax-category', 'tax-cat');
 
       const fixture: Fixture = {
         businesses: {
-          businesses: [createBusiness({ id: adminId, name: 'Admin' })],
+          businesses: [createBusiness({ id: ownerId, name: 'Admin' })],
         },
         taxCategories: {
           taxCategories: [createTaxCategory({ id: taxCatId, name: 'Tax Category' })],
         },
         charges: {
           charges: [
-            createCharge({ owner_id: adminId }, { id: chargeId, tax_category_id: taxCatId }),
+            createCharge({ owner_id: ownerId }, { id: chargeId, tax_category_id: taxCatId }),
           ],
         },
       };

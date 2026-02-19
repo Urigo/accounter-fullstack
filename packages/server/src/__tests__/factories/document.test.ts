@@ -9,6 +9,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument({
         charge_id: chargeId,
@@ -18,6 +19,7 @@ describe('Factory: Document', () => {
         total_amount: 1000.0,
         currency_code: 'ILS',
         date: '2024-01-15',
+        owner_id: ownerId,
       });
 
       // Required fields
@@ -49,6 +51,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document1 = createDocument({
         charge_id: chargeId,
@@ -58,6 +61,7 @@ describe('Factory: Document', () => {
         total_amount: 500.0,
         currency_code: 'USD',
         date: '2024-02-01',
+        owner_id: ownerId,
       });
 
       const document2 = createDocument({
@@ -68,6 +72,7 @@ describe('Factory: Document', () => {
         total_amount: 500.0,
         currency_code: 'USD',
         date: '2024-02-01',
+        owner_id: ownerId,
       });
 
       expect(document1.id).not.toBe(document2.id);
@@ -78,6 +83,7 @@ describe('Factory: Document', () => {
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
       const date = new Date('2024-03-15T12:00:00Z');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument({
         charge_id: chargeId,
@@ -87,6 +93,7 @@ describe('Factory: Document', () => {
         total_amount: 750.0,
         currency_code: 'EUR',
         date: date,
+        owner_id: ownerId,
       });
 
       expect(document.date).toEqual(date);
@@ -96,11 +103,13 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const invoice = createDocument({
         charge_id: chargeId,
         creditor_id: creditorId,
         debtor_id: debtorId,
+        owner_id: ownerId,
         type: 'INVOICE',
         total_amount: 1000.0,
         currency_code: 'ILS',
@@ -111,6 +120,7 @@ describe('Factory: Document', () => {
         charge_id: chargeId,
         creditor_id: creditorId,
         debtor_id: debtorId,
+        owner_id: ownerId,
         type: 'RECEIPT',
         total_amount: 500.0,
         currency_code: 'ILS',
@@ -121,6 +131,7 @@ describe('Factory: Document', () => {
         charge_id: chargeId,
         creditor_id: creditorId,
         debtor_id: debtorId,
+        owner_id: ownerId,
         type: 'CREDIT_INVOICE',
         total_amount: -200.0,
         currency_code: 'ILS',
@@ -136,6 +147,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
       const customId = makeUUID('document', 'custom-doc');
 
       const document = createDocument(
@@ -147,6 +159,7 @@ describe('Factory: Document', () => {
           total_amount: 2500.0,
           currency_code: 'EUR',
           date: '2024-03-10',
+          owner_id: ownerId,
         },
         {
           id: customId,
@@ -168,6 +181,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'customer-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument(
         {
@@ -178,6 +192,7 @@ describe('Factory: Document', () => {
           total_amount: 500.0,
           currency_code: 'USD',
           date: '2024-02-20',
+          owner_id: ownerId,
         },
         {
           vat_amount: 85.47,
@@ -195,6 +210,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'customer-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument({
         charge_id: chargeId,
@@ -204,6 +220,7 @@ describe('Factory: Document', () => {
         total_amount: 1000.0,
         currency_code: 'ILS',
         date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       // Verify structure matches expected interface
@@ -230,6 +247,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const ilsDoc = createDocument({
         charge_id: chargeId,
@@ -239,6 +257,7 @@ describe('Factory: Document', () => {
         total_amount: 1000.0,
         currency_code: 'ILS',
         date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       const usdDoc = createDocument({
@@ -249,6 +268,7 @@ describe('Factory: Document', () => {
         total_amount: 500.0,
         currency_code: 'USD',
         date: '2024-01-02',
+        owner_id: ownerId,
       });
 
       const eurDoc = createDocument({
@@ -259,6 +279,7 @@ describe('Factory: Document', () => {
         total_amount: 750.0,
         currency_code: 'EUR',
         date: '2024-01-03',
+        owner_id: ownerId,
       });
 
       expect(ilsDoc.currency_code).toBe('ILS');
@@ -270,6 +291,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument(
         {
@@ -280,6 +302,7 @@ describe('Factory: Document', () => {
           total_amount: 1170.0,
           currency_code: 'ILS',
           date: '2024-04-01',
+          owner_id: ownerId,
         },
         {
           vat_amount: 170.0, // 17% VAT on 1000
@@ -294,6 +317,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument(
         {
@@ -304,6 +328,7 @@ describe('Factory: Document', () => {
           total_amount: 800.0,
           currency_code: 'USD',
           date: '2024-05-01',
+          owner_id: ownerId,
         },
         {
           file_url: 'https://example.com/docs/invoice.pdf',
@@ -319,6 +344,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const creditInvoice = createDocument({
         charge_id: chargeId,
@@ -328,6 +354,7 @@ describe('Factory: Document', () => {
         total_amount: -300.0,
         currency_code: 'ILS',
         date: '2024-06-01',
+        owner_id: ownerId,
       });
 
       expect(creditInvoice.total_amount).toBe(-300.0);
@@ -338,6 +365,7 @@ describe('Factory: Document', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const creditorId = makeUUID('business', 'supplier-1');
       const debtorId = makeUUID('business', 'my-business');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const document = createDocument(
         {
@@ -348,6 +376,7 @@ describe('Factory: Document', () => {
           total_amount: 1000.0,
           currency_code: 'ILS',
           date: '2024-01-01',
+          owner_id: ownerId,
         },
         {
           serial_number: null,

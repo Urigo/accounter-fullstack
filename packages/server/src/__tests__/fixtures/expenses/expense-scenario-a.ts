@@ -27,6 +27,8 @@ import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import type { Fixture } from '../../helpers/fixture-types';
 import { Currency, CountryCode } from '../../../shared/enums.js';
 
+const ADMIN_ID = makeUUID('business', 'admin-business-scenario-a');
+
 /**
  * Expense Scenario A: ILS Receipt Expense
  *
@@ -54,7 +56,7 @@ export const expenseScenarioA: Fixture = {
     businesses: [
       // Admin business (owner of the expense)
       createBusiness({
-        id: makeUUID('business', 'admin-business-scenario-a'),
+        id: ADMIN_ID,
         name: 'Accountancy Management',
         country: CountryCode.Israel,
       }),
@@ -65,6 +67,7 @@ export const expenseScenarioA: Fixture = {
         country: CountryCode.Israel,
         exemptDealer: false,
         isReceiptEnough: true, // Can provide receipts for small purchases
+        ownerId: ADMIN_ID,
       }),
     ],
   },
@@ -74,10 +77,12 @@ export const expenseScenarioA: Fixture = {
       createTaxCategory({
         id: makeUUID('tax-category', 'expense-general'),
         name: 'General Expenses',
+        ownerId: ADMIN_ID,
       }),
       createTaxCategory({
         id: makeUUID('tax-category', 'bank-account-tax-category'),
         name: 'Bank Account',
+        ownerId: ADMIN_ID,
       }),
     ],
   },
@@ -87,7 +92,7 @@ export const expenseScenarioA: Fixture = {
       createFinancialAccount({
         accountNumber: 'BANK-ACCOUNT-001',
         type: 'BANK_ACCOUNT',
-        ownerId: makeUUID('business', 'admin-business-scenario-a'),
+        ownerId: ADMIN_ID,
       }),
     ],
   },
@@ -98,6 +103,7 @@ export const expenseScenarioA: Fixture = {
         accountNumber: 'BANK-ACCOUNT-001',
           currency: Currency.Ils,
         taxCategoryId: makeUUID('tax-category', 'bank-account-tax-category'),
+        ownerId: ADMIN_ID,
       },
     ],
   },
@@ -106,7 +112,7 @@ export const expenseScenarioA: Fixture = {
     charges: [
       createCharge(
         {
-          owner_id: makeUUID('business', 'admin-business-scenario-a'),
+          owner_id: ADMIN_ID,
           tax_category_id: makeUUID('tax-category', 'expense-general'),
           user_description: 'Office supplies purchase',
         },
@@ -127,6 +133,7 @@ export const expenseScenarioA: Fixture = {
             currency: Currency.Ils,
           event_date: '2024-01-15',
           is_fee: false,
+          owner_id: ADMIN_ID,
         },
         {
           id: makeUUID('transaction', 'transaction-supplies-payment'),
@@ -134,6 +141,7 @@ export const expenseScenarioA: Fixture = {
           source_description: 'Office supplies - Local Supplier Ltd',
           debit_date: '2024-01-15',
           current_balance: '0', // Placeholder - not critical for test
+          owner_id: ADMIN_ID,
         },
       ),
     ],
@@ -150,11 +158,13 @@ export const expenseScenarioA: Fixture = {
           total_amount: 500.0, // Matches transaction amount (positive in document)
             currency_code: Currency.Ils,
           date: '2024-01-15', // Receipt date matches transaction
+          owner_id: ADMIN_ID,
         },
         {
           id: makeUUID('document', 'document-supplies-receipt'),
           serial_number: 'RCP-2024-001',
           vat_amount: null, // For simplicity, no VAT breakdown on receipt
+          owner_id: ADMIN_ID,
         },
       ),
     ],
@@ -170,6 +180,7 @@ export const expenseScenarioA: Fixture = {
         totalDebitLocal: 500.0,
         totalCreditLocal: 500.0,
         balanced: true,
+        ownerId: ADMIN_ID,
       },
     ],
   },

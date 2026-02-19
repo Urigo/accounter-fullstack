@@ -56,6 +56,7 @@ export function createBusiness(
     pcn874RecordTypeOverride: null,
     isReceiptEnough: false,
     isDocumentsOptional: false,
+    ownerId: defaultId,
     ...overrides,
   };
 }
