@@ -2,7 +2,7 @@ import type { Client, PoolClient } from 'pg';
 import { qualifyTable } from './test-db-config.js';
 import { EntityValidationError, SeedError } from './seed-errors.js';
 import { makeUUID } from '../factories/index.js';
-import { EMPTY_UUID, UUID_REGEX } from '../../shared/constants.js';
+import { UUID_REGEX } from '../../shared/constants.js';
 import type {FixtureBusinesses, FixtureTaxCategories} from './fixture-types.js';
 
 /**
@@ -114,7 +114,7 @@ export async function ensureFinancialEntity(
 
     const result = await client.query<{ id: string }>(
       insertQuery,
-      [consistentId, name, type, ownerId ?? null],
+      [consistentId, name, type, ownerId],
     );
 
     const row = result.rows[0];
@@ -245,7 +245,7 @@ export async function ensureBusinessForEntity(
             options?.pcn874RecordTypeOverride ?? null,
             options?.isReceiptEnough ?? false,
             options?.isDocumentsOptional ?? false,
-            options?.ownerId ?? EMPTY_UUID,]);
+            options?.ownerId]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;
@@ -352,7 +352,7 @@ export async function ensureTaxCategoryForEntity(
       ON CONFLICT (id) DO NOTHING
     `;
 
-    await client.query(insertQuery, [entityId, options?.hashavshevetName, options?.taxExcluded ?? false, options?.ownerId ?? EMPTY_UUID]);
+    await client.query(insertQuery, [entityId, options?.hashavshevetName, options?.taxExcluded ?? false, options?.ownerId]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;
@@ -364,4 +364,19 @@ export async function ensureTaxCategoryForEntity(
       error as Error,
     );
   }
+}
+
+export async function setAdminEntity(client: PoolClient): Promise<string> {
+  const ownerId = makeUUID('business', 'admin');
+
+  await ensureFinancialEntity(client, {
+    name: 'Owner Entity',
+    type: 'business',
+    id: ownerId,
+  });
+
+  // Ensure business for this entity
+  await ensureBusinessForEntity(client, ownerId, {ownerId});
+
+  return ownerId;
 }

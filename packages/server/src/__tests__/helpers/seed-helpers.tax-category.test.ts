@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { qualifyTable } from './test-db-config.js';
-import { ensureFinancialEntity, ensureTaxCategoryForEntity } from './seed-helpers.js';
+import { ensureFinancialEntity, ensureTaxCategoryForEntity, setAdminEntity } from './seed-helpers.js';
 import { EntityValidationError } from './seed-errors.js';
 import { TestDatabase } from './db-setup.js';
 
@@ -18,14 +18,17 @@ describe('ensureTaxCategoryForEntity', () => {
 
   it('should create tax category on first call', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+
       // Create financial entity
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'VAT Category',
         type: 'tax_category',
+        ownerId,
       });
 
       // Create tax category
-      await ensureTaxCategoryForEntity(client, entityId);
+      await ensureTaxCategoryForEntity(client, entityId, {ownerId});
 
       // Verify tax category exists
       const result = await client.query(
@@ -39,15 +42,18 @@ describe('ensureTaxCategoryForEntity', () => {
 
   it('should be idempotent (no-op on repeated calls)', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+      
       // Create financial entity
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Income Tax',
         type: 'tax_category',
+        ownerId,
       });
 
       // Create tax category twice
-      await ensureTaxCategoryForEntity(client, entityId);
-      await ensureTaxCategoryForEntity(client, entityId);
+      await ensureTaxCategoryForEntity(client, entityId, {ownerId});
+      await ensureTaxCategoryForEntity(client, entityId, {ownerId});
 
       // Verify only one row exists
       const result = await client.query(
@@ -60,14 +66,17 @@ describe('ensureTaxCategoryForEntity', () => {
 
   it('should preserve existing values on subsequent calls', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+
       // Create financial entity
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Expense Category',
         type: 'tax_category',
+        ownerId,
       });
 
       // Create tax category
-      await ensureTaxCategoryForEntity(client, entityId);
+      await ensureTaxCategoryForEntity(client, entityId, {ownerId});
 
       // Get initial state
       const initialResult = await client.query(
@@ -77,7 +86,7 @@ describe('ensureTaxCategoryForEntity', () => {
       const initialRow = initialResult.rows[0];
 
       // Call again (should not modify)
-      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 999 });
+      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 999, ownerId });
 
       // Verify unchanged
       const finalResult = await client.query(
@@ -125,43 +134,19 @@ describe('ensureTaxCategoryForEntity', () => {
       expect(parseInt(result.rows[0].count)).toBe(0);
     }));
 
-  it('should work with entities that have owner_id', async () =>
-    db.withTransaction(async client => {
-      // Create owner business entity (without owner_id requirement)
-      const { id: _ownerId } = await ensureFinancialEntity(client, {
-        name: 'Owner Business',
-        type: 'business',
-      });
-
-      // Create owned tax category entity (tax categories can have owner_id)
-      const { id: taxCatId } = await ensureFinancialEntity(client, {
-        name: 'Owned Tax Category',
-        type: 'tax_category',
-      });
-
-      // Create tax category
-      await ensureTaxCategoryForEntity(client, taxCatId);
-
-      // Verify tax category exists
-      const result = await client.query(
-        `SELECT id FROM ${qualifyTable('tax_categories')} WHERE id = $1`,
-        [taxCatId],
-      );
-
-      expect(result.rows).toHaveLength(1);
-      expect(result.rows[0].id).toBe(taxCatId);
-    }));
-
   it('should handle options parameter gracefully (future-proofing)', async () =>
     db.withTransaction(async client => {
+      const ownerId = await setAdminEntity(client);
+      
       // Create financial entity
       const { id: entityId } = await ensureFinancialEntity(client, {
         name: 'Category with Options',
         type: 'tax_category',
+        ownerId,
       });
 
       // Create tax category with options
-      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 1000 });
+      await ensureTaxCategoryForEntity(client, entityId, { sortCode: 1000, ownerId });
 
       // Verify tax category exists
       const result = await client.query(
