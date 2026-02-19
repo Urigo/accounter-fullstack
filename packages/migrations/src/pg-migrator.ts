@@ -2,11 +2,15 @@ import { sql, type DatabasePool, type DatabaseTransactionConnection } from 'slon
 
 export type MigrationExecutor = {
   name: string;
+  noTransaction?: boolean;
   /**
    * You can either return a SQL query to run or instead use the connection within the function to run custom logic.
    * You can also return an array of named steps so you can see the progress in the logs.
    */
-  run: (args: { sql: typeof sql.unsafe }) => ReturnType<typeof sql.unsafe>;
+  run: (args: {
+    sql: typeof sql.unsafe;
+    connection: DatabaseTransactionConnection | DatabasePool;
+  }) => Promise<void> | ReturnType<typeof sql.unsafe> | Promise<ReturnType<typeof sql.unsafe>>;
 };
 
 const seedMigrationsIfNotExists = async (args: { connection: DatabasePool }) => {
@@ -24,7 +28,7 @@ const seedMigrationsIfNotExists = async (args: { connection: DatabasePool }) => 
 };
 
 async function runMigration(
-  connection: DatabaseTransactionConnection,
+  connection: DatabaseTransactionConnection | DatabasePool,
   migration: MigrationExecutor,
 ) {
   const exists = await connection.maybeOneFirst(sql.unsafe`
@@ -42,7 +46,7 @@ async function runMigration(
   const startTime = Date.now();
   console.log(`Running migration: ${migration.name}`);
 
-  const result = await migration.run({ sql: sql.unsafe });
+  const result = await migration.run({ sql: sql.unsafe, connection });
   if (result) {
     await connection.query(result);
   }
@@ -68,7 +72,11 @@ export async function runMigrations(args: {
   await seedMigrationsIfNotExists({ connection: args.slonik });
 
   for (const migration of args.migrations) {
-    await args.slonik.transaction(connection => runMigration(connection, migration));
+    if (migration.noTransaction) {
+      await runMigration(args.slonik, migration);
+    } else {
+      await args.slonik.transaction(connection => runMigration(connection, migration));
+    }
 
     if (args.runTo && args.runTo === migration.name) {
       console.log(`reached migration '${migration.name}'. Stopping.`);
