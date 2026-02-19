@@ -81,14 +81,14 @@
     "zustand": "5.0.11"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.1.18",
+    "@tailwindcss/vite": "4.2.0",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
     "autoprefixer": "10.4.24",
-    "tailwindcss": "4.1.18",
+    "tailwindcss": "4.2.0",
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.9.3",
     "vite": "7.3.1",
