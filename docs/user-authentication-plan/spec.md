@@ -596,8 +596,6 @@ session variable value. RLS policies compare this against the `owner_id` column.
   business_trips_transactions.owner_id)
 - businesses (add owner_id, backfill: id => financial_entities.owner_id)
 - businesses_admin (add owner_id, backfill: id => businesses => financial_entities.owner_id)
-- businesses_green_invoice_match (add owner_id, backfill: business_id => businesses =>
-  financial_entities.owner_id)
 - charge_balance_cancellation (add owner_id, backfill: charge_id => charges.owner_id)
 - charge_spread (add owner_id, backfill: charge_id => charges.owner_id)
 - charge_tags (add owner_id, backfill: charge_id => charges.owner_id)
@@ -620,9 +618,9 @@ session variable value. RLS policies compare this against the `owner_id` column.
 - financial_bank_accounts (add owner_id, backfill: id => financial_accounts.owner_id)
 - misc_expenses (add owner_id, backfill: charge_id => charges.owner_id)
 - pcn874 (add owner_id, backfill: business_id => businesses => financial_entities.owner_id)
-- poalim_ils_account_transactions (add owner_id, backfill: account match to
-  financial_accounts.owner_id)
+- pension_funds (add owner_id, backfill: needs analysis - likely via employees or businesses)
 - salaries (add owner_id, backfill: employer => businesses => financial_entities.owner_id)
+- sort_codes (add owner_id, backfill: needs analysis - may be derived from business context)
 - tags (add owner_id, backfill: needs analysis - may be global or per-business)
 - tax_categories (add owner_id, backfill: id => financial_entities.owner_id)
 - transactions (add owner_id, backfill: charge_id => charges.owner_id)
