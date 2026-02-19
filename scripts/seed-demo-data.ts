@@ -83,6 +83,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
         governmentId: null,
         suggestions: null,
         pcn874RecordTypeOverride: null,
+        ownerId: b.ownerId,
       })),
     };
   }
@@ -94,6 +95,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
         name: tc.name,
         hashavshevetName: null,
         taxExcluded: false,
+        ownerId: tc.ownerId,
       })),
     };
   }
@@ -104,7 +106,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
         accountNumber: fa.accountNumber,
         type: fa.type,
         privateBusiness: 'Private',
-        ownerId: null,
+        ownerId: fa.ownerId,
       })),
     };
 
@@ -114,6 +116,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
           accountNumber: fa.accountNumber,
           currency: tcm.currency,
           taxCategoryId: tcm.taxCategoryId,
+          ownerId: tcm.ownerId,
         })),
       );
 
@@ -150,6 +153,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
         event_date: t.eventDate,
         debit_date: t.debitDate,
         source_id: 'DEMO_SEED',
+        owner_id: t.ownerId,
       })),
     };
   }
@@ -166,6 +170,7 @@ function convertUseCaseFixtureToFixture(useCaseFixtures: FixtureSpec): Fixture {
         date: d.date,
         total_amount: Number(d.totalAmount),
         currency_code: d.currencyCode,
+        owner_id: d.ownerId,
       })),
     };
   }
@@ -268,6 +273,7 @@ async function seedDemoData() {
             governmentId: null,
             suggestions: null,
             pcn874RecordTypeOverride: null,
+            ownerId: adminBusinessId,
           });
         }
 

@@ -23,12 +23,14 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         name: 'Acme Retail Client',
         country: CountryCode['Israel'],
         canSettleWithReceipt: false,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     taxCategories: [
       {
         id: makeUUID('tax-category', 'service-income'),
         name: 'Service Income',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     financialAccounts: [
@@ -37,10 +39,12 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         accountNumber: '22-333-4444',
         type: 'BANK_ACCOUNT',
         currency: Currency.Ils,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
         taxCategoryMappings: [
           {
             taxCategoryId: makeUUID('tax-category', 'service-income'),
             currency: Currency.Ils,
+            ownerId: '{{ADMIN_BUSINESS_ID}}',
           },
         ],
       },
@@ -67,6 +71,7 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         eventDate: '2024-11-15',
         debitDate: '2024-11-15',
         accountNumber: '22-333-4444',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'client-refund-2024-11-20'),
@@ -77,6 +82,7 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         eventDate: '2024-11-20',
         debitDate: '2024-11-20',
         accountNumber: '22-333-4444',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     documents: [
@@ -90,6 +96,7 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         date: '2024-11-01',
         totalAmount: '2000.00',
         currencyCode: Currency.Ils,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'client-credit-invoice-2024-11-20'),
@@ -101,6 +108,7 @@ export const clientPaymentWithRefund: UseCaseSpec = {
         date: '2024-11-20',
         totalAmount: '500.00',
         currencyCode: Currency.Ils,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
   },

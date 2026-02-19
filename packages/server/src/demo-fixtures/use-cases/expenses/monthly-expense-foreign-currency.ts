@@ -25,12 +25,14 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         name: 'Acme Consulting LLC',
         country: CountryCode['United States of America (the)'],
         canSettleWithReceipt: false,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     taxCategories: [
       {
         id: makeUUID('tax-category', 'consulting-expenses'),
         name: 'Consulting Expenses',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     financialAccounts: [
@@ -39,10 +41,12 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         accountNumber: '123-456-7890',
         type: 'BANK_ACCOUNT',
         currency: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
         taxCategoryMappings: [
           {
             taxCategoryId: makeUUID('tax-category', 'consulting-expenses'),
             currency: Currency.Usd,
+            ownerId: '{{ADMIN_BUSINESS_ID}}',
           },
         ],
       },
@@ -119,6 +123,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-01-15',
         debitDate: '2024-01-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-02'),
@@ -129,6 +134,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-02-15',
         debitDate: '2024-02-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-03'),
@@ -139,6 +145,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-03-15',
         debitDate: '2024-03-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-04'),
@@ -149,6 +156,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-04-15',
         debitDate: '2024-04-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-05'),
@@ -159,6 +167,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-05-15',
         debitDate: '2024-05-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-06'),
@@ -169,6 +178,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-06-15',
         debitDate: '2024-06-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-07'),
@@ -179,6 +189,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-07-15',
         debitDate: '2024-07-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-08'),
@@ -189,6 +200,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-08-15',
         debitDate: '2024-08-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-09'),
@@ -199,6 +211,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-09-15',
         debitDate: '2024-09-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-10'),
@@ -209,6 +222,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-10-15',
         debitDate: '2024-10-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-11'),
@@ -219,6 +233,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-11-15',
         debitDate: '2024-11-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('transaction', 'consulting-payment-usd-12'),
@@ -229,6 +244,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         eventDate: '2024-12-15',
         debitDate: '2024-12-15',
         accountNumber: '123-456-7890',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     documents: [
@@ -242,6 +258,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-01-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-02-15'),
@@ -253,6 +270,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-02-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-03-15'),
@@ -264,6 +282,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-03-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-04-15'),
@@ -275,6 +294,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-04-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-05-15'),
@@ -286,6 +306,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-05-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-06-15'),
@@ -297,6 +318,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-06-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-07-15'),
@@ -308,6 +330,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-07-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-08-15'),
@@ -319,6 +342,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-08-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-09-15'),
@@ -330,6 +354,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-09-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-10-15'),
@@ -341,6 +366,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-10-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-11-15'),
@@ -352,6 +378,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-11-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
       {
         id: makeUUID('document', 'consulting-invoice-inv-2024-12-15'),
@@ -363,6 +390,7 @@ export const monthlyExpenseForeignCurrency: UseCaseSpec = {
         date: '2024-12-01',
         totalAmount: '500.00',
         currencyCode: Currency.Usd,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
   },
