@@ -1,3 +1,4 @@
+import { EMPTY_UUID } from '../../shared/constants.js';
 import { makeUUIDLegacy } from '../../demo-fixtures/helpers/deterministic-uuid.js';
 import { FixtureTaxCategories } from '../helpers/fixture-types.js';
 
@@ -44,6 +45,7 @@ export function createTaxCategory(
     name: overrides?.name ?? overrides?.id ?? defaultId,
     hashavshevetName: null,
     taxExcluded: false,
+    ownerId: EMPTY_UUID, // Default ownerId to the same as id for simplicity, can be overridden
     ...overrides,
   };
 }

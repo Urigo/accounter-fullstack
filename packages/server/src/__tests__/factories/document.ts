@@ -40,6 +40,7 @@ export interface DocumentInsertParams {
   allocation_number?: string | null;
   exchange_rate_override?: number | null;
   file_hash?: string | null;
+  owner_id: string;
 }
 
 /**
@@ -119,6 +120,7 @@ export function createDocument(
     total_amount: number;
     currency_code: string;
     date: Date | string;
+    owner_id: string;
   },
   overrides?: Partial<DocumentInsertParams>,
 ): DocumentInsertParams {
@@ -140,6 +142,7 @@ export function createDocument(
     allocation_number: null,
     exchange_rate_override: null,
     file_hash: null,
+    owner_id: params.owner_id,
     ...overrides,
   };
 }

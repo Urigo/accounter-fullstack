@@ -42,8 +42,8 @@ export async function createAdminBusinessContext(client: Client): Promise<string
 
   // 3) Insert business row (references financial_entity)
   await client.query(
-    `INSERT INTO accounter_schema.businesses (id)
-     VALUES ($1)`,
+    `INSERT INTO accounter_schema.businesses (id, owner_id)
+     VALUES ($1, $1)`,
     [adminId],
   );
 

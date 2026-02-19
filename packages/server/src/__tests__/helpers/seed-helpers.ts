@@ -2,7 +2,7 @@ import type { Client, PoolClient } from 'pg';
 import { qualifyTable } from './test-db-config.js';
 import { EntityValidationError, SeedError } from './seed-errors.js';
 import { makeUUID } from '../factories/index.js';
-import { UUID_REGEX } from '../../shared/constants.js';
+import { EMPTY_UUID, UUID_REGEX } from '../../shared/constants.js';
 import type {FixtureBusinesses, FixtureTaxCategories} from './fixture-types.js';
 
 /**
@@ -222,9 +222,9 @@ export async function ensureBusinessForEntity(
       INSERT INTO ${qualifyTable('businesses')} (
         id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number,
         exempt_dealer, suggestion_data, optional_vat, country,
-        pcn874_record_type_override, can_settle_with_receipt, no_invoices_required
+        pcn874_record_type_override, can_settle_with_receipt, no_invoices_required, owner_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       ON CONFLICT (id) DO NOTHING
     `;
 
@@ -244,7 +244,8 @@ export async function ensureBusinessForEntity(
             options?.country ?? 'ISR',
             options?.pcn874RecordTypeOverride ?? null,
             options?.isReceiptEnough ?? false,
-            options?.isDocumentsOptional ?? false]);
+            options?.isDocumentsOptional ?? false,
+            options?.ownerId ?? EMPTY_UUID,]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;
@@ -345,13 +346,13 @@ export async function ensureTaxCategoryForEntity(
     // the conflict handler will safely return the existing row
     const insertQuery = `
       INSERT INTO ${qualifyTable('tax_categories')} (
-        id, hashavshevet_name, tax_excluded
+        id, hashavshevet_name, tax_excluded, owner_id
       )
-      VALUES ($1, $2, $3)
+      VALUES ($1, $2, $3, $4)
       ON CONFLICT (id) DO NOTHING
     `;
 
-    await client.query(insertQuery, [entityId, options?.hashavshevetName, options?.taxExcluded ?? false]);
+    await client.query(insertQuery, [entityId, options?.hashavshevetName, options?.taxExcluded ?? false, options?.ownerId ?? EMPTY_UUID]);
   } catch (error) {
     if (error instanceof EntityValidationError || error instanceof SeedError) {
       throw error;

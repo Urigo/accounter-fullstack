@@ -232,7 +232,6 @@ const getDocumentsByFilters = sql<IGetDocumentsByFiltersQuery>`
 const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
   SELECT d.*
   FROM accounter_schema.documents d
-  LEFT JOIN accounter_schema.charges c ON c.id = d.charge_id
   WHERE
     ($isIDs = 0 OR d.id IN $$IDs)
     AND ($fromVatDate ::TEXT IS NULL OR COALESCE(d.vat_report_date_override ,d.date)::TEXT::DATE >= date_trunc('day', $fromVatDate ::DATE))
@@ -240,7 +239,7 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
     AND ($fromDate ::TEXT IS NULL OR d.date::TEXT::DATE >= date_trunc('day', $fromDate ::DATE))
     AND ($toDate ::TEXT IS NULL OR d.date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR d.debtor_id IN $$businessIDs OR d.creditor_id IN $$businessIDs)
-    AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
+    AND ($isOwnerIDs = 0 OR d.owner_id IN $$ownerIDs)
     AND ($isUnmatched = 0 OR NOT EXISTS (
       SELECT 1 
       FROM accounter_schema.transactions t 

@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { setupDbHooks, getTestClient } from './helpers/test-hooks.js';
 import { qualifyTable } from './helpers/test-db-config.js';
+import { EMPTY_UUID } from '../shared/constants.js';
 
 // Register hooks (no admin seed needed for isolation demo)
 setupDbHooks();
@@ -20,7 +21,7 @@ describe('transaction isolation (dummy)', () => {
   test('insert inside transaction is visible during test', async () => {
     const before = await countDummyTags();
     const client = getTestClient();
-    await client.query(`INSERT INTO ${qualifyTable('tags')} (name) VALUES ($1)`, [TAG_NAME]);
+    await client.query(`INSERT INTO ${qualifyTable('tags')} (name, owner_id) VALUES ($1, $2)`, [TAG_NAME, EMPTY_UUID]);
     const during = await countDummyTags();
     expect(during).toBe(before + 1);
   });

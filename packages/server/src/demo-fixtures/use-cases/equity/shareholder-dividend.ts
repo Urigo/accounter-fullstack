@@ -22,12 +22,14 @@ export const shareholderDividend: UseCaseSpec = {
         name: 'Dividends Withholding Tax',
         country: CountryCode['Israel'],
         canSettleWithReceipt: false,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     taxCategories: [
       {
         id: makeUUID('tax-category', 'dividend'),
         name: 'Dividend',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     financialAccounts: [
@@ -36,10 +38,12 @@ export const shareholderDividend: UseCaseSpec = {
         accountNumber: '11-222-3333',
         type: 'BANK_ACCOUNT',
         currency: Currency.Ils,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
         taxCategoryMappings: [
           {
             taxCategoryId: makeUUID('tax-category', 'dividend'),
             currency: Currency.Ils,
+            ownerId: '{{ADMIN_BUSINESS_ID}}',
           },
         ],
       },
@@ -61,6 +65,7 @@ export const shareholderDividend: UseCaseSpec = {
         eventDate: '2024-12-31',
         debitDate: '2024-12-31',
         accountNumber: '11-222-3333',
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
     documents: [
@@ -74,6 +79,7 @@ export const shareholderDividend: UseCaseSpec = {
         date: '2024-12-31',
         totalAmount: '10000.00',
         currencyCode: Currency.Ils,
+        ownerId: '{{ADMIN_BUSINESS_ID}}',
       },
     ],
   },

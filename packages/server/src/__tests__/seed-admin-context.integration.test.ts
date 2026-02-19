@@ -155,7 +155,7 @@ describe('seedAdminCore integration', () => {
         [TEMP_NAME],
       );
       const tempId = insertEntity.rows[0].id;
-      await client.query(`INSERT INTO accounter_schema.businesses (id) VALUES ($1)`, [tempId]);
+      await client.query(`INSERT INTO accounter_schema.businesses (id, owner_id) VALUES ($1, $2)`, [tempId, tempId]);
 
       // Verify exists within the same transaction
       const inTx = await client.query(

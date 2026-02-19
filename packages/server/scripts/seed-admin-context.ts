@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { PoolClient } from 'pg';
+import { makeUUID } from '../src/__tests__/factories/index.js';
 import { writeEnvVar } from '../src/__tests__/helpers/env-file.js';
 import {
   ensureBusinessForEntity,
@@ -44,7 +45,9 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
   console.log('Creating admin business entity...');
 
   // First check if admin entity already exists (by name and type, ignoring owner_id for admin)
+  const adminId = makeUUID('business', 'Admin Business');
   const { id } = await ensureFinancialEntity(client, {
+    id: adminId,
     name: 'Admin Business',
     type: 'business',
   });
@@ -52,7 +55,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
   console.log(`✅ Admin entity: ${adminEntityId}`);
 
   // Create corresponding business record
-  await ensureBusinessForEntity(client, adminEntityId);
+  await ensureBusinessForEntity(client, adminEntityId, { ownerId: adminEntityId });
   console.log('✅ Admin business record created');
 
   // Update owner_id to self
@@ -76,7 +79,10 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
       ownerId: adminEntityId,
     });
     authorityBusinessIds[name] = id;
-    await ensureBusinessForEntity(client, id, { isDocumentsOptional: true });
+    await ensureBusinessForEntity(client, id, {
+      isDocumentsOptional: true,
+      ownerId: adminEntityId,
+    });
   }
   console.log(`✅ Created ${authorities.businesses.length} authority businesses`);
 
@@ -90,7 +96,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
       ownerId: adminEntityId,
     });
     authorityTaxCategoryIds[name] = id;
-    await ensureTaxCategoryForEntity(client, id);
+    await ensureTaxCategoryForEntity(client, id, { ownerId: adminEntityId });
   }
   console.log(`✅ Created ${authorities.taxCategories.length} authority tax categories`);
 
@@ -119,7 +125,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
       ownerId: adminEntityId,
     });
     generalTaxCategoryIds[name] = id;
-    await ensureTaxCategoryForEntity(client, id);
+    await ensureTaxCategoryForEntity(client, id, { ownerId: adminEntityId });
   }
   console.log(`✅ Created ${generalTaxCategories.length} general tax categories`);
 
@@ -140,7 +146,7 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
       ownerId: adminEntityId,
     });
     crossYearTaxCategoryIds[name] = id;
-    await ensureTaxCategoryForEntity(client, id);
+    await ensureTaxCategoryForEntity(client, id, { ownerId: adminEntityId });
   }
   console.log(`✅ Created ${crossYearTaxCategories.length} cross-year tax categories`);
 

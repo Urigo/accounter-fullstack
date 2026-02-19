@@ -8,6 +8,7 @@ import type { CountryCode, Currency } from '../shared/enums.js';
 export interface TaxCategoryMapping {
   taxCategoryId: string;
   currency: Currency;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -18,6 +19,7 @@ export interface BusinessFixture {
   name: string;
   country: CountryCode;
   canSettleWithReceipt: boolean;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -26,6 +28,7 @@ export interface BusinessFixture {
 export interface TaxCategoryFixture {
   id: string;
   name: string;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -37,6 +40,7 @@ export interface FinancialAccountFixture {
   type: financial_account_type; // 'BANK_ACCOUNT', 'CREDIT_CARD', etc.
   currency: Currency;
   taxCategoryMappings?: TaxCategoryMapping[];
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -60,6 +64,7 @@ export interface TransactionFixture {
   eventDate: string; // ISO date string
   debitDate: string; // ISO date string
   accountNumber: string;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -75,6 +80,7 @@ export interface DocumentFixture {
   date: string; // ISO date string
   totalAmount: string; // Decimal as string
   currencyCode: Currency;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**
@@ -84,6 +90,7 @@ export interface TagFixture {
   id: string;
   name: string;
   description?: string;
+  ownerId: string; // Supports {{ADMIN_BUSINESS_ID}} placeholder
 }
 
 /**

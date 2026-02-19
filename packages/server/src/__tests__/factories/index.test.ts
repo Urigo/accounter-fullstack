@@ -74,6 +74,7 @@ describe('Factory Integration', () => {
       amount: formatNumeric(-500),
       currency: 'ILS',
       event_date: isoToday(),
+      owner_id: supplierId,
     });
 
     const document = createDocument({
@@ -84,6 +85,7 @@ describe('Factory Integration', () => {
       total_amount: 500.0,
       currency_code: 'ILS',
       date: isoToday(),
+      owner_id: supplierId,
     });
 
     // Assert: All entities created with correct relationships
@@ -134,6 +136,7 @@ describe('Factory Integration', () => {
       amount: -123.45, // Number input
       currency: 'USD',
       event_date: '2024-01-15',
+      owner_id: makeUUID('business', 'business-1'),
     });
 
     expect(transaction.amount).toBe('-123.45'); // String output for PostgreSQL
@@ -144,6 +147,7 @@ describe('Factory Integration', () => {
     const chargeId = makeUUID('charge', 'charge-doc');
     const creditorId = makeUUID('business', 'creditor');
     const debtorId = makeUUID('business', 'debtor');
+    const ownerId = makeUUID('user', 'admin-user');
 
     const invoice = createDocument({
       charge_id: chargeId,
@@ -153,6 +157,7 @@ describe('Factory Integration', () => {
       total_amount: 1000.0,
       currency_code: 'ILS',
       date: '2024-01-01',
+      owner_id: ownerId,
     });
 
     const receipt = createDocument({
@@ -163,6 +168,7 @@ describe('Factory Integration', () => {
       total_amount: 1000.0,
       currency_code: 'ILS',
       date: '2024-01-02',
+      owner_id: ownerId,
     });
 
     expect(invoice.type).toBe('INVOICE');

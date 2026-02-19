@@ -35,8 +35,6 @@ const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequir
 const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
   SELECT t.*
   FROM accounter_schema.transactions t
-  LEFT JOIN accounter_schema.charges c
-    ON t.charge_id = C.id
   WHERE
     ($isIDs = 0 OR t.id IN $$IDs)
     AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
@@ -44,15 +42,13 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
     AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
     AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
     AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
-    AND ($isOwnerIDs = 0 OR c.owner_id IN $$ownerIDs)
+    AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;
 `;
 
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
-    SELECT t.id, t.account_id, t.charge_id, t.source_id, t.source_description, t.currency, t.event_date, t.debit_date, t.amount, t.current_balance, t.business_id, t.created_at, t.updated_at, t.debit_date_override, t.is_fee, t.source_reference, t.source_origin, t.counter_account, t.debit_timestamp, t.currency_rate, t.origin_key, c.owner_id
+    SELECT t.id, t.account_id, t.charge_id, t.source_id, t.source_description, t.currency, t.event_date, t.debit_date, t.amount, t.current_balance, t.business_id, t.created_at, t.updated_at, t.debit_date_override, t.is_fee, t.source_reference, t.source_origin, t.counter_account, t.debit_timestamp, t.currency_rate, t.origin_key, t.owner_id
     FROM accounter_schema.transactions t
-    LEFT JOIN accounter_schema.charges c
-      ON t.charge_id = c.id
     WHERE (CASE WHEN $withMissingInfo IS TRUE THEN
       business_id IS NULL
    ELSE
@@ -61,7 +57,7 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
       AND (
         (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
-      ) AND c.owner_id = $ownerId;`;
+      ) AND t.owner_id = $ownerId;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions

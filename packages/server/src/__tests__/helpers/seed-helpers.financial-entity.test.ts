@@ -70,8 +70,8 @@ describe('ensureFinancialEntity', () => {
       });
 
       // Create corresponding business record (required for foreign key)
-      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`, [
-        ownerEntityResult.id,
+      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id, owner_id) VALUES ($1, $2)`, [
+        ownerEntityResult.id, ownerEntityResult.id,
       ]);
 
       // Create owned entity (tax_category)
@@ -100,8 +100,8 @@ describe('ensureFinancialEntity', () => {
       });
 
       // Create corresponding business record
-      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`, [
-        ownerEntityResult.id,
+      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id, owner_id) VALUES ($1, $2)`, [
+        ownerEntityResult.id, ownerEntityResult.id,
       ]);
 
       const firstResult = await ensureFinancialEntity(client, {
@@ -149,16 +149,16 @@ describe('ensureFinancialEntity', () => {
         name: 'Owner 1',
         type: 'business',
       });
-      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`, [
-        owner1Entity.id,
+      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id, owner_id) VALUES ($1, $2)`, [
+        owner1Entity.id, owner1Entity.id,
       ]);
 
       const owner2Entity = await ensureFinancialEntity(client, {
         name: 'Owner 2',
         type: 'business',
       });
-      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id) VALUES ($1)`, [
-        owner2Entity.id,
+      await client.query(`INSERT INTO ${qualifyTable('businesses')} (id, owner_id) VALUES ($1, $2)`, [
+        owner2Entity.id, owner2Entity.id,
       ]);
 
       const entity1 = await ensureFinancialEntity(client, {

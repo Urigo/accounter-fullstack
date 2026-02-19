@@ -8,6 +8,7 @@ describe('Factory: Transaction', () => {
     it('should create transaction with required fields', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -15,6 +16,7 @@ describe('Factory: Transaction', () => {
         amount: '-100.50',
         currency: 'ILS',
         event_date: '2024-01-15',
+        owner_id: ownerId,
       });
 
       // Required fields
@@ -42,6 +44,7 @@ describe('Factory: Transaction', () => {
     it('should generate unique IDs by default', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction1 = createTransaction({
         charge_id: chargeId,
@@ -49,6 +52,7 @@ describe('Factory: Transaction', () => {
         amount: '100',
         currency: 'USD',
         event_date: '2024-01-15',
+        owner_id: ownerId,
       });
 
       const transaction2 = createTransaction({
@@ -57,6 +61,7 @@ describe('Factory: Transaction', () => {
         amount: '100',
         currency: 'USD',
         event_date: '2024-01-15',
+        owner_id: ownerId,
       });
 
       expect(transaction1.id).not.toBe(transaction2.id);
@@ -65,6 +70,7 @@ describe('Factory: Transaction', () => {
     it('should accept numeric amount and convert to string', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -72,6 +78,7 @@ describe('Factory: Transaction', () => {
         amount: 100.5,
         currency: 'EUR',
         event_date: '2024-02-01',
+        owner_id: ownerId,
       });
 
       expect(transaction.amount).toBe('100.5');
@@ -81,6 +88,7 @@ describe('Factory: Transaction', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
       const date = new Date('2024-03-15T12:00:00Z');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -88,6 +96,7 @@ describe('Factory: Transaction', () => {
         amount: '200',
         currency: 'ILS',
         event_date: date,
+        owner_id: ownerId,
       });
 
       expect(transaction.event_date).toBe('2024-03-15');
@@ -96,6 +105,7 @@ describe('Factory: Transaction', () => {
     it('should handle is_fee parameter', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'bank');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const feeTransaction = createTransaction({
         charge_id: chargeId,
@@ -104,6 +114,7 @@ describe('Factory: Transaction', () => {
         currency: 'USD',
         event_date: '2024-01-15',
         is_fee: true,
+        owner_id: ownerId,
       });
 
       expect(feeTransaction.is_fee).toBe(true);
@@ -114,6 +125,7 @@ describe('Factory: Transaction', () => {
       const businessId = makeUUID('business', 'business-1');
       const customId = makeUUID('transaction', 'custom-tx');
       const accountId = makeUUID('financial-account', 'eur-account');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction(
         {
@@ -122,6 +134,7 @@ describe('Factory: Transaction', () => {
           amount: 500.0,
           currency: 'EUR',
           event_date: '2024-03-10',
+          owner_id: ownerId,
         },
         {
           id: customId,
@@ -142,11 +155,13 @@ describe('Factory: Transaction', () => {
     it('should allow partial overrides', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction(
         {
           charge_id: chargeId,
           business_id: businessId,
+          owner_id: ownerId,
           amount: '300',
           currency: 'ILS',
           event_date: '2024-04-01',
@@ -164,6 +179,7 @@ describe('Factory: Transaction', () => {
     it('should preserve all required fields', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction({
         charge_id: chargeId,
@@ -171,6 +187,7 @@ describe('Factory: Transaction', () => {
         amount: '100',
         currency: 'USD',
         event_date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       // Verify structure matches expected interface
@@ -191,6 +208,7 @@ describe('Factory: Transaction', () => {
     it('should handle different currency types', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const ilsTransaction = createTransaction({
         charge_id: chargeId,
@@ -198,6 +216,7 @@ describe('Factory: Transaction', () => {
         amount: '1000',
         currency: 'ILS',
         event_date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       const usdTransaction = createTransaction({
@@ -206,6 +225,7 @@ describe('Factory: Transaction', () => {
         amount: '1000',
         currency: 'USD',
         event_date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       const eurTransaction = createTransaction({
@@ -214,6 +234,7 @@ describe('Factory: Transaction', () => {
         amount: '1000',
         currency: 'EUR',
         event_date: '2024-01-01',
+        owner_id: ownerId,
       });
 
       expect(ilsTransaction.currency).toBe('ILS');
@@ -224,6 +245,7 @@ describe('Factory: Transaction', () => {
     it('should handle negative amounts (expenses)', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'supplier');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const expense = createTransaction({
         charge_id: chargeId,
@@ -231,6 +253,7 @@ describe('Factory: Transaction', () => {
         amount: '-500.75',
         currency: 'ILS',
         event_date: '2024-05-01',
+        owner_id: ownerId,
       });
 
       expect(expense.amount).toBe('-500.75');
@@ -239,6 +262,7 @@ describe('Factory: Transaction', () => {
     it('should handle positive amounts (income)', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'customer');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const income = createTransaction({
         charge_id: chargeId,
@@ -246,6 +270,7 @@ describe('Factory: Transaction', () => {
         amount: '1200.00',
         currency: 'USD',
         event_date: '2024-06-01',
+        owner_id: ownerId,
       });
 
       expect(income.amount).toBe('1200.00');
@@ -254,6 +279,7 @@ describe('Factory: Transaction', () => {
     it('should allow explicit null overrides', () => {
       const chargeId = makeUUID('charge', 'charge-1');
       const businessId = makeUUID('business', 'business-1');
+      const ownerId = makeUUID('user', 'admin-user');
 
       const transaction = createTransaction(
         {
@@ -262,6 +288,7 @@ describe('Factory: Transaction', () => {
           amount: '100',
           currency: 'ILS',
           event_date: '2024-01-01',
+          owner_id: ownerId,
         },
         {
           source_description: null,

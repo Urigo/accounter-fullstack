@@ -15,15 +15,11 @@ const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
   FROM accounter_schema.transactions t
   LEFT JOIN (SELECT COUNT(et.*) AS counter, array_agg(DISTINCT et.charge_id) AS charge_ids, et.source_reference
           FROM accounter_schema.transactions et
-          LEFT JOIN accounter_schema.charges c
-              ON c.id = et.charge_id
-          WHERE c.owner_id = $ownerId
+          WHERE et.owner_id = $ownerId
           GROUP BY source_reference ) g
       ON g.source_reference = t.source_reference
-  LEFT JOIN accounter_schema.charges c
-      ON c.id = t.charge_id
 
-  WHERE c.owner_id = $ownerId
+  WHERE t.owner_id = $ownerId
       AND g.counter > 1
       AND array_length(g.charge_ids, 1) > 1
       AND t.source_reference NOT IN (
@@ -42,15 +38,11 @@ const flagForeignFeeTransactions = sql<IFlagForeignFeeTransactionsQuery>`
                                   array_agg(DISTINCT t2.charge_id) AS charge_ids,
                                   t2.source_reference
                             FROM accounter_schema.transactions t2
-                                    LEFT JOIN accounter_schema.charges c2
-                                              ON c2.id = t2.charge_id
-                            WHERE c2.owner_id = $ownerId
+                            WHERE t2.owner_id = $ownerId
                             GROUP BY source_reference) g
                           ON g.source_reference = t.source_reference
-                LEFT JOIN accounter_schema.charges c
-                          ON c.id = t.charge_id
         WHERE t.is_fee IS FALSE
-          AND c.owner_id = $ownerId
+          AND t.owner_id = $ownerId
           AND g.counter > 1
           AND t.currency <> 'ILS'
           AND t.amount <= 30
@@ -67,10 +59,9 @@ WITH alt_debit_date AS (SELECT p.event_date,
                         ORDER BY p.event_date DESC),
      altered_transactions AS (SELECT DISTINCT ON (t.id) t.id,
                                                         alt_debit_date.event_date AS alt_debit_date,
-                                                        c.owner_id
+                                                        t.owner_id
                               FROM accounter_schema.transactions t
                                        LEFT JOIN accounter_schema.financial_accounts a ON a.id = t.account_id
-                                       LEFT JOIN accounter_schema.charges c ON c.id = t.charge_id
                                        LEFT JOIN alt_debit_date
                                                  ON alt_debit_date.reference_number = a.account_number AND
                                                     alt_debit_date.event_date > t.event_date AND

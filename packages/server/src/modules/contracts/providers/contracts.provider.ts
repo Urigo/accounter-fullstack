@@ -27,10 +27,9 @@ const getContractsByIds = sql<IGetContractsByIdsQuery>`
     WHERE id In $$ids;`;
 
 const getContractsByAdminBusinessIds = sql<IGetContractsByAdminBusinessIdsQuery>`
-    SELECT fe.owner_id, c.id, c.client_id, c.start_date, c.end_date, c.remarks, c.document_type, c.amount, c.currency, c.billing_cycle, c.product, c.plan, c.is_active, c.signed_agreement, c.ms_cloud, c.purchase_orders, c.operations_count
-    FROM accounter_schema.clients_contracts c
-    LEFT JOIN accounter_schema.financial_entities fe ON c.client_id = fe.id
-    WHERE fe.owner_id IN $$adminBusinessIds;`;
+    SELECT *
+    FROM accounter_schema.clients_contracts
+    WHERE owner_id IN $$adminBusinessIds;`;
 
 const getContractsByClientIds = sql<IGetContractsByClientIdsQuery>`
     SELECT *
