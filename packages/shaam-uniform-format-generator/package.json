@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
-    "eslint": "9.39.2",
+    "eslint": "10.0.1",
     "vitest": "4.0.18"
   },
   "publishConfig": {
