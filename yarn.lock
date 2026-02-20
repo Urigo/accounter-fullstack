@@ -120,7 +120,7 @@ __metadata:
     react-hook-form: "npm:7.71.1"
     react-number-format: "npm:5.4.4"
     react-router-dom: "npm:7.13.0"
-    react-to-pdf: "npm:3.1.0"
+    react-to-pdf: "npm:3.2.1"
     recharts: "npm:2.15.4"
     sonner: "npm:2.0.7"
     tailwind-merge: "npm:3.5.0"
@@ -1080,7 +1080,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.25.7, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.28.4, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.25.7, @babel/runtime@npm:^7.26.10, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.28.6
   resolution: "@babel/runtime@npm:7.28.6"
   checksum: 10c0/358cf2429992ac1c466df1a21c1601d595c46930a13c1d4662fde908d44ee78ec3c183aaff513ecb01ef8c55c3624afe0309eeeb34715672dbfadb7feedb2c0d
@@ -16238,11 +16238,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jspdf@npm:^4.0.0":
-  version: 4.1.0
-  resolution: "jspdf@npm:4.1.0"
+"jspdf@npm:^4.2.0":
+  version: 4.2.0
+  resolution: "jspdf@npm:4.2.0"
   dependencies:
-    "@babel/runtime": "npm:^7.28.4"
+    "@babel/runtime": "npm:^7.28.6"
     canvg: "npm:^3.0.11"
     core-js: "npm:^3.6.0"
     dompurify: "npm:^3.3.1"
@@ -16258,7 +16258,7 @@ __metadata:
       optional: true
     html2canvas:
       optional: true
-  checksum: 10c0/1565c6e01ebd7c9414be6c286d4b1ce7f7d511c81efa49b9a0835a5479e7927003b08d71b5e892a046fcfa2b8b438d19703d08c4c1a2b8074f5c965495371090
+  checksum: 10c0/446f8aca80e862b2528d343892c22e608753530683cd939aa58b5f5a7dc37d387e45dca115451961059ad8a76fa63237343052248f38a8fc31dba7d498a6dbc4
   languageName: node
   linkType: hard
 
@@ -19959,16 +19959,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-to-pdf@npm:3.1.0":
-  version: 3.1.0
-  resolution: "react-to-pdf@npm:3.1.0"
+"react-to-pdf@npm:3.2.1":
+  version: 3.2.1
+  resolution: "react-to-pdf@npm:3.2.1"
   dependencies:
     html2canvas: "npm:^1.4.1"
-    jspdf: "npm:^4.0.0"
+    jspdf: "npm:^4.2.0"
   peerDependencies:
     react: ">=16.8"
     react-dom: ">=16.8"
-  checksum: 10c0/c4628584e8417fc98116328e561e62b487fa55df031aa352fc37d98588f36a53ddedaf27284341b6e58b108fa0097bfd1c300e9eefccbe1aeb74ed7752550240
+  checksum: 10c0/52295f578260420b1c8d3ebd1b1601c7bb2e881079c5904cf40695eaa43b9afd758722d22378be3d2453e9ff5e3cd38b0f7642a3bfe6d8ea35fe46c5a30bb78a
   languageName: node
   linkType: hard
 
