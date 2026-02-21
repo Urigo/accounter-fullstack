@@ -44,6 +44,15 @@ export function Shaam6111Report() {
     pause: !selectedYear || !selectedBusiness,
   });
 
+  const [{ data: referenceData }] = useQuery({
+    query: Shaam6111ReportScreenDocument,
+    variables: {
+      year: referenceYear ? Number.parseInt(referenceYear, 10) : 0,
+      businessId: selectedBusiness,
+    },
+    pause: !referenceYear || !selectedBusiness,
+  });
+
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5" dir="rtl">
@@ -73,6 +82,7 @@ export function Shaam6111Report() {
           <Content
             fetching={fetching}
             data={data}
+            referenceData={referenceData}
             selectedBusiness={selectedBusiness}
             selectedYear={selectedYear}
             referenceYear={referenceYear}
@@ -86,12 +96,14 @@ export function Shaam6111Report() {
 function Content({
   fetching,
   data,
+  referenceData,
   selectedBusiness,
   selectedYear,
   referenceYear,
 }: {
   fetching: boolean;
   data?: Shaam6111ReportScreenQuery;
+  referenceData?: Shaam6111ReportScreenQuery;
   selectedBusiness?: string;
   selectedYear?: string;
   referenceYear?: string;
@@ -125,6 +137,7 @@ function Content({
   return (
     <Shaam6111ReportContent
       data={reportData}
+      referenceData={referenceData?.shaam6111.data}
       businessInfo={data.shaam6111.business}
       selectedBusiness={selectedBusiness}
       selectedYear={selectedYear}
