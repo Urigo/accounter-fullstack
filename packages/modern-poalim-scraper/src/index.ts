@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer';
-import { max, MaxOptions, type MaxCredentials } from './scrapers/max.js';
 import {
   amex,
   AmexCredentials,
@@ -16,6 +15,12 @@ import {
   isracard,
   IsracardCredentials,
   IsracardOptions,
+  leumi,
+  LeumiCredentials,
+  LeumiOptions,
+  max,
+  MaxOptions,
+  type MaxCredentials,
 } from './scrapers/scrapers-index.js';
 import { newPage } from './utils/browser-util.js';
 
@@ -38,6 +43,11 @@ export async function init({
       //return hapoalim.init
       const page = await newPage(browser);
       return hapoalim(page, credentials, options);
+    },
+    leumi: async (credentials: LeumiCredentials, options?: LeumiOptions) => {
+      //return leumi.init
+      const page = await newPage(browser);
+      return leumi(page, credentials, options);
     },
     isracard: async (credentials: IsracardCredentials, options?: IsracardOptions) => {
       //return isracard.init
