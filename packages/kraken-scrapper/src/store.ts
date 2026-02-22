@@ -84,11 +84,12 @@ export async function createAndConnectStore(options: { connectionString: string;
             WHERE NEW.trade_ref_id = t.trade_id;
 
             -- create new transaction
-            INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+            INSERT INTO ${options.schema}.transactions (owner_id, account_id, charge_id, source_id, source_description, currency,
                                                       event_date, debit_date, amount, current_balance, source_reference,
                                                       currency_rate, debit_timestamp, source_origin, counter_account,
                                                       origin_key)
-            VALUES (account_id_var,
+            VALUES (owner_id_var,
+                    account_id_var,
                     charge_id_var,
                     merged_id,
                     CONCAT_WS(' ', NEW.action_type, NEW.trade_ref_id),
@@ -112,11 +113,12 @@ export async function createAndConnectStore(options: { connectionString: string;
 
             -- if fee is not null, create new fee transaction
             IF (NEW.fee IS NOT NULL AND NEW.fee <> 0) THEN
-                INSERT INTO ${options.schema}.transactions (account_id, charge_id, source_id, source_description, currency,
+                INSERT INTO ${options.schema}.transactions (owner_id, account_id, charge_id, source_id, source_description, currency,
                                                           event_date, debit_date, amount, current_balance, is_fee,
                                                           source_reference, currency_rate, debit_timestamp, source_origin,
                                                           counter_account, origin_key)
-                VALUES (account_id_var,
+                VALUES (owner_id_var,
+                        account_id_var,
                         charge_id_var,
                         merged_id,
                         CONCAT_WS(' ', 'Fee:', NEW.trade_ref_id),

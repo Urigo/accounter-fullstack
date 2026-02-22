@@ -152,6 +152,7 @@ import migration_2026_02_16T19_00_00_enrich_extended_charges_with_text_search fr
 import migration_2026_02_18T10_00_00_add_owner_id_nullable from './actions/2026-02-18T10-00-00.add-owner-id-nullable.js';
 import migration_2026_02_18T15_00_00_make_ledger_owner_non_nullable from './actions/2026-02-18T15-00-00.make-ledger-owner-non-nullable.js';
 import migration_2026_02_18T16_00_00_owner_id_not_null from './actions/2026-02-18T16-00-00.owner-id-not-null.js';
+import migration_2026_02_19T17_00_00_update_scraper_triggers_according_to_rls_restrictions from './actions/2026-02-19T17-00-00.update-scraper-triggers-according-to-rls-restrictions.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -308,6 +309,7 @@ export const MIGRATIONS = [
   migration_2026_02_18T10_00_00_add_owner_id_nullable,
   migration_2026_02_18T15_00_00_make_ledger_owner_non_nullable,
   migration_2026_02_18T16_00_00_owner_id_not_null,
+  migration_2026_02_19T17_00_00_update_scraper_triggers_according_to_rls_restrictions,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
