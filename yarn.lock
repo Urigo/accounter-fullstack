@@ -356,6 +356,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/test-npm-publish@workspace:packages/test-npm-publish":
+  version: 0.0.0-use.local
+  resolution: "@accounter/test-npm-publish@workspace:packages/test-npm-publish"
+  dependencies:
+    bob-the-bundler: "npm:7.0.1"
+  languageName: unknown
+  linkType: soft
+
 "@ai-sdk/anthropic@npm:3.0.44":
   version: 3.0.44
   resolution: "@ai-sdk/anthropic@npm:3.0.44"
