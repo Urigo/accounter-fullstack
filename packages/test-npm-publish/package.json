@@ -1,0 +1,61 @@
+{
+  "name": "@accounter/test-npm-publish",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Test package for debugging NPM publish workflow",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/test-npm-publish"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/test-npm-publish#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^20.0.0 || >= 22"
+  },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
+  "keywords": [
+    "test",
+    "npm",
+    "publish"
+  ],
+  "scripts": {
+    "build": "bob build",
+    "prepublish": "yarn build"
+  },
+  "devDependencies": {
+    "bob-the-bundler": "7.0.1"
+  },
+  "publishConfig": {
+    "directory": "dist",
+    "registry": "https://registry.npmjs.org",
+    "access": "public",
+    "provenance": true
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
+  }
+}

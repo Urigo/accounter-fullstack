@@ -1,0 +1,65 @@
+name: Test NPM Publish
+
+# Manual trigger only for testing
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.0.1, 0.0.2-alpha.1)'
+        required: true
+        type: string
+
+env:
+  NODE_NO_WARNINGS: true
+  CI: true
+  NODE_ENV: production
+  NPM_CONFIG_PROVENANCE: true
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+jobs:
+  test-publish:
+    name: Test Publish Package
+    if: github.repository == 'Urigo/accounter-fullstack'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install NodeJS
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: .node-version
+          cache: 'yarn'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Update Package Version
+        run: |
+          cd packages/test-npm-publish
+          npm version ${{ inputs.version }} --no-git-tag-version
+
+      - name: Build Test Package
+        run: |
+          cd packages/test-npm-publish
+          yarn build
+
+      - name: Publish to NPM
+        working-directory: packages/test-npm-publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: |
+          echo "Publishing @accounter/test-npm-publish@${{ inputs.version }}"
+          npm publish --access public --provenance
+
+      - name: Report Success
+        run: |
+          echo "✅ Successfully published @accounter/test-npm-publish@${{ inputs.version }}"
+          echo "Install with: npm install @accounter/test-npm-publish@${{ inputs.version }}"
