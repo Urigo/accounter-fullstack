@@ -64,6 +64,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           await injector.get(FinancialBankAccountsProvider).insertBankAccounts({
             bankAccounts: [
               {
+                ownerId: input.ownerId,
                 bankNumber: input.bankAccountDetails.bankNumber,
                 branchNumber: input.bankAccountDetails.branchNumber,
                 iban: input.bankAccountDetails.iban,
@@ -91,9 +92,10 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
             .get(FinancialAccountsTaxCategoriesProvider)
             .insertFinancialAccountTaxCategories({
               financialAccountsTaxCategories: input.currencies.map(c => ({
-                financial_account_id: account.id,
+                ownerId: input.ownerId,
+                financialAccountId: account.id,
                 currency: c.currency,
-                tax_category_id: c.taxCategoryId,
+                taxCategoryId: c.taxCategoryId,
               })),
             });
         }
@@ -193,9 +195,10 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
               } else {
                 // new tax category for this account, insert it
                 taxCategoriesToInsert.push({
-                  financial_account_id: account.id,
+                  ownerId: account.owner_id,
+                  financialAccountId: account.id,
                   currency: inputTaxCategory.currency,
-                  tax_category_id: inputTaxCategory.taxCategoryId,
+                  taxCategoryId: inputTaxCategory.taxCategoryId,
                 });
               }
             });
@@ -216,9 +219,10 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
               .get(FinancialAccountsTaxCategoriesProvider)
               .insertFinancialAccountTaxCategories({
                 financialAccountsTaxCategories: fields.currencies.map(c => ({
-                  financial_account_id: account.id,
+                  ownerId: account.owner_id,
+                  financialAccountId: account.id,
                   currency: c.currency,
-                  tax_category_id: c.taxCategoryId,
+                  taxCategoryId: c.taxCategoryId,
                 })),
               });
           }

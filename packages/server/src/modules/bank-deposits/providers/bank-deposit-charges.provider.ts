@@ -1,7 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { dateToTimelessDateString, reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -40,9 +40,9 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
     AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
 const insertOrUpdateBankDepositCharge = sql<IInsertOrUpdateBankDepositChargeQuery>`
-  INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id)
-  VALUES ($chargeId, $depositId, $accountId)
-  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id, account_id = EXCLUDED.account_id;
+  INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id, owner_id)
+  VALUES ($chargeId, $depositId, $accountId, $ownerId)
+  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id, account_id = EXCLUDED.account_id, owner_id = EXCLUDED.owner_id;
 `;
 
 const deleteBankDepositChargesByChargeIds = sql<IDeleteBankDepositChargesByChargeIdsQuery>`
@@ -74,6 +74,7 @@ export class BankDepositChargesProvider {
   constructor(
     private db: TenantAwareDBClient,
     private transactionsProvider: TransactionsProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchTransactionsByBankDeposits(depositIds: readonly string[]) {
@@ -95,7 +96,10 @@ export class BankDepositChargesProvider {
   }
 
   public insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
-    return insertOrUpdateBankDepositCharge.run(params, this.db);
+    return insertOrUpdateBankDepositCharge.run(
+      reassureOwnerIdExists(params, this.context),
+      this.db,
+    );
   }
 
   public async getAllDepositsWithMetadata() {

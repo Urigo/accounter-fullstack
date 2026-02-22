@@ -434,7 +434,7 @@ export class GmailServiceProvider {
 
       // insert to DB
       const [document] = await this.documentsProvider.insertDocuments({
-        document: [{ ...documentToUpload, remarks }],
+        documents: [{ ...documentToUpload, remarks }],
       });
 
       if (!document) {

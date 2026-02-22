@@ -6,6 +6,7 @@ import { GoogleDriveProvider } from '../../app-providers/google-drive/google-dri
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
@@ -84,7 +85,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         const [document] = await injector
           .get(DocumentsProvider)
-          .insertDocuments({ document: [newDocument] });
+          .insertDocuments({ documents: [newDocument] });
 
         return { document };
       } catch (e) {
@@ -114,7 +115,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         chargeId = newCharge.id;
       }
 
-      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
       await Promise.all(
         documents.map(async document => {
           // get new document data
@@ -123,7 +124,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }),
       );
 
-      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      const res = await injector
+        .get(DocumentsProvider)
+        .insertDocuments({ documents: newDocuments });
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     batchUploadDocumentsFromGoogleDrive: async (
@@ -167,7 +170,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         chargeId = newCharge.id;
       }
 
-      const newDocuments: Array<IInsertDocumentsParams['document'][number]> = [];
+      const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
       await Promise.all(
         files.map(async file => {
           // get new document data
@@ -181,7 +184,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }),
       );
 
-      const res = await injector.get(DocumentsProvider).insertDocuments({ document: newDocuments });
+      const res = await injector
+        .get(DocumentsProvider)
+        .insertDocuments({ documents: newDocuments });
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
@@ -331,19 +336,19 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         throw new GraphQLError(`Failed to delete document ID="${documentId}": ${e}`);
       }
     },
-    insertDocument: async (_, { record }, { injector }) => {
+    insertDocument: async (_, { record }, { injector, adminContext }) => {
+      let charge: IGetChargesByIdsResult | undefined;
       try {
         if (record.chargeId) {
-          const charge = await injector
-            .get(ChargesProvider)
-            .getChargeByIdLoader.load(record.chargeId);
+          charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(record.chargeId);
 
           if (!charge) {
             throw new Error(`Charge ID='${record.chargeId}' not found`);
           }
         }
 
-        const newDocument: IInsertDocumentsParams['document']['0'] = {
+        const newDocument: IInsertDocumentsParams['documents']['0'] = {
+          ownerId: charge?.owner_id ?? adminContext.defaultAdminBusinessId,
           image: record.image ? record.image.toString() : null,
           file: record.file ? record.file.toString() : null,
           documentType: record.documentType ?? DocumentType.Unprocessed,
@@ -367,7 +372,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
         const res = await injector
           .get(DocumentsProvider)
-          .insertDocuments({ document: [newDocument] });
+          .insertDocuments({ documents: [newDocument] });
 
         if (!res || res.length === 0) {
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);

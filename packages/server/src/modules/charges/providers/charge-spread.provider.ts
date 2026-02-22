@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
@@ -41,11 +41,12 @@ const updateChargeSpread = sql<IUpdateChargeSpreadQuery>`
 `;
 
 const insertChargeSpread = sql<IInsertChargeSpreadQuery>`
-  INSERT INTO accounter_schema.charge_spread (charge_id, year_of_relevance, amount)
+  INSERT INTO accounter_schema.charge_spread (charge_id, year_of_relevance, amount, owner_id)
   VALUES $$chargeSpread(
     chargeId,
     yearOfRelevance,
-    amount
+    amount,
+    ownerId
   )
   RETURNING *;
 `;
@@ -64,7 +65,10 @@ const deleteAllChargeSpreadByChargeIdAndYearOfRelevance = sql<IDeleteAllChargeSp
   global: true,
 })
 export class ChargeSpreadProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchChargesSpreadByChargeIds(ids: readonly string[]) {
     const charges = await getChargesSpreadByChargeIds.run(
@@ -85,7 +89,16 @@ export class ChargeSpreadProvider {
   }
 
   public insertChargeSpread(params: IInsertChargeSpreadParams) {
-    return insertChargeSpread.run(params, this.db);
+    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+    return insertChargeSpread.run(
+      {
+        chargeSpread: params.chargeSpread.map(spread => ({
+          ...spread,
+          ownerId: spread.ownerId || ownerId,
+        })),
+      },
+      this.db,
+    );
   }
 
   public deleteAllChargeSpreadByChargeIds(params: IDeleteAllChargeSpreadByChargeIdsParams) {

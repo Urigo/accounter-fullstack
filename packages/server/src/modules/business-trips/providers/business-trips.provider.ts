@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   BusinessTripProto,
@@ -59,8 +60,8 @@ const getBusinessTripsByDates = sql<IGetBusinessTripsByDatesQuery>`
   WHERE business_trips_dates.from_date >= $fromDate AND business_trips_dates.to_date < $toDate ;`;
 
 const updateChargeBusinessTrip = sql<IUpdateChargeBusinessTripQuery>`
-  INSERT INTO accounter_schema.business_trip_charges (charge_id, business_trip_id)
-  VALUES($chargeId, $businessTripId)
+  INSERT INTO accounter_schema.business_trip_charges (charge_id, business_trip_id, owner_id)
+  VALUES($chargeId, $businessTripId, $ownerId)
   ON CONFLICT (charge_id) 
   DO 
     UPDATE SET business_trip_id = $businessTripId
@@ -95,8 +96,8 @@ const updateBusinessTrip = sql<IUpdateBusinessTripQuery>`
 `;
 
 const insertBusinessTrip = sql<IInsertBusinessTripQuery>`
-  INSERT INTO accounter_schema.business_trips (name, destination, trip_purpose)
-  VALUES($name, $destinationCode, $tripPurpose)
+  INSERT INTO accounter_schema.business_trips (name, destination, trip_purpose, owner_id)
+  VALUES($name, $destinationCode, $tripPurpose, $ownerId)
   RETURNING id;`;
 
 const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
@@ -113,7 +114,10 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
   global: true,
 })
 export class BusinessTripsProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   public getAllBusinessTrips() {
     return getAllBusinessTrips.run(undefined, this.dbProvider) as Promise<BusinessTripProto[]>;
@@ -180,7 +184,10 @@ export class BusinessTripsProvider {
     if (businessTripId) {
       this.getBusinessTripsByIdLoader.clear(businessTripId);
       this.getChargeIdsByBusinessTripIdLoader.clear(businessTripId);
-      return updateChargeBusinessTrip.run({ chargeId, businessTripId }, this.dbProvider);
+      return updateChargeBusinessTrip.run(
+        reassureOwnerIdExists({ chargeId, businessTripId, ownerId: null }, this.context),
+        this.dbProvider,
+      );
     }
     return deleteChargeBusinessTrip.run({ chargeId }, this.dbProvider);
   }
@@ -197,7 +204,7 @@ export class BusinessTripsProvider {
   }
 
   public insertBusinessTrip(params: IInsertBusinessTripParams) {
-    return insertBusinessTrip.run(params, this.dbProvider);
+    return insertBusinessTrip.run(reassureOwnerIdExists(params, this.context), this.dbProvider);
   }
 
   public async updateAccountantApproval(params: IUpdateAccountantApprovalParams) {

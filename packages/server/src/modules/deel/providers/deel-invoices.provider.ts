@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IGetChargeIdsByPaymentIdsQuery,
@@ -83,7 +84,8 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         "work",
         total_payment_currency,
         payment_id,
-        recipient_legal_entity_id)
+        recipient_legal_entity_id,
+        owner_id)
       VALUES ($id,
         $documentId,
         $amount,
@@ -125,7 +127,8 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         $work,
         $totalPaymentCurrency,
         $paymentId,
-        $recipientLegalEntityId)
+        $recipientLegalEntityId,
+        $ownerId)
       RETURNING *;`;
 
 @Injectable({
@@ -133,7 +136,10 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
   global: true,
 })
 export class DeelInvoicesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchInvoicesByIssueDates(issueDates: readonly Date[]) {
     const times = issueDates.map(date => date.getTime());
@@ -199,7 +205,10 @@ export class DeelInvoicesProvider {
   public async insertDeelInvoiceRecords(params: IInsertDeelInvoiceRecordsParams) {
     try {
       // invalidate cache
-      return insertDeelInvoiceRecords.run(params, this.dbProvider);
+      return insertDeelInvoiceRecords.run(
+        reassureOwnerIdExists(params, this.context),
+        this.dbProvider,
+      );
     } catch (e) {
       const message = `Error inserting Deel invoice`;
       console.error(message, e);

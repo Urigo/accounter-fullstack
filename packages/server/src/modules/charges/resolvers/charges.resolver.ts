@@ -371,6 +371,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
               .get(ChargeSpreadProvider)
               .insertChargeSpread({
                 chargeSpread: fields.yearsOfRelevance!.map(record => ({
+                  ownerId: updatedCharge.owner_id,
                   chargeId,
                   yearOfRelevance: record.year,
                   amount: record.amount,

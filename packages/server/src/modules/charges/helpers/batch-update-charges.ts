@@ -5,6 +5,7 @@ import { EMPTY_UUID } from '../../../shared/constants.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
+import { ChargesProvider } from '../providers/charges.provider.js';
 
 export async function batchUpdateChargesTags(
   injector: Injector,
@@ -108,11 +109,16 @@ export async function batchUpdateChargesYearsSpread(
     });
 
   return Promise.all(
-    chargeIds.map(chargeId =>
-      injector
+    chargeIds.map(async chargeId => {
+      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new GraphQLError(`Charge ID="${chargeId}" not found`);
+      }
+      return injector
         .get(ChargeSpreadProvider)
         .insertChargeSpread({
           chargeSpread: yearsOfRelevance.map(record => ({
+            ownerId: charge.owner_id,
             chargeId,
             yearOfRelevance: record.year,
             amount: record.amount,
@@ -121,7 +127,7 @@ export async function batchUpdateChargesYearsSpread(
         .catch(e => {
           console.error(e);
           throw new GraphQLError(`Error inserting spread records for charge ID="${chargeId}"`);
-        }),
-    ),
+        });
+    }),
   );
 }

@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBankAccountParams,
@@ -151,7 +152,8 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
     service_authorization_desc,
     branch_type_code,
     mymail_entitlement_switch,
-    product_label
+    product_label,
+    owner_id
   )
   VALUES $$bankAccounts(
     bankNumber,
@@ -170,7 +172,8 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
     serviceAuthorizationDesc,
     branchTypeCode,
     mymailEntitlementSwitch,
-    productLabel
+    productLabel,
+    ownerId
   )
   RETURNING *;`;
 
@@ -185,7 +188,10 @@ const deleteBankAccount = sql<IDeleteBankAccountQuery>`
   global: true,
 })
 export class FinancialBankAccountsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchFinancialBankAccountsByIds(bankAccountIds: readonly string[]) {
     const accounts = await getFinancialBankAccountsByIds.run(
@@ -235,7 +241,10 @@ export class FinancialBankAccountsProvider {
 
   public async insertBankAccounts(params: IInsertBankAccountsParams) {
     this.allFinancialBankAccountsCache = null;
-    return insertBankAccounts.run(params, this.db);
+    const bankAccountsWithOwnerId = params.bankAccounts.map(account =>
+      reassureOwnerIdExists(account, this.context),
+    );
+    return insertBankAccounts.run({ bankAccounts: bankAccountsWithOwnerId }, this.db);
   }
 
   public invalidateById(bankAccountId: string) {

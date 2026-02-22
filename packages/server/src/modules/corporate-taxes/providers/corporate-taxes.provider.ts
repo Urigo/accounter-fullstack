@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Inject, Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AUTH_CONTEXT } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
@@ -43,8 +44,8 @@ const updateCorporateTax = sql<IUpdateCorporateTaxQuery>`
   RETURNING *;`;
 
 const insertCorporateTax = sql<IInsertCorporateTaxQuery>`
-  INSERT INTO accounter_schema.corporate_tax_variables (corporate_id, date, tax_rate, original_tax_rate)
-  VALUES ($corporateId, $date, $taxRate, $originalTaxRate)
+  INSERT INTO accounter_schema.corporate_tax_variables (corporate_id, date, tax_rate, original_tax_rate, owner_id)
+  VALUES ($corporateId, $date, $taxRate, $originalTaxRate, $ownerId)
   RETURNING *`;
 
 const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`
@@ -61,6 +62,7 @@ export class CorporateTaxesProvider {
   constructor(
     private db: TenantAwareDBClient,
     @Inject(AUTH_CONTEXT) private authContext: AuthContext,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private get businessId() {
@@ -122,7 +124,7 @@ export class CorporateTaxesProvider {
 
   public insertCorporateTax(params: IInsertCorporateTaxParams) {
     this.allCorporateTaxesCache = new Map();
-    return insertCorporateTax.run(params, this.db);
+    return insertCorporateTax.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public deleteCorporateTax(params: IDeleteCorporateTaxParams) {

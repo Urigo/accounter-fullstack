@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllBusinessesQuery,
@@ -109,8 +110,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusinesses = sql<IInsertBusinessesQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required)
-  VALUES $$businesses(id, hebrewName, address, city, zipCode, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required, owner_id)
+  VALUES $$businesses(id, hebrewName, address, city, zipCode, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional, ownerId)
   RETURNING *;`;
 
 const replaceBusinesses = sql<IReplaceBusinessesQuery>`
@@ -215,7 +216,10 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
   global: true,
 })
 export class BusinessesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
     const uniqueIds = [...new Set(ids)];
@@ -275,9 +279,12 @@ export class BusinessesProvider {
         }
       }),
     );
+    const businessesWithOwnerId = newBusinesses.map(business =>
+      reassureOwnerIdExists(business, this.context),
+    );
     const businesses = await insertBusinesses.run(
       {
-        businesses: newBusinesses,
+        businesses: businessesWithOwnerId,
       },
       this.db,
     );

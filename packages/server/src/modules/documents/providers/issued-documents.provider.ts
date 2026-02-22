@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteIssuedDocumentParams,
@@ -126,13 +127,15 @@ const insertIssuedDocuments = sql<IInsertIssuedDocumentsQuery>`
       id,
       external_id,
       status,
-      linked_document_ids
+      linked_document_ids,
+      owner_id
     )
     VALUES $$issuedDocuments(
       id,
-      external_id,
+      externalId,
       status,
-      linked_document_ids
+      linkedDocumentIds,
+      ownerId
     )
     RETURNING *;`;
 
@@ -141,7 +144,10 @@ const insertIssuedDocuments = sql<IInsertIssuedDocumentsQuery>`
   global: true,
 })
 export class IssuedDocumentsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private allIssuedDocumentsCache: Promise<IGetAllIssuedDocumentsResult[]> | null = null;
   public async getAllIssuedDocuments(params: IGetAllIssuedDocumentsParams) {
@@ -278,7 +284,10 @@ export class IssuedDocumentsProvider {
 
   public async insertIssuedDocuments(params: IInsertIssuedDocumentsParams) {
     this.allIssuedDocumentsCache = null;
-    return insertIssuedDocuments.run(params, this.db);
+    const issuedDocumentsWithOwnerId = params.issuedDocuments.map(doc =>
+      reassureOwnerIdExists(doc, this.context),
+    );
+    return insertIssuedDocuments.run({ issuedDocuments: issuedDocumentsWithOwnerId }, this.db);
   }
 
   public async invalidateById(id: string) {

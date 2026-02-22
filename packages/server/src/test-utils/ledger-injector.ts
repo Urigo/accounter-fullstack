@@ -127,28 +127,52 @@ export function createLedgerTestContext(options: {
           tenantAwareDB,
         );
       case UnbalancedBusinessesProvider:
-        return new UnbalancedBusinessesProvider(tenantAwareDB);
+        return new UnbalancedBusinessesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case BalanceCancellationProvider:
         return new BalanceCancellationProvider(tenantAwareDB);
       case MiscExpensesProvider:
-        return new MiscExpensesProvider(tenantAwareDB);
+        return new MiscExpensesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case DocumentsProvider:
-        return new DocumentsProvider(tenantAwareDB);
+        return new DocumentsProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case TransactionsProvider:
         return new TransactionsProvider(tenantAwareDB);
       case BusinessesProvider:
-        return new BusinessesProvider(tenantAwareDB);
+        return new BusinessesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case FinancialAccountsProvider:
-        return new FinancialAccountsProvider(tenantAwareDB);
+        return new FinancialAccountsProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case TaxCategoriesProvider:
-        return new TaxCategoriesProvider(tenantAwareDB);
+        return new TaxCategoriesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case ChargesProvider:
         return new ChargesProvider(tenantAwareDB);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
-        const businessesProvider = new BusinessesProvider(tenantAwareDB);
-        const taxCategoriesProvider = new TaxCategoriesProvider(tenantAwareDB);
+        const businessesProvider = new BusinessesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
+        const taxCategoriesProvider = new TaxCategoriesProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
         const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
           deleteBusinessById: async (_businessId: string) => {},
         };
@@ -160,9 +184,15 @@ export function createLedgerTestContext(options: {
         );
       }
       case BusinessTripsProvider:
-        return new BusinessTripsProvider(dbProvider);
+        return new BusinessTripsProvider(
+          dbProvider,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       case ChargeSpreadProvider:
-        return new ChargeSpreadProvider(tenantAwareDB);
+        return new ChargeSpreadProvider(
+          tenantAwareDB,
+          contextRef.current as unknown as GraphQLModules.Context,
+        );
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${

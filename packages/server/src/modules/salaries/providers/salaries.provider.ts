@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
@@ -267,7 +267,10 @@ const updateSalaryRecord = sql<IUpdateSalaryRecordQuery>`
   global: true,
 })
 export class SalariesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchSalaryRecordsByMonths(months: readonly string[]) {
     if (months.length === 1) {
@@ -309,7 +312,16 @@ export class SalariesProvider {
 
   public insertSalaryRecords(params: IInsertSalaryRecordsParams) {
     this.clearCache();
-    return insertSalaryRecords.run(params, this.db);
+    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+    return insertSalaryRecords.run(
+      {
+        salaryRecords: params.salaryRecords.map(record => ({
+          ...record,
+          ownerId: record.ownerId || ownerId,
+        })),
+      },
+      this.db,
+    );
   }
 
   public updateSalaryRecord(params: IUpdateSalaryRecordParams) {
