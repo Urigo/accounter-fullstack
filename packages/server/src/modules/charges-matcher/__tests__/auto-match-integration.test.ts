@@ -4,8 +4,10 @@ import { createMockTransaction, createMockDocument } from './test-helpers.js';
 // Mock the module imports
 vi.mock('graphql-modules', () => ({
   Injectable: () => (target: any) => target,
+  Inject: () => (target: any, propertyKey: string | symbol, parameterIndex: number) => {},
   Injector: class {},
   Scope: { Operation: 'Operation' },
+  CONTEXT: Symbol('CONTEXT'),
 }));
 
 vi.mock('../../charges/providers/charges.provider.js', () => ({

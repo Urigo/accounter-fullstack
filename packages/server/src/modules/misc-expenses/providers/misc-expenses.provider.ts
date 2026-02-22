@@ -187,7 +187,10 @@ export class MiscExpensesProvider {
     const ownerId = this.context.adminContext.defaultAdminBusinessId;
     return insertExpenses.run(
       {
-        miscExpenses: params.miscExpenses.map(expense => ({ ...expense, ownerId })),
+        miscExpenses: params.miscExpenses.map(expense => ({
+          ...expense,
+          ownerId: expense.ownerId || ownerId,
+        })),
       },
       this.db,
     );
