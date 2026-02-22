@@ -685,9 +685,7 @@ BEGIN
     SELECT INTO account_id_var, owner_id_var id,
                                              owner
     FROM accounter_schema.financial_accounts
-    WHERE account_number = NEW.account_number
-      AND branch_number = NEW.operation_branch
-      AND bank_number = NEW.operation_bank;
+    WHERE account_number = NEW.account_number;
     -- check if matching charge exists:
     -- TBD
     -- create new charge
