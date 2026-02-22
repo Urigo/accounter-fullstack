@@ -39,6 +39,7 @@ const getSalaryRecordsByChargeIds = sql<IGetSalaryRecordsByChargeIdsQuery>`
 
 const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
   INSERT INTO accounter_schema.salaries (
+    owner_id,
     added_vacation_days,
     base_salary,
     bonus,
@@ -77,6 +78,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     work_days,
     zkufot)
   VALUES $$salaryRecords(
+    owner_id,
     addedVacationDays,
     baseSalary,
     bonus,

@@ -68,7 +68,7 @@ function validateColumn(
   nullable = false,
 ): { cell: unknown; colLetter: string } {
   const columns = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  if (!nullable && !row[columnNum]) {
+  if (!nullable && row[columnNum] == null) {
     throw new SalaryError(
       `Missing column ${columns[columnNum]} for ${category} in row ${rowNum + 1}`,
     );
@@ -78,19 +78,18 @@ function validateColumn(
 }
 
 function validateCell(
-  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] | undefined,
+  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'],
   category: string,
   columnNum: number,
   nullable = false,
 ): { cell: unknown; colLetter: string; rowNum: number } {
-  const data = validateGenericSalaryData(salaryData);
-  const { row, rowNum } = validateRowByCategory(data, category);
+  const { row, rowNum } = validateRowByCategory(salaryData, category);
   const { cell, colLetter } = validateColumn(row, columnNum, category, rowNum, nullable);
   return { cell, colLetter, rowNum };
 }
 
 function validateNumericCell(
-  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'] | undefined,
+  salaryData: ReturnType<typeof xlsx.parse<unknown[]>>[number]['data'],
   category: string,
   columnNum: number,
   nullable = false,
@@ -110,13 +109,17 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
       if (!workSheetsFromFile) {
         throw new SalaryError('No salary data file found');
       }
-      const salaryData = workSheetsFromFile.find(sheet => sheet.name === 'ריכוז נתוני שכר')?.data;
-      if (!salaryData) {
+      const salaryRawData = workSheetsFromFile.find(
+        sheet => sheet.name === 'ריכוז נתוני שכר',
+      )?.data;
+      if (!salaryRawData) {
         throw new SalaryError('No salary data sheet found in file');
       }
 
-      const rawSalaryMonth = salaryData[1][3];
+      const rawSalaryMonth = salaryRawData[1][3];
       const salaryMonth = getFormattedSalaryMonth(rawSalaryMonth);
+
+      const salaryData = validateGenericSalaryData(salaryRawData);
 
       const { row: employeesRow } = validateRowByCategory(salaryData, 'מספר זהות');
       const employeesNationalIds = getEmployeeIdsFromSheet(employeesRow);
@@ -130,7 +133,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
         });
 
       const salaryChargePromise = chargeId
-        ? Promise.resolve(chargeId)
+        ? injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId)
         : injector
             .get(ChargesProvider)
             .generateCharge({
@@ -138,7 +141,6 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
               ownerId: currentUser.userId,
               userDescription: `Salaries ${rawSalaryMonth}`,
             })
-            .then(res => res.id)
             .catch(e => {
               console.error(e);
               throw new SalaryError('Failed to generate salary charge');
@@ -146,11 +148,15 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
 
       const allFundsPromise = injector.get(FundsProvider).getAllFunds();
 
-      const [allEmployees, salaryChargeId, allFunds] = await Promise.all([
+      const [allEmployees, salaryCharge, allFunds] = await Promise.all([
         allEmployeesPromise,
         salaryChargePromise,
         allFundsPromise,
       ]);
+
+      if (!salaryCharge) {
+        throw new SalaryError('Failed to get or generate salary charge');
+      }
 
       const salaryRecords: Array<IInsertSalaryRecordsParams['salaryRecords'][0]> = [];
 
@@ -167,10 +173,9 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
         }
 
         function validateFund(category: string, nullable?: boolean) {
-          const data = validateGenericSalaryData(salaryData);
-          const { rowNum: prevRowNum } = validateRowByCategory(data, category);
+          const { rowNum: prevRowNum } = validateRowByCategory(salaryData, category);
           const rowNum = prevRowNum + 1;
-          const row = data[rowNum];
+          const row = salaryData[rowNum];
           if (!Array.isArray(row)) {
             throw new SalaryError(`Invalid row for ${category} in row ${rowNum + 2}`);
           }
@@ -194,8 +199,9 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
         }
 
         const record: IInsertSalaryRecordsParams['salaryRecords'][number] = {
+          owner_id: salaryCharge.owner_id,
           month: salaryMonth,
-          chargeId: salaryChargeId,
+          chargeId: salaryCharge.id,
           employeeId: employee.business_id,
           employer: employee.employer,
           employee: employee.national_id,

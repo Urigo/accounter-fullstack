@@ -36,7 +36,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
   Mutation: {
     insertSalaryRecords,
     updateSalaryRecord,
-    insertOrUpdateSalaryRecords: async (_, params, { injector }) => {
+    insertOrUpdateSalaryRecords: async (_, params, { injector, adminContext }) => {
       try {
         const recordsPromises = params.salaryRecords.map(async salaryRecord => {
           try {
@@ -53,6 +53,7 @@ export const salariesResolvers: SalariesModule.Resolvers &
           try {
             const salaryRecords = params.salaryRecords.map(salaryRecord => ({
               ...salaryRecord,
+              owner_id: adminContext.defaultAdminBusinessId,
               employee: salaryRecord.employee ?? null,
               addedVacationDays: salaryRecord.addedVacationDays ?? null,
               baseSalary: salaryRecord.baseSalary ?? null,

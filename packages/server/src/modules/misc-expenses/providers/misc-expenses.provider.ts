@@ -83,8 +83,8 @@ const replaceMiscExpensesChargeId = sql<IReplaceMiscExpensesChargeIdQuery>`
   `;
 
 const insertExpense = sql<IInsertExpenseQuery>`
-  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
-  VALUES ($chargeId, $creditorId, $debtorId, $amount, $currency, $description, $invoiceDate, $valueDate)
+  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date, owner_id)
+  VALUES ($chargeId, $creditorId, $debtorId, $amount, $currency, $description, $invoiceDate, $valueDate, $ownerId)
   RETURNING *;`;
 
 const insertExpenses = sql<IInsertExpensesQuery>`
