@@ -21,7 +21,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
     "@types/pg": "npm:8.16.0"
     pg-promise: "npm:12.6.1"
     slonik: "npm:48.10.3"
@@ -291,7 +291,7 @@ __metadata:
     "@graphql-yoga/plugin-defer-stream": "npm:3.18.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
@@ -8007,7 +8007,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^48.10.0, @slonik/driver@npm:^48.10.3":
+"@slonik/driver@npm:^48.10.3":
   version: 48.10.3
   resolution: "@slonik/driver@npm:48.10.3"
   dependencies:
@@ -8022,7 +8022,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/errors@npm:^48.10.0, @slonik/errors@npm:^48.10.3":
+"@slonik/errors@npm:^48.10.3":
   version: 48.10.3
   resolution: "@slonik/errors@npm:48.10.3"
   dependencies:
@@ -8031,26 +8031,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:48.10.0":
-  version: 48.10.0
-  resolution: "@slonik/pg-driver@npm:48.10.0"
-  dependencies:
-    "@slonik/driver": "npm:^48.10.0"
-    "@slonik/errors": "npm:^48.10.0"
-    "@slonik/sql-tag": "npm:^48.10.0"
-    "@slonik/types": "npm:^48.10.0"
-    "@slonik/utilities": "npm:^48.10.0"
-    pg: "npm:^8.17.1"
-    pg-query-stream: "npm:^4.10.3"
-    pg-types: "npm:^4.1.0"
-    postgres-array: "npm:^3.0.4"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/98362e3ec8c41b27484cbb9e90f76b7684a30d5ffe44a41c0fae3e2f2bde82a53387f1047fe605c9b60261d30c43b954d4325c7cf5ec72d1d3c7885e22bd1a27
-  languageName: node
-  linkType: hard
-
-"@slonik/pg-driver@npm:^48.10.3":
+"@slonik/pg-driver@npm:48.10.3":
   version: 48.10.3
   resolution: "@slonik/pg-driver@npm:48.10.3"
   dependencies:
@@ -8069,26 +8050,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch":
-  version: 48.10.0
-  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.0#~/.yarn/patches/@slonik-pg-driver-npm-48.10.0-121a9aed22.patch::version=48.10.0&hash=7afe8f"
+"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch":
+  version: 48.10.3
+  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch::version=48.10.3&hash=7afe8f"
   dependencies:
-    "@slonik/driver": "npm:^48.10.0"
-    "@slonik/errors": "npm:^48.10.0"
-    "@slonik/sql-tag": "npm:^48.10.0"
-    "@slonik/types": "npm:^48.10.0"
-    "@slonik/utilities": "npm:^48.10.0"
-    pg: "npm:^8.17.1"
-    pg-query-stream: "npm:^4.10.3"
+    "@slonik/driver": "npm:^48.10.3"
+    "@slonik/errors": "npm:^48.10.3"
+    "@slonik/sql-tag": "npm:^48.10.3"
+    "@slonik/types": "npm:^48.10.3"
+    "@slonik/utilities": "npm:^48.10.3"
+    pg: "npm:^8.18.0"
+    pg-query-stream: "npm:^4.12.0"
     pg-types: "npm:^4.1.0"
     postgres-array: "npm:^3.0.4"
   peerDependencies:
     zod: ^3.25 || ^4
-  checksum: 10c0/9c63ff2c5277237efc971c15188c7e71b9d84a2b5061c15ad3a59236269ba5417f4f894f676988a769bb49e9815040f593050e3d6245828a9e52160a7ee389e4
+  checksum: 10c0/e7e5e6da417451c63cb9aa0c31a08d7960606f6a5ce1a71983416235606d4ebf60fff983e676ef5930fd16a3b6f09d43c5b7e3e28eea4d9e5b95f061be905b76
   languageName: node
   linkType: hard
 
-"@slonik/sql-tag@npm:^48.10.0, @slonik/sql-tag@npm:^48.10.3":
+"@slonik/sql-tag@npm:^48.10.3":
   version: 48.10.3
   resolution: "@slonik/sql-tag@npm:48.10.3"
   dependencies:
@@ -8102,7 +8083,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/types@npm:^48.10.0, @slonik/types@npm:^48.10.3":
+"@slonik/types@npm:^48.10.3":
   version: 48.10.3
   resolution: "@slonik/types@npm:48.10.3"
   peerDependencies:
@@ -8111,7 +8092,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/utilities@npm:^48.10.0, @slonik/utilities@npm:^48.10.3":
+"@slonik/utilities@npm:^48.10.3":
   version: 48.10.3
   resolution: "@slonik/utilities@npm:48.10.3"
   dependencies:
@@ -19136,7 +19117,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-query-stream@npm:^4.10.3, pg-query-stream@npm:^4.12.0":
+"pg-query-stream@npm:^4.12.0":
   version: 4.12.0
   resolution: "pg-query-stream@npm:4.12.0"
   dependencies:
@@ -19175,7 +19156,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:8.18.0, pg@npm:^8.17.1, pg@npm:^8.18.0":
+"pg@npm:8.18.0, pg@npm:^8.18.0":
   version: 8.18.0
   resolution: "pg@npm:8.18.0"
   dependencies:
