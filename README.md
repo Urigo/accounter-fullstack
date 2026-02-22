@@ -113,8 +113,7 @@ ALLOW_DEMO_SEED=1 yarn test:demo-seed
 
 Integration and demo-seed tests require:
 
-1. **PostgreSQL running**: Start with
-   `docker compose -f docker/docker-compose.dev.yml up -d postgres`
+1. **PostgreSQL running**: Start with `docker compose -f docker/docker-compose.dev.yml up -d db`
 2. **Migrations applied**: Run `yarn workspace @accounter/migrations migration:run`
 3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` environment variable
 

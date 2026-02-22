@@ -1,0 +1,24 @@
+FROM node:24
+
+WORKDIR /app
+
+# Enable Corepack for Yarn 4
+RUN corepack enable
+
+# Copy root configurations
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY .yarn ./.yarn
+
+# Copy workspace package.json files (we copy all of packages to get package.json structure right easily, 
+# but for optimized builds we would be more selective. For dev, copying is fine if followed by install)
+# To avoid invalidating cache too often when source changes, correct way is to copy only package.json first.
+# But listing all of them is tedious.
+# Simplest for now: Copy everything, run install. 
+# Better: Copy everything.
+COPY . .
+
+RUN yarn install
+
+WORKDIR /app/packages/server
+
+CMD ["yarn", "server:dev"]
