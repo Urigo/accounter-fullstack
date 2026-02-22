@@ -51,9 +51,9 @@ export const salariesResolvers: SalariesModule.Resolvers &
           }
 
           try {
-            const salaryRecords = params.salaryRecords.map(salaryRecord => ({
+            const salaryRecordToUpdate = {
               ...salaryRecord,
-              owner_id: adminContext.defaultAdminBusinessId,
+              ownerId: adminContext.defaultAdminBusinessId,
               employee: salaryRecord.employee ?? null,
               addedVacationDays: salaryRecord.addedVacationDays ?? null,
               baseSalary: salaryRecord.baseSalary ?? null,
@@ -87,8 +87,10 @@ export const salariesResolvers: SalariesModule.Resolvers &
               vacationTakeout: salaryRecord.vacationTakeout ?? null,
               workDays: salaryRecord.workDays ?? null,
               zkufot: salaryRecord.zkufot ?? null,
-            }));
-            const res = await injector.get(SalariesProvider).insertSalaryRecords({ salaryRecords });
+            };
+            const res = await injector
+              .get(SalariesProvider)
+              .insertSalaryRecords({ salaryRecords: [salaryRecordToUpdate] });
             if (res.length !== 1) {
               throw new Error('Failed to insert salary record');
             }

@@ -78,7 +78,7 @@ const insertSalaryRecords = sql<IInsertSalaryRecordsQuery>`
     work_days,
     zkufot)
   VALUES $$salaryRecords(
-    owner_id,
+    ownerId,
     addedVacationDays,
     baseSalary,
     bonus,

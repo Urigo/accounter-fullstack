@@ -199,7 +199,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
         }
 
         const record: IInsertSalaryRecordsParams['salaryRecords'][number] = {
-          owner_id: salaryCharge.owner_id,
+          ownerId: salaryCharge.owner_id,
           month: salaryMonth,
           chargeId: salaryCharge.id,
           employeeId: employee.business_id,
