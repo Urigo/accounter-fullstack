@@ -1,0 +1,85 @@
+name: Publish (OIDC Trusted)
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore: ['.changeset/**']
+  push:
+    branches: [prod]
+
+env:
+  NODE_NO_WARNINGS: true
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: accounter
+  CI: true
+  NODE_ENV: production
+  NPM_CONFIG_PROVENANCE: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+  id-token: write
+
+jobs:
+  snapshot:
+    name: Snapshot (alpha) for PRs
+    if:
+      ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name ==
+      github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          registryUrl: 'https://registry.npmjs.org'
+
+      - name: alpha release
+        id: changesets
+        uses: the-guild-org/changesets-snapshot-action@12ae5b6781ea75c36ece2f2e3446cee6dc093e99 # v0.0.3
+        with:
+          tag: alpha
+          prepareScript: yarn run build
+        env:
+          NPM_TOKEN: FILLER
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  stable:
+    name: Stable release on prod
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/prod' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          registryUrl: 'https://registry.npmjs.org'
+
+      - name: Build Packages
+        run: yarn build
+
+      - name: release / pull_request (stable)
+        id: changesets-stable
+        uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e
+        with:
+          publish: 'yarn changeset publish'
+          version: 'yarn changeset version'
+          commit: 'chore(release): update monorepo packages versions'
+          title: 'Upcoming Release Changes'
+          createGithubReleases: aggregate
+          githubReleaseName: ${{ github.run_number }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: FILLER
