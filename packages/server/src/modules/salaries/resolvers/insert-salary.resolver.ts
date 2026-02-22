@@ -5,11 +5,12 @@ import type { SalariesModule } from '../types.js';
 export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalaryRecords'] = async (
   _,
   params,
-  { injector },
+  { injector, adminContext },
 ) => {
   try {
     const salaryRecords = params.salaryRecords.map(salaryRecord => ({
       ...salaryRecord,
+      ownerId: adminContext.defaultAdminBusinessId,
       employee: salaryRecord.employee ?? null,
       addedVacationDays: salaryRecord.addedVacationDays ?? null,
       baseSalary: salaryRecord.baseSalary ?? null,

@@ -21,9 +21,13 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
   Mutation: {
     insertMiscExpense: async (_, { chargeId, fields }, { injector }) => {
       try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new Error(`Charge ID="${chargeId}" not found`);
+        }
         return await injector
           .get(MiscExpensesProvider)
-          .insertExpense({ ...fields, chargeId })
+          .insertExpense({ ...fields, chargeId, ownerId: charge.owner_id })
           .then(res => {
             if (!res.length) {
               throw new Error('Error inserting misc expense');
