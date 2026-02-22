@@ -63,6 +63,8 @@ const TxnAbroadSchema = z
         'PLZ',
         'CAD',
         'ISK',
+        'RSD',
+        'PLN',
       ])
       .nullable(),
     dealsInbound: z.null(),
@@ -244,6 +246,8 @@ const IdHolderItemSchema = z
 const CardsTransactionsListBeanSchema = z
   .object({
     EsbServicesCall: z.null(),
+    accountErrorCode: z.null(),
+    bcKey: z.null(),
     card0: CardSchema,
     card6Digits: z.string().regex(sixDigitPattern),
     cardIdx: z.enum(['0,1,2,3,4,5', '0,1,2,3,4', '0,1,2,3', '0,1,2', '0,1', '0']),
@@ -269,6 +273,7 @@ const CardsTransactionsListBeanSchema = z
     payDay: z.enum(['10', '02', '15']).nullable(),
     paymentPercent: z.null(),
     paymentSum: z.enum(['000', '280']),
+    requestNumber: z.null(),
     returnCode: z.null(),
     returnMessage: z.null(),
     selectedCardIndex: z.enum(['0', '1', '2', '3', '4', '5']),
@@ -303,9 +308,6 @@ const CardsTransactionsListBeanSchema = z
       '2025',
       '2026',
     ]),
-    bcKey: z.null(),
-    requestNumber: z.null(),
-    accountErrorCode: z.null(),
   })
   .strict()
   .catchall(
