@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteFinancialAccountParams,
@@ -65,10 +66,10 @@ const updateFinancialAccount = sql<IUpdateFinancialAccountQuery>`
 
 const insertFinancialAccounts = sql<IInsertFinancialAccountsQuery>`
       INSERT INTO accounter_schema.financial_accounts (
-        account_number, account_name, private_business, owner, type
+        account_number, account_name, private_business, owner, type, owner_id
       )
       VALUES $$bankAccounts(
-        accountNumber, name, privateBusiness, ownerId, type
+        accountNumber, name, privateBusiness, ownerId, type, ownerId
       )
       RETURNING *;`;
 
@@ -83,7 +84,10 @@ const deleteFinancialAccount = sql<IDeleteFinancialAccountQuery>`
   global: true,
 })
 export class FinancialAccountsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchFinancialAccountsByOwnerIds(ownerIds: readonly string[]) {
     const accounts = await getFinancialAccountsByOwnerIds.run(
@@ -163,7 +167,10 @@ export class FinancialAccountsProvider {
 
   public async insertFinancialAccounts(params: IInsertFinancialAccountsParams) {
     this.allFinancialAccountsCache = null;
-    return insertFinancialAccounts.run(params, this.db);
+    const bankAccountsWithOwnerId = params.bankAccounts.map(account =>
+      reassureOwnerIdExists(account, this.context),
+    );
+    return insertFinancialAccounts.run({ bankAccounts: bankAccountsWithOwnerId }, this.db);
   }
 
   public invalidateById(financialAccountId: string) {

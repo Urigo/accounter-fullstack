@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
@@ -194,9 +195,10 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       exchange_rate_override,
       file_hash,
       description,
-      remarks
+      remarks,
+      owner_id
     )
-    VALUES $$document(
+    VALUES $$documents(
       image,
       file,
       documentType,
@@ -214,7 +216,8 @@ const insertDocuments = sql<IInsertDocumentsQuery>`
       exchangeRateOverride,
       fileHash,
       description,
-      remarks
+      remarks,
+      ownerId
     )
     RETURNING *;`;
 
@@ -274,7 +277,10 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
   global: true,
 })
 export class DocumentsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private allDocumentsCache: Promise<IGetAllDocumentsResult[]> | null = null;
   public async getAllDocuments(params: IGetAllDocumentsParams) {
@@ -440,12 +446,15 @@ export class DocumentsProvider {
   }
 
   public async insertDocuments(params: IInsertDocumentsParams) {
-    if (params.document.length) {
-      params.document.map(doc => {
+    if (params.documents.length) {
+      params.documents.map(doc => {
         if (doc.chargeId) this.invalidateByChargeId(doc.chargeId);
       });
     }
-    return insertDocuments.run(params, this.db);
+    const documentsWithOwnerId = params.documents.map(doc =>
+      reassureOwnerIdExists(doc, this.context),
+    );
+    return insertDocuments.run({ documents: documentsWithOwnerId }, this.db);
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {

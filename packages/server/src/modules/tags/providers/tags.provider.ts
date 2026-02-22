@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IAddNewTagParams,
@@ -33,8 +34,8 @@ const getTagsByNames = sql<IGetTagsByNamesQuery>`
   WHERE name in $$tagNames;`;
 
 const addNewTag = sql<IAddNewTagQuery>`
-  INSERT INTO accounter_schema.tags (name)
-  VALUES ($name)
+  INSERT INTO accounter_schema.tags (name, owner_id)
+  VALUES ($name, $ownerId)
   RETURNING *;
 `;
 
@@ -63,7 +64,10 @@ const updateTagParent = sql<IUpdateTagParentQuery>`
   global: true,
 })
 export class TagsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private allTagsCache: Promise<IGetAllTagsResult[]> | null = null;
   public getAllTags() {
@@ -103,7 +107,7 @@ export class TagsProvider {
 
   public addNewTag(params: IAddNewTagParams) {
     this.clearCache();
-    return addNewTag.run(params, this.db);
+    return addNewTag.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async renameTag(params: IRenameTagParams) {

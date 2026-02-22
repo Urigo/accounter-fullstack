@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
+import { IGenerateChargeResult } from 'modules/charges/types.js';
 import type {
   _DOLLAR_defs_addDocumentRequest_Input,
   _DOLLAR_defs_Country,
@@ -1114,7 +1115,14 @@ export async function insertNewDocumentFromGreenInvoice(
       }
     }
 
-    if (!chargeId) {
+    let charge: IGenerateChargeResult | undefined = undefined;
+
+    if (chargeId) {
+      charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+      if (!charge) {
+        throw new Error(`Charge with ID ${chargeId} not found`);
+      }
+    } else {
       // Generate new parent charge
 
       let userDescription = 'Green Invoice generated charge';
@@ -1129,7 +1137,7 @@ export async function insertNewDocumentFromGreenInvoice(
         userDescription = greenInvoiceDoc.description;
       }
 
-      const charge = await injector.get(ChargesProvider).generateCharge({
+      charge = await injector.get(ChargesProvider).generateCharge({
         ownerId,
         userDescription,
         type: 'COMMON',
@@ -1143,7 +1151,8 @@ export async function insertNewDocumentFromGreenInvoice(
     const counterpartyId = client?.business_id ?? null;
 
     // insert document
-    const rawDocument: IInsertDocumentsParams['document']['0'] = {
+    const rawDocument: IInsertDocumentsParams['documents']['0'] = {
+      ownerId: charge.owner_id,
       image: imageUrl,
       file: fileUrl,
       documentType,
@@ -1166,7 +1175,7 @@ export async function insertNewDocumentFromGreenInvoice(
 
     const newDocumentResponse = await injector
       .get(DocumentsProvider)
-      .insertDocuments({ document: [rawDocument] });
+      .insertDocuments({ documents: [rawDocument] });
     if (!newDocumentResponse || newDocumentResponse.length === 0) {
       throw new Error('Failed to insert document');
     }
@@ -1178,10 +1187,11 @@ export async function insertNewDocumentFromGreenInvoice(
       .insertIssuedDocuments({
         issuedDocuments: [
           {
-            external_id: greenInvoiceDoc.id,
+            ownerId: newDocument.owner_id,
+            externalId: greenInvoiceDoc.id,
             id: newDocument.id,
             status: greenInvoiceToDocumentStatus(greenInvoiceDoc.status),
-            linked_document_ids: linkedDocumentIds,
+            linkedDocumentIds,
           },
         ],
       })

@@ -219,3 +219,15 @@ export function hashStringToInt(text: string): number {
   }
   return hash;
 }
+
+export function reassureOwnerIdExists<
+  T extends {
+    ownerId?: string | null | void;
+  },
+>(params: T, context: GraphQLModules.GlobalContext): Omit<T, 'ownerId'> & { ownerId: string } {
+  const ownerId = params.ownerId ?? context.adminContext.defaultAdminBusinessId;
+  return {
+    ...params,
+    ownerId,
+  };
+}

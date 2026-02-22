@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { stringArray } from '../../charges/types.js';
 import type {
@@ -25,8 +26,8 @@ const getBusinessTripsExpenseMatchesByExpenseIds = sql<IGetBusinessTripsExpenseM
   WHERE business_trip_transaction_id in $$expenseIds;`;
 
 const insertBusinessTripExpenseMatch = sql<IInsertBusinessTripExpenseMatchQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_match (business_trip_transaction_id, transaction_id, amount)
-  VALUES($businessTripExpenseId, $transactionId, $amount)
+  INSERT INTO accounter_schema.business_trips_transactions_match (business_trip_transaction_id, transaction_id, amount, owner_id)
+  VALUES($businessTripExpenseId, $transactionId, $amount, $ownerId)
   RETURNING *;`;
 
 const deleteBusinessTripExpenseMatch = sql<IDeleteBusinessTripExpenseMatchQuery>`
@@ -45,7 +46,10 @@ const deleteSpecificBusinessTripExpenseMatch = sql<IDeleteSpecificBusinessTripEx
   global: true,
 })
 export class BusinessTripExpensesTransactionsMatchProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchBusinessTripsExpenseMatchesByTransactionIds(
     transactionIds: readonly string[],
@@ -86,7 +90,10 @@ export class BusinessTripExpensesTransactionsMatchProvider {
     if (params.transactionId) {
       this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clear(params.transactionId);
     }
-    return insertBusinessTripExpenseMatch.run(params, this.dbProvider);
+    return insertBusinessTripExpenseMatch.run(
+      reassureOwnerIdExists(params, this.context),
+      this.dbProvider,
+    );
   }
 
   public async deleteBusinessTripExpenseMatch(params: IDeleteBusinessTripExpenseMatchParams) {

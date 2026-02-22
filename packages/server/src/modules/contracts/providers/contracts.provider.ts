@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type {
@@ -119,7 +120,8 @@ const insertContract = sql<IInsertContractQuery>`
           plan,
           is_active,
           ms_cloud,
-          operations_count
+          operations_count,
+          owner_id
         )
         VALUES ($clientId,
           $purchaseOrders,
@@ -134,7 +136,8 @@ const insertContract = sql<IInsertContractQuery>`
           $plan,
           $isActive,
           $msCloud,
-          $operationsLimit)
+          $operationsLimit,
+          $ownerId)
         RETURNING *;`;
 
 @Injectable({
@@ -145,6 +148,7 @@ export class ContractsProvider {
   constructor(
     private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private allOpenContractsCache: Promise<IGetAllOpenContractsResult[]> | null = null;
@@ -201,7 +205,10 @@ export class ContractsProvider {
   );
 
   public async createContract(params: IInsertContractParams) {
-    const [newContract] = await insertContract.run(params, this.db);
+    const [newContract] = await insertContract.run(
+      reassureOwnerIdExists(params, this.context),
+      this.db,
+    );
     this.getContractsByIdLoader.prime(newContract.id, newContract);
 
     // Invalidate list caches

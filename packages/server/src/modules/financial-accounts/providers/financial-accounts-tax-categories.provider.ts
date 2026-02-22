@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteFinancialAccountTaxCategoriesParams,
@@ -32,10 +33,10 @@ const updateFinancialAccountTaxCategory = sql<IUpdateFinancialAccountTaxCategory
 
 const insertFinancialAccountTaxCategories = sql<IInsertFinancialAccountTaxCategoriesQuery>`
       INSERT INTO accounter_schema.financial_accounts_tax_categories (
-        financial_account_id, currency, tax_category_id
+        financial_account_id, currency, tax_category_id, owner_id
       )
       VALUES $$financialAccountsTaxCategories(
-        financial_account_id, currency, tax_category_id
+        financialAccountId, currency, taxCategoryId, ownerId
       )
       RETURNING *;`;
 
@@ -52,7 +53,10 @@ const deleteFinancialAccountTaxCategories = sql<IDeleteFinancialAccountTaxCatego
   global: true,
 })
 export class FinancialAccountsTaxCategoriesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchFinancialAccountTaxCategoriesByAccountIds(accountIds: readonly string[]) {
     const taxCategories = await getFinancialAccountTaxCategoriesByAccountIds.run(
@@ -91,11 +95,17 @@ export class FinancialAccountsTaxCategoriesProvider {
     params: IInsertFinancialAccountTaxCategoriesParams,
   ) {
     params.financialAccountsTaxCategories.map(tc => {
-      if (tc.financial_account_id) {
-        this.invalidateByAccountId(tc.financial_account_id);
+      if (tc.financialAccountId) {
+        this.invalidateByAccountId(tc.financialAccountId);
       }
     });
-    return insertFinancialAccountTaxCategories.run(params, this.db);
+    const taxCategoriesWithOwnerId = params.financialAccountsTaxCategories.map(tc =>
+      reassureOwnerIdExists(tc, this.context),
+    );
+    return insertFinancialAccountTaxCategories.run(
+      { financialAccountsTaxCategories: taxCategoriesWithOwnerId },
+      this.db,
+    );
   }
 
   public invalidateByAccountId(financialAccountId: string) {

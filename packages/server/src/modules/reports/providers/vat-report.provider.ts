@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
 import { format } from 'date-fns';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IGetReportByBusinessIdAndDatesQuery,
@@ -23,8 +24,8 @@ const updateReport = sql<IUpdateReportQuery>`
   RETURNING *;`;
 
 const insertReport = sql<IInsertReportQuery>`
-  INSERT INTO accounter_schema.pcn874 (business_id, month_date, content)
-  VALUES ($businessId, $monthDate, $content)
+  INSERT INTO accounter_schema.pcn874 (business_id, month_date, content, owner_id)
+  VALUES ($businessId, $monthDate, $content, $ownerId)
   RETURNING *;`;
 
 @Injectable({
@@ -32,7 +33,10 @@ const insertReport = sql<IInsertReportQuery>`
   global: true,
 })
 export class VatReportProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchReportsByBusinessIdAndMonthDatesLoader(
     businessAndDates: readonly [string, string][],
@@ -87,7 +91,7 @@ export class VatReportProvider {
         format(params.monthDate, 'yyyy-MM-dd'),
       );
     }
-    return insertReport.run(params, this.db);
+    return insertReport.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: string) {

@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
@@ -40,8 +41,8 @@ const updateBusinessTripTravelAndSubsistenceExpense = sql<IUpdateBusinessTripTra
 `;
 
 const insertBusinessTripTravelAndSubsistenceExpense = sql<IInsertBusinessTripTravelAndSubsistenceExpenseQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_tns (id, expense_type)
-  VALUES($id, $expenseType)
+  INSERT INTO accounter_schema.business_trips_transactions_tns (id, expense_type, owner_id)
+  VALUES($id, $expenseType, $ownerId)
   RETURNING *;`;
 
 const deleteBusinessTripTravelAndSubsistenceExpense = sql<IDeleteBusinessTripTravelAndSubsistenceExpenseQuery>`
@@ -55,7 +56,10 @@ const deleteBusinessTripTravelAndSubsistenceExpense = sql<IDeleteBusinessTripTra
   global: true,
 })
 export class BusinessTripTravelAndSubsistenceExpensesProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(
+    private dbProvider: DBProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIds(
     businessTripIds: readonly string[],
@@ -108,7 +112,10 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
   public insertBusinessTripTravelAndSubsistenceExpense(
     params: IInsertBusinessTripTravelAndSubsistenceExpenseParams,
   ) {
-    return insertBusinessTripTravelAndSubsistenceExpense.run(params, this.dbProvider);
+    return insertBusinessTripTravelAndSubsistenceExpense.run(
+      reassureOwnerIdExists(params, this.context),
+      this.dbProvider,
+    );
   }
 
   public deleteBusinessTripTravelAndSubsistenceExpense(

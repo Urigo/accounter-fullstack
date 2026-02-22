@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IClearAllChargeTagsParams,
@@ -31,7 +32,7 @@ const clearAllChargeTags = sql<IClearAllChargeTagsQuery>`
     WHERE charge_id = $chargeId;`;
 
 const insertChargeTag = sql<IInsertChargeTagQuery>`
-    INSERT INTO accounter_schema.charge_tags (charge_id, tag_id, part) VALUES ($chargeId, $tagId, $part) ON CONFLICT DO NOTHING;`;
+    INSERT INTO accounter_schema.charge_tags (charge_id, tag_id, part, owner_id) VALUES ($chargeId, $tagId, $part, $ownerId) ON CONFLICT DO NOTHING;`;
 
 const updateChargeTagPart = sql<IUpdateChargeTagPartQuery>`
     UPDATE accounter_schema.charge_tags
@@ -51,6 +52,7 @@ export class ChargeTagsProvider {
   constructor(
     private db: TenantAwareDBClient,
     private tagsProvider: TagsProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchTagsByChargeID(chargeIDs: readonly string[]) {
@@ -93,7 +95,7 @@ export class ChargeTagsProvider {
     if (params.chargeId) {
       this.invalidateTagsByChargeID(params.chargeId);
     }
-    return insertChargeTag.run(params, this.db);
+    return insertChargeTag.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async updateChargeTagPart(params: IUpdateChargeTagPartParams) {

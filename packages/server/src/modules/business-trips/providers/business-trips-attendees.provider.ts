@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   DateOrString,
@@ -44,8 +45,8 @@ const getLastFlightByDateAndAttendeeId = sql<IGetLastFlightByDateAndAttendeeIdQu
       FETCH FIRST 1 ROWS ONLY;`;
 
 const addBusinessTripAttendees = sql<IAddBusinessTripAttendeesQuery>`
-  INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure)
-  VALUES ($businessTripId, $businessId, $arrival, $departure)
+  INSERT INTO accounter_schema.business_trips_attendees (business_trip_id, attendee_business_id, arrival, departure, owner_id)
+  VALUES ($businessTripId, $businessId, $arrival, $departure, $ownerId)
   ON CONFLICT DO NOTHING
   RETURNING *;`;
 
@@ -80,6 +81,7 @@ export class BusinessTripAttendeesProvider {
   constructor(
     private db: TenantAwareDBClient,
     private businessTripsProvider: BusinessTripsProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchBusinessTripsAttendeesByChargeIds(chargeIds: readonly string[]) {
@@ -149,7 +151,7 @@ export class BusinessTripAttendeesProvider {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
-    return addBusinessTripAttendees.run(params, this.db);
+    return addBusinessTripAttendees.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {

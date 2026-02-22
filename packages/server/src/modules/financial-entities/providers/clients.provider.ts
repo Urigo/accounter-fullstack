@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
@@ -62,8 +63,8 @@ const deleteClient = sql<IDeleteClientQuery>`
 `;
 
 const insertClient = sql<IInsertClientQuery>`
-    INSERT INTO accounter_schema.clients (business_id, emails, integrations)
-    VALUES ($businessId, $emails, $integrations)
+    INSERT INTO accounter_schema.clients (business_id, emails, integrations, owner_id)
+    VALUES ($businessId, $emails, $integrations, $ownerId)
     RETURNING *;`;
 
 @Injectable({
@@ -71,7 +72,10 @@ const insertClient = sql<IInsertClientQuery>`
   global: true,
 })
 export class ClientsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private allClientsPython: Promise<IGetAllClientsResult[]> | null = null;
   public async getAllClients() {
@@ -152,7 +156,7 @@ export class ClientsProvider {
 
   public async insertClient(params: IInsertClientParams) {
     this.clearCache();
-    return insertClient.run(params, this.db);
+    return insertClient.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public clearCache() {

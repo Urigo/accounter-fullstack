@@ -182,7 +182,8 @@ export async function uploadDeelInvoice(
     const [{ fileUrl, imageUrl }, fileHash] = await Promise.all([fileUrlsPromise, fileHashPromise]);
 
     // create the new document object
-    const newDocumentFromInvoice: IInsertDocumentsParams['document'][number] = {
+    const newDocumentFromInvoice: IInsertDocumentsParams['documents'][number] = {
+      ownerId,
       image: imageUrl ?? null,
       file: fileUrl ?? null,
       documentType:
@@ -210,7 +211,7 @@ export async function uploadDeelInvoice(
 
     // upload the document
     const [document] = await injector.get(DocumentsProvider).insertDocuments({
-      document: [newDocumentFromInvoice],
+      documents: [newDocumentFromInvoice],
     });
 
     if (!document.id) {

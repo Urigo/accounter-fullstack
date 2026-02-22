@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripAccommodationsExpenseParams,
@@ -48,8 +49,8 @@ const updateBusinessTripAccommodationsExpense = sql<IUpdateBusinessTripAccommoda
 `;
 
 const insertBusinessTripAccommodationsExpense = sql<IInsertBusinessTripAccommodationsExpenseQuery>`
-  INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count, attendees_stay)
-  VALUES($id, $country, $nightsCount, $attendeesStay)
+  INSERT INTO accounter_schema.business_trips_transactions_accommodations (id, country, nights_count, attendees_stay, owner_id)
+  VALUES($id, $country, $nightsCount, $attendeesStay, $ownerId)
   RETURNING *;`;
 
 const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommodationsExpenseQuery>`
@@ -63,7 +64,10 @@ const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommoda
   global: true,
 })
 export class BusinessTripAccommodationsExpensesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchBusinessTripsAccommodationsExpensesByBusinessTripIds(
     businessTripIds: readonly string[],
@@ -114,7 +118,10 @@ export class BusinessTripAccommodationsExpensesProvider {
     params: IInsertBusinessTripAccommodationsExpenseParams,
   ) {
     params.attendeesStay ||= [];
-    return insertBusinessTripAccommodationsExpense.run(params, this.db);
+    return insertBusinessTripAccommodationsExpense.run(
+      reassureOwnerIdExists(params, this.context),
+      this.db,
+    );
   }
 
   public deleteBusinessTripAccommodationsExpense(

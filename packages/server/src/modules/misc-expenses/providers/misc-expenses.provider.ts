@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteExpenseParams,
@@ -88,8 +89,8 @@ const insertExpense = sql<IInsertExpenseQuery>`
   RETURNING *;`;
 
 const insertExpenses = sql<IInsertExpensesQuery>`
-  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date)
-  VALUES $$miscExpenses(chargeId, creditorId, debtorId, amount, currency, description, invoiceDate, valueDate)
+  INSERT INTO accounter_schema.misc_expenses (charge_id, creditor_id, debtor_id, amount, currency, description, invoice_date, value_date, owner_id)
+  VALUES $$miscExpenses(chargeId, creditorId, debtorId, amount, currency, description, invoiceDate, valueDate, ownerId)
   RETURNING *;`;
 
 const deleteExpense = sql<IDeleteExpenseQuery>`
@@ -102,7 +103,10 @@ const deleteExpense = sql<IDeleteExpenseQuery>`
   global: true,
 })
 export class MiscExpensesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
     const expenses = await getExpensesByChargeIds.run({ chargeIds }, this.db);
@@ -170,7 +174,7 @@ export class MiscExpensesProvider {
 
   public async insertExpense(params: IInsertExpenseParams) {
     if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
-    return insertExpense.run(params, this.db);
+    return insertExpense.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async insertExpenses(params: IInsertExpensesParams) {
@@ -180,7 +184,13 @@ export class MiscExpensesProvider {
     if (chargeIds.length) {
       await Promise.all(chargeIds.map(chargeId => this.invalidateByChargeId(chargeId)));
     }
-    return insertExpenses.run(params, this.db);
+    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+    return insertExpenses.run(
+      {
+        miscExpenses: params.miscExpenses.map(expense => ({ ...expense, ownerId })),
+      },
+      this.db,
+    );
   }
 
   public async deleteMiscExpense(params: IDeleteExpenseParams) {

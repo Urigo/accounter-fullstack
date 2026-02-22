@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetEmployeeIDsByContractIdsQuery,
@@ -27,14 +28,16 @@ const insertDeelContract = sql<IInsertDeelContractQuery>`
         contractor_id,
         contractor_name,
         contract_start_date,
-        business_id
+        business_id,
+        owner_id
       )
       VALUES (
         $contractId,
         $contractorId,
         $contractorName,
         $contractStartDate,
-        $businessId
+        $businessId,
+        $ownerId
       )
       RETURNING *;`;
 
@@ -43,7 +46,10 @@ const insertDeelContract = sql<IInsertDeelContractQuery>`
   global: true,
 })
 export class DeelContractsProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchEmployeeIDsByContractIds(contractIds: readonly string[]) {
     const contracts = await getEmployeeIDsByContractIds.run({ contractIds }, this.db);
@@ -83,7 +89,7 @@ export class DeelContractsProvider {
   public async insertDeelContract(params: IInsertDeelContractParams) {
     try {
       // invalidate cache
-      return insertDeelContract.run(params, this.db);
+      return insertDeelContract.run(reassureOwnerIdExists(params, this.context), this.db);
     } catch (e) {
       const message = `Error inserting Deel contract [${params.contractId}]`;
       console.error(`${message}: ${e}`);

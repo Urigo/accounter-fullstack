@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllSortCodesQuery,
@@ -22,8 +23,8 @@ const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
 
 const insertSortCode = sql<IInsertSortCodeQuery>`
-    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code)
-    VALUES ($name, $key, $defaultIrsCode)
+    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code, owner_id)
+    VALUES ($name, $key, $defaultIrsCode, $ownerId)
     RETURNING *;
   `;
 
@@ -46,7 +47,10 @@ const updateSortCode = sql<IUpdateSortCodeQuery>`
   global: true,
 })
 export class SortCodesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private allSortCodesCache: Promise<IGetAllSortCodesResult[]> | null = null;
   public getAllSortCodes() {
@@ -79,7 +83,7 @@ export class SortCodesProvider {
 
   public addSortCode(params: IInsertSortCodeParams) {
     this.clearCache();
-    return insertSortCode.run(params, this.db);
+    return insertSortCode.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async updateSortCode(params: IUpdateSortCodeParams) {

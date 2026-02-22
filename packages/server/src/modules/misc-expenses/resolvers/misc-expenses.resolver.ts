@@ -42,18 +42,19 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     },
     insertMiscExpenses: async (_, { chargeId, expenses }, { injector }) => {
       try {
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new Error(`Charge ID="${chargeId}" not found`);
+        }
         await injector.get(MiscExpensesProvider).insertExpenses({
           miscExpenses: expenses.map(expense => ({
             ...expense,
             description: expense.description ?? null,
             chargeId,
+            ownerId: charge.owner_id,
           })),
         });
 
-        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-        if (!charge) {
-          throw new Error(`Charge ID="${chargeId}" not found`);
-        }
         return charge;
       } catch (e) {
         const message = 'Error inserting misc expense';

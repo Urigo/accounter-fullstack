@@ -133,7 +133,7 @@ export function getDocumentFromUrlsAndOcrData(
   adminBusinessId: string,
   chargeId?: string | null,
   fileHash?: number,
-): IInsertDocumentsParams['document'][number] {
+): IInsertDocumentsParams['documents'][number] {
   const sides = figureOutSides(
     ocrData.documentType,
     adminBusinessId,
@@ -141,7 +141,8 @@ export function getDocumentFromUrlsAndOcrData(
     ocrData.counterpartyId,
   );
 
-  const newDocument: IInsertDocumentsParams['document'][number] = {
+  const newDocument: IInsertDocumentsParams['documents'][number] = {
+    ownerId: adminBusinessId,
     image: imageUrl ?? null,
     file: fileUrl ?? null,
     documentType: ocrData.documentType,
@@ -170,7 +171,7 @@ export async function getDocumentFromFile(
   file: File | Blob,
   chargeId?: string | null,
   isSensitive?: boolean | null,
-): Promise<IInsertDocumentsParams['document'][number]> {
+): Promise<IInsertDocumentsParams['documents'][number]> {
   try {
     const {
       injector,

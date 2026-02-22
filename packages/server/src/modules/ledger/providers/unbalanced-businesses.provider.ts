@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteChargeUnbalancedBusinessesByBusinessIdQuery,
@@ -20,8 +21,8 @@ const getChargeUnbalancedBusinessesByChargeIds = sql<IGetChargeUnbalancedBusines
     WHERE charge_id IN $$chargeIds;`;
 
 const insertChargeUnbalancedBusinesses = sql<IInsertChargeUnbalancedBusinessesQuery>`
-  INSERT INTO accounter_schema.charge_unbalanced_ledger_businesses (charge_id, business_id, remark)
-  VALUES $$unbalancedBusinesses(chargeId, businessId, remark)
+  INSERT INTO accounter_schema.charge_unbalanced_ledger_businesses (charge_id, business_id, remark, owner_id)
+  VALUES $$unbalancedBusinesses(chargeId, businessId, remark, ownerId)
   ON CONFLICT DO NOTHING
   RETURNING *;
 `;
@@ -52,7 +53,10 @@ const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>
   global: true,
 })
 export class UnbalancedBusinessesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchChargeUnbalancedBusinessesByChargeIds(chargeIds: readonly string[]) {
     const ids = new Set(chargeIds);
@@ -77,7 +81,16 @@ export class UnbalancedBusinessesProvider {
         if (chargeId) this.invalidateByChargeId(chargeId);
       });
     }
-    return insertChargeUnbalancedBusinesses.run(params, this.db);
+    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+    return insertChargeUnbalancedBusinesses.run(
+      {
+        unbalancedBusinesses: params.unbalancedBusinesses.map(business => ({
+          ...business,
+          ownerId,
+        })),
+      },
+      this.db,
+    );
   }
 
   public deleteChargeUnbalancedBusinesses(params: IDeleteChargeUnbalancedBusinessesParams) {

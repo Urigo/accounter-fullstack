@@ -235,6 +235,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
         const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
           id: financialEntity.id,
+          ownerId: financialEntity.owner_id,
           address: fields.address,
           city: fields.city,
           zipCode: fields.zipCode,
@@ -479,6 +480,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
           const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({
             id: financialEntity.id,
+            ownerId: financialEntity.owner_id,
             country: locality,
             hebrewName: description,
             suggestions: {

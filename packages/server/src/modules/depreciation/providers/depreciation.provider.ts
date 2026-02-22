@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
@@ -75,8 +76,8 @@ const updateDepreciationRecord = sql<IUpdateDepreciationRecordQuery>`
   RETURNING *;`;
 
 const insertDepreciationRecord = sql<IInsertDepreciationRecordQuery>`
-  INSERT INTO accounter_schema.depreciation (charge_id, amount, currency, activation_date, type, category)
-  VALUES ($chargeId, $amount, $currency, $activationDate, $type, $categoryId)
+  INSERT INTO accounter_schema.depreciation (charge_id, amount, currency, activation_date, type, category, owner_id)
+  VALUES ($chargeId, $amount, $currency, $activationDate, $type, $categoryId, $ownerId)
   RETURNING *`;
 
 const deleteDepreciationRecord = sql<IDeleteDepreciationRecordQuery>`
@@ -96,7 +97,10 @@ const deleteDepreciationRecordByChargeId = sql<IDeleteDepreciationRecordByCharge
   global: true,
 })
 export class DepreciationProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+  ) {}
 
   private async batchDepreciationRecordsByIds(depreciationRecordIds: readonly string[]) {
     const records = await getDepreciationRecordsByIds.run(
@@ -145,7 +149,7 @@ export class DepreciationProvider {
 
   public insertDepreciationRecord(params: IInsertDepreciationRecordParams) {
     this.clearCache();
-    return insertDepreciationRecord.run(params, this.db);
+    return insertDepreciationRecord.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public deleteDepreciationRecord(params: IDeleteDepreciationRecordParams) {
