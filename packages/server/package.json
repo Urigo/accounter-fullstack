@@ -2,9 +2,19 @@
   "name": "@accounter/server",
   "version": "0.0.10",
   "type": "module",
-  "description": "",
+  "description": "Accounter GraphQL server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/server#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
-  "main": "./src/index.mts",
+  "main": "dist/server/src/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
     "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",

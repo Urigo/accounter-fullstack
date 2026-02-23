@@ -2,7 +2,17 @@
   "name": "@accounter/modern-poalim-scraper",
   "version": "0.10.4",
   "type": "module",
-  "description": "",
+  "description": "Modern scraper for Israeli banks (Hapoalim, Isracard, Max)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/modern-poalim-scraper"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/modern-poalim-scraper#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
