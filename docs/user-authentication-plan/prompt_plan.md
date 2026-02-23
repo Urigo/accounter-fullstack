@@ -2368,30 +2368,27 @@ DEPLOYMENT: Can run during business hours (non-blocking). Monitor:
 
 ``
 
-CONTEXT: The pilot RLS on charges was successful (Step 3.2), and all tables now have indexed
-owner_id columns with foreign keys to businesses. Time to enable RLS across all remaining tenant
-tables.
+CONTEXT: All tables now have indexed owner_id columns with foreign keys to businesses. Time to
+enable RLS across all tenant tables.
 
 TASK: Enable RLS on all tenant tables using owner_id column with comprehensive policies.
 
 REQUIREMENTS:
 
-1. Create migration: `packages/migrations/src/2026-02-16T10-00-00.enable-rls-all-tables.ts`
+1. Create migration: `packages/migrations/src/2026-02-23T09-00-00.enable-rls-all-tables.ts`
 
-2. Enable RLS in batches for safety (charges already done in Step 3.2):
+2. Enable RLS in batches for safety:
 
-   **Batch 1** (already complete):
-   - charges (RLS enabled in Step 3.2)
-
-   **Batch 2: Core business tables**
+   **Batch 1: Core business tables**
 
    ```sql
+   ALTER TABLE accounter_schema.charges ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.documents ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.transactions ENABLE ROW LEVEL SECURITY;
    ALTER TABLE accounter_schema.ledger_records ENABLE ROW LEVEL SECURITY;
    ```
 
-   **Batch 3: Financial tables**
+   **Batch 2: Financial tables**
 
    ```sql
    ALTER TABLE accounter_schema.salaries ENABLE ROW LEVEL SECURITY;
@@ -2400,7 +2397,7 @@ REQUIREMENTS:
    ALTER TABLE accounter_schema.dividends ENABLE ROW LEVEL SECURITY;
    ```
 
-   **Batch 4: Supporting tables**
+   **Batch 3: Supporting tables**
 
    ```sql
    ALTER TABLE accounter_schema.clients ENABLE ROW LEVEL SECURITY;
