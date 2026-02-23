@@ -2774,7 +2774,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/server
-   npm install auth0
+   yarn add auth0
    ```
 
 2. Create service: `packages/server/src/modules/auth/services/auth0-management.service.ts`
