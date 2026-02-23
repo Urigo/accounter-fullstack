@@ -155,6 +155,7 @@ import migration_2026_02_18T16_00_00_owner_id_not_null from './actions/2026-02-1
 import migration_2026_02_19T14_00_00_add_owner_id_indexes from './actions/2026-02-19T14-00-00.add-owner-id-indexes.js';
 import migration_2026_02_19T17_00_00_update_scraper_triggers_according_to_rls_restrictions from './actions/2026-02-19T17-00-00.update-scraper-triggers-according-to-rls-restrictions.js';
 import migration_2026_02_22T19_00_00_fix_overlapping_parallel_function_updates from './actions/2026-02-22T19-00-00.fix-overlapping-parallel-function-updates.js';
+import migration_2026_02_23T09_00_00_enable_rls_all_tables from './actions/2026-02-23T09-00-00.enable-rls-all-tables.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -314,6 +315,7 @@ export const MIGRATIONS = [
   migration_2026_02_19T14_00_00_add_owner_id_indexes,
   migration_2026_02_19T17_00_00_update_scraper_triggers_according_to_rls_restrictions,
   migration_2026_02_22T19_00_00_fix_overlapping_parallel_function_updates,
+  migration_2026_02_23T09_00_00_enable_rls_all_tables,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
