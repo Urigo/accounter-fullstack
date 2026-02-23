@@ -74,7 +74,6 @@ export default gql`
 
   extend input UpdateChargeInput {
     counterpartyId: UUID
-    ownerId: UUID
   }
 
   extend interface Transaction {

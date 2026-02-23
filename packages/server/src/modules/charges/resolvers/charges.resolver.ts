@@ -275,7 +275,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         type: fields.type,
         isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
-        ownerId: fields.ownerId,
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
         optionalVAT: fields.optionalVAT,
@@ -415,7 +414,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
         type: fields.type,
         isProperty: fields.isDecreasedVAT,
         isInvoicePaymentDifferentCurrency: fields.isInvoicePaymentDifferentCurrency,
-        ownerId: fields.ownerId,
         userDescription: fields.userDescription,
         taxCategoryId: fields.defaultTaxCategoryID,
         optionalVAT: fields.optionalVAT,
@@ -511,7 +509,6 @@ export const chargesResolvers: ChargesModule.Resolvers &
             isInvoicePaymentDifferentCurrency: fields?.isInvoicePaymentDifferentCurrency,
             optionalVAT: fields?.optionalVAT,
             optionalDocuments: fields?.optionalDocuments,
-            ownerId: fields?.ownerId,
             userDescription: fields?.userDescription,
             chargeId: baseChargeID,
           };

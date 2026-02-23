@@ -76,10 +76,6 @@ const updateLedgerRecord = sql<IUpdateLedgerRecordQuery>`
     $chargeId,
     charge_id
   ),
-  owner_id = COALESCE(
-    $ownerId,
-    owner_id
-  ),
   credit_entity1 = COALESCE(
     $creditEntity1,
     credit_entity1

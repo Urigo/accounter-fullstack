@@ -33,22 +33,22 @@ const getTransactionsByMissingRequiredInfo = sql<IGetTransactionsByMissingRequir
     WHERE business_id IS NULL;`;
 
 const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
-  SELECT t.*
-  FROM accounter_schema.transactions t
+  SELECT *
+  FROM accounter_schema.transactions
   WHERE
-    ($isIDs = 0 OR t.id IN $$IDs)
-    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
-    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
-    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
-    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
-    AND ($isBusinessIDs = 0 OR t.business_id IN $$businessIDs)
-    AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
+    ($isIDs = 0 OR id IN $$IDs)
+    AND ($fromEventDate ::TEXT IS NULL OR event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
+    AND ($toEventDate ::TEXT IS NULL OR event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
+    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
+    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(debit_date_override, debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    AND ($isBusinessIDs = 0 OR business_id IN $$businessIDs)
+    AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;
 `;
 
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
-    SELECT t.id, t.account_id, t.charge_id, t.source_id, t.source_description, t.currency, t.event_date, t.debit_date, t.amount, t.current_balance, t.business_id, t.created_at, t.updated_at, t.debit_date_override, t.is_fee, t.source_reference, t.source_origin, t.counter_account, t.debit_timestamp, t.currency_rate, t.origin_key, t.owner_id
-    FROM accounter_schema.transactions t
+    SELECT *
+    FROM accounter_schema.transactions
     WHERE (CASE WHEN $withMissingInfo IS TRUE THEN
       business_id IS NULL
    ELSE
@@ -57,7 +57,7 @@ const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
       AND (
         (source_description IS NOT NULL AND source_description <> '' AND source_description = $details)
         OR (counter_account IS NOT NULL AND counter_account <> '' AND counter_account = $counterAccount)
-      ) AND t.owner_id = $ownerId;`;
+      ) AND owner_id = $ownerId;`;
 
 const replaceTransactionsChargeId = sql<IReplaceTransactionsChargeIdQuery>`
   UPDATE accounter_schema.transactions
@@ -120,9 +120,10 @@ export class TransactionsProvider {
   constructor(private db: TenantAwareDBClient) {}
 
   private async batchTransactionsByIds(ids: readonly string[]) {
+    const transactionIds = Array.from(new Set(ids));
     const transactions = await getTransactionsByIds.run(
       {
-        transactionIds: ids,
+        transactionIds,
       },
       this.db,
     );
