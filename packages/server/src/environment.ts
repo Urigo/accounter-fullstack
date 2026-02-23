@@ -139,11 +139,11 @@ const DeelModel = zod.union([
 
 const Auth0Model = zod.union([
   zod.object({
-    AUTH0_DOMAIN: zod.string(),
-    AUTH0_AUDIENCE: zod.string(),
-    AUTH0_CLIENT_ID: zod.string(),
-    AUTH0_CLIENT_SECRET: zod.string(),
-    AUTH0_MANAGEMENT_AUDIENCE: zod.string(),
+    AUTH0_DOMAIN: zod.string().min(1),
+    AUTH0_AUDIENCE: zod.string().min(1),
+    AUTH0_CLIENT_ID: zod.string().min(1),
+    AUTH0_CLIENT_SECRET: zod.string().min(1),
+    AUTH0_MANAGEMENT_AUDIENCE: zod.string().min(1),
   }),
   // If no Auth0 variables are provided, validation passes (optional configuration)
   // We use a looser object check here because process.env is always an object
