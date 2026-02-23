@@ -495,7 +495,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       const errors: string[] = [];
 
       await Promise.all(
-        generateDocumentsInfo.map(document => {
+        generateDocumentsInfo.map(async document =>
           executeDocumentIssue(
             injector,
             defaultAdminBusinessId,
@@ -507,8 +507,8 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
           ).catch(e => {
             console.error(e);
             errors.push(`${document.client?.name ?? document.client?.id}: ${e.message}`);
-          });
-        }),
+          }),
+        ),
       );
 
       return {
