@@ -72,7 +72,7 @@ jobs:
 
       - name: release / pull_request (stable)
         id: changesets-stable
-        uses: dotansimha/changesets-action@069996e9be15531bd598272996fa23853d61590e
+        uses: dotansimha/changesets-action@2eb8e159b258a2144d8553f527fa015a8893dfe2
         with:
           publish: 'yarn changeset publish'
           version: 'yarn changeset version'
