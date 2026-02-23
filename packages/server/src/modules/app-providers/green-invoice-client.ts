@@ -247,7 +247,7 @@ export class GreenInvoiceClientProvider {
     return sdk.closeDocument_mutation({ id: documentId }).then(res => res.closeDocument);
   }
 
-  public async invalidateDocument(documentId: string) {
+  public invalidateDocument(documentId: string) {
     this.documentLoader.clear(documentId);
   }
 
