@@ -3,6 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import postgres, { type QueryResultBase, type QueryResultRow } from 'pg';
 import 'reflect-metadata';
 
+let QUERY_COUNTER = 0;
+
 type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[]; rowCount: number }; // NOTE: rowCount added to workaround pgTyped issue
 
 /**
@@ -71,9 +73,20 @@ export class DBProvider {
     if (!this.pool) {
       throw new Error('DB connection not initialized');
     }
-    return this.pool
-      .query(queryStatement, values)
-      .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
+    const queryId = ++QUERY_COUNTER;
+    const start = Date.now();
+    console.log(`[DBProvider] Query #${queryId} starting: ${queryStatement.slice(-100)}`);
+
+    try {
+      const result = await this.pool.query(queryStatement, values);
+      const duration = Date.now() - start;
+      console.log(`[DBProvider] Query #${queryId} finished in ${duration}ms`);
+      return { ...result, rowCount: result.rowCount ?? 0 };
+    } catch (error) {
+      const duration = Date.now() - start;
+      console.error(`[DBProvider] Query #${queryId} failed in ${duration}ms:`, error);
+      throw error;
+    }
   }
 
   /**
