@@ -26,6 +26,12 @@ async function main() {
     max: env.postgres.max, // maximum number of clients in the pool
   });
 
+  if (env.auth0) {
+    console.log(`Auth0 configured: ${env.auth0.domain}`);
+  } else {
+    console.log('Auth0 not configured');
+  }
+
   const application = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
