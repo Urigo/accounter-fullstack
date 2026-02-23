@@ -75,7 +75,11 @@ export class Auth0ManagementService {
     const special = '!@#$%^&*()_+~`|}{[]\\:;?><,./-=';
     const all = lower + upper + numbers + special;
 
-    const pick = (str: string) => str[Math.floor(Math.random() * str.length)];
+    const pick = (str: string) => {
+      const randomValues = new Uint32Array(1);
+      globalThis.crypto.getRandomValues(randomValues);
+      return str[randomValues[0] % str.length];
+    };
 
     const password =
       pick(lower) +
