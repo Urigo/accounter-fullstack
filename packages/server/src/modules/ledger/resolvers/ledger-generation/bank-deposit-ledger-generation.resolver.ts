@@ -133,10 +133,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
       const businessTaxCategory = await injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByBusinessAndOwnerIDsLoader.load({
-          businessId: transactionBusinessId,
-          ownerId: charge.owner_id,
-        });
+        .taxCategoryByBusinessIDsLoader.load(transactionBusinessId);
       if (!businessTaxCategory) {
         errors.add(`Business ID="${transactionBusinessId}" is missing tax category`);
         return;

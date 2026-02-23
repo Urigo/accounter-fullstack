@@ -185,7 +185,7 @@ export function createLedgerTestContext(options: {
       }
       case BusinessTripsProvider:
         return new BusinessTripsProvider(
-          dbProvider,
+          tenantAwareDB,
           contextRef.current as unknown as GraphQLModules.Context,
         );
       case ChargeSpreadProvider:

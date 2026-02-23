@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   BusinessTripProto,
   IDeleteChargeBusinessTripQuery,
@@ -115,12 +115,12 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 })
 export class BusinessTripsProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   public getAllBusinessTrips() {
-    return getAllBusinessTrips.run(undefined, this.dbProvider) as Promise<BusinessTripProto[]>;
+    return getAllBusinessTrips.run(undefined, this.db) as Promise<BusinessTripProto[]>;
   }
 
   private async batchBusinessTripsByIds(businessTripsIds: readonly string[]) {
@@ -128,7 +128,7 @@ export class BusinessTripsProvider {
       {
         businessTripsIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return businessTripsIds.map(id => businessTrips.find(record => record.id === id));
   }
@@ -143,7 +143,7 @@ export class BusinessTripsProvider {
       {
         chargeIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return chargeIds.map(id => businessTrips.find(record => record.charge_id === id));
   }
@@ -157,7 +157,7 @@ export class BusinessTripsProvider {
       {
         businessTripsIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return businessTripsIds.map(tripId =>
       businessTripsChargeIds
@@ -171,7 +171,7 @@ export class BusinessTripsProvider {
   );
 
   public getBusinessTripsByDates(params: IGetBusinessTripsByDatesParams) {
-    return getBusinessTripsByDates.run(params, this.dbProvider);
+    return getBusinessTripsByDates.run(params, this.db);
   }
 
   public async updateChargeBusinessTrip(chargeId: string, businessTripId: string | null) {
@@ -186,10 +186,10 @@ export class BusinessTripsProvider {
       this.getChargeIdsByBusinessTripIdLoader.clear(businessTripId);
       return updateChargeBusinessTrip.run(
         reassureOwnerIdExists({ chargeId, businessTripId, ownerId: null }, this.context),
-        this.dbProvider,
+        this.db,
       );
     }
-    return deleteChargeBusinessTrip.run({ chargeId }, this.dbProvider);
+    return deleteChargeBusinessTrip.run({ chargeId }, this.db);
   }
 
   public async updateBusinessTrip(params: IUpdateBusinessTripParams) {
@@ -200,11 +200,11 @@ export class BusinessTripsProvider {
       }
       this.getBusinessTripsByIdLoader.clear(params.businessTripId);
     }
-    return updateBusinessTrip.run(params, this.dbProvider);
+    return updateBusinessTrip.run(params, this.db);
   }
 
   public insertBusinessTrip(params: IInsertBusinessTripParams) {
-    return insertBusinessTrip.run(reassureOwnerIdExists(params, this.context), this.dbProvider);
+    return insertBusinessTrip.run(reassureOwnerIdExists(params, this.context), this.db);
   }
 
   public async updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
@@ -215,7 +215,7 @@ export class BusinessTripsProvider {
       }
       this.getBusinessTripsByIdLoader.clear(params.businessTripId);
     }
-    return updateAccountantApproval.run(params, this.dbProvider);
+    return updateAccountantApproval.run(params, this.db);
   }
 
   public clearCache() {

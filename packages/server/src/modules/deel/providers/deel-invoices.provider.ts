@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetChargeIdsByPaymentIdsQuery,
   IGetInvoicesByIdsQuery,
@@ -137,7 +137,7 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
 })
 export class DeelInvoicesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
@@ -145,7 +145,7 @@ export class DeelInvoicesProvider {
     const times = issueDates.map(date => date.getTime());
     const from = new Date(Math.min(...times));
     const to = new Date(Math.max(...times));
-    const records = await getInvoicesByIssueDates.run({ from, to }, this.dbProvider);
+    const records = await getInvoicesByIssueDates.run({ from, to }, this.db);
     return issueDates.map(date => {
       return records.filter(record => record.issued_at.getTime() === date.getTime());
     });
@@ -153,7 +153,7 @@ export class DeelInvoicesProvider {
 
   public async getInvoicesByIssueDates(from: Date, to: Date) {
     try {
-      return getInvoicesByIssueDates.run({ from, to }, this.dbProvider);
+      return getInvoicesByIssueDates.run({ from, to }, this.db);
     } catch (e) {
       const message = `Error getting Deel invoices by issue dates`;
       console.error(message, e);
@@ -166,7 +166,7 @@ export class DeelInvoicesProvider {
   );
 
   private async batchInvoicesByIds(ids: readonly string[]) {
-    const invoices = await getInvoicesByIds.run({ ids }, this.dbProvider);
+    const invoices = await getInvoicesByIds.run({ ids }, this.db);
     return ids.map(id => invoices.find(invoice => invoice.id === id));
   }
 
@@ -175,7 +175,7 @@ export class DeelInvoicesProvider {
   );
 
   private async batchChargeIdsByPaymentIds(paymentIds: readonly string[]) {
-    const matches = await getChargeIdsByPaymentIds.run({ paymentIds }, this.dbProvider);
+    const matches = await getChargeIdsByPaymentIds.run({ paymentIds }, this.db);
     return paymentIds.map(
       paymentId => matches.find(match => match.payment_id === paymentId)?.charge_id,
     );
@@ -187,7 +187,7 @@ export class DeelInvoicesProvider {
 
   public async getReceiptToCharge() {
     try {
-      const records = await getReceiptToCharge.run(undefined, this.dbProvider);
+      const records = await getReceiptToCharge.run(undefined, this.db);
       const receiptChargeMap = new Map<string, string>();
       for (const record of records) {
         if (record.charge_id) {
@@ -205,10 +205,7 @@ export class DeelInvoicesProvider {
   public async insertDeelInvoiceRecords(params: IInsertDeelInvoiceRecordsParams) {
     try {
       // invalidate cache
-      return insertDeelInvoiceRecords.run(
-        reassureOwnerIdExists(params, this.context),
-        this.dbProvider,
-      );
+      return insertDeelInvoiceRecords.run(reassureOwnerIdExists(params, this.context), this.db);
     } catch (e) {
       const message = `Error inserting Deel invoice`;
       console.error(message, e);

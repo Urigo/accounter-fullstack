@@ -257,10 +257,7 @@ export async function getChargeTaxCategoryId(
 
   const taxCategory = await injector
     .get(TaxCategoriesProvider)
-    .taxCategoryByBusinessAndOwnerIDsLoader.load({
-      businessId: mainBusinessId,
-      ownerId: charge.owner_id,
-    });
+    .taxCategoryByBusinessIDsLoader.load(mainBusinessId);
 
   return taxCategory?.id ?? null;
 }

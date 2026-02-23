@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
   IDeleteBusinessTripTravelAndSubsistenceExpenseQuery,
@@ -57,7 +57,7 @@ const deleteBusinessTripTravelAndSubsistenceExpense = sql<IDeleteBusinessTripTra
 })
 export class BusinessTripTravelAndSubsistenceExpensesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
@@ -70,7 +70,7 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
           isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
           businessTripIds,
         },
-        this.dbProvider,
+        this.db,
       );
     return businessTripIds.map(id =>
       businessTripsTravelAndSubsistenceExpenses.filter(record => record.business_trip_id === id),
@@ -89,7 +89,7 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
           isIds: expenseIds.length > 0 ? 1 : 0,
           expenseIds,
         },
-        this.dbProvider,
+        this.db,
       );
     return expenseIds.map(id =>
       businessTripsTravelAndSubsistenceExpenses.find(record => record.id === id),
@@ -106,7 +106,7 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }
-    return updateBusinessTripTravelAndSubsistenceExpense.run(params, this.dbProvider);
+    return updateBusinessTripTravelAndSubsistenceExpense.run(params, this.db);
   }
 
   public insertBusinessTripTravelAndSubsistenceExpense(
@@ -114,7 +114,7 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
   ) {
     return insertBusinessTripTravelAndSubsistenceExpense.run(
       reassureOwnerIdExists(params, this.context),
-      this.dbProvider,
+      this.db,
     );
   }
 
@@ -124,7 +124,7 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }
-    return deleteBusinessTripTravelAndSubsistenceExpense.run(params, this.dbProvider);
+    return deleteBusinessTripTravelAndSubsistenceExpense.run(params, this.db);
   }
 
   public async invalidateById(expenseId: string) {

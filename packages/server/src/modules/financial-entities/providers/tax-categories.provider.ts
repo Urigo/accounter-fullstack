@@ -10,7 +10,7 @@ import type {
   IDeleteTaxCategoryQuery,
   IGetAllTaxCategoriesQuery,
   IGetAllTaxCategoriesResult,
-  IGetTaxCategoryByBusinessAndOwnerIDsQuery,
+  IGetTaxCategoryByBusinessIDsQuery,
   IGetTaxCategoryByFinancialAccountIdsAndCurrenciesQuery,
   IGetTaxCategoryByFinancialAccountIdsQuery,
   IGetTaxCategoryByFinancialAccountOwnerIdsQuery,
@@ -27,15 +27,14 @@ import type {
   IUpdateTaxCategoryQuery,
 } from '../types.js';
 
-const getTaxCategoryByBusinessAndOwnerIDs = sql<IGetTaxCategoryByBusinessAndOwnerIDsQuery>`
+const getTaxCategoryByBusinessIDs = sql<IGetTaxCategoryByBusinessIDsQuery>`
 SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, tcm.business_id, tcm.owner_id
 FROM accounter_schema.tax_categories tc
 LEFT JOIN accounter_schema.financial_entities fe
   ON fe.id = tc.id
 LEFT JOIN accounter_schema.business_tax_category_match tcm
   ON tcm.tax_category_id = tc.id
-WHERE tcm.business_id IN $$BusinessIds
-AND tcm.owner_id IN $$OwnerIds;`;
+WHERE tcm.business_id IN $$BusinessIds;`;
 
 const getTaxCategoryBySortCodes = sql<IGetTaxCategoryBySortCodesQuery>`
 SELECT fe.id, fe.name, fe.sort_code, fe.type, fe.created_at, fe.updated_at, fe.irs_code, fe.is_active, tc.hashavshevet_name, tc.tax_excluded, fe.owner_id
@@ -167,30 +166,27 @@ export class TaxCategoriesProvider {
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
-  private async batchTaxCategoryByBusinessAndOwnerIDs(
-    entries: readonly { businessId: string; ownerId: string }[],
+  private async batchTaxCategoryByBusinessIDs(
+    businessIds: readonly string[],
   ): Promise<(IGetAllTaxCategoriesResult | undefined)[]> {
-    const BusinessIdsSet = new Set<string | null>(entries.map(e => e.businessId));
-    const OwnerIdsSet = new Set<string | null>(entries.map(e => e.ownerId));
+    const BusinessIdsSet = new Set<string | null>(businessIds);
 
-    const taxCategories = await getTaxCategoryByBusinessAndOwnerIDs.run(
+    const taxCategories = await getTaxCategoryByBusinessIDs.run(
       {
         BusinessIds: BusinessIdsSet.size === 0 ? [null] : Array.from(BusinessIdsSet),
-        OwnerIds: OwnerIdsSet.size === 0 ? [null] : Array.from(OwnerIdsSet),
       },
       this.db,
     );
-    return entries.map(
-      ({ businessId, ownerId }) =>
-        taxCategories.find(
-          tc => tc.business_id === businessId && tc.owner_id === ownerId,
-        ) as unknown as IGetAllTaxCategoriesResult | undefined, // TODO: temporary type casting, should be fixed later
+    return businessIds.map(
+      businessId =>
+        taxCategories.find(tc => tc.business_id === businessId) as unknown as
+          | IGetAllTaxCategoriesResult
+          | undefined, // TODO: temporary type casting, should be fixed later
     );
   }
 
-  public taxCategoryByBusinessAndOwnerIDsLoader = new DataLoader(
-    (keys: readonly { businessId: string; ownerId: string }[]) =>
-      this.batchTaxCategoryByBusinessAndOwnerIDs(keys),
+  public taxCategoryByBusinessIDsLoader = new DataLoader((businessIds: readonly string[]) =>
+    this.batchTaxCategoryByBusinessIDs(businessIds),
   );
 
   private async batchTaxCategoryByIDs(
@@ -250,6 +246,9 @@ export class TaxCategoriesProvider {
   public taxCategoryByFinancialAccountIdsAndCurrenciesLoader = new DataLoader(
     (keys: readonly { financialAccountId: string; currency: Currency }[]) =>
       this.batchTaxCategoryByFinancialAccountIdsAndCurrencies(keys),
+    {
+      cacheKeyFn: key => `${key.financialAccountId}-${key.currency}`,
+    },
   );
 
   private async batchTaxCategoryByFinancialAccountOwnerIds(ownerIds: readonly string[]) {
@@ -359,7 +358,7 @@ export class TaxCategoriesProvider {
   }
 
   public invalidateTaxCategoryById(taxCategoryId: string) {
-    this.taxCategoryByBusinessAndOwnerIDsLoader.clearAll();
+    this.taxCategoryByBusinessIDsLoader.clearAll();
     this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
     this.taxCategoryByFinancialAccountIdsLoader.clearAll();
     this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
@@ -370,7 +369,7 @@ export class TaxCategoriesProvider {
   public clearCache() {
     this.taxCategoryByIdLoader.clearAll();
     this.taxCategoriesBySortCodeLoader.clearAll();
-    this.taxCategoryByBusinessAndOwnerIDsLoader.clearAll();
+    this.taxCategoryByBusinessIDsLoader.clearAll();
     this.taxCategoryByFinancialAccountIdsAndCurrenciesLoader.clearAll();
     this.taxCategoryByFinancialAccountIdsLoader.clearAll();
     this.taxCategoryByFinancialAccountOwnerIdsLoader.clearAll();
