@@ -12,6 +12,7 @@ import { DeelClientProvider } from './modules/app-providers/deel/deel-client.pro
 import { GoogleDriveProvider } from './modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
+import { authModule } from './modules/auth/index.js';
 import { bankDepositsModule } from './modules/bank-deposits/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesMatcherModule } from './modules/charges-matcher/index.js';
@@ -87,6 +88,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       contractsModule,
       bankDepositsModule,
       adminContextModule,
+      authModule,
     ],
     providers: [
       {
