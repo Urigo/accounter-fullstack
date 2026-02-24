@@ -137,6 +137,10 @@ const DeelModel = zod.union([
   zod.void(),
 ]);
 
+const GeneralModel = zod.object({
+  FRONTEND_URL: zod.string().url().optional(),
+});
+
 const Auth0Model = zod.union([
   zod.object({
     AUTH0_DOMAIN: zod.string().min(1),
@@ -168,6 +172,7 @@ const configs = {
   gmail: GmailModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
+  general: GeneralModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -200,6 +205,7 @@ const googleDrive = extractConfig(configs.googleDrive);
 const gmail = extractConfig(configs.gmail);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
+const general = extractConfig(configs.general);
 
 export const env = {
   postgres: {
@@ -265,4 +271,7 @@ export const env = {
         managementAudience: auth0.AUTH0_MANAGEMENT_AUDIENCE,
       }
     : undefined,
+  general: {
+    frontendUrl: general?.FRONTEND_URL,
+  },
 } as const;
