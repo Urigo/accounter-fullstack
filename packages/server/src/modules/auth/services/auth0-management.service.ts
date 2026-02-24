@@ -1,6 +1,7 @@
 import { ManagementClient } from 'auth0';
-import { Injectable, Scope } from 'graphql-modules';
-import { env } from '../../../environment.js';
+import { Inject, Injectable, Scope } from 'graphql-modules';
+import { ENVIRONMENT } from '../../../shared/tokens.js';
+import type { Environment } from '../../../shared/types/index.js';
 
 @Injectable({
   scope: Scope.Singleton,
@@ -9,17 +10,17 @@ import { env } from '../../../environment.js';
 export class Auth0ManagementService {
   private client: ManagementClient | undefined;
 
-  constructor() {
+  constructor(@Inject(ENVIRONMENT) private env: Environment) {
     this.initializeClient();
   }
 
   private initializeClient() {
-    if (env.auth0) {
+    if (this.env.auth0) {
       this.client = new ManagementClient({
-        domain: env.auth0.domain,
-        clientId: env.auth0.clientId,
-        clientSecret: env.auth0.clientSecret,
-        audience: env.auth0.managementAudience,
+        domain: this.env.auth0.domain,
+        clientId: this.env.auth0.clientId,
+        clientSecret: this.env.auth0.clientSecret,
+        audience: this.env.auth0.managementAudience,
       });
     } else {
       console.warn('Auth0 not configured, Auth0ManagementService disabled');
@@ -33,22 +34,24 @@ export class Auth0ManagementService {
     return this.client;
   }
 
-  async createUser(email: string): Promise<string> {
+  async createBlockedUser(email: string): Promise<string> {
     const client = this.getClient();
     const temporaryPassword = this.generateTemporaryPassword();
 
     try {
+      // Create user with blocked status (prevents login until invitation accepted)
       const user = await client.users.create({
         connection: 'Username-Password-Authentication',
         email,
-        password: temporaryPassword,
+        password: temporaryPassword, // User will reset via invitation
         email_verified: false,
         blocked: true,
         app_metadata: {
-          registrated_by: 'accounter',
+          registered_by: 'accounter',
         },
       });
 
+      // Returns Auth0 user ID (e.g., "auth0|507f...")
       return user.data.user_id;
     } catch (error) {
       console.error('Failed to create Auth0 user:', error);
@@ -56,13 +59,41 @@ export class Auth0ManagementService {
     }
   }
 
-  async deleteUser(userId: string): Promise<void> {
+  async unblockUser(auth0UserId: string): Promise<void> {
     const client = this.getClient();
     try {
-      await client.users.delete(userId);
+      await client.users.update(auth0UserId, { blocked: false });
     } catch (error) {
-      console.error(`Failed to delete Auth0 user ${userId}:`, error);
+      console.error(`Failed to unblock Auth0 user ${auth0UserId}:`, error);
+      throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`);
+    }
+  }
+
+  async deleteUser(auth0UserId: string): Promise<void> {
+    const client = this.getClient();
+    try {
+      // Cleanup for expired invitations
+      await client.users.delete(auth0UserId);
+    } catch (error) {
+      console.error(`Failed to delete Auth0 user ${auth0UserId}:`, error);
       throw new Error(`Failed to delete Auth0 user: ${(error as Error).message}`);
+    }
+  }
+
+  async sendPasswordResetEmail(auth0UserId: string): Promise<string> {
+    const client = this.getClient();
+    try {
+      const { data } = await client.tickets.changePassword({
+        user_id: auth0UserId,
+        mark_email_as_verified: true, // Mark verified only after password change
+        result_url: this.env.general.frontendUrl
+          ? `${this.env.general.frontendUrl}/login`
+          : undefined,
+      });
+      return data.ticket;
+    } catch (error) {
+      console.error('Failed to trigger password change', error);
+      throw new Error(`Failed to trigger password change: ${(error as Error).message}`);
     }
   }
 
