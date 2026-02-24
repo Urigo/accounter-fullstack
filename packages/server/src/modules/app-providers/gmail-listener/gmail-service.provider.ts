@@ -2,12 +2,13 @@ import { google, type gmail_v1 } from 'googleapis';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
+import { sql } from '@pgtyped/runtime';
 import type { EmailAttachmentType } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
-import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import type { accountant_status, IGenerateChargeQuery } from '../../charges/types.js';
 import {
   getDocumentFromUrlsAndOcrData,
   type OcrData,
@@ -17,10 +18,26 @@ import {
   EmailListenerConfig,
   suggestionDataSchema,
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import type { IGetBusinessByEmailQuery } from '../../financial-entities/types.js';
 import { AnthropicProvider } from '../anthropic.js';
 import { CloudinaryProvider } from '../cloudinary.js';
+import { DBProvider } from '../db.provider.js';
 import { troubleshootOAuth } from './config.js';
+
+const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      USING (id)
+    WHERE
+      suggestion_data->'emails' ? $email::text
+    LIMIT 1;`;
+
+const generateCharge = sql<IGenerateChargeQuery>`
+      INSERT INTO accounter_schema.charges (owner_id, type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag, is_property)
+      VALUES ($ownerId, $type, $accountantStatus, $userDescription, $taxCategoryId, $optionalVAT, $optionalDocuments, $isProperty)
+      RETURNING *;
+    `;
 
 type EmailDocument = {
   filename?: string;
@@ -81,9 +98,8 @@ export class GmailServiceProvider {
     @Inject(ENVIRONMENT) private env: Environment,
     private cloudinaryProvider: CloudinaryProvider,
     private anthropicProvider: AnthropicProvider,
-    private chargesProvider: ChargesProvider,
+    private db: DBProvider,
     private documentsProvider: DocumentsProvider,
-    private businessesProvider: BusinessesProvider,
   ) {
     this.gmailEnv = this.env.gmail!;
     this.targetLabel = this.gmailEnv.labelPath;
@@ -635,7 +651,7 @@ export class GmailServiceProvider {
         });
 
         const issuerEmail = this.getIssuerEmail(emailData);
-        const business = await this.businessesProvider.getBusinessByEmail(issuerEmail);
+        const [business] = await getBusinessByEmail.run({ email: issuerEmail }, this.db);
 
         let listenerConfig: EmailListenerConfig = {};
         if (business?.suggestion_data) {
@@ -699,10 +715,18 @@ export class GmailServiceProvider {
         }
 
         const userDescription = `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`;
-        const charge = await this.chargesProvider
-          .generateCharge({
-            ownerId: this.env.authorization.adminBusinessId,
-            userDescription,
+        const fullParams = {
+          ownerId: this.env.authorization.adminBusinessId,
+          userDescription,
+          isProperty: false,
+          optionalVAT: false,
+          optionalDocuments: false,
+          accountantStatus: 'UNAPPROVED' as accountant_status,
+        };
+        const charge = await generateCharge
+          .run(fullParams, this.db)
+          .then(([newCharge]) => {
+            return newCharge;
           })
           .catch(e => {
             throw new Error(`Error generating charge for email id=${message.id}: ${e}`);
