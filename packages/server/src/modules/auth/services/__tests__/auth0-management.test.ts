@@ -1,40 +1,51 @@
 import { ManagementClient } from 'auth0';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Auth0ManagementService } from '../auth0-management.service.js';
+import type { Environment } from '../../../../shared/types/index.js';
 
 // Mock auth0 library
 vi.mock('auth0', () => {
   const users = {
     create: vi.fn(),
     delete: vi.fn(),
+    update: vi.fn(),
+  };
+  const tickets = {
+    changePassword: vi.fn(),
   };
   const ManagementClient = vi.fn(function() {
     return {
         users,
+        tickets,
     }
 });
   return { ManagementClient };
 });
 
-// Mock environment
-vi.mock('../../../../environment.js', () => ({
-  env: {
-    auth0: {
-      domain: 'test-domain',
-      clientId: 'test-client-id',
-      clientSecret: 'test-client-secret',
-      managementAudience: 'test-audience',
-    },
-  },
-}));
-
 describe('Auth0ManagementService', () => {
   let service: Auth0ManagementService;
   let mockClient: any;
+  let mockEnv: Environment;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new Auth0ManagementService();
+    
+    // Create mock environment
+    mockEnv = {
+      auth0: {
+        domain: 'test-domain',
+        clientId: 'test-client-id',
+        clientSecret: 'test-client-secret',
+        audience: 'test-audience',
+        managementAudience: 'test-management-audience',
+      },
+      general: {
+        frontendUrl: 'http://localhost:3000',
+      },
+      // minimal mock
+    } as any;
+
+    service = new Auth0ManagementService(mockEnv);
     // Get the instance of the mocked client
     mockClient = (ManagementClient as any).mock.results[0].value;
   });
@@ -48,7 +59,7 @@ describe('Auth0ManagementService', () => {
       domain: 'test-domain',
       clientId: 'test-client-id',
       clientSecret: 'test-client-secret',
-      audience: 'test-audience',
+      audience: 'test-management-audience',
     });
   });
 
@@ -62,7 +73,7 @@ describe('Auth0ManagementService', () => {
       },
     });
 
-    const userId = await service.createUser(email);
+    const userId = await service.createBlockedUser(email);
 
     expect(userId).toBe(mockUserId);
     expect(mockClient.users.create).toHaveBeenCalledWith(
@@ -72,7 +83,7 @@ describe('Auth0ManagementService', () => {
         blocked: true,
         email_verified: false,
         app_metadata: {
-            registrated_by: 'accounter',
+            registered_by: 'accounter',
         },
       }),
     );
@@ -88,6 +99,18 @@ describe('Auth0ManagementService', () => {
     expect(/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password)).toBe(true);
   });
 
+  it('should unblock a user', async () => {
+    const userId = 'auth0|123456';
+    mockClient.users.update.mockResolvedValue({});
+
+    await service.unblockUser(userId);
+
+    expect(mockClient.users.update).toHaveBeenCalledWith(
+      userId,
+      { blocked: false }
+    );
+  });
+
   it('should delete a user', async () => {
     const userId = 'auth0|123456';
     
@@ -98,9 +121,38 @@ describe('Auth0ManagementService', () => {
     expect(mockClient.users.delete).toHaveBeenCalledWith(userId);
   });
 
+  it('should send password reset email (trigger ticket)', async () => {
+    const userId = 'auth0|123456';
+    const mockTicket = 'https://auth0.com/ticket';
+    
+    mockClient.tickets.changePassword.mockResolvedValue({
+      data: { ticket: mockTicket }
+    });
+
+    const ticket = await service.sendPasswordResetEmail(userId);
+
+    // Should return the ticket URL
+    expect(ticket).toBe(mockTicket);
+
+    // Should NOT assume verified before reset
+    expect(mockClient.users.update).not.toHaveBeenCalledWith(
+      { id: userId },
+      { email_verified: true }
+    );
+
+    // Should trigger password change with mark_email_as_verified: true
+    expect(mockClient.tickets.changePassword).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: userId,
+        mark_email_as_verified: true,
+        result_url: 'http://localhost:3000/login',
+      })
+    );
+  });
+
   it('should throw error if creation fails', async () => {
     mockClient.users.create.mockRejectedValue(new Error('Auth0 Error'));
 
-    await expect(service.createUser('fail@test.com')).rejects.toThrow('Failed to create Auth0 user: Auth0 Error');
+    await expect(service.createBlockedUser('fail@test.com')).rejects.toThrow('Failed to create Auth0 user: Auth0 Error');
   });
 });
