@@ -97,10 +97,7 @@ export async function getDeelEmployeeId(
     // get employee tax category
     const taxCategoryId = await context.injector
       .get(TaxCategoriesProvider)
-      .taxCategoryByBusinessAndOwnerIDsLoader.load({
-        businessId: employeeId,
-        ownerId: context.adminContext.defaultAdminBusinessId,
-      })
+      .taxCategoryByBusinessIDsLoader.load(employeeId)
       .then(taxCategory => taxCategory?.id);
     let newEntry: LedgerProto;
     if (isDeelCreditor) {

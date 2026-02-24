@@ -4,7 +4,7 @@ export default gql`
   extend type Query {
     taxCategories: [TaxCategory!]! @auth(role: ACCOUNTANT)
     taxCategory(id: UUID!): TaxCategory! @auth(role: ACCOUNTANT)
-    taxCategoryByBusinessId(businessId: UUID!, ownerId: UUID!): TaxCategory @auth(role: ACCOUNTANT) # TODO: get owner from server context
+    taxCategoryByBusinessId(businessId: UUID!): TaxCategory @auth(role: ACCOUNTANT)
   }
 
   extend interface Charge {

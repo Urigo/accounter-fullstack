@@ -33,10 +33,6 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
     $name,
     name
   ),
-  owner_id = COALESCE(
-    $ownerId,
-    owner_id
-  ),
   sort_code = COALESCE(
     $sortCode,
     sort_code

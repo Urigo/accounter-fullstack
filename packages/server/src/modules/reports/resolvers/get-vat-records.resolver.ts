@@ -137,9 +137,9 @@ export const getVatRecords = async (
 
       // filter business linked to document
       const counterpartyId =
-        doc.creditor_id === charge.owner_id
+        doc.creditor_id === doc.owner_id
           ? doc.debtor_id
-          : doc.debtor_id === charge.owner_id
+          : doc.debtor_id === doc.owner_id
             ? doc.creditor_id
             : null;
       const business = businesses.find(business => business.id === counterpartyId);

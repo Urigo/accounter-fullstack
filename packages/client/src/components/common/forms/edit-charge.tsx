@@ -16,7 +16,6 @@ import {
   type MakeBoolean,
   type TimelessDateString,
 } from '../../../helpers/index.js';
-import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
@@ -43,7 +42,6 @@ type Props = {
 
 export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => {
   const { updateCharge, fetching: isChargeLoading } = useUpdateCharge();
-  const { selectableBusinesses: businesses, fetching: fetchingBusinesses } = useGetBusinesses();
   const [businessTrips, setBusinessTrips] = useState<Array<{ value: string; label: string }>>([]);
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
   const [similarChargesData, setSimilarChargesData] = useState<
@@ -192,28 +190,6 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
-              <Controller
-                name="ownerId"
-                control={control}
-                defaultValue={chargeInputData.ownerId}
-                rules={{
-                  required: 'Required',
-                  minLength: { value: 2, message: 'Minimum 2 characters' },
-                }}
-                render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    {...field}
-                    data={businesses}
-                    value={field.value}
-                    disabled={fetchingBusinesses}
-                    label="Owner"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                  />
                 )}
               />
               <Controller

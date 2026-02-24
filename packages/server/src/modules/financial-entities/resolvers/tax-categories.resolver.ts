@@ -28,10 +28,10 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       }
     },
     taxCategoryByBusinessId: async (_, args, { injector }) => {
-      const { businessId, ownerId } = args;
+      const { businessId } = args;
       return injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByBusinessAndOwnerIDsLoader.load({ businessId, ownerId })
+        .taxCategoryByBusinessIDsLoader.load(businessId)
         .then(res => res ?? null);
     },
   },
@@ -137,13 +137,10 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
   ForeignSecuritiesCharge: commonTaxChargeFields,
   CreditcardBankCharge: commonTaxChargeFields,
   LtdFinancialEntity: {
-    taxCategory: async (parent, _, { injector, adminContext: { defaultAdminBusinessId } }) => {
+    taxCategory: async (parent, _, { injector }) => {
       const taxCategory = await injector
         .get(TaxCategoriesProvider)
-        .taxCategoryByBusinessAndOwnerIDsLoader.load({
-          businessId: parent.id,
-          ownerId: defaultAdminBusinessId,
-        });
+        .taxCategoryByBusinessIDsLoader.load(parent.id);
       if (!taxCategory) {
         throw new GraphQLError(`Tax category for business ID="${parent.id}" not found`);
       }

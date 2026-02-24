@@ -119,8 +119,8 @@ export async function adjustTaxRecord(
       vatNumber: isLocal ? business.vat_number : undefined,
       isExpense:
         doc.type === DocumentType.CreditInvoice
-          ? doc.debtor_id !== charge.owner_id
-          : doc.debtor_id === charge.owner_id,
+          ? doc.debtor_id !== doc.owner_id
+          : doc.debtor_id === doc.owner_id,
       allocationNumber: doc.allocation_number,
       pcn874RecordType: business.pcn874_record_type_override ?? undefined,
     };

@@ -2,7 +2,7 @@ import DataLoader from 'dataloader';
 import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripCarRentalExpenseParams,
   IDeleteBusinessTripCarRentalExpenseQuery,
@@ -61,7 +61,7 @@ const deleteBusinessTripCarRentalExpense = sql<IDeleteBusinessTripCarRentalExpen
 })
 export class BusinessTripCarRentalExpensesProvider {
   constructor(
-    private dbProvider: DBProvider,
+    private db: TenantAwareDBClient,
     @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
@@ -74,7 +74,7 @@ export class BusinessTripCarRentalExpensesProvider {
           isBusinessTripIds: businessTripIds.length > 0 ? 1 : 0,
           businessTripIds,
         },
-        this.dbProvider,
+        this.db,
       );
     return businessTripIds.map(id =>
       businessTripsCarRentalExpenses.filter(record => record.business_trip_id === id),
@@ -91,7 +91,7 @@ export class BusinessTripCarRentalExpensesProvider {
         isIds: expenseIds.length > 0 ? 1 : 0,
         expenseIds,
       },
-      this.dbProvider,
+      this.db,
     );
     return expenseIds.map(id => businessTripsCarRentalExpenses.find(record => record.id === id));
   }
@@ -104,13 +104,13 @@ export class BusinessTripCarRentalExpensesProvider {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }
-    return updateBusinessTripCarRentalExpense.run(params, this.dbProvider);
+    return updateBusinessTripCarRentalExpense.run(params, this.db);
   }
 
   public insertBusinessTripCarRentalExpense(params: IInsertBusinessTripCarRentalExpenseParams) {
     return insertBusinessTripCarRentalExpense.run(
       reassureOwnerIdExists(params, this.context),
-      this.dbProvider,
+      this.db,
     );
   }
 
@@ -118,7 +118,7 @@ export class BusinessTripCarRentalExpensesProvider {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }
-    return deleteBusinessTripCarRentalExpense.run(params, this.dbProvider);
+    return deleteBusinessTripCarRentalExpense.run(params, this.db);
   }
 
   public async invalidateById(expenseId: string) {

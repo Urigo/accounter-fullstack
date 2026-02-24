@@ -79,10 +79,6 @@ const getChargesByMissingRequiredInfo = sql<IGetChargesByMissingRequiredInfoQuer
 const updateCharge = sql<IUpdateChargeQuery>`
   UPDATE accounter_schema.charges
   SET
-  owner_id = COALESCE(
-    $ownerId,
-    owner_id
-  ),
   user_description = COALESCE(
     $userDescription,
     user_description
@@ -123,10 +119,6 @@ const updateCharge = sql<IUpdateChargeQuery>`
 const batchUpdateCharges = sql<IBatchUpdateChargesQuery>`
   UPDATE accounter_schema.charges
   SET
-  owner_id = COALESCE(
-    $ownerId,
-    owner_id
-  ),
   user_description = COALESCE(
     $userDescription,
     user_description
