@@ -66,9 +66,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
   const [selectedDescription, setSelectedDescription] = useState<
     { id: string; value: string } | undefined
   >(undefined);
-  const [selectedOwner, setSelectedOwner] = useState<{ id: string; value: string } | undefined>(
-    undefined,
-  );
   const [selectedOptionalVAT, setSelectedOptionalVAT] = useState<
     { id: string; value: boolean } | undefined
   >(undefined);
@@ -114,13 +111,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
       fields = {
         ...fields,
         userDescription: selectedDescription.value,
-      };
-    }
-    if (selectedOwner && selectedOwner.value !== mainCharge.owner.id) {
-      fields ??= {};
-      fields = {
-        ...fields,
-        ownerId: selectedOwner.value,
       };
     }
     if (selectedType && selectedType.value !== mainCharge.__typename) {
@@ -186,7 +176,7 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
     distinctChargeIDs,
     mergeCharges,
     selectedDescription,
-    selectedOwner,
+    selectedOptionalDocuments,
     selectedType,
     selectedDecreasedVAT,
     selectedOptionalVAT,
@@ -226,10 +216,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                         setSelectedDescription({
                           id: charge.id,
                           value: charge.userDescription ?? '',
-                        });
-                        setSelectedOwner({
-                          id: charge.id,
-                          value: charge.owner.id,
                         });
                         setSelectedOptionalVAT({
                           id: charge.id,
@@ -285,30 +271,6 @@ export function MergeChargesSelectionForm({ chargeIds, onDone, resetMerge }: Pro
                       }
                     >
                       {charge.userDescription}
-                    </div>
-                  </button>
-                </td>
-              ))}
-            </tr>
-            <tr>
-              <th>Owner</th>
-              {charges.map(charge => (
-                <td key={charge.id}>
-                  <button
-                    className="w-full px-2"
-                    disabled={selectedOwner?.value === charge.owner.id}
-                    onClick={(): void =>
-                      setSelectedOwner({
-                        id: charge.id,
-                        value: charge.owner.id,
-                      })
-                    }
-                  >
-                    <div
-                      className="flex items-center justify-center px-2 py-2 border-x-2"
-                      style={selectedOwner?.id === charge.id ? { background: '#228be633' } : {}}
-                    >
-                      {charge.owner.name}
                     </div>
                   </button>
                 </td>
