@@ -1,4 +1,4 @@
-import { createApplication, Scope } from 'graphql-modules';
+import { CONTEXT, createApplication, Scope } from 'graphql-modules';
 import pg from 'pg';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { adminContextModule } from './modules/admin-context/index.js';
@@ -13,6 +13,7 @@ import { GoogleDriveProvider } from './modules/app-providers/google-drive/google
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
 import { authModule } from './modules/auth/index.js';
+import { AuthContextV2Provider } from './modules/auth/providers/auth-context-v2.provider.js';
 import { bankDepositsModule } from './modules/bank-deposits/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesMatcherModule } from './modules/charges-matcher/index.js';
@@ -40,8 +41,9 @@ import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
 import type { AdminContext } from './plugins/admin-context-plugin.js';
+import type { RawAuth } from './plugins/auth-plugin-v2.js';
 import type { UserType } from './plugins/auth-plugin.js';
-import { AUTH_CONTEXT, ENVIRONMENT } from './shared/tokens.js';
+import { AUTH_CONTEXT, AUTH_CONTEXT_V2, ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -53,6 +55,7 @@ declare global {
       env: Environment;
       currentUser: UserType;
       adminContext: AdminContext;
+      rawAuth: RawAuth;
     }
   }
 }
@@ -113,6 +116,24 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       {
         provide: AUTH_CONTEXT,
         useValue: null,
+        scope: Scope.Operation,
+      },
+      {
+        provide: RAW_AUTH,
+        useFactory: (context: GraphQLModules.GlobalContext) => {
+          // This bridges the Yoga context rawAuth to the InjectionToken
+          return context.rawAuth || { authType: null, token: null };
+        },
+        scope: Scope.Operation,
+        deps: [CONTEXT],
+      },
+      AuthContextV2Provider,
+      {
+        provide: AUTH_CONTEXT_V2,
+        useFactory: async (provider: AuthContextV2Provider) => {
+          return provider.getAuthContext();
+        },
+        deps: [AuthContextV2Provider],
         scope: Scope.Operation,
       },
     ],
