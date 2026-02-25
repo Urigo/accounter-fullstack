@@ -74,7 +74,7 @@
     "eslint-plugin-unicorn": "63.0.0",
     "glob": "13.0.6",
     "globals": "17.3.0",
-    "graphql": "16.12.0",
+    "graphql": "16.13.0",
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "pg": "8.18.0",
@@ -89,7 +89,7 @@
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^48.10.3": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch",
-    "graphql": "16.12.0"
+    "graphql": "16.13.0"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
