@@ -68,9 +68,7 @@ describe('Auth0ManagementService', () => {
     const mockUserId = 'auth0|123456';
     
     mockClient.users.create.mockResolvedValue({
-      data: {
-        user_id: mockUserId,
-      },
+      user_id: mockUserId,
     });
 
     const userId = await service.createBlockedUser(email);
@@ -125,9 +123,7 @@ describe('Auth0ManagementService', () => {
     const userId = 'auth0|123456';
     const mockTicket = 'https://auth0.com/ticket';
     
-    mockClient.tickets.changePassword.mockResolvedValue({
-      data: { ticket: mockTicket }
-    });
+    mockClient.tickets.changePassword.mockResolvedValue({ ticket: mockTicket });
 
     const ticket = await service.sendPasswordResetEmail(userId);
 

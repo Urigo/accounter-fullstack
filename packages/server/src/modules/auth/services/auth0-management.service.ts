@@ -34,9 +34,23 @@ export class Auth0ManagementService {
     return this.client;
   }
 
-  async createBlockedUser(email: string): Promise<string> {
+  async getUserByEmail(email: string): Promise<string | null> {
     const client = this.getClient();
-    const temporaryPassword = this.generateTemporaryPassword();
+    try {
+      const users = await client.users.listUsersByEmail({ email });
+      if (users?.length > 0) {
+        return users[0].user_id ?? null;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Failed to get Auth0 user by email ${email}:`, error);
+      throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`);
+    }
+  }
+
+  async createBlockedUser(email: string, password?: string): Promise<string> {
+    const client = this.getClient();
+    const temporaryPassword = password || this.generateTemporaryPassword();
 
     try {
       // Create user with blocked status (prevents login until invitation accepted)
@@ -51,8 +65,12 @@ export class Auth0ManagementService {
         },
       });
 
+      if (!user.user_id) {
+        throw new Error('Auth0 did not return a user ID');
+      }
+
       // Returns Auth0 user ID (e.g., "auth0|507f...")
-      return user.data.user_id;
+      return user.user_id;
     } catch (error) {
       console.error('Failed to create Auth0 user:', error);
       throw new Error(`Failed to create Auth0 user: ${(error as Error).message}`);
@@ -68,7 +86,15 @@ export class Auth0ManagementService {
       throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`);
     }
   }
-
+  async blockUser(auth0UserId: string): Promise<void> {
+    const client = this.getClient();
+    try {
+      await client.users.update(auth0UserId, { blocked: true });
+    } catch (error) {
+      console.error(`Failed to block Auth0 user ${auth0UserId}:`, error);
+      throw new Error(`Failed to block Auth0 user: ${(error as Error).message}`);
+    }
+  }
   async deleteUser(auth0UserId: string): Promise<void> {
     const client = this.getClient();
     try {
@@ -83,14 +109,14 @@ export class Auth0ManagementService {
   async sendPasswordResetEmail(auth0UserId: string): Promise<string> {
     const client = this.getClient();
     try {
-      const { data } = await client.tickets.changePassword({
+      const { ticket } = await client.tickets.changePassword({
         user_id: auth0UserId,
         mark_email_as_verified: true, // Mark verified only after password change
         result_url: this.env.general.frontendUrl
           ? `${this.env.general.frontendUrl}/login`
           : undefined,
       });
-      return data.ticket;
+      return ticket;
     } catch (error) {
       console.error('Failed to trigger password change', error);
       throw new Error(`Failed to trigger password change: ${(error as Error).message}`);
