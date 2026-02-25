@@ -17,6 +17,7 @@
   "main": "dist/server/src/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
+    "create-migration-test-users": "dotenv -e ../../.env -- tsx src/scripts/create-migration-test-users.ts",
     "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
