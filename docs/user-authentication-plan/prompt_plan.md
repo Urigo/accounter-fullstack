@@ -742,7 +742,7 @@ REQUIREMENTS:
 3. Install `jose` library for Auth0 JWT verification:
 
    ```bash
-   npm install jose
+   yarn add jose
    ```
 
 4. Implement AuthContextV2Provider:
@@ -2169,7 +2169,7 @@ EXPECTED OUTPUT:
 
 - Script: `packages/server/src/scripts/backfill-business-id.ts`
 - Tests: `packages/server/src/scripts/__tests__/backfill-business-id.test.ts`
-- Documentation: How to run script (`npm run backfill-owner-id`)
+- Documentation: How to run script
 - All tests passing
 
 INTEGRATION: Run this script AFTER deploying the nullable column migration (Prompt 3.3) and BEFORE
@@ -2504,7 +2504,7 @@ CRITICAL: This is HIGH RISK. Extensive testing required before production.
 ROLLBACK PLAN: Script ready to disable RLS per table if issues found:
 
 ```bash
-npm run disable-rls-table -- --table=charges
+yarn run disable-rls-table -- --table=charges
 ```
 
 ``
@@ -2550,7 +2550,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/server
-   npm install jose
+   yarn add jose
    ```
 
 2. Update `packages/server/src/environment.ts`:
@@ -2665,9 +2665,10 @@ REQUIREMENTS:
    - Name: "Accounter Web App"
    - Type: Regular Web Application
    - Configure application settings:
-     - Allowed Callback URLs: `http://localhost:5173/callback`, `https://app.example.com/callback`
-     - Allowed Logout URLs: `http://localhost:5173`, `https://app.example.com`
-     - Allowed Web Origins: `http://localhost:5173`, `https://app.example.com`
+     - Allowed Callback URLs: `http://localhost:3001/callback`,
+       `https://accounter-prod.pages.dev/callback`
+     - Allowed Logout URLs: `http://localhost:3001`, `https://accounter-prod.pages.dev`
+     - Allowed Web Origins: `http://localhost:3001`, `https://accounter-prod.pages.dev`
      - Token Endpoint Authentication Method: Post
    - Save changes
 
@@ -2977,7 +2978,7 @@ REQUIREMENTS:
    testAuth0Parallel().catch(console.error)
    ```
 
-3. Add npm script to `packages/server/package.json`:
+3. Add yarn script to `packages/server/package.json`:
 
    ```json
    {
@@ -2993,11 +2994,15 @@ REQUIREMENTS:
    - Password: `TestAuth0Pass123!`
    - Connection: Username-Password-Authentication
    - Blocked: No (for testing)
-   - Map to existing business_users record:
+   - Create a mapping for the test user:
      ```sql
-     UPDATE accounter_schema.business_users
-     SET auth0_user_id = 'auth0|...'  -- From Auth0 dashboard
-     WHERE email = 'test-auth0@example.com';
+     INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
+     VALUES (
+        gen_random_uuid(),
+        'auth0|...', -- Replace with ID from Auth0 dashboard
+        (SELECT id FROM accounter_schema.businesses LIMIT 1), -- Or use specific business ID
+        'business_owner'
+     );
      ```
 
 5. Obtain test JWT:
@@ -3019,7 +3024,7 @@ REQUIREMENTS:
 6. Run parallel tests:
 
    ```bash
-   AUTH0_TEST_JWT="eyJ..." npm run test:auth0-parallel
+   AUTH0_TEST_JWT="eyJ..." yarn run test:auth0-parallel
    ```
 
 7. Validate both auth systems work:
@@ -3181,7 +3186,7 @@ REQUIREMENTS:
 4. Run test user creation:
 
    ```bash
-   npm run create-migration-test-users
+   yarn run create-migration-test-users
    ```
 
 5. Validate test users:
@@ -3255,7 +3260,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/client
-   npm install @auth0/auth0-react
+   yarn add @auth0/auth0-react
    ```
 
 2. **Configure Auth0Provider** (`packages/client/src/main.tsx`):
@@ -3457,7 +3462,7 @@ REQUIREMENTS:
    git push origin frontend-auth0-integration
    
    # Deploy to staging
-   npm run deploy:client:staging
+   yarn run deploy:client:staging
    ```
 
 **VALIDATION** (Staging environment):
@@ -3614,7 +3619,7 @@ REQUIREMENTS:
    git push origin auth0-backend-switch
    
    # Deploy to staging
-   npm run deploy:server:staging
+   yarn run deploy:server:staging
    ```
 
 4. **Staging validation** (30-minute soak test):
@@ -3631,7 +3636,7 @@ REQUIREMENTS:
    ```bash
    # Announce maintenance window
    # Deploy to production
-   npm run deploy:production
+   yarn run deploy:production
    
    # Monitor for 24 hours
    ```
@@ -3655,7 +3660,7 @@ REQUIREMENTS:
    git revert HEAD
    
    # Redeploy
-   npm run deploy:production
+   yarn run deploy:production
    
    # Verify old auth works
    curl -H "Authorization: Bearer OLD_JWT" https://api.example.com/graphql
@@ -4046,7 +4051,7 @@ git add .
 git commit -m "feat: migrate businesses provider to TenantAwareDBClient with RLS"
 git push origin migrate-businesses-provider
 
-npm run deploy:staging
+yarn run deploy:staging
 
 # Staging validation (2 hours)
 - Create test businesses
@@ -4059,7 +4064,7 @@ npm run deploy:staging
 
 ```bash
 # Deploy to production
-npm run deploy:production
+yarn run deploy:production
 
 # Monitor for 48 hours:
 - RLS policy violations (should be zero)
@@ -4609,7 +4614,7 @@ REQUIREMENTS:
    - Run cleanup script and then delete it:
 
    ```bash
-   npm run cleanup-test-users
+   yarn run cleanup-test-users
    rm packages/server/src/scripts/cleanup-migration-test-users.ts
    ```
 
@@ -4770,13 +4775,13 @@ REQUIREMENTS:
 7. **Run all tests**:
 
    ```bash
-   npm test
+   yarn test
    ```
 
 8. **TypeScript compilation**:
 
    ```bash
-   npm run type-check
+   yarn run type-check
    ```
 
 9. **Commit changes**:
