@@ -8,6 +8,7 @@ import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { env } from './environment.js';
 import { createGraphQLApp } from './modules-app.js';
 import { adminContextPlugin } from './plugins/admin-context-plugin.js';
+import { authPluginV2 } from './plugins/auth-plugin-v2.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { AccounterContext } from './shared/types/index.js';
@@ -38,6 +39,7 @@ async function main() {
     plugins: [
       dbCleanupPlugin(),
       authPlugin(),
+      authPluginV2(),
       adminContextPlugin(),
       useGraphQLModules(application),
       useDeferStream(),
