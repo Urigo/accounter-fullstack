@@ -3894,7 +3894,7 @@ File: `packages/server/src/modules/corporate-taxes/providers/corporate-taxes.pro
 @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
 
 private get businessId() {
-  return this.authContext?.tenant?.businessId ?? this.context.currentUser.userId;
+  return this.authContext?.tenant?.businessId ?? this.context.currentUser?.userId;
 }
 
 // AFTER (Auth0 only):
