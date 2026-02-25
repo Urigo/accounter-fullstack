@@ -1606,6 +1606,12 @@ Now that Auth0 is active and AuthContext is properly populated, remove TEMPORARY
   - Change: `tenant?.businessId ?? this.context.currentUser?.userId ?? null`
   - To: `tenant?.businessId ?? null`
 - **NO provider changes needed** (providers already use final pattern)
+- **Clean up provider-specific fallbacks**:
+  - File: `packages/server/src/modules/corporate-taxes/providers/corporate-taxes.provider.ts`
+  - Remove the `businessId` getter fallback:
+    `authContext?.tenant?.businessId ?? this.context.currentUser.userId`
+  - Change to: Return only `authContext.tenant.businessId` and throw error if null
+  - Remove `@Inject(CONTEXT) private context` injection (no longer needed)
 - Verification:
 
   ```bash

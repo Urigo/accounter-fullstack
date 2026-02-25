@@ -66,7 +66,11 @@ export class CorporateTaxesProvider {
   ) {}
 
   private get businessId() {
-    return this.authContext.tenant?.businessId;
+    // TODO: CLEANUP AFTER PHASE 4 MIGRATION - Remove fallback to context.currentUser.userId
+    // Once tenant-aware DB migration (Phase 4.8) is complete and all providers use AUTH_CONTEXT,
+    // this should only return authContext.tenant.businessId and throw an error if null.
+    // The fallback to userId is a temporary measure during the Auth0 migration transition.
+    return this.authContext?.tenant?.businessId ?? this.context.currentUser.userId;
   }
 
   private allCorporateTaxesCache = new Map<

@@ -3885,7 +3885,30 @@ if (!businessIdValue) {
 }
 ```
 
-d. **Remove context.rlsClient type definition** (if it was added):
+d. **Clean up provider-specific fallbacks**:
+
+File: `packages/server/src/modules/corporate-taxes/providers/corporate-taxes.provider.ts`
+
+```typescript
+// BEFORE (with fallback):
+@Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+
+private get businessId() {
+  return this.authContext?.tenant?.businessId ?? this.context.currentUser?.userId;
+}
+
+// AFTER (Auth0 only):
+// Remove @Inject(CONTEXT) injection entirely
+
+private get businessId() {
+  if (!this.authContext?.tenant?.businessId) {
+    throw new Error('Missing businessId in AuthContext');
+  }
+  return this.authContext.tenant.businessId;
+}
+```
+
+e. **Remove context.rlsClient type definition** (if it was added):
 
 File: `packages/server/src/shared/types/index.ts`
 
@@ -3896,7 +3919,7 @@ rlsClient?: PoolClient
 
 From AccounterContext interface.
 
-e. **Verification commands**:
+f. **Verification commands**:
 
 ```bash
 # Should find NO matches after cleanup:
@@ -3913,7 +3936,7 @@ rg "constructor.*private db: TenantAwareDBClient" \
 # Expected: Many matches (all migrated providers, including charges.provider.ts)
 ```
 
-f. **Provider Migration Note**:
+g. **Provider Migration Note**:
 
 Providers that were migrated to `TenantAwareDBClient` during Phase 3 (like `charges.provider.ts`)
 require **NO CHANGES** - they're already using the final pattern. Only TenantAwareDBClient's

@@ -281,6 +281,14 @@ export class TenantAwareDBClient {
   // authContext is null. This enables providers to migrate directly to final
   // pattern (inject TenantAwareDBClient) without intermediate workaround code.
   // Cleanup: Remove @Inject(CONTEXT) and all fallback logic in Phase 4.8.
+  //
+  // Phase 4.8 Cleanup Checklist:
+  // - Remove @Inject(CONTEXT) from TenantAwareDBClient constructor
+  // - Remove all context.currentUser.userId fallbacks from TenantAwareDBClient
+  // - Clean up provider-specific fallbacks (e.g., CorporateTaxesProvider.businessId getter)
+  //   - File: packages/server/src/modules/corporate-taxes/providers/corporate-taxes.provider.ts
+  //   - Remove: authContext?.tenant?.businessId ?? this.context.currentUser.userId fallback
+  //   - Change to: Only return authContext.tenant.businessId, throw if null
 
   async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
     // Reuse existing transaction if within a GraphQL operation
