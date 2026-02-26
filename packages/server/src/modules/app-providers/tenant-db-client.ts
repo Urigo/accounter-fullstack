@@ -8,8 +8,6 @@ import type { AuthContext } from '../../shared/types/auth.js';
 import type { AccounterContext } from '../../shared/types/index.js';
 import { DBProvider } from './db.provider.js';
 
-let QUERY_COUNTER = 0;
-
 /**
  * TenantAwareDBClient enforces Row-Level Security (RLS) by setting PostgreSQL
  * session variables for every database transaction.
@@ -52,7 +50,6 @@ export class TenantAwareDBClient {
   private transactionDepth = 0;
   private isDisposed = false;
   private initializationPromise: Promise<void> | null = null;
-  private instanceId = Math.random().toString(36).substring(7);
 
   constructor(
     private dbProvider: DBProvider,
@@ -97,43 +94,15 @@ export class TenantAwareDBClient {
     }
 
     if (this.storage.getStore() && this.activeClient) {
-      const queryId = ++QUERY_COUNTER;
-      const start = Date.now();
-      console.log(`[TenantDB:${this.instanceId}] Query #${queryId} starting: ${text.slice(-100)}`);
-
-      try {
-        const result = await this.activeClient.query<T>(text, params);
-        const duration = Date.now() - start;
-        console.log(`[TenantDB:${this.instanceId}] Query #${queryId} finished in ${duration}ms`);
-        return { ...result, rowCount: result.rowCount ?? 0 };
-      } catch (error) {
-        const duration = Date.now() - start;
-        console.error(
-          `[TenantDB:${this.instanceId}] Query #${queryId} failed in ${duration}ms:`,
-          error,
-        );
-        throw error;
-      }
+      return this.activeClient
+        .query<T>(text, params)
+        .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
     }
 
     return this.transaction(async client => {
-      const queryId = ++QUERY_COUNTER;
-      const start = Date.now();
-      console.log(`[TenantDB:${this.instanceId}] Query #${queryId} starting: ${text}`);
-
-      try {
-        const result = await client.query<T>(text, params);
-        const duration = Date.now() - start;
-        console.log(`[TenantDB:${this.instanceId}] Query #${queryId} finished in ${duration}ms`);
-        return { ...result, rowCount: result.rowCount ?? 0 };
-      } catch (error) {
-        const duration = Date.now() - start;
-        console.error(
-          `[TenantDB:${this.instanceId}] Query #${queryId} failed in ${duration}ms:`,
-          error,
-        );
-        throw error;
-      }
+      return client
+        .query<T>(text, params)
+        .then(result => ({ ...result, rowCount: result.rowCount ?? 0 }));
     });
   }
 

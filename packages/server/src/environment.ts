@@ -154,6 +154,14 @@ const Auth0Model = zod.union([
   zod.void(),
 ]);
 
+const OtelModel = zod.union([
+  zod.object({
+    OTEL_ENABLED: emptyString(zod.enum(['true', 'false'])).optional(),
+    OTEL_SERVICE_NAME: emptyString(zod.string()).optional(),
+  }),
+  zod.void(),
+]);
+
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
@@ -164,6 +172,7 @@ const configs = {
   gmail: GmailModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
+  otel: OtelModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -196,6 +205,7 @@ const googleDrive = extractConfig(configs.googleDrive);
 const gmail = extractConfig(configs.gmail);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
+const otel = extractConfig(configs.otel);
 
 export const env = {
   postgres: {
@@ -258,4 +268,11 @@ export const env = {
         audience: auth0.AUTH0_AUDIENCE!,
       }
     : undefined,
+  otel:
+    otel?.OTEL_ENABLED === 'true'
+      ? {
+          enabled: true,
+          serviceName: otel.OTEL_SERVICE_NAME || 'accounter-server',
+        }
+      : undefined,
 } as const;
