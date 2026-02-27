@@ -28,7 +28,9 @@ const HeaderSchema = z
 const TxnAbroadSchema = z
   .object({
     EsbServicesCall: z.null(),
+    accountErrorCode: z.null(),
     adendum: z.null(),
+    bcKey: z.null(),
     cardIndex: z.enum(['0', '1', '2', '3', '4', '5']),
     city: z.string().nullable(),
     clientIpAddress: z.null().optional(),
@@ -84,7 +86,9 @@ const TxnAbroadSchema = z
     isHoraatKeva: z.literal('false'),
     isShowDealsOutbound: z.enum(['_']).nullable(),
     isShowLinkForSupplierDetails: z.null(),
+    kodMatbeaMekori: z.null(),
     message: z.null(),
+    monthlyRefundCardIndex: z.undefined(),
     moreInfo: z.null(),
     paymentDate: z.string().regex(datePatternShort).nullable(),
     paymentSum: z.null(),
@@ -92,6 +96,7 @@ const TxnAbroadSchema = z
     paymentSumSign: z.null(),
     purchaseDate: z.null(),
     purchaseDateOutbound: z.string().regex(datePatternShort).nullable(),
+    requestNumber: z.null(),
     returnCode: z.null(),
     returnMessage: z.null(),
     siteName: z.null(),
@@ -105,10 +110,6 @@ const TxnAbroadSchema = z
     voucherNumber: z.string().regex(sevenDigitPattern).nullable(),
     voucherNumberRatz: z.null(),
     voucherNumberRatzOutbound: z.string().regex(nineDigitPattern),
-    bcKey: z.null(),
-    requestNumber: z.null(),
-    accountErrorCode: z.null(),
-    kodMatbeaMekori: z.null(),
   })
   .strict();
 
@@ -143,6 +144,7 @@ const TxnIsraelSchema = z
     isShowLinkForSupplierDetails: z.enum(['yes', 'NO']),
     kodMatbeaMekori: z.enum(['ש"ח', 'דולר']).nullable(),
     message: z.null(),
+    monthlyRefundCardIndex: z.undefined(),
     moreInfo: z.string().nullable(),
     paymentDate: z.null(),
     paymentSum: z.string().nullable(),
@@ -189,6 +191,8 @@ const IndexSchema = z
 const CardItemSchema = z
   .object({
     EsbServicesCall: z.null(),
+    accountErrorCode: z.null(),
+    bcKey: z.null(),
     clientIpAddress: z.null().optional(),
     currentId: z.enum(['0', '1', '2', '3', '4', '5']).nullable(),
     displayProperties: z.null(),
@@ -198,6 +202,8 @@ const CardItemSchema = z
     isCaptcha: z.literal('false'),
     isError: z.literal('false'),
     message: z.null(),
+    monthlyRefundCardIndex: z.undefined(),
+    requestNumber: z.null(),
     returnCode: z.null(),
     returnMessage: z.null(),
     siteName: z.null(),
@@ -206,9 +212,6 @@ const CardItemSchema = z
     totalDollar: z.enum(['0']).nullable(),
     totalEuro: z.enum(['0']).nullable(),
     totalNis: z.string().nullable(),
-    bcKey: z.null(),
-    requestNumber: z.null(),
-    accountErrorCode: z.null(),
   })
   .strict();
 
@@ -279,7 +282,7 @@ const CardsTransactionsListBeanSchema = z
     selectedCardIndex: z.enum(['0', '1', '2', '3', '4', '5']),
     selectedCardInfo: z.string(),
     selectedDateIndex: z.enum(['23', '24']),
-    siteName: z.null(),
+    siteName: z.string().nullable(),
     specificDate: z.null(),
     stage: z.null(),
     startDate: z.null(),

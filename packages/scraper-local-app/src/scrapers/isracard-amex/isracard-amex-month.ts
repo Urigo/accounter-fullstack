@@ -366,7 +366,7 @@ async function insertTransactions(
         ) > 2)
     ) {
       logger.error(
-        `diff: ${differenceInMonths(new Date(), new Date(transaction.fullPurchaseDateOutbound as string))} ${new Date(transaction.fullPurchaseDateOutbound as string).toUTCString()}`,
+        `diff: ${differenceInMonths(new Date(), new Date(transaction.fullPurchaseDate as string))} ${new Date(transaction.fullPurchaseDateOutbound as string).toUTCString()}`,
       );
       logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
       throw new Error('Old transaction');
