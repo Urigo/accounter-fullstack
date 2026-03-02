@@ -22,7 +22,7 @@ __metadata:
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
-    "@types/pg": "npm:8.16.0"
+    "@types/pg": "npm:8.18.0"
     pg-promise: "npm:12.6.1"
     slonik: "npm:48.10.3"
     tslib: "npm:2.8.1"
@@ -37,13 +37,13 @@ __metadata:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@types/pg": "npm:8.16.0"
+    "@types/pg": "npm:8.18.0"
     date-fns: "npm:4.1.0"
     dotenv: "npm:17.3.1"
     dotenv-cli: "npm:11.0.0"
     fast-xml-parser: "npm:5.3.8"
     listr2: "npm:10.1.1"
-    pg: "npm:8.18.0"
+    pg: "npm:8.19.0"
     rimraf: "npm:6.1.3"
     tsup: "npm:8.5.1"
     typescript: "npm:5.9.3"
@@ -296,7 +296,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:24.11.0"
-    "@types/pg": "npm:8.16.0"
+    "@types/pg": "npm:8.18.0"
     "@whatwg-node/fetch": "npm:0.10.13"
     ai: "npm:6.0.99"
     async-mutex: "npm:0.5.0"
@@ -318,7 +318,7 @@ __metadata:
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.14"
-    pg: "npm:8.18.0"
+    pg: "npm:8.19.0"
     pino-pretty: "npm:13.1.3"
     playwright: "npm:1.58.2"
     reflect-metadata: "npm:0.2.2"
@@ -8543,14 +8543,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.16.0":
-  version: 8.16.0
-  resolution: "@types/pg@npm:8.16.0"
+"@types/pg@npm:8.18.0":
+  version: 8.18.0
+  resolution: "@types/pg@npm:8.18.0"
   dependencies:
     "@types/node": "npm:*"
     pg-protocol: "npm:*"
     pg-types: "npm:^2.2.0"
-  checksum: 10c0/421fe7c07d5c0226835d362414a63653f86251ee966150d807ed60174c13921d1b8a3e2f1c2bfba9659ec0282ca50974030c4c1efcd575003eb922ea12ca7d05
+  checksum: 10c0/cafece430d8d583a75eb3f7beff7b3e97e05ef0b6326ae5070476bda46ccc42edb72724b9c2bf799cea93a48b1342319bfbbe1217fff5ffa5c322b8d637ea949
   languageName: node
   linkType: hard
 
@@ -9203,7 +9203,7 @@ __metadata:
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:24.11.0"
-    "@types/pg": "npm:8.16.0"
+    "@types/pg": "npm:8.18.0"
     "@vitest/coverage-v8": "npm:4.0.18"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.1"
@@ -9216,7 +9216,7 @@ __metadata:
     graphql: "npm:16.13.0"
     husky: "npm:9.1.7"
     lint-staged: "npm:16.3.1"
-    pg: "npm:8.18.0"
+    pg: "npm:8.19.0"
     prettier: "npm:3.8.1"
     prettier-plugin-sql: "npm:0.19.2"
     rimraf: "npm:6.1.3"
@@ -18762,7 +18762,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:^8.18.0":
+"pg@npm:8.19.0, pg@npm:^8.18.0":
   version: 8.19.0
   resolution: "pg@npm:8.19.0"
   dependencies:

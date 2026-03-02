@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch",
-    "@types/pg": "8.16.0",
+    "@types/pg": "8.18.0",
     "pg-promise": "12.6.1",
     "slonik": "48.10.3",
     "tslib": "2.8.1",
