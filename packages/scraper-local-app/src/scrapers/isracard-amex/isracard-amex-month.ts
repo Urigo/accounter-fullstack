@@ -353,20 +353,13 @@ async function insertTransactions(
   const { type, nickname } = context;
   const transactionsToInsert: Array<InsertionTransactionParams> = [];
   for (const transaction of transactions) {
+    const purchaseDate = transaction.fullPurchaseDate || transaction.fullPurchaseDateOutbound;
     if (
-      (transaction.fullPurchaseDate != null &&
-        differenceInMonths(
-          new Date(),
-          new Date(transaction.fullPurchaseDate.split('/').reverse().join('-')),
-        ) > 2) ||
-      (transaction.fullPurchaseDateOutbound != null &&
-        differenceInMonths(
-          new Date(),
-          new Date(transaction.fullPurchaseDateOutbound.split('/').reverse().join('-')),
-        ) > 2)
+      purchaseDate != null &&
+      differenceInMonths(new Date(), new Date(purchaseDate.split('/').reverse().join('-'))) > 2
     ) {
       logger.error(
-        `diff: ${differenceInMonths(new Date(), new Date(transaction.fullPurchaseDate as string))} ${new Date(transaction.fullPurchaseDateOutbound as string).toUTCString()}`,
+        `diff: ${differenceInMonths(new Date(), new Date(purchaseDate))} ${new Date(purchaseDate).toUTCString()}`,
       );
       logger.error('Was going to insert an old transaction!!', JSON.stringify(transaction));
       throw new Error('Old transaction');
