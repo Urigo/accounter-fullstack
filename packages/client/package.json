@@ -99,7 +99,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.4",
-    "autoprefixer": "10.4.24",
+    "autoprefixer": "10.4.27",
     "tailwindcss": "4.2.1",
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.9.3",
