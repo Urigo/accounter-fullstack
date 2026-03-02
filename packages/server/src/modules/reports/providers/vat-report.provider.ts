@@ -72,6 +72,7 @@ export class VatReportProvider {
   public getReportByBusinessIdAndMonthDateLoader = new DataLoader(
     (businessAndDates: readonly [string, string][]) =>
       this.batchReportsByBusinessIdAndMonthDatesLoader(businessAndDates),
+    { cacheKeyFn: ([businessId, monthDate]) => `${businessId}-${monthDate}` },
   );
 
   public async updateReport(params: IUpdateReportParams) {
