@@ -41,7 +41,7 @@ __metadata:
     date-fns: "npm:4.1.0"
     dotenv: "npm:17.3.1"
     dotenv-cli: "npm:11.0.0"
-    fast-xml-parser: "npm:5.3.7"
+    fast-xml-parser: "npm:5.3.8"
     listr2: "npm:10.1.1"
     pg: "npm:8.18.0"
     rimraf: "npm:6.1.3"
@@ -13386,14 +13386,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:5.3.7":
-  version: 5.3.7
-  resolution: "fast-xml-parser@npm:5.3.7"
+"fast-xml-parser@npm:5.3.8":
+  version: 5.3.8
+  resolution: "fast-xml-parser@npm:5.3.8"
   dependencies:
     strnum: "npm:^2.1.2"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10c0/2452b8d4557f6958507ccb9694dad094fb56342385774ee900e0ae1e193027a6590dd5c4ce9e5485af64fb18c2299b64d5423c82dba5f5a698950d36d02a864d
+  checksum: 10c0/7b85f1858f1a88e2c9b859ff8bae89ea47d2c6f749372db0ed8e9ed4b97d40fb5e2a2721012dbe6498295f755f3edc84942cd1c417caa96bf16a4e292394a9db
   languageName: node
   linkType: hard
 
