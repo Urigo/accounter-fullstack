@@ -73,7 +73,7 @@ For each scenario:
 
 ### 5. Owner Assignment
 
-- All records: `owner_id === adminContext.defaultAdminBusinessId` for the given test execution.
+- All records: `owner_id === adminContext.ownerId` for the given test execution.
 - No `NULL` owner IDs.
 
 ### 6. Individual Record Internal Balance

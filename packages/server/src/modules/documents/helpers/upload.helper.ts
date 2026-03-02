@@ -1,6 +1,7 @@
 import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import type { IInsertDocumentsParams } from '../types.js';
@@ -93,7 +94,7 @@ async function getHashFromFile(file: File | Blob): Promise<number> {
 
 function figureOutSides(
   documentType: DocumentType,
-  defaultAdminBusinessId: string,
+  ownerId: string,
   isOwnerIssuer?: boolean,
   counterPartyId?: string,
 ): { creditorId?: string; debtorId?: string } {
@@ -106,7 +107,7 @@ function figureOutSides(
     debtorId: string | undefined;
   } = {
     creditorId: counterPartyId,
-    debtorId: defaultAdminBusinessId,
+    debtorId: ownerId,
   };
 
   if (isOwnerIssuer === true) {
@@ -167,16 +168,14 @@ export function getDocumentFromUrlsAndOcrData(
 }
 
 export async function getDocumentFromFile(
-  context: GraphQLModules.ModuleContext,
+  injector: Injector,
   file: File | Blob,
   chargeId?: string | null,
   isSensitive?: boolean | null,
 ): Promise<IInsertDocumentsParams['documents'][number]> {
   try {
-    const {
-      injector,
-      // adminContext: { defaultAdminBusinessId },
-    } = context;
+    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
     // Buffer the file to allow multiple reads from a stream
     const buffer = await file.arrayBuffer();
     const multiReadableFile = new Blob([buffer], { type: file.type });
@@ -191,14 +190,7 @@ export async function getDocumentFromFile(
       throw new Error('No data returned from Green Invoice');
     }
 
-    return getDocumentFromUrlsAndOcrData(
-      fileUrl,
-      imageUrl,
-      ocrData,
-      context.adminContext.defaultAdminBusinessId,
-      chargeId,
-      hash,
-    );
+    return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, hash);
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);

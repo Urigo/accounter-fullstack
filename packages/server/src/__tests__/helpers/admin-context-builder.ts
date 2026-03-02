@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import type { AdminContext } from '../../plugins/admin-context-plugin.js';
 import { qualifyTable } from './test-db-config.js';
+import type { AdminContext } from '../../modules/admin-context/types.js';
 
 /**
  * Builds AdminContext from database user_context table.
@@ -48,7 +48,7 @@ export async function buildAdminContextFromDb(
   return {
     defaultLocalCurrency: dbContext.default_local_currency,
     defaultCryptoConversionFiatCurrency: dbContext.default_fiat_currency_for_crypto_conversions,
-    defaultAdminBusinessId: adminBusinessId,
+    ownerId: adminBusinessId,
     defaultTaxCategoryId: dbContext.default_tax_category_id,
     locality: dbContext.locality || 'Israel',
     ledgerLock: dbContext.ledger_lock 

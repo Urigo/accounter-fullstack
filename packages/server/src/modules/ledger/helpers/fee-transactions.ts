@@ -1,4 +1,7 @@
+import type { Injector } from 'graphql-modules';
 import type { LedgerProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import type { AdminContext } from '../../admin-context/types.js';
 import {
   getChargeBusinesses,
   getChargeTaxCategoryId,
@@ -27,9 +30,9 @@ export function splitFeeTransactions(transactions: Array<IGetTransactionsByCharg
 
 export function isSupplementalFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
-  context: GraphQLModules.Context,
+  financialAccounts: AdminContext['financialAccounts'],
 ): boolean {
-  const { internalWalletsIds, swiftBusinessId } = context.adminContext.financialAccounts;
+  const { internalWalletsIds, swiftBusinessId } = financialAccounts;
   if (!transaction.is_fee) {
     return false;
   }
@@ -55,17 +58,8 @@ export function isSupplementalFeeTransaction(
 export async function getEntriesFromFeeTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<Array<LedgerProto>> {
-  const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      general: {
-        taxCategories: { feeTaxCategoryId, generalFeeTaxCategoryId },
-      },
-    },
-  } = context;
   const ledgerEntries: Array<LedgerProto> = [];
 
   if (!transaction.is_fee) {
@@ -79,7 +73,15 @@ export async function getEntriesFromFeeTransaction(
     return ledgerEntries;
   }
 
-  const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
+  const {
+    defaultLocalCurrency,
+    general: {
+      taxCategories: { feeTaxCategoryId, generalFeeTaxCategoryId },
+    },
+    financialAccounts,
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+  const isSupplementalFee = isSupplementalFeeTransaction(transaction, financialAccounts);
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 

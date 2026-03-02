@@ -1,8 +1,9 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type {
   IDeleteContractQuery,
@@ -145,11 +146,21 @@ const insertContract = sql<IInsertContractQuery>`
   global: true,
 })
 export class ContractsProvider {
+  private businessIdCache: string | null = null;
   constructor(
     private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private authContextProvider: AuthContextV2Provider,
   ) {}
+
+  private async getBusinessId() {
+    if (this.businessIdCache !== null) {
+      return this.businessIdCache;
+    }
+    const authContext = await this.authContextProvider.getAuthContext();
+    this.businessIdCache = authContext?.tenant.businessId ?? null;
+    return this.businessIdCache;
+  }
 
   private allOpenContractsCache: Promise<IGetAllOpenContractsResult[]> | null = null;
   public getAllOpenContracts() {
@@ -205,8 +216,12 @@ export class ContractsProvider {
   );
 
   public async createContract(params: IInsertContractParams) {
+    const businessId = await this.getBusinessId();
+    if (!businessId) {
+      throw new Error('Business ID is required for creating a cotnract');
+    }
     const [newContract] = await insertContract.run(
-      reassureOwnerIdExists(params, this.context),
+      reassureOwnerIdExists(params, businessId),
       this.db,
     );
     this.getContractsByIdLoader.prime(newContract.id, newContract);

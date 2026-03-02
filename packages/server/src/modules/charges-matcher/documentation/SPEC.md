@@ -39,7 +39,7 @@ query FindChargeMatches($chargeId: UUID!) {
 **Input:**
 
 - `chargeId: UUID` - The ID of an unmatched charge
-- Admin business ID extracted from `context.adminContext.defaultAdminBusinessId`
+- Admin business ID extracted from `context.adminContext.ownerId`
 - User authentication via `@auth(role: ACCOUNTANT)` directive
 
 **Output:**
@@ -94,7 +94,7 @@ mutation AutoMatchCharges {
 
 **Input:**
 
-- Admin business ID extracted from `context.adminContext.defaultAdminBusinessId`
+- Admin business ID extracted from `context.adminContext.ownerId`
 - User authentication via `@auth(role: ACCOUNTANT)` directive
 
 **Output:**
@@ -349,7 +349,7 @@ interface AggregatedData {
 
 **Context Extraction:**
 
-- Admin business ID: `context.adminContext.defaultAdminBusinessId`
+- Admin business ID: `context.adminContext.ownerId`
 - Injector access: `context.injector.get(ProviderClass)`
 - All operations are scoped to single admin business
 
@@ -919,7 +919,7 @@ charges list toolbar
 
 **Context Handling:**
 
-- Admin business ID: `context.adminContext.defaultAdminBusinessId`
+- Admin business ID: `context.adminContext.ownerId`
 - Injector access: `context.injector.get(ProviderClass)`
 - All operations scoped to single admin business
 - No cross-business matching
@@ -1140,7 +1140,7 @@ __tests__/
 **Key Test Patterns:**
 
 - Mock providers using Vitest `vi.fn()`
-- Context mocking with `adminContext.defaultAdminBusinessId`
+- Context mocking with `adminContext.ownerId`
 - DataLoader response simulation
 - Error case validation (throw Error, not return)
 - Integration tests verify full function flows
@@ -1387,7 +1387,7 @@ export interface AggregatedData {
 ```typescript
 interface GraphQLModules.AppContext {
   adminContext: {
-    defaultAdminBusinessId: string; // UUID of current admin business
+    ownerId: string; // UUID of current admin business
   };
   injector: {
     get<T>(provider: Type<T>): T; // Dependency injection
@@ -1584,7 +1584,7 @@ export const findChargeMatchesResolver: ChargesMatcherResolvers = {
   Query: {
     findChargeMatches: async (_, { chargeId }, context) => {
       try {
-        const adminBusinessId = context.adminContext.defaultAdminBusinessId
+        const adminBusinessId = context.adminContext.ownerId
         const chargesMatcherProvider = context.injector.get(ChargesMatcherProvider)
 
         const matches = await chargesMatcherProvider.findMatchesForCharge(

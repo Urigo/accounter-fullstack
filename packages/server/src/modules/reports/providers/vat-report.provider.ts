@@ -1,8 +1,9 @@
 import DataLoader from 'dataloader';
 import { format } from 'date-fns';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IGetReportByBusinessIdAndDatesQuery,
@@ -35,7 +36,7 @@ const insertReport = sql<IInsertReportQuery>`
 export class VatReportProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchReportsByBusinessIdAndMonthDatesLoader(
@@ -91,7 +92,8 @@ export class VatReportProvider {
         format(params.monthDate, 'yyyy-MM-dd'),
       );
     }
-    return insertReport.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertReport.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async invalidateByBusinessIdAndMonth(businessId: string, monthDate: string) {

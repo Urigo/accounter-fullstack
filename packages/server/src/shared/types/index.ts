@@ -3,8 +3,7 @@ import pg from 'pg';
 import type { CorporateTaxRulingComplianceReport, Role } from '../../__generated__/types.js';
 import type { env } from '../../environment.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
-import type { AdminContext } from '../../plugins/admin-context-plugin.js';
-import type { UserType } from '../../plugins/auth-plugin.js';
+import { RawAuth } from '../../plugins/auth-plugin-v2.js';
 import type { Currency } from '../../shared/enums.js';
 
 export type Environment = typeof env;
@@ -62,8 +61,7 @@ export type AccounterContext = YogaInitialContext & {
   session?: {
     role?: Role;
   };
-  currentUser?: UserType;
-  adminContext?: AdminContext;
+  rawAuth?: RawAuth;
   dbClientsToDispose?: { dispose: () => Promise<void> }[];
 };
 

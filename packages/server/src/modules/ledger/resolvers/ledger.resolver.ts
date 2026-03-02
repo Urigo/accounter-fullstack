@@ -7,6 +7,7 @@ import {
 } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { accountant_statusArray } from '../../charges/types.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -34,7 +35,8 @@ import { commonChargeLedgerResolver } from './common.resolver.js';
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   Query: {
     chargesWithLedgerChanges: async (_, { filters, limit }, context, info) => {
-      const { injector, adminContext } = context;
+      const { injector } = context;
+      const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
       // handle sort column
       let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
@@ -52,8 +54,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
       // get max date of filter and ledger lock
       const fromDate =
-        adminContext.ledgerLock || filters?.fromDate
-          ? [adminContext.ledgerLock, filters?.fromDate].filter(Boolean).sort().reverse()[0]
+        ledgerLock || filters?.fromDate
+          ? [ledgerLock, filters?.fromDate].filter(Boolean).sort().reverse()[0]
           : undefined;
 
       const charges = await injector
@@ -93,7 +95,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         await Promise.all(
           limitedCharges.map(async charge => {
-            if (await isChargeLocked(charge, injector, adminContext.ledgerLock)) {
+            if (await isChargeLocked(charge, injector, ledgerLock)) {
               handledCharges++;
               if (handledCharges % 50 === 0 || handledCharges === limitedCharges.length) {
                 push({ progress: calculateProgress() });
@@ -150,16 +152,17 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         stop();
       }) as unknown as Promise<readonly ResolversTypes['ChargesWithLedgerChangesResult'][]>;
     },
-    ledgerRecordsByDates: async (_, { fromDate, toDate }, { injector, adminContext }) => {
+    ledgerRecordsByDates: async (_, { fromDate, toDate }, { injector }) => {
       if (fromDate > toDate) {
         throw new GraphQLError('fromDate must be before or equal to toDate');
       }
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       return await injector
         .get(LedgerProvider)
         .getLedgerRecordsByDates({
           fromDate,
           toDate,
-          ownerId: adminContext.defaultAdminBusinessId,
+          ownerId,
         })
         .then(records =>
           records.sort((a, b) => a.invoice_date.getTime() - b.invoice_date.getTime()),
@@ -178,11 +181,14 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
       const { injector } = context;
+      const { ledgerLock, ownerId } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
       if (!charge) {
         throw new GraphQLError(`Charge with id ${chargeId} not found`);
       }
-      if (await isChargeLocked(charge, injector, context.adminContext.ledgerLock)) {
+      if (await isChargeLocked(charge, injector, ledgerLock)) {
         return {
           __typename: 'CommonError',
           message: `Charge with id ${chargeId} is locked`,
@@ -253,7 +259,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           .then(() =>
             injector.get(LedgerProvider).insertLedgerRecords({
               ledgerRecords: recordsToUpdate
-                .map(record => convertLedgerRecordToInput(record, context))
+                .map(record => convertLedgerRecordToInput(record, ownerId))
                 .map(record => {
                   record.chargeId = chargeId;
                   return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
@@ -274,7 +280,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
                 .get(LedgerProvider)
                 .insertLedgerRecords({
                   ledgerRecords: newRecords.map(record =>
-                    convertLedgerRecordToInput(record, context),
+                    convertLedgerRecordToInput(record, ownerId),
                   ) as IInsertLedgerRecordsParams['ledgerRecords'],
                 })
                 .catch(e => {
@@ -344,18 +350,34 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       DbLedgerRecord.credit_foreign_amount2 == null
         ? null
         : formatFinancialAmount(DbLedgerRecord.credit_foreign_amount2, DbLedgerRecord.currency),
-    localCurrencyDebitAmount1: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(DbLedgerRecord.debit_local_amount1, defaultLocalCurrency),
-    localCurrencyDebitAmount2: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
-      DbLedgerRecord.debit_local_amount2 == null
+    localCurrencyDebitAmount1: async (DbLedgerRecord, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(DbLedgerRecord.debit_local_amount1, defaultLocalCurrency);
+    },
+    localCurrencyDebitAmount2: async (DbLedgerRecord, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return DbLedgerRecord.debit_local_amount2 == null
         ? null
-        : formatFinancialAmount(DbLedgerRecord.debit_local_amount2, defaultLocalCurrency),
-    localCurrencyCreditAmount1: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(DbLedgerRecord.credit_local_amount1, defaultLocalCurrency),
-    localCurrencyCreditAmount2: (DbLedgerRecord, _, { adminContext: { defaultLocalCurrency } }) =>
-      DbLedgerRecord.credit_local_amount2 == null
+        : formatFinancialAmount(DbLedgerRecord.debit_local_amount2, defaultLocalCurrency);
+    },
+    localCurrencyCreditAmount1: async (DbLedgerRecord, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(DbLedgerRecord.credit_local_amount1, defaultLocalCurrency);
+    },
+    localCurrencyCreditAmount2: async (DbLedgerRecord, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return DbLedgerRecord.credit_local_amount2 == null
         ? null
-        : formatFinancialAmount(DbLedgerRecord.credit_local_amount2, defaultLocalCurrency),
+        : formatFinancialAmount(DbLedgerRecord.credit_local_amount2, defaultLocalCurrency);
+    },
     invoiceDate: DbLedgerRecord => DbLedgerRecord.invoice_date,
     valueDate: DbLedgerRecord => DbLedgerRecord.value_date,
     description: DbLedgerRecord => DbLedgerRecord.description ?? null,
@@ -363,11 +385,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   Ledger: {
     records: parent => parent.records,
-    balance: async (parent, _, context) => {
-      const { injector } = context;
+    balance: async (parent, _, { injector }) => {
       if (parent.balance) {
         return parent.balance;
       }
+      const { ownerId, defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
 
       const financialEntitiesIds = new Set<string>();
       parent.records.map(record => {
@@ -394,7 +418,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
       const allowedUnbalancedBusinessesPromise = ledgerUnbalancedBusinessesByCharge(
         parent.charge,
-        context,
+        injector,
       );
 
       const [financialEntities, allowedUnbalancedBusinesses] = await Promise.all([
@@ -404,15 +428,15 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
       const ledgerBalance = new Map<string, { amount: number; entityId: string }>();
       const ledgerEntries = parent.records.map(record =>
-        convertLedgerRecordToProto(record, context),
+        convertLedgerRecordToProto(record, ownerId),
       );
 
       for (const ledgerEntry of ledgerEntries) {
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
       }
 
       return getLedgerBalanceInfo(
-        context,
+        injector,
         ledgerBalance,
         undefined,
         allowedUnbalancedBusinesses,
@@ -420,8 +444,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       );
     },
     validate: async ({ charge, records }, _, context, info) => {
-      const { injector, adminContext } = context;
-      const { ledgerLock } = adminContext;
+      const { injector } = context;
+      const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       if (await isChargeLocked(charge, injector, ledgerLock)) {
         return {
           isValid: true,
@@ -534,7 +558,9 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
   },
   ChargeMetadata: {
-    isLedgerLocked: async (DbCharge, _, { adminContext, injector }) =>
-      isChargeLocked(DbCharge, injector, adminContext.ledgerLock),
+    isLedgerLocked: async (DbCharge, _, { injector }) => {
+      const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      return isChargeLocked(DbCharge, injector, ledgerLock);
+    },
   },
 };

@@ -10,6 +10,7 @@ import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { Currency } from '../../../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../../../shared/helpers/index.js';
 import type { LedgerProto, TimelessDateString } from '../../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
 import { TaxCategoriesProvider } from '../../../../financial-entities/providers/tax-categories.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '../../../../financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
@@ -26,15 +27,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
-    const {
-      injector,
-      adminContext: {
-        defaultLocalCurrency,
-        general: {
-          taxCategories: { exchangeRevaluationTaxCategoryId },
-        },
-      },
-    } = context;
+    const { injector } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -63,6 +56,13 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     if (accountTaxCategories.length === 0) {
       throw new Error('No accounts found');
     }
+
+    const {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { exchangeRevaluationTaxCategoryId },
+      },
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
     const foreignAccounts = accountTaxCategories.filter(
       ({ currency }) => currency !== defaultLocalCurrency,
@@ -170,7 +170,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     entriesPromises.push(...foreignAccountsLedger);
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -181,7 +181,7 @@ export const generateLedgerRecordsForExchangeRevaluation: ResolverFn<
     await Promise.all(entriesPromises);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, injector);
     }
 
     return {

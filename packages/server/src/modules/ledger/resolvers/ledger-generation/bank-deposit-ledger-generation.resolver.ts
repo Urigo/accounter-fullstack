@@ -6,6 +6,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { BankDepositChargesProvider } from '../../../bank-deposits/providers/bank-deposit-charges.provider.js';
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
@@ -35,17 +36,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const chargeId = charge.id;
   const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      general: {
-        taxCategories: { exchangeRateTaxCategoryId },
-      },
+    ownerId,
+    defaultLocalCurrency,
+    general: {
+      taxCategories: { exchangeRateTaxCategoryId },
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const errors: Set<string> = new Set();
 
@@ -108,14 +107,14 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
     const mainTransactionPromise = async () =>
       ledgerEntryFromMainTransaction(
         mainTransaction,
-        context,
+        injector,
         chargeId,
         charge.owner_id,
         mainBusinessId ?? undefined,
       )
         .then(ledgerEntry => {
           financialAccountLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         })
         .catch(e => {
           if (e instanceof LedgerError) {
@@ -177,15 +176,15 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       };
 
       interestLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
       });
     });
 
@@ -316,7 +315,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
           };
 
           miscLedgerEntries.push(revaluationLedgerEntry);
-          updateLedgerBalanceByEntry(revaluationLedgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(revaluationLedgerEntry, ledgerBalance, defaultLocalCurrency);
         }
       } else if (isWithdrawal) {
         const mainBusinessBalance = mainTransaction.business_id
@@ -358,9 +357,9 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
 
         if (depositLedgerRecord.debit_entity1) {
           updateLedgerBalanceByEntry(
-            convertLedgerRecordToProto(depositLedgerRecord, context),
+            convertLedgerRecordToProto(depositLedgerRecord, ownerId),
             ledgerBalance,
-            context,
+            defaultLocalCurrency,
           );
         }
         if (mainTransaction.currency !== defaultLocalCurrency) {
@@ -377,7 +376,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
               mainLedgerEntry.creditAccountID1,
               [
                 ...financialAccountLedgerEntries,
-                convertLedgerRecordToProto(depositLedgerRecord, context),
+                convertLedgerRecordToProto(depositLedgerRecord, ownerId),
               ],
               defaultLocalCurrency,
             );
@@ -406,7 +405,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
             chargeId,
           };
           miscLedgerEntries.push(exchangeLedgerEntry);
-          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(exchangeLedgerEntry, ledgerBalance, defaultLocalCurrency);
         }
       }
 
@@ -428,7 +427,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       ...miscLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
@@ -440,7 +439,7 @@ export const generateLedgerRecordsForBankDeposit: ResolverFn<
       allowedUnbalancedBusinesses.add(mainBusinessId);
     }
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,

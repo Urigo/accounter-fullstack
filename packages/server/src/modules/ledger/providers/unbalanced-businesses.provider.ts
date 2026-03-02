@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteChargeUnbalancedBusinessesByBusinessIdQuery,
@@ -54,7 +55,7 @@ const updateChargeUnbalancedBusiness = sql<IUpdateChargeUnbalancedBusinessQuery>
 export class UnbalancedBusinessesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchChargeUnbalancedBusinessesByChargeIds(chargeIds: readonly string[]) {
@@ -74,13 +75,14 @@ export class UnbalancedBusinessesProvider {
     this.batchChargeUnbalancedBusinessesByChargeIds(keys),
   );
 
-  public insertChargeUnbalancedBusinesses(params: IInsertChargeUnbalancedBusinessesParams) {
+  public async insertChargeUnbalancedBusinesses(params: IInsertChargeUnbalancedBusinessesParams) {
     if (params.unbalancedBusinesses.length) {
       params.unbalancedBusinesses.map(({ chargeId }) => {
         if (chargeId) this.invalidateByChargeId(chargeId);
       });
     }
-    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertChargeUnbalancedBusinesses.run(
       {
         unbalancedBusinesses: params.unbalancedBusinesses.map(business => ({

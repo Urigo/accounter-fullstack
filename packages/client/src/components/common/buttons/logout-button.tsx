@@ -1,16 +1,17 @@
-import { useContext, type ReactElement } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../../providers/auth-guard.js';
+import { type ReactElement } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { ROUTES } from '../../../router/routes.js';
 import { Button } from '../../ui/button.js';
 
 export function LogoutButton(): ReactElement {
-  const navigate = useNavigate();
-  const { authService } = useContext(AuthContext);
+  const { logout } = useAuth0();
 
   const handleLogout = async (): Promise<void> => {
-    await authService.logout();
-    navigate(ROUTES.LOGIN);
+    await logout({
+      logoutParams: {
+        returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
+      },
+    });
   };
 
   return (

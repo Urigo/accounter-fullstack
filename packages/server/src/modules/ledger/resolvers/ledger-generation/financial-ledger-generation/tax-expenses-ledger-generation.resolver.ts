@@ -6,6 +6,7 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../../financial-entities/providers/financial-entities.provider.js';
 import {
   decorateLedgerRecords,
@@ -26,15 +27,12 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   try {
     const {
-      injector,
-      adminContext: {
-        defaultLocalCurrency,
-        authorities: { taxBusinessId, taxExpensesTaxCategoryId },
-      },
-    } = context;
+      defaultLocalCurrency,
+      authorities: { taxBusinessId, taxExpensesTaxCategoryId },
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -113,7 +111,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
       getProfitLossReportAmountsByYear(year);
 
     const { annualTaxExpenseAmount } = await calculateTaxAmounts(
-      context,
+      injector,
       year,
       decoratedLedgerByYear.get(year) ?? [],
       researchAndDevelopmentExpenses.amount * -1,
@@ -140,7 +138,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     const ledgerEntries = [ledgerEntry];
 
     // generate ledger from misc expenses
-    await generateMiscExpensesLedger(charge, context).then(entries => {
+    await generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -148,7 +146,7 @@ export const generateLedgerRecordsForTaxExpenses: ResolverFn<
     });
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, injector);
     }
 
     return {

@@ -1,5 +1,7 @@
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { businessTripSummary } from '../../business-trips/resolvers/business-trip-summary.resolver.js';
 import { BusinessTripProto } from '../../business-trips/types.js';
@@ -13,7 +15,7 @@ import {
 import { DecoratedLedgerRecord, getProfitLossReportAmounts } from './profit-and-loss.helper.js';
 
 export async function calculateTaxAmounts(
-  context: GraphQLModules.Context,
+  injector: Injector,
   year: number,
   decoratedLedgerRecords: DecoratedLedgerRecord[],
   yearlyResearchAndDevelopmentExpensesAmount: number,
@@ -21,17 +23,15 @@ export async function calculateTaxAmounts(
   profitBeforeTaxAmount: number,
 ) {
   const {
-    injector,
-    adminContext: {
-      general: {
-        taxCategories: {
-          fineTaxCategoryId,
-          untaxableGiftsTaxCategoryId,
-          salaryExcessExpensesTaxCategoryId,
-        },
+    general: {
+      taxCategories: {
+        fineTaxCategoryId,
+        untaxableGiftsTaxCategoryId,
+        salaryExcessExpensesTaxCategoryId,
       },
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
   const taxRateVariablesPromise = injector
     .get(CorporateTaxesProvider)
     .getCorporateTaxesByDateLoader.load(`${year}-01-01` as TimelessDateString);
@@ -44,7 +44,7 @@ export async function calculateTaxAmounts(
     .then(
       async businessTrips =>
         await Promise.all(
-          businessTrips.map(trip => businessTripSummary(context, trip as BusinessTripProto)),
+          businessTrips.map(trip => businessTripSummary(injector, trip as BusinessTripProto)),
         ),
     );
   const [taxRateVariables, businessTrips] = await Promise.all([

@@ -1,16 +1,18 @@
 import { format } from 'date-fns';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
 import type { SalariesModule } from '../types.js';
 
 export const insertSalaryRecords: SalariesModule.MutationResolvers['insertSalaryRecords'] = async (
   _,
   params,
-  { injector, adminContext },
+  { injector },
 ) => {
   try {
+    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     const salaryRecords = params.salaryRecords.map(salaryRecord => ({
       ...salaryRecord,
-      ownerId: adminContext.defaultAdminBusinessId,
+      ownerId,
       employee: salaryRecord.employee ?? null,
       addedVacationDays: salaryRecord.addedVacationDays ?? null,
       baseSalary: salaryRecord.baseSalary ?? null,

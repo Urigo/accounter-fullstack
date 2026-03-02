@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripAccommodationsExpenseParams,
@@ -66,7 +67,7 @@ const deleteBusinessTripAccommodationsExpense = sql<IDeleteBusinessTripAccommoda
 export class BusinessTripAccommodationsExpensesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessTripsAccommodationsExpensesByBusinessTripIds(
@@ -105,7 +106,7 @@ export class BusinessTripAccommodationsExpensesProvider {
     (ids: readonly string[]) => this.batchBusinessTripsAccommodationsExpensesByIds(ids),
   );
 
-  public updateBusinessTripAccommodationsExpense(
+  public async updateBusinessTripAccommodationsExpense(
     params: IUpdateBusinessTripAccommodationsExpenseParams,
   ) {
     if (params.businessTripExpenseId) {
@@ -114,17 +115,18 @@ export class BusinessTripAccommodationsExpensesProvider {
     return updateBusinessTripAccommodationsExpense.run(params, this.db);
   }
 
-  public insertBusinessTripAccommodationsExpense(
+  public async insertBusinessTripAccommodationsExpense(
     params: IInsertBusinessTripAccommodationsExpenseParams,
   ) {
     params.attendeesStay ||= [];
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertBusinessTripAccommodationsExpense.run(
-      reassureOwnerIdExists(params, this.context),
+      reassureOwnerIdExists(params, ownerId),
       this.db,
     );
   }
 
-  public deleteBusinessTripAccommodationsExpense(
+  public async deleteBusinessTripAccommodationsExpense(
     params: IDeleteBusinessTripAccommodationsExpenseParams,
   ) {
     if (params.businessTripExpenseId) {

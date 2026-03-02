@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripEmployeePaymentParams,
@@ -85,7 +86,7 @@ const replaceBusinessTripsEmployeePaymentsChargeId = sql<IReplaceBusinessTripsEm
 export class BusinessTripEmployeePaymentsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessTripEmployeePaymentsByChargeIds(chargeIds: readonly string[]) {
@@ -117,7 +118,7 @@ export class BusinessTripEmployeePaymentsProvider {
     return updateBusinessTripEmployeePayment.run(params, this.db);
   }
 
-  public replaceBusinessTripsEmployeePaymentsChargeId(
+  public async replaceBusinessTripsEmployeePaymentsChargeId(
     params: IReplaceBusinessTripsEmployeePaymentsChargeIdParams,
   ) {
     if (params.assertChargeID) {
@@ -129,14 +130,12 @@ export class BusinessTripEmployeePaymentsProvider {
     return replaceBusinessTripsEmployeePaymentsChargeId.run(params, this.db);
   }
 
-  public insertBusinessTripEmployeePayment(params: IInsertBusinessTripEmployeePaymentParams) {
+  public async insertBusinessTripEmployeePayment(params: IInsertBusinessTripEmployeePaymentParams) {
     if (params.chargeId) {
       this.getBusinessTripEmployeePaymentsByChargeIdLoader.clear(params.chargeId);
     }
-    return insertBusinessTripEmployeePayment.run(
-      reassureOwnerIdExists(params, this.context),
-      this.db,
-    );
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertBusinessTripEmployeePayment.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async deleteBusinessTripEmployeePayment(params: IDeleteBusinessTripEmployeePaymentParams) {

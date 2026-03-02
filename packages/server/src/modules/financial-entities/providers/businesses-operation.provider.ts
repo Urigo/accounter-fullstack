@@ -1,5 +1,6 @@
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { BusinessTripAttendeesProvider } from '../../business-trips/providers/business-trips-attendees.provider.js';
 import { DividendsProvider } from '../../dividends/providers/dividends.provider.js';
@@ -24,8 +25,8 @@ const deleteBusiness = sql<IDeleteBusinessQuery>`
 })
 export class BusinessesOperationProvider {
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private db: TenantAwareDBClient,
+    private adminContextProvider: AdminContextProvider,
     private businessesProvider: BusinessesProvider,
     private taxCategoryProvider: TaxCategoriesProvider,
     private clientsProvider: ClientsProvider,
@@ -69,8 +70,16 @@ export class BusinessesOperationProvider {
           throw new Error('Cannot delete business as it represent dividends receiver');
       });
 
+    const adminContextPromise = this.adminContextProvider.getVerifiedAdminContext;
+
     // some validations before deleting the business
-    await Promise.all([employeePromise, tripsPromise, fundPromise, dividendsPromise]);
+    const [{ ownerId }] = await Promise.all([
+      adminContextPromise(),
+      employeePromise,
+      tripsPromise,
+      fundPromise,
+      dividendsPromise,
+    ]);
 
     // remove from charge unbalanced ledger businesses
     const deleteUnbalancedChargesBusinesses =
@@ -91,7 +100,7 @@ export class BusinessesOperationProvider {
     // remove business-tax-category matches
     const deleteMatchingTaxCategory = this.taxCategoryProvider.deleteBusinessTaxCategory({
       businessId,
-      ownerId: this.context.currentUser.userId,
+      ownerId,
     });
 
     await Promise.all([

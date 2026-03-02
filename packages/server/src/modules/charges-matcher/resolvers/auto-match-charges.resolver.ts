@@ -4,9 +4,9 @@ import type { ChargesMatcherModule } from '../types.js';
 
 export const autoMatchChargesResolver: ChargesMatcherModule.Resolvers = {
   Mutation: {
-    autoMatchCharges: async (_, __, context) => {
+    autoMatchCharges: async (_, __, { injector }) => {
       try {
-        const result = await context.injector.get(ChargesMatcherProvider).autoMatchCharges(context);
+        const result = await injector.get(ChargesMatcherProvider).autoMatchCharges();
         return result;
       } catch (e) {
         if (e instanceof GraphQLError) {

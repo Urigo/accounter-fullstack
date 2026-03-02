@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   DateOrString,
@@ -80,8 +81,8 @@ const removeBusinessTripAttendees = sql<IRemoveBusinessTripAttendeesQuery>`
 export class BusinessTripAttendeesProvider {
   constructor(
     private db: TenantAwareDBClient,
+    private adminContextProvider: AdminContextProvider,
     private businessTripsProvider: BusinessTripsProvider,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchBusinessTripsAttendeesByChargeIds(chargeIds: readonly string[]) {
@@ -136,32 +137,33 @@ export class BusinessTripAttendeesProvider {
     (ids: readonly string[]) => this.batchBusinessTripsAttendeesByBusinessTripIds(ids),
   );
 
-  public getBusinessTripsByAttendeeId(attendeeId: string) {
+  public async getBusinessTripsByAttendeeId(attendeeId: string) {
     return getBusinessTripsByAttendeeId.run({ attendeeId }, this.db);
   }
 
-  public getLastFlightByDateAndAttendeeId(params: {
+  public async getLastFlightByDateAndAttendeeId(params: {
     attendeeBusinessId: string;
     date: DateOrString;
   }) {
     return getLastFlightByDateAndAttendeeId.run(params, this.db);
   }
 
-  public addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
+  public async addBusinessTripAttendees(params: IAddBusinessTripAttendeesParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
-    return addBusinessTripAttendees.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return addBusinessTripAttendees.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
-  public updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {
+  public async updateBusinessTripAttendee(params: IUpdateBusinessTripAttendeeParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }
     return updateBusinessTripAttendee.run(params, this.db);
   }
 
-  public removeBusinessTripAttendees(params: IRemoveBusinessTripAttendeesParams) {
+  public async removeBusinessTripAttendees(params: IRemoveBusinessTripAttendeesParams) {
     if (params.businessTripId) {
       this.getBusinessTripsAttendeesByBusinessTripIdLoader.clear(params.businessTripId);
     }

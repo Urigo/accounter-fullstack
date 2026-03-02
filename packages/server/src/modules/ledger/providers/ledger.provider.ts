@@ -1,9 +1,10 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import type { Currency } from '../../../shared/enums.js';
 import { LedgerLockError } from '../../../shared/errors.js';
+import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { validateLedgerRecordParams } from '../helpers/ledger-validation.helper.js';
 import type {
@@ -232,22 +233,17 @@ const lockLedgerRecords = sql<ILockLedgerRecordsQuery>`
   global: true,
 })
 export class LedgerProvider {
-  adminBusinessId: string;
-  localCurrency: Currency;
-
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
     private db: TenantAwareDBClient,
-  ) {
-    this.adminBusinessId = this.context.adminContext.defaultAdminBusinessId;
-    this.localCurrency = this.context.adminContext.defaultLocalCurrency;
-  }
+    private adminContextProvider: AdminContextProvider,
+  ) {}
 
   private async batchLedgerRecordsByIds(ids: readonly string[]) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const ledgerRecords = await getLedgerRecordsByIds.run(
       {
         ids,
-        ownerId: this.adminBusinessId,
+        ownerId,
       },
       this.db,
     );
@@ -259,10 +255,11 @@ export class LedgerProvider {
   );
 
   private async batchLedgerRecordsByChargesIds(ids: readonly string[]) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const ledgerRecords = await getLedgerRecordsByChargesIds.run(
       {
         chargeIds: ids,
-        ownerId: this.adminBusinessId,
+        ownerId,
       },
       this.db,
     );
@@ -274,10 +271,11 @@ export class LedgerProvider {
   );
 
   private async batchLedgerRecordsByFinancialEntityIds(ids: readonly string[]) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const ledgerRecords = await getLedgerRecordsByFinancialEntityIds.run(
       {
         financialEntityIds: ids,
-        ownerId: this.adminBusinessId,
+        ownerId,
       },
       this.db,
     );
@@ -296,11 +294,9 @@ export class LedgerProvider {
   public getLedgerRecordsByFinancialEntityIdLoader = new DataLoader((keys: readonly string[]) =>
     this.batchLedgerRecordsByFinancialEntityIds(keys),
   );
-  public getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
-    return getLedgerRecordsByDates.run(
-      { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
-      this.db,
-    );
+  public async getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return getLedgerRecordsByDates.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public getLedgerBalanceToDate(date: TimelessDateString) {
@@ -317,17 +313,16 @@ export class LedgerProvider {
     }
 
     this.clearCache();
-    return updateLedgerRecord.run(
-      { ...params, ownerId: params.ownerId ?? this.adminBusinessId },
-      this.db,
-    );
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return updateLedgerRecord.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async insertLedgerRecords(params: IInsertLedgerRecordsParams) {
     if (params.ledgerRecords.length === 0) return [];
 
     this.clearCache();
-    params.ledgerRecords.map(record => validateLedgerRecordParams(record, this.localCurrency));
+    const { defaultLocalCurrency } = await this.adminContextProvider.getVerifiedAdminContext();
+    params.ledgerRecords.map(record => validateLedgerRecordParams(record, defaultLocalCurrency));
     return insertLedgerRecords.run(params, this.db);
   }
 
@@ -343,11 +338,12 @@ export class LedgerProvider {
       }
     });
 
-    await this.clearCache();
+    this.clearCache();
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     await deleteLedgerRecords.run(
       {
         ledgerRecordIds: ids,
-        ownerId: this.adminBusinessId,
+        ownerId,
       },
       this.db,
     );
@@ -372,10 +368,11 @@ export class LedgerProvider {
     });
 
     this.clearCache();
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     await deleteLedgerRecordsByChargeIds.run(
       {
         chargeIds,
-        ownerId: this.adminBusinessId,
+        ownerId,
       },
       this.db,
     );

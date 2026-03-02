@@ -1,5 +1,5 @@
-import { useContext, useEffect, useMemo, type ReactNode } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   createClient,
   fetchExchange,
@@ -8,23 +8,40 @@ import {
   type AnyVariables,
   type Operation,
 } from 'urql';
+import { useAuth0 } from '@auth0/auth0-react';
 import { authExchange } from '@urql/exchange-auth';
 import { ROUTES } from '../router/routes.js';
-import { AuthContext } from './auth-guard.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  const { authService } = useContext(AuthContext);
+  const { getAccessTokenSilently, isAuthenticated, logout } = useAuth0();
+  const [token, setToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // Track login state to trigger token updates
-  const loggedIn = authService.isLoggedIn();
+  useEffect(() => {
+    const refreshToken = async (): Promise<void> => {
+      if (!isAuthenticated) {
+        setToken(null);
+        return;
+      }
 
-  const token = useMemo(() => {
-    const token = authService.authToken();
-    return token;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loggedIn is needed to trigger token refresh on login
-  }, [authService, loggedIn]);
+      try {
+        const accessToken = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+            scope: 'openid profile email',
+          },
+        });
+
+        setToken(`Bearer ${accessToken}`);
+      } catch (tokenError) {
+        console.error('Failed to get Auth0 access token:', tokenError);
+        setToken(null);
+      }
+    };
+
+    void refreshToken();
+  }, [isAuthenticated, getAccessTokenSilently]);
 
   const client = useMemo(() => {
     let url: string;
@@ -48,13 +65,16 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
       exchanges: [
         mapExchange({
           onResult(result) {
-            // Handle authentication errors
             const isAuthError =
-              result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
-              result?.error?.response?.status === 401;
+              result?.error?.graphQLErrors.some(
+                e => e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
+              ) || result?.error?.response?.status === 401;
+
             if (isAuthError) {
-              navigate(ROUTES.LOGIN, {
-                state: { message: 'You are not authorized to access this page' },
+              void logout({
+                logoutParams: {
+                  returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
+                },
               });
               return;
             }
@@ -75,29 +95,45 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
             didAuthError(error, _operation): boolean {
               return (
                 error?.response?.status === 401 ||
-                error?.graphQLErrors?.some(e => e.extensions?.code === 'FORBIDDEN')
+                error?.graphQLErrors?.some(
+                  e =>
+                    e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
+                )
               );
             },
             async refreshAuth(): Promise<void> {
-              authService.logout();
+              if (!isAuthenticated) {
+                setToken(null);
+                navigate(ROUTES.LOGIN, {
+                  state: { message: 'You are not authorized to access this page' },
+                });
+                return;
+              }
+
+              try {
+                const refreshedToken = await getAccessTokenSilently({
+                  authorizationParams: {
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    scope: 'openid profile email',
+                  },
+                  cacheMode: 'off',
+                });
+
+                setToken(`Bearer ${refreshedToken}`);
+              } catch (refreshError) {
+                console.error('Failed to refresh Auth0 token:', refreshError);
+                setToken(null);
+                navigate(ROUTES.LOGIN, {
+                  state: { message: 'Session expired. Please sign in again.' },
+                });
+              }
             },
           };
         }),
         fetchExchange,
       ],
     });
-  }, [navigate, token, authService]);
+  }, [navigate, token, getAccessTokenSilently, isAuthenticated, logout]);
 
-  useEffect(() => {
-    if (!client) {
-      navigate(ROUTES.LOGIN, { state: { prevPath: window.location.pathname } });
-    }
-    return;
-  }, [client, navigate]);
-
-  return client ? (
-    <Provider value={client}>{children}</Provider>
-  ) : (
-    <Navigate to={ROUTES.LOGIN} state={{ prevPath: window.location.pathname }} />
-  );
+  return <Provider value={client}>{children}</Provider>;
 }

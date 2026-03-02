@@ -4,6 +4,7 @@ import {
   formatFinancialAmount,
   optionalDateToTimelessDateString,
 } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
@@ -32,11 +33,10 @@ export const commonBusinessTripExpenseFields: BusinessTripsModule.BusinessTripEx
       }),
   date: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.date),
   valueDate: DbTripExpense => optionalDateToTimelessDateString(DbTripExpense.value_date),
-  amount: async (
-    DbTripExpense,
-    _,
-    { injector, adminContext: { defaultCryptoConversionFiatCurrency } },
-  ) => {
+  amount: async (DbTripExpense, _, { injector }) => {
+    const { defaultCryptoConversionFiatCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
     if (!DbTripExpense.amount || !DbTripExpense.currency) {
       if (!DbTripExpense.transaction_ids?.length) {
         return null;

@@ -1,11 +1,9 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import { AUTH_CONTEXT } from '../../../shared/tokens.js';
-import type { AuthContext } from '../../../shared/types/auth.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
 import type {
   IDeleteCorporateTaxParams,
   IDeleteCorporateTaxQuery,
@@ -59,18 +57,22 @@ const deleteCorporateTax = sql<IDeleteCorporateTaxQuery>`
   global: true,
 })
 export class CorporateTaxesProvider {
+  private businessIdCache: string | null = null;
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(AUTH_CONTEXT) private authContext: AuthContext,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private authContextProvider: AuthContextV2Provider,
   ) {}
 
-  private get businessId() {
-    // TODO: CLEANUP AFTER PHASE 4 MIGRATION - Remove fallback to context.currentUser.userId
-    // Once tenant-aware DB migration (Phase 4.8) is complete and all providers use AUTH_CONTEXT,
-    // this should only return authContext.tenant.businessId and throw an error if null.
-    // The fallback to userId is a temporary measure during the Auth0 migration transition.
-    return this.authContext?.tenant?.businessId ?? this.context.currentUser.userId;
+  private async getBusinessId(): Promise<string> {
+    if (this.businessIdCache !== null) {
+      return this.businessIdCache;
+    }
+    const authContext = await this.authContextProvider.getAuthContext();
+    this.businessIdCache = authContext?.tenant.businessId ?? null;
+    if (!this.businessIdCache) {
+      throw new Error('Missing businessId in AuthContext');
+    }
+    return this.businessIdCache;
   }
 
   private allCorporateTaxesCache = new Map<
@@ -103,14 +105,14 @@ export class CorporateTaxesProvider {
     });
   }
 
-  public getCorporateTaxesByDateLoader = new DataLoader((dates: readonly TimelessDateString[]) => {
-    if (!this.businessId) {
-      throw new Error('Business ID is required for getCorporateTaxesByDateLoader');
-    }
-    return this.batchCorporateTaxesByDates(
-      dates.map(date => ({ date, corporateId: this.businessId! })),
-    );
-  });
+  public getCorporateTaxesByDateLoader = new DataLoader(
+    async (dates: readonly TimelessDateString[]) => {
+      const businessId = await this.getBusinessId();
+      return this.batchCorporateTaxesByDates(
+        dates.map(date => ({ date, corporateId: businessId })),
+      );
+    },
+  );
 
   private async batchCorporateTaxesByCorporateIds(corporateIds: readonly string[]) {
     const taxes = await getCorporateTaxesByCorporateIds.run({ corporateIds }, this.db);
@@ -126,9 +128,16 @@ export class CorporateTaxesProvider {
     return updateCorporateTax.run(params, this.db);
   }
 
-  public insertCorporateTax(params: IInsertCorporateTaxParams) {
+  public async insertCorporateTax(params: IInsertCorporateTaxParams) {
     this.allCorporateTaxesCache = new Map();
-    return insertCorporateTax.run(reassureOwnerIdExists(params, this.context), this.db);
+    const ownerId = params.ownerId ?? (await this.getBusinessId());
+    return insertCorporateTax.run(
+      {
+        ...params,
+        ownerId,
+      },
+      this.db,
+    );
   }
 
   public deleteCorporateTax(params: IDeleteCorporateTaxParams) {

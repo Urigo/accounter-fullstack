@@ -1,9 +1,11 @@
 import { differenceInDays, endOfMonth, endOfYear, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import {
   AVERAGE_MONTHLY_WORK_DAYS,
   AVERAGE_MONTHLY_WORK_HOURS,
 } from '../../../shared/constants.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
 import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
 import type {
@@ -35,17 +37,11 @@ function vacationDaysPerYearsOfExperience(years: number) {
   return 0;
 }
 
-export async function calculateVacationReserveAmount(
-  context: GraphQLModules.Context,
-  year: number,
-) {
+export async function calculateVacationReserveAmount(injector: Injector, year: number) {
   const {
-    injector,
-    adminContext: {
-      defaultAdminBusinessId,
-      salaries: { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId },
-    },
-  } = context;
+    ownerId,
+    salaries: { vacationReserveTaxCategoryId, vacationReserveExpensesTaxCategoryId },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   if (!vacationReserveTaxCategoryId) {
     throw new GraphQLError(`Vacation reserves tax category is not set`);
   }
@@ -58,7 +54,7 @@ export async function calculateVacationReserveAmount(
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
+    .getEmployeesByEmployerLoader.load(ownerId);
   const vacationLedgerRecordsPromise = injector
     .get(LedgerProvider)
     .getLedgerRecordsByFinancialEntityIdLoader.load(vacationReserveTaxCategoryId);

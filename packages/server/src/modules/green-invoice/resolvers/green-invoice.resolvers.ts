@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type {
@@ -45,9 +46,11 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
     syncGreenInvoiceDocuments: async (
       _,
       { ownerId: inputOwnerId, singlePageLimit = true },
-      { injector, adminContext: { defaultAdminBusinessId } },
+      { injector },
     ) => {
-      const ownerId = inputOwnerId ?? defaultAdminBusinessId;
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+      const ownerId = inputOwnerId ?? adminContext.ownerId;
       const greenInvoiceDocuments = await getGreenInvoiceDocuments(injector, !singlePageLimit);
 
       const issuedDocuments = await injector.get(IssuedDocumentsProvider).getAllIssuedDocuments();

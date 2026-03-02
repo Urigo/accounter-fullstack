@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import { QueryResult, QueryResultRow } from 'pg';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import type { AuthContext } from '../../../shared/types/auth.js';
 
 type QueryResultWithRows<T extends QueryResultRow = QueryResultRow> = QueryResult<T> & {rowCount: number};
 
 describe('AdminContextProvider', () => {
   let provider: AdminContextProvider;
   let dbProvider: Mocked<TenantAwareDBClient>;
-  let context: GraphQLModules.GlobalContext;
+  let authContextProvider: Mocked<AuthContextV2Provider>;
 
   beforeEach(() => {
     dbProvider = {
@@ -18,12 +20,20 @@ describe('AdminContextProvider', () => {
       healthCheck: vi.fn(),
       query: vi.fn(),
     } as unknown as Mocked<TenantAwareDBClient>;
-    context = {
-      currentUser: { userId: 'test-owner-id' },
-    } as GraphQLModules.GlobalContext;
 
-    // Inject mocks: context (for ownerId) and dbProvider
-    provider = new AdminContextProvider(context, dbProvider);
+    const mockAuthContext: AuthContext = {
+      authType: 'jwt',
+      tenant: {
+        businessId: 'test-owner-id',
+      },
+    };
+
+    authContextProvider = {
+      getAuthContext: vi.fn().mockResolvedValue(mockAuthContext),
+    } as unknown as Mocked<AuthContextV2Provider>;
+
+    // Inject mocks: authContextProvider (for auth context) and dbProvider
+    provider = new AdminContextProvider(authContextProvider, dbProvider);
   });
 
   it('should fetch admin context for the current user', async () => {
@@ -34,7 +44,7 @@ describe('AdminContextProvider', () => {
 
     const result = await provider.getAdminContext();
     expect(result).toBeDefined();
-    expect(result?.default_local_currency).toBe('USD');
+    expect(result?.defaultLocalCurrency).toBe('USD');
     expect(dbProvider.query).toHaveBeenCalled();
   });
 
@@ -66,13 +76,9 @@ describe('AdminContextProvider', () => {
     await provider.updateAdminContext({ defaultLocalCurrency: 'EUR' });
     expect(dbProvider.query).toHaveBeenCalledTimes(2); // +1 for update
 
-    dbProvider.query.mockResolvedValueOnce({
-        rows: [{ owner_id: 'test-owner-id', default_local_currency: 'EUR' }],
-        rowCount: 1
-    } as unknown as QueryResultWithRows); // get again
-    
+    // The cache should now have the updated value from updateAdminContext
     const result = await provider.getAdminContext();
-    expect(result?.default_local_currency).toBe('EUR');
-    expect(dbProvider.query).toHaveBeenCalledTimes(3); // +1 for refetch
+    expect(result?.defaultLocalCurrency).toBe('EUR');
+    expect(dbProvider.query).toHaveBeenCalledTimes(2); // No additional call, using cache
   });
 });

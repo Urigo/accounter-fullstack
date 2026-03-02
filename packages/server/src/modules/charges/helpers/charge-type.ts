@@ -1,3 +1,5 @@
+import { Injector } from 'graphql-modules';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -38,7 +40,7 @@ function normalizeDbType(chargeType?: charge_type | null): ChargeTypeEnum | unde
 
 export async function getChargeType(
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<ChargeTypeEnum> {
   const type = normalizeDbType(charge.type);
   if (type) {
@@ -46,9 +48,9 @@ export async function getChargeType(
   }
 
   const [{ allBusinessIds, mainBusinessId }, businessTrip, transactions] = await Promise.all([
-    getChargeBusinesses(charge.id, context.injector),
-    context.injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
-    context.injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
+    getChargeBusinesses(charge.id, injector),
+    injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
+    injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
   ]);
 
   if (businessTrip) {
@@ -61,7 +63,7 @@ export async function getChargeType(
     dividends: { dividendBusinessIds },
     authorities: { vatBusinessId },
     financialAccounts: { creditCardIds },
-  } = context.adminContext;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   if (
     bankDepositBusinessId &&

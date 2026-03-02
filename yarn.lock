@@ -54,6 +54,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
+    "@auth0/auth0-react": "npm:2.15.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:5.2.2"
@@ -505,6 +506,40 @@ __metadata:
   dependencies:
     node-fetch: "npm:^2.6.1"
   checksum: 10c0/cd69134005ef5ea570d55631c8be59b593e2dda2207f616d30618f948af6ee5d227b857aefd56c535e8f7f3ade47083e4e7795b5ee014a6732011c6e5f9eb08f
+  languageName: node
+  linkType: hard
+
+"@auth0/auth0-auth-js@npm:^1.4.0":
+  version: 1.4.0
+  resolution: "@auth0/auth0-auth-js@npm:1.4.0"
+  dependencies:
+    jose: "npm:^6.0.8"
+    openid-client: "npm:^6.8.0"
+  checksum: 10c0/b28de115a178024990ebf9330a9a443395e9a9591a0a30a82e4956c9ca2d97f2a88f0fc8e2be298cb158ae30fd81c82dd4dc7dbc9988386d08052f8b0cee9426
+  languageName: node
+  linkType: hard
+
+"@auth0/auth0-react@npm:2.15.0":
+  version: 2.15.0
+  resolution: "@auth0/auth0-react@npm:2.15.0"
+  dependencies:
+    "@auth0/auth0-spa-js": "npm:^2.16.0"
+  peerDependencies:
+    react: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
+    react-dom: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
+  checksum: 10c0/278d23b05c885337aa4db121606d26573310e4568f614b3553d07fe8ca4bcd0eafb6b5213a19666a5ff188330f155003784c2c8020ecdd6a91f7d46113c9063b
+  languageName: node
+  linkType: hard
+
+"@auth0/auth0-spa-js@npm:^2.16.0":
+  version: 2.17.0
+  resolution: "@auth0/auth0-spa-js@npm:2.17.0"
+  dependencies:
+    "@auth0/auth0-auth-js": "npm:^1.4.0"
+    browser-tabs-lock: "npm:^1.2.15"
+    dpop: "npm:^2.1.1"
+    es-cookie: "npm:~1.3.2"
+  checksum: 10c0/0976aba1bcf53698034b11eebaf013cdfcbb70f2722d871e5aad22751b23077dd48d234b4938fa022046b858b2bb42f32fa4779519d27902d6c6e044cfea2128
   languageName: node
   linkType: hard
 
@@ -10442,6 +10477,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"browser-tabs-lock@npm:^1.2.15":
+  version: 1.3.0
+  resolution: "browser-tabs-lock@npm:1.3.0"
+  dependencies:
+    lodash: "npm:>=4.17.21"
+  checksum: 10c0/b1f9cbd221725cf3228daf42360ea6a97f69b29e0475ef734bc5a6bd5c27b61f99db716c49808988a1c735d828207dcaa3a8802e605d0195538fbf9e25d1753b
+  languageName: node
+  linkType: hard
+
 "browserify-aes@npm:^1.0.4, browserify-aes@npm:^1.2.0":
   version: 1.2.0
   resolution: "browserify-aes@npm:1.2.0"
@@ -12322,6 +12366,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dpop@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "dpop@npm:2.1.1"
+  checksum: 10c0/e46dfd62325dd63372a17492c1867f79cdaf235645d32b87c3be8a09d4c7b03b8b44efec26688ba19e8279c77497a08deb302a9a4704b432795efd1163519611
+  languageName: node
+  linkType: hard
+
 "dset@npm:^3.1.1, dset@npm:^3.1.2, dset@npm:^3.1.3, dset@npm:^3.1.4":
   version: 3.1.4
   resolution: "dset@npm:3.1.4"
@@ -12610,6 +12661,13 @@ __metadata:
     unbox-primitive: "npm:^1.1.0"
     which-typed-array: "npm:^1.1.19"
   checksum: 10c0/fca062ef8b5daacf743732167d319a212d45cb655b0bb540821d38d715416ae15b04b84fc86da9e2c89135aa7b337337b6c867f84dcde698d75d55688d5d765c
+  languageName: node
+  linkType: hard
+
+"es-cookie@npm:~1.3.2":
+  version: 1.3.2
+  resolution: "es-cookie@npm:1.3.2"
+  checksum: 10c0/26eb6e06b25b5569d8763fcb23b5335a5098e354b0a9a7bc5122e8c8705003307187a165ddaeda5cff08fa4cc8e1675dbddd5709279fb27cfa8875514dc3eccb
   languageName: node
   linkType: hard
 
@@ -16089,6 +16147,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jose@npm:^6.0.8, jose@npm:^6.1.3":
+  version: 6.1.3
+  resolution: "jose@npm:6.1.3"
+  checksum: 10c0/b9577b4a7a5e84131011c23823db9f5951eae3ba796771a6a2401ae5dd50daf71104febc8ded9c38146aa5ebe94a92ac09c725e699e613ef26949b9f5a8bc30f
+  languageName: node
+  linkType: hard
+
 "joycon@npm:^3.1.1":
   version: 3.1.1
   resolution: "joycon@npm:3.1.1"
@@ -16801,7 +16866,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.21, lodash@npm:~4.17.0":
+"lodash@npm:>=4.17.21, lodash@npm:^4.17.21, lodash@npm:~4.17.0":
   version: 4.17.23
   resolution: "lodash@npm:4.17.23"
   checksum: 10c0/1264a90469f5bb95d4739c43eb6277d15b6d9e186df4ac68c3620443160fc669e2f14c11e7d8b2ccf078b81d06147c01a8ccced9aab9f9f63d50dcf8cace6bf6
@@ -18323,6 +18388,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"oauth4webapi@npm:^3.8.4":
+  version: 3.8.5
+  resolution: "oauth4webapi@npm:3.8.5"
+  checksum: 10c0/688142b30f2243813721bfa4ab879aa0056636b19a3d7964d46b11b967199ab8f74f3771225f71ec766821d410add950475cf1afcfe26a9640cd1c0a1de8e423
+  languageName: node
+  linkType: hard
+
 "object-assign@npm:^4.0.1, object-assign@npm:^4.1.0, object-assign@npm:^4.1.1":
   version: 4.1.1
   resolution: "object-assign@npm:4.1.1"
@@ -18511,6 +18583,16 @@ __metadata:
     is-docker: "npm:^2.0.0"
     is-wsl: "npm:^2.1.1"
   checksum: 10c0/77573a6a68f7364f3a19a4c80492712720746b63680ee304555112605ead196afe91052bd3c3d165efdf4e9d04d255e87de0d0a77acec11ef47fd5261251813f
+  languageName: node
+  linkType: hard
+
+"openid-client@npm:^6.8.0":
+  version: 6.8.2
+  resolution: "openid-client@npm:6.8.2"
+  dependencies:
+    jose: "npm:^6.1.3"
+    oauth4webapi: "npm:^3.8.4"
+  checksum: 10c0/98de93a1d1135f7c51b7707258ec0506bc6dc5359acf06f922cd4258635d657d1a80b740ad4a11ae9e79ce6061dd0d19cf5115a9918866f0b46c5486cfbbf22c
   languageName: node
   linkType: hard
 

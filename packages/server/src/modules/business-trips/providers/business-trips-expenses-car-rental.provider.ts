@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripCarRentalExpenseParams,
@@ -62,7 +63,7 @@ const deleteBusinessTripCarRentalExpense = sql<IDeleteBusinessTripCarRentalExpen
 export class BusinessTripCarRentalExpensesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessTripsCarRentalExpensesByBusinessTripIds(
@@ -100,21 +101,25 @@ export class BusinessTripCarRentalExpensesProvider {
     this.batchBusinessTripsCarRentalExpensesByIds(ids),
   );
 
-  public updateBusinessTripCarRentalExpense(params: IUpdateBusinessTripCarRentalExpenseParams) {
+  public async updateBusinessTripCarRentalExpense(
+    params: IUpdateBusinessTripCarRentalExpenseParams,
+  ) {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }
     return updateBusinessTripCarRentalExpense.run(params, this.db);
   }
 
-  public insertBusinessTripCarRentalExpense(params: IInsertBusinessTripCarRentalExpenseParams) {
-    return insertBusinessTripCarRentalExpense.run(
-      reassureOwnerIdExists(params, this.context),
-      this.db,
-    );
+  public async insertBusinessTripCarRentalExpense(
+    params: IInsertBusinessTripCarRentalExpenseParams,
+  ) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertBusinessTripCarRentalExpense.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
-  public deleteBusinessTripCarRentalExpense(params: IDeleteBusinessTripCarRentalExpenseParams) {
+  public async deleteBusinessTripCarRentalExpense(
+    params: IDeleteBusinessTripCarRentalExpenseParams,
+  ) {
     if (params.businessTripExpenseId) {
       this.invalidateById(params.businessTripExpenseId);
     }

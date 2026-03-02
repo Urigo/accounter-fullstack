@@ -39,9 +39,8 @@ export const commonFinancialAccountFields: FinancialAccountsModule.FinancialAcco
 export const commonTransactionFields:
   | FinancialAccountsModule.ConversionTransactionResolvers
   | FinancialAccountsModule.CommonTransactionResolvers = {
-  account: async (transactionId, _, { injector, adminContext }) => {
-    return getFinancialAccountByTransactionId(transactionId, injector, adminContext);
-  },
+  account: async (transactionId, _, { injector }) =>
+    getFinancialAccountByTransactionId(transactionId, injector),
 };
 
 export const commonFinancialEntityFields:

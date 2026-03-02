@@ -1,18 +1,19 @@
+import type { Injector } from 'graphql-modules';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { Currency } from '../../../shared/enums.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
 
 export async function generateMiscExpensesLedger(
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<LedgerProto[]> {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency },
-  } = context;
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   const expenses = await injector
     .get(MiscExpensesProvider)
     .getExpensesByChargeIdLoader.load(charge.id);

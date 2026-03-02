@@ -178,6 +178,10 @@ const LoginPage = lazy(() =>
   import('../components/login-page.js').then(m => ({ default: m.LoginPage })),
 );
 
+const AuthCallbackPage = lazy(() =>
+  import('../components/screens/auth-callback.js').then(m => ({ default: m.AuthCallbackPage })),
+);
+
 /**
  * Helper to wrap components with Suspense
  */
@@ -210,6 +214,13 @@ export const routes: RouteObject[] = [
         element: withSuspense(LoginPage),
         handle: {
           title: 'Login',
+        },
+      },
+      {
+        path: ROUTES.AUTH_CALLBACK,
+        element: withSuspense(AuthCallbackPage),
+        handle: {
+          title: 'Processing Login...',
         },
       },
 

@@ -1,8 +1,10 @@
 import type { Injector } from 'graphql-modules';
 import type { Pool } from 'pg';
+import { AdminContextProvider } from '../modules/admin-context/providers/admin-context.provider.js';
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
+import { AuthContextV2Provider } from '../modules/auth/providers/auth-context-v2.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
@@ -21,18 +23,13 @@ import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbala
 import { MiscExpensesProvider } from '../modules/misc-expenses/providers/misc-expenses.provider.js';
 import { TransactionsProvider } from '../modules/transactions/providers/transactions.provider.js';
 import { VatProvider } from '../modules/vat/providers/vat.provider.js';
-import type { AdminContext } from '../plugins/admin-context-plugin.js';
 import type { Currency } from '../shared/enums.js';
-import type { AuthContext } from '../shared/types/auth.js';
-import type { AccounterContext } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
-  adminContext: AdminContext;
   // Keep optional fields for compatibility with resolvers/helpers
   moduleId: string;
   env?: unknown;
-  currentUser?: unknown;
 };
 
 class SimpleInjector implements Injector {
@@ -56,10 +53,8 @@ export type ExchangeRateMockFn = (
 
 export function createLedgerTestContext(options: {
   pool: Pool;
-  adminContext: AdminContext;
   moduleId?: string;
   env?: unknown;
-  currentUser?: unknown;
   /**
    * Optional mock function to override ExchangeProvider.getExchangeRates.
    * Use this to fix exchange rates for deterministic tests.
@@ -67,54 +62,59 @@ export function createLedgerTestContext(options: {
    */
   mockExchangeRates?: ExchangeRateMockFn;
 }): ModuleContextLike {
-  const { pool, adminContext, moduleId = 'test', env, currentUser, mockExchangeRates } = options;
+  const { pool, moduleId = 'test', env, mockExchangeRates } = options;
 
   const dbProvider = new DBProvider(pool);
 
   // Common context object shared between injector and TenantAwareDBClient
   const context = {
     injector: undefined as unknown as Injector,
-    adminContext,
     moduleId,
     env,
-    currentUser,
   } as ModuleContextLike;
 
-  const tenantAwareDB = new TenantAwareDBClient(
-    dbProvider,
-    {} as AuthContext,
-    context as unknown as AccounterContext,
-  );
+  const tenantAwareDB = new TenantAwareDBClient(dbProvider, {
+    getAuthContext: async () => ({
+      authType: null,
+      tenant: { businessId: process.env.DEFAULT_FINANCIAL_ENTITY_ID! },
+    }),
+  } as AuthContextV2Provider);
 
-  // placeholder for context; filled after injector is created
-  const contextRef: { current?: ModuleContextLike } = { current: context };
+  // Create AdminContextProvider for providers that need it
+  const adminContextProvider = new AdminContextProvider(
+    {
+      getAuthContext: async () => ({
+        authType: null,
+        tenant: { businessId: process.env.DEFAULT_FINANCIAL_ENTITY_ID! },
+      }),
+    } as AuthContextV2Provider,
+    tenantAwareDB,
+  );
 
   const injector = new SimpleInjector(token => {
     switch (token) {
       case DBProvider:
         return dbProvider;
+      case AdminContextProvider:
+        return adminContextProvider;
       case CoinMarketCapProvider:
         return new CoinMarketCapProvider();
       case FiatExchangeProvider:
         return new FiatExchangeProvider(dbProvider);
       case CryptoExchangeProvider:
         return new CryptoExchangeProvider(
-          contextRef.current as unknown as GraphQLModules.Context,
           tenantAwareDB,
+          adminContextProvider,
           new CoinMarketCapProvider(),
         );
       case ExchangeProvider: {
         const crypto = new CryptoExchangeProvider(
-          contextRef.current as unknown as GraphQLModules.Context,
           tenantAwareDB,
+          adminContextProvider,
           new CoinMarketCapProvider(),
         );
         const fiat = new FiatExchangeProvider(dbProvider);
-        const exchangeProvider = new ExchangeProvider(
-          contextRef.current as unknown as GraphQLModules.Context,
-          crypto,
-          fiat,
-        );
+        const exchangeProvider = new ExchangeProvider(crypto, fiat, adminContextProvider);
         // Apply mock if provided
         if (mockExchangeRates) {
           exchangeProvider.getExchangeRates = mockExchangeRates;
@@ -122,56 +122,32 @@ export function createLedgerTestContext(options: {
         return exchangeProvider;
       }
       case LedgerProvider:
-        return new LedgerProvider(
-          contextRef.current as unknown as GraphQLModules.Context,
-          tenantAwareDB,
-        );
+        return new LedgerProvider(tenantAwareDB, adminContextProvider);
       case UnbalancedBusinessesProvider:
-        return new UnbalancedBusinessesProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new UnbalancedBusinessesProvider(tenantAwareDB, adminContextProvider);
       case BalanceCancellationProvider:
         return new BalanceCancellationProvider(tenantAwareDB);
       case MiscExpensesProvider:
-        return new MiscExpensesProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new MiscExpensesProvider(tenantAwareDB, adminContextProvider);
       case DocumentsProvider:
-        return new DocumentsProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new DocumentsProvider(tenantAwareDB, adminContextProvider);
       case TransactionsProvider:
         return new TransactionsProvider(tenantAwareDB);
       case BusinessesProvider:
-        return new BusinessesProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new BusinessesProvider(tenantAwareDB, adminContextProvider);
       case FinancialAccountsProvider:
-        return new FinancialAccountsProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new FinancialAccountsProvider(tenantAwareDB, adminContextProvider);
       case TaxCategoriesProvider:
-        return new TaxCategoriesProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new TaxCategoriesProvider(tenantAwareDB, adminContextProvider);
       case ChargesProvider:
         return new ChargesProvider(tenantAwareDB);
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {
-        const businessesProvider = new BusinessesProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        const businessesProvider = new BusinessesProvider(tenantAwareDB, adminContextProvider);
         const taxCategoriesProvider = new TaxCategoriesProvider(
           tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
+          adminContextProvider,
         );
         const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
           deleteBusinessById: async (_businessId: string) => {},
@@ -184,15 +160,9 @@ export function createLedgerTestContext(options: {
         );
       }
       case BusinessTripsProvider:
-        return new BusinessTripsProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new BusinessTripsProvider(tenantAwareDB, adminContextProvider);
       case ChargeSpreadProvider:
-        return new ChargeSpreadProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new ChargeSpreadProvider(tenantAwareDB, adminContextProvider);
       default:
         throw new Error(
           `Unsupported provider requested by injector: ${

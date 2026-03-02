@@ -1,5 +1,7 @@
 import { lastDayOfMonth } from 'date-fns';
+import type { Currency } from '../../../shared/enums.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
+import type { AdminContext } from '../../admin-context/types.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import type { IGetSalaryRecordsByChargeIdsResult } from '../../salaries/types.js';
 import { LedgerError } from './utils.helper.js';
@@ -12,13 +14,13 @@ function generateEntryRaw(
   ownerId: string,
   isCreditor: boolean,
   chargeId: string,
-  context: GraphQLModules.Context,
+  defaultLocalCurrency: Currency,
 ): LedgerProto {
   return {
     id: `${accountId}|${month}`,
     invoiceDate: transactionDate,
     valueDate: transactionDate,
-    currency: context.adminContext.defaultLocalCurrency,
+    currency: defaultLocalCurrency,
     ...(isCreditor ? { creditAccountID1: accountId } : { debitAccountID1: accountId }),
     localCurrencyCreditAmount1: amount,
     localCurrencyDebitAmount1: amount,
@@ -52,7 +54,7 @@ type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boo
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  adminContext: AdminContext,
 ): {
   entries: LedgerProto[];
   monthlyEntriesProto: MonthlyLedgerProto[];
@@ -61,7 +63,9 @@ export function generateEntriesFromSalaryRecords(
   const {
     salaries: { taxDeductionsBusinessId },
     authorities: { socialSecurityBusinessId },
-  } = context.adminContext;
+    defaultLocalCurrency,
+    salaries,
+  } = adminContext;
   const chargeId = charge.id;
 
   if (!salaryRecords.length) {
@@ -88,7 +92,7 @@ export function generateEntriesFromSalaryRecords(
       charge.owner_id,
       isCreditor,
       chargeId,
-      context,
+      defaultLocalCurrency,
     );
   }
 
@@ -210,7 +214,7 @@ export function generateEntriesFromSalaryRecords(
     compensationProvidentFundExpensesAmount,
     trainingFundExpensesAmount,
     zkufotAmount,
-    context,
+    salaries,
   });
 
   return {
@@ -227,7 +231,7 @@ export function getMonthlyExpensesEntriesProto({
   compensationProvidentFundExpensesAmount,
   trainingFundExpensesAmount,
   zkufotAmount,
-  context,
+  salaries,
 }: {
   salaryExpensesAmount: number;
   socialSecurityExpensesAmount: number;
@@ -235,7 +239,7 @@ export function getMonthlyExpensesEntriesProto({
   compensationProvidentFundExpensesAmount: number;
   trainingFundExpensesAmount: number;
   zkufotAmount: number;
-  context: GraphQLModules.Context;
+  salaries: AdminContext['salaries'];
 }) {
   const {
     zkufotExpensesTaxCategoryId,
@@ -245,7 +249,7 @@ export function getMonthlyExpensesEntriesProto({
     trainingFundExpensesTaxCategoryId,
     pensionExpensesTaxCategoryId,
     compensationFundExpensesTaxCategoryId,
-  } = context.adminContext.salaries;
+  } = salaries;
   if (
     !zkufotExpensesTaxCategoryId ||
     !zkufotIncomeTaxCategoryId ||

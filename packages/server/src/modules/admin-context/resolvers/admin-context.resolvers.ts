@@ -1,6 +1,4 @@
 import { GraphQLError } from 'graphql';
-import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { fetchBusiness, fetchTaxCategory } from '../helpers/admin-context.helper.js';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
@@ -11,7 +9,7 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
     adminContext: (_, __, { injector }) =>
       injector
         .get(AdminContextProvider)
-        .getAdminContext()
+        .getVerifiedAdminContext()
         .then(res => {
           if (!res) {
             const message = 'Admin context not found';
@@ -36,10 +34,10 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           ...context,
         })
         .then(res => {
-          if (!res[0]) {
+          if (!res) {
             throw new GraphQLError(`Error updating admin context`);
           }
-          return res[0];
+          return res;
         })
         .catch(e => {
           if (e instanceof GraphQLError) {
@@ -49,148 +47,167 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
           throw new GraphQLError(`Error updating admin context`);
         }),
   },
-  AdminContext: {
-    id: dbAdminContext => dbAdminContext.owner_id,
-    ownerId: dbAdminContext => dbAdminContext.owner_id,
-    defaultLocalCurrency: dbAdminContext => dbAdminContext.default_local_currency as Currency,
-    defaultForeignCurrency: dbAdminContext =>
-      dbAdminContext.default_fiat_currency_for_crypto_conversions as Currency,
+  AdminContextInfo: {
+    id: dbAdminContext => dbAdminContext.ownerId,
+    ownerId: dbAdminContext => dbAdminContext.ownerId,
+    defaultLocalCurrency: dbAdminContext => dbAdminContext.defaultLocalCurrency,
+    defaultForeignCurrency: dbAdminContext => dbAdminContext.defaultCryptoConversionFiatCurrency,
     defaultTaxCategory: async (dbAdminContext, _, { injector }) =>
-      fetchTaxCategory(injector, 'defaultTaxCategory', dbAdminContext.default_tax_category_id),
+      fetchTaxCategory(injector, 'defaultTaxCategory', dbAdminContext.defaultTaxCategoryId),
     locality: dbAdminContext => dbAdminContext.locality,
     vatBusiness: async (dbAdminContext, _, { injector }) =>
-      fetchBusiness(injector, 'vatBusiness', dbAdminContext.vat_business_id),
+      fetchBusiness(injector, 'vatBusiness', dbAdminContext.authorities.vatBusinessId),
     inputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
-      fetchTaxCategory(injector, 'inputVatTaxCategory', dbAdminContext.input_vat_tax_category_id),
+      fetchTaxCategory(
+        injector,
+        'inputVatTaxCategory',
+        dbAdminContext.authorities.inputVatTaxCategoryId,
+      ),
     outputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
-      fetchTaxCategory(injector, 'outputVatTaxCategory', dbAdminContext.output_vat_tax_category_id),
+      fetchTaxCategory(
+        injector,
+        'outputVatTaxCategory',
+        dbAdminContext.authorities.outputVatTaxCategoryId,
+      ),
     propertyOutputVatTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'propertyOutputVatTaxCategory',
-        dbAdminContext.property_output_vat_tax_category_id,
+        dbAdminContext.authorities.propertyOutputVatTaxCategoryId,
       ),
     taxBusiness: async (dbAdminContext, _, { injector }) =>
-      fetchBusiness(injector, 'taxBusiness', dbAdminContext.tax_business_id),
+      fetchBusiness(injector, 'taxBusiness', dbAdminContext.authorities.taxBusinessId),
     taxExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'taxExpensesTaxCategory',
-        dbAdminContext.tax_expenses_tax_category_id,
+        dbAdminContext.authorities.taxExpensesTaxCategoryId,
       ),
     socialSecurityBusiness: async (dbAdminContext, _, { injector }) =>
-      fetchBusiness(injector, 'socialSecurityBusiness', dbAdminContext.social_security_business_id),
+      fetchBusiness(
+        injector,
+        'socialSecurityBusiness',
+        dbAdminContext.authorities.socialSecurityBusinessId,
+      ),
     exchangeRateTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'exchangeRateTaxCategory',
-        dbAdminContext.exchange_rate_tax_category_id,
+        dbAdminContext.general.taxCategories.exchangeRateTaxCategoryId,
       ),
     incomeExchangeRateTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'incomeExchangeRateTaxCategory',
-        dbAdminContext.income_exchange_rate_tax_category_id,
+        dbAdminContext.general.taxCategories.incomeExchangeRateTaxCategoryId,
       ),
     exchangeRateRevaluationTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'exchangeRateRevaluationTaxCategory',
-        dbAdminContext.exchange_rate_revaluation_tax_category_id,
+        dbAdminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
       ),
     feeTaxCategory: async (dbAdminContext, _, { injector }) =>
-      fetchTaxCategory(injector, 'feeTaxCategory', dbAdminContext.fee_tax_category_id),
+      fetchTaxCategory(
+        injector,
+        'feeTaxCategory',
+        dbAdminContext.general.taxCategories.feeTaxCategoryId,
+      ),
     generalFeeTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'generalFeeTaxCategory',
-        dbAdminContext.general_fee_tax_category_id,
+        dbAdminContext.general.taxCategories.generalFeeTaxCategoryId,
       ),
     fineTaxCategory: async (dbAdminContext, _, { injector }) =>
-      fetchTaxCategory(injector, 'fineTaxCategory', dbAdminContext.fine_tax_category_id),
+      fetchTaxCategory(
+        injector,
+        'fineTaxCategory',
+        dbAdminContext.general.taxCategories.fineTaxCategoryId,
+      ),
     untaxableGiftsTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'untaxableGiftsTaxCategory',
-        dbAdminContext.untaxable_gifts_tax_category_id,
+        dbAdminContext.general.taxCategories.untaxableGiftsTaxCategoryId,
       ),
     balanceCancellationTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'balanceCancellationTaxCategory',
-        dbAdminContext.balance_cancellation_tax_category_id,
+        dbAdminContext.general.taxCategories.balanceCancellationTaxCategoryId,
       ),
     developmentForeignTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'developmentForeignTaxCategory',
-        dbAdminContext.development_foreign_tax_category_id,
+        dbAdminContext.general.taxCategories.developmentForeignTaxCategoryId,
       ),
     developmentLocalTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'developmentLocalTaxCategory',
-        dbAdminContext.development_local_tax_category_id,
+        dbAdminContext.general.taxCategories.developmentLocalTaxCategoryId,
       ),
     accumulatedDepreciationTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.accumulated_depreciation_tax_category_id
+      dbAdminContext.depreciation.accumulatedDepreciationTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'accumulatedDepreciationTaxCategory',
-            dbAdminContext.accumulated_depreciation_tax_category_id,
+            dbAdminContext.depreciation.accumulatedDepreciationTaxCategoryId,
           )
         : null,
     rndDepreciationExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.rnd_depreciation_expenses_tax_category_id
+      dbAdminContext.depreciation.rndDepreciationExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'rndDepreciationExpensesTaxCategory',
-            dbAdminContext.rnd_depreciation_expenses_tax_category_id,
+            dbAdminContext.depreciation.rndDepreciationExpensesTaxCategoryId,
           )
         : null,
     gnmDepreciationExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.gnm_depreciation_expenses_tax_category_id
+      dbAdminContext.depreciation.gnmDepreciationExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'gnmDepreciationExpensesTaxCategory',
-            dbAdminContext.gnm_depreciation_expenses_tax_category_id,
+            dbAdminContext.depreciation.gnmDepreciationExpensesTaxCategoryId,
           )
         : null,
     marketingDepreciationExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.marketing_depreciation_expenses_tax_category_id
+      dbAdminContext.depreciation.marketingDepreciationExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'marketingDepreciationExpensesTaxCategory',
-            dbAdminContext.marketing_depreciation_expenses_tax_category_id,
+            dbAdminContext.depreciation.marketingDepreciationExpensesTaxCategoryId,
           )
         : null,
     bankDepositInterestIncomeTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.bank_deposit_interest_income_tax_category_id
+      dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'bankDepositInterestIncomeTaxCategory',
-            dbAdminContext.bank_deposit_interest_income_tax_category_id,
+            dbAdminContext.bankDeposits.bankDepositInterestIncomeTaxCategoryId,
           )
         : null,
     businessTripTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.business_trip_tax_category_id
+      dbAdminContext.businessTrips.businessTripTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'businessTripTaxCategory',
-            dbAdminContext.business_trip_tax_category_id,
+            dbAdminContext.businessTrips.businessTripTaxCategoryId,
           )
         : null,
     businessTripTag: async (dbAdminContext, _, { injector }) => {
-      if (!dbAdminContext.business_trip_tag_id) {
+      if (!dbAdminContext.businessTrips.businessTripTagId) {
         return null;
       }
       return injector
         .get(TagsProvider)
-        .getTagByIDLoader.load(dbAdminContext.business_trip_tag_id)
+        .getTagByIDLoader.load(dbAdminContext.businessTrips.businessTripTagId)
         .then(res => {
           if (!res) {
             throw new GraphQLError(
-              `Business trip tag (with ID="${dbAdminContext.business_trip_tag_id}") not found`,
+              `Business trip tag (with ID="${dbAdminContext.businessTrips.businessTripTagId}") not found`,
             );
           }
           return res;
@@ -207,210 +224,241 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
       fetchTaxCategory(
         injector,
         'expensesToPayTaxCategory',
-        dbAdminContext.expenses_to_pay_tax_category_id,
+        dbAdminContext.crossYear.expensesToPayTaxCategoryId,
       ),
     expensesInAdvanceTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'expensesInAdvanceTaxCategory',
-        dbAdminContext.expenses_in_advance_tax_category_id,
+        dbAdminContext.crossYear.expensesInAdvanceTaxCategoryId,
       ),
     incomeToCollectTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'incomeToCollectTaxCategory',
-        dbAdminContext.income_to_collect_tax_category_id,
+        dbAdminContext.crossYear.incomeToCollectTaxCategoryId,
       ),
     incomeInAdvanceTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.income_in_advance_tax_category_id
+      dbAdminContext.crossYear.incomeInAdvanceTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'incomeInAdvanceTaxCategory',
-            dbAdminContext.income_in_advance_tax_category_id,
+            dbAdminContext.crossYear.incomeInAdvanceTaxCategoryId,
           )
         : null,
     zkufotExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.zkufot_expenses_tax_category_id
+      dbAdminContext.salaries.zkufotExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'zkufotExpensesTaxCategory',
-            dbAdminContext.zkufot_expenses_tax_category_id,
+            dbAdminContext.salaries.zkufotExpensesTaxCategoryId,
           )
         : null,
     zkufotIncomeTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.zkufot_income_tax_category_id
+      dbAdminContext.salaries.zkufotIncomeTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'zkufotIncomeTaxCategory',
-            dbAdminContext.zkufot_income_tax_category_id,
+            dbAdminContext.salaries.zkufotIncomeTaxCategoryId,
           )
         : null,
     socialSecurityExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.social_security_expenses_tax_category_id
+      dbAdminContext.salaries.socialSecurityExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'socialSecurityExpensesTaxCategory',
-            dbAdminContext.social_security_expenses_tax_category_id,
+            dbAdminContext.salaries.socialSecurityExpensesTaxCategoryId,
           )
         : null,
     salaryExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.salary_expenses_tax_category_id
+      dbAdminContext.salaries.salaryExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'salaryExpensesTaxCategory',
-            dbAdminContext.salary_expenses_tax_category_id,
+            dbAdminContext.salaries.salaryExpensesTaxCategoryId,
           )
         : null,
     trainingFundExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.training_fund_expenses_tax_category_id
+      dbAdminContext.salaries.trainingFundExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'trainingFundExpensesTaxCategory',
-            dbAdminContext.training_fund_expenses_tax_category_id,
+            dbAdminContext.salaries.trainingFundExpensesTaxCategoryId,
           )
         : null,
     pensionFundExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.pension_fund_expenses_tax_category_id
+      dbAdminContext.salaries.pensionExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'pensionFundExpensesTaxCategory',
-            dbAdminContext.pension_fund_expenses_tax_category_id,
+            dbAdminContext.salaries.pensionExpensesTaxCategoryId,
           )
         : null,
     compensationFundExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.compensation_fund_expenses_tax_category_id
+      dbAdminContext.salaries.compensationFundExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'compensationFundExpensesTaxCategory',
-            dbAdminContext.compensation_fund_expenses_tax_category_id,
+            dbAdminContext.salaries.compensationFundExpensesTaxCategoryId,
           )
         : null,
     batchedEmployeesBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.batched_employees_business_id
+      dbAdminContext.salaries.batchedEmployeesBusinessId
         ? fetchBusiness(
             injector,
             'batchedEmployeesBusiness',
-            dbAdminContext.batched_employees_business_id,
+            dbAdminContext.salaries.batchedEmployeesBusinessId,
           )
         : null,
     batchedFundsBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.batched_funds_business_id
-        ? fetchBusiness(injector, 'batchedFundsBusiness', dbAdminContext.batched_funds_business_id)
+      dbAdminContext.salaries.batchedFundsBusinessId
+        ? fetchBusiness(
+            injector,
+            'batchedFundsBusiness',
+            dbAdminContext.salaries.batchedFundsBusinessId,
+          )
         : null,
     taxDeductionsBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.tax_deductions_business_id
+      dbAdminContext.salaries.taxDeductionsBusinessId
         ? fetchBusiness(
             injector,
             'taxDeductionsBusiness',
-            dbAdminContext.tax_deductions_business_id,
+            dbAdminContext.salaries.taxDeductionsBusinessId,
           )
         : null,
     recoveryReserveExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.recovery_reserve_expenses_tax_category_id
+      dbAdminContext.salaries.recoveryReserveExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'recoveryReserveExpensesTaxCategory',
-            dbAdminContext.recovery_reserve_expenses_tax_category_id,
+            dbAdminContext.salaries.recoveryReserveExpensesTaxCategoryId,
           )
         : null,
     recoveryReserveTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.recovery_reserve_tax_category_id
+      dbAdminContext.salaries.recoveryReserveTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'recoveryReserveTaxCategory',
-            dbAdminContext.recovery_reserve_tax_category_id,
+            dbAdminContext.salaries.recoveryReserveTaxCategoryId,
           )
         : null,
     vacationReserveExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.vacation_reserve_expenses_tax_category_id
+      dbAdminContext.salaries.vacationReserveExpensesTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'vacationReserveExpensesTaxCategory',
-            dbAdminContext.vacation_reserve_expenses_tax_category_id,
+            dbAdminContext.salaries.vacationReserveExpensesTaxCategoryId,
           )
         : null,
     vacationReserveTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.vacation_reserve_tax_category_id
+      dbAdminContext.salaries.vacationReserveTaxCategoryId
         ? fetchTaxCategory(
             injector,
             'vacationReserveTaxCategory',
-            dbAdminContext.vacation_reserve_tax_category_id,
+            dbAdminContext.salaries.vacationReserveTaxCategoryId,
           )
         : null,
     poalimBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.poalim_business_id
-        ? fetchBusiness(injector, 'poalimBusiness', dbAdminContext.poalim_business_id)
+      dbAdminContext.financialAccounts.poalimBusinessId
+        ? fetchBusiness(
+            injector,
+            'poalimBusiness',
+            dbAdminContext.financialAccounts.poalimBusinessId,
+          )
         : null,
     discountBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.discount_business_id
-        ? fetchBusiness(injector, 'discountBusiness', dbAdminContext.discount_business_id)
+      dbAdminContext.financialAccounts.discountBusinessId
+        ? fetchBusiness(
+            injector,
+            'discountBusiness',
+            dbAdminContext.financialAccounts.discountBusinessId,
+          )
         : null,
     isracardBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.isracard_business_id
-        ? fetchBusiness(injector, 'isracardBusiness', dbAdminContext.isracard_business_id)
+      dbAdminContext.financialAccounts.isracardBusinessId
+        ? fetchBusiness(
+            injector,
+            'isracardBusiness',
+            dbAdminContext.financialAccounts.isracardBusinessId,
+          )
         : null,
     amexBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.amex_business_id
-        ? fetchBusiness(injector, 'amexBusiness', dbAdminContext.amex_business_id)
+      dbAdminContext.financialAccounts.amexBusinessId
+        ? fetchBusiness(injector, 'amexBusiness', dbAdminContext.financialAccounts.amexBusinessId)
         : null,
     calBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.cal_business_id
-        ? fetchBusiness(injector, 'calBusiness', dbAdminContext.cal_business_id)
+      dbAdminContext.financialAccounts.calBusinessId
+        ? fetchBusiness(injector, 'calBusiness', dbAdminContext.financialAccounts.calBusinessId)
         : null,
     etanaBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.etana_business_id
-        ? fetchBusiness(injector, 'etanaBusiness', dbAdminContext.etana_business_id)
+      dbAdminContext.financialAccounts.etanaBusinessId
+        ? fetchBusiness(injector, 'etanaBusiness', dbAdminContext.financialAccounts.etanaBusinessId)
         : null,
     krakenBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.kraken_business_id
-        ? fetchBusiness(injector, 'krakenBusiness', dbAdminContext.kraken_business_id)
+      dbAdminContext.financialAccounts.krakenBusinessId
+        ? fetchBusiness(
+            injector,
+            'krakenBusiness',
+            dbAdminContext.financialAccounts.krakenBusinessId,
+          )
         : null,
     etherscanBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.etherscan_business_id
-        ? fetchBusiness(injector, 'etherscanBusiness', dbAdminContext.etherscan_business_id)
+      dbAdminContext.financialAccounts.etherScanBusinessId
+        ? fetchBusiness(
+            injector,
+            'etherscanBusiness',
+            dbAdminContext.financialAccounts.etherScanBusinessId,
+          )
         : null,
     swiftBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.swift_business_id
-        ? fetchBusiness(injector, 'swiftBusiness', dbAdminContext.swift_business_id)
+      dbAdminContext.financialAccounts.swiftBusinessId
+        ? fetchBusiness(injector, 'swiftBusiness', dbAdminContext.financialAccounts.swiftBusinessId)
         : null,
     bankDepositBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.bank_deposit_business_id
-        ? fetchBusiness(injector, 'bankDepositBusiness', dbAdminContext.bank_deposit_business_id)
+      dbAdminContext.bankDeposits.bankDepositBusinessId
+        ? fetchBusiness(
+            injector,
+            'bankDepositBusiness',
+            dbAdminContext.bankDeposits.bankDepositBusinessId,
+          )
         : null,
     dividendWithholdingTaxBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.dividend_withholding_tax_business_id
+      dbAdminContext.dividends.dividendWithholdingTaxBusinessId
         ? fetchBusiness(
             injector,
             'dividendWithholdingTaxBusiness',
-            dbAdminContext.dividend_withholding_tax_business_id,
+            dbAdminContext.dividends.dividendWithholdingTaxBusinessId,
           )
         : null,
     dividendTaxCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.dividend_tax_category_id
-        ? fetchTaxCategory(injector, 'dividendTaxCategory', dbAdminContext.dividend_tax_category_id)
+      dbAdminContext.dividends.dividendTaxCategoryId
+        ? fetchTaxCategory(
+            injector,
+            'dividendTaxCategory',
+            dbAdminContext.dividends.dividendTaxCategoryId,
+          )
         : null,
     salaryExcessExpensesTaxCategory: async (dbAdminContext, _, { injector }) =>
       fetchTaxCategory(
         injector,
         'salaryExcessExpensesTaxCategory',
-        dbAdminContext.salary_excess_expenses_tax_category_id,
+        dbAdminContext.general.taxCategories.salaryExcessExpensesTaxCategoryId,
       ),
-    ledgerLock: dbAdminContext =>
-      dbAdminContext.ledger_lock ? dateToTimelessDateString(dbAdminContext.ledger_lock) : null,
+    ledgerLock: dbAdminContext => dbAdminContext.ledgerLock ?? null,
     foreignSecuritiesBusiness: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.foreign_securities_business_id
+      dbAdminContext.foreignSecurities.foreignSecuritiesBusinessId
         ? fetchBusiness(
             injector,
             'foreignSecuritiesBusiness',
-            dbAdminContext.foreign_securities_business_id,
+            dbAdminContext.foreignSecurities.foreignSecuritiesBusinessId,
           )
         : null,
     foreignSecuritiesFeesCategory: async (dbAdminContext, _, { injector }) =>
-      dbAdminContext.foreign_securities_fees_category_id
+      dbAdminContext.foreignSecurities.foreignSecuritiesFeesCategoryId
         ? fetchTaxCategory(
             injector,
             'foreignSecuritiesFeesCategory',
-            dbAdminContext.foreign_securities_fees_category_id,
+            dbAdminContext.foreignSecurities.foreignSecuritiesFeesCategoryId,
           )
         : null,
   },

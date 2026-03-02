@@ -1,5 +1,6 @@
 import { errorSimplifier } from '../../../shared/errors.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
 import {
   calculateTotalAmount,
@@ -26,10 +27,14 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       throw errorSimplifier('Failed to fetch VAT amount', error);
     }
   },
-  totalAmount: async (dbCharge, _, { adminContext: { defaultLocalCurrency }, injector }) =>
-    calculateTotalAmount(dbCharge.id, injector, defaultLocalCurrency).catch(error => {
+  totalAmount: async (dbCharge, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return calculateTotalAmount(dbCharge.id, injector, defaultLocalCurrency).catch(error => {
       throw errorSimplifier('Failed to fetch total amount', error);
-    }),
+    });
+  },
   property: async (dbCharge, _, { injector }) => {
     try {
       const depreciation = await injector
@@ -61,8 +66,8 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       .catch(error => {
         throw errorSimplifier('Failed to fetch min documents date', error);
       }),
-  validationData: (DbCharge, _, context) =>
-    validateCharge(DbCharge, context).catch(error => {
+  validationData: (DbCharge, _, { injector }) =>
+    validateCharge(DbCharge, injector).catch(error => {
       throw errorSimplifier('Failed to fetch validation data', error);
     }),
   metadata: DbCharge => DbCharge,

@@ -1,5 +1,8 @@
-import { Currency } from '../../../shared/enums.js';
+import type { Injector } from 'graphql-modules';
+import type { Currency } from '../../../shared/enums.js';
 import type { LedgerProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import type { AdminContext } from '../../admin-context/types.js';
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
@@ -86,21 +89,19 @@ function getPartialEntryAmounts(
 
 export async function handleCrossYearLedgerEntries(
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
   accountingLedgerEntries: LedgerProto[],
 ): Promise<LedgerProto[] | null> {
   const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      crossYear: {
-        expensesToPayTaxCategoryId,
-        expensesInAdvanceTaxCategoryId,
-        incomeInAdvanceTaxCategoryId,
-        incomeToCollectTaxCategoryId,
-      },
+    defaultLocalCurrency,
+    authorities,
+    crossYear: {
+      expensesToPayTaxCategoryId,
+      expensesInAdvanceTaxCategoryId,
+      incomeInAdvanceTaxCategoryId,
+      incomeToCollectTaxCategoryId,
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   if (accountingLedgerEntries.length === 0) {
     return null;
   }
@@ -136,7 +137,7 @@ export async function handleCrossYearLedgerEntries(
 
   const entriesAmount = accountingLedgerEntries
     .map(entry => {
-      const { adjustedEntry } = splitVatPayments(entry, context);
+      const { adjustedEntry } = splitVatPayments(entry, authorities);
       return adjustedEntry;
     })
     .reduce((acc, entry) => {
@@ -188,7 +189,7 @@ export async function handleCrossYearLedgerEntries(
   const crossYearEntries: LedgerProto[] = [];
   if (accountingLedgerEntries.length === 1) {
     const entry = accountingLedgerEntries[0];
-    const { adjustedEntry, vatEntries } = splitVatPayments(entry, context);
+    const { adjustedEntry, vatEntries } = splitVatPayments(entry, authorities);
     crossYearEntries.push(...vatEntries);
 
     const defaultAmounts = divideEntryAmounts(
@@ -254,7 +255,7 @@ export async function handleCrossYearLedgerEntries(
     validateEntriesAmountsMatchesSpread(spreadRecord.amount, entriesAmount);
 
     for (const entry of accountingLedgerEntries) {
-      const { adjustedEntry, vatEntries } = splitVatPayments(entry, context);
+      const { adjustedEntry, vatEntries } = splitVatPayments(entry, authorities);
       crossYearEntries.push(...vatEntries);
 
       if (
@@ -305,13 +306,13 @@ export async function handleCrossYearLedgerEntries(
 
 function splitVatPayments(
   entry: LedgerProto,
-  context: GraphQLModules.Context,
+  authorities: AdminContext['authorities'],
 ): {
   adjustedEntry: LedgerProto;
   vatEntries: LedgerProto[];
 } {
   const { inputVatTaxCategoryId, outputVatTaxCategoryId, propertyOutputVatTaxCategoryId } =
-    context.adminContext.authorities;
+    authorities;
   const vatTaxIds = [inputVatTaxCategoryId, outputVatTaxCategoryId, propertyOutputVatTaxCategoryId];
   const vatEntries: LedgerProto[] = [];
   const adjustedEntry = { ...entry };

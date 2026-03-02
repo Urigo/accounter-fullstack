@@ -3,7 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { DBProvider } from '../db.provider.js';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
-import type { AccounterContext } from '../../../shared/types/index.js';
+import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
 
 describe('TenantAwareDBClient', () => {
   let mockPoolClient: PoolClient;
@@ -50,12 +50,14 @@ describe('TenantAwareDBClient', () => {
       },
     };
 
-    tenantDBClient = new TenantAwareDBClient(mockDBProvider, mockAuthContext, {} as AccounterContext);
+    const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextV2Provider;
+
+    tenantDBClient = new TenantAwareDBClient(mockDBProvider, authContextProvider);
   });
 
   describe('query', () => {
     it('should throw if auth context is missing', async () => {
-      tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any, {} as any);
+      tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
       
       await expect(tenantDBClient.query('SELECT 1'))
         .rejects
@@ -94,7 +96,7 @@ describe('TenantAwareDBClient', () => {
 
   describe('transaction', () => {
     it('should throw if auth context is missing', async () => {
-        tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any, {} as any);
+        tenantDBClient = new TenantAwareDBClient(mockDBProvider, null as any);
         
         await expect(tenantDBClient.transaction(async () => {}))
           .rejects
@@ -260,7 +262,9 @@ describe('TenantAwareDBClient', () => {
     });
 
     it('should throw if businessId is missing in auth context', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
       (tenantDBClient as any).authContext = { ...mockAuthContext, tenant: {} };
+      (tenantDBClient as any).authContextInitialized = true;
 
       await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
     });

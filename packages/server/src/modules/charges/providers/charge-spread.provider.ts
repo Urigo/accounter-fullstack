@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceParams,
@@ -67,7 +68,7 @@ const deleteAllChargeSpreadByChargeIdAndYearOfRelevance = sql<IDeleteAllChargeSp
 export class ChargeSpreadProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchChargesSpreadByChargeIds(ids: readonly string[]) {
@@ -84,12 +85,12 @@ export class ChargeSpreadProvider {
     this.batchChargesSpreadByChargeIds(keys),
   );
 
-  public updateChargeSpread(params: IUpdateChargeSpreadParams) {
+  public async updateChargeSpread(params: IUpdateChargeSpreadParams) {
     return updateChargeSpread.run(params, this.db);
   }
 
-  public insertChargeSpread(params: IInsertChargeSpreadParams) {
-    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+  public async insertChargeSpread(params: IInsertChargeSpreadParams) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertChargeSpread.run(
       {
         chargeSpread: params.chargeSpread.map(spread => ({
@@ -101,11 +102,11 @@ export class ChargeSpreadProvider {
     );
   }
 
-  public deleteAllChargeSpreadByChargeIds(params: IDeleteAllChargeSpreadByChargeIdsParams) {
+  public async deleteAllChargeSpreadByChargeIds(params: IDeleteAllChargeSpreadByChargeIdsParams) {
     return deleteAllChargeSpreadByChargeIds.run(params, this.db);
   }
 
-  public deleteAllChargeSpreadByChargeIdAndYearOfRelevance(
+  public async deleteAllChargeSpreadByChargeIdAndYearOfRelevance(
     params: IDeleteAllChargeSpreadByChargeIdAndYearOfRelevanceParams,
   ) {
     return deleteAllChargeSpreadByChargeIdAndYearOfRelevance.run(params, this.db);

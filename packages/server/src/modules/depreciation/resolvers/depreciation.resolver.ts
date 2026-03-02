@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { calculateTotalAmount } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DepreciationCategoriesProvider } from '../providers/depreciation-categories.provider.js';
@@ -203,14 +204,13 @@ export const depreciationResolvers: DepreciationModule.Resolvers &
         });
     },
     chargeId: dbDepreciationRecord => dbDepreciationRecord.charge_id,
-    amount: async (
-      dbDepreciationRecord,
-      _,
-      { injector, adminContext: { defaultLocalCurrency } },
-    ) => {
+    amount: async (dbDepreciationRecord, _, { injector }) => {
       if (dbDepreciationRecord.amount && dbDepreciationRecord.currency) {
         return formatFinancialAmount(dbDepreciationRecord.amount, dbDepreciationRecord.currency);
       }
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const [charge, amount] = await Promise.all([
         injector.get(ChargesProvider).getChargeByIdLoader.load(dbDepreciationRecord.charge_id),
         calculateTotalAmount(dbDepreciationRecord.charge_id, injector, defaultLocalCurrency),

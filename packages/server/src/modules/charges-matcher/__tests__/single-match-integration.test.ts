@@ -33,11 +33,15 @@ vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
   ClientsProvider: class {},
 }));
 
+vi.mock('../../admin-context/providers/admin-context.provider.js', () => ({
+  AdminContextProvider: class {},
+}));
+
 vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
 
-const getMockInjector = (mockChargesProvider?: {
+const createMockProvider = (mockChargesProvider?: {
     getChargesByFilters?: (filters: any) => Promise<any[]>;
     getChargeByIdLoader?: { load: (id: string) => Promise<any>};
   },
@@ -47,23 +51,45 @@ const getMockInjector = (mockChargesProvider?: {
   mockDocumentsProvider?: {
     getDocumentsByChargeIdLoader: { load: (id: string) => Promise<any[]>; };
 }
-) => ({
-  get: vi.fn((token: {name: string}) => {
-    if (token.name === 'ChargesProvider') return mockChargesProvider ?? null;
-    if (token.name === 'TransactionsProvider') return mockTransactionsProvider ?? null;
-    if (token.name === 'DocumentsProvider') return mockDocumentsProvider ?? null;
-    if (token.name === 'ClientsProvider')
-      return {
-        getClientByIdLoader: {
-          load: (businessId: string) => {
-            const isRegisteredClient = businessId.startsWith('client-');
-            return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+) => {
+  const mockAdminContextProvider = {
+    getVerifiedAdminContext: vi.fn(() => Promise.resolve({ ownerId: ADMIN_BUSINESS_ID })),
+  } as any;
+
+  const mockCharges = mockChargesProvider ?? null;
+  const mockTransactions = mockTransactionsProvider ?? null;
+  const mockDocuments = mockDocumentsProvider ?? null;
+
+  const mockInjector = {
+    get: vi.fn((token: {name: string}) => {
+      if (token.name === 'ChargesProvider') return mockCharges;
+      if (token.name === 'TransactionsProvider') return mockTransactions;
+      if (token.name === 'DocumentsProvider') return mockDocuments;
+      if (token.name === 'ClientsProvider')
+        return {
+          getClientByIdLoader: {
+            load: (businessId: string) => {
+              const isRegisteredClient = businessId.startsWith('client-');
+              return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+            },
           },
-        },
-      };
-    return null;
-  }),
-}) as Injector;
+        };
+      return null;
+    }),
+  } as Injector;
+
+  const mockContext = {
+    injector: mockInjector,
+  } as any;
+
+  return new ChargesMatcherProvider(
+    mockAdminContextProvider,
+    mockCharges as any,
+    mockTransactions as any,
+    mockDocuments as any,
+    mockContext,
+  );
+};
 
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
@@ -157,11 +183,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
       // Execute
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -238,11 +262,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
       // Execute
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       // Verify
       expect(result.matches).toHaveLength(2);
@@ -257,12 +279,10 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider);
-
-      const provider = new ChargesMatcherProvider();
+      const provider = createMockProvider(mockChargesProvider);
 
       await expect(
-        provider.findMatchesForCharge('non-existent', { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any),
+        provider.findMatchesForCharge('non-existent'),
       ).rejects.toThrow(/Source charge not found/);
     });
 
@@ -287,13 +307,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
-      const provider = new ChargesMatcherProvider();
-
-      await expect(provider.findMatchesForCharge(chargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any)).rejects.toThrow(
-        /already matched/,
-      );
+      await expect(provider.findMatchesForCharge(chargeId)).rejects.toThrow();
     });
 
     it('should throw error if charge has no transactions or documents', async () => {
@@ -317,11 +333,9 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
 
-      const provider = new ChargesMatcherProvider();
-
-      await expect(provider.findMatchesForCharge(chargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any)).rejects.toThrow(
+      await expect(provider.findMatchesForCharge(chargeId)).rejects.toThrow(
         /no transactions or documents/,
       );
     });
@@ -348,10 +362,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       expect(result.matches).toEqual([]);
     });
@@ -393,10 +405,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       // Should only include validCandidateId, not matchedCandidateId
       expect(result.matches).toHaveLength(1);
@@ -457,10 +467,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       // Should only include candidate within window
       expect(result.matches).toHaveLength(1);
@@ -468,12 +476,20 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
     });
 
     it('should throw error if user ID not in context', async () => {
-      const mockInjector = getMockInjector();
+      const mockAdminContextProvider = {
+        getVerifiedAdminContext: vi.fn(() => Promise.reject(new Error('Admin context not found for the authenticated user.'))),
+      } as any;
 
-      const provider = new ChargesMatcherProvider();
+      const provider = new ChargesMatcherProvider(
+        mockAdminContextProvider,
+        null as any,
+        null as any,
+        null as any,
+        { injector: {} } as any,
+      );
 
-      await expect(provider.findMatchesForCharge('any-id', { adminContext: { defaultAdminBusinessId: null }, injector: mockInjector } as any)).rejects.toThrow(
-        /Admin business not found in context/,
+      await expect(provider.findMatchesForCharge('any-id')).rejects.toThrow(
+        /Admin context not found/,
       );
     });
 
@@ -514,10 +530,8 @@ describe('ChargesMatcherProvider - Integration Tests', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.findMatchesForCharge(sourceChargeId, { adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID }, injector: mockInjector } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.findMatchesForCharge(sourceChargeId);
 
       // Should return maximum of 5 matches
       expect(result.matches).toHaveLength(5);

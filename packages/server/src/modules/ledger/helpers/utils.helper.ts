@@ -12,6 +12,7 @@ import type {
   LedgerProto,
   StrictLedgerProto,
 } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -146,7 +147,7 @@ function entrySingleAccountBalancer(
   entry: LedgerProto,
   isCredit: boolean,
   ledgerEntityNumber: 1 | 2,
-  context: GraphQLModules.Context,
+  defaultLocalCurrency: Currency,
 ) {
   const entityId = isCredit
     ? ledgerEntityNumber === 1
@@ -180,9 +181,6 @@ function entrySingleAccountBalancer(
       : ledgerEntityNumber === 1
         ? entry.localCurrencyDebitAmount1
         : entry.localCurrencyDebitAmount2) ?? 0) * factor;
-  const {
-    adminContext: { defaultLocalCurrency },
-  } = context;
   if (current) {
     current.amount += localAmount;
     current.foreignAmounts ||= {};
@@ -219,18 +217,18 @@ export function updateLedgerBalanceByEntry(
       foreignAmounts?: Partial<Record<Currency, { local: number; foreign: number }>>;
     }
   >,
-  context: GraphQLModules.Context,
+  defaultLocalCurrency: Currency,
 ): void {
-  entrySingleAccountBalancer(ledgerBalance, entry, true, 1, context);
-  entrySingleAccountBalancer(ledgerBalance, entry, true, 2, context);
-  entrySingleAccountBalancer(ledgerBalance, entry, false, 1, context);
-  entrySingleAccountBalancer(ledgerBalance, entry, false, 2, context);
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 1, defaultLocalCurrency);
+  entrySingleAccountBalancer(ledgerBalance, entry, true, 2, defaultLocalCurrency);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 1, defaultLocalCurrency);
+  entrySingleAccountBalancer(ledgerBalance, entry, false, 2, defaultLocalCurrency);
 
   return;
 }
 
 export async function getLedgerBalanceInfo(
-  context: GraphQLModules.Context,
+  injector: Injector,
   ledgerBalance: Map<string, { amount: number; entityId: string }>,
   errors: Set<string> = new Set(),
   allowedUnbalancedBusinesses: Set<string> = new Set(),
@@ -240,10 +238,9 @@ export async function getLedgerBalanceInfo(
     financialEntities: Array<IGetFinancialEntitiesByIdsResult>;
   }
 > {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency },
-  } = context;
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   let ledgerBalanceSum = 0;
   let isBalanced = true;
   const unbalancedEntities: Array<{ entityId: string; balance: FinancialAmount }> = [];
@@ -355,16 +352,14 @@ export async function getFinancialAccountTaxCategoryId(
 }
 
 export async function multipleForeignCurrenciesBalanceEntries(
-  context: GraphQLModules.Context,
+  injector: Injector,
+  defaultLocalCurrency: Currency,
   documentEntries: LedgerProto[],
   transactionEntries: LedgerProto[],
   charge: IGetChargesByIdsResult,
   foreignAmounts: Partial<Record<Currency, { local: number; foreign: number }>>,
   balanceAgainstLocal?: boolean,
 ): Promise<LedgerProto[]> {
-  const {
-    adminContext: { defaultLocalCurrency },
-  } = context;
   const useDocuments = !charge.documents_optional_flag;
   if (!transactionEntries.length) {
     throw new LedgerError(`Failed to locate transaction entries for charge "${charge.id}"`);
@@ -375,7 +370,7 @@ export async function multipleForeignCurrenciesBalanceEntries(
 
   const ledgerEntries: LedgerProto[] = [];
 
-  const { mainBusinessId } = await getChargeBusinesses(charge.id, context.injector);
+  const { mainBusinessId } = await getChargeBusinesses(charge.id, injector);
   if (mainBusinessId && Object.keys(foreignAmounts).length > 0) {
     const transactionEntry = transactionEntries.reduce((prev, curr) => {
       if (!prev) {

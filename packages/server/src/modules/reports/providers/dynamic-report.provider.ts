@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import {
   IDeleteTemplateParams,
@@ -56,7 +57,7 @@ const deleteTemplate = sql<IDeleteTemplateQuery>`
 export class DynamicReportProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   public async getTemplate(params: IGetTemplateParams) {
@@ -89,11 +90,12 @@ export class DynamicReportProvider {
     return updateTemplateName.run(params, this.db);
   }
 
-  public insertTemplate(params: IInsertTemplateParams) {
+  public async insertTemplate(params: IInsertTemplateParams) {
     if (params.ownerId) {
       this.invalidateByOwnerId(params.ownerId);
     }
-    return insertTemplate.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertTemplate.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async deleteTemplate(params: IDeleteTemplateParams) {

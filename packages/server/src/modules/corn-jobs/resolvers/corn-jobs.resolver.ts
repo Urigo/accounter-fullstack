@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -11,14 +12,11 @@ const ACCEPTABLE_DATE_DIFF_MILLISECONDS = 86_400_000; // 1 days
 
 export const cornJobsResolvers: CornJobsModule.Resolvers = {
   Mutation: {
-    mergeChargesByTransactionReference: async (
-      _,
-      __,
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    mergeChargesByTransactionReference: async (_, __, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         const candidates = await injector.get(CornJobsProvider).getReferenceMergeCandidates({
-          ownerId: defaultAdminBusinessId,
+          ownerId,
         });
 
         const chargeIds = new Set<string>(candidates.map(candidate => candidate.charge_id!));
@@ -178,15 +176,10 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         };
       }
     },
-    flagForeignFeeTransactions: async (
-      _,
-      __,
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    flagForeignFeeTransactions: async (_, __, { injector }) => {
       try {
-        const res = await injector
-          .get(CornJobsProvider)
-          .flagForeignFeeTransactions({ ownerId: defaultAdminBusinessId });
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        const res = await injector.get(CornJobsProvider).flagForeignFeeTransactions({ ownerId });
         const updatedTransactionsIds = res.map(({ id }) => id);
         return {
           success: true,
@@ -199,15 +192,10 @@ export const cornJobsResolvers: CornJobsModule.Resolvers = {
         };
       }
     },
-    calculateCreditcardTransactionsDebitDate: async (
-      _,
-      __,
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    calculateCreditcardTransactionsDebitDate: async (_, __, { injector }) => {
       try {
-        await injector
-          .get(CornJobsProvider)
-          .calculateCreditcardDebitDate({ ownerId: defaultAdminBusinessId });
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        await injector.get(CornJobsProvider).calculateCreditcardDebitDate({ ownerId });
         return true;
       } catch (e) {
         console.error(e);

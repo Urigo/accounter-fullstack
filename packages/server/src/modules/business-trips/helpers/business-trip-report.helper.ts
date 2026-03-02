@@ -1,9 +1,11 @@
+import { Injector } from 'graphql-modules';
 import type {
   BusinessTripSummaryCategories,
   BusinessTripSummaryRow,
 } from '../../../__generated__/types.js';
 import { CountryCode, Currency } from '../../../shared/enums.js';
 import { formatCurrency, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -105,15 +107,14 @@ export function getExpenseCoreData(
 }
 
 async function getDefaultCurrenciesAmountsAndExchangeRate(
-  context: GraphQLModules.Context,
+  injector: Injector,
   currency: Currency,
   amount: number,
   date: Date,
 ) {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency, defaultCryptoConversionFiatCurrency },
-  } = context;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   const exchangeRatePromise =
     currency === defaultLocalCurrency
       ? Promise.resolve(1)
@@ -131,15 +132,14 @@ async function getDefaultCurrenciesAmountsAndExchangeRate(
 }
 
 export async function getExpenseAmountsData(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpense: IGetBusinessTripsExpensesByBusinessTripIdsResult,
 ) {
-  const { injector } = context;
   try {
     const { amount, currency, date } = getExpenseCoreData(businessTripExpense);
 
     const { localAmount, foreignAmount } = await getDefaultCurrenciesAmountsAndExchangeRate(
-      context,
+      injector,
       currency,
       amount,
       date,
@@ -184,7 +184,7 @@ export async function getExpenseAmountsData(
         }
 
         const { localAmount: transactionLocalAmount, foreignAmount: transactionForeignAmount } =
-          await getDefaultCurrenciesAmountsAndExchangeRate(context, currency, amount, date);
+          await getDefaultCurrenciesAmountsAndExchangeRate(injector, currency, amount, date);
 
         localAmount += transactionLocalAmount;
         foreignAmount += transactionForeignAmount;
@@ -196,7 +196,7 @@ export async function getExpenseAmountsData(
 }
 
 export async function flightExpenseDataCollector(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpense: IGetBusinessTripsFlightsExpensesByBusinessTripIdsResult,
   partialSummaryData: Partial<SummaryData>,
 ): Promise<void> {
@@ -204,7 +204,7 @@ export async function flightExpenseDataCollector(
   partialSummaryData['FLIGHT'] ??= {};
   const category = partialSummaryData['FLIGHT'] as SummaryCategoryData;
 
-  const { localAmount, foreignAmount } = await getExpenseAmountsData(context, businessTripExpense);
+  const { localAmount, foreignAmount } = await getExpenseAmountsData(injector, businessTripExpense);
 
   // calculate taxable amount
   const fullyTaxableClasses: flight_class[] = ['ECONOMY', 'PREMIUM_ECONOMY', 'BUSINESS'];
@@ -226,7 +226,9 @@ export async function flightExpenseDataCollector(
   const foreignTaxable = foreignAmount;
 
   // update amounts
-  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   category[defaultLocalCurrency] ||= { total: 0, taxable: 0, maxTaxable: 0 };
   category[defaultLocalCurrency].total += localAmount;
   category[defaultLocalCurrency].taxable += localTaxable;
@@ -242,11 +244,13 @@ export async function flightExpenseDataCollector(
 export async function employeeAccommodationDataByTrip() {}
 
 export async function otherExpensesDataCollector(
-  context: GraphQLModules.Context,
+  injector: Injector,
   otherExpenses: IGetBusinessTripsExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
 ): Promise<string | void> {
-  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   // populate category
   partialSummaryData['OTHER'] ??= {};
   const category = partialSummaryData['OTHER'] as SummaryCategoryData;
@@ -260,7 +264,7 @@ export async function otherExpensesDataCollector(
   await Promise.all(
     otherExpenses.map(async businessTripExpense => {
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        context,
+        injector,
         businessTripExpense,
       );
 
@@ -283,13 +287,15 @@ type ReportMetaData = {
 };
 
 export async function travelAndSubsistenceExpensesDataCollector(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
   { destinationCode, unAccommodatedDays, attendees }: ReportMetaData,
 ): Promise<void> {
-  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   // populate category
   partialSummaryData['TRAVEL_AND_SUBSISTENCE'] ??= {};
   const category = partialSummaryData['TRAVEL_AND_SUBSISTENCE'] as SummaryCategoryData;
@@ -315,7 +321,7 @@ export async function travelAndSubsistenceExpensesDataCollector(
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense => {
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        context,
+        injector,
         businessTripExpense,
       );
 
@@ -341,13 +347,15 @@ export async function travelAndSubsistenceExpensesDataCollector(
 }
 
 export async function carRentalExpensesDataCollector(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpenses: IGetBusinessTripsCarRentalExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   taxVariables: IGetAllTaxVariablesResult,
   destinationCode: string | null,
 ): Promise<void> {
-  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = context.adminContext;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   // populate category
   partialSummaryData['CAR_RENTAL'] ??= {};
   const category = partialSummaryData['CAR_RENTAL'] as SummaryCategoryData;
@@ -364,7 +372,7 @@ export async function carRentalExpensesDataCollector(
       }
 
       const { localAmount, foreignAmount } = await getExpenseAmountsData(
-        context,
+        injector,
         businessTripExpense,
       );
 
