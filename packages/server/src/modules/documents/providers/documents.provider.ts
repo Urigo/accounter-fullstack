@@ -1,9 +1,10 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Inject, Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
-import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
-import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { ENVIRONMENT } from '../../../shared/tokens.js';
+import type { Environment, Optional, TimelessDateString } from '../../../shared/types/index.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import type {
   IDeleteDocumentParams,
   IDeleteDocumentQuery,
@@ -273,13 +274,13 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
 `;
 
 @Injectable({
-  scope: Scope.Operation,
+  scope: Scope.Singleton,
   global: true,
 })
 export class DocumentsProvider {
   constructor(
-    private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private db: DBProvider,
+    @Inject(ENVIRONMENT) private env: Environment,
   ) {}
 
   private allDocumentsCache: Promise<IGetAllDocumentsResult[]> | null = null;
@@ -452,7 +453,7 @@ export class DocumentsProvider {
       });
     }
     const documentsWithOwnerId = params.documents.map(doc =>
-      reassureOwnerIdExists(doc, this.context),
+      reassureOwnerIdExists(doc, this.env.authorization.adminBusinessId),
     );
     return insertDocuments.run({ documents: documentsWithOwnerId }, this.db);
   }

@@ -24,7 +24,7 @@ import { VatProvider } from '../modules/vat/providers/vat.provider.js';
 import type { AdminContext } from '../plugins/admin-context-plugin.js';
 import type { Currency } from '../shared/enums.js';
 import type { AuthContext } from '../shared/types/auth.js';
-import type { AccounterContext } from '../shared/types/index.js';
+import type { AccounterContext, Environment } from '../shared/types/index.js';
 
 export type ModuleContextLike = {
   injector: Injector;
@@ -139,10 +139,7 @@ export function createLedgerTestContext(options: {
           contextRef.current as unknown as GraphQLModules.Context,
         );
       case DocumentsProvider:
-        return new DocumentsProvider(
-          tenantAwareDB,
-          contextRef.current as unknown as GraphQLModules.Context,
-        );
+        return new DocumentsProvider(dbProvider, contextRef.current!.env as unknown as Environment);
       case TransactionsProvider:
         return new TransactionsProvider(tenantAwareDB);
       case BusinessesProvider:
