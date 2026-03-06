@@ -288,7 +288,7 @@ __metadata:
     "@envelop/graphql-modules": "npm:9.1.1"
     "@google-cloud/pubsub": "npm:5.3.0"
     "@graphql-hive/yoga": "npm:0.47.3"
-    "@graphql-yoga/plugin-defer-stream": "npm:3.18.0"
+    "@graphql-yoga/plugin-defer-stream": "npm:3.18.1"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
@@ -311,7 +311,7 @@ __metadata:
     graphql: "npm:16.13.0"
     graphql-modules: "npm:3.1.1"
     graphql-scalars: "npm:1.25.0"
-    graphql-yoga: "npm:5.18.0"
+    graphql-yoga: "npm:5.18.1"
     inline-css: "npm:4.0.3"
     jose: "npm:6.1.3"
     json-bigint-patch: "npm:0.0.9"
@@ -4058,15 +4058,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-yoga/plugin-defer-stream@npm:3.18.0":
-  version: 3.18.0
-  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.18.0"
+"@graphql-yoga/plugin-defer-stream@npm:3.18.1":
+  version: 3.18.1
+  resolution: "@graphql-yoga/plugin-defer-stream@npm:3.18.1"
   dependencies:
     "@graphql-tools/utils": "npm:^10.11.0"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0
-    graphql-yoga: ^5.18.0
-  checksum: 10c0/66b7d357ab86f95ac39f4321d07190742b70be420c3e78da015752f27e1b6df10d1afd39003e4ffa61dcfce427125ae188f5280304819e35432a6368c5553905
+    graphql-yoga: ^5.18.1
+  checksum: 10c0/4c9ae8dcdd07a4ec9d29aff3aacefc70276f94d0e983f089f9f813ebd92f65d6794cc7dbd8c29c6b6d3d72db343aa7a5c17a2f3aa42cd2d7152e6eedd5f07d9c
   languageName: node
   linkType: hard
 
@@ -14275,11 +14275,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-yoga@npm:5.18.0, graphql-yoga@npm:^5.18.0":
-  version: 5.18.0
-  resolution: "graphql-yoga@npm:5.18.0"
+"graphql-yoga@npm:5.18.1":
+  version: 5.18.1
+  resolution: "graphql-yoga@npm:5.18.1"
   dependencies:
-    "@envelop/core": "npm:^5.3.0"
+    "@envelop/core": "npm:^5.5.1"
     "@envelop/instrumentation": "npm:^1.0.0"
     "@graphql-tools/executor": "npm:^1.5.0"
     "@graphql-tools/schema": "npm:^10.0.11"
@@ -14293,7 +14293,7 @@ __metadata:
     tslib: "npm:^2.8.1"
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0
-  checksum: 10c0/c5a079eb4ae76a7a7bb784b5e11a6e86002c64aace5dcc0f4013f950a419a53ada6bb240b27673f6a7f8237ff1d57cbe5d7c099612cfd6c17191e9e126a06e91
+  checksum: 10c0/62d96701cb35da7043187c8dcc7fe67edf68e595b1caa76ec61938d5a2a8bafa589fa734a25cf5f83be2638a8cec09f46ae66f98f996b1f8313cfbc11cdaeb7d
   languageName: node
   linkType: hard
 
@@ -14315,6 +14315,28 @@ __metadata:
   peerDependencies:
     graphql: ^15.2.0 || ^16.0.0
   checksum: 10c0/dc7524bd076bf336ca671a40a9765cf5ec66c0c6feda658bcd817966814010c849a7fa5b49ffdc3121ad9887b9791a460bf51ebdab3d0c7d2b9d5038230c6328
+  languageName: node
+  linkType: hard
+
+"graphql-yoga@npm:^5.18.0":
+  version: 5.18.0
+  resolution: "graphql-yoga@npm:5.18.0"
+  dependencies:
+    "@envelop/core": "npm:^5.3.0"
+    "@envelop/instrumentation": "npm:^1.0.0"
+    "@graphql-tools/executor": "npm:^1.5.0"
+    "@graphql-tools/schema": "npm:^10.0.11"
+    "@graphql-tools/utils": "npm:^10.11.0"
+    "@graphql-yoga/logger": "npm:^2.0.1"
+    "@graphql-yoga/subscription": "npm:^5.0.5"
+    "@whatwg-node/fetch": "npm:^0.10.6"
+    "@whatwg-node/promise-helpers": "npm:^1.3.2"
+    "@whatwg-node/server": "npm:^0.10.14"
+    lru-cache: "npm:^10.0.0"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^15.2.0 || ^16.0.0
+  checksum: 10c0/c5a079eb4ae76a7a7bb784b5e11a6e86002c64aace5dcc0f4013f950a419a53ada6bb240b27673f6a7f8237ff1d57cbe5d7c099612cfd6c17191e9e126a06e91
   languageName: node
   linkType: hard
 
