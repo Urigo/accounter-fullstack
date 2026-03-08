@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { GraphQLError } from 'graphql';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import type { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import type { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import type { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 
 function createProvider(options: {
   businessId: string | null;
@@ -26,7 +26,7 @@ function createProvider(options: {
           }
         : null,
     ),
-  } as unknown as AuthContextV2Provider;
+  } as unknown as AuthContextProvider;
 
   return {
     provider: new AdminContextProvider(auth, db),

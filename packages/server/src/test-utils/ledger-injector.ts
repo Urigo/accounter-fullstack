@@ -4,7 +4,7 @@ import { AdminContextProvider } from '../modules/admin-context/providers/admin-c
 import { CoinMarketCapProvider } from '../modules/app-providers/coinmarketcap.js';
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
-import { AuthContextV2Provider } from '../modules/auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../modules/auth/providers/auth-context.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
@@ -90,7 +90,7 @@ export function createLedgerTestContext(options: {
       authType: null,
       tenant: { businessId: resolvedBusinessId },
     }),
-  } as AuthContextV2Provider);
+  } as AuthContextProvider);
 
   // Create AdminContextProvider for providers that need it
   const adminContextProvider = new AdminContextProvider(
@@ -99,7 +99,7 @@ export function createLedgerTestContext(options: {
         authType: null,
         tenant: { businessId: resolvedBusinessId },
       }),
-    } as AuthContextV2Provider,
+    } as AuthContextProvider,
     tenantAwareDB,
   );
 
