@@ -138,7 +138,7 @@ const DeelModel = zod.union([
 ]);
 
 const GeneralModel = zod.object({
-  FRONTEND_URL: zod.string().url().optional(),
+  FRONTEND_URL: zod.url().optional(),
 });
 
 const Auth0Model = zod.union([
