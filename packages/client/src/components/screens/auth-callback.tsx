@@ -4,10 +4,15 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { ROUTES } from '../../router/routes.js';
 
 export function AuthCallbackPage(): ReactElement {
-  const { handleRedirectCallback, isLoading, error } = useAuth0();
+  const { handleRedirectCallback, isLoading, error, isAuthenticated } = useAuth0();
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isAuthenticated) {
+      navigate(ROUTES.CHARGES.ROOT, { replace: true });
+      return;
+    }
+
     const handleCallback = async (): Promise<void> => {
       try {
         const result = await handleRedirectCallback();
@@ -22,7 +27,7 @@ export function AuthCallbackPage(): ReactElement {
     if (!isLoading && !error) {
       void handleCallback();
     }
-  }, [isLoading, error, handleRedirectCallback, navigate]);
+  }, [isAuthenticated, isLoading, error, handleRedirectCallback, navigate]);
 
   if (error) {
     return <div>Authentication error: {error.message}</div>;

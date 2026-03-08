@@ -4,7 +4,7 @@ import { sql } from '@pgtyped/runtime';
 import { formatCurrency, optionalDateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import type {
   AdminContext,
   IGetAdminContextsQuery,
@@ -285,7 +285,7 @@ export class AdminContextProvider {
   private cachedContextInitializing: Promise<AdminContext | null> | null = null;
 
   constructor(
-    private authContextProvider: AuthContextV2Provider,
+    private authContextProvider: AuthContextProvider,
     private db: TenantAwareDBClient,
   ) {}
 
@@ -460,7 +460,6 @@ export class AdminContextProvider {
     }
 
     this.cachedContextInitializing ??= this.getAdminContext();
-    await this.cachedContextInitializing;
 
     const context = await this.cachedContextInitializing;
     if (!context) {

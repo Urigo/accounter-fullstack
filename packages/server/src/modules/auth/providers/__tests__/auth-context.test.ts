@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
-import { AuthContextV2Provider } from '../auth-context-v2.provider.js';
+import { AuthContextProvider } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
 import type { Environment } from '../../../../shared/types/index.js';
 
@@ -11,8 +11,8 @@ vi.mock('jose', async () => {
     }
 });
 
-describe('AuthContextV2Provider', () => {
-  let provider: AuthContextV2Provider;
+describe('AuthContextProvider', () => {
+  let provider: AuthContextProvider;
   let mockDBProvider: any;
   let mockEnv: any;
   let mockRawAuth: any;
@@ -38,17 +38,17 @@ describe('AuthContextV2Provider', () => {
 
     vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
 
-    provider = new AuthContextV2Provider(mockEnv, mockRawAuth, mockDBProvider);
+    provider = new AuthContextProvider(mockEnv, mockRawAuth, mockDBProvider);
   });
 
   it('should return null if authType is null', async () => {
-    provider = new AuthContextV2Provider(mockEnv, { authType: null, token: null }, mockDBProvider);
+    provider = new AuthContextProvider(mockEnv, { authType: null, token: null }, mockDBProvider);
     const result = await provider.getAuthContext();
     expect(result).toBeNull();
   });
 
   it('should return null for apiKey (Phase 7 support)', async () => {
-    provider = new AuthContextV2Provider(mockEnv, { authType: 'apiKey', token: 'key' }, mockDBProvider);
+    provider = new AuthContextProvider(mockEnv, { authType: 'apiKey', token: 'key' }, mockDBProvider);
     const result = await provider.getAuthContext();
     expect(result).toBeNull();
   });

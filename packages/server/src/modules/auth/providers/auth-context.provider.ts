@@ -1,6 +1,6 @@
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import type { RawAuth } from '../../../plugins/auth-plugin-v2.js';
+import type { RawAuth } from '../../../plugins/auth-plugin.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
@@ -13,7 +13,7 @@ const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
   scope: Scope.Operation,
   global: true,
 })
-export class AuthContextV2Provider {
+export class AuthContextProvider {
   private cachedContext: AuthContext | null | undefined = undefined;
   private handlingAuth: Promise<AuthContext | null> | null = null;
 
@@ -78,7 +78,7 @@ export class AuthContextV2Provider {
       const auth0UserId = payload.sub;
 
       if (!auth0UserId) {
-        console.error('AuthContextV2: Missing sub claim in JWT');
+        console.error('AuthContext: Missing sub claim in JWT');
         this.handlingAuth = null;
         this.cachedContext = null;
         return null;
@@ -88,7 +88,7 @@ export class AuthContextV2Provider {
       const userContext = await this.mapAuth0UserToLocal(auth0UserId);
 
       if (!userContext) {
-        console.warn(`AuthContextV2: User not found/linked in local DB: ${auth0UserId}`);
+        console.warn(`AuthContext: User not found/linked in local DB: ${auth0UserId}`);
         this.handlingAuth = null;
         this.cachedContext = null;
         return null;
@@ -117,7 +117,7 @@ export class AuthContextV2Provider {
       this.handlingAuth = null;
       return authContext;
     } catch (error) {
-      console.error('AuthContextV2: JWT verification failed', error);
+      console.error('AuthContext: Failed to process authentication token', error);
       this.handlingAuth = null;
       return null;
     }
@@ -145,7 +145,7 @@ export class AuthContextV2Provider {
         roleId: row.role_id,
       };
     } catch (error) {
-      console.error('AuthContextV2: DB lookup failed', error);
+      console.error('AuthContext: DB lookup failed', error);
       throw error;
     }
   }

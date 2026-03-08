@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import type {
   IDeleteCorporateTaxParams,
   IDeleteCorporateTaxQuery,
@@ -60,7 +60,7 @@ export class CorporateTaxesProvider {
   private businessIdCache: string | null = null;
   constructor(
     private db: TenantAwareDBClient,
-    private authContextProvider: AuthContextV2Provider,
+    private authContextProvider: AuthContextProvider,
   ) {}
 
   private async getBusinessId(): Promise<string> {

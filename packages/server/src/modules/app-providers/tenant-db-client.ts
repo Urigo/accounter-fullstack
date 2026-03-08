@@ -4,7 +4,7 @@ import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import type { AuthContext } from '../../shared/types/auth.js';
-import { AuthContextV2Provider } from '../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
 
 let QUERY_COUNTER = 0;
@@ -58,7 +58,7 @@ export class TenantAwareDBClient {
 
   constructor(
     private dbProvider: DBProvider,
-    private authContextProvider: AuthContextV2Provider,
+    private authContextProvider: AuthContextProvider,
   ) {}
 
   /**
