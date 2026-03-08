@@ -50,10 +50,9 @@ yarn generate:watch
 Or use the VSCode Terminals extension: `fabiospampinato.vscode-terminals` to run all this for you in
 different terminals.
 
-6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in. The credentials to log in are
-   in your `.env` file under `AUTHORIZED_USERS`. Set the hashed password in the `.env` file. e.g.
-   replace `SECRET` with `$2b$10$SuqbDX5r6qZidiMbAcGnFOPloNQSRQrLEPShZjplabtfdN.QzS4ba`. And then
-   use the password `SECRET` to log in.
+6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in via Auth0 Universal Login.
+   Configure Auth0 variables in `.env` (`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`,
+   `AUTH0_CLIENT_SECRET`, `AUTH0_MANAGEMENT_AUDIENCE`) before running the app.
 
 7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
    `yarn seed`.
