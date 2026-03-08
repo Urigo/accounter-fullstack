@@ -86,6 +86,14 @@ mutation {
 }
 ```
 
+## Authentication
+
+Accounter uses Auth0 for user authentication. See:
+
+- [Architecture Documentation](docs/architecture/authentication.md)
+- [Operations Runbook](docs/operations/auth0-runbook.md)
+- [Auth0 Setup Guide](docs/user-authentication-plan/auth0-setup.md)
+
 ## Testing
 
 The test suite is organized into three projects for efficiency:
