@@ -92,7 +92,7 @@ Accounter uses Auth0 for user authentication. See:
 
 - [Architecture Documentation](docs/architecture/authentication.md)
 - [Operations Runbook](docs/operations/auth0-runbook.md)
-- [Auth0 Setup Guide](docs/archive/user-authentication-plan/auth0-setup.md)
+- [Auth0 Setup Guide](docs/user-authentication-plan/auth0-setup.md)
 
 ## Testing
 
