@@ -1,11 +1,12 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { Auth0Provider } from '@auth0/auth0-react';
+import { Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import { routes } from './router/config.js';
 import './index.css';
 import 'json-bigint-patch';
 import { ROUTES } from '@/router/routes.js';
+import { setUrqlAccessTokenProvider } from './providers/urql.js';
 
 const rootElement = document.getElementById('root');
 const root = createRoot(rootElement!);
@@ -23,6 +24,32 @@ if (!domain || !clientId || !audience) {
   console.warn('Auth0 environment variables not set. Auth0 login will fail.');
 }
 
+function Auth0UrqlTokenBridge() {
+  const { getAccessTokenSilently } = useAuth0();
+
+  // Register token provider during render so route loaders can read it immediately.
+  setUrqlAccessTokenProvider(async () => {
+    try {
+      return await getAccessTokenSilently({
+        authorizationParams: {
+          audience,
+          scope: 'openid profile email offline_access',
+        },
+      });
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    return () => {
+      setUrqlAccessTokenProvider(null);
+    };
+  }, []);
+
+  return <RouterProvider router={router} />;
+}
+
 root.render(
   <StrictMode>
     <Auth0Provider
@@ -34,9 +61,10 @@ root.render(
         scope: 'openid profile email offline_access',
       }}
       useRefreshTokens
+      cacheLocation="localstorage"
       skipRedirectCallback={shouldSkipRedirectCallback}
     >
-      <RouterProvider router={router} />
+      <Auth0UrqlTokenBridge />
     </Auth0Provider>
   </StrictMode>,
 );

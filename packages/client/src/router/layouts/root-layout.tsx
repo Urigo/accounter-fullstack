@@ -8,8 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DocumentTitle } from '../../components/layout/document-title.js';
 import { NavigationProgress } from '../../components/layout/navigation-progress.js';
 import { Toaster } from '../../components/ui/sonner.js';
-import { UrqlProvider } from '../../providers/urql.js';
-import { UserProvider } from '../../providers/user-provider.js';
+import { UrqlProvider, UserProvider } from '../../providers/index.js';
 
 // Create these outside the component to prevent recreation on every render
 const queryClient = new QueryClient({

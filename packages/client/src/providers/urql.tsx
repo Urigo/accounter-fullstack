@@ -1,139 +1,117 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   createClient,
   fetchExchange,
   mapExchange,
   Provider,
   type AnyVariables,
+  type Client,
   type Operation,
 } from 'urql';
-import { useAuth0 } from '@auth0/auth0-react';
 import { authExchange } from '@urql/exchange-auth';
-import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
-export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  const { getAccessTokenSilently, isAuthenticated, logout } = useAuth0();
-  const [token, setToken] = useState<string | null>(null);
-  const navigate = useNavigate();
+type AccessTokenProvider = () => Promise<string | null>;
 
-  useEffect(() => {
-    const refreshToken = async (): Promise<void> => {
-      if (!isAuthenticated) {
-        setToken(null);
-        return;
-      }
+let accessTokenProvider: AccessTokenProvider | null = null;
+let bearerToken: string | null = null;
 
-      try {
-        const accessToken = await getAccessTokenSilently({
-          authorizationParams: {
-            audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-            scope: 'openid profile email offline_access',
-          },
-        });
+export function setUrqlAccessTokenProvider(provider: AccessTokenProvider | null): void {
+  accessTokenProvider = provider;
+  if (!provider) {
+    bearerToken = null;
+  }
+}
 
-        setToken(`Bearer ${accessToken}`);
-      } catch (tokenError) {
-        console.error('Failed to get Auth0 access token:', tokenError);
-        setToken(null);
-      }
-    };
+async function refreshBearerToken(): Promise<void> {
+  if (!accessTokenProvider) {
+    bearerToken = null;
+    return;
+  }
 
-    void refreshToken();
-  }, [isAuthenticated, getAccessTokenSilently]);
+  try {
+    const accessToken = await accessTokenProvider();
+    bearerToken = accessToken ? `Bearer ${accessToken}` : null;
+  } catch {
+    bearerToken = null;
+  }
+}
 
-  const client = useMemo(() => {
-    let url: string;
-    switch (import.meta.env.MODE) {
-      case 'production': {
-        url = 'https://accounter.onrender.com/graphql';
-        break;
-      }
-      case 'staging': {
-        url = 'https://accounter-staging.onrender.com/graphql';
-        break;
-      }
-      default: {
-        url = 'http://localhost:4000/graphql';
-        break;
-      }
+/**
+ * Singleton URQL client for use in loaders and server-side operations
+ * This is separate from the Provider client to avoid React context dependencies
+ */
+let globalClient: Client | null = null;
+
+export function getUrqlClient(): Client {
+  if (globalClient) {
+    return globalClient;
+  }
+
+  let url: string;
+  switch (import.meta.env.MODE) {
+    case 'production': {
+      url = 'https://accounter.onrender.com/graphql';
+      break;
     }
+    case 'staging': {
+      url = 'https://accounter-staging.onrender.com/graphql';
+      break;
+    }
+    default: {
+      url = 'http://localhost:4000/graphql';
+      break;
+    }
+  }
 
-    return createClient({
-      url,
-      exchanges: [
-        mapExchange({
-          onResult(result) {
-            const isAuthError =
-              result?.error?.graphQLErrors.some(
-                e => e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
-              ) || result?.error?.response?.status === 401;
-
-            if (isAuthError) {
-              void logout({
-                logoutParams: {
-                  returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
-                },
-              });
-              return;
-            }
-
-            handleUrqlError(result);
+  globalClient = createClient({
+    url,
+    exchanges: [
+      mapExchange({
+        onResult(result) {
+          handleUrqlError(result);
+        },
+      }),
+      authExchange(async utils => {
+        return {
+          willAuthError(): boolean {
+            return !bearerToken;
           },
-        }),
-        authExchange(async utils => {
-          return {
-            addAuthToOperation(operation): Operation<void, AnyVariables> {
-              if (!token) {
-                return operation;
-              }
-              return utils.appendHeaders(operation, {
-                Authorization: token,
-              });
-            },
-            didAuthError(error, _operation): boolean {
-              return (
-                error?.response?.status === 401 ||
-                error?.graphQLErrors?.some(
-                  e =>
-                    e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
-                )
-              );
-            },
-            async refreshAuth(): Promise<void> {
-              if (!isAuthenticated) {
-                setToken(null);
-                navigate(ROUTES.LOGIN, {
-                  state: { message: 'You are not authorized to access this page' },
-                });
-                return;
-              }
+          addAuthToOperation(operation): Operation<void, AnyVariables> {
+            if (!bearerToken) {
+              return operation;
+            }
+            return utils.appendHeaders(operation, {
+              Authorization: bearerToken,
+            });
+          },
+          didAuthError(error, _operation): boolean {
+            return (
+              error?.response?.status === 401 ||
+              error?.graphQLErrors?.some(
+                e => e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
+              )
+            );
+          },
+          async refreshAuth(): Promise<void> {
+            await refreshBearerToken();
+          },
+        };
+      }),
+      fetchExchange,
+    ],
+  });
 
-              try {
-                const refreshedToken = await getAccessTokenSilently({
-                  authorizationParams: {
-                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                    scope: 'openid profile email',
-                  },
-                  cacheMode: 'off',
-                });
+  return globalClient;
+}
 
-                setToken(`Bearer ${refreshedToken}`);
-              } catch (refreshError) {
-                console.error('Failed to refresh Auth0 token:', refreshError);
-                setToken(null);
-                navigate(ROUTES.LOGIN, {
-                  state: { message: 'Session expired. Please sign in again.' },
-                });
-              }
-            },
-          };
-        }),
-        fetchExchange,
-      ],
-    });
-  }, [navigate, token, getAccessTokenSilently, isAuthenticated, logout]);
+/**
+ * Reset the global client (useful for tests or logout)
+ */
+export function resetUrqlClient(): void {
+  globalClient = null;
+  bearerToken = null;
+}
 
-  return <Provider value={client}>{children}</Provider>;
+export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
+  return <Provider value={getUrqlClient()}>{children}</Provider>;
 }
