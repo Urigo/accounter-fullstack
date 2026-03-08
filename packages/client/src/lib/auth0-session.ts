@@ -18,7 +18,7 @@ function parseAuth0CacheEntry(rawValue: string): string | null {
 }
 
 export function getStoredAuth0AccessToken(): string | null {
-  const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
+  const clientId = import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID;
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
   if (!clientId || !audience) {

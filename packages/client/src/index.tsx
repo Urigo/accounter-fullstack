@@ -14,7 +14,7 @@ const root = createRoot(rootElement!);
 const router = createBrowserRouter(routes);
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN;
-const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
+const clientId = import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID;
 const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 const redirectUri = `${window.location.origin}${ROUTES.AUTH_CALLBACK}`;
 const shouldSkipRedirectCallback = window.location.pathname === ROUTES.AUTH_CALLBACK;
