@@ -4556,7 +4556,7 @@ REQUIREMENTS:
      ) {}
 
      async myMethod() {
-       const authContext = await this.authProvider.getContext()
+       const authContext = await this.authProvider.getAuthContext()
        const adminContext = await this.adminProvider.getAdminContext()
        if (!authContext?.user) {
          throw new GraphQLError('Unauthorized')
@@ -5106,126 +5106,2290 @@ RISK: None (documentation only)
 
 ---
 
-## Phases 6-10: Additional Features
+## Phase 6: Role-Based Authorization
 
-**Note**: The following phases expand the authentication system with role-based authorization,
-invitation workflows, API keys, and production hardening. **Only proceed after Phases 1-5 are stable
-in production for at least 7 days.**
+**Note**: Only proceed after Phases 1-5 are stable in production for at least 7 days. Authorization
+checks are additive — the system remains fully operative throughout this phase.
 
-### Phase 6: Role-Based Authorization (Week 6)
+### Prompt 6.1: GraphQL Authorization Directives
 
-Implement role-based access control using GraphQL directives and authorization services. **System
-remains fully operative** - authorization checks are additive security layers on top of working
-Auth0 authentication.
+``
 
-**Key Prompts**:
+CONTEXT: Auth0 authentication is active (Phase 4), all providers use TenantAwareDBClient (Phase
+4.8), and the codebase is clean after Phase 5 cleanup. The next layer of security is role-based
+authorization exposed as GraphQL schema directives. Currently any authenticated user can call any
+mutation — this prompt closes that gap.
 
-- **Prompt 6.1**: GraphQL Directives (`@requiresAuth`, `@requiresRole`)
-  - E2E State: Authenticated users can access role-protected resolvers; unauthorized users receive
-    FORBIDDEN errors
-- **Prompt 6.2**: Authorization Service Pattern (base service for domain-specific authorization)
-  - E2E State: Complex authorization logic encapsulated in services; resolvers delegate
-    authorization checks
-- **Prompt 6.3**: Domain Authorization Service (example: ChargesAuthorizationService)
-  - E2E State: Charges module has full role-based authorization; employees cannot delete,
-    accountants cannot issue invoices
-- **Prompt 6.4**: Wire Authorization into Resolvers (apply directives and services to existing
-  resolvers)
-  - E2E State: All critical resolvers protected; role violations return clear error messages
+**Note**: Initial implementation uses role-based checks only (`if roleId === 'business_owner'`). The
+`permissions` and `role_permissions` tables exist in the database (created in Phase 1) but remain
+unpopulated and unused for now. Granular permission-based authorization is a future enhancement.
 
-**Refer to**: [blueprint.md Phase 6](blueprint.md#phase-6-role-based-authorization-week-6) for
-detailed implementation steps.
+TASK: Implement `@requiresAuth` and `@requiresRole` GraphQL directives and the schema-level
+transformer that enforces them.
+
+REQUIREMENTS:
+
+1. Create directive definitions (`packages/server/src/modules/auth/auth.graphql`):
+
+   ```graphql
+   directive @requiresAuth on FIELD_DEFINITION
+   directive @requiresRole(role: String!) on FIELD_DEFINITION
+   directive @requiresAnyRole(roles: [String!]!) on FIELD_DEFINITION
+   ```
+
+2. Create directive transformer: `packages/server/src/modules/auth/directives/auth-directives.ts`
+
+   ```typescript
+   import { mapSchema, getDirective, MapperKind } from '@graphql-tools/utils'
+   import { defaultFieldResolver, GraphQLSchema } from 'graphql'
+   import { GraphQLError } from 'graphql'
+   import type { AuthContextProvider } from '../providers/auth-context.provider'
+
+   export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
+     return mapSchema(schema, {
+       [MapperKind.OBJECT_FIELD]: fieldConfig => {
+         const requiresAuthDirective = getDirective(schema, fieldConfig, 'requiresAuth')?.[0]
+         const requiresRoleDirective = getDirective(schema, fieldConfig, 'requiresRole')?.[0]
+         const requiresAnyRoleDirective = getDirective(schema, fieldConfig, 'requiresAnyRole')?.[0]
+
+         if (!requiresAuthDirective && !requiresRoleDirective && !requiresAnyRoleDirective) {
+           return fieldConfig
+         }
+
+         const { resolve = defaultFieldResolver } = fieldConfig
+
+         return {
+           ...fieldConfig,
+           resolve: async (source, args, context, info) => {
+             // Inject AuthContextProvider from GraphQL Modules DI
+             const authProvider: AuthContextProvider = context.injector.get(AuthContextProvider)
+             const authContext = await authProvider.getAuthContext()
+
+             if (!authContext?.user) {
+               throw new GraphQLError('Authentication required', {
+                 extensions: { code: 'UNAUTHENTICATED' }
+               })
+             }
+
+             if (requiresRoleDirective) {
+               const role = requiresRoleDirective['role'] as string
+               if (authContext.user.roleId !== role) {
+                 throw new GraphQLError(`Requires role: ${role}`, {
+                   extensions: { code: 'FORBIDDEN' }
+                 })
+               }
+             }
+
+             if (requiresAnyRoleDirective) {
+               const roles = requiresAnyRoleDirective['roles'] as string[]
+               if (!roles.includes(authContext.user.roleId)) {
+                 throw new GraphQLError(`Requires one of roles: ${roles.join(', ')}`, {
+                   extensions: { code: 'FORBIDDEN' }
+                 })
+               }
+             }
+
+             return resolve(source, args, context, info)
+           }
+         }
+       }
+     })
+   }
+   ```
+
+3. Apply transformer in `packages/server/src/modules-app.ts`:
+
+   ```typescript
+   import { authDirectiveTransformer } from './modules/auth/directives/auth-directives.js'
+
+   export const application = createApplication({
+     /* ... */
+   })
+
+   // Apply directive transformer after createApplication
+   export const transformedSchema = authDirectiveTransformer(application.schema)
+   ```
+
+4. Update `packages/server/src/index.ts` to use the transformed schema alongside the
+   `useGraphQLModules` plugin. Use `useSchema` from `@envelop/core` to override the schema **after**
+   `useGraphQLModules` (which still provides the executor and DI context):
+
+   ```typescript
+   import { useSchema } from '@envelop/core'
+   import { application, transformedSchema } from './modules-app.js'
+
+   const yoga = createYoga({
+     plugins: [
+       dbCleanupPlugin(),
+       authPlugin(),
+       useGraphQLModules(application), // Executor + DI context per operation
+       useSchema(transformedSchema), // Override schema with directive-wrapped version
+       useDeferStream()
+       // ... other plugins
+     ]
+     // ... context factory
+   })
+   ```
+
+   **Why this order matters**: `useGraphQLModules` registers the executor
+   (`application.createExecution()`) and the per-operation DI container setup. `useSchema` runs
+   after it in the same `onEnveloped` phase and overwrites the schema pointer to the
+   directive-transformed version. Execution then runs against the transformed schema (with wrapped
+   field resolvers), so directives are enforced — while DI injection via `context.injector`
+   continues to work correctly.
+
+5. Add `@requiresAuth` to all existing queries/mutations that require authentication:
+   - Check current schema for unprotected fields
+   - Add directives in the appropriate `.graphql` schema files
+
+6. Write unit tests:
+   - `@requiresAuth` passes when auth context exists
+   - `@requiresAuth` throws UNAUTHENTICATED when no user
+   - `@requiresRole` passes when role matches
+   - `@requiresRole` throws FORBIDDEN when role doesn't match
+   - `@requiresAnyRole` passes when any role matches
+   - Directives stack (field with both `@requiresAuth` and `@requiresRole`)
+
+7. Write integration tests:
+   - Execute protected query as authenticated user → succeeds
+   - Execute protected query as unauthenticated → 401 error
+   - Execute role-restricted mutation as wrong role → 403 error
+   - Execute role-restricted mutation as correct role → succeeds
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/modules/auth/auth.graphql` (directive definitions)
+- New: `packages/server/src/modules/auth/directives/auth-directives.ts`
+- Updated: `packages/server/src/modules-app.ts` (apply transformer, export `transformedSchema`)
+- Updated: `packages/server/src/index.ts` (`useSchema(transformedSchema)` added after
+  `useGraphQLModules`)
+- Updated: Existing `.graphql` files with `@requiresAuth` on protected fields
+- Tests: `packages/server/src/modules/auth/directives/__tests__/auth-directives.test.ts`
+- All tests passing
+
+INTEGRATION: Directives provide declarative, schema-level authorization. Field-level business logic
+(e.g., "accountant can view but not issue invoices") is handled by domain services (Prompt 6.2-6.3).
+
+VALIDATION:
+
+- Schema transformer applies correctly
+- All critical mutations protected
+- Unauthenticated requests fail at directive level (not in provider)
+- TypeScript compilation succeeds
+
+RISK: Low (additive security; all existing functionality continues to work)
+
+``
 
 ---
 
-### Phase 7: Invitation Flow (Auth0 Pre-Registration) (Week 7)
+### Prompt 6.2: Authorization Service Pattern
 
-Implement user invitation system using Auth0 Management API for pre-registration. **System remains
-fully operative** - existing Auth0 users unaffected; invitations add new users.
+``
 
-**Key Prompts**:
+CONTEXT: Directives handle coarse-grained protection (auth required, role required). Complex,
+domain-specific authorization logic — like "accountant can update but not delete, and only for their
+own business" — belongs in a reusable service class.
 
-- **Prompt 7.1**: Invitation Creation Mutation (with Auth0 Management API)
-  - E2E State: Business owners can invite users; invited users receive Auth0 password setup emails;
-    local user_id pre-created
-- **Prompt 7.2**: Accept Invitation Mutation (Auth0 Session Required)
-  - E2E State: Invited users set Auth0 password, log in, accept invitation; immediately gain
-    business access
-- **Prompt 7.3**: Invitation Cleanup Background Job (delete expired invitations and blocked Auth0
-  users)
-  - E2E State: Expired invitations auto-cleaned; unused Auth0 accounts deleted; secure token storage
-- **Prompt 7.4**: Audit Log Service Integration (track invitation creation, acceptance, expiration)
-  - E2E State: All invitation events logged to audit_logs table; compliance-ready audit trail
+TASK: Create a base `AuthorizationService` class that domain services can extend for consistent,
+testable authorization logic.
 
-**Refer to**:
-[blueprint.md Phase 7](blueprint.md#phase-7-invitation-flow-auth0-pre-registration-week-7) for
-detailed implementation steps.
+REQUIREMENTS:
+
+1. Create base service: `packages/server/src/modules/auth/services/authorization.service.ts`
+
+   ```typescript
+   import { Injectable, Scope } from 'graphql-modules'
+   import { GraphQLError } from 'graphql'
+   import type { AuthContextProvider } from '../providers/auth-context.provider'
+   import type { AuthUser } from '@shared/types/auth'
+
+   @Injectable({ scope: Scope.Operation })
+   export class AuthorizationService {
+     constructor(protected authProvider: AuthContextProvider) {}
+
+     async requireAuth(): Promise<AuthUser> {
+       const auth = await this.authProvider.getAuthContext()
+       if (!auth?.user) {
+         throw new GraphQLError('Authentication required', {
+           extensions: { code: 'UNAUTHENTICATED' }
+         })
+       }
+       return auth.user
+     }
+
+     async requireRole(allowedRoles: string[]): Promise<AuthUser> {
+       const user = await this.requireAuth()
+       if (!allowedRoles.includes(user.roleId)) {
+         throw new GraphQLError(`Access denied. Required roles: ${allowedRoles.join(', ')}`, {
+           extensions: { code: 'FORBIDDEN' }
+         })
+       }
+       return user
+     }
+
+     async requireBusinessOwner(): Promise<AuthUser> {
+       return this.requireRole(['business_owner'])
+     }
+
+     async canWrite(): Promise<AuthUser> {
+       // employee is read-only; business_owner and accountant can write general data
+       // Note: scraper is NOT included here - it must be added explicitly in
+       // domain services that support scraper writes (e.g., transaction insertion)
+       return this.requireRole(['business_owner', 'accountant'])
+     }
+
+     async canManageUsers(): Promise<AuthUser> {
+       return this.requireRole(['business_owner'])
+     }
+   }
+   ```
+
+2. Register in `packages/server/src/modules/auth/index.ts`:
+
+   ```typescript
+   import { readFileSync } from 'node:fs'
+   import { createModule } from 'graphql-modules'
+   import { Auth0ManagementService } from './services/auth0-management.service.js'
+   import { AuthorizationService } from './services/authorization.service.js'
+
+   const __dirname = new URL('.', import.meta.url).pathname
+
+   export const authModule = createModule({
+     id: 'auth',
+     dirname: __dirname,
+     typeDefs: [readFileSync(`${__dirname}/auth.graphql`, 'utf-8')],
+     providers: [Auth0ManagementService, AuthorizationService]
+   })
+   ```
+
+   > `typeDefs` registers the directive SDL (`auth.graphql`) with GraphQL Modules so the directives
+   > are present in the merged schema that `authDirectiveTransformer` then processes.
+
+3. Write unit tests:
+   - `requireAuth` returns user when authenticated
+   - `requireAuth` throws UNAUTHENTICATED when no user
+   - `requireRole` returns user when role matches
+   - `requireRole` throws FORBIDDEN when role doesn't match
+   - `requireBusinessOwner` restricts to business_owner
+   - `canWrite` allows business_owner and accountant; blocks employee and scraper
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/modules/auth/services/authorization.service.ts`
+- Updated: `packages/server/src/modules/auth/index.ts`
+- Tests: `packages/server/src/modules/auth/services/__tests__/authorization.service.test.ts`
+- All tests passing
+
+INTEGRATION: Domain services (charges, invoices, etc.) extend or inject `AuthorizationService` to
+avoid duplicating authorization logic. See Prompt 6.3 for a complete domain example.
+
+RISK: Low (new service, does not touch existing code)
+
+``
 
 ---
 
-### Phase 8: API Key Management (Week 8)
+### Prompt 6.3: Domain Authorization Service Example (Charges)
 
-Implement API key authentication for programmatic access (independent of Auth0). **System remains
-fully operative** - Auth0 users unaffected; API keys provide alternate authentication method.
+``
 
-**Key Prompts**:
+CONTEXT: The base `AuthorizationService` is ready. Now demonstrate the pattern with a complete
+domain example: `ChargesAuthorizationService`. This serves as the canonical pattern for all other
+modules to follow.
 
-- **Prompt 8.1**: API Key Generation Mutation (admins create API keys for scrapers)
-  - E2E State: Business owners generate API keys; keys hashed and stored; plain-text key shown once
-- **Prompt 8.2**: API Key Authentication (support X-API-Key header in authPluginV2)
-  - E2E State: Scrapers authenticate with X-API-Key header; AuthContext populated from api_keys
-    table
-- **Prompt 8.3**: API Key Management UI (list, revoke, rotate keys)
-  - E2E State: Admins view active API keys; can revoke compromised keys; last_used_at tracking
+TASK: Implement `ChargesAuthorizationService` and integrate it into the charges resolvers.
 
-**Refer to**: [blueprint.md Phase 8](blueprint.md#phase-8-api-key-management-week-8) for detailed
-implementation steps.
+REQUIREMENTS:
+
+1. Create: `packages/server/src/modules/charges/services/charges-authorization.service.ts`
+
+   ```typescript
+   import { Injectable, Scope } from 'graphql-modules'
+   import { GraphQLError } from 'graphql'
+   import { AuthorizationService } from '@modules/auth/services/authorization.service'
+   import { TenantAwareDBClient } from '@modules/app-providers/tenant-db-client'
+
+   @Injectable({ scope: Scope.Operation })
+   export class ChargesAuthorizationService extends AuthorizationService {
+     constructor(
+       authProvider: AuthContextProvider,
+       private db: TenantAwareDBClient
+     ) {
+       super(authProvider)
+     }
+
+     /** Any authenticated user may read charges (RLS enforces tenant isolation) */
+     async canReadCharges(): Promise<void> {
+       await this.requireAuth()
+     }
+
+     /** Only business_owner or accountant may create/update charges */
+     async canWriteCharge(): Promise<void> {
+       await this.requireRole(['business_owner', 'accountant'])
+     }
+
+     /** Only business_owner may delete charges */
+     async canDeleteCharge(chargeId: string): Promise<void> {
+       await this.requireBusinessOwner()
+
+       // RLS already ensures the charge belongs to this tenant,
+       // so a simple existence check is sufficient.
+       const { rows } = await this.db.query(
+         'SELECT id FROM accounter_schema.charges WHERE id = $1',
+         [chargeId]
+       )
+       if (!rows.length) {
+         throw new GraphQLError('Charge not found or access denied', {
+           extensions: { code: 'NOT_FOUND' }
+         })
+       }
+     }
+   }
+   ```
+
+2. Register `ChargesAuthorizationService` in the charges module providers.
+
+3. Inject into existing `ChargesProvider`:
+
+   ```typescript
+   @Injectable({ scope: Scope.Operation })
+   export class ChargesProvider {
+     constructor(
+       private db: TenantAwareDBClient,
+       private auth: ChargesAuthorizationService
+     ) {}
+
+     async updateCharge(id: string, input: UpdateChargeInput) {
+       await this.auth.canWriteCharge()
+       return updateCharge.run({ id, ...input }, this.db)
+     }
+
+     async deleteCharge(id: string) {
+       await this.auth.canDeleteCharge(id)
+       return deleteCharge.run({ id }, this.db)
+     }
+   }
+   ```
+
+4. Write tests:
+   - `canReadCharges`: passes for all roles
+   - `canWriteCharge`: passes for business_owner and accountant; blocks employee and scraper
+   - `canDeleteCharge`: passes for business_owner only; returns NOT_FOUND for unknown charge
+   - Integration: employee calling deleteCharge mutation gets FORBIDDEN
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/modules/charges/services/charges-authorization.service.ts`
+- Updated: `packages/server/src/modules/charges/providers/charges.provider.ts`
+- Tests: `packages/server/src/modules/charges/services/__tests__/charges-authorization.test.ts`
+- All tests passing
+
+INTEGRATION: This pattern is the template for all other modules. Document the pattern in
+`docs/architecture/authorization-pattern.md` as a reference.
+
+RISK: Low (new service, changes confined to charges module)
+
+``
 
 ---
 
-### Phase 9: Frontend Enhancement (Auth0 Features) (Week 9)
+### Prompt 6.4: Wire Authorization into All Resolvers
 
-**Note**: Core Auth0 login integration completed in Phase 4, Step 4.6 (zero-downtime requirement).
-This phase adds enhanced auth features and user experience improvements.
+``
 
-**Key Prompts**:
+CONTEXT: The authorization pattern is established (Prompts 6.1-6.3). Now audit all existing
+mutations/queries and add the appropriate authorization checks.
 
-- **Prompt 9.1**: Protected Routes Component (restrict unauthenticated access)
-  - E2E State: Unauthenticated users redirected to /login; protected routes require Auth0 session
-- **Prompt 9.2**: Enhanced Error Handling (user-friendly auth error messages)
-  - E2E State: Auth errors display clear messages; network failures retry automatically
-- **Prompt 9.3**: User Profile Display (show Auth0 user info in UI)
-  - E2E State: User dropdown shows name, email, avatar; logout button works
-- **Prompt 9.4**: Enhanced Token Management (automatic refresh, multi-tab sync)
-  - E2E State: Tokens refresh silently before expiration; logout in one tab logs out all tabs
+TASK: Systematically protect all GraphQL mutations and sensitive queries with role-based
+authorization.
 
-**Refer to**:
-[blueprint.md Phase 9](blueprint.md#phase-9-frontend-enhancement-auth0-features-week-9) for detailed
-implementation steps.
+REQUIREMENTS:
+
+1. Audit all mutations in the codebase:
+
+   ```bash
+   rg "type Mutation" --include="*.graphql" -l | xargs grep -h "^\s\+\w\+(" | sort
+   ```
+
+2. Build an authorization matrix and annotate the schema files:
+
+   | Type     | Operation                   | Allowed Roles                       |
+   | -------- | --------------------------- | ----------------------------------- |
+   | Mutation | createInvitation            | business_owner                      |
+   | Mutation | acceptInvitation            | any authenticated                   |
+   | Mutation | generateApiKey              | business_owner                      |
+   | Mutation | revokeApiKey                | business_owner                      |
+   | Mutation | updateBusinessSettings      | business_owner                      |
+   | Mutation | createCharge / updateCharge | business_owner, accountant          |
+   | Mutation | deleteCharge                | business_owner                      |
+   | Mutation | insertTransaction           | business_owner, accountant, scraper |
+   | Mutation | createDocument              | business_owner, accountant          |
+   | Mutation | issueInvoice                | business_owner                      |
+   | Query    | viewSalaries                | business_owner                      |
+   | Mutation | createSalary / updateSalary | business_owner                      |
+   | Query    | viewAuditLogs               | business_owner                      |
+
+3. Apply directives at the schema level for simple role checks:
+
+   ```graphql
+   type Mutation {
+     updateBusinessSettings(input: BusinessSettingsInput!): Business!
+       @requiresRole(role: "business_owner")
+     insertTransaction(input: TransactionInput!): Transaction!
+       @requiresAnyRole(roles: ["business_owner", "accountant", "scraper"])
+   }
+   ```
+
+4. For mutations requiring context-aware checks (ownership confirmation), delegate to domain
+   authorization services instead of directives.
+
+5. Add `@requiresAuth` to all queries returning tenant-specific data.
+
+6. Write integration tests per module:
+   - Test each role against each critical mutation
+   - Verify exact error codes (UNAUTHENTICATED vs. FORBIDDEN)
+   - Verify correct access is granted (not just that denial works)
+
+7. Document the authorization matrix in `docs/architecture/authorization-matrix.md`.
+
+EXPECTED OUTPUT:
+
+- Updated: All `.graphql` schema files (directives applied)
+- Updated: Domain providers/services using `AuthorizationService`
+- New: `docs/architecture/authorization-matrix.md`
+- Tests: Per-module integration tests covering all role combinations
+- All tests passing
+
+VALIDATION:
+
+- Every mutation has at least `@requiresAuth`
+- Role-based mutations produce FORBIDDEN (not 500) for wrong roles
+- Employee cannot mutate data
+- Scraper is limited to transaction insertion
+- business_owner has full access
+
+RISK: Medium (touches many resolvers; incremental module-by-module rollout recommended)
+
+**APPROACH**: Roll out one module per day. Start with least-used modules; leave critical paths for
+last. Run integration tests after each module.
+
+``
 
 ---
 
-### Phase 10: Production Hardening (Week 10)
+## Phase 6 Complete - Role-Based Authorization Functional
 
-Final production readiness: monitoring, rate limiting, security headers, disaster recovery. **System
-remains fully operative** - hardening measures are defensive layers.
+**Achievement**: All mutations/queries protected by role-based authorization
 
-**Key Prompts**:
+**Critical Validation**:
 
-- **Prompt 10.1**: Monitoring and Alerting (Auth0 webhook integration, Datadog/Sentry)
-  - E2E State: Failed logins trigger alerts; authentication metrics dashboards; incident response
-    playbook
-- **Prompt 10.2**: Rate Limiting (protect against brute force, credential stuffing)
-  - E2E State: Login attempts rate-limited per IP; GraphQL queries rate-limited per user; abuse
-    detection
-- **Prompt 10.3**: Security Headers (CSP, HSTS, CORS hardening)
-  - E2E State: All security headers configured; HTTPS enforced; XSS/CSRF protections active
-- **Prompt 10.4**: Disaster Recovery Plan (RLS policy backup, Auth0 tenant backup, rollback
-  procedures)
-  - E2E State: Recovery procedures documented and tested; RTO/RPO defined; team trained
+- ✅ Directives enforce authentication and role checks at schema level
+- ✅ Domain authorization services encapsulate complex business logic
+- ✅ Employee role is truly read-only (cannot mutate anything)
+- ✅ Scraper role restricted to transaction insertion
+- ✅ business_owner has full access including user management
+- ✅ All integration tests pass with role matrix verified
+- ✅ No unauthorized data access possible (defense in depth: RLS + directive + service)
 
-**Refer to**: [blueprint.md Phase 10](blueprint.md#phase-10-production-hardening-week-10) for
-detailed implementation steps.
+---
+
+## Phase 7: Invitation Flow (Auth0 Pre-Registration)
+
+### Prompt 7.1: Create Invitation Mutation
+
+``
+
+CONTEXT: Auth0 authentication is active, role-based authorization is enforced (Phase 6). Business
+owners need a way to invite new users. The `invitations` and `business_users` tables were created in
+Phase 1 but remain unused. This prompt implements the full invitation creation flow including Auth0
+pre-registration.
+
+**Flow**: Admin invites user → server creates local record + calls Auth0 Management API to create
+blocked user → Auth0 sends password setup email → user sets password → user logs in → invitation
+acceptance flow (Prompt 7.2).
+
+TASK: Implement the `createInvitation` GraphQL mutation.
+
+REQUIREMENTS:
+
+1. Add to schema (`packages/server/src/modules/auth/auth.graphql`):
+
+   ```graphql
+   type Mutation {
+     createInvitation(email: String!, roleId: String!): InvitationPayload!
+       @requiresRole(role: "business_owner")
+   }
+
+   type InvitationPayload {
+     id: ID!
+     email: String!
+     roleId: String!
+     expiresAt: DateTime!
+   }
+   ```
+
+2. Create resolver: `packages/server/src/modules/auth/resolvers/create-invitation.resolver.ts`
+
+   Implement the following steps inside a single database transaction:
+
+   a. Validate `roleId` is one of the allowed values (`business_owner`, `accountant`, `employee`,
+   `scraper`) b. Check no active (non-expired, non-accepted) invitation exists for the same
+   `email + business` combination c. Generate a cryptographically secure 64-character invitation
+   token:
+
+   ```typescript
+   import { randomBytes } from 'crypto'
+   const token = randomBytes(32).toString('hex') // 64 hex chars
+   ```
+
+   d. Generate a local `user_id` UUID for the future `business_users` row e. Call
+   `auth0ManagementService.createBlockedUser(email)`:
+   - Catches Auth0 errors; on rate-limit (429) returns user-friendly error
+   - On any Auth0 error: abort transaction (no invitation record created) f. INSERT into
+     `accounter_schema.invitations`:
+   - `auth0_user_created: true`, `auth0_user_id: <from Auth0 response>`
+   - `expires_at: NOW() + interval '7 days'`
+   - `invited_by_user_id: authContext.user.userId` g. INSERT into `accounter_schema.business_users`:
+   - `user_id: <generated UUID>`, `auth0_user_id: NULL` (linked on first login)
+   - `business_id`, `role_id` from mutation arguments h. INSERT into `accounter_schema.audit_logs`:
+   - `action: 'INVITATION_CREATED'`, `entity: 'Invitation'`, `entity_id: invitation.id`
+   - `details: { email, roleId, auth0UserId }` i. Return invitation payload
+
+3. Error handling:
+   - Auth0 rate limit → `GraphQLError` with code `RATE_LIMITED` and `retryAfter` extension
+   - Auth0 user already exists → `GraphQLError` with code `USER_ALREADY_EXISTS`
+   - Duplicate active invitation → `GraphQLError` with code `INVITATION_ALREADY_PENDING`
+
+4. Write tests:
+   - business_owner can create invitation (happy path)
+   - Auth0 Management API called with correct parameters (mock)
+   - Invitation record inserted with correct fields
+   - `business_users` row pre-created (auth0_user_id NULL)
+   - Audit log entry created
+   - Duplicate active invitation rejected
+   - Auth0 rate limit handled gracefully (mocked 429)
+   - employee calling mutation gets FORBIDDEN
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/server/src/modules/auth/auth.graphql`
+- New: `packages/server/src/modules/auth/resolvers/create-invitation.resolver.ts`
+- Tests: `packages/server/src/modules/auth/__tests__/create-invitation.test.ts`
+- All tests passing
+
+INTEGRATION: Depends on `Auth0ManagementService` (Prompt 4.3). The `business_users` row pre-created
+here is completed in Prompt 7.2 when the user accepts and `auth0_user_id` is set.
+
+RISK: Medium (Auth0 API integration, transaction management)
+
+``
+
+---
+
+### Prompt 7.2: Accept Invitation Mutation
+
+``
+
+CONTEXT: Invitations are created and Auth0 pre-registers users. After a user sets their password via
+Auth0's email and logs in for the first time, they must accept the invitation to complete
+onboarding. This mutation handles both first-time users and existing users accepting a second
+business invitation.
+
+TASK: Implement the `acceptInvitation` GraphQL mutation.
+
+REQUIREMENTS:
+
+1. Add to schema:
+
+   ```graphql
+   type Mutation {
+     acceptInvitation(token: String!): AcceptInvitationPayload! @requiresAuth
+   }
+
+   type AcceptInvitationPayload {
+     success: Boolean!
+     businessId: ID!
+     roleId: String!
+   }
+   ```
+
+2. Create resolver: `packages/server/src/modules/auth/resolvers/accept-invitation.resolver.ts`
+
+   Inside a single database transaction:
+
+   a. Look up invitation by token:
+
+   ```sql
+   SELECT * FROM accounter_schema.invitations
+   WHERE token = $1
+     AND accepted_at IS NULL
+     AND expires_at > NOW()
+   ```
+
+   b. If not found: throw `GraphQLError` with code `TOKEN_INVALID` c. If expired: throw
+   `GraphQLError` with code `TOKEN_EXPIRED` d. Determine if this is the caller's first invitation
+   acceptance:
+
+   ```sql
+   SELECT user_id FROM accounter_schema.business_users
+   WHERE auth0_user_id = $1
+   LIMIT 1
+   ```
+
+   (using `authContext.user.auth0UserId`)
+
+   e. **If first invitation** (no existing auth0_user_id link):
+   - Update the pre-created `business_users` row for this invitation:
+     ```sql
+     UPDATE accounter_schema.business_users
+     SET auth0_user_id = $1, updated_at = NOW()
+     WHERE user_id = $2
+     ```
+   - Call `auth0ManagementService.unblockUser(invitation.auth0_user_id)`
+
+   f. **If second+ invitation** (existing user adding another business):
+   - Insert a new `business_users` row using the caller's existing `user_id` and the invitation's
+     `business_id`/`role_id`
+   - **No Auth0 unblock needed** (user already active)
+
+   g. Mark invitation as accepted:
+
+   ```sql
+   UPDATE accounter_schema.invitations
+   SET accepted_at = NOW()
+   WHERE id = $1
+   ```
+
+   h. INSERT into `audit_logs`:
+   - `action: 'INVITATION_ACCEPTED'`, include `auth0_user_id`, `business_id`, `role_id`
+
+   i. Return `{ success: true, businessId, roleId }`
+
+3. Error handling:
+   - Invalid/expired/already-used token: appropriate error codes
+   - Auth0 unblock failure: rollback transaction, return error
+
+4. Write tests:
+   - First-time acceptance: `auth0_user_id` linked, Auth0 user unblocked
+   - Second invitation: new `business_users` row added, no Auth0 unblock call
+   - Expired token rejected with `TOKEN_EXPIRED`
+   - Invalid token rejected with `TOKEN_INVALID`
+   - Already-accepted token rejected
+   - Unauthenticated user attempting acceptance gets `UNAUTHENTICATED`
+   - Audit log entry created correctly
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/server/src/modules/auth/auth.graphql`
+- New: `packages/server/src/modules/auth/resolvers/accept-invitation.resolver.ts`
+- Tests: `packages/server/src/modules/auth/__tests__/accept-invitation.test.ts`
+- All tests passing
+
+RISK: Medium (multi-step transaction with Auth0 side effects)
+
+``
+
+---
+
+### Prompt 7.3: Invitation Cleanup Background Job
+
+``
+
+CONTEXT: Invitations expire after 7 days. When expired invitations are never accepted, the
+corresponding blocked Auth0 users sit in the Auth0 tenant unused. Without cleanup, Auth0 user quotas
+fill up and abandoned records accumulate.
+
+TASK: Create a scheduled background job that deletes expired invitations and their associated
+blocked Auth0 accounts.
+
+REQUIREMENTS:
+
+1. Create job: `packages/server/src/jobs/cleanup-expired-invitations.ts`
+
+   ```typescript
+   export async function cleanupExpiredInvitations(
+     db: DBProvider,
+     auth0: Auth0ManagementService,
+     logger: Logger
+   ): Promise<{ deleted: number; errors: number }> {
+     const client = await db.pool.connect()
+     let deleted = 0
+     let errors = 0
+
+     try {
+       // Fetch all expired, unaccepted invitations
+       const { rows: expired } = await client.query<{
+         id: string
+         auth0_user_id: string | null
+         auth0_user_created: boolean
+         user_id: string
+       }>(
+         `SELECT id, auth0_user_id, auth0_user_created, invited_user_id
+          FROM accounter_schema.invitations
+          WHERE accepted_at IS NULL
+            AND expires_at < NOW()`
+       )
+
+       for (const invitation of expired) {
+         try {
+           // Delete blocked Auth0 user if one was created
+           if (invitation.auth0_user_created && invitation.auth0_user_id) {
+             await auth0.deleteUser(invitation.auth0_user_id)
+           }
+
+           // Delete the orphaned business_users row (auth0_user_id IS NULL = never activated)
+           await client.query(
+             `DELETE FROM accounter_schema.business_users
+              WHERE user_id = $1 AND auth0_user_id IS NULL`,
+             [invitation.user_id]
+           )
+
+           // Delete the invitation record
+           await client.query('DELETE FROM accounter_schema.invitations WHERE id = $1', [
+             invitation.id
+           ])
+
+           // Log to audit_logs (system action — no user_id)
+           await client.query(
+             `INSERT INTO accounter_schema.audit_logs (action, entity, entity_id, details)
+              VALUES ('INVITATION_EXPIRED_CLEANUP', 'Invitation', $1, $2)`,
+             [invitation.id, JSON.stringify({ auth0_user_id: invitation.auth0_user_id })]
+           )
+
+           deleted++
+         } catch (err) {
+           // Log error but continue cleanup
+           logger.error('Failed to cleanup invitation', { invitationId: invitation.id, err })
+           errors++
+         }
+       }
+     } finally {
+       client.release()
+     }
+
+     return { deleted, errors }
+   }
+   ```
+
+2. Schedule the job to run daily (use a cron-compatible scheduler or a simple setInterval for
+   lighter setups):
+
+   ```typescript
+   // packages/server/src/index.ts
+   import { cleanupExpiredInvitations } from './jobs/cleanup-expired-invitations.js'
+
+   // Schedule: daily at 02:00 UTC
+   scheduleJob('0 2 * * *', async () => {
+     const result = await cleanupExpiredInvitations(dbProvider, auth0Service, logger)
+     logger.info('Invitation cleanup complete', result)
+   })
+   ```
+
+3. Expose a one-off run script for manual triggering:
+   `packages/server/src/scripts/run-invitation-cleanup.ts`
+
+4. Write tests:
+   - Expired invitations are deleted
+   - Associated Auth0 users deleted via Management API (mock)
+   - Orphaned `business_users` rows cleaned up
+   - Accepted invitations are NOT deleted
+   - Non-expired invitations are NOT deleted
+   - Auth0 API errors are logged but do not abort the entire job
+   - Audit log entries created for each cleaned invitation
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/jobs/cleanup-expired-invitations.ts`
+- New: `packages/server/src/scripts/run-invitation-cleanup.ts`
+- Updated: `packages/server/src/index.ts` (job scheduled)
+- Tests: `packages/server/src/jobs/__tests__/cleanup-expired-invitations.test.ts`
+- All tests passing
+
+RISK: Low (background job, non-critical path; cleanup errors are logged not re-thrown)
+
+``
+
+---
+
+### Prompt 7.4: Audit Service
+
+``
+
+CONTEXT: Critical auth events (invitation creation, acceptance, API key operations) currently write
+audit logs inline within mutations. As the number of audited events grows, centralizing this logic
+reduces duplication and ensures consistent log structure.
+
+TASK: Create a typed `AuditService` and migrate all existing audit log writes to use it.
+
+REQUIREMENTS:
+
+1. Define audit event types: `packages/server/src/modules/auth/types/audit-events.ts`
+
+   ```typescript
+   export type AuditAction =
+     | 'INVITATION_CREATED'
+     | 'INVITATION_ACCEPTED'
+     | 'INVITATION_EXPIRED_CLEANUP'
+     | 'API_KEY_CREATED'
+     | 'API_KEY_REVOKED'
+     | 'USER_LOGIN'
+     | 'USER_ROLE_CHANGED'
+
+   export interface AuditEvent {
+     businessId?: string
+     userId?: string
+     auth0UserId?: string
+     action: AuditAction
+     entity?: string
+     entityId?: string
+     details?: Record<string, unknown>
+     ipAddress?: string
+   }
+   ```
+
+2. Create service: `packages/server/src/modules/auth/services/audit.service.ts`
+
+   ```typescript
+   @Injectable({ scope: Scope.Operation })
+   export class AuditService {
+     constructor(private db: TenantAwareDBClient) {}
+
+     async log(event: AuditEvent): Promise<void> {
+       await this.db.query(
+         `INSERT INTO accounter_schema.audit_logs
+          (business_id, user_id, auth0_user_id, action, entity, entity_id, details, ip_address)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         [
+           event.businessId ?? null,
+           event.userId ?? null,
+           event.auth0UserId ?? null,
+           event.action,
+           event.entity ?? null,
+           event.entityId ?? null,
+           event.details ? JSON.stringify(event.details) : null,
+           event.ipAddress ?? null
+         ]
+       )
+     }
+   }
+   ```
+
+3. Register `AuditService` in the auth module providers.
+
+4. Migrate existing inline audit log writes in `create-invitation.resolver.ts` and
+   `accept-invitation.resolver.ts` to use `AuditService`.
+
+5. Inject `AuditService` into the invitation cleanup job.
+
+6. Write tests:
+   - `log()` correctly inserts a row with all fields
+   - Nullable fields default to NULL
+   - JSONB details serialized correctly
+   - All audit writes in resolvers/jobs use `AuditService` (no raw queries for audit_logs)
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/modules/auth/types/audit-events.ts`
+- New: `packages/server/src/modules/auth/services/audit.service.ts`
+- Updated: All files that previously wrote to `audit_logs` directly (use `AuditService` instead)
+- Tests: `packages/server/src/modules/auth/services/__tests__/audit.service.test.ts`
+- All tests passing
+
+RISK: Low (service extraction, no logic changes)
+
+``
+
+---
+
+## Phase 7 Complete - Invitation Flow Functional
+
+**Achievement**: Full pre-registration invitation flow with Auth0 integration
+
+**Critical Validation**:
+
+- ✅ Business owners can invite users via Auth0 pre-registration
+- ✅ Auth0 sends password setup emails automatically
+- ✅ First-time users: Auth0 account unblocked on invitation acceptance
+- ✅ Existing users: additional business linked without new Auth0 account
+- ✅ Expired invitations cleaned up automatically (daily job)
+- ✅ All security events audited centrally via `AuditService`
+
+---
+
+## Phase 8: API Key Management
+
+### Prompt 8.1: API Key Generation Mutation
+
+``
+
+CONTEXT: The `api_keys` table was created in Phase 1 and the `authPlugin` already extracts
+`X-API-Key` headers (Phase 2.2). What's missing is the GraphQL interface for creating and managing
+API keys, and the server-side logic for authenticating requests that use them.
+
+TASK: Implement the `generateApiKey` GraphQL mutation.
+
+REQUIREMENTS:
+
+1. Add to schema:
+
+   ```graphql
+   type Mutation {
+     generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
+       @requiresRole(role: "business_owner")
+   }
+
+   type GenerateApiKeyPayload {
+     apiKey: String! # Plaintext — only shown once
+     record: ApiKey!
+   }
+
+   type ApiKey {
+     id: ID!
+     name: String!
+     roleId: String!
+     lastUsedAt: DateTime
+     createdAt: DateTime!
+   }
+   ```
+
+2. Create resolver: `packages/server/src/modules/auth/resolvers/generate-api-key.resolver.ts`
+
+   ```typescript
+   import { randomBytes, createHash } from 'crypto'
+
+   // In resolver:
+   // 1. Validate roleId (must NOT be 'business_owner'; API keys are for automation roles)
+   const ALLOWED_API_KEY_ROLES = ['scraper', 'accountant', 'employee']
+   if (!ALLOWED_API_KEY_ROLES.includes(roleId)) {
+     throw new GraphQLError('business_owner role cannot be assigned to API keys', {
+       extensions: { code: 'INVALID_ARGUMENT' }
+     })
+   }
+
+   // 2. Generate 64-byte key (128 hex chars)
+   const plaintextKey = randomBytes(64).toString('hex')
+
+   // 3. Hash with SHA-256 for storage
+   const keyHash = createHash('sha256').update(plaintextKey).digest('hex')
+
+   // 4. Insert into api_keys
+   await db.query(
+     `INSERT INTO accounter_schema.api_keys (business_id, role_id, key_hash, name)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, name, role_id, created_at`,
+     [authContext.tenant.businessId, roleId, keyHash, name]
+   )
+
+   // 5. Audit log
+   await auditService.log({ action: 'API_KEY_CREATED', entity: 'ApiKey', entityId: record.id })
+
+   // 6. Return plaintext key + record (key shown ONCE)
+   return { apiKey: plaintextKey, record }
+   ```
+
+3. Write tests:
+   - business_owner can generate API key
+   - Plaintext key is 128 hex characters
+   - SHA-256 hash stored in database (not plaintext)
+   - `business_owner` roleId rejected
+   - API key returned only in the response (not stored in plaintext anywhere)
+   - Audit log entry created
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/server/src/modules/auth/auth.graphql`
+- New: `packages/server/src/modules/auth/resolvers/generate-api-key.resolver.ts`
+- Tests: `packages/server/src/modules/auth/__tests__/generate-api-key.test.ts`
+- All tests passing
+
+RISK: Low (isolated mutation, no side effects beyond DB insert)
+
+``
+
+---
+
+### Prompt 8.2: API Key Authentication (Server-Side)
+
+``
+
+CONTEXT: API keys can now be generated. The `authPlugin` already extracts `X-API-Key` from headers
+as `rawAuth.authType === 'apiKey'`. The `AuthContextProvider.getAuthContext()` currently returns
+`null` for API key requests (placeholder from Phase 2.4). This prompt implements the API key
+authentication path.
+
+TASK: Add API key verification to `AuthContextProvider` so that requests using `X-API-Key: <key>`
+receive a properly populated `AuthContext`.
+
+REQUIREMENTS:
+
+1. Update `packages/server/src/modules/auth/providers/auth-context.provider.ts`:
+
+   Add handling for `rawAuth.authType === 'apiKey'` inside `getAuthContext()`:
+
+   ```typescript
+   if (rawAuth.authType === 'apiKey' && rawAuth.token) {
+     return this.resolveApiKeyContext(rawAuth.token)
+   }
+
+   private async resolveApiKeyContext(plaintextKey: string): Promise<AuthContext | null> {
+     const keyHash = createHash('sha256').update(plaintextKey).digest('hex')
+
+     const { rows } = await this.db.query<{
+       id: string
+       business_id: string
+       role_id: string
+     }>(
+       `SELECT id, business_id, role_id
+        FROM accounter_schema.api_keys
+        WHERE key_hash = $1
+          AND revoked_at IS NULL`,
+       [keyHash]
+     )
+
+     if (!rows.length) return null
+
+     const apiKey = rows[0]
+
+     // Update last_used_at (hourly granularity to prevent write amplification)
+     await this.db.query(
+       `UPDATE accounter_schema.api_keys
+        SET last_used_at = NOW()
+        WHERE id = $1
+          AND (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '1 hour')`,
+       [apiKey.id]
+     )
+
+     return {
+       authType: 'apiKey',
+       tenant: { businessId: apiKey.business_id },
+       user: {
+         userId: `api-key:${apiKey.id}`, // Synthetic userId for audit logging
+         auth0UserId: null,
+         roleId: apiKey.role_id,
+         permissions: [],
+         emailVerified: true,
+         permissionsVersion: 0
+       }
+     }
+   }
+   ```
+
+2. Ensure the existing JWT path remains unchanged.
+
+3. Write tests:
+   - Valid API key returns `AuthContext` with `authType: 'apiKey'`
+   - Valid API key populates `tenant.businessId` and `user.roleId`
+   - Invalid API key (wrong hash) returns `null`
+   - Revoked API key (`revoked_at IS NOT NULL`) returns `null`
+   - `last_used_at` updated on first use
+   - `last_used_at` NOT updated within the same hour (throttle check)
+
+4. Write integration tests:
+   - GraphQL query with `X-API-Key: <valid-key>` returns 200 and correct data
+   - GraphQL query with `X-API-Key: <invalid-key>` returns UNAUTHENTICATED
+   - RLS enforced (API key can only access its assigned business data)
+   - Scraper role cannot invoke `createInvitation` (gets FORBIDDEN)
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/server/src/modules/auth/providers/auth-context.provider.ts`
+- Tests: `packages/server/src/modules/auth/providers/__tests__/api-key-auth.test.ts`
+- All tests passing
+
+RISK: Low (extending existing provider, JWT path unchanged)
+
+``
+
+---
+
+### Prompt 8.3: API Key Management Mutations & Scraper Integration Test
+
+``
+
+CONTEXT: API keys can be generated (Prompt 8.1) and used for authentication (Prompt 8.2). This
+prompt adds the management interface (list, revoke), validates the full scraper workflow end-to-end,
+and adds last-used tracking for audit visibility.
+
+TASK: Implement `listApiKeys`, `revokeApiKey` mutations and a full scraper integration test.
+
+REQUIREMENTS:
+
+1. Add to schema:
+
+   ```graphql
+   type Query {
+     listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
+   }
+
+   type Mutation {
+     revokeApiKey(id: ID!): Boolean! @requiresRole(role: "business_owner")
+   }
+   ```
+
+2. Create resolvers:
+
+   **listApiKeys**:
+
+   ```typescript
+   // Returns all active (not revoked) api_keys for the authenticated business
+   SELECT id, name, role_id, last_used_at, created_at
+   FROM accounter_schema.api_keys
+   WHERE revoked_at IS NULL
+   ORDER BY created_at DESC
+   ```
+
+   **revokeApiKey**:
+
+   ```typescript
+   // Soft-delete: set revoked_at, do NOT hard-delete (preserve audit trail)
+   UPDATE accounter_schema.api_keys
+   SET revoked_at = NOW()
+   WHERE id = $1
+   // RLS ensures the key belongs to the authenticated business
+   ```
+
+   Then write audit log: `action: 'API_KEY_REVOKED'`.
+
+3. Full scraper integration test (`packages/server/src/__tests__/scraper-integration.test.ts`):
+
+   ```typescript
+   describe('Scraper Role E2E', () => {
+     let apiKey: string
+
+     beforeAll(async () => {
+       // business_owner generates API key with scraper role
+       const result = await graphql(app, {
+         query: GENERATE_API_KEY,
+         variables: { name: 'Test Scraper', roleId: 'scraper' },
+         authContext: businessOwnerContext
+       })
+       apiKey = result.data.generateApiKey.apiKey
+     })
+
+     it('scraper can insert a transaction', async () => {
+       const result = await graphql(app, {
+         query: INSERT_TRANSACTION,
+         variables: { input: validTransaction },
+         headers: { 'X-API-Key': apiKey }
+       })
+       expect(result.errors).toBeUndefined()
+     })
+
+     it('scraper cannot create an invitation', async () => {
+       const result = await graphql(app, {
+         query: CREATE_INVITATION,
+         variables: { email: 'new@example.com', roleId: 'employee' },
+         headers: { 'X-API-Key': apiKey }
+       })
+       expect(result.errors?.[0]?.extensions?.code).toBe('FORBIDDEN')
+     })
+
+     it('scraper cannot access another business data', async () => {
+       // Use the same API key but verify RLS blocks cross-tenant access
+       const result = await graphql(app, {
+         query: GET_CHARGES,
+         headers: { 'X-API-Key': apiKey }
+       })
+       // Should return only the scraper's business charges (empty for test business)
+       expect(result.data.charges).toEqual([])
+     })
+
+     it('business_owner can revoke the API key', async () => {
+       const result = await graphql(app, {
+         query: REVOKE_API_KEY,
+         variables: { id: apiKeyId },
+         authContext: businessOwnerContext
+       })
+       expect(result.data.revokeApiKey).toBe(true)
+
+       // Subsequent use of revoked key returns UNAUTHENTICATED
+       const after = await graphql(app, {
+         query: INSERT_TRANSACTION,
+         variables: { input: validTransaction },
+         headers: { 'X-API-Key': apiKey }
+       })
+       expect(after.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED')
+     })
+   })
+   ```
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/modules/auth/resolvers/list-api-keys.resolver.ts`
+- New: `packages/server/src/modules/auth/resolvers/revoke-api-key.resolver.ts`
+- New: `packages/server/src/__tests__/scraper-integration.test.ts`
+- Tests: `packages/server/src/modules/auth/__tests__/api-key-management.test.ts`
+- All tests passing
+
+RISK: Low (CRUD mutations; integration test catches regressions)
+
+``
+
+---
+
+## Phase 8 Complete - API Key Management Functional
+
+**Achievement**: Full API key lifecycle from generation to revocation, with scraper role validated
+
+**Critical Validation**:
+
+- ✅ API keys generated securely (SHA-256 hash stored, plaintext shown once)
+- ✅ API key authentication works end-to-end (X-API-Key → AuthContext → RLS)
+- ✅ Scraper role limited to transaction insertion (FORBIDDEN on all other mutations)
+- ✅ RLS enforced for API key requests (cross-tenant access blocked)
+- ✅ Revoked keys immediately rejected (soft-delete with `revoked_at`)
+- ✅ `last_used_at` tracked for audit visibility
+
+---
+
+## Phase 9: Frontend Enhancement (Auth0 Features)
+
+**Note**: Core Auth0 login integration was completed in Phase 4, Step 4.6 (zero-downtime
+requirement). This phase adds enhanced auth features and user experience improvements.
+
+### Prompt 9.1: Protected Routes Component
+
+``
+
+CONTEXT: The Auth0 SDK is installed and the login/callback flows work (Phase 4.6). Currently there
+is no client-side guard preventing unauthenticated users from navigating directly to `/charges` or
+other app routes. This prompt adds a reusable `ProtectedRoute` wrapper.
+
+TASK: Create a `ProtectedRoute` component and wrap all authenticated app routes.
+
+REQUIREMENTS:
+
+1. Create `packages/client/src/components/protected-route.tsx`:
+
+   ```typescript
+   import { useAuth0 } from '@auth0/auth0-react'
+   import { Navigate, useLocation } from 'react-router-dom'
+   import type { ReactElement, ReactNode } from 'react'
+
+   interface Props {
+     children: ReactNode
+   }
+
+   export function ProtectedRoute({ children }: Props): ReactElement {
+     const { isAuthenticated, isLoading } = useAuth0()
+     const location = useLocation()
+
+     if (isLoading) {
+       return (
+         <div className="flex items-center justify-center h-screen">
+           <div className="text-muted-foreground">Loading...</div>
+         </div>
+       )
+     }
+
+     if (!isAuthenticated) {
+       // Preserve the attempted path so we can redirect back after login
+       return <Navigate to="/login" state={{ returnTo: location.pathname }} replace />
+     }
+
+     return <>{children}</>
+   }
+   ```
+
+2. Wrap all protected routes in the router configuration:
+
+   ```typescript
+   // packages/client/src/router/index.tsx
+   {
+     path: '/charges',
+     element: <ProtectedRoute><ChargesPage /></ProtectedRoute>
+   },
+   {
+     path: '/invoices',
+     element: <ProtectedRoute><InvoicesPage /></ProtectedRoute>
+   }
+   // ... all other app routes except /login, /auth/callback
+   ```
+
+3. Update the login page to respect the `returnTo` state:
+
+   ```typescript
+   const location = useLocation()
+   const returnTo = (location.state as { returnTo?: string })?.returnTo ?? ROUTES.HOME
+
+   // After Auth0 login:
+   loginWithRedirect({ appState: { returnTo } })
+   ```
+
+4. Update `AuthCallbackPage` to use `appState.returnTo` (likely already done in Phase 4.6 — verify).
+
+5. Write tests:
+   - Unauthenticated user visiting `/charges` is redirected to `/login`
+   - Redirect preserves the `returnTo` path
+   - Authenticated user can access protected routes
+   - Loading state renders spinner (not redirect)
+
+EXPECTED OUTPUT:
+
+- New: `packages/client/src/components/protected-route.tsx`
+- Updated: Router configuration (all app routes wrapped)
+- Updated: Login page (uses `returnTo` from state)
+- Tests: `packages/client/src/components/__tests__/protected-route.test.tsx`
+- All tests passing
+
+RISK: Low (pure UX improvement, no backend changes)
+
+``
+
+---
+
+### Prompt 9.2: Enhanced Error Handling
+
+``
+
+CONTEXT: When Auth0 returns errors (access denied, network failure), the callback page currently
+shows a generic error. Users need actionable, friendly messages.
+
+TASK: Add detailed error handling to the callback page and retry logic for transient network
+failures.
+
+REQUIREMENTS:
+
+1. Create error message mapping in `packages/client/src/lib/auth0-errors.ts`:
+
+   ```typescript
+   export const AUTH0_ERROR_MESSAGES: Record<string, string> = {
+     access_denied: 'Login was cancelled or permissions were not granted.',
+     unauthorized: 'Invalid email or password. Please try again.',
+     too_many_attempts: 'Too many login attempts. Your account is temporarily blocked.',
+     consent_required: 'Additional permissions are required to continue.',
+     login_required: 'Please log in to continue.',
+     invalid_token: 'Your session has expired. Please log in again.'
+   }
+
+   export function getAuth0ErrorMessage(error: Error & { error?: string }): string {
+     if (error.error && AUTH0_ERROR_MESSAGES[error.error]) {
+       return AUTH0_ERROR_MESSAGES[error.error]
+     }
+     if (error.message?.includes('network')) {
+       return 'Network error — please check your connection and try again.'
+     }
+     return 'An unexpected error occurred. Please try again.'
+   }
+   ```
+
+2. Update `AuthCallbackPage` to use the mapping and add a retry button:
+
+   ```typescript
+   if (error) {
+     const message = getAuth0ErrorMessage(error)
+     return (
+       <div className="flex items-center justify-center h-screen">
+         <div className="text-center max-w-sm space-y-4">
+           <h1 className="text-2xl font-bold">Login Failed</h1>
+           <p className="text-muted-foreground">{message}</p>
+           <div className="flex gap-2 justify-center">
+             <Button onClick={() => loginWithRedirect()}>Try Again</Button>
+             <Button variant="outline" onClick={() => navigate('/login')}>
+               Back to Login
+             </Button>
+           </div>
+         </div>
+       </div>
+     )
+   }
+   ```
+
+3. Add login page error display (query param `?error=`):
+
+   ```typescript
+   const errorParam = new URLSearchParams(location.search).get('error')
+   // Display decoded error_param if present
+   ```
+
+4. Write tests:
+   - Each `AUTH0_ERROR_MESSAGES` key maps to a human-readable string
+   - `getAuth0ErrorMessage` returns generic message for unknown errors
+   - Callback page renders error state with retry button
+   - Retry button calls `loginWithRedirect`
+
+EXPECTED OUTPUT:
+
+- New: `packages/client/src/lib/auth0-errors.ts`
+- Updated: `packages/client/src/components/screens/auth-callback.tsx`
+- Updated: `packages/client/src/components/login-page.tsx` (error display)
+- Tests: `packages/client/src/lib/__tests__/auth0-errors.test.ts`
+- All tests passing
+
+RISK: Low (UI enhancement, no backend changes)
+
+``
+
+---
+
+### Prompt 9.3: User Profile Display
+
+``
+
+CONTEXT: After login, users have no visible indication of who is logged in or what role they have.
+Adding a user menu to the app header improves trust and usability.
+
+TASK: Create a user profile dropdown in the app header with logout and role display.
+
+REQUIREMENTS:
+
+1. Create `packages/client/src/components/user-menu.tsx`:
+
+   ```typescript
+   import { useAuth0 } from '@auth0/auth0-react'
+   import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
+   import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
+
+   export function UserMenu(): ReactElement | null {
+     const { user, logout, isAuthenticated } = useAuth0()
+
+     if (!isAuthenticated || !user) return null
+
+     const initials = user.name
+       ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+       : user.email?.[0]?.toUpperCase() ?? '?'
+
+     return (
+       <DropdownMenu>
+         <DropdownMenuTrigger asChild>
+           <button className="flex items-center gap-2 rounded-full">
+             <Avatar className="h-8 w-8">
+               <AvatarImage src={user.picture} alt={user.name ?? user.email} />
+               <AvatarFallback>{initials}</AvatarFallback>
+             </Avatar>
+           </button>
+         </DropdownMenuTrigger>
+         <DropdownMenuContent align="end">
+           <div className="px-3 py-2 text-sm">
+             <p className="font-medium">{user.name ?? user.email}</p>
+             <p className="text-muted-foreground text-xs">{user.email}</p>
+           </div>
+           <DropdownMenuItem
+             onClick={() => logout({ logoutParams: { returnTo: window.location.origin + '/login' } })}
+           >
+             Log Out
+           </DropdownMenuItem>
+         </DropdownMenuContent>
+       </DropdownMenu>
+     )
+   }
+   ```
+
+2. Add `UserMenu` to the existing app header/navbar component.
+
+3. Write tests:
+   - `UserMenu` renders null when not authenticated
+   - Avatar shows image when `user.picture` available
+   - Avatar shows initials when no picture
+   - Dropdown shows name and email
+   - Logout button calls `logout()` with correct `returnTo`
+
+EXPECTED OUTPUT:
+
+- New: `packages/client/src/components/user-menu.tsx`
+- Updated: App header/navbar component
+- Tests: `packages/client/src/components/__tests__/user-menu.test.tsx`
+- All tests passing
+
+RISK: Low (additive UI component)
+
+``
+
+---
+
+### Prompt 9.4: Enhanced Token Management
+
+``
+
+CONTEXT: The Urql client sends Auth0 tokens in requests (Phase 4.6). When tokens expire (15 min) or
+requests fail with UNAUTHENTICATED, the current implementation may not recover gracefully.
+
+TASK: Harden the Urql client with automatic token refresh and UNAUTHENTICATED error recovery.
+
+REQUIREMENTS:
+
+1. Update `packages/client/src/urql-client.ts` using `@urql/exchange-auth`:
+
+   ```typescript
+   import { authExchange } from '@urql/exchange-auth'
+
+   authExchange(async utils => {
+     let token: string | null = null
+
+     // Attempt to get initial token silently (uses cache)
+     try {
+       token = await getAccessTokenSilently()
+     } catch {
+       token = null
+     }
+
+     return {
+       addAuthToOperation(operation) {
+         if (!token) return operation
+         return utils.appendHeaders(operation, { Authorization: `Bearer ${token}` })
+       },
+
+       didAuthError(error) {
+         // Trigger refresh only on true auth errors (not permission errors)
+         return error.graphQLErrors.some(e => e.extensions?.code === 'UNAUTHENTICATED')
+       },
+
+       async refreshAuth() {
+         try {
+           // Force fresh token (bypass cache)
+           token = await getAccessTokenSilently({ cacheMode: 'off' })
+         } catch {
+           // Token refresh failed (likely session expired) → redirect to login
+           token = null
+           window.location.href = '/login'
+         }
+       },
+
+       willAuthError({ authState }) {
+         return !authState
+       }
+     }
+   })
+   ```
+
+2. Install `@urql/exchange-auth` if not already present:
+
+   ```bash
+   cd packages/client && yarn add @urql/exchange-auth
+   ```
+
+3. Write tests:
+   - `addAuthToOperation` adds `Authorization` header when token available
+   - `didAuthError` detects `UNAUTHENTICATED` code
+   - `refreshAuth` calls `getAccessTokenSilently` with `cacheMode: 'off'`
+   - `refreshAuth` redirects to `/login` when token fetch fails
+   - Silent token refresh does not interrupt in-flight requests
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/client/src/urql-client.ts`
+- Package: `@urql/exchange-auth` added to `packages/client/package.json`
+- Tests: `packages/client/src/__tests__/urql-client.test.ts`
+- All tests passing
+
+RISK: Low (improves error recovery; fallback redirects to login)
+
+``
+
+---
+
+### Prompt 9.5: Logout Flow Enhancement
+
+``
+
+CONTEXT: Logout needs to clear Auth0 session state AND local application state (Urql cache, any
+local storage items from legacy auth).
+
+TASK: Implement a complete, reliable logout flow.
+
+REQUIREMENTS:
+
+1. Create a `useLogout` hook: `packages/client/src/hooks/use-logout.ts`
+
+   ```typescript
+   import { useAuth0 } from '@auth0/auth0-react'
+   import { useClient } from 'urql'
+
+   export function useLogout() {
+     const { logout } = useAuth0()
+     const urqlClient = useClient()
+
+     return async () => {
+       // 1. Clear any legacy auth tokens
+       localStorage.removeItem('legacyAuthToken')
+       sessionStorage.clear()
+
+       // 2. Reset Urql cache (prevents stale data after logout)
+       urqlClient.resetStore?.()
+
+       // 3. Auth0 logout (clears Auth0 session + redirects)
+       await logout({
+         logoutParams: {
+           returnTo: `${window.location.origin}/login`
+         }
+       })
+     }
+   }
+   ```
+
+2. Replace all direct `logout()` calls across the codebase with `useLogout()`:
+
+   ```bash
+   rg "useAuth0\(\)" packages/client/src --include="*.tsx" -l \
+     | xargs grep -l "logout"
+   ```
+
+3. Write tests:
+   - `useLogout` clears `legacyAuthToken` from localStorage
+   - `useLogout` calls `urqlClient.resetStore()`
+   - `useLogout` calls Auth0 `logout` with correct `returnTo`
+
+EXPECTED OUTPUT:
+
+- New: `packages/client/src/hooks/use-logout.ts`
+- Updated: All components that call `logout()` (use `useLogout` hook instead)
+- Tests: `packages/client/src/hooks/__tests__/use-logout.test.ts`
+- All tests passing
+
+RISK: Low (encapsulates existing logout logic)
+
+``
+
+---
+
+### Prompt 9.6: Invitation Acceptance UI Flow
+
+``
+
+CONTEXT: The backend accepts invitations (Phase 7.2). Users receive invitation emails from Auth0
+(via password setup), set their password, and are redirected to the application. The frontend needs
+an `/accept-invitation/:token` page to complete the flow.
+
+TASK: Create the invitation acceptance UI flow.
+
+REQUIREMENTS:
+
+1. Create `packages/client/src/components/screens/accept-invitation.tsx`:
+
+   ```typescript
+   import { useParams, useNavigate } from 'react-router-dom'
+   import { useAuth0 } from '@auth0/auth0-react'
+   import { useMutation } from 'urql'
+   import { ACCEPT_INVITATION_MUTATION } from '@/graphql/mutations'
+
+   export function AcceptInvitationPage(): ReactElement {
+     const { token } = useParams<{ token: string }>()
+     const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0()
+     const navigate = useNavigate()
+     const [{ fetching, error }, acceptInvitation] = useMutation(ACCEPT_INVITATION_MUTATION)
+
+     // Unauthenticated: prompt to log in, preserving the invitation token
+     if (!isLoading && !isAuthenticated) {
+       return (
+         <div className="flex items-center justify-center h-screen">
+           <div className="text-center max-w-sm space-y-4">
+             <h1 className="text-2xl font-bold">You've been invited!</h1>
+             <p className="text-muted-foreground">
+               Please log in or create an account to accept this invitation.
+             </p>
+             <Button
+               onClick={() =>
+                 loginWithRedirect({
+                   appState: { returnTo: `/accept-invitation/${token}` }
+                 })
+               }
+             >
+               Login / Create Account
+             </Button>
+           </div>
+         </div>
+       )
+     }
+
+     const handleAccept = async () => {
+       const result = await acceptInvitation({ token })
+       if (!result.error) {
+         navigate(ROUTES.HOME, { replace: true })
+       }
+     }
+
+     return (
+       <div className="flex items-center justify-center h-screen">
+         <div className="text-center max-w-sm space-y-4">
+           <h1 className="text-2xl font-bold">Accept Invitation</h1>
+           {error && (
+             <p className="text-destructive text-sm">
+               {error.graphQLErrors?.[0]?.message ?? 'An error occurred'}
+             </p>
+           )}
+           <Button onClick={handleAccept} disabled={fetching}>
+             {fetching ? 'Accepting...' : 'Accept Invitation'}
+           </Button>
+         </div>
+       </div>
+     )
+   }
+   ```
+
+2. Add route to router configuration:
+
+   ```typescript
+   { path: '/accept-invitation/:token', element: <AcceptInvitationPage /> }
+   ```
+
+   Note: Route is NOT wrapped in `ProtectedRoute` — unauthenticated users need to see the login
+   prompt.
+
+3. Add `acceptInvitation` mutation GraphQL document:
+   `packages/client/src/graphql/mutations/accept-invitation.ts`
+
+4. Write tests:
+   - Unauthenticated user sees login prompt (not accept button)
+   - Login redirect preserves the invitation token in `appState.returnTo`
+   - Authenticated user sees accept button
+   - Successful acceptance redirects to `/charges` (ROUTES.HOME)
+   - Error message displayed on mutation failure
+   - Expired token shows appropriate error (`TOKEN_EXPIRED`)
+
+EXPECTED OUTPUT:
+
+- New: `packages/client/src/components/screens/accept-invitation.tsx`
+- New: `packages/client/src/graphql/mutations/accept-invitation.ts`
+- Updated: Router configuration
+- Tests: `packages/client/src/components/screens/__tests__/accept-invitation.test.tsx`
+- All tests passing
+
+RISK: Low (frontend only; backend mutation already implemented in Phase 7.2)
+
+``
+
+---
+
+## Phase 9 Complete - Frontend Fully Integrated
+
+**Achievement**: Complete Auth0 frontend experience with enhanced UX
+
+**Critical Validation**:
+
+- ✅ Protected routes redirect unauthenticated users to login (saving `returnTo`)
+- ✅ Auth errors display friendly messages with retry options
+- ✅ User menu shows name, avatar, and logout in app header
+- ✅ Tokens refresh silently; UNAUTHENTICATED errors trigger re-auth
+- ✅ Logout clears all local state before Auth0 session termination
+- ✅ Invitation acceptance UI handles both new and existing users
+
+---
+
+## Phase 10: Production Hardening
+
+### Prompt 10.1: Complete Provider Migration (Remaining Modules)
+
+``
+
+CONTEXT: Phase 4.8 migrated `BusinessesProvider` as a pilot. Phase 4.9 migrated
+`AdminContextProvider`. Many other providers still inject `DBProvider` directly, bypassing RLS. This
+prompt completes the module-by-module migration with ESLint enforcement to prevent regressions.
+
+TASK: Migrate all remaining server providers from `DBProvider` to `TenantAwareDBClient` and verify
+RLS is enforced across all queries.
+
+REQUIREMENTS:
+
+1. Run the audit to find remaining `DBProvider` usages in providers:
+
+   ```bash
+   rg "DBProvider" packages/server/src/modules --include="*.ts" -l \
+     | grep -v "__tests__" | grep -v "migrations" | grep -v "scripts"
+   ```
+
+2. Migrate each provider following the established pattern:
+
+   ```typescript
+   // BEFORE:
+   constructor(private dbProvider: DBProvider) {}
+   async getData() {
+     return getSomeData.run({ businessId }, this.dbProvider)
+   }
+
+   // AFTER:
+   constructor(private db: TenantAwareDBClient) {}
+   async getData() {
+     // No businessId parameter needed — RLS filters automatically
+     return getSomeData.run({}, this.db)
+   }
+   ```
+
+3. Priority order (highest value tables by data sensitivity):
+   - `salaries.provider.ts` — HIGH sensitivity
+   - `financial-entities.provider.ts`
+   - `documents.provider.ts`
+   - `ledger-records.provider.ts`
+   - `employees.provider.ts`
+   - All remaining providers (one PR per module)
+
+4. For each migrated provider:
+   - Remove explicit `WHERE owner_id = $1` / `WHERE business_id = $1` clauses (RLS handles it)
+   - Remove `businessId` parameters from method signatures where they were only used for filtering
+   - Add an integration test verifying cross-tenant isolation
+
+5. Verify ESLint rule still catching regressions:
+
+   ```bash
+   # Attempt to import DBProvider in a provider file:
+   # Should produce ESLint error:
+   # "Providers must inject TenantAwareDBClient for RLS enforcement."
+   yarn lint
+   ```
+
+6. Final verification — no DBProvider in providers:
+
+   ```bash
+   rg "DBProvider" packages/server/src/modules --include="*.ts" \
+     | grep -v "__tests__" | grep -v "migrations" | grep -v "scripts"
+   # Expected: ZERO matches
+   ```
+
+EXPECTED OUTPUT:
+
+- Updated: All remaining provider files (use `TenantAwareDBClient`)
+- Tests: Integration tests per module verifying cross-tenant isolation
+- ESLint: No new `DBProvider` imports in providers
+- All tests passing
+
+VALIDATION:
+
+- Zero `DBProvider` imports in module providers (verified by ESLint and rg)
+- All database queries pass through RLS-enforced `TenantAwareDBClient`
+- Cross-tenant isolation verified for all migrated providers
+
+RISK: High (touches many files; roll out one module per PR with staging validation)
+
+``
+
+---
+
+### Prompt 10.2: Connection Pool Optimization & Monitoring
+
+``
+
+CONTEXT: With RLS enforced (each request holds a transaction), connection pool sizing is critical.
+Under-sized pools cause request queuing; over-sized pools waste resources.
+
+TASK: Right-size the connection pool, add monitoring, and validate under load.
+
+REQUIREMENTS:
+
+1. Update pool configuration in `packages/server/src/modules/app-providers/db.provider.ts`:
+
+   ```typescript
+   const pool = new pg.Pool({
+     max: parseInt(process.env.PG_POOL_MAX ?? '50'),
+     idleTimeoutMillis: 30_000,
+     connectionTimeoutMillis: 5_000,
+     statement_timeout: 30_000 // 30 second query timeout
+   })
+   ```
+
+2. Add pool health metrics endpoint (extend existing `healthCheck()`):
+
+   ```typescript
+   getPoolStats() {
+     return {
+       totalCount: this.pool.totalCount,
+       idleCount: this.pool.idleCount,
+       waitingCount: this.pool.waitingCount,
+       utilizationPercent: ((this.pool.totalCount - this.pool.idleCount) / this.pool.totalCount) * 100
+     }
+   }
+   ```
+
+3. Add health check to server:
+
+   ```typescript
+   // GET /health
+   app.get('/health', async (req, res) => {
+     const dbHealthy = await dbProvider.healthCheck()
+     const poolStats = dbProvider.getPoolStats()
+
+     res.status(dbHealthy ? 200 : 503).json({
+       status: dbHealthy ? 'ok' : 'degraded',
+       pool: poolStats,
+       timestamp: new Date().toISOString()
+     })
+   })
+   ```
+
+4. Add pool saturation alert (log warning when > 80% utilized):
+
+   ```typescript
+   pool.on('connect', () => {
+     const stats = dbProvider.getPoolStats()
+     if (stats.utilizationPercent > 80) {
+       logger.warn('Database pool > 80% utilized', stats)
+     }
+   })
+   ```
+
+5. Run load test to validate pool sizing:
+
+   ```bash
+   # Using k6 or similar tool:
+   k6 run --vus 100 --duration 2m scripts/load-test.js
+   # Success criteria:
+   # - p95 latency < 500ms
+   # - Zero connection timeout errors
+   # - Pool utilization < 80% at peak
+   ```
+
+6. Document recommended pool sizes per environment in `.env.example`.
+
+7. Write tests:
+   - `getPoolStats()` returns correct counts
+   - `/health` returns 200 when pool healthy
+   - `/health` returns 503 when pool unavailable
+
+EXPECTED OUTPUT:
+
+- Updated: `packages/server/src/modules/app-providers/db.provider.ts`
+- Updated: `packages/server/src/index.ts` (health endpoint)
+- New: `scripts/load-test.js`
+- Tests: Pool stats and health endpoint tests
+- Load test results documented
+
+RISK: Low (monitoring is additive; pool size tune-up is low impact)
+
+``
+
+---
+
+### Prompt 10.3: Rate Limiting
+
+``
+
+CONTEXT: Auth0 protects against credential stuffing on its login endpoint. The application's own
+GraphQL mutations (especially invitation creation and API key generation) need local rate limiting
+to prevent abuse.
+
+TASK: Implement rate limiting on sensitive mutations using a token-bucket strategy.
+
+REQUIREMENTS:
+
+1. Install rate limiting library:
+
+   ```bash
+   cd packages/server && yarn add rate-limiter-flexible
+   ```
+
+2. Create rate limiter configurations: `packages/server/src/plugins/rate-limit-plugin.ts`
+
+   ```typescript
+   import { RateLimiterMemory } from 'rate-limiter-flexible'
+
+   const limiters = {
+     createInvitation: new RateLimiterMemory({
+       points: 10, // 10 invitations
+       duration: 3600 // per hour
+     }),
+     generateApiKey: new RateLimiterMemory({
+       points: 5, // 5 API keys
+       duration: 3600 // per hour
+     }),
+     acceptInvitation: new RateLimiterMemory({
+       points: 10,
+       duration: 3600
+     })
+   }
+
+   export function checkRateLimit(mutation: keyof typeof limiters, key: string): Promise<void> {
+     const limiter = limiters[mutation]
+     return limiter
+       .consume(key)
+       .then(() => undefined)
+       .catch(() => {
+         throw new GraphQLError('Rate limit exceeded. Please try again later.', {
+           extensions: {
+             code: 'RATE_LIMITED',
+             retryAfter: 3600
+           }
+         })
+       })
+   }
+   ```
+
+3. Integrate into relevant resolvers:
+
+   ```typescript
+   // create-invitation.resolver.ts
+   const clientIp = context.request.headers.get('x-forwarded-for') ?? 'unknown'
+   await checkRateLimit('createInvitation', `${authContext.tenant.businessId}:${clientIp}`)
+   ```
+
+4. For production with multiple server instances, switch to Redis-backed limiter:
+
+   ```typescript
+   // Opt-in via REDIS_URL env var
+   import { RateLimiterRedis } from 'rate-limiter-flexible'
+   ```
+
+5. Write tests:
+   - First 10 requests succeed
+   - 11th request throws `RATE_LIMITED`
+   - Rate limit keyed per business AND IP
+   - Error includes `retryAfter` extension
+
+EXPECTED OUTPUT:
+
+- New: `packages/server/src/plugins/rate-limit-plugin.ts`
+- Updated: `create-invitation.resolver.ts`, `generate-api-key.resolver.ts`,
+  `accept-invitation.resolver.ts`
+- Tests: `packages/server/src/plugins/__tests__/rate-limit.test.ts`
+- All tests passing
+
+RISK: Low (additive protection; library handles all state)
+
+``
+
+---
+
+### Prompt 10.4: Audit Log Query Interface
+
+``
+
+CONTEXT: The `audit_logs` table records all security events. Business owners need a GraphQL
+interface to query their audit log for compliance and security monitoring.
+
+TASK: Implement a paginated `auditLogs` query and (optionally) a simple UI page.
+
+REQUIREMENTS:
+
+1. Add to schema:
+
+   ```graphql
+   type Query {
+     auditLogs(
+       action: String
+       userId: ID
+       from: DateTime
+       to: DateTime
+       limit: Int = 50
+       offset: Int = 0
+     ): AuditLogConnection! @requiresRole(role: "business_owner")
+   }
+
+   type AuditLogConnection {
+     nodes: [AuditLog!]!
+     totalCount: Int!
+   }
+
+   type AuditLog {
+     id: ID!
+     action: String!
+     entity: String
+     entityId: String
+     details: JSON
+     ipAddress: String
+     createdAt: DateTime!
+   }
+   ```
+
+2. Create resolver: `packages/server/src/modules/auth/resolvers/audit-logs.resolver.ts`
+
+   ```typescript
+   // RLS ensures records are scoped to the authenticated business automatically
+   SELECT id, action, entity, entity_id, details, ip_address, created_at
+   FROM accounter_schema.audit_logs
+   WHERE ($1::text IS NULL OR action = $1)
+     AND ($2::uuid IS NULL OR user_id = $2)
+     AND ($3::timestamptz IS NULL OR created_at >= $3)
+     AND ($4::timestamptz IS NULL OR created_at <= $4)
+   ORDER BY created_at DESC
+   LIMIT $5 OFFSET $6
+   ```
+
+3. (Optional) Create a minimal audit log page in the client:
+   `packages/client/src/components/screens/audit-logs-page.tsx`
+
+4. Write tests:
+   - business_owner can query audit logs
+   - employee cannot query audit logs (FORBIDDEN)
+   - Results filtered by action, userId, date range correctly
+   - RLS ensures only the authenticated business's logs returned
+   - Pagination (limit/offset) works correctly
+
+EXPECTED OUTPUT:
+
+- Updated: Schema file (auditLogs query)
+- New: `packages/server/src/modules/auth/resolvers/audit-logs.resolver.ts`
+- Optional: `packages/client/src/components/screens/audit-logs-page.tsx`
+- Tests: `packages/server/src/modules/auth/__tests__/audit-logs.test.ts`
+- All tests passing
+
+RISK: Low (read-only query, RLS prevents cross-tenant access)
+
+``
+
+---
+
+### Prompt 10.5: Security Hardening Checklist
+
+``
+
+CONTEXT: The system is fully operational. Before declaring production-ready, perform a systematic
+security audit against the OWASP Top 10 and Auth0-specific risks.
+
+TASK: Execute the security hardening checklist and fix any gaps found.
+
+REQUIREMENTS:
+
+Work through each item. Document findings in `docs/operations/security-audit.md`.
+
+**Auth0 Configuration**:
+
+- [ ] RS256 algorithm enforced (check tenant settings)
+- [ ] Access token lifetime: 15 minutes (900 seconds)
+- [ ] Refresh token rotation enabled
+- [ ] Refresh token absolute expiration: 7 days
+- [ ] Callback URLs allowlist uses HTTPS in production (no `http://` in prod)
+- [ ] MFA available via Auth0 settings (enable at tenant level)
+- [ ] Auth0 tenant attack protection enabled (brute force protection, anomaly detection)
+
+**API & Transport**:
+
+- [ ] HTTPS enforced in production (HSTS header present)
+- [ ] CORS configured to allowlist specific origins (not `*`)
+- [ ] `X-Content-Type-Options: nosniff` header present
+- [ ] `X-Frame-Options: DENY` header present
+- [ ] CSP header configured
+
+**Database & RLS**:
+
+- [ ] RLS enabled and tested on ALL tenant tables (run full RLS integration test suite)
+- [ ] Zero `DBProvider` direct imports in module providers (ESLint rule active)
+- [ ] `api_keys.key_hash` stores SHA-256 hash only (no plaintext)
+- [ ] `invitations.token` is 64 cryptographically random characters
+
+**GraphQL**:
+
+- [ ] All mutations have at least `@requiresAuth`
+- [ ] Query depth limiting enabled (prevent deeply nested malicious queries)
+- [ ] Introspection disabled in production
+- [ ] Error messages do not leak internals (`"Internal server error"` not stack traces)
+
+**Application**:
+
+- [ ] SQL injection impossible (verify ALL queries use parameterized statements — no string
+      interpolation)
+- [ ] Auth0 Management API credentials in environment variables (not in code)
+- [ ] No secrets in git history (`git log -S "secret"` returns nothing sensitive)
+- [ ] Dependencies audited (`yarn audit` returns no critical vulnerabilities)
+- [ ] Invitation cleanup job scheduled and verified running
+
+**Fixes**: For each failed item, create a fix and re-validate.
+
+EXPECTED OUTPUT:
+
+- New: `docs/operations/security-audit.md` (findings and resolutions)
+- Fixes for any gaps discovered
+- All checklist items resolved
+
+RISK: None (audit only; fixes are targeted)
+
+``
+
+---
+
+### Prompt 10.6: Performance Baseline & Ongoing Monitoring
+
+``
+
+CONTEXT: The system is security-hardened. Establishing a performance baseline now allows early
+detection of regressions as new features are added.
+
+TASK: Measure baseline performance metrics, set up monitoring alerts, and document SLOs.
+
+REQUIREMENTS:
+
+1. Establish baseline via load test (`scripts/load-test.ts` or k6):
+
+   | Scenario                          | Expected p95 |
+   | --------------------------------- | ------------ |
+   | List charges (authenticated)      | < 100ms      |
+   | createInvitation (Auth0 API call) | < 1000ms     |
+   | acceptInvitation (Auth0 API call) | < 1000ms     |
+   | JWT verification (cached JWKS)    | < 10ms       |
+   | API key lookup                    | < 30ms       |
+   | RLS overhead vs non-RLS           | < 20% slower |
+
+2. Add server-side timing logs:
+
+   ```typescript
+   // Log slow queries (> 200ms) to identify bottlenecks
+   pool.on('query', query => {
+     const start = Date.now()
+     query.on('end', () => {
+       const duration = Date.now() - start
+       if (duration > 200) {
+         logger.warn('Slow query detected', { duration, query: query.text })
+       }
+     })
+   })
+   ```
+
+3. Add GraphQL operation timing middleware:
+
+   ```typescript
+   // Track per-operation performance in server logs
+   onExecute: ({ args }) => ({
+     onExecuteDone: ({ result }) => {
+       const duration = Date.now() - start
+       logger.info('GraphQL operation', {
+         operation: args.document.definitions[0].name?.value,
+         duration,
+         errors: result.errors?.length ?? 0
+       })
+     }
+   })
+   ```
+
+4. Set up monitoring alerts (documentation for whichever APM is in use):
+   - Alert if p95 latency > 500ms for 5 consecutive minutes
+   - Alert if error rate > 1% over 5 minutes
+   - Alert if pool utilization > 80% for 2 consecutive minutes
+   - Alert if Auth0 JWT verification failure rate > 0.1%
+
+5. Document Service Level Objectives (SLOs) in `docs/operations/slos.md`:
+
+   ```markdown
+   ## Service Level Objectives
+
+   | Metric                    | SLO     |
+   | ------------------------- | ------- |
+   | API availability          | 99.9%   |
+   | p95 query latency         | < 500ms |
+   | Authentication error rate | < 0.1%  |
+   | Zero cross-tenant leaks   | 100%    |
+   ```
+
+6. Write tests:
+   - Timing log fires for queries > 200ms (mock slow query)
+   - Pool stats endpoint reflects actual pool state
+   - Load test passes defined thresholds
+
+EXPECTED OUTPUT:
+
+- New: `docs/operations/slos.md`
+- Updated: `packages/server/src/modules/app-providers/db.provider.ts` (slow query logging)
+- Updated: `packages/server/src/index.ts` (operation timing middleware)
+- New: `scripts/load-test.ts`
+- Load test results documented in `docs/operations/performance-baseline.md`
+- Monitoring alerts configured and documented
+
+RISK: Low (observability only; no behavior changes)
+
+``
+
+---
+
+## Phase 10 Complete - Production Ready
+
+**Achievement**: System production-hardened with monitoring, rate limiting, and security verified
+
+**Critical Validation**:
+
+- ✅ All providers use `TenantAwareDBClient` — zero `DBProvider` leaks (ESLint enforced)
+- ✅ Connection pool sized and monitored; health endpoint returns real-time stats
+- ✅ Rate limiting prevents invitation and API key abuse
+- ✅ Audit logs queryable by business owners for compliance
+- ✅ Security hardening checklist 100% complete
+- ✅ Performance baselines established; SLOs documented and monitored
+
+---
 
 ---
 
