@@ -11,15 +11,12 @@ export interface RawAuth {
  *
  * This plugin is part of the Auth0 authentication system.
  * It ONLY handles credential extraction. Verification and context creation
- * are delegated to the AuthContextProvider (Phase 4).
+ * are delegated to the AuthContextProvider.
  *
  * Responsibilities:
  * 1. Extract `Authorization: Bearer <token>` (JWT)
  * 2. Extract `X-API-Key: <key>` (API Key)
  * 3. Add `rawAuth` object to Yoga context
- *
- * NOTE: This plugin intentionally runs alongside the legacy auth plugin
- * during the migration phase. It does NOT throw errors or block requests.
  */
 export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
   return useExtendContext(
