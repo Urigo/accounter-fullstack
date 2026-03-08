@@ -29,7 +29,7 @@ export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode 
         const accessToken = await getAccessTokenSilently({
           authorizationParams: {
             audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-            scope: 'openid profile email',
+            scope: 'openid profile email offline_access',
           },
         });
 

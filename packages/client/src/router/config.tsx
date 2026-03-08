@@ -2,9 +2,10 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { ErrorBoundary } from '../components/error-boundary.js';
 import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layout/page-skeleton.js';
+import { PublicOnlyGuard, RequireAuthGuard } from './guards/auth-guards.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
-import { businessLoader, chargeLoader, publicOnly, requireAuth } from './loaders/index.js';
+import { businessLoader, chargeLoader } from './loaders/index.js';
 import { ROUTES } from './routes.js';
 
 /**
@@ -210,8 +211,7 @@ export const routes: RouteObject[] = [
       // Public routes (login, error pages)
       {
         path: ROUTES.LOGIN,
-        loader: publicOnly,
-        element: withSuspense(LoginPage),
+        element: <PublicOnlyGuard>{withSuspense(LoginPage)}</PublicOnlyGuard>,
         handle: {
           title: 'Login',
         },
@@ -227,8 +227,11 @@ export const routes: RouteObject[] = [
       // Protected routes (require authentication)
       {
         path: '/',
-        loader: requireAuth,
-        element: <DashboardLayoutRoute />,
+        element: (
+          <RequireAuthGuard>
+            <DashboardLayoutRoute />
+          </RequireAuthGuard>
+        ),
         errorElement: <ErrorBoundary />,
         children: [
           // Home / Charges (default)

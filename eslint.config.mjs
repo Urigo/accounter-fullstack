@@ -237,6 +237,10 @@ export default [
         {
           patterns: [
             {
+              group: ['pg'],
+              message: 'Do not import "pg" directly. Use TenantAwareDBClient for RLS enforcement.',
+            },
+            {
               group: ['**/db.provider*', '**/app-providers/db.provider*'],
               message:
                 'Providers must inject TenantAwareDBClient for RLS enforcement. Only migrations, scripts, and explicitly exempt global/auth providers can access DBProvider directly.',

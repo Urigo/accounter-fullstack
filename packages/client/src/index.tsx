@@ -33,7 +33,6 @@ root.render(
         audience,
         scope: 'openid profile email offline_access',
       }}
-      cacheLocation="localstorage"
       useRefreshTokens
       skipRedirectCallback={shouldSkipRedirectCallback}
     >
