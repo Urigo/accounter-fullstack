@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import { QueryResult, QueryResultRow } from 'pg';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 
 type QueryResultWithRows<T extends QueryResultRow = QueryResultRow> = QueryResult<T> & {rowCount: number};
@@ -10,7 +10,7 @@ type QueryResultWithRows<T extends QueryResultRow = QueryResultRow> = QueryResul
 describe('AdminContextProvider', () => {
   let provider: AdminContextProvider;
   let dbProvider: Mocked<TenantAwareDBClient>;
-  let authContextProvider: Mocked<AuthContextV2Provider>;
+  let authContextProvider: Mocked<AuthContextProvider>;
 
   beforeEach(() => {
     dbProvider = {
@@ -30,7 +30,7 @@ describe('AdminContextProvider', () => {
 
     authContextProvider = {
       getAuthContext: vi.fn().mockResolvedValue(mockAuthContext),
-    } as unknown as Mocked<AuthContextV2Provider>;
+    } as unknown as Mocked<AuthContextProvider>;
 
     // Inject mocks: authContextProvider (for auth context) and dbProvider
     provider = new AdminContextProvider(authContextProvider, dbProvider);

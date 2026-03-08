@@ -1,5 +1,5 @@
 import { InjectionToken } from 'graphql-modules';
-import type { RawAuth } from '../plugins/auth-plugin-v2.js';
+import type { RawAuth } from '../plugins/auth-plugin.js';
 import type { Environment } from './types/index.js';
 
 export const ENVIRONMENT = new InjectionToken<Environment>('ENVIRONMENT');

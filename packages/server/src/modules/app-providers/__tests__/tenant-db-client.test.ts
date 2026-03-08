@@ -3,7 +3,7 @@ import type { Pool, PoolClient } from 'pg';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { DBProvider } from '../db.provider.js';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
-import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 
 describe('TenantAwareDBClient', () => {
   let mockPoolClient: PoolClient;
@@ -50,7 +50,7 @@ describe('TenantAwareDBClient', () => {
       },
     };
 
-    const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextV2Provider;
+    const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextProvider;
 
     tenantDBClient = new TenantAwareDBClient(mockDBProvider, authContextProvider);
   });

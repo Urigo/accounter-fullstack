@@ -1,11 +1,11 @@
 import { createSchema, createYoga } from 'graphql-yoga';
 import { describe, expect, it } from 'vitest';
-import { authPluginV2, type RawAuth } from '../auth-plugin-v2.js';
+import { authPlugin, type RawAuth } from '../auth-plugin.js';
 
-describe('authPluginV2', () => {
+describe('authPlugin', () => {
   const createTestYoga = () => {
     return createYoga({
-      plugins: [authPluginV2()],
+      plugins: [authPlugin()],
       schema: createSchema({
         typeDefs: `type Query { test: String }`,
         resolvers: {

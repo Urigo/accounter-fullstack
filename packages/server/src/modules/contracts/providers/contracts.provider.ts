@@ -3,7 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { AuthContextV2Provider } from '../../auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type {
   IDeleteContractQuery,
@@ -150,7 +150,7 @@ export class ContractsProvider {
   constructor(
     private db: TenantAwareDBClient,
     private businessesProvider: BusinessesProvider,
-    private authContextProvider: AuthContextV2Provider,
+    private authContextProvider: AuthContextProvider,
   ) {}
 
   private async getBusinessId() {

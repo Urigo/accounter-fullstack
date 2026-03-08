@@ -7,21 +7,18 @@ export interface RawAuth {
 }
 
 /**
- * AuthPluginV2 - Extracts authentication credentials from request headers.
+ * AuthPlugin - Extracts authentication credentials from request headers.
  *
- * This plugin is part of the v2 authentication system (Auth0 integration).
+ * This plugin is part of the Auth0 authentication system.
  * It ONLY handles credential extraction. Verification and context creation
- * are delegated to the AuthContextProvider (Phase 4).
+ * are delegated to the AuthContextProvider.
  *
  * Responsibilities:
  * 1. Extract `Authorization: Bearer <token>` (JWT)
  * 2. Extract `X-API-Key: <key>` (API Key)
  * 3. Add `rawAuth` object to Yoga context
- *
- * NOTE: This plugin intentionally runs alongside the legacy auth plugin
- * during the migration phase. It does NOT throw errors or block requests.
  */
-export const authPluginV2 = (): Plugin<{ rawAuth: RawAuth }> => {
+export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
   return useExtendContext(
     async (yogaContext: YogaInitialContext): Promise<{ rawAuth: RawAuth }> => {
       const request = yogaContext.request;

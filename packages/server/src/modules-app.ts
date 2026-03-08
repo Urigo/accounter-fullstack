@@ -14,7 +14,7 @@ import { GoogleDriveProvider } from './modules/app-providers/google-drive/google
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
 import { authModule } from './modules/auth/index.js';
-import { AuthContextV2Provider } from './modules/auth/providers/auth-context-v2.provider.js';
+import { AuthContextProvider } from './modules/auth/providers/auth-context.provider.js';
 import { bankDepositsModule } from './modules/bank-deposits/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesMatcherModule } from './modules/charges-matcher/index.js';
@@ -41,7 +41,7 @@ import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
-import type { RawAuth } from './plugins/auth-plugin-v2.js';
+import type { RawAuth } from './plugins/auth-plugin.js';
 import { ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
@@ -110,7 +110,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         scope: Scope.Operation,
         deps: [CONTEXT],
       },
-      AuthContextV2Provider,
+      AuthContextProvider,
       TenantAwareDBClient,
       AdminContextProvider,
       CloudinaryProvider,
