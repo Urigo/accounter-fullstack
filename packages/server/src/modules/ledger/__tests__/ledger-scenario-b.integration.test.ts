@@ -159,6 +159,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
+      const adminContext = await buildAdminContextFromDb(client);
       const adminId = makeUUID('business', 'admin-business-usd');
       await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
 
@@ -174,6 +175,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
         pool: db.getPool(),
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 
@@ -255,6 +257,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
         pool: db.getPool(),
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 

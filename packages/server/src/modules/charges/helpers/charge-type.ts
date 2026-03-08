@@ -1,6 +1,6 @@
 import { Injector } from 'graphql-modules';
-import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { charge_type, IGetChargesByIdsResult } from '../types.js';

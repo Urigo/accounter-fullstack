@@ -163,6 +163,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
         pool: db.getPool(),
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
       });
 
       const result = await ledgerGenerationByCharge(
@@ -244,6 +245,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
         pool: db.getPool(),
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
       });
 
       // First generation
