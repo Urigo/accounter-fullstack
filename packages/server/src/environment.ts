@@ -80,7 +80,6 @@ const GreenInvoiceModel = zod.union([
 const AuthorizationModel = zod.object({
   AUTHORIZED_USERS: zod.union([zod.string(), zod.void()]),
   DEFAULT_FINANCIAL_ENTITY_ID: zod.string(),
-  USE_AUTH0: zod.enum(['true', 'false']).optional(),
 });
 
 const HiveModel = zod.union([
@@ -233,7 +232,6 @@ export const env = {
   authorization: {
     users: authorization?.AUTHORIZED_USERS,
     adminBusinessId: authorization?.DEFAULT_FINANCIAL_ENTITY_ID,
-    useAuth0: authorization?.USE_AUTH0 === 'true',
   },
   hive: hive?.HIVE_TOKEN
     ? {

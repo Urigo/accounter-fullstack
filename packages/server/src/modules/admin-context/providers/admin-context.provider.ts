@@ -460,7 +460,6 @@ export class AdminContextProvider {
     }
 
     this.cachedContextInitializing ??= this.getAdminContext();
-    await this.cachedContextInitializing;
 
     const context = await this.cachedContextInitializing;
     if (!context) {
