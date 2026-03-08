@@ -95,9 +95,6 @@ Auth0 configuration is read from `packages/server/src/environment.ts`.
 Set the following env vars (typically in your root `.env` that server loads):
 
 ```bash
-# Toggle Auth0 mode
-USE_AUTH0=true
-
 # JWT verification
 AUTH0_DOMAIN=<tenant>.auth0.com
 AUTH0_AUDIENCE=https://api.accounter.com
@@ -172,7 +169,7 @@ Use this checklist after configuration:
 - [ ] API exists with RS256 and expected identifier/audience
 - [ ] M2M app exists and has required Management API scopes
 - [ ] `Username-Password-Authentication` connection enabled
-- [ ] Server Auth0 env vars set (`AUTH0_*`, `USE_AUTH0=true`)
+- [ ] Server Auth0 env vars set (`AUTH0_*`)
 - [ ] Client Auth0 env vars set (`VITE_AUTH0_*`)
 - [ ] Local user mapping exists in `business_users.auth0_user_id`
 

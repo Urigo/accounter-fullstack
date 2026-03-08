@@ -117,7 +117,7 @@ export class AuthContextProvider {
       this.handlingAuth = null;
       return authContext;
     } catch (error) {
-      console.error('AuthContext: JWT verification failed', error);
+      console.error('AuthContext: Failed to process authentication token', error);
       this.handlingAuth = null;
       return null;
     }
