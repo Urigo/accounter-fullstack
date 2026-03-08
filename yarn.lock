@@ -283,7 +283,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.50"
+    "@ai-sdk/anthropic": "npm:3.0.51"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
     "@google-cloud/pubsub": "npm:5.3.0"
@@ -298,7 +298,7 @@ __metadata:
     "@types/node": "npm:24.11.0"
     "@types/pg": "npm:8.18.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.105"
+    ai: "npm:6.0.106"
     async-mutex: "npm:0.5.0"
     basic-auth: "npm:2.0.1"
     bcrypt: "npm:6.0.0"
@@ -356,28 +356,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.50":
-  version: 3.0.50
-  resolution: "@ai-sdk/anthropic@npm:3.0.50"
+"@ai-sdk/anthropic@npm:3.0.51":
+  version: 3.0.51
+  resolution: "@ai-sdk/anthropic@npm:3.0.51"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.8"
     "@ai-sdk/provider-utils": "npm:4.0.16"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1cacfe756e6d7d32da02d0a92bc19d55739e81971ef9635ec99e7a9ba9e1c7e057c43457cbf3e7f1dc59f91f7f473b508766331273db08a0859bd131a704bdc1
+  checksum: 10c0/9eab85d91ac15e516ddfbc785839a74bbd9f5091fac4cbae390de89732170adc1198403b1fa6af624b86017667ea8e0c3bdd9e0f309bc413ef79249dfbdc0689
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.59":
-  version: 3.0.59
-  resolution: "@ai-sdk/gateway@npm:3.0.59"
+"@ai-sdk/gateway@npm:3.0.60":
+  version: 3.0.60
+  resolution: "@ai-sdk/gateway@npm:3.0.60"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.8"
     "@ai-sdk/provider-utils": "npm:4.0.16"
     "@vercel/oidc": "npm:3.1.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/31d2088f12fbf2f26cb61dea279435fea55eeeeb81cb5b7b60b4c4e1128c365abdde43e793db241338381c3d441ccbc74135e596b3cb72aea1973cc73a034d20
+  checksum: 10c0/45d27e4f75faf97eb48c0331f0f60436cf7aad6403da9996dc7d17f8c02550f5d1c43fb89cf7dc7237f979defcdf28822274e9b497ab98a441702ce43b18311f
   languageName: node
   linkType: hard
 
@@ -9135,17 +9135,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.105":
-  version: 6.0.105
-  resolution: "ai@npm:6.0.105"
+"ai@npm:6.0.106":
+  version: 6.0.106
+  resolution: "ai@npm:6.0.106"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.59"
+    "@ai-sdk/gateway": "npm:3.0.60"
     "@ai-sdk/provider": "npm:3.0.8"
     "@ai-sdk/provider-utils": "npm:4.0.16"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/fad51594dbd3795e0a209468e978636d0869475d1c2b3885fa94ceefbd663abced0d6177f1f9012e2e8a86fcc52ea2417283cb93b6d40e3a4d77ca79299cb721
+  checksum: 10c0/0a5e72823e24be276e1c0dc4720a62571a893d45b0ba028985badac2fad1f9f02f59876c0e2f197fe2024552a1f5b59106f160b41f570d6edf8b1ecc580a7aef
   languageName: node
   linkType: hard
 
