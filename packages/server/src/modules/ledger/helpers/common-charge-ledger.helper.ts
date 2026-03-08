@@ -1,6 +1,8 @@
+import type { Injector } from 'graphql-modules';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import {
   validateDocumentAllocation,
@@ -19,23 +21,12 @@ import {
 } from './utils.helper.js';
 
 export async function ledgerEntryFromDocument(
-  context: GraphQLModules.Context,
+  injector: Injector,
   document: IGetDocumentsByChargeIdResult,
   charge: IGetChargesByIdsResult,
   ownerId: string,
   taxCategoryId: string,
 ): Promise<StrictLedgerProto> {
-  const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      authorities: {
-        inputVatTaxCategoryId,
-        outputVatTaxCategoryId,
-        propertyOutputVatTaxCategoryId,
-      },
-    },
-  } = context;
   if (!document.date) {
     throw new LedgerError(`Document serial "${document.serial_number}" is missing the date`);
   }
@@ -52,6 +43,11 @@ export async function ledgerEntryFromDocument(
   if (!document.currency_code) {
     throw new LedgerError(`Document serial "${document.serial_number}" is missing currency code`);
   }
+
+  const {
+    defaultLocalCurrency,
+    authorities: { inputVatTaxCategoryId, outputVatTaxCategoryId, propertyOutputVatTaxCategoryId },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   let totalAmount = Math.abs(document.total_amount);
 
@@ -95,7 +91,7 @@ export async function ledgerEntryFromDocument(
     validateDocumentVat(document, vatValue, message => {
       throw new LedgerError(message);
     });
-    await validateDocumentAllocation(document, context).then(valid => {
+    await validateDocumentAllocation(document, injector).then(valid => {
       if (!valid) {
         throw new LedgerError(`Allocation number missing for document [${document.serial_number}]`);
       }
@@ -192,23 +188,21 @@ export async function ledgerEntryFromDocument(
 
 export async function ledgerEntryFromMainTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
   chargeId: string,
   ownerId: string,
   businessId?: string,
   gotRelevantDocuments = false,
 ): Promise<StrictLedgerProto> {
-  const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      financialAccounts: { internalWalletsIds },
-    },
-  } = context;
   const { currency, valueDate, transactionBusinessId } =
     validateTransactionBasicVariables(transaction);
 
   let mainAccountId: string = transactionBusinessId;
+
+  const {
+    defaultLocalCurrency,
+    financialAccounts: { internalWalletsIds },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   if (
     !gotRelevantDocuments &&
@@ -270,22 +264,20 @@ export async function ledgerEntryFromMainTransaction(
   return ledgerEntry;
 }
 
-export function ledgerEntryFromBalanceCancellation(
+export async function ledgerEntryFromBalanceCancellation(
   balanceCancellation: IGetBalanceCancellationByChargesIdsResult,
   ledgerBalance: Map<string, { amount: number; entityId: string }>,
   financialAccountLedgerEntries: StrictLedgerProto[],
   chargeId: string,
   ownerId: string,
-  context: GraphQLModules.Context,
-): LedgerProto {
+  injector: Injector,
+): Promise<LedgerProto> {
   const {
-    adminContext: {
-      defaultLocalCurrency,
-      general: {
-        taxCategories: { balanceCancellationTaxCategoryId },
-      },
+    defaultLocalCurrency,
+    general: {
+      taxCategories: { balanceCancellationTaxCategoryId },
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const entityBalance = ledgerBalance.get(balanceCancellation.business_id);
   if (!entityBalance) {
     throw new LedgerError(

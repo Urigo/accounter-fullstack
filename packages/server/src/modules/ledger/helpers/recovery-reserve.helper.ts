@@ -1,6 +1,8 @@
 import { differenceInYears, endOfDay, endOfMonth, endOfYear } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import { AVERAGE_MONTHLY_WORK_HOURS } from '../../../shared/constants.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
 import { RecoveryProvider } from '../../salaries/providers/recovery.provider.js';
 import { SalariesProvider } from '../../salaries/providers/salaries.provider.js';
@@ -69,17 +71,11 @@ function calculateMonthPart(
   return [1, 0];
 }
 
-export async function calculateRecoveryReserveAmount(
-  context: GraphQLModules.Context,
-  year: number,
-) {
+export async function calculateRecoveryReserveAmount(injector: Injector, year: number) {
   const {
-    injector,
-    adminContext: {
-      defaultAdminBusinessId,
-      salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
-    },
-  } = context;
+    ownerId,
+    salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   if (!recoveryReserveExpensesTaxCategoryId) {
     throw new GraphQLError('Recovery reserve expenses tax category is not set');
   }
@@ -92,7 +88,7 @@ export async function calculateRecoveryReserveAmount(
     .getSalaryRecordsByDates({ fromDate: '2000-01', toDate: `${year}-12` });
   const employeesPromise = injector
     .get(EmployeesProvider)
-    .getEmployeesByEmployerLoader.load(defaultAdminBusinessId);
+    .getEmployeesByEmployerLoader.load(ownerId);
   const recoveryDataPromise = injector
     .get(RecoveryProvider)
     .getRecoveryData()

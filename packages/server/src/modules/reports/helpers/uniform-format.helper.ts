@@ -1,5 +1,6 @@
 import { subDays } from 'date-fns';
 import { GraphQLResolveInfo } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import type {
   Account,
   BusinessMetadata,
@@ -9,6 +10,7 @@ import type {
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { isCryptoCurrency } from '../../exchange-rates/helpers/exchange.helper.js';
 import { AdminBusinessesProvider } from '../../financial-entities/providers/admin-businesses.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
@@ -19,14 +21,11 @@ import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 
 export async function businessForUniformFormat(
-  context: GraphQLModules.ModuleContext,
+  injector: Injector,
   fromDate: TimelessDateString,
   toDate: TimelessDateString,
 ): Promise<BusinessMetadata> {
-  const {
-    adminContext: { defaultAdminBusinessId: ownerId },
-    injector,
-  } = context;
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const adminBusiness = await injector
     .get(AdminBusinessesProvider)
@@ -52,14 +51,11 @@ export async function businessForUniformFormat(
 }
 
 export async function journalEntriesForUniformFormat(
-  context: GraphQLModules.ModuleContext,
+  injector: Injector,
   fromDate: TimelessDateString,
   toDate: TimelessDateString,
 ): Promise<JournalEntry[]> {
-  const {
-    adminContext: { defaultAdminBusinessId: ownerId },
-    injector,
-  } = context;
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const ledgerRecords = await injector
     .get(LedgerProvider)
@@ -188,10 +184,9 @@ export async function accountsForUniformFormat(
   fromDate: TimelessDateString,
   toDate: TimelessDateString,
 ): Promise<Account[]> {
-  const {
-    adminContext: { defaultAdminBusinessId: ownerId },
-    injector,
-  } = context;
+  const { injector } = context;
+
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const financialEntitiesPromise = injector
     .get(FinancialEntitiesProvider)

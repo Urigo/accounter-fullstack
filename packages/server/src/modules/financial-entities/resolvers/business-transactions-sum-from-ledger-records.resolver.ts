@@ -6,6 +6,7 @@ import type {
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { RawBusinessTransactionsSum } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { BANK_DEPOSITS_REVALUATION_LEDGER_DESCRIPTION } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation/bank-deposits-revaluation-ledger-generation.resolver.js';
@@ -19,7 +20,7 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
   object,
   GraphQLModules.Context,
   Partial<QueryBusinessTransactionsSumFromLedgerRecordsArgs>
-> = async (_, { filters }, { injector, adminContext: { defaultLocalCurrency } }, _info) => {
+> = async (_, { filters }, { injector }, _info) => {
   const {
     ownerIds,
     businessIDs,
@@ -84,7 +85,8 @@ export const businessTransactionsSumFromLedgerRecords: ResolverFn<
       }
     };
 
-    const [financialEntitiesIDs, ledgerRecords] = await Promise.all([
+    const [{ defaultLocalCurrency }, financialEntitiesIDs, ledgerRecords] = await Promise.all([
+      injector.get(AdminContextProvider).getVerifiedAdminContext(),
       financialEntitiesIDsPromise(),
       ledgerRecordsPromise(),
     ]);

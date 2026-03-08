@@ -1,8 +1,9 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { Currency } from '../../../shared/enums.js';
+import type { Currency } from '../../../shared/enums.js';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTaxCategoryParams,
@@ -163,7 +164,7 @@ const replaceTaxCategories = sql<IReplaceTaxCategoriesQuery>`
 export class TaxCategoriesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchTaxCategoryByBusinessIDs(
@@ -295,16 +296,15 @@ export class TaxCategoriesProvider {
     return updateBusinessTaxCategory.run(params, this.db);
   }
 
-  public insertTaxCategory(params: IInsertTaxCategoryParams) {
+  public async insertTaxCategory(params: IInsertTaxCategoryParams) {
     if (!params.id) {
       throw new Error('Missing required parameters');
     }
-    return insertTaxCategory
-      .run(reassureOwnerIdExists(params, this.context), this.db)
-      .catch(error => {
-        console.error(`Failed to insert tax category: ${error.message}`);
-        throw error;
-      });
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertTaxCategory.run(reassureOwnerIdExists(params, ownerId), this.db).catch(error => {
+      console.error(`Failed to insert tax category: ${error.message}`);
+      throw error;
+    });
   }
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {

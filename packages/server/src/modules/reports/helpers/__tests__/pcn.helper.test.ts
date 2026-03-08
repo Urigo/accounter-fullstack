@@ -14,6 +14,7 @@ import { Currency } from '../../../../shared/enums.js';
 import { getVatRecords } from '../../resolvers/get-vat-records.resolver.js';
 import { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { TimelessDateString } from 'shared/types/index.js';
+import type { Injector } from 'graphql-modules';
 
 type GetVatRecordsResponse = {
       income: Array<RawVatReportRecord>;
@@ -86,7 +87,7 @@ interface MockContextOptions {
   vatRecords?: RawVatReportRecord[];
 }
 
-function createMockContext(options: MockContextOptions = {}) {
+function createMockInjector(options: MockContextOptions = {}) {
   const { business, vatRecords } = options;
 
   const mockLoaders = {
@@ -106,7 +107,6 @@ function createMockContext(options: MockContextOptions = {}) {
   };
 
   return {
-    injector: {
       get: vi.fn((token: any) => {
         const tokenName = typeof token === 'string' ? token : token.name;
         return (
@@ -114,8 +114,7 @@ function createMockContext(options: MockContextOptions = {}) {
           mockLoaders[tokenName as keyof typeof mockLoaders]
         );
       }),
-    },
-  } as unknown as GraphQLModules.Context;
+  } as unknown as Injector;
 }
 
 describe('pcn.helper', () => {
@@ -140,10 +139,10 @@ describe('pcn.helper', () => {
     it('should create a mock context with loaders', () => {
       const business = createMockBusiness();
       const vatRecords = [createMockVatRecord()];
-      const context = createMockContext({ business, vatRecords });
+      const injector = createMockInjector({ business, vatRecords });
 
-      expect(context.injector).toBeDefined();
-      expect(vi.isMockFunction(context.injector.get)).toBe(true);
+      expect(injector).toBeDefined();
+      expect(vi.isMockFunction(injector.get)).toBe(true);
     });
   });
 
@@ -640,7 +639,7 @@ describe('pcn.helper', () => {
           ];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: vatRecords,
@@ -651,7 +650,7 @@ describe('pcn.helper', () => {
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -690,7 +689,7 @@ describe('pcn.helper', () => {
           ];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: vatRecords,
@@ -701,7 +700,7 @@ describe('pcn.helper', () => {
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -736,7 +735,7 @@ describe('pcn.helper', () => {
           ];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: vatRecords,
@@ -747,7 +746,7 @@ describe('pcn.helper', () => {
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -767,7 +766,7 @@ describe('pcn.helper', () => {
           ];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: vatRecords,
@@ -778,7 +777,7 @@ describe('pcn.helper', () => {
           } as GetVatRecordsResponse);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -796,7 +795,7 @@ describe('pcn.helper', () => {
           ];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           const consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
 
@@ -809,7 +808,7 @@ describe('pcn.helper', () => {
           } as any);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -828,7 +827,7 @@ describe('pcn.helper', () => {
           const vatRecords: RawVatReportRecord[] = [];
 
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: [],
@@ -839,7 +838,7 @@ describe('pcn.helper', () => {
           } as any);
 
           const result = await getPcn874String(
-            context,
+            injector,
             FIXED_BUSINESS_ID,
             FIXED_REPORT_MONTH,
           );
@@ -860,20 +859,20 @@ describe('pcn.helper', () => {
           businessWithoutVAT.vatNumber = null;
           businessWithoutVAT.vat_number = null;
 
-          const context = createMockContext({
+          const injector = createMockInjector({
             business: businessWithoutVAT,
             vatRecords,
           });
 
           await expect(
-            getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH),
+            getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH),
           ).rejects.toThrow(/VAT/i);
         });
 
         it('should validate report month format', async () => {
           const vatRecords = [createMockVatRecord()];
           const business = createMockBusiness();
-          const context = createMockContext({ business, vatRecords });
+          const injector = createMockInjector({ business, vatRecords });
 
           vi.mocked(getVatRecords).mockResolvedValue({
             income: vatRecords,
@@ -883,7 +882,7 @@ describe('pcn.helper', () => {
             businessTrips: [],
           } as GetVatRecordsResponse);
 
-          const result = await getPcn874String(context, FIXED_BUSINESS_ID, '2024-1' as TimelessDateString);
+          const result = await getPcn874String(injector, FIXED_BUSINESS_ID, '2024-1' as TimelessDateString);
           expect(result.reportMonth).toBe('202401');
         });
       });
@@ -929,7 +928,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: vatRecords,
@@ -939,7 +938,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -963,7 +962,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: vatRecords,
@@ -973,7 +972,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -996,7 +995,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: vatRecords,
@@ -1006,7 +1005,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1036,7 +1035,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: vatRecords,
@@ -1046,7 +1045,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1075,7 +1074,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: [],
@@ -1085,7 +1084,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1172,7 +1171,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: [],
@@ -1182,7 +1181,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1231,7 +1230,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: [],
@@ -1241,7 +1240,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1290,7 +1289,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: [],
@@ -1300,7 +1299,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();
@@ -1365,7 +1364,7 @@ describe('pcn.helper', () => {
         ];
 
         const business = createMockBusiness();
-        const context = createMockContext({ business, vatRecords });
+        const injector = createMockInjector({ business, vatRecords });
 
         vi.mocked(getVatRecords).mockResolvedValue({
           income: [],
@@ -1375,7 +1374,7 @@ describe('pcn.helper', () => {
           businessTrips: [],
         } as GetVatRecordsResponse);
 
-        const result = await getPcn874String(context, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
+        const result = await getPcn874String(injector, FIXED_BUSINESS_ID, FIXED_REPORT_MONTH);
 
         expect(validatePcn874(result.reportContent)).toBe(true);
         expect(result.reportContent).toMatchSnapshot();

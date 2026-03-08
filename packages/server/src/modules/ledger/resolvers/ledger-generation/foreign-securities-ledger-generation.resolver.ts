@@ -7,6 +7,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeBusinesses } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
@@ -29,16 +30,13 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const chargeId = charge.id;
   const {
-    injector,
-    adminContext: {
-      defaultAdminBusinessId,
-      defaultLocalCurrency,
-      foreignSecurities: { foreignSecuritiesFeesCategoryId },
-    },
-  } = context;
+    ownerId,
+    defaultLocalCurrency,
+    foreignSecurities: { foreignSecuritiesFeesCategoryId },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const errors: Set<string> = new Set();
 
@@ -59,7 +57,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
 
     const financialAccountsPromise = injector
       .get(FinancialAccountsProvider)
-      .getFinancialAccountsByOwnerIdLoader.load(defaultAdminBusinessId);
+      .getFinancialAccountsByOwnerIdLoader.load(ownerId);
 
     const [transactions, financialAccounts, { mainBusinessId }] = await Promise.all([
       transactionsPromise,
@@ -87,14 +85,14 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       async transaction =>
         await ledgerEntryFromMainTransaction(
           { ...transaction, source_reference: 'foreign_securities' },
-          context,
+          injector,
           chargeId,
           charge.owner_id,
           mainBusinessId ?? undefined,
         )
           .then(ledgerEntry => {
             financialAccountLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
           })
           .catch(e => {
             if (e instanceof LedgerError) {
@@ -157,15 +155,15 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       };
 
       feeFinancialAccountLedgerEntries.push(ledgerEntry);
-      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+      updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
     });
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         miscExpensesLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
       });
     });
 
@@ -183,7 +181,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       ...miscExpensesLedgerEntries,
     ];
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     const allowedUnbalancedBusinesses = new Set<string>();
@@ -192,7 +190,7 @@ export const generateLedgerRecordsForForeignSecurities: ResolverFn<
       allowedUnbalancedBusinesses.add(mainLedgerEntry.debitAccountID1);
     }
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,

@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBusinessTripTravelAndSubsistenceExpenseParams,
@@ -58,7 +59,7 @@ const deleteBusinessTripTravelAndSubsistenceExpense = sql<IDeleteBusinessTripTra
 export class BusinessTripTravelAndSubsistenceExpensesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIds(
@@ -109,11 +110,12 @@ export class BusinessTripTravelAndSubsistenceExpensesProvider {
     return updateBusinessTripTravelAndSubsistenceExpense.run(params, this.db);
   }
 
-  public insertBusinessTripTravelAndSubsistenceExpense(
+  public async insertBusinessTripTravelAndSubsistenceExpense(
     params: IInsertBusinessTripTravelAndSubsistenceExpenseParams,
   ) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertBusinessTripTravelAndSubsistenceExpense.run(
-      reassureOwnerIdExists(params, this.context),
+      reassureOwnerIdExists(params, ownerId),
       this.db,
     );
   }

@@ -5,6 +5,7 @@ import {
   formatFinancialIntAmount,
   optionalDateToTimelessDateString,
 } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { getEntryTypeByRecord } from '../helpers/pcn.helper.js';
@@ -30,12 +31,13 @@ import { yearlyLedgerReport } from './reports/yearly-ledger-report.resolver.js';
 
 export const reportsResolvers: ReportsModule.Resolvers = {
   Query: {
-    vatReport: (_, args, context) => getVatRecords(args, context),
+    vatReport: (_, args, { injector }) => getVatRecords(args, injector),
     profitAndLossReport,
     taxReport,
     corporateTaxRulingComplianceReport,
     yearlyLedgerReport,
     uniformFormat: async (_, { fromDate, toDate }, context, info) => {
+      const { injector } = context;
       const accountsPromise = accountsForUniformFormat(context, info, fromDate, toDate).catch(
         err => {
           const message = `Failed to fetch accounts for uniform format: ${err.message}`;
@@ -43,18 +45,20 @@ export const reportsResolvers: ReportsModule.Resolvers = {
           throw new Error(message);
         },
       );
-      const businessPromise = businessForUniformFormat(context, fromDate, toDate).catch(err => {
+      const businessPromise = businessForUniformFormat(injector, fromDate, toDate).catch(err => {
         const message = `Failed to fetch main business info for uniform format: ${err.message}`;
         console.error(`${message}: ${err}`);
         throw new Error(message);
       });
-      const journalEntriesPromise = journalEntriesForUniformFormat(context, fromDate, toDate).catch(
-        err => {
-          const message = `Failed to fetch journal entries for uniform format: ${err.message}`;
-          console.error(`${message}: ${err}`);
-          throw new Error(message);
-        },
-      );
+      const journalEntriesPromise = journalEntriesForUniformFormat(
+        injector,
+        fromDate,
+        toDate,
+      ).catch(err => {
+        const message = `Failed to fetch journal entries for uniform format: ${err.message}`;
+        console.error(`${message}: ${err}`);
+        throw new Error(message);
+      });
       const [accounts, business, journalEntries] = await Promise.all([
         accountsPromise,
         businessPromise,
@@ -105,28 +109,48 @@ export const reportsResolvers: ReportsModule.Resolvers = {
     documentDate: raw => optionalDateToTimelessDateString(raw.documentDate),
     documentSerial: raw => raw.documentSerial,
     image: raw => raw.documentUrl,
-    localAmount: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
-      raw.eventLocalAmount
+    localAmount: async (raw, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return raw.eventLocalAmount
         ? formatFinancialAmount(raw.eventLocalAmount, defaultLocalCurrency)
-        : null,
-    localVatAfterDeduction: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
-      raw.localVatAfterDeduction
+        : null;
+    },
+    localVatAfterDeduction: async (raw, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return raw.localVatAfterDeduction
         ? formatFinancialAmount(raw.localVatAfterDeduction, defaultLocalCurrency)
-        : null,
-    roundedLocalVatAfterDeduction: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
-      raw.roundedVATToAdd
+        : null;
+    },
+    roundedLocalVatAfterDeduction: async (raw, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return raw.roundedVATToAdd
         ? formatFinancialIntAmount(raw.roundedVATToAdd, defaultLocalCurrency)
-        : null,
-    taxReducedLocalAmount: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
-      raw.localAmountBeforeVAT
+        : null;
+    },
+    taxReducedLocalAmount: async (raw, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return raw.localAmountBeforeVAT
         ? formatFinancialIntAmount(raw.localAmountBeforeVAT, defaultLocalCurrency)
-        : null,
+        : null;
+    },
     taxReducedForeignAmount: raw =>
       raw.foreignAmountBeforeVAT
         ? formatFinancialIntAmount(raw.foreignAmountBeforeVAT, raw.currencyCode)
         : null,
-    localVat: (raw, _, { adminContext: { defaultLocalCurrency } }) =>
-      raw.localVat ? formatFinancialAmount(raw.localVat, defaultLocalCurrency) : null,
+    localVat: async (raw, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return raw.localVat ? formatFinancialAmount(raw.localVat, defaultLocalCurrency) : null;
+    },
     foreignVat: raw =>
       raw.foreignVat ? formatFinancialAmount(raw.foreignVat, raw.currencyCode) : null,
     foreignVatAfterDeduction: raw =>

@@ -1,8 +1,9 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDocumentParams,
@@ -279,7 +280,7 @@ const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
 export class DocumentsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private allDocumentsCache: Promise<IGetAllDocumentsResult[]> | null = null;
@@ -451,9 +452,8 @@ export class DocumentsProvider {
         if (doc.chargeId) this.invalidateByChargeId(doc.chargeId);
       });
     }
-    const documentsWithOwnerId = params.documents.map(doc =>
-      reassureOwnerIdExists(doc, this.context),
-    );
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    const documentsWithOwnerId = params.documents.map(doc => reassureOwnerIdExists(doc, ownerId));
     return insertDocuments.run({ documents: documentsWithOwnerId }, this.db);
   }
 

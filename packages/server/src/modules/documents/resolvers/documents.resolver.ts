@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { DocumentType } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
@@ -77,11 +78,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     },
   },
   Mutation: {
-    uploadDocument: async (_, { file, chargeId }, context) => {
-      const { injector } = context;
-
+    uploadDocument: async (_, { file, chargeId }, { injector }) => {
       try {
-        const newDocument = await getDocumentFromFile(context, file, chargeId);
+        const newDocument = await getDocumentFromFile(injector, file, chargeId);
 
         const [document] = await injector
           .get(DocumentsProvider)
@@ -97,16 +96,13 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         };
       }
     },
-    batchUploadDocuments: async (_, { documents, isSensitive, chargeId }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    batchUploadDocuments: async (_, { documents, isSensitive, chargeId }, { injector }) => {
       if (!chargeId) {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         // generate new charge
         const newCharge = await injector.get(ChargesProvider).generateCharge({
-          ownerId: defaultAdminBusinessId,
+          ownerId,
           userDescription: 'New uploaded documents',
         });
         if (!newCharge) {
@@ -119,7 +115,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       await Promise.all(
         documents.map(async document => {
           // get new document data
-          const newDocument = await getDocumentFromFile(context, document, chargeId, isSensitive);
+          const newDocument = await getDocumentFromFile(injector, document, chargeId, isSensitive);
           newDocuments.push(newDocument);
         }),
       );
@@ -132,7 +128,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     batchUploadDocumentsFromGoogleDrive: async (
       _,
       { sharedFolderUrl, chargeId, isSensitive },
-      context,
+      { injector },
     ) => {
       const isValidGoogleDriveUrl = (url: string): boolean => {
         try {
@@ -149,19 +145,16 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         throw new GraphQLError('Invalid Google Drive folder URL');
       }
 
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
       const files = await injector
         .get(GoogleDriveProvider)
         .fetchFilesFromSharedFolder(sharedFolderUrl);
 
       if (!chargeId) {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         // generate new charge
         const newCharge = await injector.get(ChargesProvider).generateCharge({
-          ownerId: defaultAdminBusinessId,
+          ownerId,
           userDescription: 'New uploaded documents',
         });
         if (!newCharge) {
@@ -175,7 +168,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         files.map(async file => {
           // get new document data
           try {
-            const newDocument = await getDocumentFromFile(context, file, chargeId, isSensitive);
+            const newDocument = await getDocumentFromFile(injector, file, chargeId, isSensitive);
             newDocuments.push(newDocument);
           } catch (error) {
             // Skip this file and continue with other files
@@ -336,7 +329,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         throw new GraphQLError(`Failed to delete document ID="${documentId}": ${e}`);
       }
     },
-    insertDocument: async (_, { record }, { injector, adminContext }) => {
+    insertDocument: async (_, { record }, { injector }) => {
       let charge: IGetChargesByIdsResult | undefined;
       try {
         if (record.chargeId) {
@@ -347,8 +340,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           }
         }
 
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         const newDocument: IInsertDocumentsParams['documents']['0'] = {
-          ownerId: charge?.owner_id ?? adminContext.defaultAdminBusinessId,
+          ownerId: charge?.owner_id ?? ownerId,
           image: record.image ? record.image.toString() : null,
           file: record.file ? record.file.toString() : null,
           documentType: record.documentType ?? DocumentType.Unprocessed,

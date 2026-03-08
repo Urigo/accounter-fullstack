@@ -10,6 +10,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import type {
   IGetAllFinancialEntitiesResult,
@@ -23,14 +24,17 @@ export const yearlyLedgerReport: ResolverFn<
   ResolversParentTypes['Query'],
   GraphQLModules.Context,
   RequireFields<QueryYearlyLedgerReportArgs, 'year'>
-> = async (_, { year }, { injector, adminContext }) => {
+> = async (_, { year }, { injector }) => {
+  const { ownerId, defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   const financialEntitiesPromise = injector
     .get(FinancialEntitiesProvider)
     .getAllFinancialEntities();
   const ledgerRecordsPromise = injector.get(LedgerProvider).getLedgerRecordsByDates({
     fromDate: `${year}-01-01` as TimelessDateString,
     toDate: `${year}-12-31` as TimelessDateString,
-    ownerId: adminContext.defaultAdminBusinessId,
+    ownerId,
   });
   const ledgerOpeningBalance = injector
     .get(LedgerProvider)
@@ -92,7 +96,7 @@ export const yearlyLedgerReport: ResolverFn<
           entity: debit1FinancialEntity,
           openingBalance: formatFinancialAmount(
             Number(ledgerBalance.find(r => r.entity_id === debit1FinancialEntity.id)?.sum ?? '0'),
-            adminContext.defaultLocalCurrency,
+            defaultLocalCurrency,
           ),
           records: [],
         };
@@ -117,7 +121,7 @@ export const yearlyLedgerReport: ResolverFn<
       } = {
         ...coreInfo,
         id: `${record.id}-debit1`,
-        amount: formatFinancialAmount(amount, adminContext.defaultLocalCurrency),
+        amount: formatFinancialAmount(amount, defaultLocalCurrency),
         counterParty: credit1FinancialEntity,
       };
 
@@ -136,7 +140,7 @@ export const yearlyLedgerReport: ResolverFn<
           entity: debit2FinancialEntity,
           openingBalance: formatFinancialAmount(
             Number(ledgerBalance.find(r => r.entity_id === debit2FinancialEntity.id)?.sum ?? '0'),
-            adminContext.defaultLocalCurrency,
+            defaultLocalCurrency,
           ),
           records: [],
         };
@@ -161,7 +165,7 @@ export const yearlyLedgerReport: ResolverFn<
       } = {
         ...coreInfo,
         id: `${record.id}-debit2`,
-        amount: formatFinancialAmount(amount, adminContext.defaultLocalCurrency),
+        amount: formatFinancialAmount(amount, defaultLocalCurrency),
         counterParty: credit1FinancialEntity,
       };
 
@@ -180,7 +184,7 @@ export const yearlyLedgerReport: ResolverFn<
           entity: credit1FinancialEntity,
           openingBalance: formatFinancialAmount(
             Number(ledgerBalance.find(r => r.entity_id === credit1FinancialEntity.id)?.sum ?? '0'),
-            adminContext.defaultLocalCurrency,
+            defaultLocalCurrency,
           ),
           records: [],
         };
@@ -205,7 +209,7 @@ export const yearlyLedgerReport: ResolverFn<
       } = {
         ...coreInfo,
         id: `${record.id}-credit1`,
-        amount: formatFinancialAmount(amount, adminContext.defaultLocalCurrency),
+        amount: formatFinancialAmount(amount, defaultLocalCurrency),
         counterParty: debit1FinancialEntity,
       };
 
@@ -224,7 +228,7 @@ export const yearlyLedgerReport: ResolverFn<
           entity: credit2FinancialEntity,
           openingBalance: formatFinancialAmount(
             Number(ledgerBalance.find(r => r.entity_id === credit2FinancialEntity.id)?.sum ?? '0'),
-            adminContext.defaultLocalCurrency,
+            defaultLocalCurrency,
           ),
           records: [],
         };
@@ -246,7 +250,7 @@ export const yearlyLedgerReport: ResolverFn<
       } = {
         ...coreInfo,
         id: `${record.id}-credit2`,
-        amount: formatFinancialAmount(amount, adminContext.defaultLocalCurrency),
+        amount: formatFinancialAmount(amount, defaultLocalCurrency),
         counterParty: debit1FinancialEntity,
       };
 
@@ -270,13 +274,13 @@ export const yearlyLedgerReport: ResolverFn<
         });
         const closingBalance = formatFinancialAmount(
           records[records.length - 1].balance,
-          adminContext.defaultLocalCurrency,
+          defaultLocalCurrency,
         );
         return {
           entity,
           openingBalance,
-          totalCredit: formatFinancialAmount(totalCreditAmount, adminContext.defaultLocalCurrency),
-          totalDebit: formatFinancialAmount(totalDebitAmount, adminContext.defaultLocalCurrency),
+          totalCredit: formatFinancialAmount(totalCreditAmount, defaultLocalCurrency),
+          totalDebit: formatFinancialAmount(totalDebitAmount, defaultLocalCurrency),
           closingBalance,
           records: sortEntityRecordsAndAddBalance(openingBalance.raw, records),
         };

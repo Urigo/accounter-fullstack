@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { createApplication, createModule, Injectable, Scope, gql, Inject } from 'graphql-modules';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
 import { DBProvider } from '../db.provider.js';
-import { AUTH_CONTEXT } from '../../../shared/tokens.js';
 
 describe('TenantAwareDBClient DI Integration', () => {
   it('should be injectable into providers and operation-scoped', async () => {
@@ -42,11 +41,6 @@ describe('TenantAwareDBClient DI Integration', () => {
         TestProvider,
         TenantAwareDBClient,
         { provide: DBProvider, useClass: MockDBProvider },
-        { 
-            provide: AUTH_CONTEXT, 
-            useValue: { authType: 'jwt', tenant: { businessId: '123' } }, 
-            scope: Scope.Operation 
-        }
       ]
     });
 
@@ -87,8 +81,7 @@ describe('TenantAwareDBClient DI Integration', () => {
         modules: [testModule],
         providers: [
             TenantAwareDBClient,
-            { provide: DBProvider, useClass: MockDBProvider },
-            { provide: AUTH_CONTEXT, useValue: null, scope: Scope.Operation }
+            { provide: DBProvider, useClass: MockDBProvider }
         ]
     });
     

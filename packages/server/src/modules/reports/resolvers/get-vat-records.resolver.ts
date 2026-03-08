@@ -1,8 +1,10 @@
 import { endOfDay, lastDayOfMonth, startOfDay, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import type { QueryVatReportArgs, ResolversTypes } from '../../../__generated__/types.js';
 import { DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { getChargeBusinesses } from '../../charges/helpers/common.helper.js';
 import { validateCharge } from '../../charges/helpers/validate.helper.js';
@@ -19,14 +21,12 @@ import {
 
 export const getVatRecords = async (
   { filters }: Partial<QueryVatReportArgs>,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<ResolversTypes['VatReportResult']> => {
   const {
-    injector,
-    adminContext: {
-      authorities: { vatReportExcludedBusinessNames },
-    },
-  } = context;
+    authorities: { vatReportExcludedBusinessNames },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
   try {
     const response = {
       income: [] as Array<RawVatReportRecord>,
@@ -180,12 +180,12 @@ export const getVatRecords = async (
       // TODO: what if no exchange dates found?
       await Promise.all([
         ...incomeRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, context).then(res => {
+          adjustTaxRecord(rawRecord, injector).then(res => {
             response.income.push(res);
           }),
         ),
         ...expenseRecords.map(async rawRecord =>
-          adjustTaxRecord(rawRecord, context).then(res => {
+          adjustTaxRecord(rawRecord, injector).then(res => {
             response.expenses.push(res);
           }),
         ),
@@ -200,7 +200,7 @@ export const getVatRecords = async (
     }>(
       charges.map(async charge => {
         const [validation, businessTrip] = await Promise.all([
-          validateCharge(charge, context),
+          validateCharge(charge, injector),
           injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
         ]);
         if (!('isValid' in validation)) {

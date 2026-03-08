@@ -2,11 +2,11 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    adminContext(ownerId: UUID): AdminContext! @auth(role: ACCOUNTANT)
+    adminContext(ownerId: UUID): AdminContextInfo! @auth(role: ACCOUNTANT)
   }
 
   extend type Mutation {
-    updateAdminContext(context: AdminContextInput!): AdminContext! @auth(role: ADMIN)
+    updateAdminContext(context: AdminContextInput!): AdminContextInfo! @auth(role: ADMIN)
   }
 
   " input variables for updateAdminContext "
@@ -77,7 +77,7 @@ export default gql`
   }
 
   " defines a tag / category for charge arrangement"
-  type AdminContext {
+  type AdminContextInfo {
     id: ID!
     ownerId: UUID!
     defaultLocalCurrency: Currency!

@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IAddNewTagParams,
@@ -66,7 +67,7 @@ const updateTagParent = sql<IUpdateTagParentQuery>`
 export class TagsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private allTagsCache: Promise<IGetAllTagsResult[]> | null = null;
@@ -105,9 +106,11 @@ export class TagsProvider {
     this.batchTagsByNames(keys),
   );
 
-  public addNewTag(params: IAddNewTagParams) {
+  public async addNewTag(params: IAddNewTagParams) {
     this.clearCache();
-    return addNewTag.run(reassureOwnerIdExists(params, this.context), this.db);
+
+    const adminContext = await this.adminContextProvider.getVerifiedAdminContext();
+    return addNewTag.run(reassureOwnerIdExists(params, adminContext.ownerId), this.db);
   }
 
   public async renameTag(params: IRenameTagParams) {

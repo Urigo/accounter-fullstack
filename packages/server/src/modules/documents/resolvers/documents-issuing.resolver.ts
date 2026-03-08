@@ -4,6 +4,7 @@ import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import {
   getChargeBusinesses,
@@ -47,21 +48,16 @@ import { normalizeDocumentType } from './common.js';
 
 export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
   Query: {
-    newDocumentDraftByCharge: async (
-      _,
-      { chargeId },
-      {
-        injector,
-        adminContext: {
-          defaultCryptoConversionFiatCurrency,
-          financialAccounts: { swiftBusinessId },
-          locality,
-        },
-      },
-    ) => {
+    newDocumentDraftByCharge: async (_, { chargeId }, { injector }) => {
       if (!chargeId) {
         throw new GraphQLError('Charge ID is required to fetch document draft');
       }
+
+      const {
+        defaultCryptoConversionFiatCurrency,
+        financialAccounts: { swiftBusinessId },
+        locality,
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
       const chargePromise = injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
       const documentsPromise = injector
@@ -217,18 +213,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       };
       return draft;
     },
-    newDocumentDraftByDocument: async (
-      _,
-      { documentId },
-      {
-        injector,
-        adminContext: {
-          defaultCryptoConversionFiatCurrency,
-          financialAccounts: { swiftBusinessId },
-          locality,
-        },
-      },
-    ) => {
+    newDocumentDraftByDocument: async (_, { documentId }, { injector }) => {
       if (!documentId) {
         throw new GraphQLError('Document ID is required to fetch document draft');
       }
@@ -240,6 +225,12 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       if (!document) {
         throw new GraphQLError(`Document with ID "${documentId}" not found`);
       }
+
+      const {
+        defaultCryptoConversionFiatCurrency,
+        financialAccounts: { swiftBusinessId },
+        locality,
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
       const chargePromise = document.charge_id
         ? injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id)
@@ -375,8 +366,8 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       };
       return draft;
     },
-    periodicalDocumentDrafts: async (_, { issueMonth }, context) => {
-      const { injector } = context;
+    periodicalDocumentDrafts: async (_, { issueMonth }, { injector }) => {
+      const { locality } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       const openContracts = await injector.get(ContractsProvider).getAllOpenContracts();
       const monthlyBillingCycle: BillingCycle = 'MONTHLY';
       const monthlyContracts = openContracts.filter(
@@ -384,21 +375,23 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       );
       const drafts = await Promise.all(
         monthlyContracts.map(async contract =>
-          convertContractToDraft(contract, context, issueMonth),
+          convertContractToDraft(injector, contract, locality, issueMonth),
         ),
       );
 
       return drafts;
     },
-    periodicalDocumentDraftsByContracts: async (_, { issueMonth, contractIds }, context) => {
-      const { injector } = context;
+    periodicalDocumentDraftsByContracts: async (_, { issueMonth, contractIds }, { injector }) => {
+      const { locality } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       const contracts = await injector
         .get(ContractsProvider)
         .getContractsByIdLoader.loadMany(contractIds)
         .then(res => res.filter(c => !!c && !(c instanceof Error)) as IGetContractsByIdsResult[]);
 
       const drafts = await Promise.all(
-        contracts.map(async contract => convertContractToDraft(contract, context, issueMonth)),
+        contracts.map(async contract =>
+          convertContractToDraft(injector, contract, locality, issueMonth),
+        ),
       );
 
       return drafts;
@@ -487,27 +480,19 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
     },
   },
   Mutation: {
-    issueGreenInvoiceDocuments: async (
-      _,
-      { generateDocumentsInfo },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    issueGreenInvoiceDocuments: async (_, { generateDocumentsInfo }, { injector }) => {
       const errors: string[] = [];
+
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
       await Promise.all(
         generateDocumentsInfo.map(async document =>
-          executeDocumentIssue(
-            injector,
-            defaultAdminBusinessId,
-            document,
-            undefined,
-            true,
-            undefined,
-            true,
-          ).catch(e => {
-            console.error(e);
-            errors.push(`${document.client?.name ?? document.client?.id}: ${e.message}`);
-          }),
+          executeDocumentIssue(injector, ownerId, document, undefined, true, undefined, true).catch(
+            e => {
+              console.error(e);
+              errors.push(`${document.client?.name ?? document.client?.id}: ${e.message}`);
+            },
+          ),
         ),
       );
 
@@ -519,11 +504,12 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
     issueGreenInvoiceDocument: async (
       _,
       { input: initialInput, emailContent, attachment, chargeId, sendEmail = false },
-      { injector, adminContext: { defaultAdminBusinessId } },
+      { injector },
     ) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       return executeDocumentIssue(
         injector,
-        defaultAdminBusinessId,
+        ownerId,
         initialInput,
         emailContent ?? undefined,
         attachment ?? undefined,

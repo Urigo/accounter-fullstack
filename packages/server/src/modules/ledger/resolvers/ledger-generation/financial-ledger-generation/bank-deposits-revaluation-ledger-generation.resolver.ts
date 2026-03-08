@@ -14,6 +14,7 @@ import type {
   LedgerProto,
   TimelessDateString,
 } from '../../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../../exchange-rates/providers/exchange.provider.js';
 import { businessTransactionsSumFromLedgerRecords } from '../../../../financial-entities/resolvers/business-transactions-sum-from-ledger-records.resolver.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
@@ -29,22 +30,21 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
   try {
-    const {
-      injector,
-      adminContext: {
-        defaultLocalCurrency,
-        general: {
-          taxCategories: { exchangeRevaluationTaxCategoryId },
-        },
-        bankDeposits: { bankDepositBusinessId },
-      },
-    } = context;
+    const { injector } = context;
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
         message: `Bank deposits revaluation charge must include user description with designated year`,
       };
     }
+
+    const {
+      defaultLocalCurrency,
+      general: {
+        taxCategories: { exchangeRevaluationTaxCategoryId },
+      },
+      bankDeposits: { bankDepositBusinessId },
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     if (!bankDepositBusinessId) {
       return {
         __typename: 'CommonError',
@@ -171,7 +171,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     );
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -181,7 +181,7 @@ export const generateLedgerRecordsForBankDepositsRevaluation: ResolverFn<
     await Promise.all([expensesLedgerPromise, ...currenciesLedgerPromise]);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, injector);
     }
 
     return {

@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
 import type { CountryCode } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { updateGreenInvoiceClient } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
@@ -170,15 +171,13 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
       return updatedBusiness;
     },
-    insertNewBusiness: async (
-      _,
-      { fields },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    insertNewBusiness: async (_, { fields }, { injector }) => {
       try {
         if (!fields.country) {
           throw new GraphQLError(`Country is required to create a new business`);
         }
+
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
         let irsCode = fields.irsCode ?? null;
         if (!irsCode && fields.sortCode) {
@@ -192,7 +191,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         const [financialEntity] = await injector
           .get(FinancialEntitiesProvider)
           .insertFinancialEntity({
-            ownerId: defaultAdminBusinessId,
+            ownerId,
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'business',
@@ -260,7 +259,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         if (fields.taxCategory) {
           const taxCategoryParams: IUpdateBusinessTaxCategoryParams = {
             businessId: financialEntity.id,
-            ownerId: defaultAdminBusinessId,
+            ownerId,
             taxCategoryId: fields.taxCategory,
           };
           await injector
@@ -358,13 +357,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         throw new GraphQLError(`Failed to merge businesses`);
       }
     },
-    batchGenerateBusinessesOutOfTransactions: async (
-      _,
-      __,
-      { injector, adminContext: { defaultAdminBusinessId, locality } },
-    ) => {
+    batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
+      const { ownerId, locality } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const transactionsPromise = injector.get(TransactionsProvider).getTransactionsByFilters({
-        ownerIDs: [defaultAdminBusinessId],
+        ownerIDs: [ownerId],
       });
       const businessesPromise = injector.get(BusinessesProvider).getAllBusinesses();
       const [transactions, businesses] = await Promise.all([
@@ -460,7 +458,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           const financialEntity = await injector
             .get(FinancialEntitiesProvider)
             .insertFinancialEntitiesLoader.load({
-              ownerId: defaultAdminBusinessId,
+              ownerId,
               name: description,
               type: 'business',
               sortCode: null,

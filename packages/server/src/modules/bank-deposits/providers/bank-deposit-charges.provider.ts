@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString, reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -73,8 +74,8 @@ const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>
 export class BankDepositChargesProvider {
   constructor(
     private db: TenantAwareDBClient,
+    private adminContextProvider: AdminContextProvider,
     private transactionsProvider: TransactionsProvider,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchTransactionsByBankDeposits(depositIds: readonly string[]) {
@@ -91,15 +92,13 @@ export class BankDepositChargesProvider {
     this.batchTransactionsByBankDeposits(keys),
   );
 
-  public getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
+  public async getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
     return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.db);
   }
 
-  public insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
-    return insertOrUpdateBankDepositCharge.run(
-      reassureOwnerIdExists(params, this.context),
-      this.db,
-    );
+  public async insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertOrUpdateBankDepositCharge.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async getAllDepositsWithMetadata() {

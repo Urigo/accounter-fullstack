@@ -1,4 +1,5 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
+import { Injector } from 'graphql-modules';
 import type {
   CommonError,
   Maybe,
@@ -9,6 +10,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { LedgerRecordsProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripAttendeesProvider } from '../../business-trips/providers/business-trips-attendees.provider.js';
 import { getChargeType } from '../../charges/helpers/charge-type.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -62,10 +64,12 @@ export async function ledgerGenerationByCharge(
   context: GraphQLModules.ModuleContext,
   info: GraphQLResolveInfo,
 ): Promise<Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>> {
-  if (await isChargeLocked(charge, context.injector, context.adminContext.ledgerLock)) {
+  const { injector } = context;
+  const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  if (await isChargeLocked(charge, injector, ledgerLock)) {
     return resolveLockedCharge(charge, params, context, info);
   }
-  const chargeType = await getChargeType(charge, context);
+  const chargeType = await getChargeType(charge, injector);
   type LedgerGenFunction = ResolverFn<
     Maybe<ResolverTypeWrapper<CommonError | LedgerRecordsProto>>,
     IGetChargesByIdsResult,
@@ -100,10 +104,9 @@ export async function ledgerGenerationByCharge(
 
 export async function ledgerUnbalancedBusinessesByCharge(
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<Set<string> | undefined> {
-  const { injector } = context;
-  const chargeType = await getChargeType(charge, context);
+  const chargeType = await getChargeType(charge, injector);
   switch (chargeType) {
     case 'CommonCharge': {
       const unbalancedBusinesses = await injector

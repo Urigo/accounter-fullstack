@@ -2,6 +2,7 @@
 import { GraphQLError } from 'graphql';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DepreciationCategoriesProvider } from '../../depreciation/providers/depreciation-categories.provider.js';
@@ -29,11 +30,7 @@ type AssetRecord = {
 
 export const depreciationReportResolvers: ReportsModule.Resolvers = {
   Query: {
-    depreciationReport: async (
-      _,
-      { filters },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    depreciationReport: async (_, { filters }, { injector }) => {
       if (!filters) {
         throw new GraphQLError('No filters provided');
       }
@@ -45,7 +42,8 @@ export const depreciationReportResolvers: ReportsModule.Resolvers = {
         throw new GraphQLError('Invalid year provided');
       }
 
-      const financialEntityId = rawFinancialEntityId ?? defaultAdminBusinessId;
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const financialEntityId = rawFinancialEntityId ?? ownerId;
       if (!financialEntityId) {
         throw new GraphQLError('Unable to resolve financial entity ID');
       }

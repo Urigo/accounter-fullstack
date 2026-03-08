@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import xlsx from 'node-xlsx';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { EmployeesProvider } from '../providers/employees.provider.js';
 import { FundsProvider } from '../providers/funds.provider.js';
@@ -102,8 +103,10 @@ function validateNumericCell(
 }
 
 export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['insertSalaryRecordsFromFile'] =
-  async (_, { file, chargeId }, { injector, currentUser }) => {
+  async (_, { file, chargeId }, { injector }) => {
     try {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
       const buffer = await file.arrayBuffer();
       const workSheetsFromFile = xlsx.parse(buffer);
       if (!workSheetsFromFile) {
@@ -126,7 +129,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
 
       const allEmployeesPromise = injector
         .get(EmployeesProvider)
-        .getEmployeesByEmployerLoader.load(currentUser.userId)
+        .getEmployeesByEmployerLoader.load(ownerId)
         .catch(e => {
           console.error(e);
           throw new SalaryError('Failed to get employees for employer');
@@ -138,7 +141,7 @@ export const insertSalaryRecordsFromFile: SalariesModule.MutationResolvers['inse
             .get(ChargesProvider)
             .generateCharge({
               type: 'PAYROLL',
-              ownerId: currentUser.userId,
+              ownerId,
               userDescription: `Salaries ${rawSalaryMonth}`,
             })
             .catch(e => {

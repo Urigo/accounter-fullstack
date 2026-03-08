@@ -1,5 +1,5 @@
 import type { Injector } from 'graphql-modules';
-import type { AdminContext } from '../../../plugins/admin-context-plugin.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { IGetFinancialAccountsByAccountIDsResult } from '../types.js';
@@ -7,12 +7,11 @@ import type { IGetFinancialAccountsByAccountIDsResult } from '../types.js';
 export async function getFinancialAccountByTransactionId(
   transactionId: string,
   injector: Injector,
-  context: AdminContext,
 ): Promise<IGetFinancialAccountsByAccountIDsResult> {
   const {
-    defaultAdminBusinessId,
+    ownerId,
     foreignSecurities: { foreignSecuritiesBusinessId },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const transaction = await injector
     .get(TransactionsProvider)
     .transactionByIdLoader.load(transactionId);
@@ -24,7 +23,7 @@ export async function getFinancialAccountByTransactionId(
   if (!!foreignSecuritiesBusinessId && transaction.business_id === foreignSecuritiesBusinessId) {
     const accounts = await injector
       .get(FinancialAccountsProvider)
-      .getFinancialAccountsByOwnerIdLoader.load(defaultAdminBusinessId);
+      .getFinancialAccountsByOwnerIdLoader.load(ownerId);
     account = accounts.find(account => account.type === 'FOREIGN_SECURITIES');
   } else {
     account = await injector

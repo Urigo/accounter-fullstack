@@ -224,8 +224,8 @@ export function reassureOwnerIdExists<
   T extends {
     ownerId?: string | null | void;
   },
->(params: T, context: GraphQLModules.GlobalContext): Omit<T, 'ownerId'> & { ownerId: string } {
-  const ownerId = params.ownerId ?? context.adminContext.defaultAdminBusinessId;
+>(params: T, contextOwnerId: string): Omit<T, 'ownerId'> & { ownerId: string } {
+  const ownerId = params.ownerId ?? contextOwnerId;
   if (!ownerId) {
     throw new Error('Owner ID is required but could not be determined from parameters or context');
   }

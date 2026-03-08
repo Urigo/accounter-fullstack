@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
   getChargeDocumentsMeta,
   getChargeLedgerMeta,
@@ -40,7 +41,10 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     ils: () => {
       return 1;
     },
-    grt: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+    grt: async (timelessDate, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
         .getExchangeRates(Currency.Grt, defaultLocalCurrency, new Date(timelessDate));
@@ -49,7 +53,10 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
       return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
-    eth: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+    eth: async (timelessDate, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
         .getExchangeRates(Currency.Eth, defaultLocalCurrency, new Date(timelessDate));
@@ -58,7 +65,10 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
       return typeof exchangeRates === 'string' ? parseFloat(exchangeRates) : exchangeRates;
     },
-    usdc: async (timelessDate, _, { injector, adminContext: { defaultLocalCurrency } }) => {
+    usdc: async (timelessDate, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const exchangeRates = await injector
         .get(ExchangeProvider)
         .getExchangeRates(Currency.Usdc, defaultLocalCurrency, new Date(timelessDate));

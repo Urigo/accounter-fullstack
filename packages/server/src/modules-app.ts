@@ -2,6 +2,7 @@ import { CONTEXT, createApplication, Scope } from 'graphql-modules';
 import pg from 'pg';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { adminContextModule } from './modules/admin-context/index.js';
+import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from './modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -40,10 +41,8 @@ import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
-import type { AdminContext } from './plugins/admin-context-plugin.js';
 import type { RawAuth } from './plugins/auth-plugin-v2.js';
-import type { UserType } from './plugins/auth-plugin.js';
-import { AUTH_CONTEXT, AUTH_CONTEXT_V2, ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
+import { ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -53,8 +52,6 @@ declare global {
   namespace GraphQLModules {
     interface GlobalContext {
       env: Environment;
-      currentUser: UserType;
-      adminContext: AdminContext;
       rawAuth: RawAuth;
     }
   }
@@ -99,24 +96,10 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         useFactory: () => pool,
       },
       DBProvider,
-      TenantAwareDBClient,
-      CloudinaryProvider,
-      DeelClientProvider,
-      GreenInvoiceClientProvider,
-      CoinMarketCapProvider,
-      AnthropicProvider,
-      GoogleDriveProvider,
-      // TODO: add GmailListener back after required adjustments where made
-      // ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
       {
         provide: ENVIRONMENT,
         useValue: env,
         scope: Scope.Singleton,
-      },
-      {
-        provide: AUTH_CONTEXT,
-        useValue: null,
-        scope: Scope.Operation,
       },
       {
         provide: RAW_AUTH,
@@ -128,14 +111,16 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         deps: [CONTEXT],
       },
       AuthContextV2Provider,
-      {
-        provide: AUTH_CONTEXT_V2,
-        useFactory: async (provider: AuthContextV2Provider) => {
-          return provider.getAuthContext();
-        },
-        deps: [AuthContextV2Provider],
-        scope: Scope.Operation,
-      },
+      TenantAwareDBClient,
+      AdminContextProvider,
+      CloudinaryProvider,
+      DeelClientProvider,
+      GreenInvoiceClientProvider,
+      CoinMarketCapProvider,
+      AnthropicProvider,
+      GoogleDriveProvider,
+      // TODO: add GmailListener back after required adjustments where made
+      // ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
     ],
   });
 }

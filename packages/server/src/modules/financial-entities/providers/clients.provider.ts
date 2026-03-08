@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { validateClientIntegrations } from '../helpers/clients.helper.js';
 import type {
@@ -74,7 +75,7 @@ const insertClient = sql<IInsertClientQuery>`
 export class ClientsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private allClientsPython: Promise<IGetAllClientsResult[]> | null = null;
@@ -156,7 +157,8 @@ export class ClientsProvider {
 
   public async insertClient(params: IInsertClientParams) {
     this.clearCache();
-    return insertClient.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertClient.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public clearCache() {

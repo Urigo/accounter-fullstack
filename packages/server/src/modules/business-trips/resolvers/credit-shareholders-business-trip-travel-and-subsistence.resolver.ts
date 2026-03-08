@@ -11,6 +11,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { EmployeesProvider } from '../../salaries/providers/employees.provider.js';
 import type { IGetEmployeesByIdResult } from '../../salaries/types.js';
@@ -68,16 +69,15 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
       throw new GraphQLError(`Business trip with id ${businessTripId} is missing end date`);
     }
 
-    if (
-      context.adminContext.ledgerLock &&
-      dateToTimelessDateString(toDate) < context.adminContext.ledgerLock
-    ) {
+    const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+    if (ledgerLock && dateToTimelessDateString(toDate) < ledgerLock) {
       throw new GraphQLError(
         `Cannot credit shareholders for business trip ${businessTrip.name}, because ledger is locked`,
       );
     }
 
-    const summaryData = await businessTripSummary(context, businessTrip);
+    const summaryData = await businessTripSummary(injector, businessTrip);
 
     return { businessTrip: { ...businessTrip, toDate }, summaryData };
   }
@@ -135,7 +135,7 @@ export const creditShareholdersBusinessTripTravelAndSubsistence: Resolver<
   const [availableAmountToDistribute, shareholdersPotentialAmountToDistribute] = await Promise.all([
     availableAmountToDistributePromise(),
     shareholdersPotentialAmountToDistributePromise(
-      context,
+      injector,
       accommodationExpenses,
       shareholdersMap,
       attendeesMap,
@@ -214,19 +214,19 @@ async function shareholdersMapPromise(injector: Injector, businessTripId: string
 }
 
 async function shareholdersPotentialAmountToDistributePromise(
-  context: GraphQLModules.Context,
+  injector: Injector,
   accommodationExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   shareholdersMap: Map<string, IGetEmployeesByIdResult>,
   attendeesMap: Map<string, IGetBusinessTripsAttendeesByBusinessTripIdsResult>,
   attendeePayedTnSExpenses: IGetBusinessTripsTravelAndSubsistenceExpensesByBusinessTripIdsResult[],
   businessTrip: BusinessTripProto & { toDate: Date },
 ) {
-  const {
-    injector,
-    adminContext: { defaultCryptoConversionFiatCurrency },
-  } = context;
   const shareholdersPotentialAmountToDistribute: Record<string, number> = {};
   const shareholdersAccommodatedNightsMap = new Map<string, number>();
+
+  const { defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
 
   // collect shareholders accommodated data
   accommodationExpenses.map(expense => {

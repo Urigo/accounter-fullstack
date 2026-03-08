@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetEmployeeIDsByContractIdsQuery,
@@ -48,7 +49,7 @@ const insertDeelContract = sql<IInsertDeelContractQuery>`
 export class DeelContractsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchEmployeeIDsByContractIds(contractIds: readonly string[]) {
@@ -88,8 +89,9 @@ export class DeelContractsProvider {
 
   public async insertDeelContract(params: IInsertDeelContractParams) {
     try {
+      const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
       // invalidate cache
-      return insertDeelContract.run(reassureOwnerIdExists(params, this.context), this.db);
+      return insertDeelContract.run(reassureOwnerIdExists(params, ownerId), this.db);
     } catch (e) {
       const message = `Error inserting Deel contract [${params.contractId}]`;
       console.error(`${message}: ${e}`);

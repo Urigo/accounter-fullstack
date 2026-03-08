@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
@@ -76,12 +77,10 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         };
       }
     },
-    insertTaxCategory: async (
-      _,
-      { fields },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    insertTaxCategory: async (_, { fields }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         let irsCode = fields.irsCode ?? null;
         if (!irsCode && fields.sortCode) {
           const sortCode = await injector
@@ -94,7 +93,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         const [financialEntity] = await injector
           .get(FinancialEntitiesProvider)
           .insertFinancialEntity({
-            ownerId: defaultAdminBusinessId,
+            ownerId,
             name: fields.name,
             sortCode: fields.sortCode,
             type: 'tax_category',

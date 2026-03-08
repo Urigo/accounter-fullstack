@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { Injector } from 'graphql-modules';
 import {
   AccountingMethod,
   AccountingSystem,
@@ -45,6 +46,7 @@ import {
   YesNo,
 } from '@accounter/shaam6111-generator';
 import type * as SchemaTypes from '../../../__generated__/types.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { IGetAllFinancialEntitiesResult } from '../../financial-entities/types.js';
@@ -225,7 +227,7 @@ function getProfitAndLossEntries(
 }
 
 async function getTaxAdjustmentEntries(
-  context: GraphQLModules.Context,
+  injector: Injector,
   year: number,
   decoratedLedgerByYear: Map<number, DecoratedLedgerRecord[]>,
 ): Promise<SchemaTypes.Shaam6111ReportEntry[]> {
@@ -260,7 +262,7 @@ async function getTaxAdjustmentEntries(
     nontaxableLinkage,
     taxableIncomeAmount,
   } = await calculateTaxAmounts(
-    context,
+    injector,
     year,
     decoratedLedgerRecords,
     adjustedResearchAndDevelopmentExpensesAmount,
@@ -556,12 +558,12 @@ function getBalanceSheetEntries(
 }
 
 export async function getShaam6111Data(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessId: string,
   year: number,
 ): Promise<SchemaTypes.Shaam6111Data> {
-  const financialEntityId = businessId || context.adminContext.defaultAdminBusinessId;
-  const { injector } = context;
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  const financialEntityId = businessId || ownerId;
   const businessesProvider = injector.get(BusinessesProvider);
   const business = await businessesProvider.getBusinessByIdLoader.load(financialEntityId);
 
@@ -618,7 +620,7 @@ export async function getShaam6111Data(
     decoratedLedgerByYear.get(year) || [],
     financialEntitiesByIrsCodeDict,
   );
-  const taxAdjustment = await getTaxAdjustmentEntries(context, year, decoratedLedgerByYear);
+  const taxAdjustment = await getTaxAdjustmentEntries(injector, year, decoratedLedgerByYear);
   const ledgerSinceForever = Array.from(decoratedLedgerByYear.entries()).reduce(
     (acc, [ledgerYear, records]) => {
       if (ledgerYear <= year) {

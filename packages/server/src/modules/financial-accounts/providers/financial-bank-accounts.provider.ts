@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteBankAccountParams,
@@ -190,7 +191,7 @@ const deleteBankAccount = sql<IDeleteBankAccountQuery>`
 export class FinancialBankAccountsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchFinancialBankAccountsByIds(bankAccountIds: readonly string[]) {
@@ -241,8 +242,9 @@ export class FinancialBankAccountsProvider {
 
   public async insertBankAccounts(params: IInsertBankAccountsParams) {
     this.allFinancialBankAccountsCache = null;
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const bankAccountsWithOwnerId = params.bankAccounts.map(account =>
-      reassureOwnerIdExists(account, this.context),
+      reassureOwnerIdExists(account, ownerId),
     );
     return insertBankAccounts.run({ bankAccounts: bankAccountsWithOwnerId }, this.db);
   }

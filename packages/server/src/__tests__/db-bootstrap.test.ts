@@ -73,7 +73,7 @@ describe('DB Test Harness Bootstrap', () => {
         `SELECT COUNT(tc.*) FROM ${qualifyTable('tax_categories')} tc
         LEFT JOIN ${qualifyTable('financial_entities')} fe USING (id)
         WHERE fe.owner_id = $1`,
-        [adminContext.defaultAdminBusinessId]
+        [adminContext.ownerId]
       );
       const count = parseInt(result.rows[0].count, 10);
       expect(count).toBe(EXPECTED_TAX_CATEGORIES);
@@ -85,7 +85,7 @@ describe('DB Test Harness Bootstrap', () => {
       const adminContext = await buildAdminContextFromDb(client);
       const result = await client.query(
         `SELECT owner_id, vat_business_id FROM ${qualifyTable('user_context')} WHERE owner_id = $1 LIMIT 1`,
-        [adminContext.defaultAdminBusinessId]
+        [adminContext.ownerId]
       );
       expect(result.rows).toHaveLength(1);
       expect(result.rows[0].owner_id).toBeDefined();

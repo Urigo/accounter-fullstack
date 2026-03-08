@@ -1,4 +1,5 @@
 import { format, startOfMonth } from 'date-fns';
+import type { Injector } from 'graphql-modules';
 import { EntryType, pcnGenerator } from '@accounter/pcn874-generator';
 import type { Pcn874RecordType } from '../../../__generated__/types.js';
 import {
@@ -237,12 +238,12 @@ const transactionsFromVatReportRecords = (
 };
 
 export async function getPcn874String(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessId: string,
   rawMonthDate: TimelessDateString,
 ) {
   const monthDate = dateToTimelessDateString(startOfMonth(new Date(rawMonthDate)));
-  const financialEntity = await context.injector
+  const financialEntity = await injector
     .get(BusinessesProvider)
     .getBusinessByIdLoader.load(businessId);
   if (!financialEntity?.vat_number) {
@@ -250,7 +251,7 @@ export async function getPcn874String(
   }
   const vatRecords = await getVatRecords(
     { filters: { monthDate, financialEntityId: businessId } },
-    context,
+    injector,
   );
   const reportMonth = format(new Date(monthDate), 'yyyyMM');
   const reportContent = generatePcnFromVatRecords(

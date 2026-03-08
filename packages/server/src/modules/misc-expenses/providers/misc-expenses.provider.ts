@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteExpenseParams,
@@ -105,7 +106,7 @@ const deleteExpense = sql<IDeleteExpenseQuery>`
 export class MiscExpensesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchExpensesByChargeIds(chargeIds: readonly string[]) {
@@ -174,7 +175,8 @@ export class MiscExpensesProvider {
 
   public async insertExpense(params: IInsertExpenseParams) {
     if (params.chargeId) await this.invalidateByChargeId(params.chargeId);
-    return insertExpense.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertExpense.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async insertExpenses(params: IInsertExpensesParams) {
@@ -184,7 +186,8 @@ export class MiscExpensesProvider {
     if (chargeIds.length) {
       await Promise.all(chargeIds.map(chargeId => this.invalidateByChargeId(chargeId)));
     }
-    const ownerId = this.context.adminContext.defaultAdminBusinessId;
+
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertExpenses.run(
       {
         miscExpenses: params.miscExpenses.map(expense => ({

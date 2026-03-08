@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { stringArray } from '../../charges/types.js';
 import type {
@@ -48,7 +49,7 @@ const deleteSpecificBusinessTripExpenseMatch = sql<IDeleteSpecificBusinessTripEx
 export class BusinessTripExpensesTransactionsMatchProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessTripsExpenseMatchesByTransactionIds(
@@ -83,14 +84,15 @@ export class BusinessTripExpensesTransactionsMatchProvider {
     (ids: readonly string[]) => this.batchBusinessTripsExpenseMatchesByExpenseIds(ids),
   );
 
-  public insertBusinessTripExpenseMatch(params: IInsertBusinessTripExpenseMatchParams) {
+  public async insertBusinessTripExpenseMatch(params: IInsertBusinessTripExpenseMatchParams) {
     if (params.businessTripExpenseId) {
       this.getBusinessTripsExpenseMatchesByExpenseIdLoader.clear(params.businessTripExpenseId);
     }
     if (params.transactionId) {
       this.getBusinessTripsExpenseMatchesByTransactionIdLoader.clear(params.transactionId);
     }
-    return insertBusinessTripExpenseMatch.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertBusinessTripExpenseMatch.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async deleteBusinessTripExpenseMatch(params: IDeleteBusinessTripExpenseMatchParams) {
@@ -107,7 +109,7 @@ export class BusinessTripExpensesTransactionsMatchProvider {
     return deleteBusinessTripExpenseMatch.run(params, this.db);
   }
 
-  public deleteSpecificBusinessTripExpenseMatch(
+  public async deleteSpecificBusinessTripExpenseMatch(
     params: IDeleteSpecificBusinessTripExpenseMatchParams,
   ) {
     if (params.businessTripExpenseId) {

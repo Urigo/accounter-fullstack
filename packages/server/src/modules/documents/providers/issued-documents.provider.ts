@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteIssuedDocumentParams,
@@ -146,7 +147,7 @@ const insertIssuedDocuments = sql<IInsertIssuedDocumentsQuery>`
 export class IssuedDocumentsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private allIssuedDocumentsCache: Promise<IGetAllIssuedDocumentsResult[]> | null = null;
@@ -284,8 +285,9 @@ export class IssuedDocumentsProvider {
 
   public async insertIssuedDocuments(params: IInsertIssuedDocumentsParams) {
     this.allIssuedDocumentsCache = null;
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const issuedDocumentsWithOwnerId = params.issuedDocuments.map(doc =>
-      reassureOwnerIdExists(doc, this.context),
+      reassureOwnerIdExists(doc, ownerId),
     );
     return insertIssuedDocuments.run({ issuedDocuments: issuedDocumentsWithOwnerId }, this.db);
   }

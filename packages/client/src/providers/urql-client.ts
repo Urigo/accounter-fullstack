@@ -7,7 +7,7 @@ import {
   type Operation,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
-import { UserService } from '../services/user-service.js';
+import { getStoredAuth0AccessToken } from '../lib/auth0-session.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
 /**
@@ -20,8 +20,6 @@ export function getUrqlClient(): Client {
   if (globalClient) {
     return globalClient;
   }
-
-  const authService = new UserService();
 
   let url: string;
   switch (import.meta.env.MODE) {
@@ -50,7 +48,8 @@ export function getUrqlClient(): Client {
       authExchange(async utils => {
         return {
           addAuthToOperation(operation): Operation<void, AnyVariables> {
-            const token = authService.authToken();
+            const accessToken = getStoredAuth0AccessToken();
+            const token = accessToken ? `Bearer ${accessToken}` : null;
             if (!token) {
               return operation;
             }
@@ -61,12 +60,13 @@ export function getUrqlClient(): Client {
           didAuthError(error, _operation): boolean {
             return (
               error?.response?.status === 401 ||
-              error?.graphQLErrors?.some(e => e.extensions?.code === 'FORBIDDEN')
+              error?.graphQLErrors?.some(
+                e => e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
+              )
             );
           },
           async refreshAuth(): Promise<void> {
-            authService.logout();
-            // Redirect handled by route loader
+            // Auth0 refresh is handled by the Auth0 React provider in app runtime.
           },
         };
       }),

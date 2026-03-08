@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { isCryptoCurrency } from '../helpers/exchange.helper.js';
 import { CryptoExchangeProvider } from '../providers/crypto-exchange.provider.js';
@@ -42,11 +43,7 @@ export const commonTransactionFields:
       throw new GraphQLError(message);
     }
   },
-  cryptoExchangeRate: async (
-    transactionId,
-    _,
-    { injector, adminContext: { defaultCryptoConversionFiatCurrency } },
-  ) => {
+  cryptoExchangeRate: async (transactionId, _, { injector }) => {
     try {
       const transaction = await injector
         .get(TransactionsProvider)
@@ -68,6 +65,10 @@ export const commonTransactionFields:
         });
 
       const rate = Number(value);
+
+      const { defaultCryptoConversionFiatCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
 
       return {
         from: currency,

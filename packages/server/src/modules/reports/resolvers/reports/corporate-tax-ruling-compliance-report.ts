@@ -13,6 +13,8 @@ import type {
   CorporateTaxRulingComplianceReportProto,
   LedgerRecordsProto,
 } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import type { AdminContext } from '../../../admin-context/types.js';
 import { ChargesProvider } from '../../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../../charges/types.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
@@ -61,12 +63,10 @@ function handleLedgerSingleSide(
   financialEntityId: string,
   amount: number,
   {
-    adminContext: {
-      general: {
-        taxCategories: { developmentForeignTaxCategoryId, developmentLocalTaxCategoryId },
-      },
+    general: {
+      taxCategories: { developmentForeignTaxCategoryId, developmentLocalTaxCategoryId },
     },
-  }: GraphQLModules.Context,
+  }: AdminContext,
 ) {
   const financialEntity = financialEntitiesDict.get(financialEntityId);
 
@@ -150,10 +150,8 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
   GraphQLModules.Context,
   RequireFields<QueryCorporateTaxRulingComplianceReportArgs, 'years'>
 > = async (_, { years }, context) => {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency },
-  } = context;
+  const { injector } = context;
+  const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   years.map(year => {
     if (year < 2000 || year > new Date().getFullYear()) {
       throw new GraphQLError('Invalid year');
@@ -202,7 +200,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
         financialEntitiesDict,
         record.credit_entity1,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -213,7 +211,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
         financialEntitiesDict,
         record.credit_entity2,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -224,7 +222,7 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
         financialEntitiesDict,
         record.debit_entity1,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -235,10 +233,12 @@ export const corporateTaxRulingComplianceReport: ResolverFn<
         financialEntitiesDict,
         record.debit_entity2,
         amount,
-        context,
+        adminContext,
       );
     }
   });
+
+  const { defaultLocalCurrency } = adminContext;
 
   const yearlyReports: CorporateTaxRulingComplianceReportProto[] = [];
   for (const [year, reportAmounts] of reportAmountsByYear) {
@@ -304,10 +304,9 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
   context,
   info,
 ) => {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency },
-  } = context;
+  const { injector } = context;
+
+  const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const [charges, financialEntities] = await Promise.all([
     injector
@@ -364,7 +363,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
         financialEntitiesDict,
         record.credit_entity1,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -375,7 +374,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
         financialEntitiesDict,
         record.credit_entity2,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -386,7 +385,7 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
         financialEntitiesDict,
         record.debit_entity1,
         amount,
-        context,
+        adminContext,
       );
     }
 
@@ -397,10 +396,12 @@ export const corporateTaxRulingComplianceReportDifferences: ResolverFn<
         financialEntitiesDict,
         record.debit_entity2,
         amount,
-        context,
+        adminContext,
       );
     }
   });
+
+  const { defaultLocalCurrency } = adminContext;
 
   const yearlyReport: CorporateTaxRulingComplianceReportDifferences = {
     id: `corporate-tax-ruling-compliant-report-suggestions-${year}`,

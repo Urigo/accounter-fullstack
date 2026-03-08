@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { IGetChargesByIdsResult } from '../../charges/types.js';
@@ -40,8 +41,7 @@ export const deelResolvers: DeelModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    fetchDeelDocuments: async (_, __, context) => {
-      const { injector, adminContext } = context;
+    fetchDeelDocuments: async (_, __, { injector }) => {
       try {
         const invoices = await fetchAndFilterInvoices(injector);
         if (invoices.length === 0) {
@@ -69,6 +69,8 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         const updatedChargeIdsSet = new Set<string>();
 
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         // insert/update unmatched Deel invoice records
         for (const invoice of unmatched) {
           if (invoiceChargeMap.has(invoice.id)) {
@@ -76,7 +78,7 @@ export const deelResolvers: DeelModule.Resolvers = {
           }
 
           const charge = await injector.get(ChargesProvider).generateCharge({
-            ownerId: adminContext.defaultAdminBusinessId,
+            ownerId,
             userDescription: `Deel invoice ${invoice.label}`,
           });
 
@@ -84,7 +86,7 @@ export const deelResolvers: DeelModule.Resolvers = {
 
           const match = createDeelInvoiceMatchFromUnmatchedInvoice(invoice);
 
-          await insertDeelInvoiceRecord(context, match, charge.id);
+          await insertDeelInvoiceRecord(injector, match, charge.id);
         }
 
         // insert/update matched Deel invoice records
@@ -98,7 +100,7 @@ export const deelResolvers: DeelModule.Resolvers = {
             if (receipt) {
               const description = await getDeelChargeDescription(injector, receipt.workers);
               const charge = await injector.get(ChargesProvider).generateCharge({
-                ownerId: adminContext.defaultAdminBusinessId,
+                ownerId,
                 userDescription: description,
               });
               chargeId = charge.id;
@@ -113,7 +115,7 @@ export const deelResolvers: DeelModule.Resolvers = {
 
           updatedChargeIdsSet.add(chargeId);
 
-          await insertDeelInvoiceRecord(context, match, chargeId);
+          await insertDeelInvoiceRecord(injector, match, chargeId);
         }
 
         // fetch charges, clean empty ones

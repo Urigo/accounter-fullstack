@@ -1,20 +1,31 @@
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { CommonModule } from '../types.js';
 
 export const userContextResolvers: CommonModule.Resolvers = {
   Query: {
-    userContext: (_, __, { adminContext }) => {
-      const financialAccountsBusinessesIds = [...adminContext.financialAccounts.internalWalletsIds];
-      if (adminContext.bankDeposits.bankDepositBusinessId) {
+    userContext: async (_, __, { injector }) => {
+      const {
+        financialAccounts: { internalWalletsIds },
+        bankDeposits: { bankDepositBusinessId },
+        ownerId,
+        defaultLocalCurrency,
+        defaultCryptoConversionFiatCurrency,
+        ledgerLock,
+        locality,
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+      const financialAccountsBusinessesIds = [...internalWalletsIds];
+      if (bankDepositBusinessId) {
         // TODO: this should be removed after bank deposit conversion to financial account is done (then - it should be added to internalWalletsIds)
-        financialAccountsBusinessesIds.push(adminContext.bankDeposits.bankDepositBusinessId);
+        financialAccountsBusinessesIds.push(bankDepositBusinessId);
       }
       return {
-        adminBusinessId: adminContext.defaultAdminBusinessId,
-        defaultLocalCurrency: adminContext.defaultLocalCurrency,
-        defaultCryptoConversionFiatCurrency: adminContext.defaultCryptoConversionFiatCurrency,
-        ledgerLock: adminContext.ledgerLock,
+        adminBusinessId: ownerId,
+        defaultLocalCurrency,
+        defaultCryptoConversionFiatCurrency,
+        ledgerLock,
         financialAccountsBusinessesIds,
-        locality: adminContext.locality,
+        locality,
       };
     },
   },

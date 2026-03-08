@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import { getTransactionDebitDate } from '../../transactions/helpers/debit-date.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -9,16 +10,15 @@ import type { ChartsModule, MonthDataProto } from '../types.js';
 
 export const chartsResolvers: ChartsModule.Resolvers = {
   Query: {
-    incomeExpenseChart: async (
-      _,
-      { filters },
-      { injector, adminContext: { defaultAdminBusinessId, defaultCryptoConversionFiatCurrency } },
-    ) => {
+    incomeExpenseChart: async (_, { filters }, { injector }) => {
       try {
+        const { ownerId, defaultCryptoConversionFiatCurrency } = await injector
+          .get(AdminContextProvider)
+          .getVerifiedAdminContext();
         const transactions = await injector.get(TransactionsProvider).getTransactionsByFilters({
           fromDebitDate: filters.fromDate,
           toDebitDate: filters.toDate,
-          ownerIDs: [defaultAdminBusinessId],
+          ownerIDs: [ownerId],
         });
 
         const currency = filters.currency ?? defaultCryptoConversionFiatCurrency;

@@ -6,6 +6,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
@@ -29,16 +30,14 @@ export const generateLedgerRecordsForConversion: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      general: {
-        taxCategories: { feeTaxCategoryId, exchangeRevaluationTaxCategoryId },
-      },
+    defaultLocalCurrency,
+    general: {
+      taxCategories: { feeTaxCategoryId, exchangeRevaluationTaxCategoryId },
     },
-  } = context;
+    financialAccounts,
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -124,7 +123,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         };
 
         mainFinancialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -154,7 +153,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
         }
 
         try {
-          const isSupplementalFee = isSupplementalFeeTransaction(transaction, context);
+          const isSupplementalFee = isSupplementalFeeTransaction(transaction, financialAccounts);
           const { currency, valueDate, transactionBusinessId } =
             validateTransactionBasicVariables(transaction);
 
@@ -237,7 +236,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
             };
 
             feeFinancialAccountLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
           }
         } catch (e) {
           if (e instanceof LedgerError) {
@@ -286,7 +285,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
           };
 
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         }
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -297,7 +296,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(context, ledgerBalance, errors);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,
@@ -306,7 +305,7 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     return {

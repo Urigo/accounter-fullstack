@@ -1,8 +1,9 @@
 import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
@@ -67,6 +68,7 @@ const deleteBusinessTripExpense = sql<IDeleteBusinessTripExpenseQuery>`
 export class BusinessTripExpensesProvider {
   constructor(
     private db: TenantAwareDBClient,
+    private adminContextProvider: AdminContextProvider,
     private businessTripsProvider: BusinessTripsProvider,
     private flightExpensesProvider: BusinessTripFlightsExpensesProvider,
     private accommodationsExpensesProvider: BusinessTripAccommodationsExpensesProvider,
@@ -74,7 +76,6 @@ export class BusinessTripExpensesProvider {
     private otherExpensesProvider: BusinessTripOtherExpensesProvider,
     private carRentalExpensesProvider: BusinessTripCarRentalExpensesProvider,
     private transactionsProvider: TransactionsProvider,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
   ) {}
 
   private async batchBusinessTripsExpensesByBusinessTripIds(businessTripIds: readonly string[]) {
@@ -111,11 +112,12 @@ export class BusinessTripExpensesProvider {
     return updateBusinessTripExpense.run(params, this.db);
   }
 
-  public insertBusinessTripExpense(params: IInsertBusinessTripExpenseParams) {
+  public async insertBusinessTripExpense(params: IInsertBusinessTripExpenseParams) {
     if (params.businessTripId) {
       this.invalidateByBusinessTripId(params.businessTripId);
     }
-    return insertBusinessTripExpense.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertBusinessTripExpense.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async getBusinessTripExtendedExpensesByChargeId(chargeId: string) {
