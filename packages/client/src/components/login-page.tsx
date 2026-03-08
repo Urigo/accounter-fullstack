@@ -20,6 +20,11 @@ export function LoginPage(): ReactElement {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
+  useEffect(() => {
+    // Clean up legacy user session from localStorage
+    localStorage.removeItem('user');
+  }, []);
+
   return (
     <div className="w-full flex flex-col justify-center items-center h-screen lg:grid lg:min-h-[200px] lg:grid-cols-2 xl:min-h-screen">
       <div className="flex items-center justify-center">

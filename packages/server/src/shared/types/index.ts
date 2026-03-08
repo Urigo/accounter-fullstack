@@ -3,7 +3,7 @@ import pg from 'pg';
 import type { CorporateTaxRulingComplianceReport, Role } from '../../__generated__/types.js';
 import type { env } from '../../environment.js';
 import type { IGetChargesByIdsResult } from '../../modules/charges/types.js';
-import { RawAuth } from '../../plugins/auth-plugin-v2.js';
+import type { RawAuth } from '../../plugins/auth-plugin-v2.js';
 import type { Currency } from '../../shared/enums.js';
 
 export type Environment = typeof env;

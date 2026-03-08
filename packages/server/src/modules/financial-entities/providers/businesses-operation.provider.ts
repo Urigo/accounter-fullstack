@@ -70,11 +70,9 @@ export class BusinessesOperationProvider {
           throw new Error('Cannot delete business as it represent dividends receiver');
       });
 
-    const adminContextPromise = this.adminContextProvider.getVerifiedAdminContext;
-
     // some validations before deleting the business
     const [{ ownerId }] = await Promise.all([
-      adminContextPromise(),
+      this.adminContextProvider.getVerifiedAdminContext(),
       employeePromise,
       tripsPromise,
       fundPromise,
@@ -111,6 +109,6 @@ export class BusinessesOperationProvider {
     ]);
 
     // delete businesses
-    deleteBusiness.run({ businessId }, this.db);
+    await deleteBusiness.run({ businessId }, this.db);
   }
 }

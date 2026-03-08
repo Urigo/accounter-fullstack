@@ -23,7 +23,11 @@ const testUsers = [
   { email: 'scraper-test@example.com', roleId: 'scraper', blocked: true },
 ];
 
-const TEST_PASSWORD = '[ENTER_SOME_PASSWORD_HERE]'; // Set a default password for all test users
+const TEST_PASSWORD = process.env.MIGRATION_TEST_USER_PASSWORD;
+if (!TEST_PASSWORD) {
+  console.error('[X] MIGRATION_TEST_USER_PASSWORD environment variable is not set.');
+  process.exit(1);
+}
 
 async function createMigrationTestUsers() {
   console.log(`[i] Starting migration test users creation for Business ID: ${TEST_BUSINESS_ID}`);
