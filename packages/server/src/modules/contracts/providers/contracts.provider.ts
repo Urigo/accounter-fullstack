@@ -218,7 +218,7 @@ export class ContractsProvider {
   public async createContract(params: IInsertContractParams) {
     const businessId = await this.getBusinessId();
     if (!businessId) {
-      throw new Error('Business ID is required for creating a cotnract');
+      throw new Error('Business ID is required for creating a contract');
     }
     const [newContract] = await insertContract.run(
       reassureOwnerIdExists(params, businessId),

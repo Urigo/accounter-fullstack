@@ -80,6 +80,7 @@ export class AuthContextV2Provider {
       if (!auth0UserId) {
         console.error('AuthContextV2: Missing sub claim in JWT');
         this.handlingAuth = null;
+        this.cachedContext = null;
         return null;
       }
 
@@ -89,6 +90,7 @@ export class AuthContextV2Provider {
       if (!userContext) {
         console.warn(`AuthContextV2: User not found/linked in local DB: ${auth0UserId}`);
         this.handlingAuth = null;
+        this.cachedContext = null;
         return null;
       }
 

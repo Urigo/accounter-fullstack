@@ -54,7 +54,7 @@ type MonthlyLedgerProto = { taxCategoryId: string; amount: number; isCredit: boo
 export function generateEntriesFromSalaryRecords(
   salaryRecords: IGetSalaryRecordsByChargeIdsResult[],
   charge: IGetChargesByIdsResult,
-  adminContext: AdminContext,
+  adminContext: Pick<AdminContext, 'salaries' | 'authorities' | 'defaultLocalCurrency'>,
 ): {
   entries: LedgerProto[];
   monthlyEntriesProto: MonthlyLedgerProto[];

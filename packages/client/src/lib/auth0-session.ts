@@ -18,6 +18,11 @@ function parseAuth0CacheEntry(rawValue: string): string | null {
 }
 
 export function getStoredAuth0AccessToken(): string | null {
+  // NOTE: Prefer `useAuth0().getAccessTokenSilently()` in React code.
+  // This helper exists for non-React contexts where hooks are unavailable
+  // (for example, modules that run outside component trees). It inspects
+  // Auth0 SPA SDK localStorage cache keys/values, which are internal details
+  // and not part of Auth0's public API. Future SDK changes can break this.
   const clientId = import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID;
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
