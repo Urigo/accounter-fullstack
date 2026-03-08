@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
 import { generateLedgerRecordsForFinancialCharge } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
@@ -14,15 +15,21 @@ import { commonChargeFields } from './common.js';
 export const financialChargesResolvers: ChargesModule.Resolvers = {
   Mutation: {
     generateRevaluationCharge: async (_, { date, ownerId }, context, info) => {
-      const { injector, adminContext } = context;
-      if (adminContext.ledgerLock && date <= adminContext.ledgerLock) {
+      const { injector } = context;
+      const {
+        ledgerLock,
+        general: {
+          taxCategories: { exchangeRevaluationTaxCategoryId },
+        },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      if (ledgerLock && date <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
       try {
         const charge = await generateAndTagCharge(
           injector,
           ownerId,
-          adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
+          exchangeRevaluationTaxCategoryId,
           `Revaluation charge for ${date}`,
         );
 
@@ -39,12 +46,15 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateBankDepositsRevaluationCharge: async (_, { date, ownerId }, context, info) => {
-      const { injector, adminContext } = context;
-      if (adminContext.ledgerLock && date <= adminContext.ledgerLock) {
+      const { injector } = context;
+      const {
+        ledgerLock,
+        bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      if (ledgerLock && date <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
       try {
-        const { bankDepositInterestIncomeTaxCategoryId } = adminContext.bankDeposits;
         if (!bankDepositInterestIncomeTaxCategoryId) {
           throw new GraphQLError('Bank deposit interest income tax category missing');
         }
@@ -68,13 +78,11 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateTaxExpensesCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
       const {
-        injector,
-        adminContext: {
-          ledgerLock,
-          authorities: { taxExpensesTaxCategoryId },
-        },
-      } = context;
+        ledgerLock,
+        authorities: { taxExpensesTaxCategoryId },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -99,13 +107,11 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateDepreciationCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
       const {
-        injector,
-        adminContext: {
-          ledgerLock,
-          depreciation: { accumulatedDepreciationTaxCategoryId },
-        },
-      } = context;
+        ledgerLock,
+        depreciation: { accumulatedDepreciationTaxCategoryId },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -133,13 +139,11 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateRecoveryReserveCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
       const {
-        injector,
-        adminContext: {
-          ledgerLock,
-          salaries: { recoveryReserveTaxCategoryId },
-        },
-      } = context;
+        ledgerLock,
+        salaries: { recoveryReserveTaxCategoryId },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -167,13 +171,11 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateVacationReserveCharge: async (_, { year, ownerId }, context, info) => {
+      const { injector } = context;
       const {
-        injector,
-        adminContext: {
-          ledgerLock,
-          salaries: { vacationReserveTaxCategoryId },
-        },
-      } = context;
+        ledgerLock,
+        salaries: { vacationReserveTaxCategoryId },
+      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -202,13 +204,15 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       }
     },
     generateBalanceCharge: async (_, { description, balanceRecords }, context, info) => {
-      const { injector, adminContext } = context;
+      const { injector } = context;
 
       if (!balanceRecords.length) {
         throw new GraphQLError('Balance charge must include balance records');
       }
+      const { defaultTaxCategoryId, ownerId, ledgerLock } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
 
-      const { defaultTaxCategoryId, defaultAdminBusinessId, ledgerLock } = adminContext;
       if (!defaultTaxCategoryId) {
         throw new GraphQLError('Default tax category missing');
       }
@@ -225,7 +229,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
 
         const charge = await generateAndTagCharge(
           injector,
-          defaultAdminBusinessId,
+          ownerId,
           defaultTaxCategoryId,
           description,
         );
@@ -260,8 +264,8 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
     },
   },
   FinancialCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      (await getChargeType(DbCharge, context).catch(error => {
+    __isTypeOf: async (DbCharge, { injector }) =>
+      (await getChargeType(DbCharge, injector).catch(error => {
         throw errorSimplifier('Failed to determine charge type', error);
       })) === ChargeTypeEnum.Financial,
     ...commonChargeFields,

@@ -4,11 +4,9 @@ import type { ChargesMatcherModule } from '../types.js';
 
 export const findChargeMatchesResolver: ChargesMatcherModule.Resolvers = {
   Query: {
-    findChargeMatches: async (_, { chargeId }, context) => {
+    findChargeMatches: async (_, { chargeId }, { injector }) => {
       try {
-        const result = await context.injector
-          .get(ChargesMatcherProvider)
-          .findMatchesForCharge(chargeId, context);
+        const result = await injector.get(ChargesMatcherProvider).findMatchesForCharge(chargeId);
         return result;
       } catch (e) {
         if (e instanceof GraphQLError) {

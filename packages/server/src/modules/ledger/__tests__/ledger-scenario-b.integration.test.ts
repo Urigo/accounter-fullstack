@@ -9,7 +9,6 @@ import { mockExchangeRate } from '../../../__tests__/helpers/exchange-mock.js';
 import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
 import { assertForeignExpenseScenario, assertAuditTrail } from './helpers/ledger-assertions.js';
-import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
 import { Currency } from '../../../shared/enums.js';
 
@@ -117,7 +116,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       const fixtureOwnerId = makeUUID('business', 'admin-business-usd');
       await insertClient.query("SELECT set_config('app.current_business_id', $1, false)", [fixtureOwnerId]);
 
-      await insertFixture(insertClient, expenseScenarioB, adminContext.defaultAdminBusinessId);
+      await insertFixture(insertClient, expenseScenarioB, adminContext.ownerId);
       
       // Reset RLS context to charge owner for verification
       // (insertFixture might leave it set to the last inserted entity's owner)
@@ -160,6 +159,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
     // Re-open a new client (outside prior transaction) for verification & generation
     const client = await db.getPool().connect();
     try {
+      const adminContext = await buildAdminContextFromDb(client);
       const adminId = makeUUID('business', 'admin-business-usd');
       await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
 
@@ -169,23 +169,13 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
         [chargeId],
       );
       const charge = chargeResult.rows[0];
-
-      // Build AdminContext from database
-      const adminContext = await buildAdminContextFromDb(client);
-
-      const mockUser: UserType = {
-        username: 'test-admin-usd',
-        userId: adminId,
-        role: 'ADMIN',
-      };
       
 // Create context with mocked exchange rate: 3.5 ILS per USD
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
-        currentUser: mockUser,
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 
@@ -254,7 +244,7 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
       const adminContext = await buildAdminContextFromDb(client);
       if (existingCharge.rows.length === 0) {
         await client.query('BEGIN');
-        await insertFixture(client, expenseScenarioB, adminContext.defaultAdminBusinessId);
+        await insertFixture(client, expenseScenarioB, adminContext.ownerId);
         await client.query('COMMIT');
       }
 
@@ -263,17 +253,11 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
         [chargeId],
       );
       const charge = chargeResult.rows[0];
-      const mockUser: UserType = {
-        username: 'test-admin-usd',
-        userId: adminId,
-        role: 'ADMIN',
-      };
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
-        currentUser: mockUser,
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 

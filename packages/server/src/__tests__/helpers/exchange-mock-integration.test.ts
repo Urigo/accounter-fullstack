@@ -23,13 +23,9 @@ describe('exchange-mock integration', () => {
   it('should use mocked exchange rate in ledger test context', async () => {
     const client = await db.getPool().connect();
     try {
-      // Build admin context from DB
-      const adminContext = await buildAdminContextFromDb(client, 'Admin Business');
-
       // Create test context with mocked USD → ILS rate
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 
@@ -50,11 +46,8 @@ describe('exchange-mock integration', () => {
   it('should return inverse rate for swapped currency pair', async () => {
     const client = await db.getPool().connect();
     try {
-      const adminContext = await buildAdminContextFromDb(client, 'Admin Business');
-
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 4.0),
       });
 
@@ -74,11 +67,8 @@ describe('exchange-mock integration', () => {
   it('should throw error for unmocked currency pairs', async () => {
     const client = await db.getPool().connect();
     try {
-      const adminContext = await buildAdminContextFromDb(client, 'Admin Business');
-
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
       });
 
@@ -95,12 +85,9 @@ describe('exchange-mock integration', () => {
   it('should work without mock (default behavior)', async () => {
     const client = await db.getPool().connect();
     try {
-      const adminContext = await buildAdminContextFromDb(client, 'Admin Business');
-
       // Create context WITHOUT mock - should use real provider
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
         // No mockExchangeRates provided
       });
 

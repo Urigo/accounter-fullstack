@@ -230,24 +230,42 @@ export default [
     },
   },
   {
-    files: ['packages/server/src/modules/**/*.ts'],
-    ignores: ['packages/server/src/modules/app-providers/**'],
+    files: ['**/resolvers/**/*.ts', '**/services/**/*.ts', '**/providers/**/*.ts'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           patterns: [
             {
               group: ['pg'],
-              message: 'Do not import "pg" directly. Use TenantAwareDBClient.',
+              message: 'Do not import "pg" directly. Use TenantAwareDBClient for RLS enforcement.',
             },
             {
-              group: ['**/app-providers/db.provider*'],
-              message: 'Do not import DBProvider directly. Use TenantAwareDBClient.',
+              group: ['**/db.provider*', '**/app-providers/db.provider*'],
+              message:
+                'Providers must inject TenantAwareDBClient for RLS enforcement. Only migrations, scripts, and explicitly exempt global/auth providers can access DBProvider directly.',
             },
           ],
         },
       ],
+    },
+  },
+  {
+    files: [
+      // Exempt global/auth providers that need direct DB access for RLS bypass to function
+      'packages/server/src/modules/auth/providers/auth-context-v2.provider.ts',
+      'packages/server/src/modules/business-trips/providers/business-trips-tax-variables.provider.ts',
+      'packages/server/src/modules/countries/providers/countries.provider.ts',
+      'packages/server/src/modules/depreciation/providers/depreciation-categories.provider.ts',
+      'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
+      'packages/server/src/modules/vat/providers/vat.provider.ts',
+      // Exempt migrations, scripts, and tests that may need direct DB access for setup, maintenance, or testing purposes
+      '**/migrations/**/*.ts',
+      '**/scripts/**/*.ts',
+      '**/*.test.ts',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
 ];

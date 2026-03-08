@@ -7,8 +7,7 @@ import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { env } from './environment.js';
 import { createGraphQLApp } from './modules-app.js';
-import { adminContextPlugin } from './plugins/admin-context-plugin.js';
-import { authPlugin } from './plugins/auth-plugin.js';
+import { authPluginV2 } from './plugins/auth-plugin-v2.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { AccounterContext } from './shared/types/index.js';
 
@@ -26,13 +25,18 @@ async function main() {
     max: env.postgres.max, // maximum number of clients in the pool
   });
 
+  if (env.auth0) {
+    console.log(`Auth0 configured: ${env.auth0.domain}`);
+  } else {
+    console.log('Auth0 not configured');
+  }
+
   const application = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
     plugins: [
       dbCleanupPlugin(),
-      authPlugin(),
-      adminContextPlugin(),
+      authPluginV2(),
       useGraphQLModules(application),
       useDeferStream(),
       useHive({

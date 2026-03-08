@@ -4,6 +4,7 @@ import type {
   ResolversParentTypes,
   ResolversTypes,
 } from '../../../../__generated__/types.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeTaxCategoryId } from '../../../charges/helpers/common.helper.js';
 import { isChargeLocked } from '../../helpers/ledger-lock.js';
 import { generateLedgerRecordsForBalance } from './financial-ledger-generation/balance-ledger-generation.resolver.js';
@@ -22,21 +23,21 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
 > = async (charge, { insertLedgerRecordsIfNotExists }, context, info) => {
-  const {
-    adminContext: {
-      defaultTaxCategoryId,
-      ledgerLock,
-      authorities: { taxExpensesTaxCategoryId },
-      bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
-      depreciation: { accumulatedDepreciationTaxCategoryId },
-      general: {
-        taxCategories: { exchangeRevaluationTaxCategoryId },
-      },
-      salaries: { recoveryReserveTaxCategoryId, vacationReserveTaxCategoryId },
-    },
-  } = context;
+  const { injector } = context;
 
-  if (await isChargeLocked(charge, context.injector, ledgerLock)) {
+  const {
+    defaultTaxCategoryId,
+    ledgerLock,
+    authorities: { taxExpensesTaxCategoryId },
+    bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
+    depreciation: { accumulatedDepreciationTaxCategoryId },
+    general: {
+      taxCategories: { exchangeRevaluationTaxCategoryId },
+    },
+    salaries: { recoveryReserveTaxCategoryId, vacationReserveTaxCategoryId },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+  if (await isChargeLocked(charge, injector, ledgerLock)) {
     return {
       __typename: 'CommonError',
       message: `Charge ID="${charge.id}" is locked for ledger generation`,
@@ -44,13 +45,14 @@ export const generateLedgerRecordsForFinancialCharge: ResolverFn<
   }
 
   try {
-    const taxCategoryId = await getChargeTaxCategoryId(charge.id, context.injector);
+    const taxCategoryId = await getChargeTaxCategoryId(charge.id, injector);
     if (!taxCategoryId) {
       return {
         __typename: 'CommonError',
         message: `Financial charge must include tax category`,
       };
     }
+
     switch (taxCategoryId) {
       case exchangeRevaluationTaxCategoryId:
         return generateLedgerRecordsForExchangeRevaluation(

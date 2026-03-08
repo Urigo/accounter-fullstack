@@ -1,12 +1,12 @@
+import { AdminContext } from '../../admin-context/types.js';
 import type { IGetTransactionsByChargeIdsResult } from '../../transactions/types.js';
 import { splitFeeTransactions } from './fee-transactions.js';
 
 export function splitDividendTransactions(
   transactions: Array<IGetTransactionsByChargeIdsResult>,
-  context: GraphQLModules.Context,
+  dividends: AdminContext['dividends'],
 ) {
-  const { dividendWithholdingTaxBusinessId, dividendPaymentBusinessIds } =
-    context.adminContext.dividends;
+  const { dividendWithholdingTaxBusinessId, dividendPaymentBusinessIds } = dividends;
   if (!dividendWithholdingTaxBusinessId) {
     throw new Error('Dividend withholding tax business ID is not set');
   }

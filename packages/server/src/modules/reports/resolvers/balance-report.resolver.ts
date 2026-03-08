@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { getFinancialAccountByTransactionId } from '../../financial-accounts/helpers/account-by-transaction.helper.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -9,17 +10,14 @@ import type { ReportsModule } from '../types.js';
 
 export const balanceReportResolver: ReportsModule.Resolvers = {
   Query: {
-    transactionsForBalanceReport: async (_, { fromDate, toDate, ownerId }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
+    transactionsForBalanceReport: async (_, { fromDate, toDate, ownerId }, { injector }) => {
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
       try {
         return injector.get(BalanceReportProvider).getNormalizedBalanceTransactions({
           fromDate,
           toDate,
-          ownerId: ownerId ?? defaultAdminBusinessId,
+          ownerId: ownerId ?? adminContext.ownerId,
         });
       } catch (error) {
         const message = 'Failed to get balance transactions';
@@ -36,9 +34,9 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
     date: t => dateToTimelessDateString(t.debit_date!),
     month: t => t.month!,
     year: t => t.year!,
-    counterparty: (t, _, context) =>
+    counterparty: (t, _, { injector }) =>
       t.business_id
-        ? context.injector
+        ? injector
             .get(FinancialEntitiesProvider)
             .getFinancialEntityByIdLoader.load(t.business_id)
             .then(res => res ?? null)
@@ -59,8 +57,6 @@ export const balanceReportResolver: ReportsModule.Resolvers = {
           return res;
         });
     },
-    account: (t, _, { injector, adminContext }) => {
-      return getFinancialAccountByTransactionId(t.id, injector, adminContext);
-    },
+    account: async (t, _, { injector }) => getFinancialAccountByTransactionId(t.id, injector),
   },
 };

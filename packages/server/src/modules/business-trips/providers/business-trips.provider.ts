@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   BusinessTripProto,
@@ -116,7 +117,7 @@ const updateAccountantApproval = sql<IUpdateAccountantApprovalQuery>`
 export class BusinessTripsProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   public getAllBusinessTrips() {
@@ -184,8 +185,9 @@ export class BusinessTripsProvider {
     if (businessTripId) {
       this.getBusinessTripsByIdLoader.clear(businessTripId);
       this.getChargeIdsByBusinessTripIdLoader.clear(businessTripId);
+      const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
       return updateChargeBusinessTrip.run(
-        reassureOwnerIdExists({ chargeId, businessTripId, ownerId: null }, this.context),
+        reassureOwnerIdExists({ chargeId, businessTripId, ownerId: null }, ownerId),
         this.db,
       );
     }
@@ -203,8 +205,9 @@ export class BusinessTripsProvider {
     return updateBusinessTrip.run(params, this.db);
   }
 
-  public insertBusinessTrip(params: IInsertBusinessTripParams) {
-    return insertBusinessTrip.run(reassureOwnerIdExists(params, this.context), this.db);
+  public async insertBusinessTrip(params: IInsertBusinessTripParams) {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertBusinessTrip.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async updateAccountantApproval(params: IUpdateAccountantApprovalParams) {

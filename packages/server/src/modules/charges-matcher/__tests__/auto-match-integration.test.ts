@@ -26,6 +26,10 @@ vi.mock('../../financial-entities/providers/clients.provider.js', () => ({
   ClientsProvider: class {},
 }));
 
+vi.mock('../../admin-context/providers/admin-context.provider.js', () => ({
+  AdminContextProvider: class {},
+}));
+
 vi.mock('../../charges/helpers/merge-charges.helper.js', () => ({
   mergeChargesExecutor: vi.fn(),
 }));
@@ -34,7 +38,7 @@ vi.mock('../../../shared/helpers/index.js', () => ({
   dateToTimelessDateString: (date: Date) => date.toISOString().split('T')[0],
 }));
 
-const getMockInjector = (mockChargesProvider?: {
+const createMockProvider = (mockChargesProvider?: {
     getChargesByFilters: (filters: any) => Promise<any[]>;
   },
   mockTransactionsProvider?: {
@@ -43,33 +47,57 @@ const getMockInjector = (mockChargesProvider?: {
   mockDocumentsProvider?: {
     getDocumentsByChargeIdLoader: { load: (id: string) => Promise<any[]>; };
 }
-) => ({
-  get: vi.fn((token: {name: string}) => {
-    if (token.name === 'ChargesProvider') return mockChargesProvider ?? {
-      getChargesByFilters: vi.fn(() => Promise.resolve([])),
-    };
-    if (token.name === 'TransactionsProvider') return mockTransactionsProvider ?? {
-      transactionsByChargeIDLoader: {
-        load: vi.fn(() => Promise.resolve([])),
-      },
-    };
-    if (token.name === 'DocumentsProvider') return mockDocumentsProvider ?? {
-      getDocumentsByChargeIdLoader: {
-        load: vi.fn(() => Promise.resolve([])),
-      },
-    };
-    if (token.name === 'ClientsProvider')
-      return {
-        getClientByIdLoader: {
-          load: (businessId: string) => {
-            const isRegisteredClient = businessId.startsWith('client-');
-            return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+) => {
+  const mockAdminContextProvider = {
+    getVerifiedAdminContext: vi.fn(() => Promise.resolve({ ownerId: ADMIN_BUSINESS_ID })),
+  } as any;
+
+  const mockCharges = mockChargesProvider ?? {
+    getChargesByFilters: vi.fn(() => Promise.resolve([])),
+  };
+
+  const mockTransactions = mockTransactionsProvider ?? {
+    transactionsByChargeIDLoader: {
+      load: vi.fn(() => Promise.resolve([])),
+    },
+  };
+
+  const mockDocuments = mockDocumentsProvider ?? {
+    getDocumentsByChargeIdLoader: {
+      load: vi.fn(() => Promise.resolve([])),
+    },
+  };
+
+  const mockInjector = {
+    get: vi.fn((token: {name: string}) => {
+      if (token.name === 'ChargesProvider') return mockCharges;
+      if (token.name === 'TransactionsProvider') return mockTransactions;
+      if (token.name === 'DocumentsProvider') return mockDocuments;
+      if (token.name === 'ClientsProvider')
+        return {
+          getClientByIdLoader: {
+            load: (businessId: string) => {
+              const isRegisteredClient = businessId.startsWith('client-');
+              return Promise.resolve(isRegisteredClient ? { id: businessId } : null);
+            },
           },
-        },
-      };
-    return null;
-  }),
-}) as Injector;
+        };
+      return null;
+    }),
+  } as Injector;
+
+  const mockContext = {
+    injector: mockInjector,
+  } as any;
+
+  return new ChargesMatcherProvider(
+    mockAdminContextProvider,
+    mockCharges as any,
+    mockTransactions as any,
+    mockDocuments as any,
+    mockContext,
+  );
+};
 
 // Import after mocking
 const { ChargesMatcherProvider } = await import('../providers/charges-matcher.provider.js');
@@ -99,13 +127,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
 
   describe('autoMatchCharges', () => {
     it('should return 0 matches when database is empty', async () => {
-      const mockInjector = getMockInjector()
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider();
+      const result = await provider.autoMatchCharges();
 
       expect(result.totalMatches).toBe(0);
       expect(result.mergedCharges).toEqual([]);
@@ -122,13 +145,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         ),
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider)
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider);
+      const result = await provider.autoMatchCharges();
 
       expect(result.totalMatches).toBe(0);
       expect(result.mergedCharges).toEqual([]);
@@ -184,13 +202,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       expect(result.totalMatches).toBe(1);
       expect(result.mergedCharges).toHaveLength(1);
@@ -263,13 +276,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges( {
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       // The transaction charge should find 2 identical doc matches and skip (ambiguous)
       // But the doc charges will also match each other with high confidence
@@ -334,13 +342,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       expect(result.totalMatches).toBe(2);
       expect(result.mergedCharges).toHaveLength(2);
@@ -414,13 +417,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
       });
       (mergeChargesExecutor as any).mockImplementationOnce(() => Promise.resolve());
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges( {
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       // tx1 finds doc1, merge fails → error captured, charges not marked as merged
       // doc1 finds tx1, merge succeeds → totalMatches++, charges marked as merged
@@ -466,16 +464,11 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      await provider.autoMatchCharges();
 
       // Verify merge was called with doc charge being merged into tx charge
-      expect(mergeChargesExecutor).toHaveBeenCalledWith([docChargeId], txChargeId, mockInjector);
+      expect(mergeChargesExecutor).toHaveBeenCalledWith([docChargeId], txChargeId, expect.any(Object));
     });
 
     it('should exclude merged charges from further processing in same run', async () => {
@@ -515,13 +508,8 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       // Should only merge tx1 with doc1, tx2 should have no match
       expect(result.totalMatches).toBe(1);
@@ -629,15 +617,10 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
         },
       };
 
-      const mockInjector = getMockInjector(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
-
       (mergeChargesExecutor as any).mockImplementation(() => Promise.resolve());
 
-      const provider = new ChargesMatcherProvider();
-      const result = await provider.autoMatchCharges({
-        adminContext: { defaultAdminBusinessId: ADMIN_BUSINESS_ID },
-        injector: mockInjector,
-      } as any);
+      const provider = createMockProvider(mockChargesProvider, mockTransactionsProvider, mockDocumentsProvider);
+      const result = await provider.autoMatchCharges();
 
       // Expected results:
       // - perfectMatchTx finds perfectMatchDoc → merge (1)
@@ -655,13 +638,21 @@ describe('ChargesMatcherProvider - Auto-Match Integration', () => {
     });
 
     it('should throw error if admin business ID not found in context', async () => {
-      const provider = new ChargesMatcherProvider();
+      const mockAdminContextProvider = {
+        getVerifiedAdminContext: vi.fn(() => Promise.reject(new Error('Admin context not found for the authenticated user.'))),
+      } as any;
+
+      const provider = new ChargesMatcherProvider(
+        mockAdminContextProvider,
+        { getChargesByFilters: vi.fn() } as any,
+        { transactionsByChargeIDLoader: { load: vi.fn() } } as any,
+        { getDocumentsByChargeIdLoader: { load: vi.fn() } } as any,
+        { injector: {} } as any,
+      );
 
       await expect(
-        provider.autoMatchCharges({
-          adminContext: { defaultAdminBusinessId: null },
-        } as any),
-      ).rejects.toThrow(/Admin business not found/);
+        provider.autoMatchCharges(),
+      ).rejects.toThrow(/Admin context not found/);
     });
   });
 });

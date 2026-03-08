@@ -1,4 +1,6 @@
+import { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import type { IGetAllDocumentsResult } from '../types.js';
 import { isInvoice } from './common.helper.js';
@@ -39,7 +41,7 @@ export function validateDocumentVat(
 
 export async function validateDocumentAllocation(
   document: IGetAllDocumentsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<boolean> {
   try {
     if (document.type !== DocumentType.InvoiceReceipt && document.type !== DocumentType.Invoice) {
@@ -55,16 +57,16 @@ export async function validateDocumentAllocation(
     const docYear = document.date.getFullYear();
     const docMonth = document.date.getMonth() + 1; // getMonth is zero-based
 
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+
     // set amount to local currency
     let amount = Math.abs(document.total_amount) - Math.abs(document.vat_amount);
-    if (document.currency_code !== context.adminContext.defaultLocalCurrency) {
-      const exchangeRate = await context.injector
+    if (document.currency_code !== defaultLocalCurrency) {
+      const exchangeRate = await injector
         .get(ExchangeProvider)
-        .getExchangeRates(
-          document.currency_code as Currency,
-          context.adminContext.defaultLocalCurrency,
-          document.date,
-        );
+        .getExchangeRates(document.currency_code as Currency, defaultLocalCurrency, document.date);
       amount = amount * exchangeRate;
     }
 

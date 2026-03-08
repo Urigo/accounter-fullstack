@@ -2,6 +2,7 @@ import { endOfYear, startOfYear } from 'date-fns';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { CountriesProvider } from '../../countries/providers/countries.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
@@ -29,24 +30,23 @@ interface NormalizedRecord {
 
 export const annualRevenueResolvers: ReportsModule.Resolvers = {
   Query: {
-    annualRevenueReport: async (_, { filters: { year, adminBusinessId } }, context) => {
-      const adminId = adminBusinessId ?? context.adminContext.defaultAdminBusinessId;
-      const incomeTaxCategories = await context.injector
+    annualRevenueReport: async (_, { filters: { year, adminBusinessId } }, { injector }) => {
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const ownerId = adminBusinessId ?? adminContext.ownerId;
+      const incomeTaxCategories = await injector
         .get(TaxCategoriesProvider)
         .taxCategoriesBySortCodeLoader.load(810);
       const date = new Date(year, 6, 1);
-      const records = await context.injector
-        .get(AnnualRevenueReportProvider)
-        .getNormalizedRevenueRecords({
-          incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
-          incomeToCollectId: context.adminContext.crossYear.incomeToCollectTaxCategoryId,
-          ownerId: adminId,
-          fromDate: dateToTimelessDateString(startOfYear(date)),
-          toDate: dateToTimelessDateString(endOfYear(date)),
-        });
+      const records = await injector.get(AnnualRevenueReportProvider).getNormalizedRevenueRecords({
+        incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
+        incomeToCollectId: adminContext.crossYear.incomeToCollectTaxCategoryId,
+        ownerId,
+        fromDate: dateToTimelessDateString(startOfYear(date)),
+        toDate: dateToTimelessDateString(endOfYear(date)),
+      });
 
       // Normalize records (client, amount local currency, amount default foreign currency)
-      const businessesProvider = context.injector.get(BusinessesProvider);
+      const businessesProvider = injector.get(BusinessesProvider);
       const normalizedRecords: NormalizedRecord[] = [];
 
       const businesses = await Promise.all(
@@ -176,7 +176,7 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
       }
 
       // Build the response
-      const countriesProvider = context.injector.get(CountriesProvider);
+      const countriesProvider = injector.get(CountriesProvider);
       const countries = await Promise.all(
         Array.from(countrySums.entries()).map(async ([countryCode, data]) => {
           const country = await countriesProvider.getCountryByCodeLoader.load(countryCode);

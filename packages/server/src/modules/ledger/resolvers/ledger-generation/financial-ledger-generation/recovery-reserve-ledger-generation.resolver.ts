@@ -6,6 +6,7 @@ import type {
 } from '../../../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../../../shared/constants.js';
 import type { LedgerProto } from '../../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../../admin-context/providers/admin-context.provider.js';
 import { storeInitialGeneratedRecords } from '../../../helpers/ledgrer-storage.helper.js';
 import { generateMiscExpensesLedger } from '../../../helpers/misc-expenses-ledger.helper.js';
 import { calculateRecoveryReserveAmount } from '../../../helpers/recovery-reserve.helper.js';
@@ -16,14 +17,12 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   try {
     const {
-      adminContext: {
-        defaultLocalCurrency,
-        salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
-      },
-    } = context;
+      defaultLocalCurrency,
+      salaries: { recoveryReserveExpensesTaxCategoryId, recoveryReserveTaxCategoryId },
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
     if (!charge.user_description) {
       return {
         __typename: 'CommonError',
@@ -62,7 +61,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
       };
     }
 
-    const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(context, year);
+    const { recoveryReserveAmount } = await calculateRecoveryReserveAmount(injector, year);
 
     const isCreditorCounterparty = recoveryReserveAmount < 0;
 
@@ -89,7 +88,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
     const ledgerEntries = [ledgerEntry];
 
     // generate ledger from misc expenses
-    await generateMiscExpensesLedger(charge, context).then(entries => {
+    await generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -97,7 +96,7 @@ export const generateLedgerRecordsForRecoveryReserveExpenses: ResolverFn<
     });
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, injector);
     }
 
     return {

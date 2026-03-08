@@ -3,6 +3,7 @@ import type { Resolvers } from '../../../__generated__/types.js';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import type { BusinessTransactionProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { LedgerProvider } from '../../ledger/providers/ledger.provider.js';
 import { handleBusinessTransaction } from '../helpers/business-transactions.helper.js';
@@ -184,13 +185,28 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
           }
           return res;
         }),
-    credit: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(rawSum[defaultLocalCurrency].credit, defaultLocalCurrency),
-    debit: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(rawSum[defaultLocalCurrency].debit, defaultLocalCurrency),
-    total: (rawSum, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(rawSum[defaultLocalCurrency].total, defaultLocalCurrency),
-    foreignCurrenciesSum: (rawSum, _, { adminContext: { defaultLocalCurrency } }) => {
+    credit: async (rawSum, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(rawSum[defaultLocalCurrency].credit, defaultLocalCurrency);
+    },
+    debit: async (rawSum, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(rawSum[defaultLocalCurrency].debit, defaultLocalCurrency);
+    },
+    total: async (rawSum, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(rawSum[defaultLocalCurrency].total, defaultLocalCurrency);
+    },
+    foreignCurrenciesSum: async (rawSum, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
       const currencies = [];
       for (const key in rawSum) {
         if (!Object.values(Currency).includes(key as Currency)) continue;
@@ -216,13 +232,17 @@ export const businessTransactionsResolvers: FinancialEntitiesModule.Resolvers &
         : 'CommonError',
   },
   BusinessTransaction: {
-    amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-      formatFinancialAmount(
+    amount: async (parent, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      return formatFinancialAmount(
         Number.isNaN(parent.foreignAmount)
           ? parent.amount
           : Number(parent.amount) * (parent.isCredit ? 1 : -1),
         defaultLocalCurrency,
-      ),
+      );
+    },
     business: (parent, _, { injector }) =>
       injector
         .get(FinancialEntitiesProvider)

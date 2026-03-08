@@ -1,7 +1,8 @@
-import { createApplication, Scope } from 'graphql-modules';
+import { CONTEXT, createApplication, Scope } from 'graphql-modules';
 import pg from 'pg';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { adminContextModule } from './modules/admin-context/index.js';
+import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from './modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -12,6 +13,8 @@ import { DeelClientProvider } from './modules/app-providers/deel/deel-client.pro
 import { GoogleDriveProvider } from './modules/app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from './modules/app-providers/green-invoice-client.js';
 import { TenantAwareDBClient } from './modules/app-providers/tenant-db-client.js';
+import { authModule } from './modules/auth/index.js';
+import { AuthContextV2Provider } from './modules/auth/providers/auth-context-v2.provider.js';
 import { bankDepositsModule } from './modules/bank-deposits/index.js';
 import { businessTripsModule } from './modules/business-trips/index.js';
 import { chargesMatcherModule } from './modules/charges-matcher/index.js';
@@ -38,9 +41,8 @@ import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
-import type { AdminContext } from './plugins/admin-context-plugin.js';
-import type { UserType } from './plugins/auth-plugin.js';
-import { AUTH_CONTEXT, ENVIRONMENT } from './shared/tokens.js';
+import type { RawAuth } from './plugins/auth-plugin-v2.js';
+import { ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
 
 const { Pool } = pg;
@@ -50,8 +52,7 @@ declare global {
   namespace GraphQLModules {
     interface GlobalContext {
       env: Environment;
-      currentUser: UserType;
-      adminContext: AdminContext;
+      rawAuth: RawAuth;
     }
   }
 }
@@ -87,6 +88,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       contractsModule,
       bankDepositsModule,
       adminContextModule,
+      authModule,
     ],
     providers: [
       {
@@ -94,7 +96,23 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
         useFactory: () => pool,
       },
       DBProvider,
+      {
+        provide: ENVIRONMENT,
+        useValue: env,
+        scope: Scope.Singleton,
+      },
+      {
+        provide: RAW_AUTH,
+        useFactory: (context: GraphQLModules.GlobalContext) => {
+          // This bridges the Yoga context rawAuth to the InjectionToken
+          return context.rawAuth || { authType: null, token: null };
+        },
+        scope: Scope.Operation,
+        deps: [CONTEXT],
+      },
+      AuthContextV2Provider,
       TenantAwareDBClient,
+      AdminContextProvider,
       CloudinaryProvider,
       DeelClientProvider,
       GreenInvoiceClientProvider,
@@ -103,16 +121,6 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       GoogleDriveProvider,
       // TODO: add GmailListener back after required adjustments where made
       // ...(env.gmail ? [GmailServiceProvider, PubsubServiceProvider] : []),
-      {
-        provide: ENVIRONMENT,
-        useValue: env,
-        scope: Scope.Singleton,
-      },
-      {
-        provide: AUTH_CONTEXT,
-        useValue: null,
-        scope: Scope.Operation,
-      },
     ],
   });
 }

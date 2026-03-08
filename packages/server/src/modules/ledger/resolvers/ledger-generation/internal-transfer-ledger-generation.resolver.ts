@@ -5,6 +5,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import type { currency } from '../../../transactions/types.js';
@@ -29,16 +30,13 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      general: {
-        taxCategories: { exchangeRateTaxCategoryId },
-      },
+    defaultLocalCurrency,
+    general: {
+      taxCategories: { exchangeRateTaxCategoryId },
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -131,7 +129,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         };
 
         mainFinancialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         dates.add(valueDate.getTime());
         currencies.add(currency);
       } catch (e) {
@@ -153,7 +151,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
           charge,
-          context,
+          injector,
         ).catch(e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -168,7 +166,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
 
         feeFinancialAccountLedgerEntries.push(...ledgerEntries);
         ledgerEntries.map(ledgerEntry => {
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
           dates.add(ledgerEntry.valueDate.getTime());
           currencies.add(ledgerEntry.currency);
         });
@@ -182,11 +180,11 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     });
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
         dates.add(entry.valueDate.getTime());
         currencies.add(entry.currency);
       });
@@ -206,7 +204,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
       }
     }
 
-    const { balanceSum } = await getLedgerBalanceInfo(context, ledgerBalance);
+    const { balanceSum } = await getLedgerBalanceInfo(injector, ledgerBalance);
     const miscLedgerEntries: LedgerProto[] = [];
 
     if (!originEntry || !destinationEntry) {
@@ -247,11 +245,11 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
         };
 
         miscLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
       }
     }
 
-    const ledgerBalanceInfo = await getLedgerBalanceInfo(context, ledgerBalance, errors);
+    const ledgerBalanceInfo = await getLedgerBalanceInfo(injector, ledgerBalance, errors);
 
     const records = [
       ...mainFinancialAccountLedgerEntries,
@@ -260,7 +258,7 @@ export const generateLedgerRecordsForInternalTransfer: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     return {

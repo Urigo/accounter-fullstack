@@ -248,7 +248,7 @@ All required tables, indexes, and enums already exist in the database! ✨
 
 ### Authentication
 
-- User context: `context.adminContext.defaultAdminBusinessId`
+- User context: `context.adminContext.ownerId`
 - Authorization: `@auth(role: ACCOUNTANT)` directive on GraphQL operations
 - All operations require authenticated accountant role
 

@@ -137,21 +137,29 @@ const DeelModel = zod.union([
   zod.void(),
 ]);
 
+const GeneralModel = zod.object({
+  FRONTEND_URL: zod.url().optional(),
+});
+
 const Auth0Model = zod.union([
+  zod.object({
+    AUTH0_DOMAIN: zod.string().min(1),
+    AUTH0_AUDIENCE: zod.string().min(1),
+    AUTH0_CLIENT_ID: zod.string().min(1),
+    AUTH0_CLIENT_SECRET: zod.string().min(1),
+    AUTH0_MANAGEMENT_AUDIENCE: zod.string().min(1),
+  }),
+  // If no Auth0 variables are provided, validation passes (optional configuration)
+  // We use a looser object check here because process.env is always an object
   zod
     .object({
-      AUTH0_DOMAIN: zod.string().optional(),
-      AUTH0_AUDIENCE: zod.string().optional(),
+      AUTH0_DOMAIN: zod.undefined().or(zod.literal('')),
+      AUTH0_AUDIENCE: zod.undefined().or(zod.literal('')),
+      AUTH0_CLIENT_ID: zod.undefined().or(zod.literal('')),
+      AUTH0_CLIENT_SECRET: zod.undefined().or(zod.literal('')),
+      AUTH0_MANAGEMENT_AUDIENCE: zod.undefined().or(zod.literal('')),
     })
-    .superRefine((data, ctx) => {
-      if (!!data.AUTH0_DOMAIN !== !!data.AUTH0_AUDIENCE) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'AUTH0_DOMAIN and AUTH0_AUDIENCE must be provided together.',
-        });
-      }
-    }),
-  zod.void(),
+    .transform(() => undefined),
 ]);
 
 const configs = {
@@ -164,6 +172,7 @@ const configs = {
   gmail: GmailModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
+  general: GeneralModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -196,6 +205,7 @@ const googleDrive = extractConfig(configs.googleDrive);
 const gmail = extractConfig(configs.gmail);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
+const general = extractConfig(configs.general);
 
 export const env = {
   postgres: {
@@ -252,10 +262,16 @@ export const env = {
         subscriptionName: gmail.PUBSUB_SUBSCRIPTION || 'gmail-notifications-sub',
       }
     : undefined,
-  auth0: auth0?.AUTH0_DOMAIN
+  auth0: auth0
     ? {
-        domain: auth0.AUTH0_DOMAIN!,
-        audience: auth0.AUTH0_AUDIENCE!,
+        domain: auth0.AUTH0_DOMAIN,
+        audience: auth0.AUTH0_AUDIENCE,
+        clientId: auth0.AUTH0_CLIENT_ID,
+        clientSecret: auth0.AUTH0_CLIENT_SECRET,
+        managementAudience: auth0.AUTH0_MANAGEMENT_AUDIENCE,
       }
     : undefined,
+  general: {
+    frontendUrl: general?.FRONTEND_URL,
+  },
 } as const;

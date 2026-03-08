@@ -10,6 +10,7 @@ import type {
   ResolversTypes,
 } from '../../../../__generated__/types.js';
 import { formatFinancialAmount } from '../../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
 import { LedgerProvider } from '../../../ledger/providers/ledger.provider.js';
 import { IGetLedgerRecordsByDatesResult } from '../../../ledger/types.js';
@@ -111,47 +112,106 @@ export const profitAndLossReport: ResolverFn<
 export const profitAndLossReportYearMapper: ProfitAndLossReportYearResolvers = {
   id: parent => `profit-and-loss-year-${parent.year}`,
   year: parent => parent.year,
-  revenue: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.revenue.amount, defaultLocalCurrency),
-    records: parent.revenue.records,
-  }),
-  costOfSales: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.costOfSales.amount, defaultLocalCurrency),
-    records: parent.costOfSales.records,
-  }),
-  grossProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.grossProfit, defaultLocalCurrency),
-  researchAndDevelopmentExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(
-      parent.researchAndDevelopmentExpenses.amount,
-      defaultLocalCurrency,
-    ),
-    records: parent.researchAndDevelopmentExpenses.records,
-  }),
-  marketingExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.marketingExpenses.amount, defaultLocalCurrency),
-    records: parent.marketingExpenses.records,
-  }),
-  managementAndGeneralExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.managementAndGeneralExpenses.amount, defaultLocalCurrency),
-    records: parent.managementAndGeneralExpenses.records,
-  }),
-  operatingProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.operatingProfit, defaultLocalCurrency),
-  financialExpenses: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.financialExpenses.amount, defaultLocalCurrency),
-    records: parent.financialExpenses.records,
-  }),
-  otherIncome: (parent, _, { adminContext: { defaultLocalCurrency } }) => ({
-    amount: formatFinancialAmount(parent.otherIncome.amount, defaultLocalCurrency),
-    records: parent.otherIncome.records,
-  }),
-  profitBeforeTax: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.profitBeforeTax, defaultLocalCurrency),
-  tax: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.tax, defaultLocalCurrency),
-  netProfit: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.netProfit, defaultLocalCurrency),
+  revenue: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.revenue.amount, defaultLocalCurrency),
+      records: parent.revenue.records,
+    };
+  },
+  costOfSales: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.costOfSales.amount, defaultLocalCurrency),
+      records: parent.costOfSales.records,
+    };
+  },
+  grossProfit: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+
+    return formatFinancialAmount(parent.grossProfit, defaultLocalCurrency);
+  },
+  researchAndDevelopmentExpenses: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(
+        parent.researchAndDevelopmentExpenses.amount,
+        defaultLocalCurrency,
+      ),
+      records: parent.researchAndDevelopmentExpenses.records,
+    };
+  },
+  marketingExpenses: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.marketingExpenses.amount, defaultLocalCurrency),
+      records: parent.marketingExpenses.records,
+    };
+  },
+  managementAndGeneralExpenses: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(
+        parent.managementAndGeneralExpenses.amount,
+        defaultLocalCurrency,
+      ),
+      records: parent.managementAndGeneralExpenses.records,
+    };
+  },
+  operatingProfit: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.operatingProfit, defaultLocalCurrency);
+  },
+  financialExpenses: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.financialExpenses.amount, defaultLocalCurrency),
+      records: parent.financialExpenses.records,
+    };
+  },
+  otherIncome: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return {
+      amount: formatFinancialAmount(parent.otherIncome.amount, defaultLocalCurrency),
+      records: parent.otherIncome.records,
+    };
+  },
+  profitBeforeTax: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.profitBeforeTax, defaultLocalCurrency);
+  },
+  tax: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.tax, defaultLocalCurrency);
+  },
+  netProfit: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.netProfit, defaultLocalCurrency);
+  },
 };
 
 export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
@@ -166,8 +226,12 @@ export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
         return res;
       });
   },
-  amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.amount, defaultLocalCurrency),
+  amount: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.amount, defaultLocalCurrency);
+  },
 };
 
 export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers = {
@@ -182,6 +246,10 @@ export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers
         return res;
       });
   },
-  amount: (parent, _, { adminContext: { defaultLocalCurrency } }) =>
-    formatFinancialAmount(parent.amount, defaultLocalCurrency),
+  amount: async (parent, _, { injector }) => {
+    const { defaultLocalCurrency } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return formatFinancialAmount(parent.amount, defaultLocalCurrency);
+  },
 };

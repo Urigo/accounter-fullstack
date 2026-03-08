@@ -1,21 +1,19 @@
 import { GraphQLError } from 'graphql';
 import type { DynamicReportNode } from '../../../__generated__/types.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { parseTemplate, validateTemplate } from '../helpers/dynamic-report.helper.js';
 import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
 export const dynamicReportResolver: ReportsModule.Resolvers = {
   Query: {
-    dynamicReport: async (_, { name }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    dynamicReport: async (_, { name }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         return injector.get(DynamicReportProvider).getTemplate({
           name,
-          ownerId: defaultAdminBusinessId,
+          ownerId,
         });
       } catch (error) {
         const message = `Failed to get dynamic report template "${name}"`;
@@ -23,16 +21,11 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    allDynamicReports: async (_, __, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    allDynamicReports: async (_, __, { injector }) => {
       try {
-        return injector
-          .get(DynamicReportProvider)
-          .getTemplatesByOwnerIdLoader.load(defaultAdminBusinessId);
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        return injector.get(DynamicReportProvider).getTemplatesByOwnerIdLoader.load(ownerId);
       } catch (error) {
         const message = 'Failed to get all dynamic report templates';
         console.log(`${message}: ${error}`);
@@ -41,20 +34,17 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     },
   },
   Mutation: {
-    updateDynamicReportTemplate: async (_, { name, template }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    updateDynamicReportTemplate: async (_, { name, template }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         validateTemplate(template);
 
         return injector
           .get(DynamicReportProvider)
           .updateTemplate({
             name,
-            ownerId: defaultAdminBusinessId,
+            ownerId,
             template,
           })
           .then(result => {
@@ -69,19 +59,16 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    updateDynamicReportTemplateName: async (_, { name, newName }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    updateDynamicReportTemplateName: async (_, { name, newName }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         return injector
           .get(DynamicReportProvider)
           .updateTemplateName({
             prevName: name,
             newName,
-            ownerId: defaultAdminBusinessId,
+            ownerId,
           })
           .then(result => {
             if (result.length === 0) {
@@ -95,20 +82,17 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    insertDynamicReportTemplate: async (_, { name, template }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    insertDynamicReportTemplate: async (_, { name, template }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         validateTemplate(template);
 
         return injector
           .get(DynamicReportProvider)
           .insertTemplate({
             name,
-            ownerId: defaultAdminBusinessId,
+            ownerId,
             template,
           })
           .then(result => {
@@ -120,18 +104,15 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
-    deleteDynamicReportTemplate: async (_, { name }, context) => {
-      const {
-        injector,
-        adminContext: { defaultAdminBusinessId },
-      } = context;
-
+    deleteDynamicReportTemplate: async (_, { name }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         return injector
           .get(DynamicReportProvider)
           .deleteTemplate({
             name,
-            ownerId: defaultAdminBusinessId,
+            ownerId,
           })
           .then(result => {
             if (result.length === 0) {

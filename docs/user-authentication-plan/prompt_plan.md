@@ -742,7 +742,7 @@ REQUIREMENTS:
 3. Install `jose` library for Auth0 JWT verification:
 
    ```bash
-   npm install jose
+   yarn add jose
    ```
 
 4. Implement AuthContextV2Provider:
@@ -1218,8 +1218,9 @@ REQUIREMENTS:
    ```
 
    - Keep existing `adminContextPlugin` active
-   - Provider will be registered in Phase 4, Prompt 4.8 (AdminContext Switch)
-   - This ensures existing admin context functionality continues working
+
+- Provider will be registered in Phase 4, Prompt 4.9 (AdminContext Switch)
+- This ensures existing admin context functionality continues working
 
 3. **DO NOT update resolvers yet**:
    - Resolvers continue using `context.adminContext` from plugin
@@ -1227,7 +1228,8 @@ REQUIREMENTS:
 
 4. **DO NOT remove `adminContextPlugin` from `index.ts`**:
    - Plugin must remain active for existing users
-   - Plugin removal happens in Phase 4, Prompt 4.8
+
+- Plugin removal happens in Phase 4, Prompt 4.9
 
 5. **DO NOT delete `admin-context-plugin.ts`**:
    - File stays until Phase 4 cutover
@@ -1239,18 +1241,11 @@ REQUIREMENTS:
      packages/server/src/modules/admin-context/providers/admin-context.provider.backup.ts
    ```
 
-7. Add ADMIN_CONTEXT injection token to `packages/server/src/shared/tokens.ts`:
-
-   ```typescript
-   export const ADMIN_CONTEXT = new InjectionToken<AdminContext | null>('AdminContext')
-   ```
-
-   **Note**: Token is defined now but **provider not registered until Phase 4.8**.
-
-8. **DO NOT register provider in `modules-app.ts` yet**:
+7. **DO NOT register provider in `modules-app.ts` yet**:
    - Keep existing `adminContextPlugin` active
-   - Provider will be registered in Phase 4, Prompt 4.8 (AdminContext Switch)
-   - This ensures existing admin context functionality continues working
+
+- Provider will be registered in Phase 4, Prompt 4.9 (AdminContext Switch)
+- This ensures existing admin context functionality continues working
 
 9. **DO NOT update resolvers yet**:
    - Resolvers continue using `context.adminContext` from plugin
@@ -1258,7 +1253,7 @@ REQUIREMENTS:
 
 10. **DO NOT remove `adminContextPlugin` from `index.ts`**:
     - Plugin must remain active for existing users
-    - Plugin removal happens in Phase 4, Prompt 4.8
+    - Plugin removal happens in Phase 4, Prompt 4.9
 
 11. Write tests (isolated provider tests **without** AUTH_CONTEXT):
 
@@ -1274,7 +1269,7 @@ BENEFITS (when fully activated in Phase 4.8):
 - ✅ Request-scoped caching (no cross-tenant leakage risk) - **ACHIEVED NOW**
 - ✅ No DataLoader complexity for Operation scope - **ACHIEVED NOW**
 - ⏳ Proper DI integration with AUTH_CONTEXT - **Phase 4.8**
-- ⏳ Type-safe injection via ADMIN_CONTEXT token - **Phase 4.8**
+- ⏳ Direct provider injection for admin context - **Phase 4.8**
 - ⏳ Automatically uses TenantAwareDBClient (RLS enforced) - **Phase 4.8**
 
 EXPECTED OUTPUT:
@@ -1286,7 +1281,6 @@ EXPECTED OUTPUT:
   - **Still uses DBProvider** (TenantAwareDBClient requires AUTH_CONTEXT, not available yet)
   - Added request-scoped cache (private cachedContext)
 - Backup: `packages/server/src/modules/admin-context/providers/admin-context.provider.backup.ts`
-- Updated: `packages/server/src/shared/tokens.ts` (ADMIN_CONTEXT token defined)
 - Tests: `packages/server/src/modules/admin-context/__tests__/admin-context-v2.provider.test.ts`
 - **`modules-app.ts` UNCHANGED** (refactored provider not registered yet)
 - **`index.ts` UNCHANGED** (plugin still active)
@@ -1295,10 +1289,10 @@ EXPECTED OUTPUT:
 - All new tests passing (isolated provider tests with DBProvider mocks)
 - **Server functional** (no AUTH_CONTEXT dependency)
 
-**CRITICAL**: AdminContextProvider still uses DBProvider (not TenantAwareDBClient). Phase 4.8 will:
+**CRITICAL**: AdminContextProvider still uses DBProvider (not TenantAwareDBClient). Phase 4.9 will:
 
 1. Switch from DBProvider to TenantAwareDBClient
-2. Add AUTH_CONTEXT injection
+2. Add AuthContextProvider direct injection
 3. Register provider in modules-app.ts
 4. Remove adminContextPlugin
 
@@ -1307,9 +1301,9 @@ INTEGRATION:
 - AdminContextProvider refactored to Operation scope (cache isolation fixed)
 - **Still uses DBProvider** (TenantAwareDBClient switch happens in Phase 4.8)
 - **adminContextPlugin remains active** (existing users unaffected)
-- Provider registered in Phase 4, Prompt 4.8 (after Auth0 activation)
-- Resolvers migrated in Phase 4, Prompt 4.8
-- Plugin removed in Phase 4, Prompt 4.8
+- Provider registered in Phase 4, Prompt 4.9 (after Auth0 activation)
+- Resolvers migrated in Phase 4, Prompt 4.9
+- Plugin removed in Phase 4, Prompt 4.9
 
 VALIDATION:
 
@@ -2169,7 +2163,7 @@ EXPECTED OUTPUT:
 
 - Script: `packages/server/src/scripts/backfill-business-id.ts`
 - Tests: `packages/server/src/scripts/__tests__/backfill-business-id.test.ts`
-- Documentation: How to run script (`npm run backfill-owner-id`)
+- Documentation: How to run script
 - All tests passing
 
 INTEGRATION: Run this script AFTER deploying the nullable column migration (Prompt 3.3) and BEFORE
@@ -2504,7 +2498,7 @@ CRITICAL: This is HIGH RISK. Extensive testing required before production.
 ROLLBACK PLAN: Script ready to disable RLS per table if issues found:
 
 ```bash
-npm run disable-rls-table -- --table=charges
+yarn run disable-rls-table -- --table=charges
 ```
 
 ``
@@ -2550,7 +2544,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/server
-   npm install jose
+   yarn add jose
    ```
 
 2. Update `packages/server/src/environment.ts`:
@@ -2665,9 +2659,10 @@ REQUIREMENTS:
    - Name: "Accounter Web App"
    - Type: Regular Web Application
    - Configure application settings:
-     - Allowed Callback URLs: `http://localhost:5173/callback`, `https://app.example.com/callback`
-     - Allowed Logout URLs: `http://localhost:5173`, `https://app.example.com`
-     - Allowed Web Origins: `http://localhost:5173`, `https://app.example.com`
+     - Allowed Callback URLs: `http://localhost:3001/callback`,
+       `https://accounter-prod.pages.dev/callback`
+     - Allowed Logout URLs: `http://localhost:3001`, `https://accounter-prod.pages.dev`
+     - Allowed Web Origins: `http://localhost:3001`, `https://accounter-prod.pages.dev`
      - Token Endpoint Authentication Method: Post
    - Save changes
 
@@ -2774,7 +2769,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/server
-   npm install auth0
+   yarn add auth0
    ```
 
 2. Create service: `packages/server/src/modules/auth/services/auth0-management.service.ts`
@@ -2977,7 +2972,7 @@ REQUIREMENTS:
    testAuth0Parallel().catch(console.error)
    ```
 
-3. Add npm script to `packages/server/package.json`:
+3. Add yarn script to `packages/server/package.json`:
 
    ```json
    {
@@ -2993,11 +2988,15 @@ REQUIREMENTS:
    - Password: `TestAuth0Pass123!`
    - Connection: Username-Password-Authentication
    - Blocked: No (for testing)
-   - Map to existing business_users record:
+   - Create a mapping for the test user:
      ```sql
-     UPDATE accounter_schema.business_users
-     SET auth0_user_id = 'auth0|...'  -- From Auth0 dashboard
-     WHERE email = 'test-auth0@example.com';
+     INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
+     VALUES (
+        gen_random_uuid(),
+        'auth0|...', -- Replace with ID from Auth0 dashboard
+        (SELECT id FROM accounter_schema.businesses LIMIT 1), -- Or use specific business ID
+        'business_owner'
+     );
      ```
 
 5. Obtain test JWT:
@@ -3019,7 +3018,7 @@ REQUIREMENTS:
 6. Run parallel tests:
 
    ```bash
-   AUTH0_TEST_JWT="eyJ..." npm run test:auth0-parallel
+   AUTH0_TEST_JWT="eyJ..." yarn run test:auth0-parallel
    ```
 
 7. Validate both auth systems work:
@@ -3181,7 +3180,7 @@ REQUIREMENTS:
 4. Run test user creation:
 
    ```bash
-   npm run create-migration-test-users
+   yarn run create-migration-test-users
    ```
 
 5. Validate test users:
@@ -3255,7 +3254,7 @@ REQUIREMENTS:
 
    ```bash
    cd packages/client
-   npm install @auth0/auth0-react
+   yarn add @auth0/auth0-react
    ```
 
 2. **Configure Auth0Provider** (`packages/client/src/main.tsx`):
@@ -3295,92 +3294,238 @@ REQUIREMENTS:
    VITE_AUTH0_AUDIENCE=https://api.accounter.com
    ```
 
-4. **Create dual-auth login page** (`packages/client/src/pages/login.tsx`):
+**Note on File Organization**: This project follows these conventions:
+
+- UI components: `packages/client/src/components/` (including `login-page.tsx`)
+- Page/Screen components: `packages/client/src/components/screens/`
+- Routes configuration: `packages/client/src/router/`
+- Main landing/home page: `/charges` (defined in `ROUTES.HOME`)
+
+4. **Update existing login page** (`packages/client/src/components/login-page.tsx`):
+
+   Modify the existing LoginPage component to add Auth0 login option alongside legacy auth:
 
    ```typescript
    import { useAuth0 } from '@auth0/auth0-react'
-   import { useState } from 'react'
+   import { useContext, useEffect, useState, type ReactElement } from 'react'
+   import { useForm } from 'react-hook-form'
+   import { useNavigate } from 'react-router-dom'
+   import { toast } from 'sonner'
+   import { z } from 'zod'
+   import { zodResolver } from '@hookform/resolvers/zod'
+   import { AuthContext } from '../providers/auth-guard.js'
+   import { ROUTES } from '../router/routes.js'
+   import { Button } from './ui/button.js'
+   import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form.js'
+   import { Input } from './ui/input.js'
 
-   export function LoginPage() {
-     const { loginWithRedirect } = useAuth0()
-     const [authMethod, setAuthMethod] = useState<'legacy' | 'auth0'>('auth0')
+   const formSchema = z.object({
+     username: z.string().min(2).max(50),
+     password: z.string().min(2).max(50),
+   })
 
-     const handleAuth0Login = () => {
-       loginWithRedirect()
-     }
+   export function LoginPage(): ReactElement {
+     const { loginWithRedirect, isAuthenticated } = useAuth0()
+     const { authService } = useContext(AuthContext)
+     const [showLegacyLogin, setShowLegacyLogin] = useState(false)
+     const navigate = useNavigate()
 
-     const handleLegacyLogin = () => {
-       // Keep existing legacy login logic temporarily
-       // TODO: Remove after backend switches to Auth0 (Prompt 4.7)
+     // Existing logout effect
+     useEffect(() => {
+       authService.logout()
+     }, [authService])
+
+     // Redirect if already authenticated via Auth0
+     useEffect(() => {
+       if (isAuthenticated) {
+         navigate(ROUTES.HOME) // /charges
+       }
+     }, [isAuthenticated, navigate])
+
+     const form = useForm<z.infer<typeof formSchema>>({
+       resolver: zodResolver(formSchema),
+       defaultValues: {
+         username: '',
+         password: '',
+       },
+     })
+
+     function onSubmit(values: z.infer<typeof formSchema>) {
+       try {
+         authService.login(values.username, values.password).then(_user => {
+           navigate(ROUTES.HOME) // /charges
+         })
+         toast.success('Success', {
+           description: 'You have successfully logged in.',
+         })
+       } catch (error) {
+         console.error(error)
+         toast.error('Error', {
+           description: 'Invalid credentials. Please try again.',
+         })
+       }
      }
 
      return (
-       <div className="login-container">
-         <h1>Login to Accounter</h1>
-
-         <div className="auth-method-toggle">
-           <button
-             onClick={() => setAuthMethod('auth0')}
-             className={authMethod === 'auth0' ? 'active' : ''}
-           >
-             Login with Auth0 (Recommended)
-           </button>
-           <button
-             onClick={() => setAuthMethod('legacy')}
-             className={authMethod === 'legacy' ? 'active' : ''}
-           >
-             Legacy Login (Deprecated)
-           </button>
+       <div className="w-full flex flex-col justify-center items-center h-screen lg:grid lg:min-h-[200px] lg:grid-cols-2 xl:min-h-screen">
+         <div className="flex items-center justify-center">
+           {!showLegacyLogin ? (
+             // Auth0 login (default)
+             <div className="space-y-8 w-[300px]">
+               <div className="grid gap-2 text-center">
+                 <h1 className="text-3xl font-bold">Accounter</h1>
+                 <h1 className="text-3xl font-bold">Login</h1>
+                 <p className="text-balance text-muted-foreground">
+                   Sign in to your account
+                 </p>
+               </div>
+               <Button
+                 onClick={() =>
+                   loginWithRedirect({
+                     appState: { returnTo: ROUTES.HOME }, // /charges
+                   })
+                 }
+                 className="w-full font-semibold"
+               >
+                 Login with Auth0
+               </Button>
+               <Button
+                 onClick={() => setShowLegacyLogin(true)}
+                 variant="outline"
+                 className="w-full"
+               >
+                 Use Legacy Login
+               </Button>
+             </div>
+           ) : (
+             // Legacy login form (existing)
+             <Form {...form}>
+               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-[300px]">
+                 <div className="grid gap-2 text-center">
+                   <h1 className="text-3xl font-bold">Accounter</h1>
+                   <h1 className="text-3xl font-bold">Login</h1>
+                   <p className="text-balance text-muted-foreground">Enter your credentials to login.</p>
+                 </div>
+                 <FormField
+                   control={form.control}
+                   name="username"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>Username</FormLabel>
+                       <FormControl>
+                         <Input placeholder="Username" {...field} />
+                       </FormControl>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
+                 <FormField
+                   control={form.control}
+                   name="password"
+                   render={({ field }) => (
+                     <FormItem>
+                       <FormLabel>Password</FormLabel>
+                       <FormControl>
+                         <Input placeholder="Password" type="password" {...field} />
+                       </FormControl>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
+                 <Button
+                   disabled={form.formState.isSubmitting || !form.formState.isValid}
+                   className="w-full font-semibold"
+                   type="submit"
+                 >
+                   Login
+                 </Button>
+                 <Button
+                   onClick={() => setShowLegacyLogin(false)}
+                   variant="outline"
+                   className="w-full"
+                   type="button"
+                 >
+                   Back to Auth0 Login
+                 </Button>
+               </form>
+             </Form>
+           )}
          </div>
-
-         {authMethod === 'auth0' && (
-           <button onClick={handleAuth0Login}>
-             Login with Auth0
-           </button>
-         )}
-
-         {authMethod === 'legacy' && (
-           <div className="legacy-login-form">
-             {/* Existing legacy login form */}
+         <div className="hidden bg-muted lg:block bg-black rounded-tl-3xl rounded-bl-3xl">
+           <div className="flex flex-row justify-center items-center h-screen">
+             <img
+               src="../../icons/guild-logo.svg"
+               alt="nature"
+               className="w-[100px] h-[100px] object-cover"
+             />
            </div>
-         )}
+         </div>
        </div>
      )
    }
    ```
 
-5. **Create Auth0 callback handler** (`packages/client/src/pages/auth/callback.tsx`):
+5. **Create Auth0 callback handler** (`packages/client/src/components/screens/auth-callback.tsx`):
+
+   **Note**: Following project conventions, screens are stored under `components/screens/` rather
+   than `pages/`.
 
    ```typescript
    import { useAuth0 } from '@auth0/auth0-react'
-   import { useEffect } from 'react'
+   import { useEffect, type ReactElement } from 'react'
    import { useNavigate } from 'react-router-dom'
+   import { ROUTES } from '../../router/routes.js'
 
-   export function CallbackPage() {
-     const { handleRedirectCallback, isLoading, error } = useAuth0()
+   export function AuthCallbackPage(): ReactElement {
+     const { handleRedirectCallback, isLoading, error, isAuthenticated } = useAuth0()
      const navigate = useNavigate()
 
      useEffect(() => {
        const handleCallback = async () => {
          try {
-           await handleRedirectCallback()
-           navigate('/dashboard')
+           const result = await handleRedirectCallback()
+           // Use appState.returnTo if available, otherwise default to home
+           const returnTo = result?.appState?.returnTo || ROUTES.HOME // /charges
+           navigate(returnTo)
          } catch (err) {
            console.error('Auth callback error:', err)
            navigate('/login?error=auth_failed')
          }
        }
 
-       if (!isLoading && !error) {
+       if (!isLoading && !error && !isAuthenticated) {
          handleCallback()
+       } else if (isAuthenticated) {
+         // Already authenticated, redirect to home
+         navigate(ROUTES.HOME)
        }
-     }, [isLoading, error, handleRedirectCallback, navigate])
+     }, [isLoading, error, isAuthenticated, handleRedirectCallback, navigate])
 
      if (error) {
-       return <div>Authentication error: {error.message}</div>
+       return (
+         <div className="flex items-center justify-center h-screen">
+           <div className="text-center">
+             <h1 className="text-2xl font-bold mb-4">Authentication Error</h1>
+             <p className="text-muted-foreground mb-4">{error.message}</p>
+             <button
+               onClick={() => navigate('/login')}
+               className="px-4 py-2 bg-primary text-primary-foreground rounded"
+             >
+               Return to Login
+             </button>
+           </div>
+         </div>
+       )
      }
 
-     return <div>Processing authentication...</div>
+     return (
+       <div className="flex items-center justify-center h-screen">
+         <div className="text-center">
+           <h1 className="text-2xl font-bold mb-4">Processing authentication...</h1>
+           <p className="text-muted-foreground">Please wait while we sign you in.</p>
+         </div>
+       </div>
+     )
    }
    ```
 
@@ -3436,19 +3581,9 @@ REQUIREMENTS:
    }
    ```
 
-7. **Add /auth/callback route** (`packages/client/src/router.tsx`):
-
-   ```typescript
-   import { CallbackPage } from './pages/auth/callback'
-
-   const router = createBrowserRouter([
-     { path: '/login', element: <LoginPage /> },
-     { path: '/auth/callback', element: <CallbackPage /> },
-     // ... existing routes
-   ])
-   ```
-
-8. **Deploy frontend to staging**:
+7. **Add /auth/callback route** (`packages/client/src/router/index.tsx` or router config file):\n\n
+   `typescript\n   import { AuthCallbackPage } from '../components/screens/auth-callback.js'\n\n   // Add to your router configuration:\n   const router = createBrowserRouter([\n     { path: '/login', element: <LoginPage /> },\n     { path: '/auth/callback', element: <AuthCallbackPage /> },\n     // ... existing routes\n   ])\n   `\n\n8.
+   **Deploy frontend to staging**:
 
    ```bash
    git checkout -b frontend-auth0-integration
@@ -3457,7 +3592,7 @@ REQUIREMENTS:
    git push origin frontend-auth0-integration
    
    # Deploy to staging
-   npm run deploy:client:staging
+   yarn run deploy:client:staging
    ```
 
 **VALIDATION** (Staging environment):
@@ -3465,7 +3600,7 @@ REQUIREMENTS:
 - [ ] Auth0 login button appears on login page
 - [ ] Clicking "Login with Auth0" redirects to Auth0 Universal Login
 - [ ] After Auth0 login, user redirected to /auth/callback
-- [ ] Callback page processes authentication and redirects to /dashboard
+- [ ] Callback page processes authentication and redirects to /charges (home page)
 - [ ] Auth0 access token sent in Authorization header to GraphQL API
 - [ ] Legacy login still works (fallback during transition)
 - [ ] Users can toggle between Auth0 and legacy login
@@ -3482,10 +3617,10 @@ EXPECTED OUTPUT:
 
 - Installed: `@auth0/auth0-react` in `packages/client/package.json`
 - Updated: `packages/client/src/main.tsx` (Auth0Provider wrapper)
-- Created: `packages/client/src/pages/login.tsx` (dual-auth UI)
-- Created: `packages/client/src/pages/auth/callback.tsx` (callback handler)
+- Updated: `packages/client/src/components/login-page.tsx` (dual-auth UI with Auth0 + legacy)
+- Created: `packages/client/src/components/screens/auth-callback.tsx` (callback handler)
 - Updated: `packages/client/src/urql-client.ts` (dual-auth support)
-- Updated: `packages/client/src/router.tsx` (callback route)
+- Updated: `packages/client/src/router/index.tsx` (or router config - callback route added)
 - Environment: `packages/client/.env.example` updated
 - Frontend deployed to staging and validated
 - All tests passing
@@ -3614,7 +3749,7 @@ REQUIREMENTS:
    git push origin auth0-backend-switch
    
    # Deploy to staging
-   npm run deploy:server:staging
+   yarn run deploy:server:staging
    ```
 
 4. **Staging validation** (30-minute soak test):
@@ -3631,7 +3766,7 @@ REQUIREMENTS:
    ```bash
    # Announce maintenance window
    # Deploy to production
-   npm run deploy:production
+   yarn run deploy:production
    
    # Monitor for 24 hours
    ```
@@ -3655,7 +3790,7 @@ REQUIREMENTS:
    git revert HEAD
    
    # Redeploy
-   npm run deploy:production
+   yarn run deploy:production
    
    # Verify old auth works
    curl -H "Authorization: Bearer OLD_JWT" https://api.example.com/graphql
@@ -4046,7 +4181,7 @@ git add .
 git commit -m "feat: migrate businesses provider to TenantAwareDBClient with RLS"
 git push origin migrate-businesses-provider
 
-npm run deploy:staging
+yarn run deploy:staging
 
 # Staging validation (2 hours)
 - Create test businesses
@@ -4059,7 +4194,7 @@ npm run deploy:staging
 
 ```bash
 # Deploy to production
-npm run deploy:production
+yarn run deploy:production
 
 # Monitor for 48 hours:
 - RLS policy violations (should be zero)
@@ -4101,7 +4236,7 @@ RISK: **MEDIUM** - First operational use of TenantAwareDBClient in production
 
 **NEXT STEPS**:
 
-- Prompt 4.8: Switch from adminContextPlugin to AdminContextProvider (DI-based admin context)
+- Prompt 4.9: Switch from adminContextPlugin to AdminContextProvider (DI-based admin context)
 - Migrate remaining providers incrementally (one module per week)
 - Eventually deprecate direct DBProvider usage in providers (Phase 5)
 - Update ESLint rules to enforce TenantAwareDBClient usage
@@ -4127,11 +4262,11 @@ provider-based admin context for proper DI integration.
 - ✅ Proper GraphQL Modules DI integration
 - ✅ Request-scoped caching (no cross-tenant leakage risk)
 - ✅ Can inject TenantAwareDBClient (RLS enforced on admin queries)
-- ✅ Type-safe injection via ADMIN_CONTEXT token
+- ✅ Direct provider injection for async admin context loading
 - ✅ Testable in isolation with mock dependencies
 
-TASK: Register AdminContextProvider in DI, update resolvers to inject ADMIN_CONTEXT, remove
-adminContextPlugin.
+TASK: Register AdminContextProvider in DI, update resolvers/providers to inject AdminContextProvider
+directly, remove adminContextPlugin.
 
 REQUIREMENTS:
 
@@ -4139,7 +4274,6 @@ REQUIREMENTS:
 
 ```typescript
 import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js'
-import { ADMIN_CONTEXT } from './shared/tokens.js'
 
 export const application = createApplication({
   modules: [
@@ -4148,44 +4282,36 @@ export const application = createApplication({
   providers: [
     DBProvider,
     TenantAwareDBClient,
-    AdminContextProvider, // NEW
-    {
-      provide: ADMIN_CONTEXT,
-      useFactory: async (provider: AdminContextProvider) => {
-        return provider.getAdminContext()
-      },
-      deps: [AdminContextProvider],
-      scope: Scope.Operation
-    }
+    AdminContextProvider // NEW
   ]
 })
 ```
 
-**2. Update resolvers to inject ADMIN_CONTEXT** (examples):
+**2. Update resolvers/providers to inject AdminContextProvider** (examples):
 
 ```typescript
 // packages/server/src/modules/charges/providers/charges.provider.ts
-import { Injectable, Scope, Inject } from 'graphql-modules'
-import { ADMIN_CONTEXT } from '@shared/tokens'
-import type { AdminContext } from '@shared/types'
+import { Injectable, Scope } from 'graphql-modules'
+import { AdminContextProvider } from '@modules/admin-context/providers/admin-context.provider'
 import { TenantAwareDBClient } from '@modules/app-providers/tenant-db-client'
 import { GraphQLError } from 'graphql'
 
 @Injectable({ scope: Scope.Operation })
 export class ChargesProvider {
   constructor(
-    @Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null,
+    private adminProvider: AdminContextProvider,
     private db: TenantAwareDBClient
   ) {}
 
   async getCharges() {
-    if (!this.adminContext?.businessOwner) {
+    const adminContext = await this.adminProvider.getAdminContext()
+    if (!adminContext?.businessOwner) {
       throw new GraphQLError('Forbidden', {
         extensions: { code: 'FORBIDDEN' }
       })
     }
 
-    // Use adminContext.businessOwner, admin Context.financialEntities
+    // Use adminContext.businessOwner, adminContext.financialEntities
     return this.db.query('SELECT * FROM charges')
   }
 }
@@ -4235,10 +4361,11 @@ rm packages/server/src/plugins/admin-context-plugin.ts
   // AFTER:
   @Injectable()
   class SomeProvider {
-    constructor(@Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null) {}
+    constructor(private adminProvider: AdminContextProvider) {}
 
     async method() {
-      if (!this.adminContext?.businessOwner) { /* ... */ }
+      const adminContext = await this.adminProvider.getAdminContext()
+      if (!adminContext?.businessOwner) { /* ... */ }
     }
   }
   ```
@@ -4285,7 +4412,7 @@ EXPECTED OUTPUT:
 - Updated: `packages/server/src/modules-app.ts` (AdminContextProvider registered)
 - Updated: `packages/server/src/index.ts` (adminContextPlugin removed)
 - Deleted: `packages/server/src/plugins/admin-context-plugin.ts`
-- Updated: All providers/resolvers using admin context (inject ADMIN_CONTEXT)
+- Updated: All providers/resolvers using admin context (inject AdminContextProvider)
 - Tests: `packages/server/src/modules/admin-context/__tests__/admin-context-integration.test.ts`
 - All tests passing
 - Git branch: `feature/admin-context-provider`
@@ -4347,7 +4474,7 @@ RISK: **LOW** - AdminContextProvider was tested in Prompt 2.7, only activation c
 ``
 
 CONTEXT: Auth0 is now active (Prompt 4.7), plugins have been removed, and all providers use
-dependency injection with AUTH_CONTEXT and ADMIN_CONTEXT tokens (Prompts 4.8-4.9). The legacy
+dependency injection via AuthContextProvider and AdminContextProvider (Prompts 4.8-4.9). The legacy
 context properties (currentUser, adminContext, etc.) are no longer needed and should be removed from
 types.
 
@@ -4366,7 +4493,7 @@ REQUIREMENTS:
      request: Request
      rawAuth: RawAuth // From authPluginV2 (HTTP-level)
      // Note: Do NOT add authContext or adminContext here
-     // These are accessed via injection tokens (AUTH_CONTEXT, ADMIN_CONTEXT)
+     // These are accessed via provider injection (AuthContextProvider, AdminContextProvider)
    }
 
    export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
@@ -4379,16 +4506,6 @@ REQUIREMENTS:
          AuthContextProvider,
          TenantAwareDBClient,
          AdminContextProvider,
-         {
-           provide: AUTH_CONTEXT,
-           useFactory: (provider: AuthContextProvider) => provider.getAuthContext(),
-           deps: [AuthContextProvider]
-         },
-         {
-           provide: ADMIN_CONTEXT,
-           useFactory: (provider: AdminContextProvider) => provider.getAdminContext(),
-           deps: [AdminContextProvider]
-         },
          {
            provide: ENVIRONMENT,
            useValue: env
@@ -4409,8 +4526,7 @@ REQUIREMENTS:
      rawAuth: RawAuth
    }
 
-   // Auth context accessed via injection tokens, not context object
-   // import { AUTH_CONTEXT, ADMIN_CONTEXT } from '@shared/tokens'
+   // Auth/admin contexts are accessed via provider injection, not context object
    ```
 
 3. **Verify no legacy context access patterns remain**:
@@ -4435,15 +4551,17 @@ REQUIREMENTS:
    @Injectable({ scope: Scope.Operation })
    export class MyService {
      constructor(
-       @Inject(AUTH_CONTEXT) private authContext: AuthContext | null,
-       @Inject(ADMIN_CONTEXT) private adminContext: AdminContext | null
+       private authProvider: AuthContextProvider,
+       private adminProvider: AdminContextProvider
      ) {}
 
      async myMethod() {
-       if (!this.authContext?.user) {
+       const authContext = await this.authProvider.getContext()
+       const adminContext = await this.adminProvider.getAdminContext()
+       if (!authContext?.user) {
          throw new GraphQLError('Unauthorized')
        }
-       const businessOwner = this.adminContext?.businessOwner
+       const businessOwner = adminContext?.businessOwner
      }
    }
    ```
@@ -4456,7 +4574,7 @@ REQUIREMENTS:
    export const resolvers: Resolvers<GraphQLContext> = {
      Query: {
        // Resolvers should NOT access authContext from context
-       // Instead, inject services that have @Inject(AUTH_CONTEXT)
+       // Instead, inject services/providers and call provider methods
      }
    }
    ```
@@ -4464,17 +4582,17 @@ REQUIREMENTS:
 5. Write tests:
    - GlobalContext types compile correctly
    - rawAuth accessible from context
-   - Auth context NOT in context (accessed via injection tokens)
-   - Admin context NOT in context (accessed via injection tokens)
-   - Injection tokens work as expected
-   - All resolvers compile with new types
-   - **All existing integration tests still pass**
+
+- Auth context NOT in context (accessed via provider injection)
+- Admin context NOT in context (accessed via provider injection)
+- All resolvers compile with new types
+- **All existing integration tests still pass**
 
 EXPECTED OUTPUT:
 
 - Updated: `packages/server/src/modules-app.ts` (cleaned GlobalContext)
 - Updated: `packages/server/src/shared/types/index.ts` (minimal GraphQLContext)
-- **ZERO code changes in resolvers/providers** (should already be using injection tokens)
+- **ZERO code changes in resolvers/providers** (should already be using provider injection)
 - Tests: `packages/server/src/__tests__/context-types.test.ts`
 - TypeScript compilation succeeds
 - All tests passing
@@ -4483,7 +4601,7 @@ VALIDATION:
 
 - TypeScript compilation succeeds
 - **No references to legacy context properties** (verified with rg searches)
-- All auth access via injection tokens
+- All auth/admin access via provider injection
 - Context types accurate and minimal
 - **All integration tests pass** (proves migration complete)
 
@@ -4492,9 +4610,9 @@ RISK: **LOW** - Just type cleanup, all code already migrated in previous prompts
 BENEFITS:
 
 - ✅ Clear separation: HTTP context (rawAuth) vs business context (AUTH_CONTEXT)
-- ✅ Type-safe injection across modules
+- ✅ Type-safe provider injection across modules
 - ✅ Consistent architecture (DI-first, not context-passing)
-- ✅ Easier testing (mock injection tokens vs mocking context)
+- ✅ Easier testing (mock providers vs mocking context)
 - ✅ Prevents accidental context property access (TypeScript errors)
 
 DEPLOYMENT:
@@ -4609,7 +4727,7 @@ REQUIREMENTS:
    - Run cleanup script and then delete it:
 
    ```bash
-   npm run cleanup-test-users
+   yarn run cleanup-test-users
    rm packages/server/src/scripts/cleanup-migration-test-users.ts
    ```
 
@@ -4770,13 +4888,13 @@ REQUIREMENTS:
 7. **Run all tests**:
 
    ```bash
-   npm test
+   yarn test
    ```
 
 8. **TypeScript compilation**:
 
    ```bash
-   npm run type-check
+   yarn run type-check
    ```
 
 9. **Commit changes**:

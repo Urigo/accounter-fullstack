@@ -268,18 +268,19 @@ export class TenantAwareDBClient {
 
   constructor(
     private dbProvider: DBProvider, // Singleton pool manager
-    @Inject(AUTH_CONTEXT) private authContext: AuthContext | null = null, // Request-scoped, nullable with default
+    private authProvider: AuthContextProvider, // Request-scoped auth provider
     // TEMPORARY (Phase 3.2 → 4.8): Fallback to legacy auth during transition period
     @Inject(CONTEXT) private context: AccounterContext
   ) {}
 
-  // Note: AUTH_CONTEXT injection requires default null value because the token
-  // is not registered until Phase 4 (Auth0 activation). Phase 2 creates the
-  // infrastructure but doesn't activate it.
+  // Note: authProvider is injected but getContext() is not called in constructor
+  // because it's async. Instead, getContext() is called lazily when needed in
+  // query() method. Phase 2 creates the infrastructure but doesn't activate it.
   //
   // TEMPORARY: During Phase 3-4, fallback to context.currentUser.userId when
-  // authContext is null. This enables providers to migrate directly to final
-  // pattern (inject TenantAwareDBClient) without intermediate workaround code.
+  // authProvider.getContext() returns null. This enables providers to migrate
+  // directly to final pattern (inject TenantAwareDBClient) without intermediate
+  // workaround code.
   // Cleanup: Remove @Inject(CONTEXT) and all fallback logic in Phase 4.8.
   //
   // Phase 4.8 Cleanup Checklist:
@@ -288,6 +289,7 @@ export class TenantAwareDBClient {
   // - Clean up provider-specific fallbacks (e.g., CorporateTaxesProvider.businessId getter)
   //   - File: packages/server/src/modules/corporate-taxes/providers/corporate-taxes.provider.ts
   //   - Remove: authContext?.tenant?.businessId ?? this.context.currentUser.userId fallback
+  //   - Return: Only authContext.tenant.businessId, throw error if null
   //   - Change to: Only return authContext.tenant.businessId, throw if null
 
   async query<T = any>(queryText: string, params?: any[]): Promise<QueryResult<T>> {
@@ -301,8 +303,11 @@ export class TenantAwareDBClient {
   }
 
   async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
+    // Get auth context (async, but cached per-request)
+    const authContext = await this.authProvider.getContext()
+
     // Auth verification with TEMPORARY fallback (Phase 3.2 → 4.8)
-    if (!this.authContext && !this.context.currentUser?.userId) {
+    if (!authContext && !this.context.currentUser?.userId) {
       throw new GraphQLError('Auth context not available for tenant-aware database access')
     }
 
@@ -335,9 +340,9 @@ export class TenantAwareDBClient {
 
       // Set transaction-scoped RLS context
       // TEMPORARY (Phase 3.2 → 4.8): Fallback to legacy auth
-      const tenant = this.authContext?.tenant
-      const user = this.authContext?.user
-      const authType = this.authContext?.authType
+      const tenant = authContext?.tenant
+      const user = authContext?.user
+      const authType = authContext?.authType
 
       // TEMPORARY: businessId fallback to context.currentUser.userId
       const businessIdValue = tenant?.businessId ?? this.context.currentUser?.userId ?? null
@@ -697,9 +702,9 @@ proper authentication implementation.
 2. **Plugin Context Extension**: Plugins use `useExtendContext()` to add raw auth data
    (`rawAuth: { authType, token }`)
 3. **Modules DI Processing**: Operation-scoped providers (like `AuthContextProvider`) process raw
-   auth and create structured `AuthContext`
-4. **Injection Tokens**: Provide typed access to auth context across all modules via `AUTH_CONTEXT`
-   token
+   auth asynchronously when requested via `await provider.getContext()`
+4. **Direct Provider Injection**: Providers inject other providers directly and call async methods
+   (no injection tokens needed for async context)
 
 **Key Architecture Principles**:
 
@@ -707,8 +712,8 @@ proper authentication implementation.
   business logic (JWT verification, permission resolution)
 - **Operation Scope**: Auth-related providers MUST use `Scope.Operation` to ensure request isolation
   and prevent data leakage
-- **Injection Tokens**: Use `InjectionToken` for cross-module access to auth context (e.g.,
-  `AUTH_CONTEXT`, `ADMIN_CONTEXT`)
+- **Direct Provider Injection**: Inject providers directly (not via tokens) when async
+  initialization is needed. Providers cache their results internally per-request.
 - **No Direct Pool Access**: Resolvers MUST NOT access `pool` directly; use `TenantAwareDBClient`
   injected via DI
 - **Parallel Migration**: New auth infrastructure built alongside existing (v2 files) until safe
@@ -720,13 +725,16 @@ proper authentication implementation.
 const yoga = createYoga({
   plugins: [
     authPlugin(), // 1. Parse auth headers → add rawAuth to Yoga context
-    useGraphQLModules(app), // 2. Modules DI processes AuthContextProvider
-    adminContextPlugin(), // 3. Load business-specific config (uses AUTH_CONTEXT)
+    useGraphQLModules(app), // 2. Modules DI provides AuthContextProvider/AdminContextProvider
     useDeferStream(),
     useHive(/* ... */)
   ]
 })
 ```
+
+**Note**: `adminContextPlugin` is a transitional legacy pattern and must not be used after
+`AdminContextProvider` activation. Admin context loading belongs in `AdminContextProvider`
+(Operation-scoped), not Yoga plugin context.
 
 **Auth Plugin Responsibilities** (Minimal - Delegates to Modules):
 
@@ -744,20 +752,22 @@ existing auth plugin. Existing plugin remains active until Phase 4 cutover.
 - Extract Auth0 user ID (`sub` claim) and map to local `user_id` via database lookup
 - Fetch user's business/role associations from `business_users` table
 - Return structured `AuthContext` object with `{ authType, user, tenant, accessTokenExpiresAt }`
-- Injected as `AUTH_CONTEXT` token for use across all modules
+- Injected directly into resolvers/services (no token needed - providers call
+  `await provider.getContext()`)
+- Internal caching ensures DB queries run only once per request
 
 **Migration Note**: During Phase 2-3, preparatory infrastructure is built alongside existing auth:
 
 - `authPluginV2.ts` created (not registered in plugin array yet)
-- `AuthContextProvider` created with `AUTH_CONTEXT` token (not registered in DI yet)
-- `TenantAwareDBClient` created with nullable `AUTH_CONTEXT` injection (registered but unused)
+- `AuthContextProvider` created (not registered in DI yet)
+- `TenantAwareDBClient` created with `AuthContextProvider` injection (registered but unused)
 - Existing auth provider remains fully active and functional
 - **Phase 4.6**: Frontend Auth0 UI deployed with dual-auth support (users can choose legacy or
   Auth0)
 - **Phase 4.7**: Backend switches to Auth0-only (frontend already has Auth0 UI - zero downtime)
 - Result: Users always have a working login method throughout migration
 
-**Injection Token Provisioning** (in `modules-app.ts`):
+**Provider Registration** (in `modules-app.ts`):
 
 ```typescript
 export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
@@ -767,18 +777,19 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
     ],
     providers: [
       // ... existing providers
-      {
-        provide: AUTH_CONTEXT,
-        scope: Scope.Operation,
-        useFactory: async (context: any, authProvider: AuthContextProvider) => {
-          return authProvider.getAuthContext() // Returns AuthContext | null
-        },
-        deps: [CONTEXT, AuthContextProvider]
-      }
+      AuthContextProvider // Simply register the provider class
+      // No token or useFactory needed - inject directly into services
     ]
   })
 }
 ```
+
+**Why No Injection Token?**
+
+GraphQL Modules' `useFactory` doesn't support async functions, and `getAuthContext()` is async
+(performs JWT verification + DB queries). Instead, resolvers/services inject `AuthContextProvider`
+directly and call `await provider.getContext()`. The provider handles internal caching, so multiple
+calls within the same request are cheap.
 
 **Usage in Resolvers/Services**:
 
@@ -786,12 +797,14 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
 @Injectable({ scope: Scope.Operation })
 export class ChargesService {
   constructor(
-    @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
+    private authProvider: AuthContextProvider, // Inject provider directly
     private db: TenantAwareDBClient
   ) {}
 
   async createCharge(input: ChargeInput) {
-    if (!this.auth?.tenant?.businessId) {
+    const auth = await this.authProvider.getContext() // Async call, cached per-request
+
+    if (!auth?.tenant?.businessId) {
       throw new GraphQLError('Unauthenticated', {
         extensions: { code: 'UNAUTHENTICATED' }
       })
@@ -1155,7 +1168,7 @@ problems:
 
 1. Cannot properly use GraphQL Modules dependency injection
 2. Risk of global cache leakage between requests/tenants
-3. Cannot inject `AUTH_CONTEXT` or `TenantAwareDBClient` properly
+3. Cannot inject `AuthContextProvider` or `TenantAwareDBClient` properly
 
 **Required Migration**: Convert to Operation-scoped provider following the same pattern as
 `AuthContextProvider`.
@@ -1201,65 +1214,75 @@ export class AdminContextProvider {
   }
 }
 
-// Phase 2.7: Token defined but provider NOT registered yet
-// Phase 4.9: Provider registered in modules-app.ts
+// Phase 2.7: Provider created but NOT registered in DI yet
+// Phase 4.9: Provider registered in modules-app.ts providers array
 ```
 
 **Phase 4.9 Code** (Activation - After Auth0 and Frontend Integration):
 
 ```typescript
 // packages/server/src/modules/admin-context/providers/admin-context.provider.ts
-import { Injectable, Scope, Inject } from 'graphql-modules';
-import { GraphQLError } from 'graphql';
-import { AUTH_CONTEXT } from '../../../shared/tokens.js';
-import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import type { AuthContext } from '../../../shared/types/auth.js';
+import { Injectable, Scope } from 'graphql-modules'
+import { GraphQLError } from 'graphql'
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js'
+import { AuthContextProvider } from '../../auth/providers/auth-context-provider.js'
 
 @Injectable({ scope: Scope.Operation })
 export class AdminContextProvider {
-  private cachedContext: AdminContext | null = null;
+  private cachedContext: AdminContext | null = null
 
   constructor(
-    @Inject(AUTH_CONTEXT) private auth: AuthContext | null,
-    private db: TenantAwareDBClient,  // Phase 4.9: Switch to TenantAwareDBClient
+    private authProvider: AuthContextProvider, // Inject AuthContextProvider directly
+    private db: TenantAwareDBClient // Phase 4.9: Switch to TenantAwareDBClient
   ) {}
 
   async getAdminContext(): Promise<AdminContext> {
     if (!this.cachedContext) {
-      if (!this.auth?.tenant?.businessId) {
+      const auth = await this.authProvider.getContext() // Get auth async
+
+      if (!auth?.tenant?.businessId) {
         throw new GraphQLError('Unauthenticated', {
-          extensions: { code: 'UNAUTHENTICATED' },
-        });
+          extensions: { code: 'UNAUTHENTICATED' }
+        })
       }
 
       // Phase 4.9: Use TenantAwareDBClient - RLS enforced automatically
       // businessId is derived from validated Auth0 JWT, never from client input
       const [rawContext] = await getAdminBusinessContext.run(
-        { adminBusinessId: this.auth.tenant.businessId },
-        this.db  // TenantAwareDBClient enforces RLS via SET LOCAL
-      );
+        { adminBusinessId: auth.tenant.businessId },
+        this.db // TenantAwareDBClient enforces RLS via SET LOCAL
+      )
 
       if (!rawContext) {
-        throw new Error('Admin business context not found');
+        throw new Error('Admin business context not found')
       }
 
-      this.cachedContext = normalizeContext(rawContext);
+      this.cachedContext = normalizeContext(rawContext)
     }
-    return this.cachedContext;
+    return this.cachedContext
   }
 }
 
-// In modules-app.ts, provide via injection token:
-import { ADMIN_CONTEXT } from './shared/tokens.js';
-
-// Add to providers array (Phase 4.9 only):
-{
-  provide: ADMIN_CONTEXT,
-  scope: Scope.Operation,
-  useFactory: async (provider: AdminContextProvider) => provider.getAdminContext(),
-  deps: [AdminContextProvider],
+// In modules-app.ts, simply register the provider:
+export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
+  return createApplication({
+    modules: [
+      /* ... */
+    ],
+    providers: [
+      // ... existing providers
+      AdminContextProvider // Just register the class - no token needed
+    ]
+  })
 }
 ```
+
+**Why No Injection Token?**
+
+Same reason as `AuthContextProvider`: `getAdminContext()` is async (performs DB queries), and
+GraphQL Modules' `useFactory` doesn't support async functions. Resolvers/services inject
+`AdminContextProvider` directly and call `await provider.getAdminContext()`. Internal caching
+ensures efficient per-request execution.
 
 **Migration Steps**:
 
@@ -1271,21 +1294,20 @@ import { ADMIN_CONTEXT } from './shared/tokens.js';
    - Remove shared cache and DataLoader
    - Add request-scoped cache
    - **Keep using DBProvider** (TenantAwareDBClient not available yet)
-2. Add `ADMIN_CONTEXT` injection token to `packages/server/src/shared/tokens.ts`
-3. Create backup file for rollback
-4. Write isolation tests with DBProvider mocks
-5. **DO NOT register provider yet** (plugin remains active)
-6. **DO NOT remove plugin yet** (existing users rely on it)
+2. Create backup file for rollback
+3. Write isolation tests with DBProvider mocks
+4. **DO NOT register provider yet** (plugin remains active)
+5. **DO NOT remove plugin yet** (existing users rely on it)
 
 **Phase 4.9** (Activation - After Auth0 and Frontend):
 
-1. Update `AdminContextProvider` to inject `AUTH_CONTEXT` and use `TenantAwareDBClient`
-2. Register provider in `modules-app.ts` providers array
-3. Update all resolvers/providers to inject
-   `@Inject(ADMIN_CONTEXT) private adminContext: AdminContext`
-4. Remove `adminContextPlugin` from Yoga plugins array in `index.ts`
-5. Delete `packages/server/src/plugins/admin-context-plugin.ts`
-6. Verify all admin features work with provider-based approach
+1. Update `AdminContextProvider` to inject `AuthContextProvider` and use `TenantAwareDBClient`
+2. Register `AdminContextProvider` in `modules-app.ts` providers array
+3. Update all resolvers/providers to inject `AdminContextProvider` directly
+4. In resolver methods, call `const admin = await this.adminProvider.getAdminContext()`
+5. Remove `adminContextPlugin` from Yoga plugins array in `index.ts`
+6. Delete `packages/server/src/plugins/admin-context-plugin.ts`
+7. Verify all admin features work with provider-based approach
 
 **Migration Timing** (Two-Phase Approach):
 
@@ -1295,22 +1317,23 @@ import { ADMIN_CONTEXT } from './shared/tokens.js';
 - Remove shared cache (getCacheInstance) and DataLoader
 - Add request-scoped cache (private cachedContext)
 - **IMPORTANT**: Still uses `DBProvider` directly (not `TenantAwareDBClient`)
-- **IMPORTANT**: Does NOT inject `AUTH_CONTEXT` yet (not available until Phase 4)
+- **IMPORTANT**: Does NOT inject `AuthContextProvider` yet (not available until Phase 4)
 - Plugin remains active, refactored provider not registered
 - Purpose: Fix cache isolation vulnerability (tenant leakage risk)
 
 **Phase 4.9** (Activation - After Auth0 and Frontend Integration):
 
 - Switch from `DBProvider` to `TenantAwareDBClient` (RLS enforcement)
-- Add `AUTH_CONTEXT` injection
+- Add `AuthContextProvider` injection (call `await authProvider.getContext()`)
 - Register provider in `modules-app.ts`
 - Remove `adminContextPlugin`
-- Update all resolvers/providers to inject `ADMIN_CONTEXT` token
+- Update all resolvers/providers to inject `AdminContextProvider` and call
+  `await provider.getAdminContext()`
 
 **Why Two Phases?**
 
-- `TenantAwareDBClient` requires `AUTH_CONTEXT` injection
-- `AUTH_CONTEXT` not available until Auth0 is active (Phase 4)
+- `TenantAwareDBClient` requires `AuthContextProvider` injection
+- `AuthContextProvider` not available until Auth0 is active (Phase 4)
 - Refactoring in Phase 2 fixes cache isolation issues immediately
 - Full DI integration waits for Auth0 activation
 
@@ -1318,8 +1341,8 @@ import { ADMIN_CONTEXT } from './shared/tokens.js';
 
 - ✅ Request-scoped caching (no cross-tenant leakage) - **Achieved in Phase 2.7**
 - ✅ No DataLoader complexity - **Achieved in Phase 2.7**
-- ⏳ Proper DI integration with AUTH_CONTEXT - **Phase 4.9**
-- ⏳ Type-safe injection via ADMIN_CONTEXT token - **Phase 4.9**
+- ⏳ Proper DI integration with AuthContextProvider - **Phase 4.9**
+- ⏳ Direct provider injection pattern (no tokens needed) - **Phase 4.9**
 - ⏳ Automatically uses TenantAwareDBClient (RLS enforcement) - **Phase 4.9**
 - ⏳ Consistent with AuthContextProvider pattern - **Phase 4.9**
 
@@ -1342,14 +1365,13 @@ fully functional.
 
 - New auth components created:
   - `auth-plugin-v2.ts` (not registered in plugin array yet)
-  - `AuthContextProvider` with `AUTH_CONTEXT` token (not registered in DI yet)
-  - `TenantAwareDBClient` with nullable `AUTH_CONTEXT` injection (registered but won't function
-    until Phase 4)
+  - `AuthContextProvider` (not registered in DI yet)
+  - `TenantAwareDBClient` with nullable `AuthContextProvider` injection (registered but won't
+    function until Phase 4)
 - Environment flag added: `USE_AUTH0: boolean` (default: false)
 - All Phase 2-3 work uses EXISTING auth context (not Auth0)
 - Server remains fully functional throughout infrastructure build
-- Note: No "-v2" suffix for injection tokens - `AUTH_CONTEXT` is the standard token name from the
-  start
+- Note: No injection tokens for async providers - direct provider injection pattern used
 
 **Validation**: After each step, verify existing auth still works. Run full integration test suite.
 
@@ -1411,8 +1433,8 @@ flag.
 1. **Verify Frontend Ready**: Confirm Auth0 login works in production
 2. **Code Changes**:
    - Replace `authPlugin()` with `authPluginV2()` in plugins array
-   - Replace `AUTH_CONTEXT` provider registration to use `AuthContextV2Provider`
-   - Update `TenantAwareDBClient` to inject new `AUTH_CONTEXT`
+   - Register `AuthContextProvider` in modules-app.ts providers array
+   - `TenantAwareDBClient` already configured for direct provider injection
 3. **Deploy Backend to Staging**: Full validation with Auth0 active
 4. **Deploy Backend to Production**: Monitor error rates, ready to rollback
 5. **Update Frontend**: Make Auth0 login default (remove legacy login option)
@@ -1464,7 +1486,7 @@ client application does not implement custom login forms.
   - Wrap the application in `<Auth0Provider>` with configuration:
     - `domain`: Auth0 tenant domain (e.g., `accounter.auth0.com`)
     - `clientId`: Auth0 Application Client ID
-    - `redirectUri`: Application callback URL (e.g., `http://localhost:3000/callback`)
+    - `redirectUri`: Application callback URL (e.g., `http://localhost:3001/auth/callback`)
     - `audience`: GraphQL API identifier configured in Auth0
     - `scope`: `openid profile email`
     - `cacheLocation`: `localstorage` for persistence across page reloads
@@ -1477,16 +1499,18 @@ client application does not implement custom login forms.
     - `getAccessTokenSilently()`: Retrieves valid JWT for API requests
 
 - **UI Components**:
-  - **Login Page** (`/login`): Simple page with "Login" button that calls `loginWithRedirect()`
-  - **Callback Page** (`/callback`): Handles Auth0 redirect after login, completes authentication
-    handshake, redirects to dashboard or invitation acceptance flow
+  - **Login Page** (`/login`): Dual-auth page with Auth0 login (default) and legacy login toggle for
+    transition period. Auth0 option calls `loginWithRedirect()`, legacy option uses existing
+    email/password form.
+  - **Callback Page** (`/auth/callback`): Handles Auth0 redirect after login, completes
+    authentication handshake, redirects to home page (`/charges`) or invitation acceptance flow
   - **Accept Invitation Page** (`/accept-invitation?token=...`):
     1. Check if user is authenticated via `useAuth0().isAuthenticated`
     2. If not authenticated: Show "You've been invited to X" message with "Login to Accept" button
        that calls `loginWithRedirect({ appState: { returnTo: '/accept-invitation?token=...' } })`
     3. If authenticated: Automatically call `acceptInvitation` mutation with token from URL, handle
        success/error
-    4. On success: Redirect to business dashboard with direct access (first-time login UX)
+    4. On success: Redirect to home page (`/charges`) with direct access (first-time login UX)
   - **Invite User Form** (Admin Settings): Form for `business owner` to create invitations (email,
     role selection), calls `createInvitation` mutation, displays invitation URL with copy button
   - **API Key Management** (Admin Settings):
@@ -1674,11 +1698,12 @@ This appendix provides the required Auth0 tenant configuration for the Accounter
 2. Name: `Accounter Web App`
 3. Type: **Regular Web Application**
 4. **Settings** tab configuration:
-   - **Allowed Callback URLs**: `http://localhost:3000/callback, https://app.accounter.com/callback`
-   - **Allowed Logout URLs**: `http://localhost:3000, https://app.accounter.com`
-   - **Allowed Web Origins**: `http://localhost:3000, https://app.accounter.com`
-   - **Allowed Origins (CORS)**: `http://localhost:3000, https://app.accounter.com`
-   - **Application Login URI**: `http://localhost:3000/login` (for social connection redirects)
+   - **Allowed Callback URLs**:
+     `http://localhost:3001/auth/callback, https://app.accounter.com/auth/callback`
+   - **Allowed Logout URLs**: `http://localhost:3001, https://app.accounter.com`
+   - **Allowed Web Origins**: `http://localhost:3001, https://app.accounter.com`
+   - **Allowed Origins (CORS)**: `http://localhost:3001, https://app.accounter.com`
+   - **Application Login URI**: `http://localhost:3001/login` (for social connection redirects)
 5. **Advanced Settings** → **Grant Types**: Ensure `Authorization Code`, `Refresh Token` are enabled
 6. **Refresh Token Rotation**: Enabled
 7. **Refresh Token Expiration**: Absolute expiration after 7 days, Inactivity expiration after 3
@@ -1769,7 +1794,7 @@ Store Auth0 configuration in environment variables:
 VITE_AUTH0_DOMAIN=accounter.auth0.com
 VITE_AUTH0_CLIENT_ID=<Application Client ID>
 VITE_AUTH0_AUDIENCE=https://api.accounter.com
-VITE_AUTH0_REDIRECT_URI=http://localhost:3000/callback
+VITE_AUTH0_REDIRECT_URI=http://localhost:3001/auth/callback
 ```
 
 **Server (`packages/server/.env`)**:

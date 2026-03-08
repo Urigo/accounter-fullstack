@@ -4,28 +4,41 @@ import type { RawAuth } from '../../../plugins/auth-plugin-v2.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
-import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { DBProvider } from '../../app-providers/db.provider.js';
 
 // Global cache for JWKS functions to prevent re-fetching on every request
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 @Injectable({
   scope: Scope.Operation,
+  global: true,
 })
 export class AuthContextV2Provider {
+  private cachedContext: AuthContext | null | undefined = undefined;
+  private handlingAuth: Promise<AuthContext | null> | null = null;
+
   constructor(
-    @Inject(RAW_AUTH) private rawAuth: RawAuth,
-    private db: TenantAwareDBClient,
     @Inject(ENVIRONMENT) private env: Environment,
+    @Inject(RAW_AUTH) private rawAuth: RawAuth,
+    private db: DBProvider,
   ) {}
 
   public async getAuthContext(): Promise<AuthContext | null> {
+    if (this.cachedContext !== undefined) {
+      return this.cachedContext;
+    }
+
     if (!this.rawAuth.authType) {
       return null;
     }
 
+    if (this.handlingAuth) {
+      return this.handlingAuth;
+    }
+
     if (this.rawAuth.authType === 'jwt') {
-      return this.handleJwtAuth();
+      this.handlingAuth = this.handleJwtAuth();
+      return this.handlingAuth;
     }
 
     if (this.rawAuth.authType === 'apiKey') {
@@ -66,6 +79,8 @@ export class AuthContextV2Provider {
 
       if (!auth0UserId) {
         console.error('AuthContextV2: Missing sub claim in JWT');
+        this.handlingAuth = null;
+        this.cachedContext = null;
         return null;
       }
 
@@ -74,10 +89,13 @@ export class AuthContextV2Provider {
 
       if (!userContext) {
         console.warn(`AuthContextV2: User not found/linked in local DB: ${auth0UserId}`);
+        this.handlingAuth = null;
+        this.cachedContext = null;
         return null;
       }
 
-      return {
+      // 4. Construct AuthContext
+      const authContext: AuthContext = {
         authType: 'jwt', // Will be treated as AuthType
         token,
         user: {
@@ -95,8 +113,12 @@ export class AuthContextV2Provider {
         },
         accessTokenExpiresAt: payload.exp,
       };
+      this.cachedContext = authContext;
+      this.handlingAuth = null;
+      return authContext;
     } catch (error) {
       console.error('AuthContextV2: JWT verification failed', error);
+      this.handlingAuth = null;
       return null;
     }
   }

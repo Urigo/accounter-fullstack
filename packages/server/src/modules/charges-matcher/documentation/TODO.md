@@ -427,7 +427,7 @@
   - [x] TransactionsProvider from @modules/transactions
   - [x] DocumentsProvider from @modules/documents
 - [x] Implement `findMatchesForCharge()` method
-  - [x] Get adminBusinessId from context.adminContext.defaultAdminBusinessId
+  - [x] Get adminBusinessId from context.adminContext.ownerId
   - [x] Get providers from injector
   - [x] Load source charge using ChargesProvider.getChargeByIdLoader
   - [x] Load transactions using TransactionsProvider.transactionsByChargeIDLoader
@@ -502,7 +502,7 @@
 
 - [x] Update `providers/charges-matcher.provider.ts`
 - [x] Implement `autoMatchCharges()` method in ChargesMatcherProvider
-  - [x] Get adminBusinessId from context.adminContext.defaultAdminBusinessId
+  - [x] Get adminBusinessId from context.adminContext.ownerId
   - [x] Load all unmatched charges using ChargesProvider.getChargesByFilters
   - [x] For each unmatched charge:
     - [x] Process with processChargeForAutoMatch

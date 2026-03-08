@@ -1,5 +1,7 @@
+import { Injector } from 'graphql-modules';
 import type { ResolversTypes } from '../../../__generated__/types.js';
 import { ChargeTypeEnum, MissingChargeInfo } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { isInvoice } from '../../documents/helpers/common.helper.js';
 import { validateDocumentAllocation } from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -16,16 +18,17 @@ import {
 
 export const validateCharge = async (
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<ResolversTypes['ValidationData']> => {
-  const { injector, adminContext } = context;
   const missingInfo: Array<MissingChargeInfo> = [];
 
   const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
-    getChargeType(charge, context),
-    getChargeBusinesses(charge.id, context.injector),
-    getChargeTaxCategoryId(charge.id, context.injector),
+    getChargeType(charge, injector),
+    getChargeBusinesses(charge.id, injector),
+    getChargeTaxCategoryId(charge.id, injector),
   ]);
+
+  const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const isGeneralFees =
     taxCategoryId === adminContext.general.taxCategories.generalFeeTaxCategoryId;
@@ -46,8 +49,8 @@ export const validateCharge = async (
     { documentsVatAmount, invoiceCount, receiptCount, invalidDocuments },
   ] = await Promise.all([
     businessPromise,
-    getChargeTransactionsMeta(charge.id, context.injector),
-    getChargeDocumentsMeta(charge.id, context.injector),
+    getChargeTransactionsMeta(charge.id, injector),
+    getChargeDocumentsMeta(charge.id, injector),
   ]);
 
   const businessIsFine = businessNotRequired || !!business;
@@ -81,7 +84,7 @@ export const validateCharge = async (
     await Promise.all(
       documents.map(async doc => {
         if (isInvoice(doc.type)) {
-          const validAllocation = await validateDocumentAllocation(doc, context);
+          const validAllocation = await validateDocumentAllocation(doc, injector);
           if (!validAllocation) {
             missingAllocationNumber = true;
           }

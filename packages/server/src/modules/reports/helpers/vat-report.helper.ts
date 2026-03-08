@@ -1,7 +1,9 @@
+import type { Injector } from 'graphql-modules';
 import type { AccountantStatus, Pcn874RecordType } from '../../../__generated__/types.js';
 import { DECREASED_VAT_RATIO } from '../../../shared/constants.js';
 import { DocumentType, type Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatCurrency } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import {
   getChargeDocumentsMeta,
   getChargeTransactionsMeta,
@@ -47,12 +49,11 @@ export type RawVatReportRecord = {
 
 export async function adjustTaxRecord(
   rawRecord: VatReportRecordSources,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ): Promise<RawVatReportRecord> {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency, locality },
-  } = context;
+  const { defaultLocalCurrency, locality } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   try {
     const { charge, doc, business } = rawRecord;
     const currency = formatCurrency(doc.currency_code);

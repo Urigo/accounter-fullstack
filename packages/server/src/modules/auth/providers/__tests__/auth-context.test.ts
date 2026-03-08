@@ -18,6 +18,8 @@ describe('AuthContextV2Provider', () => {
   let mockRawAuth: any;
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    
     mockDBProvider = {
       query: vi.fn(),
     };
@@ -36,17 +38,17 @@ describe('AuthContextV2Provider', () => {
 
     vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
 
-    provider = new AuthContextV2Provider(mockRawAuth, mockDBProvider, mockEnv);
+    provider = new AuthContextV2Provider(mockEnv, mockRawAuth, mockDBProvider);
   });
 
   it('should return null if authType is null', async () => {
-    provider = new AuthContextV2Provider({ authType: null, token: null }, mockDBProvider, mockEnv);
+    provider = new AuthContextV2Provider(mockEnv, { authType: null, token: null }, mockDBProvider);
     const result = await provider.getAuthContext();
     expect(result).toBeNull();
   });
 
   it('should return null for apiKey (Phase 7 support)', async () => {
-    provider = new AuthContextV2Provider({ authType: 'apiKey', token: 'key' }, mockDBProvider, mockEnv);
+    provider = new AuthContextV2Provider(mockEnv, { authType: 'apiKey', token: 'key' }, mockDBProvider);
     const result = await provider.getAuthContext();
     expect(result).toBeNull();
   });

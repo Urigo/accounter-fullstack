@@ -6,8 +6,9 @@
  */
 
 import { subYears } from 'date-fns';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
@@ -41,45 +42,37 @@ import { aggregateTransactions } from './transaction-aggregator.js';
   scope: Scope.Operation,
 })
 export class ChargesMatcherProvider {
+  constructor(
+    private adminContextProvider: AdminContextProvider,
+    private chargesProvider: ChargesProvider,
+    private transactionsProvider: TransactionsProvider,
+    private documentsProvider: DocumentsProvider,
+    @Inject(CONTEXT) private context: GraphQLModules.ModuleContext,
+  ) {}
+
   /**
    * Find potential matches for an unmatched charge
    *
    * @param chargeId - ID of the unmatched charge to find matches for
-   * @param injector - GraphQL modules injector for provider access
    * @returns Top 5 matches ordered by confidence score
    * @throws Error if charge not found
    * @throws Error if charge is already matched
    * @throws Error if charge data is invalid
    */
-  async findMatchesForCharge(
-    chargeId: string,
-    context: GraphQLModules.AppContext,
-  ): Promise<ChargeMatchesResult> {
-    const {
-      adminContext: { defaultAdminBusinessId: adminBusinessId },
-      injector,
-    } = context;
-    // Get current user ID from context
-    if (!adminBusinessId) {
-      throw new Error('Admin business not found in context');
-    }
-
-    // Get providers from injector
-    const chargesProvider = injector.get(ChargesProvider);
-    const transactionsProvider = injector.get(TransactionsProvider);
-    const documentsProvider = injector.get(DocumentsProvider);
+  async findMatchesForCharge(chargeId: string): Promise<ChargeMatchesResult> {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
 
     // Step 1: Load source charge data
-    const sourceCharge = await chargesProvider.getChargeByIdLoader.load(chargeId);
+    const sourceCharge = await this.chargesProvider.getChargeByIdLoader.load(chargeId);
     if (!sourceCharge || sourceCharge instanceof Error) {
       throw new Error(`Source charge not found: ${chargeId}`);
     }
 
     // Step 2: Load transactions and documents for source charge
     const sourceTransactions =
-      await transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
+      await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
     const sourceDocuments = (
-      await documentsProvider.getDocumentsByChargeIdLoader.load(chargeId)
+      await this.documentsProvider.getDocumentsByChargeIdLoader.load(chargeId)
     ).filter(doc => isAccountingDocument(doc.type));
 
     // Step 3: Validate source charge is unmatched
@@ -99,7 +92,7 @@ export class ChargesMatcherProvider {
       referenceDate = aggregated.date;
     } else {
       // Use latest document date
-      const aggregated = aggregateDocuments(sourceDocuments, adminBusinessId);
+      const aggregated = aggregateDocuments(sourceDocuments, ownerId);
       referenceDate = aggregated.date;
     }
 
@@ -110,8 +103,8 @@ export class ChargesMatcherProvider {
     const windowEnd = new Date(referenceDate);
     windowEnd.setMonth(windowEnd.getMonth() + 12);
 
-    const candidateCharges = await chargesProvider.getChargesByFilters({
-      ownerIds: [adminBusinessId],
+    const candidateCharges = await this.chargesProvider.getChargesByFilters({
+      ownerIds: [ownerId],
       fromAnyDate: dateToTimelessDateString(windowStart),
       toAnyDate: dateToTimelessDateString(windowEnd),
     });
@@ -126,10 +119,9 @@ export class ChargesMatcherProvider {
           return;
         }
 
-        const candidateTransactionsPromise = transactionsProvider.transactionsByChargeIDLoader.load(
-          candidate.id,
-        );
-        const candidateDocumentsPromise = documentsProvider.getDocumentsByChargeIdLoader
+        const candidateTransactionsPromise =
+          this.transactionsProvider.transactionsByChargeIDLoader.load(candidate.id);
+        const candidateDocumentsPromise = this.documentsProvider.getDocumentsByChargeIdLoader
           .load(candidate.id)
           .then(docs => docs.filter(doc => isAccountingDocument(doc.type)));
         const [candidateTransactions, candidateDocuments] = await Promise.all([
@@ -192,8 +184,8 @@ export class ChargesMatcherProvider {
     const matches: MatchResult[] = await findMatches(
       sourceChargeData,
       candidateChargesWithData,
-      adminBusinessId,
-      injector,
+      ownerId,
+      this.context.injector,
       {
         maxMatches: 5,
         dateWindowMonths: 12,
@@ -216,29 +208,15 @@ export class ChargesMatcherProvider {
    * Skips charges with multiple high-confidence matches (ambiguous).
    * Processes all unmatched charges and returns a summary of actions taken.
    *
-   * @param injector - GraphQL modules injector for provider access
-   * @param context - GraphQL context with user information
    * @returns Summary of matches made, skipped charges, and errors
    */
-  async autoMatchCharges(context: GraphQLModules.AppContext): Promise<AutoMatchChargesResult> {
-    const {
-      adminContext: { defaultAdminBusinessId: adminBusinessId },
-      injector,
-    } = context;
-    // Get current user ID from context
-    if (!adminBusinessId) {
-      throw new Error('Admin business not found in context');
-    }
-
-    // Get providers from injector
-    const chargesProvider = injector.get(ChargesProvider);
-    const transactionsProvider = injector.get(TransactionsProvider);
-    const documentsProvider = injector.get(DocumentsProvider);
+  async autoMatchCharges(): Promise<AutoMatchChargesResult> {
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
 
     // Step 1: Load all charges for this user
     const prevYear = dateToTimelessDateString(subYears(new Date(), 1));
-    const allCharges = await chargesProvider.getChargesByFilters({
-      ownerIds: [adminBusinessId],
+    const allCharges = await this.chargesProvider.getChargesByFilters({
+      ownerIds: [ownerId],
       fromAnyDate: prevYear,
     });
 
@@ -248,10 +226,10 @@ export class ChargesMatcherProvider {
 
     await Promise.all(
       allCharges.map(async charge => {
-        const transactionsPromise = transactionsProvider.transactionsByChargeIDLoader.load(
+        const transactionsPromise = this.transactionsProvider.transactionsByChargeIDLoader.load(
           charge.id,
         );
-        const documentsPromise = documentsProvider.getDocumentsByChargeIdLoader
+        const documentsPromise = this.documentsProvider.getDocumentsByChargeIdLoader
           .load(charge.id)
           .then(docs => docs.filter(doc => isAccountingDocument(doc.type)));
 
@@ -262,7 +240,7 @@ export class ChargesMatcherProvider {
 
         chargesWithData.push({
           chargeId: charge.id,
-          ownerId: charge.owner_id ?? adminBusinessId,
+          ownerId: charge.owner_id ?? ownerId,
           type: ChargeType.TRANSACTION_ONLY, // Will be determined by processChargeForAutoMatch
           description: charge.user_description ?? undefined,
           transactions,
@@ -305,8 +283,8 @@ export class ChargesMatcherProvider {
         const processResult = await processChargeForAutoMatch(
           sourceCharge,
           candidates,
-          adminBusinessId,
-          injector,
+          ownerId,
+          this.context.injector,
         );
 
         if (processResult.status === 'matched' && processResult.match) {
@@ -329,7 +307,11 @@ export class ChargesMatcherProvider {
 
           try {
             // Execute merge via existing merge functionality
-            await mergeChargesExecutor([sourceToMerge.chargeId], targetToKeep.chargeId, injector);
+            await mergeChargesExecutor(
+              [sourceToMerge.chargeId],
+              targetToKeep.chargeId,
+              this.context.injector,
+            );
 
             // Track successful merge
             result.totalMatches++;

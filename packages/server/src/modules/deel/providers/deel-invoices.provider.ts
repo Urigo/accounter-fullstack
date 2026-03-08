@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetChargeIdsByPaymentIdsQuery,
@@ -138,7 +139,7 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
 export class DeelInvoicesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchInvoicesByIssueDates(issueDates: readonly Date[]) {
@@ -204,8 +205,9 @@ export class DeelInvoicesProvider {
 
   public async insertDeelInvoiceRecords(params: IInsertDeelInvoiceRecordsParams) {
     try {
+      const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
       // invalidate cache
-      return insertDeelInvoiceRecords.run(reassureOwnerIdExists(params, this.context), this.db);
+      return insertDeelInvoiceRecords.run(reassureOwnerIdExists(params, ownerId), this.db);
     } catch (e) {
       const message = `Error inserting Deel invoice`;
       console.error(message, e);

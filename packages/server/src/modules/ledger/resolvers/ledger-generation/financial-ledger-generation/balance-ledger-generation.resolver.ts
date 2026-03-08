@@ -16,10 +16,8 @@ export const generateLedgerRecordsForBalance: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   try {
-    const { injector } = context;
-
     // validate balance record exists
     const miscExpenses = await injector
       .get(MiscExpensesProvider)
@@ -32,7 +30,7 @@ export const generateLedgerRecordsForBalance: ResolverFn<
     const ledgerEntries: LedgerProto[] = [];
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         ledgerEntries.push(entry);
@@ -42,7 +40,7 @@ export const generateLedgerRecordsForBalance: ResolverFn<
     await Promise.all([expensesLedgerPromise]);
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, ledgerEntries, context);
+      await storeInitialGeneratedRecords(charge.id, ledgerEntries, injector);
     }
 
     return {

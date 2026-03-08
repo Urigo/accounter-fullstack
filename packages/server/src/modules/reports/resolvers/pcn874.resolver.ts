@@ -5,22 +5,23 @@ import { validatePcn874 } from '@accounter/pcn874-generator';
 import type { ResolversTypes } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { getPcn874String } from '../helpers/pcn.helper.js';
 import { VatReportProvider } from '../providers/vat-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
 export const pcn874Resolvers: ReportsModule.Resolvers = {
   Query: {
-    pcnFile: async (_, { monthDate: rawMonthDate, financialEntityId }, context) => {
+    pcnFile: async (_, { monthDate: rawMonthDate, financialEntityId }, { injector }) => {
       const { reportContent, monthDate, reportMonth, financialEntity } = await getPcn874String(
-        context,
+        injector,
         financialEntityId,
         rawMonthDate,
       );
 
       // if not exists, insert the report
       try {
-        const existingContent = await context.injector
+        const existingContent = await injector
           .get(VatReportProvider)
           .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]);
         if (!existingContent && reportContent.split('\n').length > 2) {
@@ -28,7 +29,7 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
             throw new GraphQLError('Invalid PCN874 content');
           }
           // insert the report
-          await context.injector.get(VatReportProvider).insertReport({
+          await injector.get(VatReportProvider).insertReport({
             businessId: financialEntityId,
             monthDate,
             content: reportContent,
@@ -43,8 +44,9 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
 
       return { reportContent, fileName };
     },
-    pcnByDate: async (_, { businessId, fromMonthDate, toMonthDate }, context, __) => {
-      const financialEntityId = businessId || context.adminContext.defaultAdminBusinessId;
+    pcnByDate: async (_, { businessId, fromMonthDate, toMonthDate }, { injector }, __) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const financialEntityId = businessId || ownerId;
       const months: TimelessDateString[] = [];
       let startTimestamp = startOfMonth(new Date(fromMonthDate)).getTime();
       const endTimestamp = endOfMonth(new Date(toMonthDate)).getTime();
@@ -61,10 +63,10 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
             try {
               const [savedReport, { reportContent: generatedReport, financialEntity }] =
                 await Promise.all([
-                  context.injector
+                  injector
                     .get(VatReportProvider)
                     .getReportByBusinessIdAndMonthDateLoader.load([financialEntityId, monthDate]),
-                  getPcn874String(context, financialEntityId, monthDate),
+                  getPcn874String(injector, financialEntityId, monthDate),
                 ]);
 
               if (savedReport) {
@@ -81,7 +83,7 @@ export const pcn874Resolvers: ReportsModule.Resolvers = {
                     throw new GraphQLError('Invalid PCN874 content');
                   }
                   // insert the report
-                  await context.injector.get(VatReportProvider).insertReport({
+                  await injector.get(VatReportProvider).insertReport({
                     businessId: financialEntityId,
                     monthDate,
                     content: generatedReport,

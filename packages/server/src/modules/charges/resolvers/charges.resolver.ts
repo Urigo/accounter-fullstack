@@ -1,8 +1,10 @@
 import { GraphQLError } from 'graphql';
+import type { Injector } from 'graphql-modules';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -42,10 +44,10 @@ import { commonChargeFields, commonDocumentsFields } from './common.js';
 async function chargeTypeChecker(
   chargeType: ChargeTypeEnum,
   charge: IGetChargesByIdsResult,
-  context: GraphQLModules.Context,
+  injector: Injector,
 ) {
   try {
-    return (await getChargeType(charge, context)) === chargeType;
+    return (await getChargeType(charge, injector)) === chargeType;
   } catch (error) {
     throw errorSimplifier('Failed to determine charge type', error);
   }
@@ -146,7 +148,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
         },
       };
     },
-    chargesWithMissingRequiredInfo: async (_, { page, limit }, { injector, adminContext }) => {
+    chargesWithMissingRequiredInfo: async (_, { page, limit }, { injector }) => {
       try {
         const chargeIds = new Set<string>();
         // get by transactions
@@ -224,8 +226,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
           }),
         );
 
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         const pageCharges = charges
-          .filter(charge => charge.owner_id === adminContext.defaultAdminBusinessId)
+          .filter(charge => charge.owner_id === ownerId)
           .sort((chargeA, chargeB) => {
             const dateA =
               (
@@ -589,53 +593,53 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
   },
   CommonCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.Common, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.Common, DbCharge, injector),
     ...commonChargeFields,
   },
   ConversionCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.Conversion, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.Conversion, DbCharge, injector),
     ...commonChargeFields,
   },
   SalaryCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.Salary, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.Salary, DbCharge, injector),
     ...commonChargeFields,
   },
   InternalTransferCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.InternalTransfer, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.InternalTransfer, DbCharge, injector),
     ...commonChargeFields,
   },
   DividendCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.Dividend, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.Dividend, DbCharge, injector),
     ...commonChargeFields,
   },
   BusinessTripCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.BusinessTrip, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.BusinessTrip, DbCharge, injector),
     ...commonChargeFields,
   },
   MonthlyVatCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.MonthlyVat, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.MonthlyVat, DbCharge, injector),
     ...commonChargeFields,
   },
   BankDepositCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.BankDeposit, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.BankDeposit, DbCharge, injector),
     ...commonChargeFields,
   },
   ForeignSecuritiesCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.ForeignSecurities, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.ForeignSecurities, DbCharge, injector),
     ...commonChargeFields,
   },
   CreditcardBankCharge: {
-    __isTypeOf: async (DbCharge, context) =>
-      chargeTypeChecker(ChargeTypeEnum.CreditcardBankCharge, DbCharge, context),
+    __isTypeOf: async (DbCharge, { injector }) =>
+      chargeTypeChecker(ChargeTypeEnum.CreditcardBankCharge, DbCharge, injector),
     ...commonChargeFields,
   },
   Invoice: {
@@ -720,8 +724,11 @@ export const chargesResolvers: ChargesModule.Resolvers &
         })
         .then(records => records.length),
     invalidLedger: async (DbCharge, _, context, info) => {
+      const { injector } = context;
+
       try {
-        if (await isChargeLocked(DbCharge, context.injector, context.adminContext.ledgerLock)) {
+        const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        if (await isChargeLocked(DbCharge, injector, ledgerLock)) {
           return 'VALID';
         }
 
@@ -732,7 +739,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
           info,
         );
 
-        const currentRecordPromise = context.injector
+        const currentRecordPromise = injector
           .get(LedgerProvider)
           .getLedgerRecordsByChargesIdLoader.load(DbCharge.id);
 

@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
 import type { CountryCode } from '../../../shared/enums.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
   coreExpenseUpdate,
@@ -281,8 +282,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error deleting business trip expense part');
       }
     },
-    addBusinessTripFlightsExpense: async (_, { fields }, context) => {
-      const { injector } = context;
+    addBusinessTripFlightsExpense: async (_, { fields }, { injector }) => {
       try {
         const coreExpensePromise = injector
           .get(BusinessTripExpensesProvider)
@@ -293,7 +293,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           .then(res => res[0]);
 
         const chargeGenerationPromise = generateChargeForEmployeePayment(
-          context,
+          injector,
           fields.businessTripId,
         );
 
@@ -326,8 +326,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip flight expense');
       }
     },
-    addBusinessTripAccommodationsExpense: async (_, { fields }, context) => {
-      const { injector } = context;
+    addBusinessTripAccommodationsExpense: async (_, { fields }, { injector }) => {
       try {
         const coreExpensePromise = injector
           .get(BusinessTripExpensesProvider)
@@ -338,7 +337,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           .then(res => res[0]);
 
         const chargeGenerationPromise = generateChargeForEmployeePayment(
-          context,
+          injector,
           fields.businessTripId,
         );
 
@@ -373,8 +372,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
         throw new GraphQLError('Error adding new business trip accommodation expense');
       }
     },
-    addBusinessTripOtherExpense: async (_, { fields }, context) => {
-      const { injector } = context;
+    addBusinessTripOtherExpense: async (_, { fields }, { injector }) => {
       try {
         const coreExpensePromise = injector
           .get(BusinessTripExpensesProvider)
@@ -385,7 +383,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           .then(res => res[0]);
 
         const chargeGenerationPromise = generateChargeForEmployeePayment(
-          context,
+          injector,
           fields.businessTripId,
         );
 
@@ -418,19 +416,21 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
       }
     },
     addBusinessTripTravelAndSubsistenceExpense: async (_, { fields }, context) => {
-      if (context.adminContext.ledgerLock) {
-        if (fields.date && fields.date < context.adminContext.ledgerLock) {
+      const adminContext = await context.injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+      if (adminContext.ledgerLock) {
+        if (fields.date && fields.date < adminContext.ledgerLock) {
           throw new GraphQLError('Cannot add expense before ledger lock date');
         }
-        if (fields.valueDate && fields.valueDate < context.adminContext.ledgerLock) {
+        if (fields.valueDate && fields.valueDate < adminContext.ledgerLock) {
           throw new GraphQLError('Cannot add expense before ledger lock date');
         }
       }
 
       return createTravelAndSubsistenceExpense(context, fields);
     },
-    addBusinessTripCarRentalExpense: async (_, { fields }, context) => {
-      const { injector } = context;
+    addBusinessTripCarRentalExpense: async (_, { fields }, { injector }) => {
       try {
         const coreExpensePromise = injector
           .get(BusinessTripExpensesProvider)
@@ -441,7 +441,7 @@ export const businessTripExpensesResolvers: BusinessTripsModule.Resolvers = {
           .then(res => res[0]);
 
         const chargeGenerationPromise = generateChargeForEmployeePayment(
-          context,
+          injector,
           fields.businessTripId,
         );
 

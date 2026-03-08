@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { generateReport } from '@accounter/shaam6111-generator';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
@@ -9,9 +10,10 @@ import type { ReportsModule } from '../types.js';
 
 export const shaam6111Resolvers: ReportsModule.Resolvers = {
   Query: {
-    shaam6111: async (_, { year, businessId: requestedBusinessId }, context) => {
-      const businessId = requestedBusinessId ?? context.adminContext.defaultAdminBusinessId;
-      const reportData = await getShaam6111Data(context, businessId, year);
+    shaam6111: async (_, { year, businessId: requestedBusinessId }, { injector }) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const businessId = requestedBusinessId ?? ownerId;
+      const reportData = await getShaam6111Data(injector, businessId, year);
 
       return {
         businessId,

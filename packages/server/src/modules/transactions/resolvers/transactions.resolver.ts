@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -44,12 +45,13 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       });
       return transactionIDs;
     },
-    transactionsByFinancialEntity: async (_, { financialEntityID }, { injector, adminContext }) => {
+    transactionsByFinancialEntity: async (_, { financialEntityID }, { injector }) => {
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       const transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByFilters({
           businessIDs: [financialEntityID],
-          ownerIDs: [adminContext.defaultAdminBusinessId],
+          ownerIDs: [adminContext.ownerId],
         })
         .then(res => res.map(t => t.id));
       return transactions;
@@ -160,14 +162,11 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         };
       }
     },
-    updateTransactions: async (
-      _,
-      { transactionIds, fields },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    updateTransactions: async (_, { transactionIds, fields }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
 
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         const existingChargePromise = async () => {
           // verify charge exists
           const charge = await injector
@@ -239,7 +238,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
             // generate new charge
             const newCharge = await injector.get(ChargesProvider).generateCharge({
-              ownerId: defaultAdminBusinessId,
+              ownerId,
               userDescription: 'Transactions unlinked from charge',
             });
             if (!newCharge) {
@@ -366,11 +365,11 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
       return transaction.currency_rate;
     },
-    officialRateToLocal: async (
-      transactionId,
-      _,
-      { injector, adminContext: { defaultLocalCurrency } },
-    ) => {
+    officialRateToLocal: async (transactionId, _, { injector }) => {
+      const { defaultLocalCurrency } = await injector
+        .get(AdminContextProvider)
+        .getVerifiedAdminContext();
+
       const transaction = await injector
         .get(TransactionsProvider)
         .transactionByIdLoader.load(transactionId);

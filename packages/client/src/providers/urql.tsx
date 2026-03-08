@@ -1,103 +1,118 @@
-import { useContext, useEffect, useMemo, type ReactNode } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 import {
   createClient,
   fetchExchange,
   mapExchange,
   Provider,
   type AnyVariables,
+  type Client,
   type Operation,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
-import { ROUTES } from '../router/routes.js';
-import { AuthContext } from './auth-guard.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
-export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  const { authService } = useContext(AuthContext);
-  const navigate = useNavigate();
+type AccessTokenProvider = () => Promise<string | null>;
 
-  // Track login state to trigger token updates
-  const loggedIn = authService.isLoggedIn();
+let accessTokenProvider: AccessTokenProvider | null = null;
+let bearerToken: string | null = null;
 
-  const token = useMemo(() => {
-    const token = authService.authToken();
-    return token;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loggedIn is needed to trigger token refresh on login
-  }, [authService, loggedIn]);
+export function setUrqlAccessTokenProvider(provider: AccessTokenProvider | null): void {
+  accessTokenProvider = provider;
+  if (!provider) {
+    bearerToken = null;
+  }
+}
 
-  const client = useMemo(() => {
-    let url: string;
-    switch (import.meta.env.MODE) {
-      case 'production': {
-        url = 'https://accounter.onrender.com/graphql';
-        break;
-      }
-      case 'staging': {
-        url = 'https://accounter-staging.onrender.com/graphql';
-        break;
-      }
-      default: {
-        url = 'http://localhost:4000/graphql';
-        break;
-      }
-    }
-
-    return createClient({
-      url,
-      exchanges: [
-        mapExchange({
-          onResult(result) {
-            // Handle authentication errors
-            const isAuthError =
-              result?.error?.graphQLErrors.some(e => e.extensions?.code === 'FORBIDDEN') ||
-              result?.error?.response?.status === 401;
-            if (isAuthError) {
-              navigate(ROUTES.LOGIN, {
-                state: { message: 'You are not authorized to access this page' },
-              });
-              return;
-            }
-
-            handleUrqlError(result);
-          },
-        }),
-        authExchange(async utils => {
-          return {
-            addAuthToOperation(operation): Operation<void, AnyVariables> {
-              if (!token) {
-                return operation;
-              }
-              return utils.appendHeaders(operation, {
-                Authorization: token,
-              });
-            },
-            didAuthError(error, _operation): boolean {
-              return (
-                error?.response?.status === 401 ||
-                error?.graphQLErrors?.some(e => e.extensions?.code === 'FORBIDDEN')
-              );
-            },
-            async refreshAuth(): Promise<void> {
-              authService.logout();
-            },
-          };
-        }),
-        fetchExchange,
-      ],
-    });
-  }, [navigate, token, authService]);
-
-  useEffect(() => {
-    if (!client) {
-      navigate(ROUTES.LOGIN, { state: { prevPath: window.location.pathname } });
-    }
+async function refreshBearerToken(): Promise<void> {
+  if (!accessTokenProvider) {
+    bearerToken = null;
     return;
-  }, [client, navigate]);
+  }
 
-  return client ? (
-    <Provider value={client}>{children}</Provider>
-  ) : (
-    <Navigate to={ROUTES.LOGIN} state={{ prevPath: window.location.pathname }} />
-  );
+  try {
+    const accessToken = await accessTokenProvider();
+    bearerToken = accessToken ? `Bearer ${accessToken}` : null;
+  } catch {
+    bearerToken = null;
+  }
+}
+
+/**
+ * Singleton URQL client for use in loaders and server-side operations
+ * This is separate from the Provider client to avoid React context dependencies
+ */
+let globalClient: Client | null = null;
+
+export function getUrqlClient(): Client {
+  if (globalClient) {
+    return globalClient;
+  }
+
+  let url: string;
+  switch (import.meta.env.MODE) {
+    case 'production': {
+      url = 'https://accounter.onrender.com/graphql';
+      break;
+    }
+    case 'staging': {
+      url = 'https://accounter-staging.onrender.com/graphql';
+      break;
+    }
+    default: {
+      url = 'http://localhost:4000/graphql';
+      break;
+    }
+  }
+
+  globalClient = createClient({
+    url,
+    exchanges: [
+      mapExchange({
+        onResult(result) {
+          handleUrqlError(result);
+        },
+      }),
+      authExchange(async utils => {
+        return {
+          willAuthError(): boolean {
+            return !bearerToken;
+          },
+          addAuthToOperation(operation): Operation<void, AnyVariables> {
+            if (!bearerToken) {
+              return operation;
+            }
+            return utils.appendHeaders(operation, {
+              Authorization: bearerToken,
+            });
+          },
+          didAuthError(error, _operation): boolean {
+            return (
+              error?.response?.status === 401 ||
+              error?.graphQLErrors?.some(
+                e => e.extensions?.code === 'FORBIDDEN' || e.extensions?.code === 'UNAUTHENTICATED',
+              )
+            );
+          },
+          async refreshAuth(): Promise<void> {
+            await refreshBearerToken();
+          },
+        };
+      }),
+      fetchExchange,
+    ],
+  });
+
+  return globalClient;
+}
+
+/**
+ * Reset the global client (useful for tests or logout)
+ */
+export function resetUrqlClient(): void {
+  globalClient = null;
+  bearerToken = null;
+}
+
+export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
+  return <Provider value={getUrqlClient()}>{children}</Provider>;
 }

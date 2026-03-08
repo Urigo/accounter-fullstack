@@ -15,6 +15,7 @@ import type {
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
+import type { AdminContext } from '../../admin-context/types.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
@@ -296,14 +297,11 @@ export function createRemarks(contract: IGetContractsByIdsResult): string {
 }
 
 export const convertContractToDraft = async (
+  injector: Injector,
   contract: IGetContractsByIdsResult,
-  context: GraphQLModules.Context,
+  locality: AdminContext['locality'],
   issueMonth: TimelessDateString,
 ) => {
-  const {
-    injector,
-    adminContext: { locality },
-  } = context;
   const businessPromise = injector
     .get(BusinessesProvider)
     .getBusinessByIdLoader.load(contract.client_id);

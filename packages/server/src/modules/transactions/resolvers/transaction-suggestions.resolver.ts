@@ -6,6 +6,7 @@ import type {
   ResolversTypes,
 } from '../../../__generated__/types.js';
 import { formatAmount } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
@@ -31,9 +32,10 @@ function sortPhrasesByPriority(
 const missingInfoSuggestions = async (
   transactionId: ResolversParentTypes['CommonTransaction'],
   _: object,
-  { injector, adminContext }: GraphQLModules.Context,
+  { injector }: GraphQLModules.Context,
   __: GraphQLResolveInfo,
 ): Promise<Maybe<Suggestion>> => {
+  const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const {
     poalimBusinessId,
     etherScanBusinessId,

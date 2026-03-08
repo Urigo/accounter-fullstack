@@ -9,6 +9,7 @@ import type {
 import { UUID_REGEX } from '../../../../shared/constants.js';
 import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { errorSimplifier } from '../../../../shared/errors.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { suggestionDataSchema } from '../../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '../../../tags/providers/charge-tags.provider.js';
@@ -29,13 +30,20 @@ const missingInfoSuggestions: Resolver<
   GraphQLModules.Context
 > = async (DbCharge, _, context, __) => {
   try {
-    const { injector, adminContext } = context;
-    const { poalimBusinessId, etherScanBusinessId, krakenBusinessId, etanaBusinessId } =
-      adminContext.financialAccounts;
+    const { injector } = context;
+    const {
+      financialAccounts: {
+        poalimBusinessId,
+        etherScanBusinessId,
+        krakenBusinessId,
+        etanaBusinessId,
+      },
+      defaultLocalCurrency,
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
     const [chargeType, tags] = await Promise.all([
-      getChargeType(DbCharge, context),
-      context.injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(DbCharge.id),
+      getChargeType(DbCharge, injector),
+      injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(DbCharge.id),
     ]);
 
     // if all required fields are filled, no need for suggestions
@@ -48,7 +56,7 @@ const missingInfoSuggestions: Resolver<
     }
 
     const [formattedAmount, { allBusinessIds, mainBusinessId }] = await Promise.all([
-      calculateTotalAmount(DbCharge.id, injector, adminContext.defaultLocalCurrency),
+      calculateTotalAmount(DbCharge.id, injector, defaultLocalCurrency),
       getChargeBusinesses(DbCharge.id, injector),
     ]);
 
@@ -680,14 +688,16 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
     similarChargesByBusiness: async (
       _,
       { businessId, ownerId: ownerIdInput, tagsDifferentThan, descriptionDifferentThan },
-      { injector, adminContext },
+      { injector },
     ) => {
       if (!businessId?.trim()) {
         throw new GraphQLError('Business ID is required');
       }
 
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
       try {
-        const ownerId = ownerIdInput?.trim() || adminContext.defaultAdminBusinessId;
+        const ownerId = ownerIdInput?.trim() || adminContext.ownerId;
 
         const similarCharges = await injector
           .get(ChargesProvider)

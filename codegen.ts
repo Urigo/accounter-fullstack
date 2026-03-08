@@ -63,7 +63,7 @@ const config: CodegenConfig = {
         },
         mappers: {
           AdminBusiness: '../modules/financial-entities/types.js#IGetAllAdminBusinessesResult',
-          AdminContext: '../modules/admin-context/types.js#IGetAdminContextsResult',
+          AdminContextInfo: '../modules/admin-context/types.js#AdminContext',
           BalanceTransactions:
             '../modules/reports/types.js#IGetNormalizedBalanceTransactionsResult',
           BankDepositCharge: '../modules/charges/types.js#IGetChargesByIdsResult',

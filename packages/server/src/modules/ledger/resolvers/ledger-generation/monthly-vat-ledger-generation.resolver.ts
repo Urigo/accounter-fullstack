@@ -10,6 +10,7 @@ import {
   getMonthFromDescription,
 } from '../../../../shared/helpers/index.js';
 import type { LedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { RawVatReportRecord } from '../../../reports/helpers/vat-report.helper.js';
@@ -34,10 +35,13 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context, __) => {
-  const {
-    injector,
-    adminContext: {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }, __) => {
+  const chargeId = charge.id;
+
+  const errors: Set<string> = new Set();
+
+  try {
+    const {
       defaultLocalCurrency,
       authorities: {
         vatBusinessId,
@@ -48,13 +52,8 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       general: {
         taxCategories: { balanceCancellationTaxCategoryId },
       },
-    },
-  } = context;
-  const chargeId = charge.id;
+    } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-  const errors: Set<string> = new Set();
-
-  try {
     // figure out VAT month
     const { transactionsMinDebitDate, transactionsMinEventDate } = await getChargeTransactionsMeta(
       chargeId,
@@ -82,7 +81,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
 
       const { income, expenses } = await getVatRecords(
         { filters: { financialEntityId: charge.owner_id, monthDate } },
-        context,
+        injector,
       );
 
       return {
@@ -156,7 +155,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         };
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
       } catch (e) {
         if (e instanceof LedgerError) {
           errors.add(e.message);
@@ -166,11 +165,11 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       }
     });
 
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         miscExpensesLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
       });
     });
 
@@ -256,7 +255,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
         };
 
         accountingLedgerEntries.push(ledgerProto);
-        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerProto, ledgerBalance, defaultLocalCurrency);
       });
     }
 
@@ -265,7 +264,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     );
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
@@ -278,7 +277,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     return {

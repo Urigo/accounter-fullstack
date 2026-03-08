@@ -7,6 +7,7 @@ import type {
 import type { Currency } from '../../../../shared/enums.js';
 import { formatStringifyAmount } from '../../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import {
   calculateTotalAmount,
   getChargeBusinesses,
@@ -48,17 +49,14 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      defaultTaxCategoryId,
-      general: {
-        taxCategories: { incomeExchangeRateTaxCategoryId, exchangeRateTaxCategoryId },
-      },
+    defaultLocalCurrency,
+    defaultTaxCategoryId,
+    general: {
+      taxCategories: { incomeExchangeRateTaxCategoryId, exchangeRateTaxCategoryId },
     },
-  } = context;
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const chargeId = charge.id;
 
   const errors: Set<string> = new Set();
@@ -75,7 +73,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     >();
 
     function updateLedgerBalance(entry: LedgerProto) {
-      updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+      updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
     }
 
     const dates = new Set<number>();
@@ -83,7 +81,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
       getChargeDocumentsMeta(chargeId, injector),
-      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+      calculateTotalAmount(chargeId, injector, defaultLocalCurrency),
     ]);
     const gotRelevantDocuments = invoiceCount + receiptCount > 0;
 
@@ -167,7 +165,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         }
 
         return ledgerEntryFromDocument(
-          context,
+          injector,
           document,
           charge,
           charge.owner_id,
@@ -175,7 +173,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         )
           .then(async ledgerEntry => {
             await getDeelEmployeeId(
-              context,
+              injector,
               document,
               ledgerEntry,
               miscLedgerEntries,
@@ -206,7 +204,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
       const mainTransactionsPromises = mainTransactions.map(async transaction => {
         const ledgerEntry = await ledgerEntryFromMainTransaction(
           transaction,
-          context,
+          injector,
           chargeId,
           charge.owner_id,
           mainBusinessId ?? undefined,
@@ -234,7 +232,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         const ledgerEntries = await getEntriesFromFeeTransaction(
           transaction,
           charge,
-          context,
+          injector,
         ).catch(e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -259,7 +257,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     }
 
     // generate ledger from misc expenses
-    const expensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const expensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
@@ -275,13 +273,13 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     // generate ledger from balance cancellation
     for (const balanceCancellation of balanceCancellations) {
       try {
-        const ledgerEntry = ledgerEntryFromBalanceCancellation(
+        const ledgerEntry = await ledgerEntryFromBalanceCancellation(
           balanceCancellation,
           ledgerBalance,
           financialAccountLedgerEntries,
           chargeId,
           charge.owner_id,
-          context,
+          injector,
         );
 
         miscLedgerEntries.push(ledgerEntry);
@@ -318,7 +316,8 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
       try {
         const entries = await multipleForeignCurrenciesBalanceEntries(
-          context,
+          injector,
+          defaultLocalCurrency,
           documentEntries,
           transactionEntries,
           charge,
@@ -340,7 +339,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     // Add ledger completion entries
     const { balanceSum, isBalanced, unbalancedEntities, financialEntities } =
-      await getLedgerBalanceInfo(context, ledgerBalance, undefined, allowedUnbalancedBusinesses);
+      await getLedgerBalanceInfo(injector, ledgerBalance, undefined, allowedUnbalancedBusinesses);
     if (errors.size) {
       const records = [
         ...financialAccountLedgerEntries,
@@ -349,7 +348,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
         ...miscLedgerEntries,
       ];
       if (records.length && insertLedgerRecordsIfNotExists) {
-        await storeInitialGeneratedRecords(charge.id, records, context);
+        await storeInitialGeneratedRecords(charge.id, records, injector);
       }
       return {
         records: ledgerProtoToRecordsConverter(records),
@@ -378,7 +377,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
           const records = [...financialAccountLedgerEntries, ...feeFinancialAccountLedgerEntries];
 
           if (insertLedgerRecordsIfNotExists) {
-            await storeInitialGeneratedRecords(charge.id, records, context);
+            await storeInitialGeneratedRecords(charge.id, records, injector);
           }
 
           return {
@@ -498,7 +497,7 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
 
     const crossYearLedgerEntries = await handleCrossYearLedgerEntries(
       charge,
-      context,
+      injector,
       accountingLedgerEntries,
     );
 
@@ -510,11 +509,11 @@ export const generateLedgerRecordsForCommonCharge: ResolverFn<
     ];
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,

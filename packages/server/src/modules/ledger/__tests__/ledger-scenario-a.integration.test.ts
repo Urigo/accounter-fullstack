@@ -8,7 +8,6 @@ import { buildAdminContextFromDb } from '../../../__tests__/helpers/admin-contex
 import { env } from '../../../environment.js';
 import { ledgerGenerationByCharge } from '../helpers/ledger-by-charge-type.helper.js';
 import { assertSimpleLocalExpenseScenario, assertAuditTrail } from './helpers/ledger-assertions.js';
-import type { UserType } from '../../../plugins/auth-plugin.js';
 import { createLedgerTestContext } from '../../../test-utils/ledger-injector.js';
 import { Currency } from '../../../shared/enums.js';
 
@@ -105,7 +104,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       await insertClient.query('BEGIN');
 
       const adminContext = await buildAdminContextFromDb(insertClient);
-      await insertFixture(insertClient, expenseScenarioA, adminContext.defaultAdminBusinessId);
+      await insertFixture(insertClient, expenseScenarioA, adminContext.ownerId);
 
       // Reset RLS context to the charge owner before verification 
       // (insertFixture might leave it set to the last inserted entity's owner)
@@ -160,18 +159,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
       );
       const charge = chargeResult.rows[0];
 
-      const mockUser: UserType = {
-        username: 'test-admin',
-        userId: fixtureOwnerId,
-        role: 'ADMIN',
-      };
-
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
-        currentUser: mockUser,
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
       });
 
       const result = await ledgerGenerationByCharge(
@@ -240,7 +232,7 @@ describe('Ledger Generation - Expense Scenario A', () => {
       if (existingCharge.rows.length === 0) {
         // Reinsert fixture quickly
         await client.query('BEGIN');
-        await insertFixture(client, expenseScenarioA, adminContext.defaultAdminBusinessId);
+        await insertFixture(client, expenseScenarioA, adminContext.ownerId);
         await client.query('COMMIT');
       }
 
@@ -249,17 +241,11 @@ describe('Ledger Generation - Expense Scenario A', () => {
         [chargeId],
       );
       const charge = chargeResult.rows[0];
-      const mockUser: UserType = {
-        username: 'test-admin',
-        userId: adminId,
-        role: 'ADMIN',
-      };
       const context = createLedgerTestContext({
         pool: db.getPool(),
-        adminContext,
-        currentUser: mockUser,
         env,
         moduleId: 'ledger',
+        businessId: adminContext.ownerId,
       });
 
       // First generation

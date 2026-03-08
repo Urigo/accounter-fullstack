@@ -1,5 +1,5 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Inject, Injectable, Scope } from 'graphql-modules';
 import {
   _DOLLAR_defs_addClientRequest_Input,
   _DOLLAR_defs_getClientResponse,
@@ -8,10 +8,10 @@ import {
   updateClient_mutationMutationVariables,
   type Sdk,
 } from '@accounter/green-invoice-graphql';
-import type { Currency } from '../../shared/enums.js';
 import { dateToTimelessDateString } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
+import { AdminContextProvider } from '../admin-context/providers/admin-context.provider.js';
 
 export type ExpenseDraft = NonNullable<
   Extract<
@@ -24,14 +24,10 @@ export type ExpenseDraft = NonNullable<
   global: true,
 })
 export class GreenInvoiceClientProvider {
-  localCurrency: Currency;
-
   constructor(
-    @Inject(CONTEXT) private context: GraphQLModules.Context,
+    private adminContextProvider: AdminContextProvider,
     @Inject(ENVIRONMENT) private env: Environment,
-  ) {
-    this.localCurrency = this.context.adminContext.defaultLocalCurrency;
-  }
+  ) {}
 
   public authToken: string | null = null;
 
@@ -68,6 +64,7 @@ export class GreenInvoiceClientProvider {
 
   public async addExpenseDraftByFile(file: File | Blob): Promise<ExpenseDraft> {
     try {
+      const { defaultLocalCurrency } = await this.adminContextProvider.getVerifiedAdminContext();
       // convert what-wg file to nodejs file
       const newFile = new File(
         [Buffer.from(await file.arrayBuffer())],
@@ -138,7 +135,7 @@ export class GreenInvoiceClientProvider {
             // check if any actual OCR fields exists
             if (
               expense.amount !== null ||
-              expense.currency !== this.localCurrency ||
+              expense.currency !== defaultLocalCurrency ||
               expense.date !== null ||
               expense.documentType !== '_20' ||
               expense.number !== null ||
@@ -160,7 +157,7 @@ export class GreenInvoiceClientProvider {
           number: undefined,
           date: undefined,
           amount: 0,
-          currency: this.localCurrency,
+          currency: defaultLocalCurrency,
           vat: 0,
         },
       } as ExpenseDraft;

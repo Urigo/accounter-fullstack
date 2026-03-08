@@ -1,5 +1,6 @@
 import { Injector } from 'graphql-modules';
 import type { BusinessTripAttendeeStayInput } from '../../../__generated__/types.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripAttendeesProvider } from '../providers/business-trips-attendees.provider.js';
 import { BusinessTripAccommodationsExpensesProvider } from '../providers/business-trips-expenses-accommodations.provider.js';
 import type {
@@ -22,17 +23,16 @@ type AccommodationTaxVariables = {
 };
 
 export async function accommodationExpenseDataCollector(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpenses: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult[],
   partialSummaryData: Partial<SummaryData>,
   destinationCode: string | null,
   taxVariables: IGetAllTaxVariablesResult,
   attendeesMap: Map<string, AttendeeInfo>,
 ): Promise<number> {
-  const {
-    injector,
-    adminContext: { defaultLocalCurrency, defaultCryptoConversionFiatCurrency },
-  } = context;
+  const { defaultLocalCurrency, defaultCryptoConversionFiatCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
   // populate category
   partialSummaryData['ACCOMMODATION'] ??= {};
   const category = partialSummaryData['ACCOMMODATION'] as SummaryCategoryData;
@@ -50,7 +50,7 @@ export async function accommodationExpenseDataCollector(
   await Promise.all(
     businessTripExpenses.map(async businessTripExpense =>
       expenseAccommodationTaxableAmounts(
-        context,
+        injector,
         businessTripExpense,
         attendeesAccommodationMap,
       ).then(({ localAmount, foreignAmount }) => {
@@ -118,14 +118,14 @@ function getAccommodationTaxVariablesUSD(
 }
 
 async function expenseAccommodationTaxableAmounts(
-  context: GraphQLModules.Context,
+  injector: Injector,
   businessTripExpense: IGetBusinessTripsAccommodationsExpensesByBusinessTripIdsResult,
   attendeesAccommodationMap: Map<
     string,
     { localAmount: number; foreignAmount: number; nights: number }
   >,
 ) {
-  const { localAmount, foreignAmount } = await getExpenseAmountsData(context, businessTripExpense);
+  const { localAmount, foreignAmount } = await getExpenseAmountsData(injector, businessTripExpense);
 
   if (!businessTripExpense.nights_count) {
     console.error(

@@ -4,6 +4,7 @@ import type { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { dateToTimelessDateString, hashStringToInt } from '../../../shared/helpers/index.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../shared/types/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { DeelClientProvider } from '../../app-providers/deel/deel-client.provider.js';
 import type {
   DeelWorker,
@@ -39,7 +40,7 @@ export function isDeelDocument(document: IGetDocumentsByChargeIdResult): boolean
 }
 
 export async function getDeelEmployeeId(
-  context: GraphQLModules.ModuleContext,
+  injector: Injector,
   document: IGetDocumentsByChargeIdResult,
   ledgerEntry: StrictLedgerProto,
   ledgerEntries: LedgerProto[],
@@ -51,13 +52,13 @@ export async function getDeelEmployeeId(
 
   const isDeelCreditor = ledgerEntry.creditAccountID1 === DEEL_BUSINESS_ID;
   // naive fetch employee id from deel
-  let employeeId = await context.injector
+  let employeeId = await injector
     .get(DeelContractsProvider)
     .getEmployeeIdByDocumentIdLoader.load(document.id);
 
   if (!employeeId && document.date && document.type) {
     // figure out through deel records
-    const records = await context.injector
+    const records = await injector
       .get(DeelInvoicesProvider)
       .getInvoicesByIssueDates(startOfDay(document.date), endOfDay(document.date));
 
@@ -87,7 +88,7 @@ export async function getDeelEmployeeId(
       return true;
     });
     if (matchingRecord?.contract_id) {
-      employeeId = await context.injector
+      employeeId = await injector
         .get(DeelContractsProvider)
         .getEmployeeIDByContractIdLoader.load(matchingRecord.contract_id);
     }
@@ -95,7 +96,7 @@ export async function getDeelEmployeeId(
 
   if (employeeId) {
     // get employee tax category
-    const taxCategoryId = await context.injector
+    const taxCategoryId = await injector
       .get(TaxCategoriesProvider)
       .taxCategoryByBusinessIDsLoader.load(employeeId)
       .then(taxCategory => taxCategory?.id);
@@ -511,16 +512,13 @@ export async function matchInvoicesWithPayments(
 }
 
 export async function insertDeelInvoiceRecord(
-  context: GraphQLModules.ModuleContext,
+  injector: Injector,
   match: DeelInvoiceMatch,
   chargeId: string,
 ) {
   try {
-    const {
-      injector,
-      adminContext: { defaultAdminBusinessId },
-    } = context;
-    const documentId = await uploadDeelInvoice(chargeId, match, injector, defaultAdminBusinessId);
+    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+    const documentId = await uploadDeelInvoice(chargeId, match, injector, ownerId);
 
     await injector
       .get(DeelInvoicesProvider)

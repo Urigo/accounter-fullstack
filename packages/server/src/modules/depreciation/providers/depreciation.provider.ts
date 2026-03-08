@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IDeleteDepreciationRecordByChargeIdParams,
@@ -99,7 +100,7 @@ const deleteDepreciationRecordByChargeId = sql<IDeleteDepreciationRecordByCharge
 export class DepreciationProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchDepreciationRecordsByIds(depreciationRecordIds: readonly string[]) {
@@ -147,9 +148,10 @@ export class DepreciationProvider {
     return updateDepreciationRecord.run(params, this.db);
   }
 
-  public insertDepreciationRecord(params: IInsertDepreciationRecordParams) {
+  public async insertDepreciationRecord(params: IInsertDepreciationRecordParams) {
     this.clearCache();
-    return insertDepreciationRecord.run(reassureOwnerIdExists(params, this.context), this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return insertDepreciationRecord.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public deleteDepreciationRecord(params: IDeleteDepreciationRecordParams) {

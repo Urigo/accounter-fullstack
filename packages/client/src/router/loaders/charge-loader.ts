@@ -1,6 +1,6 @@
 import type { LoaderFunctionArgs } from 'react-router-dom';
 import { ChargeScreenDocument } from '../../gql/graphql.js';
-import { getUrqlClient } from '../../providers/urql-client.js';
+import { getUrqlClient } from '../../providers/urql.js';
 import { validateChargeParams } from '../types.js';
 
 /**

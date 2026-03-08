@@ -1,7 +1,8 @@
 import DataLoader from 'dataloader';
-import { CONTEXT, Inject, Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IGetAllBusinessesQuery,
@@ -218,7 +219,7 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
 export class BusinessesProvider {
   constructor(
     private db: TenantAwareDBClient,
-    @Inject(CONTEXT) private context: GraphQLModules.GlobalContext,
+    private adminContextProvider: AdminContextProvider,
   ) {}
 
   private async batchBusinessesByIds(ids: readonly string[]) {
@@ -279,8 +280,9 @@ export class BusinessesProvider {
         }
       }),
     );
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const businessesWithOwnerId = newBusinesses.map(business =>
-      reassureOwnerIdExists(business, this.context),
+      reassureOwnerIdExists(business, ownerId),
     );
     const businesses = await insertBusinesses.run(
       {

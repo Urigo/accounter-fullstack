@@ -6,7 +6,6 @@
  * Centralized exports for all route loaders
  */
 
-export { publicOnly, requireAuth } from './auth-loader.js';
 export { chargeLoader } from './charge-loader.js';
 export { businessLoader } from './business-loader.js';
 

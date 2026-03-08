@@ -6,6 +6,7 @@ import type {
 } from '../../../../__generated__/types.js';
 import type { Currency } from '../../../../shared/enums.js';
 import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/index.js';
+import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { validateTransactionAgainstBusinessTrips } from '../../../business-trips/helpers/business-trips-expenses.helper.js';
 import { BusinessTripAttendeesProvider } from '../../../business-trips/providers/business-trips-attendees.provider.js';
 import { BusinessTripEmployeePaymentsProvider } from '../../../business-trips/providers/business-trips-employee-payments.provider.js';
@@ -54,18 +55,16 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
   ResolversParentTypes['Charge'],
   GraphQLModules.Context,
   { insertLedgerRecordsIfNotExists: boolean }
-> = async (charge, { insertLedgerRecordsIfNotExists }, context) => {
-  const {
-    injector,
-    adminContext: {
-      defaultLocalCurrency,
-      defaultTaxCategoryId,
-      general: {
-        taxCategories: { incomeExchangeRateTaxCategoryId },
-      },
-    },
-  } = context;
+> = async (charge, { insertLedgerRecordsIfNotExists }, { injector }) => {
   const chargeId = charge.id;
+
+  const {
+    defaultLocalCurrency,
+    defaultTaxCategoryId,
+    general: {
+      taxCategories: { incomeExchangeRateTaxCategoryId },
+    },
+  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
   const errors: Set<string> = new Set();
 
@@ -87,7 +86,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     const [{ invoiceCount, receiptCount }, formattedChargeAmount] = await Promise.all([
       getChargeDocumentsMeta(chargeId, injector),
-      calculateTotalAmount(chargeId, injector, context.adminContext.defaultLocalCurrency),
+      calculateTotalAmount(chargeId, injector, defaultLocalCurrency),
     ]);
 
     const gotRelevantDocuments = invoiceCount + receiptCount > 0;
@@ -172,11 +171,11 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     let transactionsTotalLocalAmount = 0;
 
     // create ledger records for misc expenses
-    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, context).then(entries => {
+    const miscExpensesLedgerPromise = generateMiscExpensesLedger(charge, injector).then(entries => {
       entries.map(entry => {
         entry.ownerId = charge.owner_id;
         feeFinancialAccountLedgerEntries.push(entry);
-        updateLedgerBalanceByEntry(entry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(entry, ledgerBalance, defaultLocalCurrency);
         dates.add(entry.valueDate.getTime());
         currencies.add(entry.currency);
       });
@@ -193,7 +192,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
 
         const validateTransactionAgainstBusinessTripsPromise =
-          validateTransactionAgainstBusinessTrips(context, transaction).catch(e => {
+          validateTransactionAgainstBusinessTrips(injector, transaction).catch(e => {
             if (e instanceof LedgerError) {
               errors.add(e.message);
             } else {
@@ -259,7 +258,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         ]);
 
         financialAccountLedgerEntries.push(ledgerEntry);
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       } catch (e) {
@@ -273,7 +272,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     // create a ledger record for fee transactions
     const feeTransactionsPromises = feeTransactions.map(async transaction => {
-      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, context).catch(
+      const ledgerEntries = await getEntriesFromFeeTransaction(transaction, charge, injector).catch(
         e => {
           if (e instanceof LedgerError) {
             errors.add(e.message);
@@ -289,7 +288,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       feeFinancialAccountLedgerEntries.push(...ledgerEntries);
       ledgerEntries.map(ledgerEntry => {
-        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+        updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         dates.add(ledgerEntry.valueDate.getTime());
         currencies.add(ledgerEntry.currency);
       });
@@ -319,7 +318,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         }
 
         return ledgerEntryFromDocument(
-          context,
+          injector,
           document,
           charge,
           charge.owner_id,
@@ -327,7 +326,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         )
           .then(ledgerEntry => {
             accountingLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
             dates.add(ledgerEntry.valueDate.getTime());
             currencies.add(ledgerEntry.currency);
           })
@@ -428,7 +427,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             };
 
             accountingLedgerEntries.push(ledgerEntry);
-            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+            updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
             dates.add(ledgerEntry.valueDate.getTime());
             currencies.add(ledgerEntry.currency);
           },
@@ -460,7 +459,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
           };
 
           accountingLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         });
         await Promise.all(businessTripExpensesPromises);
       }
@@ -472,7 +471,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ]);
 
     const ledgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       undefined,
       allowedUnbalancedBusinesses,
@@ -496,7 +495,8 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
       try {
         const entries = await multipleForeignCurrenciesBalanceEntries(
-          context,
+          injector,
+          defaultLocalCurrency,
           documentEntries,
           transactionEntries,
           charge,
@@ -505,7 +505,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
         );
         for (const ledgerEntry of entries) {
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         }
       } catch (e) {
         if (e instanceof LedgerError) {
@@ -586,7 +586,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
             chargeId,
           };
           miscLedgerEntries.push(ledgerEntry);
-          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, context);
+          updateLedgerBalanceByEntry(ledgerEntry, ledgerBalance, defaultLocalCurrency);
         } else {
           errors.add(
             `Failed to locate tax category for exchange rate for business ID="${entityId}"`,
@@ -599,7 +599,7 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
 
     const crossYearLedgerEntries = await handleCrossYearLedgerEntries(
       charge,
-      context,
+      injector,
       accountingLedgerEntries,
     );
 
@@ -611,14 +611,14 @@ export const generateLedgerRecordsForBusinessTrip: ResolverFn<
     ];
 
     const updatedLedgerBalanceInfo = await getLedgerBalanceInfo(
-      context,
+      injector,
       ledgerBalance,
       errors,
       allowedUnbalancedBusinesses,
     );
 
     if (insertLedgerRecordsIfNotExists) {
-      await storeInitialGeneratedRecords(charge.id, records, context);
+      await storeInitialGeneratedRecords(charge.id, records, injector);
     }
 
     return {
