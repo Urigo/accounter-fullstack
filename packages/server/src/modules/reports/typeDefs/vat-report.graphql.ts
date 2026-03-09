@@ -2,7 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    vatReport(filters: VatReportFilter): VatReportResult! @auth(role: ACCOUNTANT)
+    vatReport(filters: VatReportFilter): VatReportResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for vatReportRecords "

@@ -2,19 +2,23 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]! @auth(role: ACCOUNTANT)
-    transactionsByFinancialEntity(financialEntityID: UUID!): [Transaction!]! @auth(role: ACCOUNTANT)
+    transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]! @requiresAuth
+    transactionsByFinancialEntity(financialEntityID: UUID!): [Transaction!]! @requiresAuth
   }
 
   extend type Mutation {
     updateTransaction(
       transactionId: UUID!
       fields: UpdateTransactionInput!
-    ): UpdateTransactionResult! @auth(role: ACCOUNTANT)
+    ): UpdateTransactionResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateTransactions(
       transactionIds: [UUID!]!
       fields: UpdateTransactionInput!
-    ): UpdateTransactionsResult! @auth(role: ACCOUNTANT)
+    ): UpdateTransactionsResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend interface Charge {

@@ -4,7 +4,7 @@ export default gql`
   extend type Query {
     " get similar transactions "
     similarTransactions(transactionId: UUID!, withMissingInfo: Boolean): [Transaction!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
   }
 
   extend interface Transaction {

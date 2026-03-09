@@ -6,17 +6,18 @@ export default gql`
       monthDate: TimelessDate!
       financialEntityId: UUID!
       options: PCNOptionsInput
-    ): PCNFileResult! @auth(role: ACCOUNTANT)
+    ): PCNFileResult! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     pcnByDate(
       businessId: UUID
       fromMonthDate: TimelessDate!
       toMonthDate: TimelessDate!
-    ): [Pcn874Records!]! @auth(role: ACCOUNTANT)
+    ): [Pcn874Records!]! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     updatePcn874(businessId: UUID, monthDate: TimelessDate!, content: String!): Boolean!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " config options for generatePCN "

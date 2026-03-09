@@ -2,15 +2,25 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allTags: [Tag!]! @auth(role: ACCOUNTANT)
+    allTags: [Tag!]! @requiresAuth
   }
 
   extend type Mutation {
-    addTag(name: String!, parentId: UUID): Boolean! @auth(role: ADMIN)
-    deleteTag(id: UUID!): Boolean! @auth(role: ADMIN)
-    updateTagParent(id: UUID!, parentId: UUID): Boolean! @auth(role: ADMIN)
-    updateTagPart(tagId: UUID!, chargeId: UUID!, part: Float!): Boolean! @auth(role: ADMIN)
-    updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean! @auth(role: ADMIN)
+    addTag(name: String!, parentId: UUID): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteTag(id: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateTagParent(id: UUID!, parentId: UUID): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateTagPart(tagId: UUID!, chargeId: UUID!, part: Float!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for updateTag "

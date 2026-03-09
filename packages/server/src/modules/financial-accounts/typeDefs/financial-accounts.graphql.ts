@@ -2,17 +2,21 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allFinancialAccounts: [FinancialAccount!]! @auth(role: ACCOUNTANT)
-    financialAccountsByOwner(ownerId: UUID!): [FinancialAccount!]! @auth(role: ACCOUNTANT)
-    financialAccount(id: UUID!): FinancialAccount! @auth(role: ACCOUNTANT)
+    allFinancialAccounts: [FinancialAccount!]! @requiresAuth
+    financialAccountsByOwner(ownerId: UUID!): [FinancialAccount!]! @requiresAuth
+    financialAccount(id: UUID!): FinancialAccount! @requiresAuth
   }
 
   extend type Mutation {
-    deleteFinancialAccount(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    deleteFinancialAccount(id: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     createFinancialAccount(input: CreateFinancialAccountInput!): FinancialAccount!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateFinancialAccount(id: UUID!, fields: UpdateFinancialAccountInput!): FinancialAccount!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Represent something external that we scrape, like bank or card "

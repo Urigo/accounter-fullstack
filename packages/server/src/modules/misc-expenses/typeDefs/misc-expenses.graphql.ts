@@ -2,17 +2,22 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    miscExpensesByCharge(chargeId: UUID!): [MiscExpense!]! @auth(role: ACCOUNTANT)
+    miscExpensesByCharge(chargeId: UUID!): [MiscExpense!]! @requiresAuth
   }
 
   extend type Mutation {
     updateMiscExpense(id: UUID!, fields: UpdateMiscExpenseInput!): MiscExpense!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertMiscExpense(chargeId: UUID!, fields: InsertMiscExpenseInput!): MiscExpense!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertMiscExpenses(chargeId: UUID!, expenses: [InsertMiscExpenseInput!]!): Charge!
-      @auth(role: ACCOUNTANT)
-    deleteMiscExpense(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteMiscExpense(id: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " a misc expense  "

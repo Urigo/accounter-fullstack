@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     corporateTaxRulingComplianceReport(years: [Int!]!): [CorporateTaxRulingComplianceReport!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for corporateTaxReport "

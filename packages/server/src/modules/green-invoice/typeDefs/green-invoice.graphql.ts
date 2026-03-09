@@ -2,12 +2,15 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    greenInvoiceClient(clientId: UUID!): GreenInvoiceClient! @auth(role: ACCOUNTANT)
+    greenInvoiceClient(clientId: UUID!): GreenInvoiceClient!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     syncGreenInvoiceDocuments(ownerId: UUID!, singlePageLimit: Boolean): [Document!]!
-      @auth(role: ADMIN)
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
   extend type IssuedDocumentInfo {
     originalDocument: DocumentDraft

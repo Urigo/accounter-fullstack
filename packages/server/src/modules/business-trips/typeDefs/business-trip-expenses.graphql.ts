@@ -110,41 +110,52 @@ export default gql`
 
   extend type Mutation {
     categorizeBusinessTripExpense(fields: CategorizeBusinessTripExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     categorizeIntoExistingBusinessTripExpense(
       fields: CategorizeIntoExistingBusinessTripExpenseInput!
-    ): UUID! @auth(role: ACCOUNTANT)
+    ): UUID! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     uncategorizePartialBusinessTripExpense(
       businessTripExpenseId: UUID!
       transactionId: UUID!
-    ): Boolean! @auth(role: ACCOUNTANT)
+    ): Boolean! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripFlightsExpense(fields: UpdateBusinessTripFlightsExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripAccommodationsExpense(
       fields: UpdateBusinessTripAccommodationsExpenseInput!
-    ): UUID! @auth(role: ACCOUNTANT)
+    ): UUID! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripOtherExpense(fields: UpdateBusinessTripOtherExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripTravelAndSubsistenceExpense(
       fields: UpdateBusinessTripTravelAndSubsistenceExpenseInput!
-    ): UUID! @auth(role: ACCOUNTANT)
+    ): UUID! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripCarRentalExpense(fields: UpdateBusinessTripCarRentalExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
-    deleteBusinessTripExpense(businessTripExpenseId: UUID!): Boolean! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteBusinessTripExpense(businessTripExpenseId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
 
     addBusinessTripFlightsExpense(fields: AddBusinessTripFlightsExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     addBusinessTripAccommodationsExpense(fields: AddBusinessTripAccommodationsExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     addBusinessTripOtherExpense(fields: AddBusinessTripOtherExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     addBusinessTripTravelAndSubsistenceExpense(
       fields: AddBusinessTripTravelAndSubsistenceExpenseInput!
-    ): UUID! @auth(role: ACCOUNTANT)
+    ): UUID! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     creditShareholdersBusinessTripTravelAndSubsistence(businessTripId: UUID!): [UUID!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     addBusinessTripCarRentalExpense(fields: AddBusinessTripCarRentalExpenseInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the input for categorizing a business trip expense "

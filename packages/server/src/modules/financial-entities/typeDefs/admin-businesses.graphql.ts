@@ -2,16 +2,21 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    adminBusiness(id: UUID!): AdminBusiness! @auth(role: ACCOUNTANT)
-    allAdminBusinesses: [AdminBusiness!]! @auth(role: ACCOUNTANT)
+    adminBusiness(id: UUID!): AdminBusiness! @requiresAuth
+    allAdminBusinesses: [AdminBusiness!]! @requiresAuth
   }
   extend type Mutation {
-    createAdminBusiness(input: CreateAdminBusinessInput!): AdminBusiness! @auth(role: ADMIN)
+    createAdminBusiness(input: CreateAdminBusinessInput!): AdminBusiness!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
 
     updateAdminBusiness(businessId: UUID!, fields: UpdateAdminBusinessInput!): AdminBusiness!
-      @auth(role: ADMIN)
+      @requiresAuth
+      @requiresRole(role: "business_owner")
 
-    deleteAdminBusiness(businessId: UUID!): Boolean! @auth(role: ADMIN)
+    deleteAdminBusiness(businessId: UUID!): Boolean!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
 
   " Represents a business entity managed by an accountant in the system."

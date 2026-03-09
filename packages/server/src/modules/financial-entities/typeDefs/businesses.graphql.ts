@@ -2,9 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    business(id: UUID!): Business! @auth(role: ACCOUNTANT)
-    businesses(ids: [UUID!]!): [Business!]! @auth(role: ACCOUNTANT)
-    allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @auth(role: ACCOUNTANT)
+    business(id: UUID!): Business! @requiresAuth
+    businesses(ids: [UUID!]!): [Business!]! @requiresAuth
+    allBusinesses(page: Int, limit: Int, name: String): PaginatedBusinesses @requiresAuth
   }
 
   " represent a financial entity of any type that may hold financial accounts (company, business, individual) "
@@ -94,12 +94,18 @@ export default gql`
       businessId: UUID!
       ownerId: UUID!
       fields: UpdateBusinessInput!
-    ): UpdateBusinessResponse! @auth(role: ACCOUNTANT)
+    ): UpdateBusinessResponse!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertNewBusiness(fields: InsertNewBusinessInput!): UpdateBusinessResponse!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     mergeBusinesses(targetBusinessId: UUID!, businessIdsToMerge: [UUID!]!): Business!
-      @auth(role: ACCOUNTANT)
-    batchGenerateBusinessesOutOfTransactions: [Business!]! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    batchGenerateBusinessesOutOfTransactions: [Business!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for updateBusiness "

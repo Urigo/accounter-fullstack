@@ -1,6 +1,6 @@
 import { ManagementClient } from 'auth0';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Auth0ManagementService } from '../auth0-management.service.js';
+import { Auth0ManagementProvider } from '../auth0-management.provider.js';
 import type { Environment } from '../../../../shared/types/index.js';
 
 // Mock auth0 library
@@ -22,8 +22,8 @@ vi.mock('auth0', () => {
   return { ManagementClient };
 });
 
-describe('Auth0ManagementService', () => {
-  let service: Auth0ManagementService;
+describe('Auth0ManagementProvider', () => {
+  let service: Auth0ManagementProvider;
   let mockClient: any;
   let mockEnv: Environment;
 
@@ -45,7 +45,7 @@ describe('Auth0ManagementService', () => {
       // minimal mock
     } as any;
 
-    service = new Auth0ManagementService(mockEnv);
+    service = new Auth0ManagementProvider(mockEnv);
     // Get the instance of the mocked client
     mockClient = (ManagementClient as any).mock.results[0].value;
   });

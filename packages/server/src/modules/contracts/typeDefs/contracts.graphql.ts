@@ -2,17 +2,22 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allOpenContracts: [Contract!]! @auth(role: ACCOUNTANT)
-    contractsByClient(clientId: UUID!): [Contract!]! @auth(role: ACCOUNTANT)
-    contractsByAdmin(adminId: UUID!): [Contract!]! @auth(role: ACCOUNTANT)
-    contractsById(id: UUID!): Contract! @auth(role: ACCOUNTANT)
+    allOpenContracts: [Contract!]! @requiresAuth
+    contractsByClient(clientId: UUID!): [Contract!]! @requiresAuth
+    contractsByAdmin(adminId: UUID!): [Contract!]! @requiresAuth
+    contractsById(id: UUID!): Contract! @requiresAuth
   }
 
   extend type Mutation {
     updateContract(contractId: UUID!, input: UpdateContractInput!): Contract!
-      @auth(role: ACCOUNTANT)
-    deleteContract(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
-    createContract(input: CreateContractInput!): Contract! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteContract(id: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    createContract(input: CreateContractInput!): Contract!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " a client contract "

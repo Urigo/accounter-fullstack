@@ -2,13 +2,17 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allSortCodes: [SortCode!]! @auth(role: ACCOUNTANT)
-    sortCode(key: Int!): SortCode @auth(role: ACCOUNTANT)
+    allSortCodes: [SortCode!]! @requiresAuth
+    sortCode(key: Int!): SortCode @requiresAuth
   }
 
   extend type Mutation {
-    addSortCode(name: String!, key: Int!, defaultIrsCode: Int): Boolean! @auth(role: ACCOUNTANT)
-    updateSortCode(key: Int!, fields: UpdateSortCodeFieldsInput!): Boolean! @auth(role: ACCOUNTANT)
+    addSortCode(name: String!, key: Int!, defaultIrsCode: Int): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateSortCode(key: Int!, fields: UpdateSortCodeFieldsInput!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for updateSortCode "

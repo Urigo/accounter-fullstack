@@ -2,7 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    taxReport(reportYear: Int!, referenceYears: [Int!]!): TaxReport! @auth(role: ACCOUNTANT)
+    taxReport(reportYear: Int!, referenceYears: [Int!]!): TaxReport!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for taxReport "
