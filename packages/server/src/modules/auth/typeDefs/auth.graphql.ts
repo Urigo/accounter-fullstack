@@ -7,4 +7,17 @@ export default gql`
   directive @requiresRole(role: String!) on FIELD_DEFINITION
   " Role-based authorization: requires user to have any of the specified roles "
   directive @requiresAnyRole(roles: [String!]!) on FIELD_DEFINITION
+
+  extend type Mutation {
+    createInvitation(email: String!, roleId: String!): InvitationPayload!
+      @requiresRole(role: "business_owner")
+  }
+
+  " Invitation payload returned after creating an invitation "
+  type InvitationPayload {
+    id: ID!
+    email: String!
+    roleId: String!
+    expiresAt: DateTime!
+  }
 `;
