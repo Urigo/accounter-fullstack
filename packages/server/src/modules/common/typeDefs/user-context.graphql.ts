@@ -2,7 +2,7 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    userContext: UserContext @auth(role: ACCOUNTANT)
+    userContext: UserContext @requiresAuth
   }
 
   " user context "

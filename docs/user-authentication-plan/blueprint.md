@@ -384,8 +384,8 @@ instead of injection tokens for async context providers.
 
 GraphQL Modules' `useFactory` doesn't support async functions. Since
 `AuthContextProvider.getAuthContext()` is async (performs JWT verification + DB queries), we inject
-`AuthContextProvider` directly into services and call `await provider.getAuthContext()`. The provider's
-internal caching ensures multiple calls within the same request are efficient.
+`AuthContextProvider` directly into services and call `await provider.getAuthContext()`. The
+provider's internal caching ensures multiple calls within the same request are efficient.
 
 **Pattern**:
 
@@ -2095,11 +2095,13 @@ enhancement.
   directive @requiresRole(role: String!) on FIELD_DEFINITION
   directive @requiresAnyRole(roles: [String!]!) on FIELD_DEFINITION
   ```
-- Wire `auth.graphql` into `authModule` via `typeDefs` in `packages/server/src/modules/auth/index.ts`
-  so the directive definitions are merged into the schema
+- Wire `auth.graphql` into `authModule` via `typeDefs` in
+  `packages/server/src/modules/auth/index.ts` so the directive definitions are merged into the
+  schema
 - Create `packages/server/src/modules/auth/directives/auth-directives.ts` — a schema transformer
   using `mapSchema` from `@graphql-tools/utils` that wraps field resolvers to enforce the directives
-- In `packages/server/src/modules-app.ts`: export `transformedSchema = authDirectiveTransformer(application.schema)`
+- In `packages/server/src/modules-app.ts`: export
+  `transformedSchema = authDirectiveTransformer(application.schema)`
 - In `packages/server/src/index.ts`: add `useSchema(transformedSchema)` (from `@envelop/core`)
   **after** `useGraphQLModules(application)` in the plugins array. This overrides the schema with
   directive-wrapped resolvers while `useGraphQLModules` still provides the executor and

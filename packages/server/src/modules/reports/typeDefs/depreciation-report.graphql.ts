@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     depreciationReport(filters: DepreciationReportFilter): DepreciationReportResult!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for depreciationReport "

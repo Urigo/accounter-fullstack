@@ -2,23 +2,29 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    salaryRecordsByCharge(chargeId: UUID!): [Salary!]! @auth(role: ACCOUNTANT)
+    salaryRecordsByCharge(chargeId: UUID!): [Salary!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     salaryRecordsByDates(
       fromDate: TimelessDate!
       toDate: TimelessDate!
       employeeIDs: [UUID!]
-    ): [Salary!]! @auth(role: ACCOUNTANT)
+    ): [Salary!]! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     insertSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
-      @auth(role: ADMIN)
+      @requiresAuth
+      @requiresRole(role: "business_owner")
     updateSalaryRecord(salaryRecord: SalaryRecordEditInput!): UpdateSalaryRecordResult!
-      @auth(role: ADMIN)
+      @requiresAuth
+      @requiresRole(role: "business_owner")
     insertOrUpdateSalaryRecords(salaryRecords: [SalaryRecordInput!]!): InsertSalaryRecordsResult!
-      @auth(role: ADMIN)
+      @requiresAuth
+      @requiresRole(role: "business_owner")
     insertSalaryRecordsFromFile(file: FileScalar!, chargeId: UUID!): Boolean!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for insert salary records "

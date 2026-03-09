@@ -2,7 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    yearlyLedgerReport(year: Int!): YearlyLedgerReport! @auth(role: ACCOUNTANT)
+    yearlyLedgerReport(year: Int!): YearlyLedgerReport!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " yearly ledger report "

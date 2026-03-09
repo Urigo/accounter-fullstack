@@ -2,13 +2,12 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    documents: [Document!]! @auth(role: ACCOUNTANT)
-    documentsByFilters(filters: DocumentsFilters!): [Document!]! @auth(role: ACCOUNTANT)
-    documentById(documentId: UUID!): Document @auth(role: ACCOUNTANT)
-    recentDocumentsByBusiness(businessId: UUID!, limit: Int): [Document!]! @auth(role: ACCOUNTANT)
-    recentDocumentsByClient(clientId: UUID!, limit: Int): [Document!]! @auth(role: ACCOUNTANT)
-    recentIssuedDocumentsByType(documentType: DocumentType!, limit: Int): [Document!]!
-      @auth(role: ACCOUNTANT)
+    documents: [Document!]! @requiresAuth
+    documentsByFilters(filters: DocumentsFilters!): [Document!]! @requiresAuth
+    documentById(documentId: UUID!): Document @requiresAuth
+    recentDocumentsByBusiness(businessId: UUID!, limit: Int): [Document!]! @requiresAuth
+    recentDocumentsByClient(clientId: UUID!, limit: Int): [Document!]! @requiresAuth
+    recentIssuedDocumentsByType(documentType: DocumentType!, limit: Int): [Document!]! @requiresAuth
   }
 
   " input variables for documents filtering "
@@ -22,22 +21,35 @@ export default gql`
   }
 
   extend type Mutation {
-    insertDocument(record: InsertDocumentInput!): InsertDocumentResult! @auth(role: ACCOUNTANT)
+    insertDocument(record: InsertDocumentInput!): InsertDocumentResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
-      @auth(role: ACCOUNTANT)
-    deleteDocument(documentId: UUID!): Boolean! @auth(role: ACCOUNTANT)
-    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteDocument(documentId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchUploadDocuments(
       documents: [FileScalar!]!
       isSensitive: Boolean
       chargeId: UUID
-    ): [UploadDocumentResult!]! @auth(role: ACCOUNTANT)
+    ): [UploadDocumentResult!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchUploadDocumentsFromGoogleDrive(
       sharedFolderUrl: String!
       isSensitive: Boolean
       chargeId: UUID
-    ): [UploadDocumentResult!]! @auth(role: ACCOUNTANT)
-    closeDocument(id: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    ): [UploadDocumentResult!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    closeDocument(id: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " All possible document types "

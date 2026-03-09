@@ -2,8 +2,12 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allPensionFunds: [PensionFund!]! @auth(role: ACCOUNTANT)
-    allTrainingFunds: [TrainingFund!]! @auth(role: ACCOUNTANT)
+    allPensionFunds: [PensionFund!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    allTrainingFunds: [TrainingFund!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " fund entity prototype "

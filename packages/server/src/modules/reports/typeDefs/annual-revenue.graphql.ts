@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     annualRevenueReport(filters: AnnualRevenueReportFilter!): AnnualRevenueReport!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " annual revenue report "

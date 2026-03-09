@@ -3,21 +3,27 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Mutation {
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateBankDepositsRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateTaxExpensesCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateDepreciationCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateRecoveryReserveCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateVacationReserveCharge(ownerId: UUID!, year: TimelessDate!): FinancialCharge!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     generateBalanceCharge(
       description: String!
       balanceRecords: [InsertMiscExpenseInput!]!
-    ): FinancialCharge! @auth(role: ACCOUNTANT)
+    ): FinancialCharge! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " financial charge "

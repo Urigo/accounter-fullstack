@@ -3,7 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     " get exchage rates by date "
-    exchangeRates(date: TimelessDate): ExchangeRates @auth(role: ACCOUNTANT)
+    exchangeRates(date: TimelessDate): ExchangeRates @requiresAuth
   }
 
   " represent a financial amount in a specific currency "

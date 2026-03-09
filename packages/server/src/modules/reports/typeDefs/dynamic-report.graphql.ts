@@ -2,18 +2,27 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    dynamicReport(name: String!): DynamicReportInfo! @auth(role: ACCOUNTANT)
-    allDynamicReports: [DynamicReportInfo!]! @auth(role: ACCOUNTANT)
+    dynamicReport(name: String!): DynamicReportInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    allDynamicReports: [DynamicReportInfo!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     updateDynamicReportTemplate(name: String!, template: String!): DynamicReportInfo!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateDynamicReportTemplateName(name: String!, newName: String!): DynamicReportInfo!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertDynamicReportTemplate(name: String!, template: String!): DynamicReportInfo!
-      @auth(role: ACCOUNTANT)
-    deleteDynamicReportTemplate(name: String!): String! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteDynamicReportTemplate(name: String!): String!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " dynamic report data "

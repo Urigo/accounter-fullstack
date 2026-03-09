@@ -1,13 +1,14 @@
 import { createModule } from 'graphql-modules';
-import { Auth0ManagementService } from './services/auth0-management.service.js';
+import { Auth0ManagementProvider } from './providers/auth0-management.provider.js';
+import authDirectives from './typeDefs/auth.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
 export const authModule = createModule({
   id: 'auth',
   dirname: __dirname,
-  providers: [Auth0ManagementService],
-  typeDefs: [],
+  typeDefs: [authDirectives],
+  providers: () => [Auth0ManagementProvider], // AuthContextProvider is added in the root module to avoid circular dependency
 });
 
-export * from './services/auth0-management.service.js';
+export * from './directives/auth-directives.js';

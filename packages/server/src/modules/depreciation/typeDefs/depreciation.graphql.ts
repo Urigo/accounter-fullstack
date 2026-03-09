@@ -2,8 +2,8 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    depreciationCategories: [DepreciationCategory!]! @auth(role: ACCOUNTANT)
-    depreciationRecordsByCharge(chargeId: UUID!): [DepreciationRecord!]! @auth(role: ACCOUNTANT)
+    depreciationCategories: [DepreciationCategory!]!
+    depreciationRecordsByCharge(chargeId: UUID!): [DepreciationRecord!]! @requiresAuth
   }
 
   extend type CommonCharge {
@@ -32,18 +32,30 @@ export default gql`
   extend type Mutation {
     updateDepreciationRecord(
       input: UpdateDepreciationRecordInput!
-    ): UpdateDepreciationRecordResult! @auth(role: ACCOUNTANT)
+    ): UpdateDepreciationRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertDepreciationRecord(
       input: InsertDepreciationRecordInput!
-    ): InsertDepreciationRecordResult! @auth(role: ACCOUNTANT)
-    deleteDepreciationRecord(depreciationRecordId: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    ): InsertDepreciationRecordResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteDepreciationRecord(depreciationRecordId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateDepreciationCategory(
       input: UpdateDepreciationCategoryInput!
-    ): UpdateDepreciationCategoryResult! @auth(role: ACCOUNTANT)
+    ): UpdateDepreciationCategoryResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     insertDepreciationCategory(
       input: InsertDepreciationCategoryInput!
-    ): InsertDepreciationCategoryResult! @auth(role: ACCOUNTANT)
-    deleteDepreciationCategory(depreciationCategoryId: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    ): InsertDepreciationCategoryResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteDepreciationCategory(depreciationCategoryId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " depreciation type "

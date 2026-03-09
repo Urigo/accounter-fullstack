@@ -7,7 +7,7 @@ import type { Environment } from '../../../shared/types/index.js';
   scope: Scope.Singleton,
   global: true,
 })
-export class Auth0ManagementService {
+export class Auth0ManagementProvider {
   private client: ManagementClient | undefined;
 
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
@@ -23,7 +23,7 @@ export class Auth0ManagementService {
         audience: this.env.auth0.managementAudience,
       });
     } else {
-      console.warn('Auth0 not configured, Auth0ManagementService disabled');
+      console.warn('Auth0 not configured, Auth0ManagementProvider disabled');
     }
   }
 
