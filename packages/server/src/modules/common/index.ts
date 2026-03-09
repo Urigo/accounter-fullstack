@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { AuditLogsProvider } from './providers/audit-logs.provider.js';
 import { scalarsResolvers } from './resolvers/common.resolver.js';
 import { gmailListenerResolvers } from './resolvers/gmail-listener.resolver.js';
 import { userContextResolvers } from './resolvers/user-context.resolver.js';
@@ -14,6 +15,7 @@ export const commonModule = createModule({
   dirname: __dirname,
   typeDefs: [common, errors, userContext, gmailListener],
   resolvers: [scalarsResolvers, userContextResolvers, gmailListenerResolvers],
+  providers: () => [AuditLogsProvider],
 });
 
 export * as CommonTypes from './types.js';
