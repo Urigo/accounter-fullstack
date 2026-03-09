@@ -8,6 +8,8 @@ import { BusinessUsersProvider } from '../providers/business-users.provider.js';
 import { InvitationsProvider } from '../providers/invitations.provider.js';
 import type { AuthModule } from '../types.js';
 
+const INVITATION_EXPIRATION_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 export const invitationsResolvers: AuthModule.Resolvers = {
   Mutation: {
     createInvitation: async (_, { email, roleId }, { injector }) => {
@@ -68,7 +70,7 @@ export const invitationsResolvers: AuthModule.Resolvers = {
           auth0UserId,
           invitedByUserId: inviterUserId,
           invitedByBusinessId: businessId,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+          expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
         });
         const [invitation] = insertedInvitation;
         if (!invitation) {
