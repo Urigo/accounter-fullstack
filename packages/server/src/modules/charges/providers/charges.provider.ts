@@ -24,6 +24,7 @@ import type {
   IUpdateChargeParams,
   IUpdateChargeQuery,
 } from '../types.js';
+import { ChargesAuthorizationProvider } from './charges-authorization.provider.js';
 
 export type ChargeRequiredWrapper<
   T extends {
@@ -255,7 +256,10 @@ const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
   global: true,
 })
 export class ChargesProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    private auth: ChargesAuthorizationProvider,
+  ) {}
 
   private async batchChargesByIds(ids: readonly string[]) {
     const charges = await getChargesByIds.run(
@@ -296,7 +300,9 @@ export class ChargesProvider {
     );
   }
 
-  public updateCharge(params: IUpdateChargeParams) {
+  public async updateCharge(params: IUpdateChargeParams) {
+    await this.auth.canWriteCharge();
+
     if (params.chargeId) {
       this.invalidateCharge(params.chargeId);
     }
@@ -309,30 +315,32 @@ export class ChargesProvider {
     });
   }
 
-  public batchUpdateCharges(params: IBatchUpdateChargesParams) {
-    {
-      params.chargeIds.map(chargeId => {
-        if (chargeId) {
-          this.invalidateCharge(chargeId);
-        }
-      });
-      return batchUpdateCharges.run(params, this.db).then(charges => {
-        charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
-        return charges;
-      });
-    }
-  }
+  public async batchUpdateCharges(params: IBatchUpdateChargesParams) {
+    await this.auth.canWriteCharge();
 
-  public updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
-    return updateAccountantApproval.run(params, this.db).then(([newCharge]) => {
-      if (newCharge) {
-        this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+    params.chargeIds.map(chargeId => {
+      if (chargeId) {
+        this.invalidateCharge(chargeId);
       }
-      return newCharge;
     });
+    const charges = await batchUpdateCharges.run(params, this.db);
+    charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+    return charges;
   }
 
-  public generateCharge(params: IGenerateChargeParams) {
+  public async updateAccountantApproval(params: IUpdateAccountantApprovalParams) {
+    await this.auth.canWriteCharge();
+
+    const [newCharge] = await updateAccountantApproval.run(params, this.db);
+    if (newCharge) {
+      this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+    }
+    return newCharge;
+  }
+
+  public async generateCharge(params: IGenerateChargeParams) {
+    await this.auth.canWriteCharge();
+
     const fullParams = {
       isProperty: false,
       userDescription: null,
@@ -341,12 +349,11 @@ export class ChargesProvider {
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
-    return generateCharge.run(fullParams, this.db).then(([newCharge]) => {
-      if (newCharge) {
-        this.getChargeByIdLoader.prime(newCharge.id, newCharge);
-      }
-      return newCharge;
-    });
+    const [newCharge] = await generateCharge.run(fullParams, this.db);
+    if (newCharge) {
+      this.getChargeByIdLoader.prime(newCharge.id, newCharge);
+    }
+    return newCharge;
   }
 
   public getChargesByFilters(params: IGetAdjustedChargesByFiltersParams) {
@@ -397,8 +404,25 @@ export class ChargesProvider {
     }
   }
 
-  public deleteChargesByIds(params: IDeleteChargesByIdsParams) {
+  public async canDeleteCharge(chargeId: string) {
+    await this.auth.canDeleteCharge(chargeId);
+  }
+
+  public async deleteChargesByIds(params: IDeleteChargesByIdsParams) {
+    await Promise.all(
+      params.chargeIds?.map(async chargeId => {
+        if (chargeId) {
+          await this.auth.canDeleteCharge(chargeId);
+        }
+      }) ?? [],
+    );
+
     return deleteChargesByIds.run(params, this.db);
+  }
+
+  public async deleteCharge(chargeId: string) {
+    await this.auth.canDeleteCharge(chargeId);
+    return this.deleteChargesByIds({ chargeIds: [chargeId] });
   }
 
   public async invalidateCharge(chargeId: string) {

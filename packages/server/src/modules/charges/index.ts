@@ -1,5 +1,6 @@
 import { createModule } from 'graphql-modules';
 import { ChargeSpreadProvider } from './providers/charge-spread.provider.js';
+import { ChargesAuthorizationProvider } from './providers/charges-authorization.provider.js';
 import { ChargesProvider } from './providers/charges.provider.js';
 import { chargeSuggestionsResolvers } from './resolvers/charge-suggestions/charge-suggestions.resolver.js';
 import { chargesResolvers } from './resolvers/charges.resolver.js';
@@ -16,7 +17,7 @@ export const chargesModule = createModule({
   dirname: __dirname,
   typeDefs: [charges, chargeValidation, chargeSuggestions, financialCharges],
   resolvers: [chargesResolvers, chargeSuggestionsResolvers, financialChargesResolvers],
-  providers: () => [ChargesProvider, ChargeSpreadProvider],
+  providers: () => [ChargesProvider, ChargeSpreadProvider, ChargesAuthorizationProvider],
 });
 
 export * as ChargesTypes from './types.js';

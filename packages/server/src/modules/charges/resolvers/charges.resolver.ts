@@ -548,6 +548,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     deleteCharge: async (_, { chargeId }, { injector }) => {
       try {
+        await injector.get(ChargesProvider).canDeleteCharge(chargeId);
+
         const [charge, transactions, documents] = await Promise.all([
           injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
           injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
