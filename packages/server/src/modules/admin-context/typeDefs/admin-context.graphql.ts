@@ -2,7 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    adminContext(ownerId: UUID): AdminContextInfo! @requiresAuth
+    adminContext(ownerId: UUID): AdminContextInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {

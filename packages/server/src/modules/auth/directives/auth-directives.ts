@@ -10,6 +10,28 @@ type AnyRoleDirectiveArgs = {
   roles: string[];
 };
 
+/**
+ * IMPORTANT MAINTENANCE NOTE:
+ *
+ * This file intentionally uses graphql-modules internals to resolve an operation injector
+ * in schema-transformed field resolvers:
+ * - resolver symbol metadata (to infer moduleId)
+ * - context.ɵinjector
+ * - context.ɵgetModuleContext(...)
+ *
+ * Rationale:
+ * When resolvers are wrapped by `mapSchema`, `context.injector` is not always available at
+ * this point in the execution flow. Without these fallbacks, auth directives may fail with
+ * missing injector errors even for valid authenticated requests.
+ *
+ * Risk:
+ * These are private implementation details and may break on graphql-modules upgrades.
+ * If auth starts failing after dependency updates, inspect this code first.
+ *
+ * Preferred long-term direction:
+ * Replace this with a stable/public graphql-modules API for module context/injector access
+ * as soon as one is available.
+ */
 type MaybeContext = {
   injector?: { get: (token: unknown) => unknown };
   ɵinjector?: { get: (token: unknown) => unknown };
@@ -72,6 +94,13 @@ function resolveInjector(context: MaybeContext, moduleId: string | undefined) {
   return undefined;
 }
 
+function throwAuthInfrastructureError(reason: string): never {
+  console.error(`[auth-directives] ${reason}`);
+  throw new GraphQLError('Authentication subsystem unavailable', {
+    extensions: { code: 'INTERNAL_SERVER_ERROR' },
+  });
+}
+
 export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
   return mapSchema(schema, {
     [MapperKind.OBJECT_FIELD]: fieldConfig => {
@@ -95,14 +124,18 @@ export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
         resolve: async (source, args, context: MaybeContext, info) => {
           const injector = resolveInjector(context, moduleId);
 
-          const authProvider = injector?.get(AuthContextProvider) as
-            | AuthContextProvider
-            | undefined;
+          if (!injector) {
+            throwAuthInfrastructureError(
+              `Failed to resolve injector for auth directives (moduleId: ${moduleId ?? 'unknown'})`,
+            );
+          }
+
+          const authProvider = injector.get(AuthContextProvider) as AuthContextProvider | undefined;
 
           if (!authProvider) {
-            throw new GraphQLError('Authentication required', {
-              extensions: { code: 'UNAUTHENTICATED' },
-            });
+            throwAuthInfrastructureError(
+              `AuthContextProvider is not available in injector (moduleId: ${moduleId ?? 'unknown'})`,
+            );
           }
 
           const authContext = await authProvider.getAuthContext();

@@ -133,6 +133,14 @@ describe('authDirectiveTransformer', () => {
     expect(result.data).toEqual({ ownerOrAccountant: 'any-role-ok' });
   });
 
+  it('@requiresAnyRole throws UNAUTHENTICATED when user is missing', async () => {
+    const yoga = createUnitYoga(null);
+    const result = await execute(yoga, '{ ownerOrAccountant }');
+
+    expect(result.data).toBeNull();
+    expect(result.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
+  });
+
   it('stacked directives enforce authentication and role', async () => {
     const unauthenticatedYoga = createUnitYoga(null);
     const unauthenticatedResult = await execute(unauthenticatedYoga, '{ secureOwnerOnly }');
