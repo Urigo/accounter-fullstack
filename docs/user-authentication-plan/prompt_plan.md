@@ -3893,7 +3893,7 @@ export default [
 
   // Prevent DBProvider/pool usage in resolvers and providers
   {
-    files: ['**/resolvers/**/*.ts' '**/providers/**/*.ts'],
+    files: ['**/resolvers/**/*.ts', '**/providers/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -5826,7 +5826,7 @@ REQUIREMENTS:
          auth0_user_created: boolean
          user_id: string
        }>(
-         `SELECT id, auth0_user_id, auth0_user_created, invited_user_id
+         `SELECT id, auth0_user_id, auth0_user_created, user_id
           FROM accounter_schema.invitations
           WHERE accepted_at IS NULL
             AND expires_at < NOW()`
