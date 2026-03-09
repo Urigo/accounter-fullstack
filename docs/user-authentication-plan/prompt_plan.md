@@ -5391,7 +5391,7 @@ RISK: Low (new provider, does not touch existing code)
 
 ---
 
-### Prompt 6.3: Domain Authorization Privider Example (Charges)
+### Prompt 6.3: Domain Authorization Provider Example (Charges)
 
 ``
 

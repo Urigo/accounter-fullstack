@@ -2,4 +2,4 @@
 '@accounter/server': patch
 ---
 
-- **Authorization Service**: Created service-layer authorization for complex checks.
+- **Authorization Provider**: Created provider-layer authorization for complex checks.
