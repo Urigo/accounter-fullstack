@@ -187,7 +187,7 @@ user impact
 
 ---
 
-## Phase 2: Core Database Services (Week 3)
+## Phase 2: Core Database Providers (Week 3)
 
 ### Step 2.1: DBProvider Singleton Setup
 
@@ -384,15 +384,15 @@ instead of injection tokens for async context providers.
 
 GraphQL Modules' `useFactory` doesn't support async functions. Since
 `AuthContextProvider.getAuthContext()` is async (performs JWT verification + DB queries), we inject
-`AuthContextProvider` directly into services and call `await provider.getAuthContext()`. The
+`AuthContextProvider` directly into providers and call `await provider.getAuthContext()`. The
 provider's internal caching ensures multiple calls within the same request are efficient.
 
 **Pattern**:
 
 ```typescript
-// Services/Providers inject AuthContextProvider directly
+// Providers inject AuthContextProvider directly
 @Injectable({ scope: Scope.Operation })
-class SomeService {
+class SomeProvider {
   constructor(private authProvider: AuthContextProvider) {}
 
   async someMethod() {
@@ -455,7 +455,7 @@ See Step 2.6 for TenantAwareDBClient integration.
 - **GraphQL Modules Providers** (see https://the-guild.dev/graphql/modules/docs/di/introduction):
   - Registered in `modules-app.ts` via `createApplication({ providers: [...] })`
   - `TenantAwareDBClient` is `Scope.Operation` (request-scoped)
-  - Injected into providers/services via constructor dependency injection
+  - Injected into providers via constructor dependency injection
   - **No Yoga context extension needed** - pure DI approach
 
 - **Dependency Injection Flow**:
@@ -1135,14 +1135,14 @@ careful validation at each stage. Existing authentication remains functional unt
 
 ---
 
-### Step 4.3: Auth0 Management API Service
+### Step 4.3: Auth0 Management API Provider
 
-**Goal**: Create service to interact with Auth0 Management API
+**Goal**: Create provider to interact with Auth0 Management API
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/services/auth0-management.service.ts`
-- Implement service methods:
+- Create `packages/server/src/modules/auth/providers/auth0-management.provider.ts`
+- Implement provider methods:
   - `getAccessToken()`: Use client credentials flow to obtain M2M access token (cache for 24 hours)
   - `createUser(email, password)`: Pre-register user with blocked status
   - `unblockUser(auth0UserId)`: Unblock user after invitation acceptance
@@ -1165,7 +1165,7 @@ careful validation at each stage. Existing authentication remains functional unt
 - Errors propagated with clear messages
 - **Existing auth system still functional**
 
-**Risk**: Low (new service, doesn't affect existing auth)
+**Risk**: Low (new provider, doesn't affect existing auth)
 
 ---
 
@@ -1311,14 +1311,14 @@ Auth0 without frontend support, ALL users will be locked out.
 
   export function LoginPage() {
     const { loginWithRedirect, isAuthenticated } = useAuth0()
-    const { authService } = useContext(AuthContext)
+    const { authProvider } = useContext(AuthContext)
     const [showLegacyLogin, setShowLegacyLogin] = useState(false)
     const navigate = useNavigate()
 
     // Existing logout effect
     useEffect(() => {
-      authService.logout()
-    }, [authService])
+      authProvider.logout()
+    }, [authProvider])
 
     // Redirect if already authenticated via Auth0
     useEffect(() => {
@@ -1331,7 +1331,7 @@ Auth0 without frontend support, ALL users will be locked out.
 
     function onSubmit(values) {
       // Existing legacy login logic
-      authService.login(values.username, values.password).then(() => {
+      authProvider.login(values.username, values.password).then(() => {
         navigate(ROUTES.HOME) // /charges
       })
     }
@@ -1582,7 +1582,7 @@ deployed first.
       // ... other providers
     ]
     ```
-  - **No token registration needed** - services inject `AuthContextProvider` directly and call
+  - **No token registration needed** - providers inject `AuthContextProvider` directly and call
     `await provider.getAuthContext()`
 - TenantAwareDBClient already configured:
   - Already injects `AuthContextProvider` directly (from Step 2.6)
@@ -1661,8 +1661,8 @@ Auth0 is active)
 
 **1. Create ESLint Rule** (`eslint.config.mjs`):
 
-- Add `no-restricted-imports` rule to prevent direct `DBProvider` imports in provider/service files
-- Pattern: `**/providers/**` and `**/services/**` cannot import `DBProvider`
+- Add `no-restricted-imports` rule to prevent direct `DBProvider` imports in provider files
+- Pattern: `**/providers/**` cannot import `DBProvider`
 - Exempt: `**/migrations/**`, `**/scripts/**`, and test files can import `DBProvider`
 - Custom error message: "Use TenantAwareDBClient injection instead of DBProvider for RLS
   enforcement"
@@ -1844,14 +1844,14 @@ providers: [
   TenantAwareDBClient,
   AuthContextProvider, // Already registered in Step 4.7
   AdminContextProvider // NEW: Simply register the provider class
-  // No token needed - services inject AdminContextProvider directly
+  // No token needed - providers inject AdminContextProvider directly
 ]
 ```
 
 **Why No Injection Token?**
 
 Same reason as AuthContextProvider: `getAdminContext()` is async (performs DB queries), and GraphQL
-Modules' `useFactory` doesn't support async functions. Services inject `AdminContextProvider`
+Modules' `useFactory` doesn't support async functions. providers inject `AdminContextProvider`
 directly and call `await provider.getAdminContext()`. Internal caching ensures efficient per-request
 execution.
 
@@ -2078,7 +2078,7 @@ context properties before Auth0 activation would break the server. This is the F
 
 ## Phase 6: Role-Based Authorization (Week 6)
 
-**Note**: Permissions infrastructure (tables, PermissionResolutionService) is out of scope for this
+**Note**: Permissions infrastructure (tables, PermissionResolutionProvider) is out of scope for this
 phase. Authorization checks use role-based logic only (e.g.,
 `if (authContext.roleId === 'business_owner')`). Permission-based authorization is a future
 enhancement.
@@ -2121,18 +2121,18 @@ enhancement.
 
 ---
 
-### Step 6.2: Authorization Service Pattern
+### Step 6.2: Authorization Provicder Pattern
 
-**Goal**: Create service-layer authorization for complex checks
+**Goal**: Create provider-layer authorization for complex checks
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/services/authorization.service.ts`
+- Create `packages/server/src/modules/auth/providers/authorization.provider.ts`
 - Implement base class:
 
   ```typescript
   @Injectable({ scope: Scope.Operation })
-  export class AuthorizationService {
+  export class AuthorizationProvider {
     constructor(protected authProvider: AuthContextProvider) {}
 
     async requireAuth(): Promise<AuthUser> {
@@ -2162,7 +2162,7 @@ enhancement.
     async canWrite(): Promise<AuthUser> {
       // employee is read-only; business_owner and accountant can write general data
       // Note: scraper is NOT included here - it must be added explicitly in
-      // domain services that support scraper writes (e.g., transaction insertion)
+      // domain providers that support scraper writes (e.g., transaction insertion)
       return this.requireRole(['business_owner', 'accountant'])
     }
 
@@ -2177,7 +2177,7 @@ enhancement.
   - `requireRole` throws when role not in allowed list
   - `requireBusinessOwner` restricts to business_owner
   - `canWrite` allows business_owner and accountant; blocks employee and scraper
-  - Can be extended by domain services
+  - Can be extended by domain providers
 
 **Validation**:
 
@@ -2188,18 +2188,18 @@ enhancement.
 
 ---
 
-### Step 6.3: Domain Authorization Service (Example - Charges)
+### Step 6.3: Domain Authorization Provider (Example - Charges)
 
-**Goal**: Demonstrate service-layer authorization pattern
+**Goal**: Demonstrate provider-layer authorization pattern
 
 **Tasks**:
 
-- Create `packages/server/src/modules/charges/services/charges-authorization.service.ts`
-- Extend AuthorizationService:
+- Create `packages/server/src/modules/charges/providers/charges-authorization.provider.ts`
+- Extend AuthorizationProvider:
 
   ```typescript
   @Injectable({ scope: Scope.Operation })
-  export class ChargesAuthorizationService extends AuthorizationService {
+  export class ChargesAuthorizationProvider extends AuthorizationProvider {
     constructor(
       authProvider: AuthContextProvider,
       private db: TenantAwareDBClient
@@ -2245,7 +2245,7 @@ enhancement.
 **Validation**:
 
 - Pattern demonstrated clearly
-- RLS + service layer work together
+- RLS + provider layer work together
 - Role-based authorization functional
 
 **Risk**: Low
@@ -2265,7 +2265,7 @@ enhancement.
   - User management (invitations): requires `business_owner`
   - Salary operations: requires `business_owner`
   - Transaction insertion: requires `scraper` (API key) or `business_owner`/`accountant` (user)
-- Add service-layer checks for:
+- Add provider-layer checks for:
   - Resource ownership (update/delete operations) - rely on RLS
   - Complex role logic (e.g., accountant can view but not issue certain document types)
 - Add integration tests:
@@ -2312,7 +2312,7 @@ enhancement.
   3. Generate cryptographically secure token (64 chars using
      `crypto.randomBytes(32).toString('hex')`)
   4. Generate local `user_id` UUID
-  5. **Call Auth0 Management API** (`auth0ManagementService.createBlockedUser(email)`):
+  5. **Call Auth0 Management API** (`auth0ManagementProvider.createBlockedUser(email)`):
      - Auth0 automatically sends password setup email (no custom email service needed)
   6. Insert into `invitations` table:
      - Set `auth0_user_created: true` on success
@@ -2369,7 +2369,7 @@ enhancement.
   5. Begin transaction: a. **Check if this is first acceptance** (is `authContext.user.auth0UserId`
      already linked to local user_id?):
      - If not linked yet (first invitation acceptance):
-       - Call `auth0ManagementService.unblockUser(invitation.auth0_user_id)`
+       - Call `auth0ManagementProvider.unblockUser(invitation.auth0_user_id)`
        - Update `business_users` SET `auth0_user_id = authContext.user.auth0UserId` WHERE
          `user_id = invitation.user_id`
      - If already linked (subsequent business invitation): \* Insert new row into `business_users`
@@ -2414,7 +2414,7 @@ enhancement.
 - Implement cleanup logic:
   1. Query invitations WHERE `accepted_at IS NULL` AND `expires_at < NOW()`
   2. For each expired invitation: a. If `auth0_user_created = true` AND `auth0_user_id` exists:
-     - Call `auth0ManagementService.deleteUser(auth0_user_id)`
+     - Call `auth0ManagementProvider.deleteUser(auth0_user_id)`
      - Log any Auth0 API errors but continue (user might already be deleted) b. Delete invitation
        record from database c. Delete orphaned `business_users` row (WHERE
        `user_id = invitation.user_id` AND `auth0_user_id IS NULL`)
@@ -2436,18 +2436,18 @@ enhancement.
 
 ---
 
-### Step 7.4: Audit Log Service Integration
+### Step 7.4: Audit Log Provider Integration
 
 **Goal**: Centralize audit logging for security events
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/services/audit.service.ts`
-- Implement async logging service:
+- Create `packages/server/src/modules/auth/providers/audit.provider.ts`
+- Implement async logging provider:
 
   ```typescript
   @Injectable({ scope: Scope.Operation })
-  export class AuditService {
+  export class AuditProvider {
     constructor(private db: TenantAwareDBClient) {}
 
     async log(event: AuditEvent): Promise<void> {
@@ -3170,13 +3170,13 @@ during backend migration. This phase adds enhanced auth features and user experi
 
 1. **Foundation & Database Schema** (Weeks 1-2): Auth0-compatible database schema with
    business_users mapping
-2. **Core Database Services** (Week 3): RLS-enforcing DB client and connection pooling
+2. **Core Database Providers** (Week 3): RLS-enforcing DB client and connection pooling
 3. **Row-Level Security** (Week 4): Multi-tenant data isolation at database level
 4. **Auth0 Integration & Authentication Migration** (Week 5): Auth0 Management API, JWT
    verification, **frontend Auth0 UI integration**, backend switch, zero-downtime migration
 5. **Post-Migration Cleanup** (Week 6): Remove old authentication code
-6. **Role-Based Authorization** (Week 6): Authorization services and GraphQL directives (role-based,
-   no permissions initially)
+6. **Role-Based Authorization** (Week 6): Authorization providers and GraphQL directives
+   (role-based, no permissions initially)
 7. **Invitation Flow** (Week 7): Pre-registration invitations with Auth0 Management API, cleanup
    jobs, audit logging
 8. **API Key Management** (Week 8): Generate/list/revoke API keys (independent of Auth0)
