@@ -373,13 +373,13 @@ INTEGRATION: Depends on:
 - business_users table (Prompt 1.3)
 - api_keys table (Prompt 1.4)
 
-These tables will be used by PermissionResolutionService in Phase 4.
+These tables will be used by PermissionResolutionProvider in Phase 4.
 
 ``
 
 ---
 
-## Phase 2: Core Database Services
+## Phase 2: Core Database Providers
 
 ### Prompt 2.1: DBProvider Singleton Setup (Verification & Enhancement)
 
@@ -914,9 +914,9 @@ RISK: Very Low (just a type definition, not used yet)
 INTEGRATION: AUTH_CONTEXT token will be used by:
 
 - TenantAwareDBClient (for RLS context)
-- All service classes needing auth (via `@Inject(AUTH_CONTEXT)`)
+- All provider classes needing auth (via `@Inject(AUTH_CONTEXT)`)
 - AdminContextProvider (next prompt)
-- Authorization services
+- Authorization providers
 
 VALIDATION:
 
@@ -1405,7 +1405,7 @@ rg "new DataLoader" packages/server/src
    ```typescript
    // CORRECT: Provider creates DataLoader per request
    @Injectable({ scope: Scope.Operation })
-   export class ChargesService {
+   export class ChargesProvider {
      private chargeLoader = new DataLoader((ids: string[]) => this.batchLoadCharges(ids))
 
      async getCharge(id: string) {
@@ -2619,7 +2619,7 @@ EXPECTED OUTPUT:
 INTEGRATION: Environment configuration will be used by:
 
 - AuthContextProvider (JWT verification)
-- Auth0ManagementService (user pre-registration during invitations)
+- Auth0ManagementProvider (user pre-registration during invitations)
 
 VALIDATION:
 
@@ -2731,7 +2731,7 @@ INTEGRATION: Configuration will be used by:
 
 - Frontend: Auth0 SDK with Client ID for Universal Login
 - Backend: JWT verification using JWKS endpoint
-- Backend: Auth0ManagementService using M2M credentials
+- Backend: Auth0ManagementProvider using M2M credentials
 
 VALIDATION:
 
@@ -2746,11 +2746,11 @@ RISK: Low (Auth0 UI configuration)
 
 ---
 
-### Prompt 4.3: Auth0 Management API Service
+### Prompt 4.3: Auth0 Management API Provider
 
 ``
 
-CONTEXT: Auth0 tenant is configured (Prompt 4.2). Now we need a service that interacts with Auth0's
+CONTEXT: Auth0 tenant is configured (Prompt 4.2). Now we need a provider that interacts with Auth0's
 Management API to create blocked user accounts during the invitation flow.
 
 **Flow**: When an admin invites a user:
@@ -2761,7 +2761,7 @@ Management API to create blocked user accounts during the invitation flow.
 4. Send invitation email with magic link
 5. When user accepts, unblock Auth0 account and map to local user_id
 
-TASK: Create Auth0ManagementService for user pre-registration and management.
+TASK: Create Auth0ManagementProvider for user pre-registration and management.
 
 REQUIREMENTS:
 
@@ -2772,7 +2772,7 @@ REQUIREMENTS:
    yarn add auth0
    ```
 
-2. Create service: `packages/server/src/modules/auth/services/auth0-management.service.ts`
+2. Create provider: `packages/server/src/modules/auth/providers/auth0-management.provider.ts`
 
    ```typescript
    import { ManagementClient } from 'auth0'
@@ -2781,7 +2781,7 @@ REQUIREMENTS:
    import type { Environment } from '@shared/types'
 
    @Injectable({ scope: Scope.Singleton })
-   export class Auth0ManagementService {
+   export class Auth0ManagementProvider {
      private client: ManagementClient
 
      constructor(@Inject(ENVIRONMENT) private env: Environment) {
@@ -2834,15 +2834,15 @@ REQUIREMENTS:
    }
    ```
 
-3. Register service in `packages/server/src/modules/auth/index.ts`:
+3. Register provider in `packages/server/src/modules/auth/index.ts`:
 
    ```typescript
    import { createModule } from 'graphql-modules'
-   import { Auth0ManagementService } from './services/auth0-management.service'
+   import { Auth0ManagementProvider } from './providers/auth0-management.provider'
 
    export const authModule = createModule({
      id: 'auth',
-     providers: [Auth0ManagementService]
+     providers: [Auth0ManagementProvider]
    })
    ```
 
@@ -2863,21 +2863,21 @@ REQUIREMENTS:
 
 EXPECTED OUTPUT:
 
-- Service: `packages/server/src/modules/auth/services/auth0-management.service.ts`
+- Provider: `packages/server/src/modules/auth/providers/auth0-management.provider.ts`
 - Module: `packages/server/src/modules/auth/index.ts`
-- Tests: `packages/server/src/modules/auth/services/__tests__/auth0-management.test.ts`
+- Tests: `packages/server/src/modules/auth/providers/__tests__/auth0-management.test.ts`
 - Package: `auth0` SDK installed
 - All tests passing
 
-INTEGRATION: This service will be used by:
+INTEGRATION: This provider will be used by:
 
-- InvitationService (Prompt 5.1) to create blocked Auth0 users when invitations are sent
+- InvitationProvider (Prompt 5.1) to create blocked Auth0 users when invitations are sent
 - Invitation acceptance flow to unblock users after password setup
 - Cleanup job to delete expired invitation accounts
 
 VALIDATION:
 
-- Service creates blocked users successfully
+- Provider creates blocked users successfully
 - Users cannot log in until unblocked
 - Management API calls authenticated correctly with M2M credentials
 
@@ -3076,7 +3076,7 @@ REQUIREMENTS:
 
    ```typescript
    import { DBProvider } from '@modules/app-providers/db.provider'
-   import { Auth0ManagementService } from '@modules/auth/services/auth0-management.service'
+   import { Auth0ManagementProvider } from '@modules/auth/providers/auth0-management.provider'
 
    const testUsers = [
      { email: 'owner-test@example.com', roleId: 'business_owner' },
@@ -3087,7 +3087,7 @@ REQUIREMENTS:
 
    async function createMigrationTestUsers() {
      const dbProvider = new DBProvider(/* config */)
-     const auth0Service = new Auth0ManagementService(env)
+     const auth0Provider = new Auth0ManagementProvider(env)
      const client = await dbProvider.pool.connect()
 
      try {
@@ -3095,8 +3095,8 @@ REQUIREMENTS:
          console.log(`Creating test user: ${testUser.email}`)
 
          // 1. Create Auth0 user (unblocked for testing)
-         const auth0UserId = await auth0Service.createBlockedUser(testUser.email)
-         await auth0Service.unblockUser(auth0UserId)
+         const auth0UserId = await auth0Provider.createBlockedUser(testUser.email)
+         await auth0Provider.unblockUser(auth0UserId)
 
          // 2. Create local business_users record
          await client.query(
@@ -3326,14 +3326,14 @@ REQUIREMENTS:
 
    export function LoginPage(): ReactElement {
      const { loginWithRedirect, isAuthenticated } = useAuth0()
-     const { authService } = useContext(AuthContext)
+     const { authProvider } = useContext(AuthContext)
      const [showLegacyLogin, setShowLegacyLogin] = useState(false)
      const navigate = useNavigate()
 
      // Existing logout effect
      useEffect(() => {
-       authService.logout()
-     }, [authService])
+       authProvider.logout()
+     }, [authProvider])
 
      // Redirect if already authenticated via Auth0
      useEffect(() => {
@@ -3352,7 +3352,7 @@ REQUIREMENTS:
 
      function onSubmit(values: z.infer<typeof formSchema>) {
        try {
-         authService.login(values.username, values.password).then(_user => {
+         authProvider.login(values.username, values.password).then(_user => {
            navigate(ROUTES.HOME) // /charges
          })
          toast.success('Success', {
@@ -3891,9 +3891,9 @@ REQUIREMENTS:
 export default [
   // ... existing configs
 
-  // Prevent DBProvider/pool usage in resolvers and services
+  // Prevent DBProvider/pool usage in resolvers and providers
   {
-    files: ['**/resolvers/**/*.ts', '**/services/**/*.ts', '**/providers/**/*.ts'],
+    files: ['**/resolvers/**/*.ts' '**/providers/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -4549,7 +4549,7 @@ REQUIREMENTS:
 
    // NEW: Inject in provider constructor
    @Injectable({ scope: Scope.Operation })
-   export class MyService {
+   export class MyProvider {
      constructor(
        private authProvider: AuthContextProvider,
        private adminProvider: AdminContextProvider
@@ -4574,7 +4574,7 @@ REQUIREMENTS:
    export const resolvers: Resolvers<GraphQLContext> = {
      Query: {
        // Resolvers should NOT access authContext from context
-       // Instead, inject services/providers and call provider methods
+       // Instead, inject providers and call provider methods
      }
    }
    ```
@@ -4655,7 +4655,7 @@ REQUIREMENTS:
 
    ```bash
    # Find all old auth-related files
-   find packages/server/src -name "*auth*" -not -name "*v2*" | grep -E "(plugin|provider|service)"
+   find packages/server/src -name "*auth*" -not -name "*v2*" | grep -E "(plugin|provider)"
    ```
 
 2. **Verify Prompt 2.9 temporary code was removed** (should have been cleaned in Prompt 4.8):
@@ -4704,7 +4704,7 @@ REQUIREMENTS:
 
    ```typescript
    // packages/server/src/scripts/cleanup-migration-test-users.ts
-   import { Auth0ManagementService } from '../modules/auth/services/auth0-management.service'
+   import { Auth0ManagementProvider } from '../modules/auth/providers/auth0-management.provider'
 
    const testUserIds = [
      'auth0|owner-test-id',
@@ -4714,7 +4714,7 @@ REQUIREMENTS:
    ]
 
    async function cleanup() {
-     const auth0 = new Auth0ManagementService()
+     const auth0 = new Auth0ManagementProvider()
      for (const userId of testUserIds) {
        await auth0.deleteUser(userId)
        console.log(`Deleted test user: ${userId}`)
@@ -4965,7 +4965,7 @@ REQUIREMENTS:
    - **authPlugin**: Extracts JWT from Authorization header
    - **AuthContextProvider**: Verifies JWT and maps to local user data
    - **TenantAwareDBClient**: Enforces RLS using auth context
-   - **Auth0ManagementService**: Creates/manages Auth0 users via Management API
+   - **Auth0ManagementProvider**: Creates/manages Auth0 users via Management API
 
    ## Security Boundaries
 
@@ -5064,7 +5064,7 @@ REQUIREMENTS:
    ## Phases Completed
 
    - [x] Phase 1: Database schema (business_users, roles, etc.)
-   - [x] Phase 2: Core services (DBProvider, TenantAwareDBClient, AuthContext)
+   - [x] Phase 2: Core providers (DBProvider, TenantAwareDBClient, AuthContext)
    - [x] Phase 3: Row-Level Security (RLS policies on all tables)
    - [x] Phase 4: Auth0 integration and cutover
    - [x] Phase 5: Post-migration cleanup
@@ -5268,7 +5268,8 @@ EXPECTED OUTPUT:
 - All tests passing
 
 INTEGRATION: Directives provide declarative, schema-level authorization. Field-level business logic
-(e.g., "accountant can view but not issue invoices") is handled by domain services (Prompt 6.2-6.3).
+(e.g., "accountant can view but not issue invoices") is handled by domain providers (Prompt
+6.2-6.3).
 
 VALIDATION:
 
@@ -5283,20 +5284,20 @@ RISK: Low (additive security; all existing functionality continues to work)
 
 ---
 
-### Prompt 6.2: Authorization Service Pattern
+### Prompt 6.2: Authorization Provider Pattern
 
 ``
 
 CONTEXT: Directives handle coarse-grained protection (auth required, role required). Complex,
 domain-specific authorization logic — like "accountant can update but not delete, and only for their
-own business" — belongs in a reusable service class.
+own business" — belongs in a reusable provider class.
 
-TASK: Create a base `AuthorizationService` class that domain services can extend for consistent,
+TASK: Create a base `AuthorizationProvider` class that domain providers can extend for consistent,
 testable authorization logic.
 
 REQUIREMENTS:
 
-1. Create base service: `packages/server/src/modules/auth/services/authorization.service.ts`
+1. Create base provider: `packages/server/src/modules/auth/providers/authorization.provider.ts`
 
    ```typescript
    import { Injectable, Scope } from 'graphql-modules'
@@ -5305,7 +5306,7 @@ REQUIREMENTS:
    import type { AuthUser } from '@shared/types/auth'
 
    @Injectable({ scope: Scope.Operation })
-   export class AuthorizationService {
+   export class AuthorizationProvider {
      constructor(protected authProvider: AuthContextProvider) {}
 
      async requireAuth(): Promise<AuthUser> {
@@ -5335,7 +5336,7 @@ REQUIREMENTS:
      async canWrite(): Promise<AuthUser> {
        // employee is read-only; business_owner and accountant can write general data
        // Note: scraper is NOT included here - it must be added explicitly in
-       // domain services that support scraper writes (e.g., transaction insertion)
+       // domain providers that support scraper writes (e.g., transaction insertion)
        return this.requireRole(['business_owner', 'accountant'])
      }
 
@@ -5350,8 +5351,8 @@ REQUIREMENTS:
    ```typescript
    import { readFileSync } from 'node:fs'
    import { createModule } from 'graphql-modules'
-   import { Auth0ManagementService } from './services/auth0-management.service.js'
-   import { AuthorizationService } from './services/authorization.service.js'
+   import { Auth0ManagementProvider } from './providers/auth0-management.provider.js'
+   import { AuthorizationProvider } from './providers/authorization.provider.js'
 
    const __dirname = new URL('.', import.meta.url).pathname
 
@@ -5359,7 +5360,7 @@ REQUIREMENTS:
      id: 'auth',
      dirname: __dirname,
      typeDefs: [readFileSync(`${__dirname}/auth.graphql`, 'utf-8')],
-     providers: [Auth0ManagementService, AuthorizationService]
+     providers: [Auth0ManagementProvider, AuthorizationProvider]
    })
    ```
 
@@ -5376,42 +5377,42 @@ REQUIREMENTS:
 
 EXPECTED OUTPUT:
 
-- New: `packages/server/src/modules/auth/services/authorization.service.ts`
+- New: `packages/server/src/modules/auth/providers/authorization.provider.ts`
 - Updated: `packages/server/src/modules/auth/index.ts`
-- Tests: `packages/server/src/modules/auth/services/__tests__/authorization.service.test.ts`
+- Tests: `packages/server/src/modules/auth/providers/__tests__/authorization.provider.test.ts`
 - All tests passing
 
-INTEGRATION: Domain services (charges, invoices, etc.) extend or inject `AuthorizationService` to
+INTEGRATION: Domain providers (charges, invoices, etc.) extend or inject `AuthorizationProvider` to
 avoid duplicating authorization logic. See Prompt 6.3 for a complete domain example.
 
-RISK: Low (new service, does not touch existing code)
+RISK: Low (new provider, does not touch existing code)
 
 ``
 
 ---
 
-### Prompt 6.3: Domain Authorization Service Example (Charges)
+### Prompt 6.3: Domain Authorization Privider Example (Charges)
 
 ``
 
-CONTEXT: The base `AuthorizationService` is ready. Now demonstrate the pattern with a complete
-domain example: `ChargesAuthorizationService`. This serves as the canonical pattern for all other
+CONTEXT: The base `AuthorizationProvider` is ready. Now demonstrate the pattern with a complete
+domain example: `ChargesAuthorizationProvider`. This serves as the canonical pattern for all other
 modules to follow.
 
-TASK: Implement `ChargesAuthorizationService` and integrate it into the charges resolvers.
+TASK: Implement `ChargesAuthorizationProvider` and integrate it into the charges resolvers.
 
 REQUIREMENTS:
 
-1. Create: `packages/server/src/modules/charges/services/charges-authorization.service.ts`
+1. Create: `packages/server/src/modules/charges/providers/charges-authorization.provider.ts`
 
    ```typescript
    import { Injectable, Scope } from 'graphql-modules'
    import { GraphQLError } from 'graphql'
-   import { AuthorizationService } from '@modules/auth/services/authorization.service'
+   import { AuthorizationProvider } from '@modules/auth/providers/authorization.provider'
    import { TenantAwareDBClient } from '@modules/app-providers/tenant-db-client'
 
    @Injectable({ scope: Scope.Operation })
-   export class ChargesAuthorizationService extends AuthorizationService {
+   export class ChargesAuthorizationProvider extends AuthorizationProvider {
      constructor(
        authProvider: AuthContextProvider,
        private db: TenantAwareDBClient
@@ -5448,7 +5449,7 @@ REQUIREMENTS:
    }
    ```
 
-2. Register `ChargesAuthorizationService` in the charges module providers.
+2. Register `ChargesAuthorizationProvider` in the charges module providers.
 
 3. Inject into existing `ChargesProvider`:
 
@@ -5457,7 +5458,7 @@ REQUIREMENTS:
    export class ChargesProvider {
      constructor(
        private db: TenantAwareDBClient,
-       private auth: ChargesAuthorizationService
+       private auth: ChargesAuthorizationProvider
      ) {}
 
      async updateCharge(id: string, input: UpdateChargeInput) {
@@ -5480,15 +5481,15 @@ REQUIREMENTS:
 
 EXPECTED OUTPUT:
 
-- New: `packages/server/src/modules/charges/services/charges-authorization.service.ts`
+- New: `packages/server/src/modules/charges/providers/charges-authorization.provider.ts`
 - Updated: `packages/server/src/modules/charges/providers/charges.provider.ts`
-- Tests: `packages/server/src/modules/charges/services/__tests__/charges-authorization.test.ts`
+- Tests: `packages/server/src/modules/charges/providers/__tests__/charges-authorization.test.ts`
 - All tests passing
 
 INTEGRATION: This pattern is the template for all other modules. Document the pattern in
 `docs/architecture/authorization-pattern.md` as a reference.
 
-RISK: Low (new service, changes confined to charges module)
+RISK: Low (new provider, changes confined to charges module)
 
 ``
 
@@ -5542,7 +5543,7 @@ REQUIREMENTS:
    ```
 
 4. For mutations requiring context-aware checks (ownership confirmation), delegate to domain
-   authorization services instead of directives.
+   authorization providers instead of directives.
 
 5. Add `@requiresAuth` to all queries returning tenant-specific data.
 
@@ -5556,7 +5557,7 @@ REQUIREMENTS:
 EXPECTED OUTPUT:
 
 - Updated: All `.graphql` schema files (directives applied)
-- Updated: Domain providers/services using `AuthorizationService`
+- Updated: Domain providers using `AuthorizationProvider`
 - New: `docs/architecture/authorization-matrix.md`
 - Tests: Per-module integration tests covering all role combinations
 - All tests passing
@@ -5585,12 +5586,12 @@ last. Run integration tests after each module.
 **Critical Validation**:
 
 - ✅ Directives enforce authentication and role checks at schema level
-- ✅ Domain authorization services encapsulate complex business logic
+- ✅ Domain authorization providers encapsulate complex business logic
 - ✅ Employee role is truly read-only (cannot mutate anything)
 - ✅ Scraper role restricted to transaction insertion
 - ✅ business_owner has full access including user management
 - ✅ All integration tests pass with role matrix verified
-- ✅ No unauthorized data access possible (defense in depth: RLS + directive + service)
+- ✅ No unauthorized data access possible (defense in depth: RLS + directive + provider)
 
 ---
 
@@ -5644,7 +5645,7 @@ REQUIREMENTS:
    ```
 
    d. Generate a local `user_id` UUID for the future `business_users` row e. Call
-   `auth0ManagementService.createBlockedUser(email)`:
+   `auth0ManagementProvider.createBlockedUser(email)`:
    - Catches Auth0 errors; on rate-limit (429) returns user-friendly error
    - On any Auth0 error: abort transaction (no invitation record created) f. INSERT into
      `accounter_schema.invitations`:
@@ -5678,7 +5679,7 @@ EXPECTED OUTPUT:
 - Tests: `packages/server/src/modules/auth/__tests__/create-invitation.test.ts`
 - All tests passing
 
-INTEGRATION: Depends on `Auth0ManagementService` (Prompt 4.3). The `business_users` row pre-created
+INTEGRATION: Depends on `Auth0ManagementProvider` (Prompt 4.3). The `business_users` row pre-created
 here is completed in Prompt 7.2 when the user accepts and `auth0_user_id` is set.
 
 RISK: Medium (Auth0 API integration, transaction management)
@@ -5746,7 +5747,7 @@ REQUIREMENTS:
      SET auth0_user_id = $1, updated_at = NOW()
      WHERE user_id = $2
      ```
-   - Call `auth0ManagementService.unblockUser(invitation.auth0_user_id)`
+   - Call `auth0ManagementProvider.unblockUser(invitation.auth0_user_id)`
 
    f. **If second+ invitation** (existing user adding another business):
    - Insert a new `business_users` row using the caller's existing `user_id` and the invitation's
@@ -5810,7 +5811,7 @@ REQUIREMENTS:
    ```typescript
    export async function cleanupExpiredInvitations(
      db: DBProvider,
-     auth0: Auth0ManagementService,
+     auth0: Auth0ManagementProvider,
      logger: Logger
    ): Promise<{ deleted: number; errors: number }> {
      const client = await db.pool.connect()
@@ -5881,7 +5882,7 @@ REQUIREMENTS:
 
    // Schedule: daily at 02:00 UTC
    scheduleJob('0 2 * * *', async () => {
-     const result = await cleanupExpiredInvitations(dbProvider, auth0Service, logger)
+     const result = await cleanupExpiredInvitations(dbProvider, auth0Provider, logger)
      logger.info('Invitation cleanup complete', result)
    })
    ```
@@ -5912,7 +5913,7 @@ RISK: Low (background job, non-critical path; cleanup errors are logged not re-t
 
 ---
 
-### Prompt 7.4: Audit Service
+### Prompt 7.4: Audit Provider
 
 ``
 
@@ -5920,7 +5921,7 @@ CONTEXT: Critical auth events (invitation creation, acceptance, API key operatio
 audit logs inline within mutations. As the number of audited events grows, centralizing this logic
 reduces duplication and ensures consistent log structure.
 
-TASK: Create a typed `AuditService` and migrate all existing audit log writes to use it.
+TASK: Create a typed `AuditProvider` and migrate all existing audit log writes to use it.
 
 REQUIREMENTS:
 
@@ -5948,11 +5949,11 @@ REQUIREMENTS:
    }
    ```
 
-2. Create service: `packages/server/src/modules/auth/services/audit.service.ts`
+2. Create provider: `packages/server/src/modules/auth/providers/audit.provider.ts`
 
    ```typescript
    @Injectable({ scope: Scope.Operation })
-   export class AuditService {
+   export class AuditProvider {
      constructor(private db: TenantAwareDBClient) {}
 
      async log(event: AuditEvent): Promise<void> {
@@ -5975,28 +5976,28 @@ REQUIREMENTS:
    }
    ```
 
-3. Register `AuditService` in the auth module providers.
+3. Register `AuditProvider` in the auth module providers.
 
 4. Migrate existing inline audit log writes in `create-invitation.resolver.ts` and
-   `accept-invitation.resolver.ts` to use `AuditService`.
+   `accept-invitation.resolver.ts` to use `AuditProvider`.
 
-5. Inject `AuditService` into the invitation cleanup job.
+5. Inject `AuditProvider` into the invitation cleanup job.
 
 6. Write tests:
    - `log()` correctly inserts a row with all fields
    - Nullable fields default to NULL
    - JSONB details serialized correctly
-   - All audit writes in resolvers/jobs use `AuditService` (no raw queries for audit_logs)
+   - All audit writes in resolvers/jobs use `AuditProvider` (no raw queries for audit_logs)
 
 EXPECTED OUTPUT:
 
 - New: `packages/server/src/modules/auth/types/audit-events.ts`
-- New: `packages/server/src/modules/auth/services/audit.service.ts`
-- Updated: All files that previously wrote to `audit_logs` directly (use `AuditService` instead)
-- Tests: `packages/server/src/modules/auth/services/__tests__/audit.service.test.ts`
+- New: `packages/server/src/modules/auth/providers/audit.provider.ts`
+- Updated: All files that previously wrote to `audit_logs` directly (use `AuditProvider` instead)
+- Tests: `packages/server/src/modules/auth/providers/__tests__/audit.provider.test.ts`
 - All tests passing
 
-RISK: Low (service extraction, no logic changes)
+RISK: Low (provider extraction, no logic changes)
 
 ``
 
@@ -6013,7 +6014,7 @@ RISK: Low (service extraction, no logic changes)
 - ✅ First-time users: Auth0 account unblocked on invitation acceptance
 - ✅ Existing users: additional business linked without new Auth0 account
 - ✅ Expired invitations cleaned up automatically (daily job)
-- ✅ All security events audited centrally via `AuditService`
+- ✅ All security events audited centrally via `AuditProvider`
 
 ---
 
@@ -6082,7 +6083,7 @@ REQUIREMENTS:
    )
 
    // 5. Audit log
-   await auditService.log({ action: 'API_KEY_CREATED', entity: 'ApiKey', entityId: record.id })
+   await auditProvider.log({ action: 'API_KEY_CREATED', entity: 'ApiKey', entityId: record.id })
 
    // 6. Return plaintext key + record (key shown ONCE)
    return { apiKey: plaintextKey, record }
@@ -7410,8 +7411,9 @@ system. Key principles:
 
 - **Phase 1**: Database schema (business_users, roles, invitations, api_keys, audit_logs)
   - E2E State: New tables created; existing functionality unchanged
-- **Phase 2**: Core services (DBProvider, TenantAwareDBClient, AuthContextProvider preparatory work)
-  - E2E State: New services exist but unused; existing auth fully functional
+- **Phase 2**: Core providers (DBProvider, TenantAwareDBClient, AuthContextProvider preparatory
+  work)
+  - E2E State: New providers exist but unused; existing auth fully functional
 - **Phase 3**: Row-Level Security (RLS policies on all tenant tables)
   - E2E State: RLS enforced; multi-tenant isolation secured; queries performance-tested
 - **Phase 4**: Auth0 Integration (CRITICAL SEQUENCING)

@@ -121,13 +121,13 @@ to ensure zero-downtime migration:
       1. Database tables for permissions infrastructure already exist from initial migration
          (`permissions`, `role_permissions`, `user_permission_overrides`,
          `api_key_permission_overrides`)
-      2. Implement `PermissionResolutionService` to map roles to permissions and merge overrides
+      2. Implement `PermissionResolutionProvider` to map roles to permissions and merge overrides
       3. Build admin UI to manage permission grants/revokes per user or API key
-      4. Update authorization services to check `authContext.permissions` array instead of role
+      4. Update authorization providers to check `authContext.permissions` array instead of role
          names
     - **Use Cases Enabled (Future)**:
       - "This employee can view salaries for their department only" → Grant `view:salary` + add
-        department filtering in service layer
+        department filtering in provider layer
       - "This API key can only read transactions, not create them" → Revoke `insert:transactions`
         from scraper role
       - "This accountant cannot approve invoices over $10k" → Create custom permission + enforce
@@ -751,7 +751,7 @@ existing auth plugin. Existing plugin remains active until Phase 4 cutover.
 - Extract Auth0 user ID (`sub` claim) and map to local `user_id` via database lookup
 - Fetch user's business/role associations from `business_users` table
 - Return structured `AuthContext` object with `{ authType, user, tenant, accessTokenExpiresAt }`
-- Injected directly into resolvers/services (no token needed - providers call
+- Injected directly into resolvers/providers (no token needed - providers call
   `await provider.getAuthContext()`)
 - Internal caching ensures DB queries run only once per request
 
@@ -777,7 +777,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
     providers: [
       // ... existing providers
       AuthContextProvider // Simply register the provider class
-      // No token or useFactory needed - inject directly into services
+      // No token or useFactory needed - inject directly into providers
     ]
   })
 }
@@ -786,15 +786,15 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
 **Why No Injection Token?**
 
 GraphQL Modules' `useFactory` doesn't support async functions, and `getAuthContext()` is async
-(performs JWT verification + DB queries). Instead, resolvers/services inject `AuthContextProvider`
+(performs JWT verification + DB queries). Instead, resolvers/providers inject `AuthContextProvider`
 directly and call `await provider.getAuthContext()`. The provider handles internal caching, so
 multiple calls within the same request are cheap.
 
-**Usage in Resolvers/Services**:
+**Usage in Resolvers/Providers**:
 
 ```typescript
 @Injectable({ scope: Scope.Operation })
-export class ChargesService {
+export class ChargesProvider {
   constructor(
     private authProvider: AuthContextProvider, // Inject provider directly
     private db: TenantAwareDBClient
@@ -824,7 +824,7 @@ Universal Login and do not exist in the GraphQL API. The server's role is limite
 verification, Auth0 user pre-registration during invitations, and business/role authorization.
 
 - **Schema (`schema.graphql`)**:
-  - **Audit Service**: Implement a dedicated `AuditService` to handle log ingestion.
+  - **Audit Provider**: Implement a dedicated `AuditProvider` to handle log ingestion.
     - Should be called asynchronously to avoid blocking user requests.
     - Must be integrated into critical flows: invitation creation, invitation acceptance, API key
       generation/revocation, and business logic events (e.g., `createInvoice`).
@@ -839,7 +839,7 @@ verification, Auth0 user pre-registration during invitations, and business/role 
     - `createInvitation(email: String!, roleId: String!): InvitationPayload!` - **Auth0
       Integration**: (1) Generates secure invitation token and local `user_id` UUID, (2) Calls Auth0
       Management API to create user with `blocked: true` as
-      `auth0ManagementService.createBlockedUser(email)`, (3) Stores invitation in DB with
+      `auth0ManagementProvider.createBlockedUser(email)`, (3) Stores invitation in DB with
       `auth0_user_created: true` and `auth0_user_id`, (4) Returns invitation payload (id, email,
       roleId, expiresAt). **businessId is derived from the authenticated JWT — never from client
       input**. **Error Handling**: Detects Auth0 rate limits (429) and returns user-friendly error,
@@ -858,7 +858,7 @@ verification, Auth0 user pre-registration during invitations, and business/role 
       derived from the authenticated JWT — never from client input**. Restricted to `business_owner`
       role (enforced via `@requiresRole(role: "business_owner")` directive).
     - `revokeApiKey(id: ID!): Boolean!` - Revokes an API key.
-- **Services and Resolvers**:
+- **Providers and Resolvers**:
   - **Auth0 JWT Verification**: Use `jose` library to verify RS256-signed JWTs from Auth0. Configure
     middleware to:
     1. Extract JWT from `Authorization: Bearer <token>` header
@@ -866,7 +866,7 @@ verification, Auth0 user pre-registration during invitations, and business/role 
        (`https://<tenant>.auth0.com/.well-known/jwks.json`)
     3. Validate `iss` (issuer), `aud` (audience), and `exp` (expiration) claims
     4. Extract `sub` claim (Auth0 user ID like `auth0|507f1f77bcf86cd799439011`)
-  - **Auth0 Management API Integration**: Create `Auth0ManagementService` to handle user lifecycle:
+  - **Auth0 Management API Integration**: Create `Auth0ManagementProvider` to handle user lifecycle:
     - **Get M2M Access Token**: Use client credentials flow with Auth0 Management API to obtain
       access token (cache for 24 hours)
     - **Create User**: `POST /api/v2/users` with payload
@@ -883,7 +883,7 @@ verification, Auth0 user pre-registration during invitations, and business/role 
 export class AuthContextEnricher {
   constructor(
     private db: TenantAwareDBClient,
-    private permissionResolver: PermissionResolutionService
+    private permissionResolver: PermissionResolutionProvider
   ) {}
 
   async enrichContext(auth0UserId: string): Promise<AuthContext> {
@@ -926,13 +926,13 @@ export class AuthContextEnricher {
         *   Fetch associated `business_id` and `role_id`
         *   Set `authContext.authType = 'apiKey'`, `authContext.roleId = role_id`, `authContext.businessId = business_id`
         *   Note: Permission resolution is future work - current implementation uses role-based checks
-    *   **Permission Resolution Service** (Future Implementation - Not in Current Scope):
-        *   When permission-based authorization is implemented in a future phase, create a unified `PermissionResolutionService` that works identically for both user JWT and API key authentication:
+    *   **Permission Resolution Provider** (Future Implementation - Not in Current Scope):
+        *   When permission-based authorization is implemented in a future phase, create a unified `PermissionResolutionProvider` that works identically for both user JWT and API key authentication:
         *   Note: For the initial implementation, authorization checks use `authContext.roleId` directly (e.g., `if (roleId === 'business_owner')` or `if (!['business_owner', 'accountant'].includes(roleId))`)
 
 ```typescript
 @Injectable({ scope: Scope.Operation })
-export class PermissionResolutionService {
+export class PermissionResolutionProvider {
   constructor(private db: TenantAwareDBClient) {}
 
   /**
@@ -1018,9 +1018,9 @@ interface PermissionOverride {
     *   **Benefits of Unified Resolution** (When Implemented):
         *   Both users and API keys will use identical permission resolution logic
         *   Adding granular permissions later only requires:
-            1. Implementing `PermissionResolutionService` to query permissions and override tables
+            1. Implementing `PermissionResolutionProvider` to query permissions and override tables
             2. Seeding initial permission data into `permissions` and `role_permissions` tables
-            3. Updating authorization services to check `authContext.permissions` array instead of `authContext.roleId`
+            3. Updating authorization providers to check `authContext.permissions` array instead of `authContext.roleId`
             4. Populating override tables via admin UI for edge cases
         *   Consistent behavior across all authentication methods
     *   **Secure Invitation Token**: Use `crypto.randomBytes(32).toString('hex')` to generate a cryptographically secure, 64-character invitation token. Tokens have a 7-day expiration enforced by database constraint.
@@ -1044,7 +1044,7 @@ interface PermissionOverride {
   - **Layer 1 - Database RLS**: Primary security boundary. Automatically filters all queries by
     `business_id`.
   - **Layer 2 - GraphQL Directives**: Simple, static checks only.
-  - **Layer 3 - Service Layer**: Complex, data-dependent authorization and business rules.
+  - **Layer 3 - Provider Layer**: Complex, data-dependent authorization and business rules.
   - **Note**: Granular permission-based authorization is future work. Current implementation uses
     role-based checks (`authContext.roleId`).
 
@@ -1059,19 +1059,20 @@ interface PermissionOverride {
   - **Do NOT use directives for**: Resource ownership checks, data-dependent business rules, complex
     authorization logic.
 
-- **AuthorizationService Pattern** (Service Layer):
-  - Create dedicated authorization services per domain:
-    - `ChargesAuthorizationService.canEdit(userId, chargeId)`: Checks charge ownership via RLS query
-    - `DocumentsAuthService.canIssue(userId, businessId)`: Checks role (e.g., `business_owner` or
+- **AuthorizationProvider Pattern** (Provider Layer):
+  - Create dedicated authorization providers per domain:
+    - `ChargesAuthorizationProvider.canEdit(userId, chargeId)`: Checks charge ownership via RLS
+      query
+    - `DocumentsAuthProvider.canIssue(userId, businessId)`: Checks role (e.g., `business_owner` or
       `accountant` only)
-    - `UsersAuthService.canManage(userId)`: Checks role is `business_owner`
-    - `UsersAuthService.canManage(userId, targetUserId)`: Prevents self-role-changes, checks
+    - `UsersAuthProvider.canManage(userId)`: Checks role is `business_owner`
+    - `UsersAuthProvider.canManage(userId, targetUserId)`: Prevents self-role-changes, checks
       hierarchy
   - **Implementation Pattern**:
 
 ```typescript
 @Injectable({ scope: Scope.Operation })
-export class ChargesAuthorizationService {
+export class ChargesAuthorizationProvider {
   constructor(
     private db: TenantAwareDBClient,
     private authProvider: AuthContextProvider
@@ -1112,20 +1113,20 @@ export const resolvers: Resolvers = {
   Mutation: {
     updateCharge: async (_, { id, data }, context) => {
       // Providers are resolved from the GraphQL Modules injector — no context-bag spreading needed
-      const authService = context.injector.get(ChargesAuthorizationService)
-      await authService.canEdit(id)
+      const authProvider = context.injector.get(ChargesAuthorizationProvider)
+      await authProvider.canEdit(id)
       return context.injector.get(ChargesProvider).updateCharge(id, data)
     }
   }
 }
 ```
 
-- **Permission Checks in Services** (Not Directives):
+- **Permission Checks in Providers** (Not Directives):
   - Store user permissions in JWT payload (from `role_permissions` table)
-  - Check permissions in service methods, not resolvers:
+  - Check permissions in provider methods, not resolvers:
 
 ```typescript
-export class DocumentsService {
+export class DocumentsProvider {
   async issueInvoice(data: InvoiceInput) {
     // Permission check
     if (!this.authContext.user.permissions.includes('issue:docs')) {
@@ -1148,7 +1149,7 @@ export class DocumentsService {
     context
   - **RLS is the primary enforcement**: All tenant isolation happens at database level
   - **Directives for simple checks only**: Authentication, basic roles
-  - **Service layer for complex authorization**: Resource ownership, data-dependent permissions,
+  - **provider layer for complex authorization**: Resource ownership, data-dependent permissions,
     business rules
   - **Fail closed**: Deny access by default; explicit grants only
 
@@ -1275,7 +1276,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
 **Why No Injection Token?**
 
 Same reason as `AuthContextProvider`: `getAdminContext()` is async (performs DB queries), and
-GraphQL Modules' `useFactory` doesn't support async functions. Resolvers/services inject
+GraphQL Modules' `useFactory` doesn't support async functions. Resolvers/providers inject
 `AdminContextProvider` directly and call `await provider.getAdminContext()`. Internal caching
 ensures efficient per-request execution.
 
@@ -1599,11 +1600,11 @@ client application does not implement custom login forms.
   - Test **Audit Logging**: verify that critical actions (invitation creation/acceptance, API key
     generation) create corresponding records in the `audit_logs` table with both `user_id` and
     `auth0_user_id`.
-  - Test **Authorization Services**:
-    - Verify `ChargesAuthorizationService.canEdit()` rejects charges from other businesses (RLS
+  - Test **Authorization Providers**:
+    - Verify `ChargesAuthorizationProvider.canEdit()` rejects charges from other businesses (RLS
       enforcement)
-    - Verify `DocumentsAuthService.canIssue()` checks permissions
-    - Verify `UsersAuthService.canManage()` prevents privilege escalation
+    - Verify `DocumentsAuthorizationProvider.canIssue()` checks permissions
+    - Verify `UsersAuthorizationProvider.canManage()` prevents privilege escalation
   - Test the RBAC logic: ensure users can only access data and perform actions allowed by their
     roles. Create tests for each role (`employee`, `accountant`, etc.) to verify their specific
     restrictions.
@@ -1648,7 +1649,7 @@ export interface AuthUser {
   auth0UserId: string | null // Auth0 identifier (null for API key auth)
   email: string // From Auth0 JWT
   roles: string[] // From business_users
-  permissions: string[] // Resolved via PermissionResolutionService
+  permissions: string[] // Resolved via PermissionResolutionProvider
   permissionsVersion: number // For cache invalidation
 }
 
