@@ -69,12 +69,14 @@ export function mapAuth0Error(error: unknown): GraphQLError {
     });
   }
 
-  return new GraphQLError(
-    `Failed to create Auth0 user: ${auth0Error?.message ?? 'Unknown error'}`,
-    {
-      extensions: {
-        code: 'AUTH0_ERROR',
-      },
+  console.error('Unexpected Auth0 error:', {
+    message: auth0Error?.message,
+    status,
+    stack: auth0Error?.stack,
+  });
+  return new GraphQLError('Failed to create user in identity provider.', {
+    extensions: {
+      code: 'AUTH0_ERROR',
     },
-  );
+  });
 }
