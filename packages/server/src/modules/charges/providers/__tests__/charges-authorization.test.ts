@@ -29,10 +29,19 @@ function createMockAuthProvider(roleId: RoleId): Pick<AuthContextProvider, 'getA
   };
 }
 
-function createService(roleId: RoleId, chargeExists = true): ChargesAuthorizationProvider {
+function createService(
+  roleId: RoleId,
+  existingChargeIds: readonly string[] = ['charge-1'],
+): ChargesAuthorizationProvider {
   const authProvider = createMockAuthProvider(roleId) as AuthContextProvider;
   const db = {
-    query: vi.fn().mockResolvedValue({ rows: chargeExists ? [{ id: 'charge-1' }] : [] }),
+    query: vi.fn().mockImplementation((_query: string, values?: unknown[]) => {
+      const chargeIds = Array.isArray(values?.[0]) ? (values?.[0] as string[]) : [];
+      const rows = chargeIds
+        .filter(chargeId => existingChargeIds.includes(chargeId))
+        .map(id => ({ id }));
+      return Promise.resolve({ rows });
+    }),
   } as unknown as TenantAwareDBClient;
 
   return new ChargesAuthorizationProvider(authProvider, db);
@@ -44,6 +53,24 @@ describe('ChargesAuthorizationProvider', () => {
       const service = createService(role);
       await expect(service.canReadCharges()).resolves.toBeUndefined();
     }
+  });
+
+  it('canReadCharges rejects with UNAUTHENTICATED when there is no user in auth context', async () => {
+    const authProvider = {
+      getAuthContext: vi.fn().mockResolvedValue({
+        authType: 'jwt',
+        user: null,
+        tenant: null,
+      }),
+    } as unknown as AuthContextProvider;
+    const db = {
+      query: vi.fn(),
+    } as unknown as TenantAwareDBClient;
+    const service = new ChargesAuthorizationProvider(authProvider, db);
+
+    await expect(service.canReadCharges()).rejects.toMatchObject({
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
   });
 
   it('canWriteCharge allows business_owner and accountant; blocks employee and scraper', async () => {
@@ -58,12 +85,9 @@ describe('ChargesAuthorizationProvider', () => {
     });
   });
 
-  it('canDeleteCharge allows only business_owner and returns NOT_FOUND for unknown charge', async () => {
-    await expect(createService('business_owner', true).canDeleteCharge('charge-1')).resolves.toBeUndefined();
-
-    await expect(createService('accountant').canDeleteCharge('charge-1')).rejects.toMatchObject({
-      extensions: { code: 'FORBIDDEN' },
-    });
+  it('canDeleteCharge allows business_owner and accountant; returns NOT_FOUND for unknown charge', async () => {
+    await expect(createService('business_owner').canDeleteCharge('charge-1')).resolves.toBeUndefined();
+    await expect(createService('accountant').canDeleteCharge('charge-1')).resolves.toBeUndefined();
     await expect(createService('employee').canDeleteCharge('charge-1')).rejects.toMatchObject({
       extensions: { code: 'FORBIDDEN' },
     });
@@ -71,7 +95,22 @@ describe('ChargesAuthorizationProvider', () => {
       extensions: { code: 'FORBIDDEN' },
     });
 
-    await expect(createService('business_owner', false).canDeleteCharge('missing-charge')).rejects.toMatchObject({
+    await expect(createService('business_owner', []).canDeleteCharge('missing-charge')).rejects.toMatchObject({
+      extensions: { code: 'NOT_FOUND' },
+    });
+  });
+
+  it('canDeleteChargesByIds checks all ids in a single query and returns NOT_FOUND if any is missing', async () => {
+    await expect(
+      createService('business_owner', ['charge-1', 'charge-2']).canDeleteChargesByIds([
+        'charge-1',
+        'charge-2',
+      ]),
+    ).resolves.toBeUndefined();
+
+    await expect(
+      createService('business_owner', ['charge-1']).canDeleteChargesByIds(['charge-1', 'missing-charge']),
+    ).rejects.toMatchObject({
       extensions: { code: 'NOT_FOUND' },
     });
   });

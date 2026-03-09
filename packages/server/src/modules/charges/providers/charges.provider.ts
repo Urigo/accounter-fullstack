@@ -404,24 +404,15 @@ export class ChargesProvider {
     }
   }
 
-  public async canDeleteCharge(chargeId: string) {
-    await this.auth.canDeleteCharge(chargeId);
-  }
-
   public async deleteChargesByIds(params: IDeleteChargesByIdsParams) {
-    await Promise.all(
-      params.chargeIds?.map(async chargeId => {
-        if (chargeId) {
-          await this.auth.canDeleteCharge(chargeId);
-        }
-      }) ?? [],
-    );
+    const chargeIds = params.chargeIds.filter((chargeId): chargeId is string => !!chargeId);
 
-    return deleteChargesByIds.run(params, this.db);
+    await this.auth.canDeleteChargesByIds(chargeIds);
+
+    return deleteChargesByIds.run({ chargeIds }, this.db);
   }
 
   public async deleteCharge(chargeId: string) {
-    await this.auth.canDeleteCharge(chargeId);
     return this.deleteChargesByIds({ chargeIds: [chargeId] });
   }
 

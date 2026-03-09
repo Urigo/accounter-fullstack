@@ -4,7 +4,7 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { AuthorizationProvider } from '../../auth/providers/authorization.provider.js';
 
-@Injectable({ scope: Scope.Operation, global: true })
+@Injectable({ scope: Scope.Operation })
 export class ChargesAuthorizationProvider extends AuthorizationProvider {
   constructor(
     authProvider: AuthContextProvider,
@@ -21,17 +21,27 @@ export class ChargesAuthorizationProvider extends AuthorizationProvider {
     await this.requireRole(['business_owner', 'accountant']);
   }
 
-  async canDeleteCharge(chargeId: string): Promise<void> {
-    await this.requireBusinessOwner();
+  async canDeleteChargesByIds(chargeIds: readonly string[]): Promise<void> {
+    await this.requireRole(['business_owner', 'accountant']);
 
-    const { rows } = await this.db.query('SELECT id FROM accounter_schema.charges WHERE id = $1', [
-      chargeId,
-    ]);
+    if (!chargeIds.length) {
+      return;
+    }
 
-    if (!rows.length) {
+    const uniqueChargeIds = [...new Set(chargeIds)];
+    const { rows } = await this.db.query(
+      'SELECT id FROM accounter_schema.charges WHERE id = ANY($1::uuid[])',
+      [uniqueChargeIds],
+    );
+
+    if (rows.length !== uniqueChargeIds.length) {
       throw new GraphQLError('Charge not found or access denied', {
         extensions: { code: 'NOT_FOUND' },
       });
     }
+  }
+
+  async canDeleteCharge(chargeId: string): Promise<void> {
+    await this.canDeleteChargesByIds([chargeId]);
   }
 }
