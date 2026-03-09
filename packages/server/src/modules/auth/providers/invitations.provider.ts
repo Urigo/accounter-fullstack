@@ -23,14 +23,14 @@ const insertInvitation = sql<IInsertInvitationQuery>`
     business_id,
     email,
     role_id,
-    token,
+    token_hash,
     auth0_user_created,
     auth0_user_id,
     invited_by_user_id,
     invited_by_business_id,
     expires_at
   )
-  VALUES ($ownerId, $email, $roleId, $token, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
+  VALUES ($ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
   RETURNING id, email, role_id, expires_at;
 `;
 

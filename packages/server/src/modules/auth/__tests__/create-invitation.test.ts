@@ -150,7 +150,7 @@ describe('createInvitation resolver', () => {
     expect(call.auth0UserId).toBe('auth0|new-user-123');
     expect(call.invitedByUserId).toBe('user-123');
     expect(call.invitedByBusinessId).toBe('business-123');
-    expect(call.token).toMatch(/^[a-f0-9]{64}$/);
+    expect(call.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(call.expiresAt).toBeInstanceOf(Date);
   });
 

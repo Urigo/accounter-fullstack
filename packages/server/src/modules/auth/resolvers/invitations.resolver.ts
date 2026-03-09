@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { GraphQLError } from 'graphql';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { ALLOWED_ROLES, mapAuth0Error } from '../helpers/invitations.helper.js';
@@ -47,6 +47,7 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       }
 
       const token = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(token).digest('hex');
       const localUserId = randomUUID();
 
       let auth0UserId: string;
@@ -61,7 +62,7 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       const insertedInvitation = await injector.get(InvitationsProvider).insertInvitation({
         email: normalizedEmail,
         roleId,
-        token,
+        tokenHash,
         auth0UserCreated: true,
         auth0UserId,
         invitedByUserId: inviterUserId,
