@@ -59,38 +59,58 @@ export const invitationsResolvers: AuthModule.Resolvers = {
         throw mapAuth0Error(error);
       }
 
-      const insertedInvitation = await injector.get(InvitationsProvider).insertInvitation({
-        email: normalizedEmail,
-        roleId,
-        tokenHash,
-        auth0UserCreated: true,
-        auth0UserId,
-        invitedByUserId: inviterUserId,
-        invitedByBusinessId: businessId,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      });
-      const [invitation] = insertedInvitation;
+      try {
+        const insertedInvitation = await injector.get(InvitationsProvider).insertInvitation({
+          email: normalizedEmail,
+          roleId,
+          tokenHash,
+          auth0UserCreated: true,
+          auth0UserId,
+          invitedByUserId: inviterUserId,
+          invitedByBusinessId: businessId,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        });
+        const [invitation] = insertedInvitation;
+        if (!invitation) {
+          throw new GraphQLError('Invitation creation failed: no record returned from DB.', {
+            extensions: { code: 'INTERNAL_SERVER_ERROR' },
+          });
+        }
 
-      await injector.get(BusinessUsersProvider).insertBusinessUser({
-        userId: localUserId,
-        auth0UserId: null,
-        roleId,
-      });
+        await injector.get(BusinessUsersProvider).insertBusinessUser({
+          userId: localUserId,
+          auth0UserId: null,
+          roleId,
+        });
 
-      await injector.get(AuditLogsProvider).insertAuditLog({
-        userId: inviterUserId,
-        action: 'INVITATION_CREATED',
-        entity: 'Invitation',
-        entityId: invitation.id,
-        details: { email: normalizedEmail, roleId, auth0UserId },
-      });
+        await injector.get(AuditLogsProvider).insertAuditLog({
+          userId: inviterUserId,
+          action: 'INVITATION_CREATED',
+          entity: 'Invitation',
+          entityId: invitation.id,
+          details: { email: normalizedEmail, roleId, auth0UserId },
+        });
 
-      return {
-        id: invitation.id,
-        email: invitation.email,
-        roleId: invitation.role_id,
-        expiresAt: invitation.expires_at,
-      };
+        return {
+          id: invitation.id,
+          email: invitation.email,
+          roleId: invitation.role_id,
+          expiresAt: invitation.expires_at,
+        };
+      } catch (error) {
+        // If DB operations fail, attempt to clean up the created Auth0 user to prevent dangling resources.
+        await injector
+          .get(Auth0ManagementProvider)
+          .deleteUser(auth0UserId)
+          .catch(cleanupError => {
+            console.error(
+              `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
+              cleanupError,
+            );
+          });
+        // Re-throw the original error to ensure the GraphQL operation fails correctly.
+        throw error;
+      }
     },
   },
 };
