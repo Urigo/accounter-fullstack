@@ -16,12 +16,6 @@ export const invitationsResolvers: AuthModule.Resolvers = {
         });
       }
 
-      if (authContext.user.roleId !== 'business_owner') {
-        throw new GraphQLError('Requires role: business_owner', {
-          extensions: { code: 'FORBIDDEN' },
-        });
-      }
-
       if (!ALLOWED_ROLES.has(roleId)) {
         throw new GraphQLError(`Invalid roleId: ${roleId}`, {
           extensions: { code: 'BAD_USER_INPUT' },
