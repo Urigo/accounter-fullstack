@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
-import { ALLOWED_ROLES, mapAuth0Error } from '../helpers/invitations.helper.js';
+import { ALLOWED_ROLES, invalidTokenError, mapAuth0Error } from '../helpers/invitations.helper.js';
+import { AcceptInvitationsProvider } from '../providers/accept-invitations.provider.js';
 import { AuthContextProvider } from '../providers/auth-context.provider.js';
 import { Auth0ManagementProvider } from '../providers/auth0-management.provider.js';
 import { InvitationsProvider } from '../providers/invitations.provider.js';
@@ -65,13 +66,33 @@ export const invitationsResolvers: AuthModule.Resolvers = {
           .get(Auth0ManagementProvider)
           .deleteUser(auth0UserId)
           .catch(cleanupError => {
-            console.error(
-              `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
-              cleanupError,
-            );
+            void cleanupError;
           });
         // Re-throw the original error to ensure the GraphQL operation fails correctly.
         throw error;
+      }
+    },
+    acceptInvitation: async (_, { token }, { injector }) => {
+      const authContext = await injector.get(AuthContextProvider).getAuthContext();
+      const auth0UserId = authContext?.user?.auth0UserId ?? null;
+
+      const normalizedToken = token.trim();
+      if (!normalizedToken) {
+        throw invalidTokenError();
+      }
+
+      try {
+        return await injector
+          .get(AcceptInvitationsProvider)
+          .acceptInvitation(normalizedToken, auth0UserId);
+      } catch (error) {
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+
+        throw new GraphQLError('Failed to accept invitation', {
+          extensions: { code: 'INVITATION_ACCEPT_FAILED' },
+        });
       }
     },
   },

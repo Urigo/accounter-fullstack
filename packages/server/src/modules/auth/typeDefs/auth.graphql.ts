@@ -11,6 +11,7 @@ export default gql`
   extend type Mutation {
     createInvitation(email: String!, roleId: String!): InvitationPayload!
       @requiresRole(role: "business_owner")
+    acceptInvitation(token: String!): AcceptInvitationPayload!
   }
 
   " Invitation payload returned after creating an invitation "
@@ -19,5 +20,12 @@ export default gql`
     email: String!
     roleId: String!
     expiresAt: DateTime!
+  }
+
+  " Result payload returned after accepting an invitation "
+  type AcceptInvitationPayload {
+    success: Boolean!
+    businessId: ID!
+    roleId: String!
   }
 `;

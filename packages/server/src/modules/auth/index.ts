@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { AcceptInvitationsProvider } from './providers/accept-invitations.provider.js';
 import { Auth0ManagementProvider } from './providers/auth0-management.provider.js';
 import { AuthorizationProvider } from './providers/authorization.provider.js';
 import { BusinessUsersProvider } from './providers/business-users.provider.js';
@@ -18,6 +19,7 @@ export const authModule = createModule({
     AuthorizationProvider,
     BusinessUsersProvider,
     InvitationsProvider,
+    AcceptInvitationsProvider,
   ], // AuthContextProvider is added in the root module to avoid circular dependency
 });
 
