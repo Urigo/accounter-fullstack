@@ -1,14 +1,19 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import type {
   IGetInvitationsByEmailsQuery,
   IInsertInvitationParams,
   IInsertInvitationQuery,
 } from '../types.js';
+import { BusinessUsersProvider } from './business-users.provider.js';
+
+const INVITATION_EXPIRATION_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 const getInvitationsByEmails = sql<IGetInvitationsByEmailsQuery>`
   SELECT id, email
@@ -42,13 +47,15 @@ export class InvitationsProvider {
   constructor(
     private db: TenantAwareDBClient,
     private adminContextProvider: AdminContextProvider,
+    private businessUsersProvider: BusinessUsersProvider,
+    private auditLogsProvider: AuditLogsProvider,
   ) {}
 
   private async batchInvitationsByEmails(emails: readonly string[]) {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const invitations = await getInvitationsByEmails.run(
       {
-        emails: emails ? [...emails] : [],
+        emails: [...emails],
         ownerId,
       },
       this.db,
@@ -64,8 +71,64 @@ export class InvitationsProvider {
       cacheKeyFn: email => email.toLowerCase(),
     },
   );
-  public async insertInvitation(params: IInsertInvitationParams) {
-    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return insertInvitation.run(reassureOwnerIdExists(params, ownerId), this.db);
+  public async insertInvitation({
+    email,
+    roleId,
+    auth0UserId,
+    invitedByUserId,
+    ownerId,
+  }: {
+    email: string;
+    roleId: string;
+    auth0UserId: string;
+    invitedByUserId: string;
+    ownerId: string;
+  }) {
+    return this.db.transaction(async client => {
+      const token = randomBytes(32).toString('hex');
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const localUserId = randomUUID();
+
+      const invitationParams: IInsertInvitationParams = {
+        email,
+        roleId,
+        tokenHash,
+        auth0UserCreated: true,
+        auth0UserId,
+        invitedByUserId,
+        invitedByBusinessId:
+          ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
+        expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
+      };
+      const insertedInvitation = await insertInvitation.run(invitationParams, client);
+
+      const [invitation] = insertedInvitation;
+      if (!invitation) {
+        throw new GraphQLError('Invitation creation failed: no record returned from DB.', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
+
+      await this.businessUsersProvider.insertBusinessUser({
+        userId: localUserId,
+        auth0UserId: null,
+        roleId,
+      });
+
+      await this.auditLogsProvider.insertAuditLog({
+        userId: invitedByUserId,
+        action: 'INVITATION_CREATED',
+        entity: 'Invitation',
+        entityId: invitation.id,
+        details: { email, roleId, auth0UserId },
+      });
+
+      return {
+        id: invitation.id,
+        email: invitation.email,
+        roleId: invitation.role_id,
+        expiresAt: invitation.expires_at,
+      };
+    });
   }
 }

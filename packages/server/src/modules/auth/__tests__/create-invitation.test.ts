@@ -1,10 +1,8 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import { invitationsResolvers } from '../resolvers/invitations.resolver.js';
 import { AuthContextProvider } from '../providers/auth-context.provider.js';
 import { Auth0ManagementProvider } from '../providers/auth0-management.provider.js';
-import { BusinessUsersProvider } from '../providers/business-users.provider.js';
 import { InvitationsProvider } from '../providers/invitations.provider.js';
 
 const createInvitation = invitationsResolvers.Mutation?.createInvitation as (
@@ -23,13 +21,14 @@ const mockInfo = {} as GraphQLResolveInfo;
 
 describe('createInvitation resolver', () => {
   let mockAuthProvider: { getAuthContext: ReturnType<typeof vi.fn> };
-  let mockAuth0ManagementProvider: { createBlockedUser: ReturnType<typeof vi.fn> };
+  let mockAuth0ManagementProvider: {
+    createBlockedUser: ReturnType<typeof vi.fn>;
+    deleteUser: ReturnType<typeof vi.fn>;
+  };
   let mockInvitationsProvider: {
     getInvitationByEmailLoader: { load: ReturnType<typeof vi.fn> };
     insertInvitation: ReturnType<typeof vi.fn>;
   };
-  let mockBusinessUsersProvider: { insertBusinessUser: ReturnType<typeof vi.fn> };
-  let mockAuditLogsProvider: { insertAuditLog: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     mockAuthProvider = {
@@ -53,28 +52,19 @@ describe('createInvitation resolver', () => {
 
     mockAuth0ManagementProvider = {
       createBlockedUser: vi.fn().mockResolvedValue('auth0|new-user-123'),
+      deleteUser: vi.fn().mockResolvedValue(undefined),
     };
 
     mockInvitationsProvider = {
       getInvitationByEmailLoader: {
         load: vi.fn().mockResolvedValue([]),
       },
-      insertInvitation: vi.fn().mockResolvedValue([
-        {
-          id: 'inv-123',
-          email: 'new.user@example.com',
-          role_id: 'employee',
-          expires_at: new Date('2030-01-01T00:00:00.000Z'),
-        },
-      ]),
-    };
-
-    mockBusinessUsersProvider = {
-      insertBusinessUser: vi.fn().mockResolvedValue([]),
-    };
-
-    mockAuditLogsProvider = {
-      insertAuditLog: vi.fn().mockResolvedValue([]),
+      insertInvitation: vi.fn().mockResolvedValue({
+        id: 'inv-123',
+        email: 'new.user@example.com',
+        roleId: 'employee',
+        expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+      }),
     };
   });
 
@@ -94,12 +84,6 @@ describe('createInvitation resolver', () => {
           }
           if (token === InvitationsProvider) {
             return mockInvitationsProvider as T;
-          }
-          if (token === BusinessUsersProvider) {
-            return mockBusinessUsersProvider as T;
-          }
-          if (token === AuditLogsProvider) {
-            return mockAuditLogsProvider as T;
           }
           throw new Error(`Unexpected token requested: ${String(token)}`);
         },
@@ -146,60 +130,25 @@ describe('createInvitation resolver', () => {
     const call = mockInvitationsProvider.insertInvitation.mock.calls[0][0];
     expect(call.email).toBe('new.user@example.com');
     expect(call.roleId).toBe('accountant');
-    expect(call.auth0UserCreated).toBe(true);
     expect(call.auth0UserId).toBe('auth0|new-user-123');
     expect(call.invitedByUserId).toBe('user-123');
-    expect(call.invitedByBusinessId).toBe('business-123');
-    expect(call.tokenHash).toMatch(/^[a-f0-9]{64}$/);
-    expect(call.expiresAt).toBeInstanceOf(Date);
+    expect(call.ownerId).toBe('business-123');
   });
 
-  it('business_users row pre-created (auth0_user_id NULL)', async () => {
-    await createInvitation(
-      {},
-      { email: 'new.user@example.com', roleId: 'employee' },
-      createContext(),
-      mockInfo,
-    );
+  it('cleans up Auth0 user when DB insert fails', async () => {
+    const dbError = new Error('DB insert failed');
+    mockInvitationsProvider.insertInvitation.mockRejectedValueOnce(dbError);
 
-    expect(mockBusinessUsersProvider.insertBusinessUser).toHaveBeenCalledTimes(1);
-    const call = mockBusinessUsersProvider.insertBusinessUser.mock.calls[0][0];
-    expect(call.auth0UserId).toBeNull();
-    expect(call.roleId).toBe('employee');
-    expect(call.userId).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
-  });
+    await expect(
+      createInvitation(
+        {},
+        { email: 'new.user@example.com', roleId: 'employee' },
+        createContext(),
+        mockInfo,
+      ),
+    ).rejects.toBe(dbError);
 
-  it('audit log entry created', async () => {
-    mockInvitationsProvider.insertInvitation.mockResolvedValueOnce([
-      {
-        id: 'inv-audit',
-        email: 'new.user@example.com',
-        role_id: 'employee',
-        expires_at: new Date('2030-05-01T00:00:00.000Z'),
-      },
-    ]);
-
-    await createInvitation(
-      {},
-      { email: 'new.user@example.com', roleId: 'employee' },
-      createContext(),
-      mockInfo,
-    );
-
-    expect(mockAuditLogsProvider.insertAuditLog).toHaveBeenCalledTimes(1);
-    expect(mockAuditLogsProvider.insertAuditLog).toHaveBeenCalledWith({
-      userId: 'user-123',
-      action: 'INVITATION_CREATED',
-      entity: 'Invitation',
-      entityId: 'inv-audit',
-      details: {
-        email: 'new.user@example.com',
-        roleId: 'employee',
-        auth0UserId: 'auth0|new-user-123',
-      },
-    });
+    expect(mockAuth0ManagementProvider.deleteUser).toHaveBeenCalledWith('auth0|new-user-123');
   });
 
   it('duplicate active invitation rejected', async () => {
