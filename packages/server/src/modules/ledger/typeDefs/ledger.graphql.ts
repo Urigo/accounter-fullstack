@@ -3,16 +3,19 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     chargesWithLedgerChanges(filters: ChargeFilter, limit: Int): [ChargesWithLedgerChangesResult!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
     ledgerRecordsByDates(fromDate: TimelessDate!, toDate: TimelessDate!): [LedgerRecord!]!
-      @auth(role: ACCOUNTANT)
-    ledgerRecordsByFinancialEntity(financialEntityId: UUID!): [LedgerRecord!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+    ledgerRecordsByFinancialEntity(financialEntityId: UUID!): [LedgerRecord!]! @requiresAuth
   }
 
   extend type Mutation {
-    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords! @auth(role: ACCOUNTANT)
-    lockLedgerRecords(date: TimelessDate!): Boolean! @auth(role: ACCOUNTANT)
+    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    lockLedgerRecords(date: TimelessDate!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " represent atomic movement of funds "

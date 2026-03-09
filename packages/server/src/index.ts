@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { createYoga } from 'graphql-yoga';
 import pg from 'pg';
 import 'reflect-metadata';
+import { useSchema } from '@envelop/core';
 import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
@@ -31,13 +32,14 @@ async function main() {
     console.log('Auth0 not configured');
   }
 
-  const application = await createGraphQLApp(env, pool);
+  const { application, transformedSchema } = await createGraphQLApp(env, pool);
 
   const yoga = createYoga({
     plugins: [
       dbCleanupPlugin(),
       authPlugin(),
       useGraphQLModules(application),
+      useSchema(transformedSchema),
       useDeferStream(),
       useHive({
         enabled: !!env.hive,

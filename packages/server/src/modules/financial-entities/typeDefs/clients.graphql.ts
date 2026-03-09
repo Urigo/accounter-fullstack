@@ -2,14 +2,17 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    client(businessId: UUID!): Client! @auth(role: ACCOUNTANT)
-    allClients: [Client!]! @auth(role: ACCOUNTANT)
+    client(businessId: UUID!): Client! @requiresAuth
+    allClients: [Client!]! @requiresAuth
   }
 
   extend type Mutation {
     updateClient(businessId: UUID!, fields: ClientUpdateInput!): UpdateClientResponse!
-      @auth(role: ACCOUNTANT)
-    insertClient(fields: ClientInsertInput!): UpdateClientResponse! @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    insertClient(fields: ClientInsertInput!): UpdateClientResponse!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " business extended with green invoice data "

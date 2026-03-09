@@ -19,15 +19,6 @@ export default gql`
   " Stream directive "
   directive @stream on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-  " Role based authorization"
-  enum Role {
-    ADMIN
-    ACCOUNTANT
-  }
-
-  " Authorization directive"
-  directive @auth(role: Role!) on FIELD_DEFINITION
-
   # Scalars
 
   " Date "

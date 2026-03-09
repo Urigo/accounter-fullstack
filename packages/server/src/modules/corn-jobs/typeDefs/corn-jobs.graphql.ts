@@ -2,9 +2,15 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Mutation {
-    mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult! @auth(role: ADMIN)
-    flagForeignFeeTransactions: FlagForeignFeeTransactionsResult! @auth(role: ADMIN)
-    calculateCreditcardTransactionsDebitDate: Boolean! @auth(role: ADMIN)
+    mergeChargesByTransactionReference: MergeChargesByTransactionReferenceResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
+    flagForeignFeeTransactions: FlagForeignFeeTransactionsResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
+    calculateCreditcardTransactionsDebitDate: Boolean!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
 
   " result type for mergeChargesByTransactionReference "

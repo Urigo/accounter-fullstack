@@ -2,9 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    taxCategories: [TaxCategory!]! @auth(role: ACCOUNTANT)
-    taxCategory(id: UUID!): TaxCategory! @auth(role: ACCOUNTANT)
-    taxCategoryByBusinessId(businessId: UUID!): TaxCategory @auth(role: ACCOUNTANT)
+    taxCategories: [TaxCategory!]! @requiresAuth
+    taxCategory(id: UUID!): TaxCategory! @requiresAuth
+    taxCategoryByBusinessId(businessId: UUID!): TaxCategory @requiresAuth
   }
 
   extend interface Charge {
@@ -73,8 +73,12 @@ export default gql`
     updateTaxCategory(
       taxCategoryId: UUID!
       fields: UpdateTaxCategoryInput!
-    ): UpdateTaxCategoryResponse! @auth(role: ACCOUNTANT)
-    insertTaxCategory(fields: InsertTaxCategoryInput!): TaxCategory! @auth(role: ACCOUNTANT)
+    ): UpdateTaxCategoryResponse!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    insertTaxCategory(fields: InsertTaxCategoryInput!): TaxCategory!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for updateBusiness "

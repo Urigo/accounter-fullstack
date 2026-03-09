@@ -2,11 +2,15 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    adminContext(ownerId: UUID): AdminContextInfo! @auth(role: ACCOUNTANT)
+    adminContext(ownerId: UUID): AdminContextInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
-    updateAdminContext(context: AdminContextInput!): AdminContextInfo! @auth(role: ADMIN)
+    updateAdminContext(context: AdminContextInput!): AdminContextInfo!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
 
   " input variables for updateAdminContext "

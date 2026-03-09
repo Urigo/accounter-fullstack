@@ -2,14 +2,20 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    allBusinessTrips: [BusinessTrip!]! @auth(role: ACCOUNTANT)
-    businessTrip(id: UUID!): BusinessTrip @auth(role: ACCOUNTANT)
+    allBusinessTrips: [BusinessTrip!]! @requiresAuth
+    businessTrip(id: UUID!): BusinessTrip @requiresAuth
   }
 
   extend type Mutation {
-    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge @auth(role: ACCOUNTANT)
-    insertBusinessTrip(fields: InsertBusinessTripInput!): UUID! @auth(role: ACCOUNTANT)
-    updateBusinessTrip(fields: UpdateBusinessTripInput!): UUID! @auth(role: ACCOUNTANT)
+    updateChargeBusinessTrip(chargeId: UUID!, businessTripId: UUID): Charge
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    insertBusinessTrip(fields: InsertBusinessTripInput!): UUID!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateBusinessTrip(fields: UpdateBusinessTripInput!): UUID!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the input for creating a business trip "

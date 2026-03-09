@@ -3,11 +3,14 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Mutation {
     insertBusinessTripAttendee(fields: InsertBusinessTripAttendeeInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripAttendee(fields: BusinessTripAttendeeUpdateInput!): UUID!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     deleteBusinessTripAttendee(fields: DeleteBusinessTripAttendeeInput!): Boolean!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " the input for adding an attendee to a business trip "

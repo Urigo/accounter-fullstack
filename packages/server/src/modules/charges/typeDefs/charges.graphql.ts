@@ -2,25 +2,29 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    charge(chargeId: UUID!): Charge! @auth(role: ACCOUNTANT)
-    chargesByIDs(chargeIDs: [UUID!]!): [Charge!]! @auth(role: ACCOUNTANT)
+    charge(chargeId: UUID!): Charge! @requiresAuth
+    chargesByIDs(chargeIDs: [UUID!]!): [Charge!]! @requiresAuth
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
     chargesWithMissingRequiredInfo(page: Int = 1, limit: Int = 999999): PaginatedCharges!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
   }
 
   extend type Mutation {
     updateCharge(chargeId: UUID!, fields: UpdateChargeInput!): UpdateChargeResult!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchUpdateCharges(chargeIds: [UUID!]!, fields: UpdateChargeInput!): BatchUpdateChargesResult!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     mergeCharges(
       baseChargeID: UUID!
       chargeIdsToMerge: [UUID!]!
       fields: UpdateChargeInput
-    ): MergeChargeResult! @auth(role: ACCOUNTANT)
-    deleteCharge(chargeId: UUID!): Boolean! @auth(role: ACCOUNTANT)
+    ): MergeChargeResult! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteCharge(chargeId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " represent a complex type for grouped charge with ledger info, bank/card transactions and documents "

@@ -7,6 +7,7 @@ import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.j
 import { AuthContextProvider } from '../modules/auth/providers/auth-context.provider.js';
 import { BusinessTripsProvider } from '../modules/business-trips/providers/business-trips.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
+import { ChargesAuthorizationProvider } from '../modules/charges/providers/charges-authorization.provider.js';
 import { ChargesProvider } from '../modules/charges/providers/charges.provider.js';
 import { DocumentsProvider } from '../modules/documents/providers/documents.provider.js';
 import { CryptoExchangeProvider } from '../modules/exchange-rates/providers/crypto-exchange.provider.js';
@@ -85,23 +86,18 @@ export function createLedgerTestContext(options: {
     env,
   } as ModuleContextLike;
 
-  const tenantAwareDB = new TenantAwareDBClient(dbProvider, {
+  // Create minimal AuthContextProvider for providers that need it
+  const authContextProvider = {
     getAuthContext: async () => ({
       authType: null,
       tenant: { businessId: resolvedBusinessId },
     }),
-  } as AuthContextProvider);
+  } as AuthContextProvider;
+
+  const tenantAwareDB = new TenantAwareDBClient(dbProvider, authContextProvider);
 
   // Create AdminContextProvider for providers that need it
-  const adminContextProvider = new AdminContextProvider(
-    {
-      getAuthContext: async () => ({
-        authType: null,
-        tenant: { businessId: resolvedBusinessId },
-      }),
-    } as AuthContextProvider,
-    tenantAwareDB,
-  );
+  const adminContextProvider = new AdminContextProvider(authContextProvider, tenantAwareDB);
 
   const injector = new SimpleInjector(token => {
     switch (token) {
@@ -151,8 +147,13 @@ export function createLedgerTestContext(options: {
         return new FinancialAccountsProvider(tenantAwareDB, adminContextProvider);
       case TaxCategoriesProvider:
         return new TaxCategoriesProvider(tenantAwareDB, adminContextProvider);
-      case ChargesProvider:
-        return new ChargesProvider(tenantAwareDB);
+      case ChargesProvider: {
+        const chargesAuthorizationProvider = new ChargesAuthorizationProvider(
+          authContextProvider,
+          tenantAwareDB,
+        );
+        return new ChargesProvider(tenantAwareDB, chargesAuthorizationProvider);
+      }
       case VatProvider:
         return new VatProvider(dbProvider);
       case FinancialEntitiesProvider: {

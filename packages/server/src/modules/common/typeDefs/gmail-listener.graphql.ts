@@ -2,12 +2,12 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    gmailListenerStatus: Boolean! @auth(role: ADMIN)
+    gmailListenerStatus: Boolean! @requiresAuth @requiresRole(role: "business_owner")
   }
 
   extend type Mutation {
-    startGmailListener: Boolean! @auth(role: ADMIN)
-    digestGmailMessages: Boolean! @auth(role: ADMIN)
-    stopGmailListener: Boolean! @auth(role: ADMIN)
+    startGmailListener: Boolean! @requiresAuth @requiresRole(role: "business_owner")
+    digestGmailMessages: Boolean! @requiresAuth @requiresRole(role: "business_owner")
+    stopGmailListener: Boolean! @requiresAuth @requiresRole(role: "business_owner")
   }
 `;

@@ -5,11 +5,11 @@ export default gql`
     updateChargeAccountantApproval(
       chargeId: UUID!
       approvalStatus: AccountantStatus!
-    ): AccountantStatus! @auth(role: ACCOUNTANT)
+    ): AccountantStatus! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     updateBusinessTripAccountantApproval(
       businessTripId: UUID!
       approvalStatus: AccountantStatus!
-    ): AccountantStatus! @auth(role: ACCOUNTANT)
+    ): AccountantStatus! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend interface Charge {

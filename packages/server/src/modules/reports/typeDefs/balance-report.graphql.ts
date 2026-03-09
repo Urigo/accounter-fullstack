@@ -6,7 +6,9 @@ export default gql`
       fromDate: TimelessDate!
       toDate: TimelessDate!
       ownerId: UUID
-    ): [BalanceTransactions!]! @auth(role: ACCOUNTANT)
+    ): [BalanceTransactions!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " transactions for balance report "

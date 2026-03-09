@@ -2,9 +2,9 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    financialEntity(id: UUID!): FinancialEntity! @auth(role: ACCOUNTANT)
+    financialEntity(id: UUID!): FinancialEntity! @requiresAuth
     " TODO: This is temporary, should be replaced after auth and financial entities hierarchy is implemented "
-    allFinancialEntities(page: Int, limit: Int): PaginatedFinancialEntities @auth(role: ACCOUNTANT)
+    allFinancialEntities(page: Int, limit: Int): PaginatedFinancialEntities @requiresAuth
   }
 
   " response for paginated Financial Entities "

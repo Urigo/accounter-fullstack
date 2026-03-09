@@ -2,30 +2,41 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    newDocumentDraftByCharge(chargeId: UUID!): DocumentDraft! @auth(role: ACCOUNTANT)
-    newDocumentDraftByDocument(documentId: UUID!): DocumentDraft! @auth(role: ACCOUNTANT)
-    periodicalDocumentDrafts(issueMonth: TimelessDate!): [DocumentDraft!]! @auth(role: ACCOUNTANT)
+    newDocumentDraftByCharge(chargeId: UUID!): DocumentDraft!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    newDocumentDraftByDocument(documentId: UUID!): DocumentDraft!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    periodicalDocumentDrafts(issueMonth: TimelessDate!): [DocumentDraft!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     periodicalDocumentDraftsByContracts(
       issueMonth: TimelessDate!
       contractIds: [UUID!]!
-    ): [DocumentDraft!]! @auth(role: ACCOUNTANT)
+    ): [DocumentDraft!]! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
 
     clientMonthlyChargeDraft(clientId: UUID!, issueMonth: TimelessDate!): DocumentDraft!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     issueGreenInvoiceDocuments(
       generateDocumentsInfo: [DocumentIssueInput!]!
-    ): GenerateDocumentsResult! @auth(role: ACCOUNTANT)
+    ): GenerateDocumentsResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     issueGreenInvoiceDocument(
       input: DocumentIssueInput!
       emailContent: String
       attachment: Boolean
       chargeId: UUID
       sendEmail: Boolean
-    ): Charge! @auth(role: ACCOUNTANT)
-    previewDocument(input: DocumentIssueInput!): FileScalar! @auth(role: ACCOUNTANT)
+    ): Charge! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    previewDocument(input: DocumentIssueInput!): FileScalar!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for generateDocuments" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this

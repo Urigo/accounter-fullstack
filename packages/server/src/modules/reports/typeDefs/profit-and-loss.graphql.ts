@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     profitAndLossReport(reportYear: Int!, referenceYears: [Int!]!): ProfitAndLossReport!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " result type for profitAndLossReport "

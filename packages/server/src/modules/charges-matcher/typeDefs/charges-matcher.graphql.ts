@@ -3,12 +3,14 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     " Find potential matches for a single unmatched charge "
-    findChargeMatches(chargeId: UUID!): ChargeMatchesResult! @auth(role: ACCOUNTANT)
+    findChargeMatches(chargeId: UUID!): ChargeMatchesResult! @requiresAuth
   }
 
   extend type Mutation {
     " Automatically match all unmatched charges above the confidence threshold "
-    autoMatchCharges: AutoMatchChargesResult! @auth(role: ACCOUNTANT)
+    autoMatchCharges: AutoMatchChargesResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Result of finding matches for a single charge "

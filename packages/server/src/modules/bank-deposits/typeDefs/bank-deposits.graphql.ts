@@ -2,14 +2,18 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    deposit(depositId: String!): BankDeposit! @auth(role: ACCOUNTANT)
-    depositByCharge(chargeId: UUID!): BankDeposit @auth(role: ACCOUNTANT)
-    allDeposits: [BankDeposit!]! @auth(role: ACCOUNTANT)
+    deposit(depositId: String!): BankDeposit! @requiresAuth
+    depositByCharge(chargeId: UUID!): BankDeposit @requiresAuth
+    allDeposits: [BankDeposit!]! @requiresAuth
   }
 
   extend type Mutation {
-    createDeposit(currency: Currency!): BankDeposit! @auth(role: ACCOUNTANT)
-    assignChargeToDeposit(chargeId: UUID!, depositId: String!): BankDeposit! @auth(role: ACCOUNTANT)
+    createDeposit(currency: Currency!): BankDeposit!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    assignChargeToDeposit(chargeId: UUID!, depositId: String!): BankDeposit!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Bank Deposit "

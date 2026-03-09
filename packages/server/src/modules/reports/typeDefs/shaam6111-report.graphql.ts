@@ -2,14 +2,18 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    shaam6111(year: Int!, businessId: UUID): Shaam6111Report! @auth(role: ACCOUNTANT)
+    shaam6111(year: Int!, businessId: UUID): Shaam6111Report!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     shaam6111ByYear(businessId: UUID, fromYear: Int!, toYear: Int!): [Shaam6111Report!]!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
     updateShaam6111(businessId: UUID, year: Int!, content: String!): Boolean!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " record of Shaam6111 report "
