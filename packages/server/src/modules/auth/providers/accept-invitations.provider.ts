@@ -26,7 +26,7 @@ const updateInvitationAcceptance = sql<IUpdateInvitationAcceptanceQuery>`
 `;
 
 const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
-  SELECT id, user_id, business_id, role_id, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash
     AND accepted_at IS NULL
@@ -35,7 +35,7 @@ const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
 `;
 
 const getInvitationByToken = sql<IGetInvitationByTokenQuery>`
-  SELECT id, user_id, business_id, role_id, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, email, auth0_user_id, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash;
 `;
@@ -70,7 +70,11 @@ export class AcceptInvitationsProvider {
     private auditLogsProvider: AuditLogsProvider,
   ) {}
 
-  public async acceptInvitation(token: string, auth0UserId: string | null) {
+  public async acceptInvitation(
+    token: string,
+    auth0UserId: string | null,
+    authenticatedUserEmail: string | null,
+  ) {
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const client = await this.dbProvider.pool.connect();
 
@@ -106,6 +110,20 @@ export class AcceptInvitationsProvider {
         throw invalidTokenError();
       }
 
+      // Defense in depth: authenticated users can claim only invitations for their own email.
+      if (auth0UserId) {
+        const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
+        const normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase();
+
+        if (
+          !normalizedInvitationEmail ||
+          !normalizedAuthenticatedEmail ||
+          normalizedInvitationEmail !== normalizedAuthenticatedEmail
+        ) {
+          throw invalidTokenError();
+        }
+      }
+
       if (!invitation.user_id) {
         throw invalidTokenError();
       }
@@ -126,7 +144,7 @@ export class AcceptInvitationsProvider {
       if (auth0UserId) {
         const existingUserResult = await getUserIdByAuth0UserId.run({ auth0UserId }, client);
 
-        if ((existingUserResult.length ?? 0) > 0) {
+        if (existingUserResult.length > 0) {
           userId = existingUserResult[0].user_id;
 
           await insertAcceptedBusinessUser.run(
@@ -149,7 +167,11 @@ export class AcceptInvitationsProvider {
 
       if (invitation.auth0_user_id) {
         try {
-          await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
+          if (auth0UserId && auth0UserId !== invitation.auth0_user_id) {
+            await this.auth0ManagementProvider.deleteUser(invitation.auth0_user_id);
+          } else {
+            await this.auth0ManagementProvider.unblockUser(invitation.auth0_user_id);
+          }
         } catch (error) {
           throw mapAuth0Error(error);
         }

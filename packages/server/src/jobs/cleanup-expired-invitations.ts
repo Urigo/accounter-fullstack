@@ -22,8 +22,9 @@ export async function cleanupExpiredInvitations(
       auth0_user_id: string | null;
       auth0_user_created: boolean;
       user_id: string;
+      business_id: string;
     }>(
-      `SELECT id, auth0_user_id, auth0_user_created, user_id
+      `SELECT id, auth0_user_id, auth0_user_created, user_id, business_id
        FROM accounter_schema.invitations
        WHERE accepted_at IS NULL
          AND expires_at < NOW()`,
@@ -49,7 +50,7 @@ export async function cleanupExpiredInvitations(
 
           await insertAuditLog.run(
             {
-              ownerId: null,
+              ownerId: invitation.business_id,
               userId: null,
               auth0UserId: null,
               action: 'INVITATION_EXPIRED_CLEANUP',

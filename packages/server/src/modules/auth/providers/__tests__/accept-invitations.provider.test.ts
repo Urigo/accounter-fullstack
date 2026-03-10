@@ -40,6 +40,7 @@ function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
     user_id: 'invited-user',
     business_id: 'business-1',
     role_id: 'employee',
+    email: 'invitee@example.com',
     auth0_user_id: 'auth0|invitee',
     accepted_at: null,
     expires_at: new Date(Date.now() + 60_000).toISOString(),
@@ -50,7 +51,10 @@ function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
 describe('AcceptInvitationsProvider', () => {
   let dbClient: { query: ReturnType<typeof vi.fn>; release: ReturnType<typeof vi.fn> };
   let dbProvider: { pool: { connect: ReturnType<typeof vi.fn> } };
-  let auth0ManagementProvider: { unblockUser: ReturnType<typeof vi.fn> };
+  let auth0ManagementProvider: {
+    unblockUser: ReturnType<typeof vi.fn>;
+    deleteUser: ReturnType<typeof vi.fn>;
+  };
   let provider: AcceptInvitationsProvider;
 
   beforeEach(() => {
@@ -71,6 +75,7 @@ describe('AcceptInvitationsProvider', () => {
 
     auth0ManagementProvider = {
       unblockUser: vi.fn().mockResolvedValue(undefined),
+      deleteUser: vi.fn().mockResolvedValue(undefined),
     };
 
     provider = new AcceptInvitationsProvider(dbProvider as any, auth0ManagementProvider as any, {log: () => {void 0}} as any);
@@ -87,7 +92,7 @@ describe('AcceptInvitationsProvider', () => {
     updateInvitationAcceptanceRun.mockResolvedValue([]);
     insertAuditLogRun.mockResolvedValue([]);
 
-    const result = await provider.acceptInvitation('token-1', 'auth0|caller');
+    const result = await provider.acceptInvitation('token-1', 'auth0|caller', 'invitee@example.com');
 
     expect(result).toEqual({
       success: true,
@@ -113,7 +118,8 @@ describe('AcceptInvitationsProvider', () => {
       dbClient,
     );
     expect(updateBusinessUserAuth0IdRun).not.toHaveBeenCalled();
-    expect(auth0ManagementProvider.unblockUser).toHaveBeenCalledWith('auth0|invitee');
+    expect(auth0ManagementProvider.deleteUser).toHaveBeenCalledWith('auth0|invitee');
+    expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
     expect(dbClient.release).toHaveBeenCalledOnce();
   });
 
@@ -124,7 +130,7 @@ describe('AcceptInvitationsProvider', () => {
     updateInvitationAcceptanceRun.mockResolvedValue([]);
     insertAuditLogRun.mockResolvedValue([]);
 
-    await provider.acceptInvitation('token-2', 'auth0|caller');
+    await provider.acceptInvitation('token-2', 'auth0|caller', 'invitee@example.com');
 
     expect(updateBusinessUserAuth0IdRun).toHaveBeenCalledWith(
       {
@@ -136,6 +142,8 @@ describe('AcceptInvitationsProvider', () => {
     );
     expect(insertAcceptedBusinessUserRun).not.toHaveBeenCalled();
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'COMMIT');
+    expect(auth0ManagementProvider.deleteUser).toHaveBeenCalledWith('auth0|invitee');
+    expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
   });
 
   it('uses invitation auth0_user_id when caller is unauthenticated', async () => {
@@ -146,7 +154,7 @@ describe('AcceptInvitationsProvider', () => {
     updateInvitationAcceptanceRun.mockResolvedValue([]);
     insertAuditLogRun.mockResolvedValue([]);
 
-    await provider.acceptInvitation('token-3', null);
+    await provider.acceptInvitation('token-3', null, null);
 
     expect(getUserIdByAuth0UserIdRun).not.toHaveBeenCalled();
     expect(updateBusinessUserAuth0IdRun).toHaveBeenCalledWith(
@@ -158,6 +166,22 @@ describe('AcceptInvitationsProvider', () => {
       dbClient,
     );
     expect(auth0ManagementProvider.unblockUser).toHaveBeenCalledWith('auth0|from-invitation');
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('unblocks invitation auth0 user when authenticated caller matches invitation auth0_user_id', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([
+      activeInvitation({ auth0_user_id: 'auth0|same-user' }),
+    ]);
+    getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
+    insertAcceptedBusinessUserRun.mockResolvedValue([]);
+    updateInvitationAcceptanceRun.mockResolvedValue([]);
+    insertAuditLogRun.mockResolvedValue([]);
+
+    await provider.acceptInvitation('token-same', 'auth0|same-user', 'invitee@example.com');
+
+    expect(auth0ManagementProvider.unblockUser).toHaveBeenCalledWith('auth0|same-user');
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
   });
 
   it('throws TOKEN_ALREADY_USED when invitation is already accepted', async () => {
@@ -166,7 +190,9 @@ describe('AcceptInvitationsProvider', () => {
       activeInvitation({ accepted_at: new Date().toISOString() }),
     ]);
 
-    await expect(provider.acceptInvitation('token-4', 'auth0|caller')).rejects.toMatchObject({
+    await expect(
+      provider.acceptInvitation('token-4', 'auth0|caller', 'invitee@example.com'),
+    ).rejects.toMatchObject({
       extensions: { code: 'TOKEN_ALREADY_USED' },
     });
 
@@ -181,7 +207,9 @@ describe('AcceptInvitationsProvider', () => {
       activeInvitation({ expires_at: new Date(Date.now() - 60_000).toISOString() }),
     ]);
 
-    await expect(provider.acceptInvitation('token-5', 'auth0|caller')).rejects.toMatchObject({
+    await expect(
+      provider.acceptInvitation('token-5', 'auth0|caller', 'invitee@example.com'),
+    ).rejects.toMatchObject({
       extensions: { code: 'TOKEN_EXPIRED' },
     });
 
@@ -192,7 +220,9 @@ describe('AcceptInvitationsProvider', () => {
     getInvitationForAcceptanceRun.mockResolvedValue([]);
     getInvitationByTokenRun.mockResolvedValue([]);
 
-    await expect(provider.acceptInvitation('token-6', 'auth0|caller')).rejects.toMatchObject({
+    await expect(
+      provider.acceptInvitation('token-6', 'auth0|caller', 'invitee@example.com'),
+    ).rejects.toMatchObject({
       extensions: { code: 'TOKEN_INVALID' },
     });
 
@@ -201,19 +231,40 @@ describe('AcceptInvitationsProvider', () => {
     expect(insertAuditLogRun).not.toHaveBeenCalled();
   });
 
-  it('rolls back and maps Auth0 unblock failures to GraphQLError', async () => {
+  it('rolls back and maps Auth0 cleanup failures to GraphQLError', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation()]);
     getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
     insertAcceptedBusinessUserRun.mockResolvedValue([]);
-    auth0ManagementProvider.unblockUser.mockRejectedValueOnce(new Error('provider unavailable'));
+    auth0ManagementProvider.deleteUser.mockRejectedValueOnce(new Error('provider unavailable'));
 
-    await expect(provider.acceptInvitation('token-7', 'auth0|caller')).rejects.toSatisfy(error => {
+    await expect(
+      provider.acceptInvitation('token-7', 'auth0|caller', 'invitee@example.com'),
+    ).rejects.toSatisfy(error => {
       return error instanceof GraphQLError && error.extensions?.code === 'AUTH0_ERROR';
     });
 
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
+    expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
+    expect(insertAuditLogRun).not.toHaveBeenCalled();
+  });
+
+  it('rejects authenticated claim when email does not match invitation email', async () => {
+    getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation({ email: 'invitee@example.com' })]);
+
+    await expect(
+      provider.acceptInvitation('token-8', 'auth0|caller', 'different@example.com'),
+    ).rejects.toMatchObject({
+      extensions: { code: 'TOKEN_INVALID' },
+    });
+
+    expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
+    expect(getUserIdByAuth0UserIdRun).not.toHaveBeenCalled();
+    expect(updateBusinessUserAuth0IdRun).not.toHaveBeenCalled();
+    expect(insertAcceptedBusinessUserRun).not.toHaveBeenCalled();
+    expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
+    expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
     expect(insertAuditLogRun).not.toHaveBeenCalled();
   });

@@ -81,6 +81,7 @@ describe('acceptInvitation resolver', () => {
     expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
       'token-1',
       'auth0|caller-123',
+      'invitee@example.com',
     );
   });
 
@@ -90,6 +91,7 @@ describe('acceptInvitation resolver', () => {
     expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith(
       'token-1',
       'auth0|caller-123',
+      'invitee@example.com',
     );
   });
 
@@ -108,7 +110,7 @@ describe('acceptInvitation resolver', () => {
 
     await acceptInvitation({}, { token: 'token-3' }, createContext(), mockInfo);
 
-    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith('token-3', null);
+    expect(mockAcceptInvitationsProvider.acceptInvitation).toHaveBeenCalledWith('token-3', null, null);
   });
 
   it('passes through GraphQLError from provider', async () => {

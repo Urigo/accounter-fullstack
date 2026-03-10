@@ -119,9 +119,8 @@ export class InvitationsProvider {
         auth0UserCreated: true,
         auth0UserId,
         invitedByUserId,
-        invitedByBusinessId:
-          ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
-        ownerId: ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
+        invitedByBusinessId: ownerId,
+        ownerId,
         expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
       };
       const insertedInvitation = await insertInvitation.run(invitationParams, client);

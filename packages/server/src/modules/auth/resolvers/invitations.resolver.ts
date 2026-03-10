@@ -78,6 +78,7 @@ export const invitationsResolvers: AuthModule.Resolvers = {
     acceptInvitation: async (_, { token }, { injector }) => {
       const authContext = await injector.get(AuthContextProvider).getAuthContext();
       const auth0UserId = authContext?.user?.auth0UserId ?? null;
+      const authenticatedUserEmail = authContext?.user?.email ?? null;
 
       const normalizedToken = token.trim();
       if (!normalizedToken) {
@@ -87,7 +88,7 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       try {
         return await injector
           .get(AcceptInvitationsProvider)
-          .acceptInvitation(normalizedToken, auth0UserId);
+          .acceptInvitation(normalizedToken, auth0UserId, authenticatedUserEmail);
       } catch (error) {
         if (error instanceof GraphQLError) {
           throw error;
