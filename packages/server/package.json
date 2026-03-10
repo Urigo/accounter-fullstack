@@ -17,6 +17,7 @@
   "main": "dist/server/src/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
+    "cleanup:expired-invitations": "tsx src/scripts/run-invitation-cleanup.ts",
     "dev": "nodemon --exec \"yarn build && yarn start | pino-pretty\" --ignore dist --watch 'src/**/*' -e ts,tsx,mts",
     "generate": "yarn generate:all",
     "generate:sql": "dotenv -e ../../.env yarn pgtyped",
