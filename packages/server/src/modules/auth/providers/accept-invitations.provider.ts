@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import {
   alreadyAcceptedError,
   expiredTokenError,
@@ -13,7 +14,6 @@ import type {
   IGetInvitationForAcceptanceQuery,
   IGetUserIdByAuth0UserIdQuery,
   IInsertAcceptedBusinessUserQuery,
-  IInsertAuditLogQuery,
   IUpdateBusinessUserAuth0IdQuery,
   IUpdateInvitationAcceptanceQuery,
 } from '../types.js';
@@ -59,19 +59,6 @@ const updateBusinessUserAuth0Id = sql<IUpdateBusinessUserAuth0IdQuery>`
     AND business_id = $ownerId;
 `;
 
-const insertAuditLog = sql<IInsertAuditLogQuery>`
-  INSERT INTO accounter_schema.audit_logs (
-    business_id,
-    user_id,
-    auth0_user_id,
-    action,
-    entity,
-    entity_id,
-    details
-  )
-  VALUES ($ownerId, $userId, $auth0UserId, 'INVITATION_ACCEPTED', 'Invitation', $invitationId, $details::jsonb);
-`;
-
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -80,6 +67,7 @@ export class AcceptInvitationsProvider {
   constructor(
     private dbProvider: DBProvider,
     private auth0ManagementProvider: Auth0ManagementProvider,
+    private auditLogsProvider: AuditLogsProvider,
   ) {}
 
   public async acceptInvitation(token: string, auth0UserId: string | null) {
@@ -169,12 +157,14 @@ export class AcceptInvitationsProvider {
 
       await updateInvitationAcceptance.run({ id: invitation.id }, client);
 
-      await insertAuditLog.run(
+      await this.auditLogsProvider.log(
         {
           ownerId: invitation.business_id,
           userId,
           auth0UserId: effectiveAuth0UserId,
-          invitationId: invitation.id,
+          action: 'INVITATION_ACCEPTED',
+          entity: 'Invitation',
+          entityId: invitation.id,
           details: {
             auth0_user_id: effectiveAuth0UserId,
             business_id: invitation.business_id,

@@ -29,6 +29,7 @@ describe('cleanupExpiredInvitations', () => {
       pool: {
         connect: mockConnect,
       },
+      query: mockQuery,
     } as unknown as DBProvider;
 
     mockDeleteUser = vi.fn().mockResolvedValue(undefined);

@@ -4,9 +4,20 @@ export default {
   name: '2026-03-10T15-00-00.add-user-id-to-invitations.sql',
   run: ({ sql }) => sql`
     -- Add deterministic invitation target user reference.
+    -- This migration intentionally assumes there are no existing invitations.
+
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM accounter_schema.invitations) THEN
+        RAISE EXCEPTION USING
+          MESSAGE = 'Invitation user_id migration requires empty invitations table',
+          HINT = 'Clear pending invitations before running this migration. Existing invitations cannot be deterministically backfilled.';
+      END IF;
+    END;
+    $$;
 
     ALTER TABLE accounter_schema.invitations
-      ADD COLUMN user_id UUID;
+      ADD COLUMN user_id UUID NOT NULL;
 
     CREATE INDEX idx_invitations_user_id ON accounter_schema.invitations(user_id);
 
