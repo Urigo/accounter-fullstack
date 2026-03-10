@@ -73,7 +73,7 @@ describe('AcceptInvitationsProvider', () => {
       unblockUser: vi.fn().mockResolvedValue(undefined),
     };
 
-    provider = new AcceptInvitationsProvider(dbProvider as any, auth0ManagementProvider as any);
+    provider = new AcceptInvitationsProvider(dbProvider as any, auth0ManagementProvider as any, {log: () => {void 0}} as any);
   });
 
   afterEach(() => {

@@ -1,5 +1,6 @@
 import { DBProvider } from '../modules/app-providers/db.provider.js';
 import { Auth0ManagementProvider } from '../modules/auth/providers/auth0-management.provider.js';
+import { insertAuditLog } from '../modules/common/providers/audit-logs.provider.js';
 
 export interface Logger {
   info(message: string, meta?: unknown): void;
@@ -46,10 +47,18 @@ export async function cleanupExpiredInvitations(
             invitation.id,
           ]);
 
-          await client.query(
-            `INSERT INTO accounter_schema.audit_logs (action, entity, entity_id, details)
-             VALUES ('INVITATION_EXPIRED_CLEANUP', 'Invitation', $1, $2)`,
-            [invitation.id, JSON.stringify({ auth0_user_id: invitation.auth0_user_id })],
+          await insertAuditLog.run(
+            {
+              ownerId: null,
+              userId: null,
+              auth0UserId: null,
+              action: 'INVITATION_EXPIRED_CLEANUP',
+              entity: 'Invitation',
+              entityId: invitation.id,
+              details: { auth0_user_id: invitation.auth0_user_id },
+              ipAddress: null,
+            },
+            client,
           );
 
           await client.query('COMMIT');

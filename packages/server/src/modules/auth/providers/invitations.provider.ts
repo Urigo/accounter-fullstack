@@ -141,7 +141,9 @@ export class InvitationsProvider {
       });
 
       await this.auditLogsProvider.insertAuditLog({
+        ownerId: invitation.business_id,
         userId: invitedByUserId,
+        auth0UserId,
         action: 'INVITATION_CREATED',
         entity: 'Invitation',
         entityId: invitation.id,
