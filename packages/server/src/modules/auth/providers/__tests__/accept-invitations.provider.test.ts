@@ -3,7 +3,7 @@ import { GraphQLError } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const pgTypedRuntimeMock = vi.hoisted(() => {
-  const runMocks = Array.from({ length: 8 }, () => vi.fn());
+  const runMocks = Array.from({ length: 7 }, () => vi.fn());
   let sqlCallIndex = 0;
 
   return {
@@ -30,7 +30,6 @@ const [
   getInvitationByTokenRun,
   getUserIdByAuth0UserIdRun,
   insertAcceptedBusinessUserRun,
-  getPendingBusinessUserForInvitationRun,
   updateBusinessUserAuth0IdRun,
   insertAuditLogRun,
 ] = pgTypedRuntimeMock.runMocks;
@@ -38,6 +37,7 @@ const [
 function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 'inv-1',
+    user_id: 'invited-user',
     business_id: 'business-1',
     role_id: 'employee',
     auth0_user_id: 'auth0|invitee',
@@ -112,7 +112,6 @@ describe('AcceptInvitationsProvider', () => {
       },
       dbClient,
     );
-    expect(getPendingBusinessUserForInvitationRun).not.toHaveBeenCalled();
     expect(updateBusinessUserAuth0IdRun).not.toHaveBeenCalled();
     expect(auth0ManagementProvider.unblockUser).toHaveBeenCalledWith('auth0|invitee');
     expect(dbClient.release).toHaveBeenCalledOnce();
@@ -121,21 +120,16 @@ describe('AcceptInvitationsProvider', () => {
   it('updates pending business user when caller is authenticated but not found in business_users', async () => {
     getInvitationForAcceptanceRun.mockResolvedValue([activeInvitation()]);
     getUserIdByAuth0UserIdRun.mockResolvedValue([]);
-    getPendingBusinessUserForInvitationRun.mockResolvedValue([{ user_id: 'pending-user' }]);
     updateBusinessUserAuth0IdRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
     insertAuditLogRun.mockResolvedValue([]);
 
     await provider.acceptInvitation('token-2', 'auth0|caller');
 
-    expect(getPendingBusinessUserForInvitationRun).toHaveBeenCalledWith(
-      { ownerId: 'business-1', roleId: 'employee' },
-      dbClient,
-    );
     expect(updateBusinessUserAuth0IdRun).toHaveBeenCalledWith(
       {
         auth0UserId: 'auth0|caller',
-        userId: 'pending-user',
+        userId: 'invited-user',
         ownerId: 'business-1',
       },
       dbClient,
@@ -148,7 +142,6 @@ describe('AcceptInvitationsProvider', () => {
     getInvitationForAcceptanceRun.mockResolvedValue([
       activeInvitation({ auth0_user_id: 'auth0|from-invitation' }),
     ]);
-    getPendingBusinessUserForInvitationRun.mockResolvedValue([{ user_id: 'pending-user' }]);
     updateBusinessUserAuth0IdRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
     insertAuditLogRun.mockResolvedValue([]);
@@ -159,7 +152,7 @@ describe('AcceptInvitationsProvider', () => {
     expect(updateBusinessUserAuth0IdRun).toHaveBeenCalledWith(
       {
         auth0UserId: 'auth0|from-invitation',
-        userId: 'pending-user',
+        userId: 'invited-user',
         ownerId: 'business-1',
       },
       dbClient,

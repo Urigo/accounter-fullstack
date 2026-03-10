@@ -31,6 +31,7 @@ const getInvitationsByTokens = sql<IGetInvitationsByTokensQuery>`
 
 const insertInvitation = sql<IInsertInvitationQuery>`
   INSERT INTO accounter_schema.invitations (
+    user_id,
     business_id,
     email,
     role_id,
@@ -41,7 +42,7 @@ const insertInvitation = sql<IInsertInvitationQuery>`
     invited_by_business_id,
     expires_at
   )
-  VALUES ($ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
+  VALUES ($userId, $ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
   RETURNING id, email, business_id, role_id, expires_at;
 `;
 
@@ -111,6 +112,7 @@ export class InvitationsProvider {
       const localUserId = randomUUID();
 
       const invitationParams: IInsertInvitationParams = {
+        userId: localUserId,
         email,
         roleId,
         tokenHash,
