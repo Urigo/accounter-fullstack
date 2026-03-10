@@ -34,23 +34,30 @@ export async function cleanupExpiredInvitations(
           await auth0.deleteUser(invitation.auth0_user_id);
         }
 
-        await client.query(
-          `DELETE FROM accounter_schema.business_users
-           WHERE user_id = $1 AND auth0_user_id IS NULL`,
-          [invitation.user_id],
-        );
+        await client.query('BEGIN');
+        try {
+          await client.query(
+            `DELETE FROM accounter_schema.business_users
+             WHERE user_id = $1 AND auth0_user_id IS NULL`,
+            [invitation.user_id],
+          );
 
-        await client.query('DELETE FROM accounter_schema.invitations WHERE id = $1', [
-          invitation.id,
-        ]);
+          await client.query('DELETE FROM accounter_schema.invitations WHERE id = $1', [
+            invitation.id,
+          ]);
 
-        await client.query(
-          `INSERT INTO accounter_schema.audit_logs (action, entity, entity_id, details)
-           VALUES ('INVITATION_EXPIRED_CLEANUP', 'Invitation', $1, $2)`,
-          [invitation.id, JSON.stringify({ auth0_user_id: invitation.auth0_user_id })],
-        );
+          await client.query(
+            `INSERT INTO accounter_schema.audit_logs (action, entity, entity_id, details)
+             VALUES ('INVITATION_EXPIRED_CLEANUP', 'Invitation', $1, $2)`,
+            [invitation.id, JSON.stringify({ auth0_user_id: invitation.auth0_user_id })],
+          );
 
-        deleted++;
+          await client.query('COMMIT');
+          deleted++;
+        } catch (dbError) {
+          await client.query('ROLLBACK');
+          throw dbError;
+        }
       } catch (err) {
         logger.error('Failed to cleanup invitation', { invitationId: invitation.id, err });
         errors++;

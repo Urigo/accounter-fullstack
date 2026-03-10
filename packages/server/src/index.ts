@@ -64,8 +64,12 @@ async function main() {
         CLEANUP_SCHEDULE_MINUTE_UTC,
         DAY_IN_MS,
         async () => {
-          const result = await cleanupExpiredInvitations(dbProvider, auth0Provider, logger);
-          logger.info('Invitation cleanup complete', result);
+          try {
+            const result = await cleanupExpiredInvitations(dbProvider, auth0Provider, logger);
+            logger.info('Invitation cleanup complete', result);
+          } catch (error) {
+            logger.error('Scheduled invitation cleanup run failed', { error });
+          }
         },
       )
     : null;

@@ -27,13 +27,29 @@ export function scheduleDailyAtUtc(
   task: () => Promise<void>,
 ): { cancel: () => void } {
   let interval: NodeJS.Timeout | null = null;
+  let inFlight = false;
+
+  const runTaskSafely = async () => {
+    if (inFlight) {
+      return;
+    }
+
+    inFlight = true;
+    try {
+      await task();
+    } catch (error) {
+      console.error('Scheduled task failed', { error });
+    } finally {
+      inFlight = false;
+    }
+  };
 
   const delay = msUntilNextUtcRun(hour, minute);
   const firstRunTimer = setTimeout(() => {
-    void task();
+    void runTaskSafely();
 
     interval = setInterval(() => {
-      void task();
+      void runTaskSafely();
     }, intervalInMs);
     interval.unref();
   }, delay);
