@@ -110,7 +110,7 @@ describe('generateApiKey mutation', () => {
   it('plaintext key is 128 hex characters', async () => {
     const result = await generateApiKeyResolver(
       {},
-      { name: 'automation key', roleId: 'accountant' },
+      { name: 'automation key', roleId: 'scraper' },
       createContext(),
       mockInfo,
     );
@@ -122,7 +122,7 @@ describe('generateApiKey mutation', () => {
   it('stores SHA-256 hash in database (not plaintext)', async () => {
     const result = await generateApiKeyResolver(
       {},
-      { name: 'finance sync key', roleId: 'employee' },
+      { name: 'finance sync key', roleId: 'scraper' },
       createContext(),
       mockInfo,
     );
@@ -136,20 +136,23 @@ describe('generateApiKey mutation', () => {
     expect(params).not.toContain(result.apiKey);
   });
 
-  it('rejects business_owner roleId for API keys', async () => {
-    await expect(
-      generateApiKeyResolver(
-        {},
-        { name: 'forbidden key', roleId: 'business_owner' },
-        createContext(),
-        mockInfo,
-      ),
-    ).rejects.toSatisfy(error => {
-      return error instanceof GraphQLError && error.extensions?.code === 'INVALID_ARGUMENT';
-    });
-
-    expect(mockDb.query).not.toHaveBeenCalled();
-    expect(mockAuditProvider.log).not.toHaveBeenCalled();
+  it('rejects invalid roleIds for API keys', async () => {
+    const INVALID_ROLES = ['business_owner', 'employee', 'accountant'];
+    for (const roleId of INVALID_ROLES) {
+      await expect(
+        generateApiKeyResolver(
+          {},
+          { name: 'forbidden key', roleId },
+          createContext(),
+          mockInfo,
+        ),
+      ).rejects.toSatisfy(error => {
+        return error instanceof GraphQLError && error.extensions?.code === 'INVALID_ARGUMENT';
+      });
+  
+      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockAuditProvider.log).not.toHaveBeenCalled();
+    }
   });
 
   it('API key returned only in response (not stored in plaintext)', async () => {

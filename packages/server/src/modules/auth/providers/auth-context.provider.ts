@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
@@ -5,6 +6,7 @@ import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import { ALLOWED_API_KEY_ROLES } from './api-keys.provider.js';
 
 // Global cache for JWKS functions to prevent re-fetching on every request
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -20,7 +22,7 @@ export class AuthContextProvider {
   constructor(
     @Inject(ENVIRONMENT) private env: Environment,
     @Inject(RAW_AUTH) private rawAuth: RawAuth,
-    private db: DBProvider,
+    @Inject(DBProvider) private db: DBProvider,
   ) {}
 
   public async getAuthContext(): Promise<AuthContext | null> {
@@ -42,11 +44,82 @@ export class AuthContextProvider {
     }
 
     if (this.rawAuth.authType === 'apiKey') {
-      // Placeholder for Phase 7
-      return null;
+      this.handlingAuth = this.handleApiKeyAuth();
+      return this.handlingAuth;
     }
 
     return null;
+  }
+
+  private async handleApiKeyAuth(): Promise<AuthContext | null> {
+    const token = this.rawAuth.token;
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const context = await this.resolveApiKeyContext(token);
+      this.cachedContext = context;
+      this.handlingAuth = null;
+      return context;
+    } catch (error) {
+      console.error('AuthContext: Failed to process API key', error);
+      this.handlingAuth = null;
+      return null;
+    }
+  }
+
+  private async resolveApiKeyContext(plaintextKey: string): Promise<AuthContext | null> {
+    const keyHash = createHash('sha256').update(plaintextKey).digest('hex');
+
+    const { rows } = await this.db.query<{
+      id: string;
+      business_id: string;
+      role_id: string;
+    }>(
+      `SELECT id, business_id, role_id
+       FROM accounter_schema.api_keys
+       WHERE key_hash = $1
+         AND revoked_at IS NULL`,
+      [keyHash],
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    const apiKey = rows[0];
+
+    if (!ALLOWED_API_KEY_ROLES.includes(apiKey.role_id as (typeof ALLOWED_API_KEY_ROLES)[number])) {
+      console.warn(`AuthContext: API key has disallowed role '${apiKey.role_id}', rejecting`);
+      return null;
+    }
+
+    // Reduce write amplification by touching usage timestamp at most once per hour.
+    await this.db.query(
+      `UPDATE accounter_schema.api_keys
+       SET last_used_at = NOW()
+       WHERE id = $1
+         AND (last_used_at IS NULL OR last_used_at < NOW() - INTERVAL '1 hour')`,
+      [apiKey.id],
+    );
+
+    return {
+      authType: 'apiKey',
+      token: plaintextKey,
+      tenant: {
+        businessId: apiKey.business_id,
+      },
+      user: {
+        userId: `api-key:${apiKey.id}`,
+        auth0UserId: null,
+        email: '',
+        roleId: apiKey.role_id,
+        permissions: [],
+        emailVerified: true,
+        permissionsVersion: 0,
+      },
+    };
   }
 
   private async handleJwtAuth(): Promise<AuthContext | null> {

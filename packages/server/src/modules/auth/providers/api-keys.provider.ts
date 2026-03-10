@@ -7,7 +7,7 @@ import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js
 import type { IInsertApiKeyQuery } from '../types.js';
 import { AuthContextProvider } from './auth-context.provider.js';
 
-const ALLOWED_API_KEY_ROLES = ['scraper', 'accountant', 'employee'] as const;
+export const ALLOWED_API_KEY_ROLES = ['scraper'] as const;
 
 export type ApiKeyRecord = {
   id: string;
