@@ -262,8 +262,9 @@ export class TenantAwareDBClient {
     }
 
     // API keys use a non-UUID identifier (e.g. "api-key:<id>") for app-level tracing.
-    // The DB helper get_current_user_id() casts app.current_user_id to UUID, so we must
-    // pass NULL (empty string) for API key sessions to avoid a runtime cast error.
+    // The DB helper get_current_user_id() casts app.current_user_id to UUID and handles
+    // empty string via NULLIF(..., ''), so we pass '' for API key sessions to avoid a
+    // runtime cast error while explicitly clearing the setting.
     const userIdValue = authType === 'apiKey' ? null : (user?.userId ?? null);
 
     await client.query(

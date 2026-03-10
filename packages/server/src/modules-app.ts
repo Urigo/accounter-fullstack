@@ -62,6 +62,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
   const application = createApplication({
     modules: [
       commonModule,
+      authModule,
       accountantApprovalModule,
       businessTripsModule,
       chargesModule,
@@ -89,7 +90,6 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       contractsModule,
       bankDepositsModule,
       adminContextModule,
-      authModule,
     ],
     providers: [
       {
