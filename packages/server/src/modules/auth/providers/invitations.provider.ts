@@ -7,7 +7,8 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuditLogsProvider } from '../../common/providers/audit-logs.provider.js';
 import type {
-  IGetInvitationsByEmailsQuery,
+  IGetActiveInvitationsByEmailsQuery,
+  IGetInvitationsByTokensQuery,
   IInsertInvitationParams,
   IInsertInvitationQuery,
 } from '../types.js';
@@ -15,13 +16,18 @@ import { BusinessUsersProvider } from './business-users.provider.js';
 
 const INVITATION_EXPIRATION_PERIOD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-const getInvitationsByEmails = sql<IGetInvitationsByEmailsQuery>`
+const getActiveInvitationsByEmails = sql<IGetActiveInvitationsByEmailsQuery>`
   SELECT id, email
   FROM accounter_schema.invitations
   WHERE business_id = $ownerId
     AND lower(email) = ANY(SELECT lower(u) FROM unnest($emails::varchar[]) AS u)
     AND accepted_at IS NULL
     AND expires_at > NOW();`;
+
+const getInvitationsByTokens = sql<IGetInvitationsByTokensQuery>`
+  SELECT id, business_id, role_id, auth0_user_id, accepted_at, expires_at, token_hash
+    FROM accounter_schema.invitations
+    WHERE token_hash IN $$tokenHashes;`;
 
 const insertInvitation = sql<IInsertInvitationQuery>`
   INSERT INTO accounter_schema.invitations (
@@ -36,7 +42,7 @@ const insertInvitation = sql<IInsertInvitationQuery>`
     expires_at
   )
   VALUES ($ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
-  RETURNING id, email, role_id, expires_at;
+  RETURNING id, email, business_id, role_id, expires_at;
 `;
 
 @Injectable({
@@ -53,7 +59,7 @@ export class InvitationsProvider {
 
   private async batchInvitationsByEmails(emails: readonly string[]) {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    const invitations = await getInvitationsByEmails.run(
+    const invitations = await getActiveInvitationsByEmails.run(
       {
         emails: [...emails],
         ownerId,
@@ -71,6 +77,21 @@ export class InvitationsProvider {
       cacheKeyFn: email => email.toLowerCase(),
     },
   );
+
+  private async batchInvitationsByTokens(tokenHashes: readonly string[]) {
+    const invitations = await getInvitationsByTokens.run(
+      {
+        tokenHashes: [...tokenHashes],
+      },
+      this.db,
+    );
+    return tokenHashes.map(tokenHash => invitations.filter(t => t.token_hash === tokenHash));
+  }
+
+  public getInvitationByTokensLoader = new DataLoader((tokenHashes: readonly string[]) =>
+    this.batchInvitationsByTokens(tokenHashes),
+  );
+
   public async insertInvitation({
     email,
     roleId,
@@ -113,6 +134,7 @@ export class InvitationsProvider {
         userId: localUserId,
         auth0UserId: null,
         roleId,
+        ownerId: invitation.business_id,
       });
 
       await this.auditLogsProvider.insertAuditLog({

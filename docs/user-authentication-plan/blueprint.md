@@ -2442,12 +2442,12 @@ enhancement.
 
 **Tasks**:
 
-- Create `packages/server/src/modules/auth/providers/audit.provider.ts`
+- Create `packages/server/src/modules/common/providers/audit-logs.provider.ts`
 - Implement async logging provider:
 
   ```typescript
   @Injectable({ scope: Scope.Operation })
-  export class AuditProvider {
+  export class AuditLogsProvider {
     constructor(private db: TenantAwareDBClient) {}
 
     async log(event: AuditEvent): Promise<void> {

@@ -9,12 +9,13 @@ const insertAuditLog = sql<IInsertAuditLogQuery>`
   INSERT INTO accounter_schema.audit_logs (
           business_id,
           user_id,
+          auth0_user_id,
           action,
           entity,
           entity_id,
           details
         )
-        VALUES ($ownerId, $userId, $action, $entity, $entityId, $details::jsonb);
+        VALUES ($ownerId, $userId, $auth0UserId, $action, $entity, $entityId, $details::jsonb);
 `;
 
 @Injectable({

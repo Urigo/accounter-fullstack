@@ -80,3 +80,21 @@ export function mapAuth0Error(error: unknown): GraphQLError {
     },
   });
 }
+
+export function invalidTokenError(): GraphQLError {
+  return new GraphQLError('Invalid invitation token', {
+    extensions: { code: 'TOKEN_INVALID' },
+  });
+}
+
+export function expiredTokenError(): GraphQLError {
+  return new GraphQLError('Invitation token expired', {
+    extensions: { code: 'TOKEN_EXPIRED' },
+  });
+}
+
+export function alreadyAcceptedError(): GraphQLError {
+  return new GraphQLError('Invitation already accepted', {
+    extensions: { code: 'TOKEN_ALREADY_USED' },
+  });
+}
