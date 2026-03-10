@@ -15,6 +15,7 @@ const createInvitation = invitationsResolvers.Mutation?.createInvitation as (
   email: string;
   roleId: string;
   expiresAt: Date;
+  token: string;
 }>;
 
 const mockInfo = {} as GraphQLResolveInfo;
@@ -64,6 +65,7 @@ describe('createInvitation resolver', () => {
         email: 'new.user@example.com',
         roleId: 'employee',
         expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+        token: 'invitation-token-abc',
       }),
     };
   });
@@ -104,6 +106,7 @@ describe('createInvitation resolver', () => {
       email: 'new.user@example.com',
       roleId: 'employee',
       expiresAt: new Date('2030-01-01T00:00:00.000Z'),
+      token: 'invitation-token-abc',
     });
   });
 

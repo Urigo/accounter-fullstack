@@ -11,7 +11,6 @@ import {
 import type {
   IGetInvitationByTokenQuery,
   IGetInvitationForAcceptanceQuery,
-  IGetPendingBusinessUserForInvitationQuery,
   IGetUserIdByAuth0UserIdQuery,
   IInsertAcceptedBusinessUserQuery,
   IInsertAuditLogQuery,
@@ -27,7 +26,7 @@ const updateInvitationAcceptance = sql<IUpdateInvitationAcceptanceQuery>`
 `;
 
 const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
-  SELECT id, business_id, role_id, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, auth0_user_id, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash
     AND accepted_at IS NULL
@@ -36,7 +35,7 @@ const getInvitationForAcceptance = sql<IGetInvitationForAcceptanceQuery>`
 `;
 
 const getInvitationByToken = sql<IGetInvitationByTokenQuery>`
-  SELECT id, business_id, role_id, auth0_user_id, accepted_at, expires_at
+  SELECT id, user_id, business_id, role_id, auth0_user_id, accepted_at, expires_at
   FROM accounter_schema.invitations
   WHERE token_hash = $tokenHash;
 `;
@@ -51,17 +50,6 @@ const getUserIdByAuth0UserId = sql<IGetUserIdByAuth0UserIdQuery>`
 const insertAcceptedBusinessUser = sql<IInsertAcceptedBusinessUserQuery>`
   INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
   VALUES ($userId, $auth0UserId, $ownerId, $roleId);
-`;
-
-const getPendingBusinessUserForInvitation = sql<IGetPendingBusinessUserForInvitationQuery>`
-  SELECT user_id
-  FROM accounter_schema.business_users
-  WHERE business_id = $ownerId
-    AND role_id = $roleId
-    AND auth0_user_id IS NULL
-  ORDER BY created_at ASC
-  LIMIT 1
-  FOR UPDATE;
 `;
 
 const updateBusinessUserAuth0Id = sql<IUpdateBusinessUserAuth0IdQuery>`
@@ -130,6 +118,21 @@ export class AcceptInvitationsProvider {
         throw invalidTokenError();
       }
 
+      if (!invitation.user_id) {
+        throw invalidTokenError();
+      }
+
+      const assignAuth0UserToInvitedUser = async () => {
+        await updateBusinessUserAuth0Id.run(
+          {
+            auth0UserId: effectiveAuth0UserId,
+            userId: invitation.user_id,
+            ownerId: invitation.business_id,
+          },
+          client,
+        );
+      };
+
       let userId: string;
 
       if (auth0UserId) {
@@ -148,52 +151,12 @@ export class AcceptInvitationsProvider {
             client,
           );
         } else {
-          const pendingUserResult = await getPendingBusinessUserForInvitation.run(
-            {
-              ownerId: invitation.business_id,
-              roleId: invitation.role_id,
-            },
-            client,
-          );
-
-          if (pendingUserResult.length === 0) {
-            throw invalidTokenError();
-          }
-
-          userId = pendingUserResult[0].user_id;
-
-          await updateBusinessUserAuth0Id.run(
-            {
-              auth0UserId: effectiveAuth0UserId,
-              userId,
-              ownerId: invitation.business_id,
-            },
-            client,
-          );
+          userId = invitation.user_id;
+          await assignAuth0UserToInvitedUser();
         }
       } else {
-        const pendingUserResult = await getPendingBusinessUserForInvitation.run(
-          {
-            ownerId: invitation.business_id,
-            roleId: invitation.role_id,
-          },
-          client,
-        );
-
-        if (pendingUserResult.length === 0) {
-          throw invalidTokenError();
-        }
-
-        userId = pendingUserResult[0].user_id;
-
-        await updateBusinessUserAuth0Id.run(
-          {
-            auth0UserId: effectiveAuth0UserId,
-            userId,
-            ownerId: invitation.business_id,
-          },
-          client,
-        );
+        userId = invitation.user_id;
+        await assignAuth0UserToInvitedUser();
       }
 
       if (invitation.auth0_user_id) {

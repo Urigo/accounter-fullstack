@@ -31,6 +31,7 @@ const getInvitationsByTokens = sql<IGetInvitationsByTokensQuery>`
 
 const insertInvitation = sql<IInsertInvitationQuery>`
   INSERT INTO accounter_schema.invitations (
+    user_id,
     business_id,
     email,
     role_id,
@@ -41,7 +42,7 @@ const insertInvitation = sql<IInsertInvitationQuery>`
     invited_by_business_id,
     expires_at
   )
-  VALUES ($ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
+  VALUES ($userId, $ownerId, $email, $roleId, $tokenHash, $auth0UserCreated, $auth0UserId, $invitedByUserId, $invitedByBusinessId, $expiresAt)
   RETURNING id, email, business_id, role_id, expires_at;
 `;
 
@@ -111,6 +112,7 @@ export class InvitationsProvider {
       const localUserId = randomUUID();
 
       const invitationParams: IInsertInvitationParams = {
+        userId: localUserId,
         email,
         roleId,
         tokenHash,
@@ -119,6 +121,7 @@ export class InvitationsProvider {
         invitedByUserId,
         invitedByBusinessId:
           ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
+        ownerId: ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
         expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
       };
       const insertedInvitation = await insertInvitation.run(invitationParams, client);
@@ -150,6 +153,7 @@ export class InvitationsProvider {
         email: invitation.email,
         roleId: invitation.role_id,
         expiresAt: invitation.expires_at,
+        token,
       };
     });
   }

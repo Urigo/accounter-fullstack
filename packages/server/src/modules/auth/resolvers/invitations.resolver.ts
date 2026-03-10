@@ -66,7 +66,10 @@ export const invitationsResolvers: AuthModule.Resolvers = {
           .get(Auth0ManagementProvider)
           .deleteUser(auth0UserId)
           .catch(cleanupError => {
-            void cleanupError;
+            console.error(
+              `Failed to cleanup Auth0 user ${auth0UserId} after DB error:`,
+              cleanupError,
+            );
           });
         // Re-throw the original error to ensure the GraphQL operation fails correctly.
         throw error;
