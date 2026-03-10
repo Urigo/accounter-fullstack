@@ -7,12 +7,19 @@ import { useGraphQLModules } from '@envelop/graphql-modules';
 import { useHive } from '@graphql-hive/yoga';
 import { useDeferStream } from '@graphql-yoga/plugin-defer-stream';
 import { env } from './environment.js';
+import { cleanupExpiredInvitations, type Logger } from './jobs/cleanup-expired-invitations.js';
+import { scheduleDailyAtUtc } from './jobs/utils.js';
 import { createGraphQLApp } from './modules-app.js';
+import { DBProvider } from './modules/app-providers/db.provider.js';
+import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { AccounterContext } from './shared/types/index.js';
 
 const { Pool } = pg;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const CLEANUP_SCHEDULE_HOUR_UTC = 2;
+const CLEANUP_SCHEDULE_MINUTE_UTC = 0;
 
 async function main() {
   // Create a shared connection pool for the entire application
@@ -30,6 +37,48 @@ async function main() {
     console.log(`Auth0 configured: ${env.auth0.domain}`);
   } else {
     console.log('Auth0 not configured');
+  }
+
+  const dbProvider = new DBProvider(pool);
+  const auth0Provider = new Auth0ManagementProvider(env);
+  const logger: Logger = {
+    info: (message, meta) => {
+      if (meta !== undefined) {
+        console.log(message, meta);
+        return;
+      }
+      console.log(message);
+    },
+    error: (message, meta) => {
+      if (meta !== undefined) {
+        console.error(message, meta);
+        return;
+      }
+      console.error(message);
+    },
+  };
+
+  const cleanupSchedule = env.auth0
+    ? scheduleDailyAtUtc(
+        CLEANUP_SCHEDULE_HOUR_UTC,
+        CLEANUP_SCHEDULE_MINUTE_UTC,
+        DAY_IN_MS,
+        async () => {
+          try {
+            const result = await cleanupExpiredInvitations(dbProvider, auth0Provider, logger);
+            logger.info('Invitation cleanup complete', result);
+          } catch (error) {
+            logger.error('Scheduled invitation cleanup run failed', { error });
+          }
+        },
+      )
+    : null;
+
+  if (cleanupSchedule) {
+    logger.info('Scheduled invitation cleanup job', {
+      cron: `${CLEANUP_SCHEDULE_MINUTE_UTC} ${CLEANUP_SCHEDULE_HOUR_UTC} * * *`,
+      timezone: 'UTC',
+    });
   }
 
   const { application, transformedSchema } = await createGraphQLApp(env, pool);
@@ -78,6 +127,8 @@ async function main() {
     await new Promise<void>(resolve => {
       server.close(() => resolve());
     });
+
+    cleanupSchedule?.cancel();
 
     // Allow in-flight requests some time to complete, then close the pool
     const FORCE_EXIT_TIMEOUT_MS = 10_000;
