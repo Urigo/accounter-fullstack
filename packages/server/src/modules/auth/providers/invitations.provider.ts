@@ -119,6 +119,7 @@ export class InvitationsProvider {
         invitedByUserId,
         invitedByBusinessId:
           ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
+        ownerId: ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId,
         expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
       };
       const insertedInvitation = await insertInvitation.run(invitationParams, client);
@@ -150,6 +151,7 @@ export class InvitationsProvider {
         email: invitation.email,
         roleId: invitation.role_id,
         expiresAt: invitation.expires_at,
+        token,
       };
     });
   }

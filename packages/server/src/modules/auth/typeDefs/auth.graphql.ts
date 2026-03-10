@@ -20,6 +20,7 @@ export default gql`
     email: String!
     roleId: String!
     expiresAt: DateTime!
+    token: String!
   }
 
   " Result payload returned after accepting an invitation "

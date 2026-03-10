@@ -15,6 +15,7 @@ const createInvitation = invitationsResolvers.Mutation?.createInvitation as (
   email: string;
   roleId: string;
   expiresAt: Date;
+  token: string;
 }>;
 
 const mockInfo = {} as GraphQLResolveInfo;
