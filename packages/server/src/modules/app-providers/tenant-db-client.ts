@@ -261,7 +261,11 @@ export class TenantAwareDBClient {
       throw new Error('Missing businessId in AuthContext');
     }
 
-    const userIdValue = user?.userId ?? null;
+    // API keys use a non-UUID identifier (e.g. "api-key:<id>") for app-level tracing.
+    // The DB helper get_current_user_id() casts app.current_user_id to UUID and handles
+    // empty string via NULLIF(..., ''), so we pass '' for API key sessions to avoid a
+    // runtime cast error while explicitly clearing the setting.
+    const userIdValue = authType === 'apiKey' ? '' : (user?.userId ?? null);
 
     await client.query(
       `

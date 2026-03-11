@@ -47,8 +47,9 @@ describe('AuthContextProvider', () => {
     expect(result).toBeNull();
   });
 
-  it('should return null for apiKey (Phase 7 support)', async () => {
+  it('should return null for invalid apiKey', async () => {
     provider = new AuthContextProvider(mockEnv, { authType: 'apiKey', token: 'key' }, mockDBProvider);
+    mockDBProvider.query.mockResolvedValueOnce({ rows: [] });
     const result = await provider.getAuthContext();
     expect(result).toBeNull();
   });

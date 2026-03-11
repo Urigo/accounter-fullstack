@@ -8,10 +8,17 @@ export default gql`
   " Role-based authorization: requires user to have any of the specified roles "
   directive @requiresAnyRole(roles: [String!]!) on FIELD_DEFINITION
 
+  extend type Query {
+    listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
+  }
+
   extend type Mutation {
     createInvitation(email: String!, roleId: String!): InvitationPayload!
       @requiresRole(role: "business_owner")
     acceptInvitation(token: String!): AcceptInvitationPayload!
+    generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
+      @requiresRole(role: "business_owner")
+    revokeApiKey(id: ID!): Boolean! @requiresRole(role: "business_owner")
   }
 
   " Invitation payload returned after creating an invitation "
@@ -28,5 +35,20 @@ export default gql`
     success: Boolean!
     businessId: ID!
     roleId: String!
+  }
+
+  " API key payload returned after generating a new API key "
+  type GenerateApiKeyPayload {
+    apiKey: String!
+    record: ApiKey!
+  }
+
+  " API key metadata (plaintext key is never stored) "
+  type ApiKey {
+    id: ID!
+    name: String!
+    roleId: String!
+    lastUsedAt: DateTime
+    createdAt: DateTime!
   }
 `;

@@ -7,7 +7,7 @@ export interface AuthUser {
   permissions: string[];
   emailVerified: boolean;
   permissionsVersion: number;
-  auth0UserId?: string;
+  auth0UserId?: string | null;
 }
 
 export interface TenantContext {

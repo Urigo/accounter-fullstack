@@ -127,6 +127,7 @@ export default [
               'FinancialAmount',
               'FinancialIntAmount',
               'FlagForeignFeeTransactionsResult',
+              'GenerateApiKeyPayload',
               'GeneratedLedgerRecords',
               'GreenInvoiceClient',
               'GreenInvoiceDiscount',
