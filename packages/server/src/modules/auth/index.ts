@@ -7,14 +7,14 @@ import { BusinessUsersProvider } from './providers/business-users.provider.js';
 import { InvitationsProvider } from './providers/invitations.provider.js';
 import { apiKeysResolvers } from './resolvers/api-keys.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
-import authDirectives from './typeDefs/auth.graphql.js';
+import auth from './typeDefs/auth.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
 
 export const authModule = createModule({
   id: 'auth',
   dirname: __dirname,
-  typeDefs: [authDirectives],
+  typeDefs: [auth],
   resolvers: [invitationsResolvers, apiKeysResolvers],
   providers: () => [
     AcceptInvitationsProvider,

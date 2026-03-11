@@ -6,7 +6,7 @@ import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
-import { ALLOWED_API_KEY_ROLES } from './api-keys.provider.js';
+import { ALLOWED_API_KEY_ROLES } from '../helpers/api-keys.helper.js';
 
 // Global cache for JWKS functions to prevent re-fetching on every request
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
