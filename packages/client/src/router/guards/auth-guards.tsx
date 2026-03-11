@@ -8,7 +8,7 @@ type GuardProps = {
   children: ReactElement;
 };
 
-export function RequireAuthGuard({ children }: GuardProps): ReactElement {
+export function ProtectedRoute({ children }: GuardProps): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
 
@@ -17,7 +17,13 @@ export function RequireAuthGuard({ children }: GuardProps): ReactElement {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to={ROUTES.LOGIN}
+        replace
+        state={{ returnTo: location.pathname + location.search + location.hash }}
+      />
+    );
   }
 
   return children;

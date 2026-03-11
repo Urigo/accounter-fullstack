@@ -1,0 +1,119 @@
+// @vitest-environment jsdom
+
+import React from 'react';
+import { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ProtectedRoute } from '../../router/guards/auth-guards.js';
+
+const { useAuth0Mock } = vi.hoisted(() => ({
+  useAuth0Mock: vi.fn(),
+}));
+
+vi.mock('@auth0/auth0-react', () => ({
+  useAuth0: useAuth0Mock,
+}));
+
+type AuthState = {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+};
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+async function renderProtectedPath(pathname: string, authState: AuthState) {
+  useAuth0Mock.mockReturnValue(authState);
+
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/login',
+        element: React.createElement('div', null, 'Login Page'),
+      },
+      {
+        path: '/charges',
+        element: React.createElement(
+          ProtectedRoute,
+          null,
+          React.createElement('div', null, 'Charges Page'),
+        ),
+      },
+    ],
+    { initialEntries: [pathname] },
+  );
+
+  const container = document.createElement('div');
+  document.body.append(container);
+
+  let root: Root | null = null;
+  await act(async () => {
+    root = createRoot(container);
+    root.render(React.createElement(RouterProvider, { router }));
+    await Promise.resolve();
+  });
+
+  const html = container.innerHTML;
+
+  const cleanup = async () => {
+    await act(async () => {
+      root?.unmount();
+      await Promise.resolve();
+    });
+    container.remove();
+  };
+
+  return { html, router, cleanup };
+}
+
+describe('ProtectedRoute', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('redirects unauthenticated users to /login', async () => {
+    const { router, cleanup } = await renderProtectedPath('/charges', {
+      isAuthenticated: false,
+      isLoading: false,
+    });
+
+    expect(router.state.location.pathname).toBe('/login');
+    await cleanup();
+  });
+
+  it('preserves attempted path in returnTo state', async () => {
+    const { router, cleanup } = await renderProtectedPath('/charges', {
+      isAuthenticated: false,
+      isLoading: false,
+    });
+
+    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.state).toEqual({ returnTo: '/charges' });
+    await cleanup();
+  });
+
+  it('allows authenticated users to access protected route', async () => {
+    const { html, router, cleanup } = await renderProtectedPath('/charges', {
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    expect(router.state.location.pathname).toBe('/charges');
+    expect(html).toContain('Charges Page');
+    await cleanup();
+  });
+
+  it('renders loading state while auth is loading', async () => {
+    const { html, router, cleanup } = await renderProtectedPath('/charges', {
+      isAuthenticated: false,
+      isLoading: true,
+    });
+
+    expect(router.state.location.pathname).toBe('/charges');
+    expect(html).toMatchSnapshot();
+    // Protected content is not rendered while loading
+    expect(html).not.toContain('Charges Page');
+    expect(router.state.location.pathname).not.toBe('/login');
+    await cleanup();
+  });
+});
