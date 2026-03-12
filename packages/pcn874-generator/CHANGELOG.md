@@ -1,5 +1,36 @@
 # @accounter-toolkit/pcn874-generator
 
+## 0.6.6
+
+### Patch Changes
+
+- [#3034](https://github.com/Urigo/accounter-fullstack/pull/3034)
+  [`88e8bb9`](https://github.com/Urigo/accounter-fullstack/commit/88e8bb914be1965333e0b899537562c8877782a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.28` ↗︎](https://www.npmjs.com/package/zod/v/3.25.28) (from
+    `3.25.14`, in `dependencies`)
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#3038](https://github.com/Urigo/accounter-fullstack/pull/3038)
+  [`4d4e60d`](https://github.com/Urigo/accounter-fullstack/commit/4d4e60dd85f6c7779c556b513e2de844615dd293)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Configurable NPM Registry in CI**: The
+  GitHub Actions setup now includes a `registryUrl` input, allowing for flexible specification of
+  the NPM registry during package publishing.
+  - **Deterministic Dependency Installation**: The `yarn install` command in the CI workflow was
+    updated to use `--frozen-lockfile`, ensuring consistent and reproducible builds by preventing
+    modifications to the `yarn.lock` file.
+  - **Standardized Package Metadata**: `package.json` files across several packages were updated to
+    include comprehensive and consistent metadata, such as `description`, `repository` details,
+    `homepage`, `bugs` URL, and `author` information.
+  - **Explicit NPM Registry Configuration**: The `publishConfig` in multiple `package.json` files
+    was modified to explicitly set the `registry` to `https://registry.npmjs.org`, clarifying the
+    target for package publication.
+
 ## 0.6.5
 
 ### Patch Changes
