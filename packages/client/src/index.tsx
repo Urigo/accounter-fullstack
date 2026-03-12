@@ -6,6 +6,7 @@ import { routes } from './router/config.js';
 import './index.css';
 import 'json-bigint-patch';
 import { ROUTES } from '@/router/routes.js';
+import { isNetworkError } from './lib/auth0-errors.js';
 import { setUrqlAccessTokenProvider } from './providers/urql.js';
 
 const rootElement = document.getElementById('root');
@@ -28,16 +29,31 @@ function Auth0UrqlTokenBridge() {
   const { getAccessTokenSilently } = useAuth0();
 
   // Register token provider during render so route loaders can read it immediately.
-  setUrqlAccessTokenProvider(async () => {
+  setUrqlAccessTokenProvider(async options => {
     try {
-      return await getAccessTokenSilently({
+      const token = await getAccessTokenSilently({
         authorizationParams: {
           audience,
-          scope: 'openid profile email offline_access',
+          // Request API token scopes only; offline_access is requested during interactive login.
+          scope: 'openid profile email',
         },
+        ...options,
       });
-    } catch {
-      return null;
+
+      return { status: 'token', token };
+    } catch (error) {
+      const auth0Error = error as Error & { error?: string };
+
+      // Auth0 uses these codes to indicate the user must authenticate interactively.
+      if (auth0Error.error === 'login_required' || auth0Error.error === 'invalid_token') {
+        return { status: 'unauthenticated' };
+      }
+
+      if (isNetworkError(auth0Error)) {
+        return { status: 'error', error: auth0Error };
+      }
+
+      return { status: 'error', error: auth0Error };
     }
   });
 

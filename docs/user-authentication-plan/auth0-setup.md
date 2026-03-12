@@ -48,6 +48,17 @@ Save:
 - `Domain`
 - Frontend `Client ID`
 
+Refresh token requirements (critical for `getAccessTokenSilently` token renewal):
+
+- Enable `Refresh Token Rotation`
+- Configure both `Absolute Expiration` and `Inactivity Expiration`
+- Ensure `Grant Types` include `Authorization Code` and `Refresh Token`
+
+Note:
+
+- If using `@auth0/auth0-react` in a browser-only SPA, ensure application type and grant settings
+  are compatible with SPA + PKCE flows in your tenant policy.
+
 ### 2.2 API (Backend JWT Audience)
 
 Create or verify an Auth0 API that represents the GraphQL backend.
@@ -58,6 +69,8 @@ Configure:
   - `https://api.accounter.com`
 - `Signing Algorithm`:
   - `RS256`
+- `Allow Offline Access`:
+  - Enabled (required for `offline_access` scope and refresh token issuance)
 
 Save:
 
@@ -166,7 +179,12 @@ Use this checklist after configuration:
 
 - [ ] Auth0 tenant exists and is reachable
 - [ ] Regular Web App configured with correct callback/logout/origin URLs
+- [ ] Callback/logout/web origins/cors values exactly match frontend URL (scheme/host/port, no
+      mismatch)
+- [ ] Refresh Token Rotation enabled with absolute + inactivity expiration configured
+- [ ] App grant types include `Authorization Code` and `Refresh Token`
 - [ ] API exists with RS256 and expected identifier/audience
+- [ ] API `Allow Offline Access` is enabled
 - [ ] M2M app exists and has required Management API scopes
 - [ ] `Username-Password-Authentication` connection enabled
 - [ ] Server Auth0 env vars set (`AUTH0_*`)
@@ -182,6 +200,8 @@ Use this checklist after configuration:
 5. Verify redirect returns to `/auth/callback` and then app home.
 6. Execute a GraphQL request requiring auth and verify it succeeds.
 7. Verify the authenticated Auth0 user is linked in local DB.
+8. Keep session idle until access token expiry (~15 min), then execute an authenticated request and
+   verify silent renewal succeeds without redirect loop.
 
 ## 9. Troubleshooting
 
@@ -200,6 +220,20 @@ Use this checklist after configuration:
 - Symptom: Invitation/password-reset operations fail
   - Cause: Missing Management API scopes or wrong management audience
   - Fix: Verify M2M scopes and `AUTH0_MANAGEMENT_AUDIENCE`
+
+- Symptom: Auth0 `403` from `/oauth/token` (refresh/silent token renewal fails)
+  - Cause: Missing refresh/offline-access settings or URL mismatch
+  - Fix checklist:
+    - Verify app grant types include `Authorization Code` and `Refresh Token`
+    - Verify `Refresh Token Rotation` is enabled with valid expiration settings
+    - Verify API `Allow Offline Access` is enabled
+    - Verify callback/logout/web origins/cors values exactly match current frontend URL
+    - Verify client env values (`VITE_AUTH0_DOMAIN`, `VITE_AUTH0_FRONTEND_CLIENT_ID`,
+      `VITE_AUTH0_AUDIENCE`) match tenant configuration
+    - Force a clean interactive login (logout + clear local session artifacts) to mint a new refresh
+      token after config changes
+    - Check Auth0 logs (`Monitoring -> Logs`) for the exact failure reason (`invalid_grant`,
+      `access_denied`, `unauthorized_client`, etc.)
 
 ## 10. Runtime Configuration Record
 

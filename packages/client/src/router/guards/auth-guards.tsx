@@ -8,7 +8,7 @@ type GuardProps = {
   children: ReactElement;
 };
 
-export function RequireAuthGuard({ children }: GuardProps): ReactElement {
+export function ProtectedRoute({ children }: GuardProps): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
 
@@ -17,7 +17,13 @@ export function RequireAuthGuard({ children }: GuardProps): ReactElement {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={ROUTES.LOGIN} replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to={ROUTES.LOGIN}
+        replace
+        state={{ returnTo: location.pathname + location.search + location.hash }}
+      />
+    );
   }
 
   return children;
@@ -25,12 +31,16 @@ export function RequireAuthGuard({ children }: GuardProps): ReactElement {
 
 export function PublicOnlyGuard({ children }: GuardProps): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
+  const location = useLocation();
+  const isForcedReauth = new URLSearchParams(location.search).get('reauth') === '1';
 
   if (isLoading) {
     return <PageSkeleton />;
   }
 
-  if (isAuthenticated) {
+  // Allow explicit re-authentication flow to render the login page even when
+  // Auth0 still reports an authenticated browser session.
+  if (isAuthenticated && !isForcedReauth) {
     return <Navigate to={ROUTES.HOME} replace />;
   }
 

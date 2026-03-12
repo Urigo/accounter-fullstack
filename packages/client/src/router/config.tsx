@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { ErrorBoundary } from '../components/error-boundary.js';
 import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layout/page-skeleton.js';
-import { PublicOnlyGuard, RequireAuthGuard } from './guards/auth-guards.js';
+import { ProtectedRoute, PublicOnlyGuard } from './guards/auth-guards.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
 import { businessLoader, chargeLoader } from './loaders/index.js';
@@ -182,6 +182,11 @@ const LoginPage = lazy(() =>
 const AuthCallbackPage = lazy(() =>
   import('../components/screens/auth-callback.js').then(m => ({ default: m.AuthCallbackPage })),
 );
+const AcceptInvitationPage = lazy(() =>
+  import('../components/screens/accept-invitation.js').then(m => ({
+    default: m.AcceptInvitationPage,
+  })),
+);
 
 /**
  * Helper to wrap components with Suspense
@@ -223,14 +228,21 @@ export const routes: RouteObject[] = [
           title: 'Processing Login...',
         },
       },
+      {
+        path: ROUTES.ACCEPT_INVITATION(),
+        element: withSuspense(AcceptInvitationPage),
+        handle: {
+          title: 'Accept Invitation',
+        },
+      },
 
       // Protected routes (require authentication)
       {
         path: '/',
         element: (
-          <RequireAuthGuard>
+          <ProtectedRoute>
             <DashboardLayoutRoute />
-          </RequireAuthGuard>
+          </ProtectedRoute>
         ),
         errorElement: <ErrorBoundary />,
         children: [

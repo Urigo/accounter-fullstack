@@ -1,6 +1,8 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import { AUTH0_ERROR_MESSAGES } from '../lib/auth0-errors.js';
+import { clearStoredAuth0Session } from '../lib/auth0-session.js';
 import { ROUTES } from '../router/routes.js';
 import { Button } from './ui/button.jsx';
 
@@ -8,22 +10,37 @@ export function LoginPage(): ReactElement {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   const navigate = useNavigate();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isReauthFlow = searchParams.get('reauth') === '1';
+  const returnTo =
+    (location.state as { returnTo?: string } | null)?.returnTo ??
+    (isReauthFlow ? sessionStorage.getItem('auth:returnTo') : null) ??
+    ROUTES.HOME;
+  const errorParam = searchParams.get('error');
 
-  const authError =
-    new URLSearchParams(location.search).get('error') === 'auth_failed'
+  const authError = errorParam
+    ? errorParam === 'auth_failed'
       ? 'Authentication failed. Please try again.'
+      : (AUTH0_ERROR_MESSAGES[errorParam] ?? errorParam)
+    : isReauthFlow
+      ? 'Your session expired. Please sign in again.'
       : null;
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate(ROUTES.CHARGES.ROOT, { replace: true });
+    if (!isLoading && isAuthenticated && !isReauthFlow) {
+      navigate(returnTo, { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, isReauthFlow, navigate, returnTo]);
 
   useEffect(() => {
     // Clean up legacy user session from localStorage
     localStorage.removeItem('user');
-  }, []);
+
+    if (isReauthFlow) {
+      // Recover from stale/rotated refresh tokens that can keep silent renewal failing.
+      clearStoredAuth0Session();
+    }
+  }, [isReauthFlow]);
 
   return (
     <div className="w-full flex flex-col justify-center items-center h-screen lg:grid lg:min-h-[200px] lg:grid-cols-2 xl:min-h-screen">
@@ -37,16 +54,21 @@ export function LoginPage(): ReactElement {
           </div>
 
           <Button
-            onClick={() =>
-              loginWithRedirect({
+            onClick={() => {
+              // Avoid overwriting an existing returnTo set earlier in the reauth flow.
+              if (!isReauthFlow || !sessionStorage.getItem('auth:returnTo')) {
+                sessionStorage.setItem('auth:returnTo', returnTo);
+              }
+              return loginWithRedirect({
                 authorizationParams: {
                   audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                  scope: 'openid profile email',
+                  scope: 'openid profile email offline_access',
+                  ...(isReauthFlow ? { prompt: 'login' } : {}),
                   redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
                 },
-                appState: { returnTo: ROUTES.CHARGES.ROOT },
-              })
-            }
+                appState: { returnTo },
+              });
+            }}
             className="w-full font-semibold"
             disabled={isLoading}
           >
