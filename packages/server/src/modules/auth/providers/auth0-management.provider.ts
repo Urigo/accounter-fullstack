@@ -51,24 +51,10 @@ export class Auth0ManagementProvider {
   async getUserEmailById(
     auth0UserId: string,
   ): Promise<{ email: string | null; emailVerified: boolean } | null> {
-    const client = this.getClient() as unknown as {
-      users: {
-        get: (identifier: string | { id: string }) => Promise<{
-          email?: string | null;
-          email_verified?: boolean | null;
-        }>;
-      };
-    };
+    const client = this.getClient();
 
     try {
-      let user: { email?: string | null; email_verified?: boolean | null } | null = null;
-
-      try {
-        user = await client.users.get(auth0UserId);
-      } catch {
-        user = await client.users.get({ id: auth0UserId });
-      }
-
+      const user = await client.users.get({ id: auth0UserId });
       return {
         email: typeof user?.email === 'string' ? user.email : null,
         emailVerified: user?.email_verified === true,
