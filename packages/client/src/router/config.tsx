@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactElement } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { ErrorBoundary } from '../components/error-boundary.js';
 import { PageSkeleton, ReportSkeleton, TableSkeleton } from '../components/layout/page-skeleton.js';
-import { PublicOnlyGuard, RequireAuthGuard } from './guards/auth-guards.js';
+import { ProtectedRoute, PublicOnlyGuard } from './guards/auth-guards.js';
 import { DashboardLayoutRoute } from './layouts/dashboard-layout.js';
 import { RootLayout } from './layouts/root-layout.js';
 import { businessLoader, chargeLoader } from './loaders/index.js';
@@ -228,9 +228,9 @@ export const routes: RouteObject[] = [
       {
         path: '/',
         element: (
-          <RequireAuthGuard>
+          <ProtectedRoute>
             <DashboardLayoutRoute />
-          </RequireAuthGuard>
+          </ProtectedRoute>
         ),
         errorElement: <ErrorBoundary />,
         children: [

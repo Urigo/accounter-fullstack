@@ -8,6 +8,7 @@ export function LoginPage(): ReactElement {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   const navigate = useNavigate();
   const location = useLocation();
+  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? ROUTES.HOME;
 
   const authError =
     new URLSearchParams(location.search).get('error') === 'auth_failed'
@@ -16,9 +17,9 @@ export function LoginPage(): ReactElement {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(ROUTES.CHARGES.ROOT, { replace: true });
+      navigate(returnTo, { replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, navigate, returnTo]);
 
   useEffect(() => {
     // Clean up legacy user session from localStorage
@@ -44,7 +45,7 @@ export function LoginPage(): ReactElement {
                   scope: 'openid profile email',
                   redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
                 },
-                appState: { returnTo: ROUTES.CHARGES.ROOT },
+                appState: { returnTo },
               })
             }
             className="w-full font-semibold"
