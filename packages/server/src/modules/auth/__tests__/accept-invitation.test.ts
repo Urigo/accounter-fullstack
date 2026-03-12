@@ -18,7 +18,10 @@ const acceptInvitation = invitationsResolvers.Mutation?.acceptInvitation as (
 const mockInfo = {} as GraphQLResolveInfo;
 
 describe('acceptInvitation resolver', () => {
-  let mockAuthProvider: { getAuthContext: ReturnType<typeof vi.fn> };
+  let mockAuthProvider: {
+    getAuthContext: ReturnType<typeof vi.fn>;
+    getJwtIdentity: ReturnType<typeof vi.fn>;
+  };
   let mockAcceptInvitationsProvider: { acceptInvitation: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
@@ -39,6 +42,7 @@ describe('acceptInvitation resolver', () => {
           roleId: 'employee',
         },
       }),
+      getJwtIdentity: vi.fn().mockResolvedValue(null),
     };
 
     mockAcceptInvitationsProvider = {
@@ -107,6 +111,7 @@ describe('acceptInvitation resolver', () => {
 
   it('unauthenticated user delegates with null auth0UserId', async () => {
     mockAuthProvider.getAuthContext.mockResolvedValueOnce(null);
+    mockAuthProvider.getJwtIdentity.mockResolvedValueOnce(null);
 
     await acceptInvitation({}, { token: 'token-3' }, createContext(), mockInfo);
 

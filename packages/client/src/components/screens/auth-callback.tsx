@@ -7,6 +7,8 @@ import { Button } from '../ui/button.jsx';
 
 const MAX_NETWORK_RETRY_ATTEMPTS = 2;
 const NETWORK_RETRY_DELAY_MS = 750;
+const callbackProcessingBySearch = new Map<string, Promise<unknown>>();
+const callbackResolvedReturnToBySearch = new Map<string, string>();
 
 type Auth0Error = Error & { error?: string };
 
@@ -33,6 +35,20 @@ function wait(ms: number): Promise<void> {
   return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
+}
+
+function processRedirectCallbackOnce(
+  callbackSearch: string,
+  handleRedirectCallback: () => Promise<unknown>,
+): Promise<unknown> {
+  const existing = callbackProcessingBySearch.get(callbackSearch);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = retryWithBackoff(handleRedirectCallback);
+  callbackProcessingBySearch.set(callbackSearch, promise);
+  return promise;
 }
 
 /**
@@ -70,10 +86,22 @@ export function AuthCallbackPage(): ReactElement {
   const navigate = useNavigate();
   const [callbackError, setCallbackError] = useState<Auth0Error | null>(null);
   const redirectUriOrigin = typeof window === 'undefined' ? '' : window.location.origin;
+  const callbackSearch = typeof window === 'undefined' ? '' : window.location.search;
+  const searchParams =
+    typeof window === 'undefined' ? null : new URLSearchParams(window.location.search);
+  const hasAuthCallbackParams = searchParams?.has('code') && searchParams?.has('state');
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(ROUTES.CHARGES.ROOT, { replace: true });
+    if (isAuthenticated && !hasAuthCallbackParams) {
+      const invitationReturnTo = sessionStorage.getItem('auth:invitationReturnTo');
+      const savedReturnTo = sessionStorage.getItem('auth:returnTo');
+      const lastResolvedReturnTo = sessionStorage.getItem('auth:lastResolvedReturnTo');
+      const returnTo =
+        invitationReturnTo ?? savedReturnTo ?? lastResolvedReturnTo ?? ROUTES.CHARGES.ROOT;
+      sessionStorage.removeItem('auth:invitationReturnTo');
+      sessionStorage.removeItem('auth:returnTo');
+      sessionStorage.removeItem('auth:lastResolvedReturnTo');
+      navigate(returnTo, { replace: true });
       return;
     }
 
@@ -90,13 +118,31 @@ export function AuthCallbackPage(): ReactElement {
 
     const handleCallback = async (): Promise<void> => {
       try {
-        const result = await retryWithBackoff(handleRedirectCallback);
+        const result = await processRedirectCallbackOnce(callbackSearch, handleRedirectCallback);
         if (cancelled) {
           return;
         }
+
+        const cachedReturnTo = callbackResolvedReturnToBySearch.get(callbackSearch);
+        if (cachedReturnTo) {
+          sessionStorage.removeItem('auth:invitationReturnTo');
+          sessionStorage.removeItem('auth:returnTo');
+          sessionStorage.removeItem('auth:lastResolvedReturnTo');
+          navigate(cachedReturnTo, { replace: true });
+          return;
+        }
+
+        const callbackResult = result as { appState?: { returnTo?: string } };
+        const invitationReturnTo = sessionStorage.getItem('auth:invitationReturnTo');
+        const savedReturnTo = sessionStorage.getItem('auth:returnTo');
+        const returnTo =
+          invitationReturnTo ?? callbackResult.appState?.returnTo ?? savedReturnTo ?? ROUTES.HOME;
+
+        callbackResolvedReturnToBySearch.set(callbackSearch, returnTo);
+        sessionStorage.setItem('auth:lastResolvedReturnTo', returnTo);
+        sessionStorage.removeItem('auth:invitationReturnTo');
         sessionStorage.removeItem('auth:returnTo');
-        const returnTo = result?.appState?.returnTo as string | undefined;
-        navigate(returnTo || ROUTES.HOME, { replace: true });
+        navigate(returnTo, { replace: true });
       } catch (caughtError) {
         if (!cancelled) {
           setCallbackError(normalizeAuth0Error(caughtError));
@@ -109,7 +155,15 @@ export function AuthCallbackPage(): ReactElement {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isLoading, error, handleRedirectCallback, navigate]);
+  }, [
+    isAuthenticated,
+    hasAuthCallbackParams,
+    callbackSearch,
+    isLoading,
+    error,
+    handleRedirectCallback,
+    navigate,
+  ]);
 
   const resolvedError = callbackError ?? (error ? normalizeAuth0Error(error) : null);
 

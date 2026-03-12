@@ -150,7 +150,12 @@ describe('AcceptInvitationPage', () => {
     });
 
     expect(loginWithRedirectMock).toHaveBeenCalledWith({
-      appState: { returnTo: `${ROUTES.ACCEPT_INVITATION}/invite-token-123` },
+      authorizationParams: {
+        audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+        scope: 'openid profile email offline_access',
+        redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
+      },
+      appState: { returnTo: ROUTES.ACCEPT_INVITATION('invite-token-123') },
     });
 
     await cleanup();

@@ -123,6 +123,63 @@ describe('AuthContextProvider', () => {
         expect(result).toBeNull();
     });
 
+      it('should relink user by verified email when auth0 sub changes', async () => {
+        const mockPayload = {
+          sub: 'google-oauth2|new-subject',
+          exp: 1234567890,
+          email: 'member@example.com',
+          email_verified: true,
+          permissions: [],
+        };
+
+        vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
+
+        mockDBProvider.query
+          .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+          .mockResolvedValueOnce({
+            rowCount: 1,
+            rows: [{ user_id: 'u-42', business_id: 'b-42', role_id: 'employee' }],
+          })
+          .mockResolvedValueOnce({ rowCount: 2, rows: [] });
+
+        const result = await provider.getAuthContext();
+
+        expect(mockDBProvider.query).toHaveBeenNthCalledWith(
+          1,
+          expect.stringContaining('WHERE bu.auth0_user_id = $1'),
+          ['google-oauth2|new-subject'],
+        );
+        expect(mockDBProvider.query).toHaveBeenNthCalledWith(
+          2,
+          expect.stringContaining('FROM accounter_schema.invitations i'),
+          ['member@example.com'],
+        );
+        expect(mockDBProvider.query).toHaveBeenNthCalledWith(
+          3,
+          expect.stringContaining('UPDATE accounter_schema.business_users'),
+          ['google-oauth2|new-subject', 'u-42'],
+        );
+
+        expect(result).toEqual({
+          authType: 'jwt',
+          token: 'valid-token',
+          user: {
+            userId: 'u-42',
+            roleId: 'employee',
+            email: 'member@example.com',
+            auth0UserId: 'google-oauth2|new-subject',
+            permissions: [],
+            emailVerified: true,
+            permissionsVersion: 0,
+          },
+          tenant: {
+            businessId: 'b-42',
+            roleId: 'employee',
+          },
+          accessTokenExpiresAt: 1234567890,
+        });
+      });
+
      it('should return null if sub claim is missing', async () => {
         const mockPayload = {}; // No sub
    

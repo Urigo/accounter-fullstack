@@ -48,11 +48,20 @@ export function AcceptInvitationPage(): ReactElement {
             Please log in or create an account to accept this invitation.
           </p>
           <Button
-            onClick={() =>
-              loginWithRedirect({
-                appState: { returnTo: `${ROUTES.ACCEPT_INVITATION}/${token}` },
-              })
-            }
+            onClick={() => {
+              const returnTo = ROUTES.ACCEPT_INVITATION(token);
+              sessionStorage.setItem('auth:returnTo', returnTo);
+              sessionStorage.setItem('auth:invitationReturnTo', returnTo);
+
+              return loginWithRedirect({
+                authorizationParams: {
+                  audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  scope: 'openid profile email offline_access',
+                  redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
+                },
+                appState: { returnTo },
+              });
+            }}
           >
             Login / Create Account
           </Button>
@@ -72,14 +81,13 @@ export function AcceptInvitationPage(): ReactElement {
     <div className="flex items-center justify-center h-screen">
       <div className="text-center max-w-sm space-y-4">
         <h1 className="text-2xl font-bold">Accept Invitation</h1>
-        {error &&
-          (() => {
-            const message = error.graphQLErrors?.[0]?.message;
-            if (message === 'TOKEN_EXPIRED') {
-              return 'This invitation link has expired. Please request a new one.';
-            }
-            return message ?? 'An error occurred';
-          })()}
+        {error && (
+          <p className="text-destructive">
+            {error.graphQLErrors?.[0]?.message === 'TOKEN_EXPIRED'
+              ? 'This invitation link has expired. Please request a new one.'
+              : (error.graphQLErrors?.[0]?.message ?? 'An error occurred')}
+          </p>
+        )}
         <Button onClick={handleAccept} disabled={fetching}>
           {fetching ? 'Accepting...' : 'Accept Invitation'}
         </Button>

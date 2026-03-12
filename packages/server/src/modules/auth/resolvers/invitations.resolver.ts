@@ -76,9 +76,12 @@ export const invitationsResolvers: AuthModule.Resolvers = {
       }
     },
     acceptInvitation: async (_, { token }, { injector }) => {
-      const authContext = await injector.get(AuthContextProvider).getAuthContext();
-      const auth0UserId = authContext?.user?.auth0UserId ?? null;
-      const authenticatedUserEmail = authContext?.user?.email ?? null;
+      const authContextProvider = injector.get(AuthContextProvider);
+      const authContext = await authContextProvider.getAuthContext();
+      const jwtIdentity = authContext ? null : await authContextProvider.getJwtIdentity();
+
+      const auth0UserId = authContext?.user?.auth0UserId ?? jwtIdentity?.auth0UserId ?? null;
+      const authenticatedUserEmail = authContext?.user?.email ?? jwtIdentity?.email ?? null;
 
       const normalizedToken = token.trim();
       if (!normalizedToken) {
