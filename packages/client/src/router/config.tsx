@@ -182,6 +182,11 @@ const LoginPage = lazy(() =>
 const AuthCallbackPage = lazy(() =>
   import('../components/screens/auth-callback.js').then(m => ({ default: m.AuthCallbackPage })),
 );
+const AcceptInvitationPage = lazy(() =>
+  import('../components/screens/accept-invitation.js').then(m => ({
+    default: m.AcceptInvitationPage,
+  })),
+);
 
 /**
  * Helper to wrap components with Suspense
@@ -221,6 +226,13 @@ export const routes: RouteObject[] = [
         element: withSuspense(AuthCallbackPage),
         handle: {
           title: 'Processing Login...',
+        },
+      },
+      {
+        path: ROUTES.ACCEPT_INVITATION(),
+        element: withSuspense(AcceptInvitationPage),
+        handle: {
+          title: 'Accept Invitation',
         },
       },
 
