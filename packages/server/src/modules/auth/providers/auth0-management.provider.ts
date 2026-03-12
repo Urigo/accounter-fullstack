@@ -54,7 +54,7 @@ export class Auth0ManagementProvider {
     const client = this.getClient();
 
     try {
-      const user = await client.users.get({ id: auth0UserId });
+      const user = await client.users.get(auth0UserId);
       return {
         email: typeof user?.email === 'string' ? user.email : null,
         emailVerified: user?.email_verified === true,
