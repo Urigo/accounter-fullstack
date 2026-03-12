@@ -51,7 +51,8 @@ vi.mock('../../ui/button.jsx', () => ({
     React.createElement('button', props, children),
 }));
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
 
 type MutationError = {
   graphQLErrors?: Array<{ message?: string }>;
