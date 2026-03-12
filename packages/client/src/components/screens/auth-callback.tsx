@@ -96,7 +96,7 @@ export function AuthCallbackPage(): ReactElement {
         }
         sessionStorage.removeItem('auth:returnTo');
         const returnTo = result?.appState?.returnTo as string | undefined;
-        navigate(returnTo || ROUTES.CHARGES.ROOT, { replace: true });
+        navigate(returnTo || ROUTES.HOME, { replace: true });
       } catch (caughtError) {
         if (!cancelled) {
           setCallbackError(normalizeAuth0Error(caughtError));
@@ -131,7 +131,7 @@ export function AuthCallbackPage(): ReactElement {
                     scope: 'openid profile email offline_access',
                     redirect_uri: `${redirectUriOrigin}${ROUTES.AUTH_CALLBACK}`,
                   },
-                  appState: { returnTo: savedReturnTo ?? ROUTES.CHARGES.ROOT },
+                  appState: { returnTo: savedReturnTo ?? ROUTES.HOME },
                 });
               }}
             >

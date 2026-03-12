@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { retryWithBackoff } from '../auth-callback.js';
 
-// auth-callback.tsx imports Button which transitively needs @/lib/utils.js – an alias that
-// is not available in the Node test environment.  Mock the module so it never loads.
+// auth-callback.tsx imports Button, which in turn pulls in Radix/UI and DOM-dependent code.
+// In this non-jsdom Node test environment, mock Button so those dependencies are never loaded.
 vi.mock('../../ui/button.jsx', () => ({}));
 
 // isNetworkError (from auth0-errors) uses `error.error === 'network_error'` or message

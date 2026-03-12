@@ -10,10 +10,14 @@ export function LoginPage(): ReactElement {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? ROUTES.HOME;
   const searchParams = new URLSearchParams(location.search);
-  const errorParam = searchParams.get('error');
   const isReauthFlow = searchParams.get('reauth') === '1';
+  const returnTo =
+    (location.state as { returnTo?: string } | null)?.returnTo ??
+    (isReauthFlow ? sessionStorage.getItem('auth:returnTo') : null) ??
+    ROUTES.HOME;
+  const errorParam = searchParams.get('error');
+
   const authError = errorParam
     ? errorParam === 'auth_failed'
       ? 'Authentication failed. Please try again.'
@@ -51,7 +55,10 @@ export function LoginPage(): ReactElement {
 
           <Button
             onClick={() => {
-              sessionStorage.setItem('auth:returnTo', returnTo);
+              // Avoid overwriting an existing returnTo set earlier in the reauth flow.
+              if (!isReauthFlow || !sessionStorage.getItem('auth:returnTo')) {
+                sessionStorage.setItem('auth:returnTo', returnTo);
+              }
               return loginWithRedirect({
                 authorizationParams: {
                   audience: import.meta.env.VITE_AUTH0_AUDIENCE,

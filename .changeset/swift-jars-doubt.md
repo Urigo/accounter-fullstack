@@ -2,7 +2,7 @@
 '@accounter/client': patch
 ---
 
-- Rename `RequireAuthGuard` to `ProtectedRoute` (with a compatibility alias) and update route config
+- Rename `RequireAuthGuard` to `ProtectedRoute` and update route config
   usage.
 - Preserve attempted path via `returnTo` state and use it in `LoginPage` redirect + Auth0
   `appState`.

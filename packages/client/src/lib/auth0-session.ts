@@ -65,12 +65,15 @@ export function hasStoredAuth0Session(): boolean {
 }
 
 export function clearStoredAuth0Session(): void {
-  const auth0KeyPrefixes = ['@@auth0spajs@@', 'a0.spajs.txs'];
-  const exactKeys = ['auth0.is.authenticated'];
-
-  Object.keys(localStorage)
-    .filter(
-      key => exactKeys.includes(key) || auth0KeyPrefixes.some(prefix => key.startsWith(prefix)),
-    )
-    .map(key => localStorage.removeItem(key));
+  try {
+    const auth0KeyPrefixes = ['@@auth0spajs@@', 'a0.spajs.txs'];
+    const exactKeys = ['auth0.is.authenticated'];
+    Object.keys(localStorage)
+      .filter(
+        key => exactKeys.includes(key) || auth0KeyPrefixes.some(prefix => key.startsWith(prefix)),
+      )
+      .map(key => localStorage.removeItem(key));
+  } catch {
+    // Ignore storage access errors (e.g., blocked localStorage) to avoid breaking login flow.
+  }
 }
