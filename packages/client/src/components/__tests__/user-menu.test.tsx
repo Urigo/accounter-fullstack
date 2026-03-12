@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserNav } from '../layout/user-nav.jsx';
 import { UserContext, type UserInfo } from '../../providers/index.js';
+import { ROUTES } from '../../router/routes.js';
 
 const { useAuth0Mock, executeJobsMock, logoutMock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
@@ -39,7 +40,7 @@ vi.mock('../common/index.js', async () => {
       onClick={() =>
         logoutMock({
           logoutParams: {
-            returnTo: `${window.location.origin}/login`,
+            returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
           },
         })
       }
@@ -211,7 +212,7 @@ describe('UserNav menu', () => {
 
     expect(logoutMock).toHaveBeenCalledWith({
       logoutParams: {
-        returnTo: `${window.location.origin}/login`,
+        returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
       },
     });
 
