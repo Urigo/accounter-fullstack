@@ -1,8 +1,8 @@
-name: 'Client Publish'
+name: "Client Publish"
 on:
   push:
     paths:
-      - 'packages/client/**'
+      - "packages/client/**"
     branches:
       - main
       - prod
@@ -50,6 +50,10 @@ jobs:
 
       - name: Build Client
         working-directory: packages/client
+        env:
+          AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
+          AUTH0_FRONTEND_CLIENT_ID: ${{ vars.AUTH0_FRONTEND_CLIENT_ID }}
+          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
         run:
           yarn build  --mode ${{ (github.ref == 'refs/heads/main' && 'staging') || (github.ref ==
           'refs/heads/prod' && 'production') || 'development' }}
