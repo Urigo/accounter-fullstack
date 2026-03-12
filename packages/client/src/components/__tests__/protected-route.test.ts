@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProtectedRoute, PublicOnlyGuard } from '../../router/guards/auth-guards.js';
+import { ROUTES } from '../../router/routes.js';
 
 const { useAuth0Mock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
@@ -32,11 +33,11 @@ async function renderProtectedPath(pathname: string, authState: AuthState) {
   const router = createMemoryRouter(
     [
       {
-        path: '/login',
+        path: ROUTES.LOGIN,
         element: React.createElement('div', null, 'Login Page'),
       },
       {
-        path: '/charges',
+        path: ROUTES.CHARGES.ROOT,
         element: React.createElement(
           ProtectedRoute,
           null,
@@ -76,7 +77,7 @@ async function renderPublicPath(pathname: string, authState: AuthState) {
   const router = createMemoryRouter(
     [
       {
-        path: '/login',
+        path: ROUTES.LOGIN,
         element: React.createElement(
           PublicOnlyGuard,
           null,
@@ -84,7 +85,7 @@ async function renderPublicPath(pathname: string, authState: AuthState) {
         ),
       },
       {
-        path: '/',
+        path: ROUTES.HOME,
         element: React.createElement('div', null, 'Home Page'),
       },
     ],
@@ -120,48 +121,48 @@ describe('ProtectedRoute', () => {
   });
 
   it('redirects unauthenticated users to /login', async () => {
-    const { router, cleanup } = await renderProtectedPath('/charges', {
+    const { router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, {
       isAuthenticated: false,
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.pathname).toBe(ROUTES.LOGIN);
     await cleanup();
   });
 
   it('preserves attempted path in returnTo state', async () => {
-    const { router, cleanup } = await renderProtectedPath('/charges', {
+    const { router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, {
       isAuthenticated: false,
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe('/login');
-    expect(router.state.location.state).toEqual({ returnTo: '/charges' });
+    expect(router.state.location.pathname).toBe(ROUTES.LOGIN);
+    expect(router.state.location.state).toEqual({ returnTo: ROUTES.CHARGES.ROOT });
     await cleanup();
   });
 
   it('allows authenticated users to access protected route', async () => {
-    const { html, router, cleanup } = await renderProtectedPath('/charges', {
+    const { html, router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, {
       isAuthenticated: true,
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe('/charges');
+    expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
     expect(html).toContain('Charges Page');
     await cleanup();
   });
 
   it('renders loading state while auth is loading', async () => {
-    const { html, router, cleanup } = await renderProtectedPath('/charges', {
+    const { html, router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, {
       isAuthenticated: false,
       isLoading: true,
     });
 
-    expect(router.state.location.pathname).toBe('/charges');
+    expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
     expect(html).toMatchSnapshot();
     // Protected content is not rendered while loading
     expect(html).not.toContain('Charges Page');
-    expect(router.state.location.pathname).not.toBe('/login');
+    expect(router.state.location.pathname).not.toBe(ROUTES.LOGIN);
     await cleanup();
   });
 });
@@ -172,22 +173,22 @@ describe('PublicOnlyGuard', () => {
   });
 
   it('redirects authenticated users away from login page', async () => {
-    const { router, cleanup } = await renderPublicPath('/login', {
+    const { router, cleanup } = await renderPublicPath(ROUTES.LOGIN, {
       isAuthenticated: true,
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe('/');
+    expect(router.state.location.pathname).toBe(ROUTES.HOME);
     await cleanup();
   });
 
   it('allows forced reauth login page even when authenticated', async () => {
-    const { html, router, cleanup } = await renderPublicPath('/login?reauth=1', {
+    const { html, router, cleanup } = await renderPublicPath(`${ROUTES.LOGIN}?reauth=1`, {
       isAuthenticated: true,
       isLoading: false,
     });
 
-    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.pathname).toBe(ROUTES.LOGIN);
     expect(router.state.location.search).toBe('?reauth=1');
     expect(html).toContain('Login Page');
     await cleanup();

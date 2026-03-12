@@ -9,6 +9,7 @@ import {
   type Operation,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
+import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
 type TokenCacheMode = 'on' | 'off';
@@ -93,7 +94,10 @@ function redirectToLogin(): void {
   }
 
   if (typeof window !== 'undefined' && window.location) {
-    if (window.location.pathname === '/login' || window.location.pathname === '/auth/callback') {
+    if (
+      window.location.pathname === ROUTES.LOGIN ||
+      window.location.pathname === ROUTES.AUTH_CALLBACK
+    ) {
       return;
     }
 
@@ -108,20 +112,20 @@ function redirectToLogin(): void {
     }
 
     loginRedirectInProgress = true;
-    window.location.href = '/login?reauth=1';
+    window.location.href = `${ROUTES.LOGIN}?reauth=1`;
     return;
   }
 
   if (typeof globalThis !== 'undefined' && 'location' in globalThis && globalThis.location) {
     if (
-      globalThis.location.pathname === '/login' ||
-      globalThis.location.pathname === '/auth/callback'
+      globalThis.location.pathname === ROUTES.LOGIN ||
+      globalThis.location.pathname === ROUTES.AUTH_CALLBACK
     ) {
       return;
     }
 
     loginRedirectInProgress = true;
-    globalThis.location.href = '/login?reauth=1';
+    globalThis.location.href = `${ROUTES.LOGIN}?reauth=1`;
   }
 }
 

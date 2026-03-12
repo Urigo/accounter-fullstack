@@ -1,3 +1,4 @@
+import { ROUTES } from '../router/routes.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createClientMock = vi.fn(() => ({ mockClient: true }));
@@ -150,7 +151,7 @@ describe('URQL auth exchange hardening', () => {
 
     await authConfig.refreshAuth();
 
-    expect(globalThis.location.href).toBe('/login?reauth=1');
+    expect(globalThis.location.href).toBe(`${ROUTES.LOGIN}?reauth=1`);
   });
 
   it('redirects to /login?reauth=1 only once when repeated unauthenticated refresh attempts fail', async () => {
@@ -167,7 +168,7 @@ describe('URQL auth exchange hardening', () => {
     await authConfig.refreshAuth();
     await authConfig.refreshAuth();
 
-    expect(globalThis.location.href).toBe('/login?reauth=1');
+    expect(globalThis.location.href).toBe(`${ROUTES.LOGIN}?reauth=1`);
   });
 
   it('does not redirect to login when forced refresh fails with a transient error', async () => {
