@@ -63,3 +63,14 @@ export function getStoredAuth0AccessToken(): string | null {
 export function hasStoredAuth0Session(): boolean {
   return !!getStoredAuth0AccessToken();
 }
+
+export function clearStoredAuth0Session(): void {
+  const auth0KeyPrefixes = ['@@auth0spajs@@', 'a0.spajs.txs'];
+  const exactKeys = ['auth0.is.authenticated'];
+
+  Object.keys(localStorage)
+    .filter(
+      key => exactKeys.includes(key) || auth0KeyPrefixes.some(prefix => key.startsWith(prefix)),
+    )
+    .map(key => localStorage.removeItem(key));
+}
