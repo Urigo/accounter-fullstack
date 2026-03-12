@@ -113,7 +113,16 @@ export class AcceptInvitationsProvider {
       // Defense in depth: authenticated users can claim only invitations for their own email.
       if (auth0UserId) {
         const normalizedInvitationEmail = invitation.email?.trim().toLowerCase();
-        const normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase();
+        let normalizedAuthenticatedEmail = authenticatedUserEmail?.trim().toLowerCase() ?? null;
+
+        // Access tokens for custom APIs often omit `email` claims.
+        // In that case, resolve the primary email from Auth0 profile for comparison.
+        if (!normalizedAuthenticatedEmail) {
+          const identity = await this.auth0ManagementProvider.getUserEmailById(auth0UserId);
+          if (identity?.emailVerified && identity.email) {
+            normalizedAuthenticatedEmail = identity.email.trim().toLowerCase();
+          }
+        }
 
         if (
           !normalizedInvitationEmail ||

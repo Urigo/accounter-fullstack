@@ -14,7 +14,7 @@ export function LoginPage(): ReactElement {
   const isReauthFlow = searchParams.get('reauth') === '1';
   const returnTo =
     (location.state as { returnTo?: string } | null)?.returnTo ??
-    (isReauthFlow ? sessionStorage.getItem('auth:returnTo') : null) ??
+    (isReauthFlow ? sessionStorage.getItem('auth:invitationReturnTo') : null) ??
     ROUTES.HOME;
   const errorParam = searchParams.get('error');
 

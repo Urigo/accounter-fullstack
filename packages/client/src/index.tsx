@@ -19,7 +19,7 @@ const domain = import.meta.env.VITE_AUTH0_DOMAIN;
 const clientId = import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID;
 const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 const redirectUri = `${window.location.origin}${ROUTES.AUTH_CALLBACK}`;
-const shouldSkipRedirectCallback = window.location.pathname === ROUTES.AUTH_CALLBACK;
+const shouldSkipRedirectCallback = window.location.pathname.startsWith(ROUTES.AUTH_CALLBACK);
 
 if (!domain || !clientId || !audience) {
   console.warn('Auth0 environment variables not set. Auth0 login will fail.');

@@ -25,6 +25,52 @@ export class AuthContextProvider {
     @Inject(DBProvider) private db: DBProvider,
   ) {}
 
+  public async getJwtIdentity(): Promise<{
+    auth0UserId: string;
+    email: string | null;
+    emailVerified: boolean;
+  } | null> {
+    const token = this.rawAuth.token;
+    if (this.rawAuth.authType !== 'jwt' || !token) {
+      return null;
+    }
+
+    try {
+      if (!this.env.auth0) {
+        return null;
+      }
+
+      const domain = this.env.auth0.domain;
+      let JWKS = jwksCache.get(domain);
+
+      if (!JWKS) {
+        JWKS = createRemoteJWKSet(new URL(`https://${domain}/.well-known/jwks.json`));
+        jwksCache.set(domain, JWKS);
+      }
+
+      const { payload } = await jwtVerify(token, JWKS, {
+        issuer: `https://${domain}/`,
+        audience: this.env.auth0.audience,
+      });
+
+      const auth0UserId = payload.sub;
+      if (!auth0UserId) {
+        return null;
+      }
+
+      const jwtEmailClaim = payload['email'];
+      const jwtEmailVerifiedClaim = payload['email_verified'];
+
+      return {
+        auth0UserId,
+        email: typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null,
+        emailVerified: jwtEmailVerifiedClaim === true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
   public async getAuthContext(): Promise<AuthContext | null> {
     if (this.cachedContext !== undefined) {
       return this.cachedContext;
@@ -157,8 +203,13 @@ export class AuthContextProvider {
         return null;
       }
 
-      // 3. Map to local user and business
-      const userContext = await this.mapAuth0UserToLocal(auth0UserId);
+      const jwtEmailClaim = payload['email'];
+      const jwtEmailVerifiedClaim = payload['email_verified'];
+      const jwtEmail = typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null;
+      const jwtEmailVerified = jwtEmailVerifiedClaim === true;
+
+      // 3. Map to local user and business (with verified-email fallback relinking).
+      const userContext = await this.mapAuth0UserToLocal(auth0UserId, jwtEmail, jwtEmailVerified);
 
       if (!userContext) {
         console.warn(`AuthContext: User not found/linked in local DB: ${auth0UserId}`);
@@ -174,10 +225,10 @@ export class AuthContextProvider {
         user: {
           userId: userContext.userId,
           roleId: userContext.roleId,
-          email: (payload.email as string) ?? '',
+          email: jwtEmail ?? '',
           auth0UserId,
-          permissions: (payload.permissions as string[]) ?? [],
-          emailVerified: (payload.email_verified as boolean) ?? false,
+          permissions: (payload['permissions'] as string[]) ?? [],
+          emailVerified: jwtEmailVerified,
           permissionsVersion: 0,
         },
         tenant: {
@@ -198,20 +249,59 @@ export class AuthContextProvider {
 
   private async mapAuth0UserToLocal(
     auth0UserId: string,
+    email: string | null,
+    emailVerified: boolean,
   ): Promise<{ userId: string; businessId: string; roleId: string } | null> {
-    const query = `
+    const byAuth0Query = `
       SELECT bu.user_id, bu.business_id, bu.role_id
       FROM accounter_schema.business_users bu
       WHERE bu.auth0_user_id = $1
       LIMIT 1
     `;
 
+    const byVerifiedEmailQuery = `
+      SELECT bu.user_id, bu.business_id, bu.role_id
+      FROM accounter_schema.invitations i
+      JOIN accounter_schema.business_users bu
+        ON bu.user_id = i.user_id
+       AND bu.business_id = i.business_id
+      WHERE LOWER(i.email) = LOWER($1)
+        AND i.accepted_at IS NOT NULL
+      ORDER BY i.accepted_at DESC
+      LIMIT 1
+    `;
+
+    const relinkAuth0IdQuery = `
+      UPDATE accounter_schema.business_users
+      SET auth0_user_id = $1, updated_at = NOW()
+      WHERE user_id = $2
+    `;
+
     try {
-      const result = await this.db.query(query, [auth0UserId]);
-      if (result.rowCount === 0) {
+      const byAuth0Result = await this.db.query(byAuth0Query, [auth0UserId]);
+      if (byAuth0Result.rowCount && byAuth0Result.rowCount > 0) {
+        const row = byAuth0Result.rows[0];
+        return {
+          userId: row.user_id,
+          businessId: row.business_id,
+          roleId: row.role_id,
+        };
+      }
+
+      if (!email || !emailVerified) {
         return null;
       }
-      const row = result.rows[0];
+
+      const byEmailResult = await this.db.query(byVerifiedEmailQuery, [email]);
+      if (!byEmailResult.rowCount || byEmailResult.rowCount === 0) {
+        return null;
+      }
+
+      const row = byEmailResult.rows[0];
+
+      // Sync newly authenticated Auth0 subject across all memberships of this local user.
+      await this.db.query(relinkAuth0IdQuery, [auth0UserId, row.user_id]);
+
       return {
         userId: row.user_id,
         businessId: row.business_id,

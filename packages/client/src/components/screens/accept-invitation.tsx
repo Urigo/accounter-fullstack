@@ -48,11 +48,20 @@ export function AcceptInvitationPage(): ReactElement {
             Please log in or create an account to accept this invitation.
           </p>
           <Button
-            onClick={() =>
-              loginWithRedirect({
-                appState: { returnTo: `${ROUTES.ACCEPT_INVITATION}/${token}` },
-              })
-            }
+            onClick={() => {
+              const returnTo = ROUTES.ACCEPT_INVITATION(token);
+              sessionStorage.setItem('auth:returnTo', returnTo);
+              sessionStorage.setItem('auth:invitationReturnTo', returnTo);
+
+              return loginWithRedirect({
+                authorizationParams: {
+                  audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                  scope: 'openid profile email offline_access',
+                  redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
+                },
+                appState: { returnTo },
+              });
+            }}
           >
             Login / Create Account
           </Button>
