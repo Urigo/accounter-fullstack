@@ -4,7 +4,7 @@ import React from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserNav } from '../layout/user-nav.js';
+import { UserNav } from '../layout/user-nav.jsx';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 
 const { useAuth0Mock, executeJobsMock, logoutMock } = vi.hoisted(() => ({
@@ -33,6 +33,20 @@ vi.mock('../common/index.js', async () => {
     ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
     SyncDocumentsModal: () => null,
     Tooltip: ({ children }: { children?: React.ReactNode }) => children ?? null,
+    AccounterLoader: () => null,
+    LogoutButton: () => (
+    <button
+      onClick={() =>
+        logoutMock({
+          logoutParams: {
+            returnTo: `${window.location.origin}/login`,
+          },
+        })
+      }
+    >
+      Log out
+    </button>
+  ),
   };
 });
 

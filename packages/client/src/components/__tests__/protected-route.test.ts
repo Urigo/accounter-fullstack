@@ -5,7 +5,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ProtectedRoute } from '../../router/guards/auth-guards.js';
+import { ProtectedRoute, PublicOnlyGuard } from '../../router/guards/auth-guards.js';
 
 const { useAuth0Mock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
@@ -20,7 +20,11 @@ type AuthState = {
   isLoading: boolean;
 };
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & {
+    IS_REACT_ACT_ENVIRONMENT?: boolean;
+  }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 async function renderProtectedPath(pathname: string, authState: AuthState) {
   useAuth0Mock.mockReturnValue(authState);
@@ -38,6 +42,50 @@ async function renderProtectedPath(pathname: string, authState: AuthState) {
           null,
           React.createElement('div', null, 'Charges Page'),
         ),
+      },
+    ],
+    { initialEntries: [pathname] },
+  );
+
+  const container = document.createElement('div');
+  document.body.append(container);
+
+  let root: Root | null = null;
+  await act(async () => {
+    root = createRoot(container);
+    root.render(React.createElement(RouterProvider, { router }));
+    await Promise.resolve();
+  });
+
+  const html = container.innerHTML;
+
+  const cleanup = async () => {
+    await act(async () => {
+      root?.unmount();
+      await Promise.resolve();
+    });
+    container.remove();
+  };
+
+  return { html, router, cleanup };
+}
+
+async function renderPublicPath(pathname: string, authState: AuthState) {
+  useAuth0Mock.mockReturnValue(authState);
+
+  const router = createMemoryRouter(
+    [
+      {
+        path: '/login',
+        element: React.createElement(
+          PublicOnlyGuard,
+          null,
+          React.createElement('div', null, 'Login Page'),
+        ),
+      },
+      {
+        path: '/',
+        element: React.createElement('div', null, 'Home Page'),
       },
     ],
     { initialEntries: [pathname] },
@@ -114,6 +162,34 @@ describe('ProtectedRoute', () => {
     // Protected content is not rendered while loading
     expect(html).not.toContain('Charges Page');
     expect(router.state.location.pathname).not.toBe('/login');
+    await cleanup();
+  });
+});
+
+describe('PublicOnlyGuard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('redirects authenticated users away from login page', async () => {
+    const { router, cleanup } = await renderPublicPath('/login', {
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    expect(router.state.location.pathname).toBe('/');
+    await cleanup();
+  });
+
+  it('allows forced reauth login page even when authenticated', async () => {
+    const { html, router, cleanup } = await renderPublicPath('/login?reauth=1', {
+      isAuthenticated: true,
+      isLoading: false,
+    });
+
+    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.search).toBe('?reauth=1');
+    expect(html).toContain('Login Page');
     await cleanup();
   });
 });
