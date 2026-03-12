@@ -19,8 +19,8 @@ import migration_2024_06_14T10_42_35_onboarding_new_user_adjustments from './act
 import migration_2024_06_19T17_41_45_drop_balance_cancellation_limitation from './actions/2024-06-19T17-41-45.drop-balance-cancellation-limitation.js';
 import migration_2024_06_19T21_28_12_improve_credit_invoice_document_handling from './actions/2024-06-19T21-28-12.improve-credit-invoice-document-handling.js';
 import migration_2024_06_26T09_03_58_ignore_zero_amount_isracard_transactions from './actions/2024-06-26T09-03-58.ignore-zero-amount-isracard-transactions.js';
+import migration_2024_06_26T16_19_27_charge_type_column from './actions/2024-06-26T16-19-27.charge-type-column.js';
 import migration_2024_06_26T16_19_27_transactions_debit_date_override from './actions/2024-06-26T16-19-27.transactions-debit-date-override.js';
-import migration_2024_06_28T14_06_52_charge_type_column from './actions/2024-06-28T14-06-52.charge-type-column.js';
 import migration_2024_06_29T17_52_10_refactor_tags from './actions/2024-06-29T17-52-10.refactor-tags.js';
 import migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates from './actions/2024-07-02T15-31-30.extended-charges-include-ledger-dates.js';
 import migration_2024_07_03T17_09_04_extended_charge_type_enum from './actions/2024-07-03T17-09-04.extended-charge-type-enum.js';
@@ -48,7 +48,7 @@ import migration_2024_08_27T14_53_58_update_misc_transactions_amount_type from '
 import migration_2024_08_28T12_03_04_business_trip_car_rental_category from './actions/2024-08-28T12-03-04.business-trip-car-rental-category.js';
 import migration_2024_08_28T16_07_43_deprecation from './actions/2024-08-28T16-07-43.deprecation.js';
 import migration_2024_09_01T13_30_24_business_trip_transactions_view_fix from './actions/2024-09-01T13-30-24.business-trip-transactions-view-fix.js';
-import migration_2024_09_04T15_37_43_company_taxes from './actions/2024-09-04T15-37-43.company-taxes.js';
+import migration_2024_09_04T15_37_43_corporate_taxes from './actions/2024-09-04T15-37-43.corporate-taxes.js';
 import migration_2024_09_04T18_34_03_vat_report_date_override from './actions/2024-09-04T18-34-03.vat-report-date-override.js';
 import migration_2024_09_05T15_51_41_depreciation from './actions/2024-09-05T15-51-41.depreciation.js';
 import migration_2024_10_01T12_37_42_refactor_misc_expenses from './actions/2024-10-01T12-37-42.refactor-misc-expenses.js';
@@ -181,7 +181,7 @@ export const MIGRATIONS = [
   migration_2024_06_19T21_28_12_improve_credit_invoice_document_handling,
   migration_2024_06_26T09_03_58_ignore_zero_amount_isracard_transactions,
   migration_2024_06_26T16_19_27_transactions_debit_date_override,
-  migration_2024_06_28T14_06_52_charge_type_column,
+  migration_2024_06_26T16_19_27_charge_type_column,
   migration_2024_06_29T17_52_10_refactor_tags,
   migration_2024_07_02T15_31_30_extended_charges_include_ledger_dates,
   migration_2024_07_03T17_09_04_extended_charge_type_enum,
@@ -209,7 +209,7 @@ export const MIGRATIONS = [
   migration_2024_08_28T12_03_04_business_trip_car_rental_category,
   migration_2024_08_28T16_07_43_deprecation,
   migration_2024_09_01T13_30_24_business_trip_transactions_view_fix,
-  migration_2024_09_04T15_37_43_company_taxes,
+  migration_2024_09_04T15_37_43_corporate_taxes,
   migration_2024_09_04T18_34_03_vat_report_date_override,
   migration_2024_09_05T15_51_41_depreciation,
   migration_2024_10_01T12_37_42_refactor_misc_expenses,
