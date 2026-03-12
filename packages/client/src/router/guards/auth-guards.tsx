@@ -43,6 +43,9 @@ export function PublicOnlyGuard({ children }: GuardProps): ReactElement {
   // Allow explicit re-authentication flow to render the login page even when
   // Auth0 still reports an authenticated browser session.
   if (isAuthenticated && !isForcedReauth) {
+    if (invitationReturnTo) {
+      sessionStorage.removeItem('auth:invitationReturnTo');
+    }
     return <Navigate to={invitationReturnTo ?? ROUTES.HOME} replace />;
   }
 
