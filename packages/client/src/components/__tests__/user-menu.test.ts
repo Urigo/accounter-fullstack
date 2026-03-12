@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
+import { ROUTES } from '../../router/routes.js';
 
 const { useAuth0Mock, executeJobsMock, logoutMock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
@@ -25,12 +26,44 @@ vi.mock('../common/modals/balance-charge-modal.js', () => ({
   BalanceChargeModal: () => null,
 }));
 
-vi.mock('../common/index.js', async () => {
-  const actual = await vi.importActual<typeof import('../common/index.js')>('../common/index.js');
+vi.mock('../ui/avatar.js', () => ({
+  Avatar: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
+  AvatarImage: ({ src, alt }: { src?: string; alt?: string }) =>
+    React.createElement('img', { 'data-slot': 'avatar-image', src, alt }),
+  AvatarFallback: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('span', null, children),
+}));
 
+vi.mock('../ui/dropdown-menu.js', () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children),
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children),
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children),
+  DropdownMenuLabel: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children),
+  DropdownMenuSeparator: () => React.createElement('hr'),
+  DropdownMenuItem: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement('div', null, children),
+}));
+
+vi.mock('../common/index.js', () => {
   return {
-    ...actual,
     ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
+    LogoutButton: () =>
+      React.createElement(
+        'button',
+        {
+          onClick: () =>
+            logoutMock({
+              logoutParams: {
+                returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
+              },
+            }),
+        },
+        'Log out',
+      ),
     SyncDocumentsModal: () => null,
     Tooltip: ({ children }: { children?: React.ReactNode }) => children ?? null,
   };

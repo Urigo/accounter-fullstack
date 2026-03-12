@@ -81,14 +81,13 @@ export function AcceptInvitationPage(): ReactElement {
     <div className="flex items-center justify-center h-screen">
       <div className="text-center max-w-sm space-y-4">
         <h1 className="text-2xl font-bold">Accept Invitation</h1>
-        {error &&
-          (() => {
-            const message = error.graphQLErrors?.[0]?.message;
-            if (message === 'TOKEN_EXPIRED') {
-              return 'This invitation link has expired. Please request a new one.';
-            }
-            return message ?? 'An error occurred';
-          })()}
+        {error && (
+          <p className="text-destructive">
+            {error.graphQLErrors?.[0]?.message === 'TOKEN_EXPIRED'
+              ? 'This invitation link has expired. Please request a new one.'
+              : (error.graphQLErrors?.[0]?.message ?? 'An error occurred')}
+          </p>
+        )}
         <Button onClick={handleAccept} disabled={fetching}>
           {fetching ? 'Accepting...' : 'Accept Invitation'}
         </Button>
