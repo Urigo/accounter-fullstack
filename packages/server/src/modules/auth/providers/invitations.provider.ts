@@ -123,6 +123,14 @@ export class InvitationsProvider {
         ownerId,
         expiresAt: new Date(Date.now() + INVITATION_EXPIRATION_PERIOD_MS),
       };
+
+      await this.businessUsersProvider.insertBusinessUser({
+        userId: localUserId,
+        auth0UserId: null,
+        roleId,
+        ownerId,
+      });
+
       const insertedInvitation = await insertInvitation.run(invitationParams, client);
 
       const [invitation] = insertedInvitation;
@@ -131,13 +139,6 @@ export class InvitationsProvider {
           extensions: { code: 'INTERNAL_SERVER_ERROR' },
         });
       }
-
-      await this.businessUsersProvider.insertBusinessUser({
-        userId: localUserId,
-        auth0UserId: null,
-        roleId,
-        ownerId: invitation.business_id,
-      });
 
       await this.auditLogsProvider.insertAuditLog({
         ownerId: invitation.business_id,

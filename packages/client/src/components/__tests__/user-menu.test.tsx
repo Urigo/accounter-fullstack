@@ -4,7 +4,7 @@ import React from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserNav } from '../layout/user-nav.jsx';
+import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
@@ -26,32 +26,46 @@ vi.mock('../common/modals/balance-charge-modal.js', () => ({
   BalanceChargeModal: () => null,
 }));
 
-vi.mock('../common/index.js', async () => {
-  const actual = await vi.importActual<typeof import('../common/index.js')>('../common/index.js');
+vi.mock('../ui/avatar.js', () => ({
+  Avatar: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AvatarImage: ({ src, alt }: { src?: string; alt?: string }) => (
+    <img data-slot="avatar-image" src={src} alt={alt} />
+  ),
+  AvatarFallback: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
 
+vi.mock('../ui/dropdown-menu.js', () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuLabel: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuSeparator: () => <hr />,
+  DropdownMenuItem: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock('../common/index.js', () => {
   return {
-    ...actual,
     ConfirmationModal: ({ children }: { children?: React.ReactNode }) => children ?? null,
     SyncDocumentsModal: () => null,
     Tooltip: ({ children }: { children?: React.ReactNode }) => children ?? null,
-    AccounterLoader: () => null,
     LogoutButton: () => (
-    <button
-      onClick={() =>
-        logoutMock({
-          logoutParams: {
-            returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
-          },
-        })
-      }
-    >
-      Log out
-    </button>
-  ),
+      <button
+        onClick={() =>
+          logoutMock({
+            logoutParams: {
+              returnTo: `${window.location.origin}${ROUTES.LOGIN}`,
+            },
+          })
+        }
+      >
+        Log out
+      </button>
+    ),
   };
 });
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
 
 const baseUserContext: UserInfo = {
   username: 'john@example.com',

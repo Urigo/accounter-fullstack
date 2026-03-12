@@ -9,12 +9,14 @@ export default defineConfig({
   plugins: [tsconfigPaths()],
   resolve: {
     alias: {
+      '@': resolve(__dirname, 'packages/client/src'),
       '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
     },
   },
   test: {
     globals: true,
     alias: {
+      '@': resolve(__dirname, 'packages/client/src'),
       '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
     },
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
@@ -24,7 +26,7 @@ export default defineConfig({
       {
         test: {
           name: 'unit',
-          include: ['**/*.test.ts', '**/*.spec.ts'],
+          include: ['**/*.test.ts', '**/*.spec.ts', '**/*.test.tsx', '**/*.spec.tsx'],
           exclude: [
             ...defaultExclude,
             '**/dist/**',
@@ -35,6 +37,7 @@ export default defineConfig({
           ],
           globals: true,
           alias: {
+            '@': resolve(__dirname, 'packages/client/src'),
             '@accounter/pcn874-generator': resolve(
               __dirname,
               'packages/pcn874-generator/src/index.ts',
@@ -60,6 +63,7 @@ export default defineConfig({
           ],
           globals: true,
           alias: {
+            '@': resolve(__dirname, 'packages/client/src'),
             '@accounter/pcn874-generator': resolve(
               __dirname,
               'packages/pcn874-generator/src/index.ts',
@@ -76,6 +80,7 @@ export default defineConfig({
           exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
           globals: true,
           alias: {
+            '@': resolve(__dirname, 'packages/client/src'),
             '@accounter/pcn874-generator': resolve(
               __dirname,
               'packages/pcn874-generator/src/index.ts',
