@@ -1,6 +1,7 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import { AUTH0_ERROR_MESSAGES } from '../lib/auth0-errors.js';
 import { ROUTES } from '../router/routes.js';
 import { Button } from './ui/button.jsx';
 
@@ -9,11 +10,12 @@ export function LoginPage(): ReactElement {
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? ROUTES.HOME;
-
-  const authError =
-    new URLSearchParams(location.search).get('error') === 'auth_failed'
+  const errorParam = new URLSearchParams(location.search).get('error');
+  const authError = errorParam
+    ? errorParam === 'auth_failed'
       ? 'Authentication failed. Please try again.'
-      : null;
+      : (AUTH0_ERROR_MESSAGES[errorParam] ?? errorParam)
+    : null;
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -38,16 +40,17 @@ export function LoginPage(): ReactElement {
           </div>
 
           <Button
-            onClick={() =>
-              loginWithRedirect({
+            onClick={() => {
+              sessionStorage.setItem('auth:returnTo', returnTo);
+              return loginWithRedirect({
                 authorizationParams: {
                   audience: import.meta.env.VITE_AUTH0_AUDIENCE,
                   scope: 'openid profile email',
                   redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
                 },
                 appState: { returnTo },
-              })
-            }
+              });
+            }}
             className="w-full font-semibold"
             disabled={isLoading}
           >
