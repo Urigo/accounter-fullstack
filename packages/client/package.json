@@ -24,7 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@auth0/auth0-react": "2.15.0",
+    "@auth0/auth0-react": "2.15.1",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@hookform/resolvers": "5.2.2",
