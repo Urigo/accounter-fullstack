@@ -1,12 +1,11 @@
-version: '1.0'
-name: 'accounter-dev'
+name: "accounter-dev"
 services:
   db:
     image: postgres:16-alpine
     networks:
-      - 'stack'
+      - "stack"
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}']
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -18,7 +17,26 @@ services:
     volumes:
       - ./.accounter-dev/postgresql/db:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "5432:5432"
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server.dev
+    environment:
+      - NODE_OPTIONS=--max-old-space-size=1800
+    ports:
+      - "4000:4000"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+        reservations:
+          memory: 512M
+    volumes:
+      - ../:/app
+      - /app/node_modules
+      - /app/.yarn
 
 networks:
   stack: {}
