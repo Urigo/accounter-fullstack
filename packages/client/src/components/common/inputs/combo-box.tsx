@@ -173,10 +173,10 @@ function OptionsList({
               }}
             >
               <div className="flex flex-col">
+                <span>{option.label}</span>
                 {option.description && (
                   <span className="text-xs opacity-65">{option.description}</span>
                 )}
-                <span>{option.label}</span>
               </div>
               <Check
                 className={cn('ml-auto', option.value === value ? 'opacity-100' : 'opacity-0')}

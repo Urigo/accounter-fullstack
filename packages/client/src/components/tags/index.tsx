@@ -1,15 +1,14 @@
-import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
-import { ListPlus, Loader2, Trash2 } from 'lucide-react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Plus, Search } from 'lucide-react';
 import { useQuery } from 'urql';
 import { AllTagsScreenDocument } from '../../gql/graphql.js';
-import { sortTags } from '../../helpers/index.js';
-import { useAddTag } from '../../hooks/use-add-tag.js';
-import { useDeleteTag } from '../../hooks/use-delete-tag.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { EditTagModal } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
-import { Input } from '../ui/input.js';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group.js';
+import { Spinner } from '../ui/spinner.js';
+import { AddTag } from './add-tag.js';
+import { TagsList } from './tags-list.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -18,90 +17,75 @@ import { Input } from '../ui/input.js';
       id
       name
       namePath
+      parent {
+        id
+      }
       ...EditTagFields
     }
   }
 `;
 
 export const TagsManager = (): ReactElement => {
+  const [search, setSearch] = useState('');
   const { setFiltersContext } = useContext(FiltersContext);
-  const [newTag, setNewTag] = useState('');
-  const [{ data, fetching }, refetch] = useQuery({
-    query: AllTagsScreenDocument,
-  });
-  const { addTag } = useAddTag();
-  const { deleteTag } = useDeleteTag();
-
   useEffect(() => {
     setFiltersContext(null);
   }, [setFiltersContext]);
 
-  const allTags = sortTags(data?.allTags ?? []);
+  const [{ data, fetching }, refetch] = useQuery({
+    query: AllTagsScreenDocument,
+  });
 
-  const onAddTag = useCallback(
-    (tagName: string) => {
-      if (tagName.length > 2) {
-        addTag({ tagName }).then(() => {
-          refetch();
-        });
-      }
-    },
-    [addTag, refetch],
-  );
-  const onDeleteTag = useCallback(
-    (tagId: string, tagName: string) => {
-      deleteTag({ tagId, name: tagName }).then(() => {
-        refetch();
-      });
-    },
-    [deleteTag, refetch],
-  );
+  const tags = useMemo(() => data?.allTags ?? [], [data]);
+
+  if (fetching && tags.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner className="size-8" />
+          <p className="text-muted-foreground text-sm">Loading tags...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <PageLayout title="Tags" description="Manage tags for your bookmarks.">
-      {fetching ? (
-        <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : (
-        <div className="h-full flex flex-col overflow-hidden">
-          {allTags?.map(tag => (
-            <div key={tag.id} className="flex items-center gap-2 text-gray-600 mb-2">
-              <div className="w-full mt-1 relative rounded-md shadow-xs">
-                {tag.namePath?.map((_, i) => (
-                  <span key={i} className="ms-2" />
-                ))}
-                {tag.name}
-              </div>
-              <EditTagModal data={tag} />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7.5"
-                onClick={(): void => onDeleteTag(tag.id, tag.name)}
-              >
-                <Trash2 className="size-5" />
-              </Button>
-            </div>
-          ))}
-          <div className="flex justify-start items-center gap-2 text-gray-600 mb-2">
-            <Input
-              className="w-80"
-              value={newTag}
-              onChange={(event): void => setNewTag(event.currentTarget.value)}
-              placeholder="Add new tag"
-              required
+    <PageLayout
+      title="Tags"
+      description="Manage your charges tags."
+      headerActions={
+        <div className="flex items-center gap-2">
+          <InputGroup className="max-w-xs">
+            <InputGroupInput
+              placeholder="Search tags..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="ps-10"
             />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-7.5"
-              disabled={newTag.length < 2}
-              onClick={(): void => onAddTag(newTag)}
-            >
-              <ListPlus className="size-5" />
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+          </InputGroup>
+          <AddTag
+            onDone={async () => {
+              await refetch();
+            }}
+          >
+            <Button className="w-full sm:w-auto">
+              <Plus className="size-4 me-2" />
+              Create Tag
             </Button>
-          </div>
+          </AddTag>
         </div>
-      )}
+      }
+    >
+      <TagsList
+        search={search}
+        allTags={tags}
+        onChange={async () => {
+          await refetch();
+        }}
+      />
     </PageLayout>
   );
 };
