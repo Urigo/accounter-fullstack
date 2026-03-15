@@ -9,14 +9,14 @@
       "!packages/old-accounter"
     ]
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.13.0",
   "engines": {
     "node": "24.14.0"
   },
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
-    "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server run build",
-    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/server --exclude accounter-monorepo run build",
+    "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server --include @accounter-helper/scraper-local-app run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/client --exclude @accounter-helper/scraper-local-app --exclude accounter-monorepo run build",
     "db:migrate": "yarn migration:run",
     "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
