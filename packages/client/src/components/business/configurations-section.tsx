@@ -602,10 +602,7 @@ function DefaultSettingsSubSection({ form }: SubSectionProps) {
               <FormLabel>Tags</FormLabel>
               <FormControl>
                 <MultiSelect
-                  options={Object.values(selectableTags).map(({ value, label }) => ({
-                    label,
-                    value,
-                  }))}
+                  options={Object.values(selectableTags)}
                   onValueChange={field.onChange}
                   defaultValue={field.value}
                   value={field.value}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CheckIcon, ChevronDownIcon } from '@radix-ui/react-icons';
+import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.jsx';
 import {
