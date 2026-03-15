@@ -6,8 +6,8 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation AddTag($tagName: String!) {
-    addTag(name: $tagName)
+  mutation AddTag($tagName: String!, $parentTag: UUID) {
+    addTag(name: $tagName, parentId: $parentTag)
   }
 `;
 

@@ -44,7 +44,7 @@ export const useGetTags = (): UseGetTags => {
     return tags.map(entity => ({
       value: entity.id,
       label: entity.name,
-      description: entity.namePath ? `${entity.namePath.join(' > ')} >` : undefined,
+      description: entity.namePath ? entity.namePath.join(' > ') : undefined,
     }));
   }, [tags]);
 
