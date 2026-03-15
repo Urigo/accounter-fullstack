@@ -15,9 +15,11 @@ import { commonChargeFields } from './common.js';
 
 export const financialChargesResolvers: ChargesModule.Resolvers = {
   Query: {
-    annualFinancialCharges: async (_, { ownerId, year }, { injector, adminContext }) => {
+    annualFinancialCharges: async (_, { ownerId, year }, { injector }) => {
+      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
       const charges = await injector.get(ChargesProvider).getChargesByFilters({
-        ownerIds: [ownerId ?? adminContext.defaultAdminBusinessId],
+        ownerIds: [ownerId ?? adminContext.ownerId],
         type: 'FINANCIAL',
         fromAnyDate: year,
         toAnyDate: year,

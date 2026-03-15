@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     annualFinancialCharges(ownerId: UUID, year: TimelessDate!): FinancialChargesGenerationResult!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
   extend type Mutation {
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!

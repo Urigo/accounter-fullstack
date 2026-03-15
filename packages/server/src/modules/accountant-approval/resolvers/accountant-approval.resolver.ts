@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsTypes } from '../../business-trips/index.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import type { ChargesTypes } from '../../charges';
@@ -9,16 +10,14 @@ import { commonChargeFields } from './common.js';
 
 export const accountantApprovalResolvers: AccountantApprovalModule.Resolvers = {
   Query: {
-    accountantApprovalStatus: async (
-      _,
-      { from, to },
-      { injector, adminContext: { defaultAdminBusinessId } },
-    ) => {
+    accountantApprovalStatus: async (_, { from, to }, { injector }) => {
       try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
         const statuses = await injector.get(AccountantApprovalProvider).getChargesApprovalStatus({
           fromDate: from,
           toDate: to,
-          ownerIds: [defaultAdminBusinessId],
+          ownerIds: [ownerId],
         });
         if (!statuses || statuses.length === 0) {
           throw new GraphQLError('No charges found for the specified date range');

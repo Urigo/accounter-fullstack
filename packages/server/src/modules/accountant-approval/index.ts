@@ -10,7 +10,7 @@ export const accountantApprovalModule = createModule({
   dirname: __dirname,
   typeDefs: [accountantApproval],
   resolvers: [accountantApprovalResolvers],
-  providers: [AccountantApprovalProvider],
+  providers: () => [AccountantApprovalProvider],
 });
 
 export * as AccountantApprovalTypes from './types.js';

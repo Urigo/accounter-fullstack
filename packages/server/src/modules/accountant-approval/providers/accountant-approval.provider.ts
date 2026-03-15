@@ -1,6 +1,6 @@
 import { Injectable, Scope } from 'graphql-modules';
-import { DBProvider } from '@modules/app-providers/db.provider.js';
 import { sql } from '@pgtyped/runtime';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type { IGetChargesApprovalStatusParams, IGetChargesApprovalStatusQuery } from '../types.js';
 
 const getChargesApprovalStatus = sql<IGetChargesApprovalStatusQuery>`
@@ -14,13 +14,13 @@ const getChargesApprovalStatus = sql<IGetChargesApprovalStatusQuery>`
   AND LEAST(documents_min_date, transactions_min_event_date, transactions_min_debit_date, ledger_min_invoice_date, ledger_min_value_date)::TEXT::DATE <= date_trunc('day', $toDate ::DATE);`;
 
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class AccountantApprovalProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   public getChargesApprovalStatus(params: IGetChargesApprovalStatusParams) {
-    return getChargesApprovalStatus.run(params, this.dbProvider);
+    return getChargesApprovalStatus.run(params, this.db);
   }
 }
