@@ -10,7 +10,7 @@ export const chargesMatcherModule = createModule({
   dirname: __dirname,
   typeDefs: [chargesMatcherTypeDefs],
   resolvers: [chargesMatcherResolvers],
-  providers: [ChargesMatcherProvider],
+  providers: () => [ChargesMatcherProvider],
 });
 
 export * as ChargesMatcherTypes from './types.js';

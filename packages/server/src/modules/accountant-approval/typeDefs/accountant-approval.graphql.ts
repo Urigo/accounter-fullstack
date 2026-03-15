@@ -3,7 +3,8 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     accountantApprovalStatus(from: TimelessDate!, to: TimelessDate!): AccountantApprovalStatus!
-      @auth(role: ACCOUNTANT)
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " represents accountant approval status for a charge "
