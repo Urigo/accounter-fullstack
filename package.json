@@ -27,7 +27,7 @@
     "graphql:coverage": "yarn graphql-inspector coverage './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache .",
-    "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn setup",
+    "local:setup": "docker compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn setup",
     "mesh:artifacts-rename": "yarn node ./scripts/mesh-artifacts-rename.mjs",
     "pre-commit": "lint-staged",
     "prettier:check": "prettier --cache --check .",

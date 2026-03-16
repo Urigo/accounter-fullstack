@@ -182,7 +182,7 @@ export function AuthCallbackPage(): ReactElement {
                 return loginWithRedirect({
                   authorizationParams: {
                     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-                    scope: 'openid profile email offline_access',
+                    scope: 'openid profile email',
                     redirect_uri: `${redirectUriOrigin}${ROUTES.AUTH_CALLBACK}`,
                   },
                   appState: { returnTo: savedReturnTo ?? ROUTES.HOME },

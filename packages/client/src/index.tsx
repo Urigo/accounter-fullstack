@@ -74,9 +74,9 @@ root.render(
       authorizationParams={{
         redirect_uri: redirectUri,
         audience,
-        scope: 'openid profile email offline_access',
+        scope: 'openid profile email',
       }}
-      useRefreshTokens
+      useRefreshTokens={false}
       cacheLocation="localstorage"
       skipRedirectCallback={shouldSkipRedirectCallback}
     >
