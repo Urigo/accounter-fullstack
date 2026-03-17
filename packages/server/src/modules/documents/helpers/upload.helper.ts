@@ -172,6 +172,7 @@ export async function getDocumentFromFile(
   file: File | Blob,
   chargeId?: string | null,
   isSensitive?: boolean | null,
+  counterPartyId?: string,
 ): Promise<IInsertDocumentsParams['documents'][number]> {
   try {
     const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -188,6 +189,10 @@ export async function getDocumentFromFile(
 
     if (!ocrData) {
       throw new Error('No data returned from Green Invoice');
+    }
+
+    if (counterPartyId) {
+      ocrData.counterpartyId = counterPartyId;
     }
 
     return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, hash);
