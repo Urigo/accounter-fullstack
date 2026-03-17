@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
-import { getChargeHref } from '@/components/screens/charges/charge.js';
 import { NavLink } from '@mantine/core';
+import { ROUTES } from '@/router/routes.js';
 
 export const ChargeLink = ({
   chargeId,
@@ -15,7 +15,7 @@ export const ChargeLink = ({
       label={label}
       onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
         event.stopPropagation();
-        window.open(getChargeHref(chargeId), '_blank', 'noreferrer');
+        window.open(ROUTES.CHARGES.DETAIL(chargeId), '_blank', 'noreferrer');
       }}
     />
   );
