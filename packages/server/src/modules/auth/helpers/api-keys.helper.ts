@@ -1,1 +1,1 @@
-export const ALLOWED_API_KEY_ROLES = ['scraper'] as const;
+export const ALLOWED_API_KEY_ROLES = ['scraper', 'gmail_listener'] as const;
