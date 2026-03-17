@@ -1,6 +1,11 @@
 import { gql } from 'graphql-modules';
 
 export default gql`
+  extend type Query {
+    annualFinancialCharges(ownerId: UUID, year: TimelessDate!): FinancialChargesGenerationResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
   extend type Mutation {
     generateRevaluationCharge(ownerId: UUID!, date: TimelessDate!): FinancialCharge!
       @requiresAuth
@@ -24,6 +29,12 @@ export default gql`
       description: String!
       balanceRecords: [InsertMiscExpenseInput!]!
     ): FinancialCharge! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    generateFinancialCharges(
+      date: TimelessDate!
+      ownerId: UUID!
+    ): FinancialChargesGenerationResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " financial charge "
@@ -44,5 +55,16 @@ export default gql`
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
     optionalDocuments: Boolean
+  }
+
+  " result type for generateFinancialCharges "
+  type FinancialChargesGenerationResult {
+    id: ID!
+    revaluationCharge: FinancialCharge
+    taxExpensesCharge: FinancialCharge
+    depreciationCharge: FinancialCharge
+    recoveryReserveCharge: FinancialCharge
+    vacationReserveCharge: FinancialCharge
+    bankDepositsRevaluationCharge: FinancialCharge
   }
 `;

@@ -6,6 +6,67 @@
  * - <Link to={ROUTES.REPORTS.TAX(2024)}>Tax Report</Link>
  */
 
+import type { ContoReportFiltersType } from '@/components/reports/conto/conto-report-filters.js';
+import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
+import type { ChargeFilter } from '@/gql/graphql.js';
+import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
+import { isObjectEmpty } from '@/helpers/form.js';
+
+export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
+export function getAllChargesParams(filter?: ChargeFilter | null, page?: number): string {
+  const params = new URLSearchParams();
+  if (page) {
+    params.append('page', String(page));
+  }
+
+  const chargesFilters = encodeChargesFilters(filter);
+  if (chargesFilters) {
+    // Add it as a single encoded parameter
+    params.append('chargesFilters', chargesFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '/';
+  return queryParams;
+}
+
+function encodeContoReportFilters(filter?: ContoReportFiltersType | null): string | null {
+  if (!filter || isObjectEmpty(filter)) return null;
+  return encodeURIComponent(JSON.stringify(filter));
+}
+
+function getContoReportParams(filter?: ContoReportFiltersType | null): string {
+  const params = new URLSearchParams();
+
+  const contoReportFilters = encodeContoReportFilters(filter);
+  if (contoReportFilters) {
+    // Add it as a single encoded parameter
+    params.append(CONTO_REPORT_FILTERS_KEY, contoReportFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/reports/conto${queryParams}`;
+}
+
+function encodeTrialBalanceReportFilters(filter?: TrialBalanceReportFilters | null): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+}
+
+function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): string {
+  const params = new URLSearchParams();
+
+  const trialBalanceReportFilters = encodeTrialBalanceReportFilters(filter);
+  if (trialBalanceReportFilters) {
+    // Add it as a single encoded parameter
+    params.append('trialBalanceReportFilters', trialBalanceReportFilters);
+  }
+
+  const queryParams = params.size > 0 ? `?${params}` : '';
+  return `/reports/trial-balance${queryParams}`;
+}
+
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
@@ -15,7 +76,8 @@ export const ROUTES = {
 
   CHARGES: {
     ROOT: '/charges',
-    ALL: '/charges',
+    ALL: (filter?: ChargeFilter | null, page?: number) =>
+      `/charges${getAllChargesParams(filter, page)}`,
     MISSING_INFO: '/charges/missing-info',
     LEDGER_VALIDATION: '/charges/ledger-validation',
     DETAIL: (chargeId: string) => `/charges/${chargeId}`,
@@ -51,8 +113,10 @@ export const ROUTES = {
 
   REPORTS: {
     ROOT: '/reports',
-    TRIAL_BALANCE: '/reports/trial-balance',
-    CONTO: '/reports/conto',
+    TRIAL_BALANCE: (filter?: TrialBalanceReportFilters | null) =>
+      `/reports/trial-balance${getTrialBalanceReportHref(filter)}`,
+    CONTO: (filter?: ContoReportFiltersType | null) =>
+      `/reports/conto${getContoReportParams(filter)}`,
     VAT_MONTHLY: '/reports/vat-monthly',
     PROFIT_AND_LOSS: (year?: number) =>
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',
@@ -72,6 +136,11 @@ export const ROUTES = {
   BANK_DEPOSITS: {
     ROOT: '/bank-deposits',
     ALL: '/bank-deposits',
+  },
+
+  WORKFLOWS: {
+    ROOT: '/workflows',
+    ANNUAL_AUDIT: '/workflows/annual-audit',
   },
 
   ACCOUNTANT_APPROVALS: '/accountant-approvals',

@@ -324,10 +324,30 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
     lockLedgerRecords: async (_, { date }, { injector }) => {
       try {
-        await injector.get(LedgerProvider).lockLedgerRecords(date);
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        const lockByRecords = injector
+          .get(LedgerProvider)
+          .lockLedgerRecords(date)
+          .catch(e => {
+            console.error(`Error locking ledger records for ${date}: ${e}`);
+            throw new Error(`Error locking ledger records for ${date}`);
+          });
+        const lockByDate = injector
+          .get(AdminContextProvider)
+          .updateAdminContext({
+            ownerId,
+            ledgerLock: date,
+          })
+          .catch(e => {
+            console.error(`Error locking ledger by date ${date}: ${e}`);
+            throw new Error(`Error locking ledger by date ${date}`);
+          });
+        await Promise.all([lockByRecords, lockByDate]);
+
         return true;
       } catch (error) {
-        console.error(`Error locking ledger records for ${date}: ${error}`);
+        console.error(`Error locking ledger for ${date}: ${error}`);
         return false;
       }
     },

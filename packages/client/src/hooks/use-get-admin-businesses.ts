@@ -9,11 +9,12 @@ import { AllAdminBusinessesDocument, type AllAdminBusinessesQuery } from '../gql
     allAdminBusinesses {
       id
       name
+      governmentId
     }
   }
 `;
 
-type AdminBusinesses = NonNullable<AllAdminBusinessesQuery['allAdminBusinesses']>;
+export type AdminBusinesses = NonNullable<AllAdminBusinessesQuery['allAdminBusinesses']>;
 
 type UseGetAdminBusinesses = {
   fetching: boolean;

@@ -16,6 +16,7 @@ import {
   Files,
   HandCoins,
   IdCard,
+  ListChecks,
   ParkingMeter,
   PlaneTakeoff,
   Puzzle,
@@ -52,7 +53,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'All Charges',
         label: '',
-        href: ROUTES.CHARGES.ALL,
+        href: ROUTES.CHARGES.ALL(),
         icon: <Receipt size={18} />,
       },
       {
@@ -84,13 +85,13 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Trial Balance Report',
         label: '',
-        href: ROUTES.REPORTS.TRIAL_BALANCE,
+        href: ROUTES.REPORTS.TRIAL_BALANCE(),
         icon: <Scale size={18} />,
       },
       {
         title: 'Conto Report',
         label: '',
-        href: ROUTES.REPORTS.CONTO,
+        href: ROUTES.REPORTS.CONTO(),
         icon: <Puzzle size={18} />,
       },
       {
@@ -253,6 +254,20 @@ export const sidelinks: SideLink[] = [
         label: '',
         href: ROUTES.CHARTS.MONTHLY_INCOME_EXPENSE,
         icon: <BarChartBig size={18} />,
+      },
+    ],
+  },
+  {
+    title: 'Workflows',
+    label: '',
+    href: '',
+    icon: <ListChecks size={18} />,
+    sub: [
+      {
+        title: 'Annual audit',
+        label: '',
+        href: ROUTES.WORKFLOWS.ANNUAL_AUDIT,
+        icon: <ListChecks size={18} />,
       },
     ],
   },
