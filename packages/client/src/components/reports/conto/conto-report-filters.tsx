@@ -6,7 +6,11 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import {
+  CONTO_REPORT_FILTERS_KEY,
+  isObjectEmpty,
+  TIMELESS_DATE_REGEX,
+} from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
@@ -20,12 +24,6 @@ import {
 } from '../../ui/dialog.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { CONTO_REPORT_FILTERS_KEY } from './index.js';
-
-export function encodeContoReportFilters(filter?: ContoReportFiltersType | null): string | null {
-  if (!filter || isObjectEmpty(filter)) return null;
-  return encodeURIComponent(JSON.stringify(filter));
-}
 
 export type ContoReportFiltersType = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;

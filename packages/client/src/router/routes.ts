@@ -6,17 +6,11 @@
  * - <Link to={ROUTES.REPORTS.TAX(2024)}>Tax Report</Link>
  */
 
-import {
-  encodeContoReportFilters,
-  type ContoReportFiltersType,
-} from '@/components/reports/conto/conto-report-filters.js';
-import { CONTO_REPORT_FILTERS_KEY } from '@/components/reports/conto/index.js';
-import {
-  encodeTrialBalanceReportFilters,
-  type TrialBalanceReportFilters,
-} from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
+import type { ContoReportFiltersType } from '@/components/reports/conto/conto-report-filters.js';
+import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
 import type { ChargeFilter } from '@/gql/graphql.js';
-import { isObjectEmpty } from '@/helpers/index.js';
+import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
+import { isObjectEmpty } from '@/helpers/form.js';
 
 export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
   return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
@@ -38,6 +32,11 @@ export function getAllChargesParams(filter?: ChargeFilter | null, page?: number)
   return queryParams;
 }
 
+function encodeContoReportFilters(filter?: ContoReportFiltersType | null): string | null {
+  if (!filter || isObjectEmpty(filter)) return null;
+  return encodeURIComponent(JSON.stringify(filter));
+}
+
 function getContoReportParams(filter?: ContoReportFiltersType | null): string {
   const params = new URLSearchParams();
 
@@ -49,6 +48,10 @@ function getContoReportParams(filter?: ContoReportFiltersType | null): string {
 
   const queryParams = params.size > 0 ? `?${params}` : '';
   return `/reports/conto${queryParams}`;
+}
+
+function encodeTrialBalanceReportFilters(filter?: TrialBalanceReportFilters | null): string | null {
+  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
 }
 
 function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): string {

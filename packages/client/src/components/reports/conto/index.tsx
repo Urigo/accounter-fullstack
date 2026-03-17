@@ -6,6 +6,7 @@ import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
+import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import {
   ContoReportDocument,
   TemplateForContoReportDocument,
@@ -87,7 +88,6 @@ import type { CustomData } from './types.js';
 
 const BANK_TREE_ROOT_ID = 'bank';
 export const REPORT_TREE_ROOT_ID = 'report';
-export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
 
 function buildSortCodeFinancialEntitiesMaps(tree: NodeModel<CustomData>[]) {
   const sortCodeMap = new Map<number, string | number>();
