@@ -1,0 +1,22 @@
+query BusinessEmailConfig($email: String!) {
+  businessEmailConfig(email: $email) {
+    businessId
+    internalEmailLinks
+    emailBody
+    attachments
+  }
+}
+
+mutation InsertEmailDocuments(
+  $documents: [FileScalar!]!
+  $userDescription: String!
+  $messageId: String
+  $businessId: UUID
+) {
+  insertEmailDocuments(
+    documents: $documents
+    userDescription: $userDescription
+    messageId: $messageId
+    businessId: $businessId
+  )
+}

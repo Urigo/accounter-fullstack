@@ -1,0 +1,48 @@
+{
+  "name": "@accounter/gmail-listener",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "A Gmail listener that listens for new emails, extracts financial documents, and sends them to the server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/gmail-listener"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/gmail-listener#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "module": "dist/index.js",
+  "keywords": [
+    "gmail",
+    "email",
+    "listener",
+    "documents",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "yarn typecheck && tsup src/index.ts",
+    "dev": "yarn build --watch --onSuccess \"node dist/index.js\"",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "5.3.0",
+    "@whatwg-node/node-fetch": "0.8.5",
+    "dotenv": "17.3.1",
+    "googleapis": "171.4.0",
+    "inline-css": "4.0.3",
+    "playwright": "1.58.2"
+  },
+  "devDependencies": {
+    "@types/inline-css": "3.0.4",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
+}

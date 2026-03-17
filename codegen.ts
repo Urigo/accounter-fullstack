@@ -8,6 +8,7 @@ const config: CodegenConfig = {
     './packages/client/src/hooks/**/*.ts',
     './packages/client/src/providers/**/*.tsx',
     './packages/client/**/*.graphql.ts',
+    './packages/gmail-listener/src/server-requests.ts',
   ],
   emitLegacyCommonJSImports: false,
   generates: {
@@ -182,6 +183,24 @@ const config: CodegenConfig = {
           BigInt: {
             input: 'bigint',
             output: 'bigint',
+          },
+        },
+      },
+    },
+    'packages/gmail-listener/src/gql/': {
+      preset: 'client',
+      config: {
+        documentMode: 'string',
+        enumsAsConst: true,
+        useTypeImports: true,
+        scalars: {
+          FileScalar: {
+            input: 'File',
+            output: 'string',
+          },
+          UUID: {
+            input: 'string',
+            output: 'string',
           },
         },
       },
