@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Calculator } from 'lucide-react';
+import { ROUTES } from '@/router/routes.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.jsx';
-import { getContoReportHref } from '../../../../reports/conto/index.jsx';
-import { getTrialBalanceReportHref } from '../../../../reports/trial-balance-report/index.jsx';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
 
@@ -31,7 +30,7 @@ function SubStep3A({
   adminBusinessId: string;
   disabled: boolean;
 }) {
-  const contoHref = getContoReportHref({
+  const contoHref = ROUTES.REPORTS.CONTO({
     fromDate: `${year - 1}-01-01` as TimelessDateString,
     toDate: `${year - 1}-12-31` as TimelessDateString,
     ownerIds: [adminBusinessId],
@@ -73,7 +72,7 @@ function SubStep3B({
   adminBusinessId: string;
   disabled: boolean;
 }) {
-  const href = getTrialBalanceReportHref({
+  const href = ROUTES.REPORTS.TRIAL_BALANCE({
     toDate: `${year - 1}-12-31` as TimelessDateString,
     ownerIds: [adminBusinessId],
   });

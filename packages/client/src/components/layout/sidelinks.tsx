@@ -53,7 +53,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'All Charges',
         label: '',
-        href: ROUTES.CHARGES.ALL,
+        href: ROUTES.CHARGES.ALL(),
         icon: <Receipt size={18} />,
       },
       {
@@ -85,13 +85,13 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Trial Balance Report',
         label: '',
-        href: ROUTES.REPORTS.TRIAL_BALANCE,
+        href: ROUTES.REPORTS.TRIAL_BALANCE(),
         icon: <Scale size={18} />,
       },
       {
         title: 'Conto Report',
         label: '',
-        href: ROUTES.REPORTS.CONTO,
+        href: ROUTES.REPORTS.CONTO(),
         icon: <Puzzle size={18} />,
       },
       {

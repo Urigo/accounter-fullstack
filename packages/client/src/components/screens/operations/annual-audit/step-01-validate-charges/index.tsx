@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight, Eye } from 'lucide-react';
 import { useQuery } from 'urql';
+import { ROUTES } from '@/router/routes.js';
 import {
   AccountantApprovalStatusDocument,
   AccountantStatus,
@@ -11,7 +12,6 @@ import { Badge } from '../../../../ui/badge.jsx';
 import { Button } from '../../../../ui/button.jsx';
 import { CardContent } from '../../../../ui/card.jsx';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { getAllChargesHref } from '../../../charges/all-charges.jsx';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -126,7 +126,7 @@ export function Step01ValidateCharges(props: Step01Props) {
   }, [data]);
 
   const href = useMemo(() => {
-    return getAllChargesHref({
+    return ROUTES.CHARGES.ALL({
       byOwners: adminBusinessId ? [adminBusinessId] : undefined,
       fromAnyDate: `${year}-01-01` as TimelessDateString,
       toAnyDate: `${year}-12-31` as TimelessDateString,
