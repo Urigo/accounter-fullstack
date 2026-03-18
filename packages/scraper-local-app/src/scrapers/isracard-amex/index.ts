@@ -17,6 +17,8 @@ interface IsracardAmexCreds {
   options?: {
     acceptedCardNumbers?: string[];
     cardNumberMapping?: Record<string, string>;
+    /** Maximum age of transactions to import in months. Defaults to 2. Set higher (e.g. 36) only for the first run to import historical data. */
+    maxTransactionMonths?: number;
   };
 }
 export type IsracardCredentials = IsracardAmexCreds;

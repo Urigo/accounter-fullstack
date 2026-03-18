@@ -1,4 +1,4 @@
-const AUTH0_SCOPE = 'openid profile email';
+const AUTH0_SCOPE = 'openid profile email offline_access';
 
 function buildAuth0CachePrefix(clientId: string, audience: string): string {
   return `@@auth0spajs@@::${clientId}::${audience}::`;

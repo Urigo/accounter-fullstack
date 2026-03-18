@@ -302,7 +302,8 @@ async function isTransactionNew(
   try {
     const res = await existingTransactionsChecker.run(
       {
-        card: Number(transaction.card),
+        // Strip non-digit characters (e.g. "**35") before parsing card number
+        card: parseInt(transaction.card.replace(/\D/g, ''), 10),
         currentPaymentCurrency: transaction.currentPaymentCurrency,
         fullPaymentDate: transaction.fullPaymentDate,
         fullPurchaseDate: transaction.fullPurchaseDate,
@@ -350,13 +351,16 @@ async function insertTransactions(
   pool: Pool,
   logger: Logger,
 ) {
-  const { type, nickname } = context;
+  const { type, nickname, options } = context;
+  const maxTransactionMonths = options?.maxTransactionMonths ?? 2;
   const transactionsToInsert: Array<InsertionTransactionParams> = [];
   for (const transaction of transactions) {
     const purchaseDate = transaction.fullPurchaseDate || transaction.fullPurchaseDateOutbound;
     if (
       purchaseDate != null &&
-      differenceInMonths(new Date(), new Date(purchaseDate.split('/').reverse().join('-'))) > 2
+      // Guard against inserting unexpectedly old transactions. Defaults to 2 months.
+      // Set options.maxTransactionMonths higher (e.g. 36) only on the first run to import history.
+      differenceInMonths(new Date(), new Date(purchaseDate.split('/').reverse().join('-'))) > maxTransactionMonths
     ) {
       logger.error(
         `diff: ${differenceInMonths(new Date(), new Date(purchaseDate))} ${new Date(purchaseDate).toUTCString()}`,
@@ -414,7 +418,7 @@ async function insertTransactions(
       isButton: transaction.isButton,
       siteName: transaction.siteName,
       clientIpAddress: transaction.clientIpAddress ?? null,
-      card: Number(transaction.card),
+      card: parseInt(transaction.card.replace(/\D/g, ''), 10),
       chargingDate: null,
       kodMatbeaMekori: transaction.kodMatbeaMekori ?? null,
       esbServicesCall: transaction.EsbServicesCall ?? null,
@@ -483,7 +487,9 @@ export async function getMonthTransactions(
               return;
             }
 
-            if (!monthTransactions.isValid) {
+            // isValid can be undefined when validateSchema is false, so we check
+            // strictly for `=== false` to avoid treating undefined as invalid.
+            if (monthTransactions.isValid === false) {
               if ('errors' in monthTransactions) {
                 logger.error(monthTransactions.errors);
               }
@@ -493,10 +499,14 @@ export async function getMonthTransactions(
             }
 
             if (monthTransactions?.data?.Header?.Status !== '1') {
-              logger.log(JSON.stringify(monthTransactions.data?.Header));
-              throw new Error(
-                `Replace password for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
+              logger.log(
+                `No data for ${type} ${nickname} ${format(month, 'MM-yyyy')}: ${JSON.stringify(monthTransactions.data?.Header)}`,
               );
+              task.skip('No data from server');
+              ctx[accountKey].processedData ??= {};
+              ctx[accountKey].processedData.transactions ??= 0;
+              parentTask.title = originalTitle + ' (No data)';
+              return;
             }
 
             ctx[accountKey][monthKey].transactionsListBean =
@@ -518,7 +528,10 @@ export async function getMonthTransactions(
           const cardNumberMapping = ctx[accountKey].options?.cardNumberMapping;
           const cardNumbersToMap = cardNumberMapping ? Object.keys(cardNumberMapping) : [];
           transactionsListBean?.cardNumberList.map((cardInformation, index) => {
-            let card = cardInformation.slice(cardInformation.length - 4);
+            // Isracard returns card numbers with non-digit separators (e.g. "**35" or "1234-5678-**35").
+            // Strip non-digits before taking the last 4, falling back to raw slice if no digits found.
+            const digits = cardInformation.replace(/\D/g, '');
+            let card = digits.slice(-4) || cardInformation.slice(-4);
             if (cardNumberMapping && cardNumbersToMap.includes(card)) {
               card = cardNumberMapping[card];
             }
