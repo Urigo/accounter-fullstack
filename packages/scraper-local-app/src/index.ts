@@ -10,7 +10,6 @@ import { getDiscountData, type DiscountCredentials } from './scrapers/discount/i
 import { getIsracardAmexData } from './scrapers/isracard-amex/index.js';
 import type { AmexCredentials, IsracardCredentials } from './scrapers/isracard-amex/index.js';
 import { getMaxData, type MaxCredentials } from './scrapers/max.js';
-import { getMizrahiData, type MizrahiCredentials } from './scrapers/mizrahi/index.js';
 import type { PoalimContext, PoalimCredentials } from './scrapers/poalim/index.js';
 import { getPoalimData } from './scrapers/poalim/index.js';
 
@@ -24,7 +23,6 @@ export type Config = {
   amexAccounts?: AmexCredentials[];
   calAccounts?: CalCredentials[];
   maxAccounts?: MaxCredentials[];
-  mizrahiAccounts?: MizrahiCredentials[];
   /**
    * If true, the scraper will run multiple tasks concurrently.
    * This is useful for scraping multiple accounts at once.
@@ -149,16 +147,6 @@ export async function scrape() {
             title: `MAX ${creds.nickname ?? i + 1}`,
             task: async (_, task) =>
               await getMaxData(creds, task, `MAX-${creds.nickname ?? i + 1}`).catch(e => {
-                logger.error(e);
-              }),
-          }) as ListrTask,
-      ) ?? []),
-      ...(config.mizrahiAccounts?.map(
-        (creds, i) =>
-          ({
-            title: `Mizrahi ${creds.nickname ?? i + 1}`,
-            task: async (ctx, task) =>
-              await getMizrahiData(creds, ctx.pool, ctx.logger, task).catch(e => {
                 logger.error(e);
               }),
           }) as ListrTask,
