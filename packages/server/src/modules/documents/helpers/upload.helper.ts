@@ -172,6 +172,8 @@ export async function getDocumentFromFile(
   file: File | Blob,
   chargeId?: string | null,
   isSensitive?: boolean | null,
+  counterPartyId?: string,
+  hash?: number,
 ): Promise<IInsertDocumentsParams['documents'][number]> {
   try {
     const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -180,17 +182,21 @@ export async function getDocumentFromFile(
     const buffer = await file.arrayBuffer();
     const multiReadableFile = new Blob([buffer], { type: file.type });
 
-    const [{ fileUrl, imageUrl }, ocrData, hash] = await Promise.all([
+    const [{ fileUrl, imageUrl }, ocrData, fileHash] = await Promise.all([
       uploadToCloudinary(injector, multiReadableFile),
       getOcrData(injector, multiReadableFile, isSensitive),
-      getHashFromFile(multiReadableFile),
+      hash ? Promise.resolve(hash) : getHashFromFile(multiReadableFile),
     ]);
 
     if (!ocrData) {
       throw new Error('No data returned from Green Invoice');
     }
 
-    return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, hash);
+    if (counterPartyId) {
+      ocrData.counterpartyId = counterPartyId;
+    }
+
+    return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, fileHash);
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);

@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
-import { sql } from '@pgtyped/runtime';
+import { sql, type IDatabaseConnection } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -446,7 +446,7 @@ export class DocumentsProvider {
     return deleteDocument.run(params, this.db);
   }
 
-  public async insertDocuments(params: IInsertDocumentsParams) {
+  public async insertDocuments(params: IInsertDocumentsParams, dbConnection?: IDatabaseConnection) {
     if (params.documents.length) {
       params.documents.map(doc => {
         if (doc.chargeId) this.invalidateByChargeId(doc.chargeId);
@@ -454,7 +454,7 @@ export class DocumentsProvider {
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     const documentsWithOwnerId = params.documents.map(doc => reassureOwnerIdExists(doc, ownerId));
-    return insertDocuments.run({ documents: documentsWithOwnerId }, this.db);
+    return insertDocuments.run({ documents: documentsWithOwnerId }, dbConnection ?? this.db);
   }
 
   public async replaceDocumentsChargeId(params: IReplaceDocumentsChargeIdParams) {

@@ -6,7 +6,7 @@ import { AuthContextProvider } from '../../../auth/providers/auth-context.provid
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import { ChargesAuthorizationProvider } from '../charges-authorization.provider.js';
 
-type RoleId = 'business_owner' | 'accountant' | 'employee' | 'scraper';
+type RoleId = 'business_owner' | 'accountant' | 'employee' | 'scraper' | 'gmail_listener';
 
 function createMockAuthProvider(roleId: RoleId): Pick<AuthContextProvider, 'getAuthContext'> {
   return {
@@ -73,14 +73,13 @@ describe('ChargesAuthorizationProvider', () => {
     });
   });
 
-  it('canWriteCharge allows business_owner and accountant; blocks employee and scraper', async () => {
+  it('canWriteCharge allows business_owner, accountant, scraper and gmail_listener; blocks employee', async () => {
     await expect(createService('business_owner').canWriteCharge()).resolves.toBeUndefined();
     await expect(createService('accountant').canWriteCharge()).resolves.toBeUndefined();
+    await expect(createService('scraper').canWriteCharge()).resolves.toBeUndefined();
+    await expect(createService('gmail_listener').canWriteCharge()).resolves.toBeUndefined();
 
     await expect(createService('employee').canWriteCharge()).rejects.toMatchObject({
-      extensions: { code: 'FORBIDDEN' },
-    });
-    await expect(createService('scraper').canWriteCharge()).rejects.toMatchObject({
       extensions: { code: 'FORBIDDEN' },
     });
   });

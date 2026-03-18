@@ -1,6 +1,12 @@
 import { GraphQLError } from 'graphql';
 
-export const ALLOWED_ROLES = new Set(['business_owner', 'accountant', 'employee', 'scraper']);
+export const ALLOWED_ROLES = new Set([
+  'business_owner',
+  'accountant',
+  'employee',
+  'scraper',
+  'gmail_listener',
+]);
 
 type Auth0ErrorLike = Error & {
   status?: number;

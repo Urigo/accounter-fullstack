@@ -1,14 +1,8 @@
-import { Inject, Injectable, Scope } from 'graphql-modules';
 import { PubSub, Topic, type Message, type Subscription } from '@google-cloud/pubsub';
-import { ENVIRONMENT } from '../../../shared/tokens.js';
-import type { Environment } from '../../../shared/types/index.js';
-import { GmailServiceProvider } from './gmail-service.provider.js';
+import { Environment } from './environment.js';
+import { GmailService } from './gmail-service.js';
 
-@Injectable({
-  scope: Scope.Singleton,
-  global: true,
-})
-export class PubsubServiceProvider {
+export class PubsubService {
   private static readonly RESTART_DELAY_MS = 5000;
   private static readonly RESTART_RETRY_DELAY_MS = 30_000;
   private static readonly HEALTH_CHECK_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes
@@ -25,16 +19,14 @@ export class PubsubServiceProvider {
   private isListening = false;
 
   constructor(
-    @Inject(ENVIRONMENT) private env: Environment,
-    private gmailService: GmailServiceProvider,
+    private env: Environment,
+    private gmailService: GmailService,
   ) {
     if (!this.env.gmail) {
       throw new Error('Gmail environment configuration is missing');
     }
     this.gmailEnv = this.env.gmail;
     this.pubSubClient = new PubSub({ projectId: this.gmailEnv.cloudProjectId });
-
-    this.startListening();
   }
 
   private async validateAndCreateTopic(): Promise<Topic> {
@@ -263,12 +255,12 @@ export class PubsubServiceProvider {
     try {
       this.stopListening();
       // Wait a bit before restarting
-      await new Promise(resolve => setTimeout(resolve, PubsubServiceProvider.RESTART_DELAY_MS));
+      await new Promise(resolve => setTimeout(resolve, PubsubService.RESTART_DELAY_MS));
       await this.startListening();
     } catch (error) {
       console.error(`[PubSub] Failed to restart listener:`, error);
       // Retry after delay
-      setTimeout(() => this.restartListening(), PubsubServiceProvider.RESTART_RETRY_DELAY_MS);
+      setTimeout(() => this.restartListening(), PubsubService.RESTART_RETRY_DELAY_MS);
     }
   }
 
@@ -300,7 +292,7 @@ export class PubsubServiceProvider {
         console.error(`[PubSub Health] Health check FAILED! Attempting restart...`);
         await this.restartListening();
       }
-    }, PubsubServiceProvider.HEALTH_CHECK_INTERVAL_MS);
+    }, PubsubService.HEALTH_CHECK_INTERVAL_MS);
 
     console.log(`[PubSub] Health monitoring started (10-minute intervals)`);
   }

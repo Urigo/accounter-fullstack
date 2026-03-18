@@ -1,73 +1,14 @@
 import { google, type gmail_v1 } from 'googleapis';
-import { Inject, Injectable, Scope } from 'graphql-modules';
 import inlineCss from 'inline-css';
 import { Browser, chromium } from 'playwright';
-import type { EmailAttachmentType } from '../../../__generated__/types.js';
-import { DocumentType } from '../../../shared/enums.js';
-import { hashStringToInt } from '../../../shared/helpers/index.js';
-import { ENVIRONMENT } from '../../../shared/tokens.js';
-import type { Environment } from '../../../shared/types/index.js';
-import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import {
-  getDocumentFromUrlsAndOcrData,
-  type OcrData,
-} from '../../documents/helpers/upload.helper.js';
-import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
-import {
-  EmailListenerConfig,
-  suggestionDataSchema,
-} from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
-import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
-import { AnthropicProvider } from '../anthropic.js';
-import { CloudinaryProvider } from '../cloudinary.js';
-import { troubleshootOAuth } from './config.js';
+import { Environment } from './environment.js';
+import type { EmailAttachmentType } from './gql/graphql.js';
+import { getServer } from './server-requests.js';
+import { troubleshootOAuth } from './troubleshoot-auth.js';
+import type { EmailData, EmailDocument, Labels, Server } from './types.js';
 
-type EmailDocument = {
-  filename?: string;
-  content?: string;
-  mimeType?: string;
-};
-
-interface EmailData {
-  id: string;
-  threadId: string;
-  subject: string;
-  from: string;
-  originalFrom?: string;
-  replyTo?: string;
-  to: string;
-  body: string;
-  labels: string[];
-  receivedAt: Date;
-  documents?: EmailDocument[];
-}
-
-type Labels = 'processed' | 'main' | 'errors' | 'debug';
-
-const decode64Url = (raw: string) => {
-  // Replace non-url compatible chars with base64 standard chars
-  raw = raw.replace(/-/g, '+').replace(/_/g, '/');
-
-  // Pad out with standard base64 required padding characters
-  const pad = raw.length % 4;
-  if (pad) {
-    if (pad === 1) {
-      throw new Error(
-        'InvalidLengthError: raw base64url string is the wrong length to determine padding',
-      );
-    }
-    raw += new Array(5 - pad).join('=');
-  }
-
-  return raw;
-};
-
-@Injectable({
-  scope: Scope.Singleton,
-  global: true,
-})
-export class GmailServiceProvider {
-  private gmailEnv: NonNullable<Environment['gmail']>;
+export class GmailService {
+  private gmailEnv: Environment['gmail'];
   private targetLabel: string;
   public labelsDict: Record<Labels, string | undefined> = {
     main: undefined,
@@ -76,15 +17,9 @@ export class GmailServiceProvider {
     debug: undefined,
   };
   public gmail: gmail_v1.Gmail;
+  private server: Server;
 
-  constructor(
-    @Inject(ENVIRONMENT) private env: Environment,
-    private cloudinaryProvider: CloudinaryProvider,
-    private anthropicProvider: AnthropicProvider,
-    private chargesProvider: ChargesProvider,
-    private documentsProvider: DocumentsProvider,
-    private businessesProvider: BusinessesProvider,
-  ) {
+  constructor(private env: Environment) {
     this.gmailEnv = this.env.gmail!;
     this.targetLabel = this.gmailEnv.labelPath;
 
@@ -97,7 +32,7 @@ export class GmailServiceProvider {
 
     this.gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-    this.init();
+    this.server = getServer();
   }
 
   /* labels */
@@ -209,74 +144,6 @@ export class GmailServiceProvider {
   }
 
   /* documents handling */
-
-  private async getUploadedDocUrls(doc: EmailDocument) {
-    if (!doc.content || !doc.mimeType) {
-      throw new Error('Document content or mimeType is missing for URL extraction');
-    }
-
-    return this.cloudinaryProvider
-      .uploadInvoiceToCloudinary(`data:${doc.mimeType};base64,${decode64Url(doc.content)}`)
-      .catch(e => {
-        console.error('Error uploading to Cloudinary:', e);
-        throw new Error(`Error on uploading file to cloudinary: ${e.message}`);
-      });
-  }
-
-  private async getOcrData(doc: EmailDocument): Promise<OcrData> {
-    const validateNumber = (value: unknown): number | undefined => {
-      return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
-    };
-
-    const validateDate = (value: string | undefined): Date | undefined => {
-      if (!value) return undefined;
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? undefined : date;
-    };
-
-    if (!doc.content || !doc.mimeType) {
-      throw new Error('Document content or mimeType is missing for OCR');
-    }
-
-    try {
-      const buffer = Buffer.from(decode64Url(doc.content), 'base64');
-      const file = new File([buffer], doc.filename ?? 'unknown', { type: doc.mimeType });
-
-      const draft = await this.anthropicProvider.extractInvoiceDetails(file);
-
-      if (!draft) {
-        throw new Error('No data returned from Anthropic OCR');
-      }
-
-      let isOwnerIssuer: boolean | undefined = undefined;
-      if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
-        isOwnerIssuer = false;
-      }
-      if (draft.issuer?.toLocaleLowerCase().includes('the guild')) {
-        isOwnerIssuer = true;
-      }
-
-      return {
-        isOwnerIssuer,
-        documentType: draft.type ?? DocumentType.Unprocessed,
-        serial: draft.referenceCode,
-        date: validateDate(draft.date),
-        amount: validateNumber(draft.fullAmount),
-        currency: draft.currency,
-        vat: validateNumber(draft.vatAmount),
-        allocationNumber: draft.allocationNumber ?? undefined,
-        description: draft.issuer
-          ? draft.description
-            ? `${draft.issuer} | ${draft.description}`
-            : draft.issuer
-          : draft.description,
-      };
-    } catch (e) {
-      const message = 'Error extracting OCR data from document';
-      console.error(`${message}: ${e}`);
-      throw new Error(message);
-    }
-  }
 
   private async convertHtmlToPdf(rawHtml: string): Promise<Required<EmailDocument>> {
     let browser: Browser | null = null;
@@ -390,62 +257,6 @@ export class GmailServiceProvider {
     } catch (e) {
       console.error(`Error fetching document from internal link ${internalLink}: ${e}`);
       return null;
-    }
-  }
-
-  private async handleDocument(
-    doc: Required<EmailDocument>,
-    chargeId: string,
-    remarks: string,
-    messageId?: string,
-    businessId?: string,
-  ) {
-    try {
-      console.log(`Uploading document: ${doc.filename}, type: ${doc.mimeType}`);
-
-      const hash = hashStringToInt(doc.content);
-
-      const existingDocument = await this.documentsProvider.getDocumentByHash.load(hash);
-      if (existingDocument) {
-        console.log(
-          `Document ${doc.filename} already exists in the database with id=${existingDocument.id}, skipping upload.`,
-        );
-        return;
-      }
-
-      const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-        this.getUploadedDocUrls(doc),
-        this.getOcrData(doc),
-      ]);
-
-      if (businessId) {
-        // link business if found by email
-        ocrData.counterpartyId = businessId;
-      }
-
-      const documentToUpload = getDocumentFromUrlsAndOcrData(
-        fileUrl,
-        imageUrl,
-        ocrData,
-        this.env.authorization.adminBusinessId,
-        chargeId,
-        hash,
-      );
-
-      // insert to DB
-      const [document] = await this.documentsProvider.insertDocuments({
-        documents: [{ ...documentToUpload, remarks }],
-      });
-
-      if (!document) {
-        throw new Error('Failed to insert document into the database');
-      }
-
-      console.log('Document to upload:', documentToUpload);
-    } catch (e) {
-      const message = `Error processing document ${doc.filename}`;
-      console.error(`${message} in email id=${messageId}: ${e}`);
-      throw new Error(message);
     }
   }
 
@@ -635,21 +446,14 @@ export class GmailServiceProvider {
         });
 
         const issuerEmail = this.getIssuerEmail(emailData);
-        const business = await this.businessesProvider.getBusinessByEmail(issuerEmail);
-
-        let listenerConfig: EmailListenerConfig = {};
-        if (business?.suggestion_data) {
-          const { data, success, error } = suggestionDataSchema.safeParse(business.suggestion_data);
-          if (success) {
-            if (data.emailListener) {
-              listenerConfig = data.emailListener;
-            }
-          } else {
-            console.error(
-              `Invalid suggestion_data schema for business "${business.name}" [${business.id}]: ${JSON.stringify(error.issues)}`,
-            );
-          }
-        }
+        const { businessEmailConfig } = await this.server
+          .businessEmailConfig({
+            email: issuerEmail,
+          })
+          .catch(e => {
+            console.error(`Error fetching business email config for email ${issuerEmail}:`, e);
+            throw new Error('Error fetching business email config');
+          });
 
         const extractedDocuments: Array<Required<EmailDocument>> = [];
 
@@ -658,13 +462,13 @@ export class GmailServiceProvider {
           doc => {
             if (!doc.content || !doc.mimeType) return false;
 
-            if (listenerConfig.attachments) {
+            if (businessEmailConfig?.attachments) {
               let docType = doc.mimeType.split('/')[1].toLocaleUpperCase();
               if (docType === 'OCTET-STREAM' && doc.filename?.includes('.pdf')) {
                 doc.mimeType = 'application/pdf';
                 docType = 'PDF';
               }
-              if (!listenerConfig.attachments.includes(docType as EmailAttachmentType)) {
+              if (!businessEmailConfig.attachments.includes(docType as EmailAttachmentType)) {
                 return false; // skip this attachment as per config
               }
             }
@@ -677,14 +481,14 @@ export class GmailServiceProvider {
         }
 
         // Email body as PDF
-        if (!business || listenerConfig.emailBody === true) {
+        if (!businessEmailConfig?.businessId || businessEmailConfig?.emailBody === true) {
           const doc = await this.convertHtmlToPdf(emailData.body);
           extractedDocuments.push(doc);
         }
 
         // Extract documents from internal links
-        if (listenerConfig.internalEmailLinks?.length) {
-          for (const link of listenerConfig.internalEmailLinks) {
+        if (businessEmailConfig?.internalEmailLinks?.length) {
+          for (const link of businessEmailConfig.internalEmailLinks) {
             const doc = await this.innerLinkDocumentFetcher(emailData.body, link);
             if (doc) {
               extractedDocuments.push(doc);
@@ -699,32 +503,28 @@ export class GmailServiceProvider {
         }
 
         const userDescription = `Email documents: ${emailData.subject} (from: ${emailData.from}, ${emailData.receivedAt.toDateString()})`;
-        const charge = await this.chargesProvider
-          .generateCharge({
-            ownerId: this.env.authorization.adminBusinessId,
+        const documents = extractedDocuments.map(
+          doc =>
+            new File([Buffer.from(doc.content, 'base64')], doc.filename, {
+              type: doc.mimeType,
+            }),
+        );
+        const { insertEmailDocuments } = await this.server
+          .insertEmailDocuments({
+            documents,
             userDescription,
+            messageId: message.id ?? undefined,
+            businessId: businessEmailConfig?.businessId,
           })
           .catch(e => {
-            throw new Error(`Error generating charge for email id=${message.id}: ${e}`);
+            console.error(`Error sending documents to server for email id=${message.id}:`, e);
+            throw new Error('Error sending documents to server');
           });
-
-        if (!charge?.id) {
-          throw new Error(`Charge creation failed for email id=${message.id}`);
+        if (!insertEmailDocuments) {
+          throw new Error(`Server processing failed for email id=${message.id}`);
         }
 
-        await Promise.all(
-          extractedDocuments.map(async doc =>
-            this.handleDocument(
-              doc,
-              charge.id,
-              userDescription,
-              message.id ?? undefined,
-              business?.id,
-            ),
-          ),
-        );
-
-        this.labelMessageAsProcessed(message.id);
+        await this.labelMessageAsProcessed(message.id);
       }
     } catch (error) {
       console.error(`Error handling message id=${message.id}:`, error);
@@ -732,7 +532,7 @@ export class GmailServiceProvider {
     }
   }
 
-  private async handlePendingMessages(): Promise<boolean> {
+  public async handlePendingMessages(): Promise<boolean> {
     try {
       // Get recent messages
       const response = await this.gmail.users.messages.list({
@@ -757,10 +557,5 @@ export class GmailServiceProvider {
   public async init() {
     await troubleshootOAuth(this.gmailEnv);
     await this.setupLabels();
-    await this.handlePendingMessages();
-  }
-
-  public async triggerHandlePendingMessages() {
-    return await this.handlePendingMessages();
   }
 }

@@ -1,15 +1,11 @@
 import { google } from 'googleapis';
-import { Environment } from '../../../shared/types/index.js';
+import type { Environment } from './environment.js';
 
 export async function troubleshootOAuth(gmailEnv: Environment['gmail']) {
   console.log('🔍 OAuth2 Configuration Troubleshooter\n');
 
   // Check environment variables
-  const requiredVars: (keyof NonNullable<Environment['gmail']>)[] = [
-    'clientId',
-    'clientSecret',
-    'refreshToken',
-  ];
+  const requiredVars: (keyof Environment['gmail'])[] = ['clientId', 'clientSecret', 'refreshToken'];
 
   console.log('1. Checking environment variables:');
   let missingVars = !gmailEnv;

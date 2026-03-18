@@ -18,7 +18,7 @@ export class ChargesAuthorizationProvider extends AuthorizationProvider {
   }
 
   async canWriteCharge(): Promise<void> {
-    await this.requireRole(['business_owner', 'accountant']);
+    await this.requireRole(['business_owner', 'accountant', 'gmail_listener', 'scraper']);
   }
 
   async canDeleteChargesByIds(chargeIds: readonly string[]): Promise<void> {

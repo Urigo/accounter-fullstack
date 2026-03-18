@@ -5,7 +5,7 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@0no-co/graphql.web@npm:^1.0.13":
+"@0no-co/graphql.web@npm:^1.0.13, @0no-co/graphql.web@npm:^1.0.5":
   version: 1.2.0
   resolution: "@0no-co/graphql.web@npm:1.2.0"
   peerDependencies:
@@ -14,6 +14,19 @@ __metadata:
     graphql:
       optional: true
   checksum: 10c0/4eed600962bfab42afb49cddcfb31a47b00502f59707609cf160559920ce0f5cf8874791e4cafc465ede30ae291992f3f892bc757b2a989e80e50e358f71c518
+  languageName: node
+  linkType: hard
+
+"@0no-co/graphqlsp@npm:1.15.2":
+  version: 1.15.2
+  resolution: "@0no-co/graphqlsp@npm:1.15.2"
+  dependencies:
+    "@gql.tada/internal": "npm:^1.0.0"
+    graphql: "npm:^15.5.0 || ^16.0.0 || ^17.0.0"
+  peerDependencies:
+    graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+    typescript: ^5.0.0
+  checksum: 10c0/d5287d705e96f81e6e88d5435be6634701507570b69235dff4de8be9c91ad9c7a783ed114f8ac81964b79dfa847dd17d2e1f7e9486e717c43147974da5d0f015
   languageName: node
   linkType: hard
 
@@ -144,6 +157,25 @@ __metadata:
     dotenv: "npm:17.3.1"
     pg-promise: "npm:12.6.2"
     tsup: "npm:8.5.1"
+  languageName: unknown
+  linkType: soft
+
+"@accounter/gmail-listener@workspace:packages/gmail-listener":
+  version: 0.0.0-use.local
+  resolution: "@accounter/gmail-listener@workspace:packages/gmail-listener"
+  dependencies:
+    "@google-cloud/pubsub": "npm:5.3.0"
+    "@types/inline-css": "npm:3.0.4"
+    "@whatwg-node/fetch": "npm:0.10.13"
+    "@whatwg-node/node-fetch": "npm:0.8.5"
+    dotenv: "npm:17.3.1"
+    googleapis: "npm:171.4.0"
+    graphql: "npm:16.13.1"
+    inline-css: "npm:4.0.3"
+    playwright: "npm:1.58.2"
+    tsup: "npm:8.5.1"
+    typescript: "npm:5.9.3"
+    zod: "npm:4.3.6"
   languageName: unknown
   linkType: soft
 
@@ -1845,6 +1877,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@gql.tada/internal@npm:^1.0.0":
+  version: 1.0.8
+  resolution: "@gql.tada/internal@npm:1.0.8"
+  dependencies:
+    "@0no-co/graphql.web": "npm:^1.0.5"
+  peerDependencies:
+    graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+    typescript: ^5.0.0
+  checksum: 10c0/dd9b34296160f7eb4374b1791dd9353fd4147f4d7e2a3a8e2974c2319dc6165a4458c19d9b517a3f7764da4e7a4401c099fdf1936841de02c0e565db95d64a5d
+  languageName: node
+  linkType: hard
+
 "@graphql-codegen/add@npm:^6.0.0":
   version: 6.0.0
   resolution: "@graphql-codegen/add@npm:6.0.0"
@@ -2039,6 +2083,22 @@ __metadata:
     graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-tag: ^2.0.0
   checksum: 10c0/ae89b5f63dab941b4535c3846cec384852d38bc6a8d26046fa3b1f829358bcf6b6bdd4474b14d799b281d3ae987c9f8f903135282e4e57a3153dbd9a37ea7780
+  languageName: node
+  linkType: hard
+
+"@graphql-codegen/typescript-graphql-request@npm:7.0.0":
+  version: 7.0.0
+  resolution: "@graphql-codegen/typescript-graphql-request@npm:7.0.0"
+  dependencies:
+    "@graphql-codegen/plugin-helpers": "npm:^6.1.1"
+    "@graphql-codegen/visitor-plugin-common": "npm:^6.2.4"
+    auto-bind: "npm:~4.0.0"
+    tslib: "npm:^2.8.1"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
+    graphql-request: ^6.0.0 || ^7.0.0
+    graphql-tag: ^2.0.0
+  checksum: 10c0/85517622b58fc4c8d1366b165ea697b024f54bcaa0ea296660918ce3bda33c3885b113345e15e055da80593341c5e88d3b7ddc402ff11ba4445149f32774b190
   languageName: node
   linkType: hard
 
@@ -9288,6 +9348,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@whatwg-node/node-fetch@npm:0.8.5, @whatwg-node/node-fetch@npm:^0.8.3":
+  version: 0.8.5
+  resolution: "@whatwg-node/node-fetch@npm:0.8.5"
+  dependencies:
+    "@fastify/busboy": "npm:^3.1.1"
+    "@whatwg-node/disposablestack": "npm:^0.0.6"
+    "@whatwg-node/promise-helpers": "npm:^1.3.2"
+    tslib: "npm:^2.6.3"
+  checksum: 10c0/9f0d944476cc40f5cfed79057cff269ddacf52bd4dda36017fe922cbf3e0a98850f26cb9c4e7990e87e6097f2f9dd94a20c6cc11f95d57652a516e99a5ccafc2
+  languageName: node
+  linkType: hard
+
 "@whatwg-node/node-fetch@npm:^0.6.0":
   version: 0.6.0
   resolution: "@whatwg-node/node-fetch@npm:0.6.0"
@@ -9309,18 +9381,6 @@ __metadata:
     "@whatwg-node/promise-helpers": "npm:^1.3.2"
     tslib: "npm:^2.6.3"
   checksum: 10c0/4aaed0511dc1b4cdfa060e5f3d0919d162c786d88bae93fd98a0dab6b55d8c09b6ecca17c96d3b29900e1e045db811a5fefc597614097e161a9b8b558102eb91
-  languageName: node
-  linkType: hard
-
-"@whatwg-node/node-fetch@npm:^0.8.3":
-  version: 0.8.5
-  resolution: "@whatwg-node/node-fetch@npm:0.8.5"
-  dependencies:
-    "@fastify/busboy": "npm:^3.1.1"
-    "@whatwg-node/disposablestack": "npm:^0.0.6"
-    "@whatwg-node/promise-helpers": "npm:^1.3.2"
-    tslib: "npm:^2.6.3"
-  checksum: 10c0/9f0d944476cc40f5cfed79057cff269ddacf52bd4dda36017fe922cbf3e0a98850f26cb9c4e7990e87e6097f2f9dd94a20c6cc11f95d57652a516e99a5ccafc2
   languageName: node
   linkType: hard
 
@@ -9383,6 +9443,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "accounter-monorepo@workspace:."
   dependencies:
+    "@0no-co/graphqlsp": "npm:1.15.2"
     "@changesets/changelog-github": "npm:0.6.0"
     "@changesets/cli": "npm:2.30.0"
     "@eslint/eslintrc": "npm:3.3.5"
@@ -9392,6 +9453,7 @@ __metadata:
     "@graphql-codegen/graphql-modules-preset": "npm:5.1.4"
     "@graphql-codegen/schema-ast": "npm:5.0.1"
     "@graphql-codegen/typescript": "npm:5.0.9"
+    "@graphql-codegen/typescript-graphql-request": "npm:7.0.0"
     "@graphql-codegen/typescript-resolvers": "npm:5.1.7"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
     "@graphql-hive/cli": "npm:0.58.5"
