@@ -80,7 +80,7 @@ async function insertEmailDocuments(
 
     if (result.errors) {
       console.error('GraphQL errors:', result.errors);
-      throw new Error('Error fetching business email config');
+      throw new Error('Error inserting email documents');
     }
 
     if (!result.data) {
@@ -104,7 +104,7 @@ const businessEmailConfig = async (variables: BusinessEmailConfigQueryVariables)
         Accept: 'application/graphql-response+json',
       },
       body: JSON.stringify({
-        query: BusinessEmailConfig,
+        query: BusinessEmailConfig.toString(),
         variables,
       }),
     });

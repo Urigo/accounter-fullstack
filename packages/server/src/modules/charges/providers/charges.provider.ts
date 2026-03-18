@@ -1,6 +1,6 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
-import { sql } from '@pgtyped/runtime';
+import { sql, type IDatabaseConnection } from '@pgtyped/runtime';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
@@ -339,7 +339,7 @@ export class ChargesProvider {
     return newCharge;
   }
 
-  public async generateCharge(params: IGenerateChargeParams) {
+  public async generateCharge(params: IGenerateChargeParams, dbConnection?: IDatabaseConnection) {
     await this.auth.canWriteCharge();
 
     const fullParams = {
@@ -350,7 +350,7 @@ export class ChargesProvider {
       accountantStatus: 'UNAPPROVED' as accountant_status,
       ...params,
     };
-    const [newCharge] = await generateCharge.run(fullParams, this.db);
+    const [newCharge] = await generateCharge.run(fullParams, dbConnection ?? this.db);
     if (newCharge) {
       this.getChargeByIdLoader.prime(newCharge.id, newCharge);
     }

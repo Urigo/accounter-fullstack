@@ -1,6 +1,8 @@
+import { GraphQLError } from 'graphql';
 import type { BusinessEmailConfig } from '../../../__generated__/types.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { getDocumentFromFile } from '../../documents/helpers/upload.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -58,20 +60,6 @@ export const gmailListenerResolvers: GmailListenerModule.Resolvers = {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-        const charge = await injector
-          .get(ChargesProvider)
-          .generateCharge({
-            ownerId,
-            userDescription,
-          })
-          .catch(e => {
-            throw new Error(`Error generating charge for email id=${messageId}: ${e}`);
-          });
-
-        if (!charge?.id) {
-          throw new Error(`Charge creation failed for email id=${messageId}`);
-        }
-
         const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
         await Promise.all(
           documents.map(async doc => {
@@ -91,20 +79,57 @@ export const gmailListenerResolvers: GmailListenerModule.Resolvers = {
             const newDocument = await getDocumentFromFile(
               injector,
               doc,
-              charge.id,
+              null,
               false,
               businessId ?? undefined,
+              hash,
             );
             newDocuments.push({ ...newDocument, remarks: userDescription });
           }),
         );
 
-        await injector.get(DocumentsProvider).insertDocuments({ documents: newDocuments });
+        if (newDocuments.length > 0) {
+          await injector.get(TenantAwareDBClient).transaction(async client => {
+            const charge = await injector
+              .get(ChargesProvider)
+              .generateCharge(
+                {
+                  ownerId,
+                  userDescription,
+                },
+                client,
+              )
+              .catch(e => {
+                throw new Error(`Error generating charge for email id=${messageId}: ${e}`);
+              });
+
+            if (!charge?.id) {
+              throw new Error(`Charge creation failed for email id=${messageId}`);
+            }
+
+            // Assign the new chargeId to all documents
+            const documentsWithChargeId = newDocuments.map(doc => ({
+              ...doc,
+              chargeId: charge.id,
+            }));
+
+            return await injector
+              .get(DocumentsProvider)
+              .insertDocuments({ documents: documentsWithChargeId }, client);
+          });
+        }
 
         return true;
       } catch (error) {
         console.error('Failed to insert email documents:', error);
-        return false;
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        throw new GraphQLError(`Failed to insert email documents`, {
+          extensions: {
+            code: 'INTERNAL_SERVER_ERROR',
+          },
+        });
       }
     },
   },
