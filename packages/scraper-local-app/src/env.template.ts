@@ -15,6 +15,15 @@ export const config: Config = {
   poalimAccounts: [],
   isracardAccounts: [],
   amexAccounts: [],
+  mizrahiAccounts: process.env.MIZRAHI_USERNAME
+    ? [
+        {
+          username: process.env.MIZRAHI_USERNAME,
+          password: process.env.MIZRAHI_PASSWORD ?? '',
+          nickname: 'mizrahi',
+        },
+      ]
+    : [],
   // Example usage:
   // calAccounts: [
   //   {
