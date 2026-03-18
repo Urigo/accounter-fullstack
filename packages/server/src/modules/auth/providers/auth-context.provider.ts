@@ -205,8 +205,29 @@ export class AuthContextProvider {
 
       const jwtEmailClaim = payload['email'];
       const jwtEmailVerifiedClaim = payload['email_verified'];
-      const jwtEmail = typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null;
-      const jwtEmailVerified = jwtEmailVerifiedClaim === true;
+      let jwtEmail = typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null;
+      let jwtEmailVerified = jwtEmailVerifiedClaim === true;
+
+      // If email is missing from the access token (common for custom API audiences),
+      // fall back to the OIDC /userinfo endpoint which always includes profile claims.
+      if (!jwtEmail && this.env.auth0) {
+        try {
+          const userInfoResponse = await fetch(`https://${this.env.auth0.domain}/userinfo`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (userInfoResponse.ok) {
+            const userInfo = (await userInfoResponse.json()) as Record<string, unknown>;
+            if (typeof userInfo['email'] === 'string') {
+              jwtEmail = userInfo['email'];
+            }
+            if (typeof userInfo['email_verified'] === 'boolean') {
+              jwtEmailVerified = userInfo['email_verified'];
+            }
+          }
+        } catch {
+          // Ignore userinfo fetch errors; proceed with null email
+        }
+      }
 
       // 3. Map to local user and business (with verified-email fallback relinking).
       const userContext = await this.mapAuth0UserToLocal(auth0UserId, jwtEmail, jwtEmailVerified);

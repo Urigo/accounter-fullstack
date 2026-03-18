@@ -20,16 +20,12 @@ export function Header(): JSX.Element {
       <nav className="flex h-14 items-center justify-between px-4">
         <div className="hidden lg:block">
           <Link to="/">
-            <img src="../../../icons/logo.svg" alt="Guild Logo" className="w-[64px] h-[64px]" />
+            <img src="../../../icons/wright-logo.png" alt="Wright Logo" className="w-[64px] h-[64px] object-contain" />
           </Link>
         </div>
         <div className="hidden md:visible md:flex flex-row justify-start gap-3">
-          <img
-            src="../../../icons/accounter-logo.svg"
-            alt="nature"
-            className="w-[25px] h-[25px] object-cover"
-          />
-          <h1 className="text-xl font-semibold">Accounter</h1>
+          <img src="../../../icons/wright-logo.png" alt="Wright" className="w-[25px] h-[25px] object-contain" />
+          <h1 className="text-xl font-semibold">Wright</h1>
           {titleByPath && (
             <>
               <h1 className="text-xl"> | </h1>

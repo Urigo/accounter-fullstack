@@ -21,10 +21,13 @@ async function seed() {
   try {
     await client.connect();
 
+    // Seed countries first (required by businesses FK constraint)
+    await seedCountries(client);
+
     // Create admin business entity
     const adminEntityResult = await client.query(`
       INSERT INTO accounter_schema.financial_entities (type, name)
-      VALUES ('business', 'Admin Business')
+      VALUES ('business', 'Wright')
       RETURNING id
     `);
 
@@ -35,8 +38,8 @@ async function seed() {
     // Create corresponding business record
     await client.query(
       `
-      INSERT INTO accounter_schema.businesses (id)
-      VALUES ($1)
+      INSERT INTO accounter_schema.businesses (id, owner_id)
+      VALUES ($1, $1)
     `,
       [adminEntityId],
     );
@@ -144,10 +147,10 @@ async function seed() {
         console.log(`✅ Created financial entity with ID: ${financialEntityId}`);
 
         const taxCategoryResult = await client.query(
-          `INSERT INTO accounter_schema.tax_categories (id)
-          VALUES ($1)
+          `INSERT INTO accounter_schema.tax_categories (id, owner_id)
+          VALUES ($1, $2)
           RETURNING id`,
-          [financialEntityId],
+          [financialEntityId, adminEntityId],
         );
 
         const taxCategoryId = taxCategoryResult.rows[0].id;
@@ -165,8 +168,6 @@ async function seed() {
 
       console.log(`✅ Created financial account ${account.account_number}`);
     }
-
-    await seedCountries(client);
 
     console.log('✅ Financial accounts created successfully');
     console.log('✅ Admin business entity created successfully');
@@ -243,7 +244,7 @@ async function createAdminBusinessContext(
   const requiredEntities = {
     authorities: {
       businesses: ['VAT', 'Tax', 'Social Security'],
-      taxCategories: ['Input Vat', 'Output Vat', 'Tax Expenses'],
+      taxCategories: ['Input Vat', 'Output Vat', 'Property Output Vat', 'Tax Expenses'],
     },
     general: {
       taxCategories: [
@@ -386,8 +387,8 @@ async function createAdminBusinessContext(
     .map(entity => entity.id);
   try {
     const res = await client.query<{ id: string }>(`
-        INSERT INTO accounter_schema.businesses (id, no_invoices_required)
-        VALUES ${businessesIds.map(id => `('${id}',TRUE)`).join(',')}
+        INSERT INTO accounter_schema.businesses (id, owner_id, no_invoices_required)
+        VALUES ${businessesIds.map(id => `('${id}','${adminEntityId}',TRUE)`).join(',')}
         RETURNING id
       `);
     if (res.rows.length !== businessesIds.length) {
@@ -405,8 +406,8 @@ async function createAdminBusinessContext(
     .map(entity => entity.id);
   try {
     const res = await client.query<{ id: string }>(`
-        INSERT INTO accounter_schema.tax_categories (id)
-        VALUES ${taxCategoryIds.map(id => `('${id}')`).join(',')}
+        INSERT INTO accounter_schema.tax_categories (id, owner_id)
+        VALUES ${taxCategoryIds.map(id => `('${id}','${adminEntityId}')`).join(',')}
         RETURNING id
       `);
     if (res.rows.length !== taxCategoryIds.length) {
@@ -422,8 +423,8 @@ async function createAdminBusinessContext(
   const tags: { id: string; name: string }[] = [];
   try {
     const res = await client.query<{ id: string; name: string }>(`
-        INSERT INTO accounter_schema.tags (name)
-        VALUES ${tagNames.map(tag => `('${tag}')`).join(',')}
+        INSERT INTO accounter_schema.tags (name, owner_id)
+        VALUES ${tagNames.map(tag => `('${tag}','${adminEntityId}')`).join(',')}
         RETURNING id, name
       `);
     if (res.rows.length !== tagNames.length) {
