@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 
-import { createServer, type IncomingMessage } from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
+import { createServer, ServerResponse, type IncomingMessage } from 'node:http';
 import { env } from './environment.js';
 import { GmailService } from './gmail-service.js';
 import { PubsubService } from './pubsub-service.js';
@@ -76,12 +77,68 @@ async function bootstrap() {
 
 function authenticate(req: IncomingMessage): boolean {
   const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.slice(7) === env.authorization.apiKey;
+  const providedKey = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : (req.headers['x-api-key'] as string | undefined);
+
+  if (!providedKey) {
+    return false;
   }
-  const apiKey = req.headers['x-api-key'];
-  return apiKey === env.authorization.apiKey;
+
+  const expectedKey = env.authorization.apiKey;
+  const providedKeyBuffer = Buffer.from(providedKey, 'utf8');
+  const expectedKeyBuffer = Buffer.from(expectedKey, 'utf8');
+
+  if (providedKeyBuffer.length !== expectedKeyBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedKeyBuffer, expectedKeyBuffer);
 }
+
+function sendJson(res: ServerResponse, statusCode: number, data: object) {
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(data));
+}
+
+const routes: Record<
+  string,
+  Record<string, (req: IncomingMessage, res: ServerResponse) => Promise<void>>
+> = {
+  GET: {
+    '/health': async (req, res) => {
+      const isHealthy = pubsubService ? await pubsubService.healthCheck() : false;
+      sendJson(res, isHealthy ? 200 : 503, { healthy: isHealthy });
+    },
+  },
+  POST: {
+    // ... other POST routes
+    '/start-listening': async (req, res) => {
+      if (!pubsubService) {
+        sendJson(res, 503, { error: 'Service not initialized' });
+        return;
+      }
+      await pubsubService.startListening();
+      sendJson(res, 200, { success: true });
+    },
+    '/stop-listening': async (req, res) => {
+      if (!pubsubService) {
+        sendJson(res, 503, { error: 'Service not initialized' });
+        return;
+      }
+      pubsubService.stopListening();
+      sendJson(res, 200, { success: true });
+    },
+    '/handle-pending-messages': async (req, res) => {
+      if (!gmailService) {
+        sendJson(res, 503, { error: 'Service not initialized' });
+        return;
+      }
+      const handled = await gmailService.handlePendingMessages();
+      sendJson(res, handled ? 200 : 500, { success: handled });
+    },
+  },
+};
 
 const server = createServer(async (req, res) => {
   if (!authenticate(req)) {
@@ -92,56 +149,16 @@ const server = createServer(async (req, res) => {
 
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
 
-  try {
-    if (req.method === 'GET' && url.pathname === '/health') {
-      const isHealthy = pubsubService ? await pubsubService.healthCheck() : false;
-      res.writeHead(isHealthy ? 200 : 503, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ healthy: isHealthy }));
-      return;
+  const handler = routes[req.method ?? '']?.[url.pathname];
+  if (handler) {
+    try {
+      await handler(req, res);
+    } catch (error) {
+      console.error('[Server] Request error:', error);
+      sendJson(res, 500, { error: 'Internal server error' });
     }
-
-    if (req.method === 'POST' && url.pathname === '/start-listening') {
-      if (!pubsubService) {
-        res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Service not initialized' }));
-        return;
-      }
-      await pubsubService.startListening();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    if (req.method === 'POST' && url.pathname === '/stop-listening') {
-      if (!pubsubService) {
-        res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Service not initialized' }));
-        return;
-      }
-      pubsubService.stopListening();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    if (req.method === 'POST' && url.pathname === '/handle-pending-messages') {
-      if (!gmailService) {
-        res.writeHead(503, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Service not initialized' }));
-        return;
-      }
-      const handled = await gmailService.handlePendingMessages();
-      res.writeHead(handled ? 200 : 500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: handled }));
-      return;
-    }
-
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
-  } catch (error) {
-    console.error('[Server] Request error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Internal server error' }));
+  } else {
+    sendJson(res, 404, { error: 'Not Found' });
   }
 });
 
