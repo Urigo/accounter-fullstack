@@ -43,7 +43,7 @@ function Auth0UrqlTokenBridge() {
     } catch (error) {
       const auth0Error = error as Error & { error?: string };
 
-      // Network failures are transient — preserve current token and retry later.
+      // Network failures are transient - preserve current token and retry later.
       if (isNetworkError(auth0Error)) {
         return { status: 'error', error: auth0Error };
       }
