@@ -22,7 +22,7 @@
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
     "generate:all": "yarn generate",
     "generate:graphql": "yarn generate:graphql:clear; graphql-codegen",
-    "generate:graphql:clear": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/",
+    "generate:graphql:clear": "rimraf schema.graphql packages/server/**/__generated__/types.ts packages/client/src/gql/ packages/gmail-listener/src/gql/",
     "generate:watch": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql --watch\" \"yarn generate:sql:watch\"",
     "graphql:coverage": "yarn graphql-inspector coverage './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
     "graphql:validate": "yarn graphql-inspector validate './packages/client/src/**/*.{ts,tsx}' './schema.graphql'",
