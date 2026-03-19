@@ -79,6 +79,9 @@ export const ROUTES = {
   TAGS: '/tags',
   TAX_CATEGORIES: '/tax-categories',
   SORT_CODES: '/sort-codes',
+  SOURCES: '/sources',
+  SETTINGS: '/settings',
+  ONBOARDING: '/onboarding',
 } as const;
 
 /**

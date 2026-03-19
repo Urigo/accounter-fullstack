@@ -138,6 +138,7 @@ const DeelModel = zod.union([
 
 const GeneralModel = zod.object({
   FRONTEND_URL: zod.url().optional(),
+  SETTINGS_ENCRYPTION_KEY: emptyString(zod.string().length(64).optional()),
 });
 
 const Auth0Model = zod.union([
@@ -271,5 +272,6 @@ export const env = {
     : undefined,
   general: {
     frontendUrl: general?.FRONTEND_URL,
+    settingsEncryptionKey: general?.SETTINGS_ENCRYPTION_KEY,
   },
 } as const;

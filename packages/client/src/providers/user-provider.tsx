@@ -15,6 +15,7 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
       ledgerLock
       financialAccountsBusinessesIds
       locality
+      roleId
     }
   }
 `;
@@ -32,6 +33,7 @@ export interface UserInfo extends User {
     ledgerLock?: string | null;
     financialAccountsBusinessesIds: string[];
     locality: string;
+    roleId: string;
   };
 }
 

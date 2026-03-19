@@ -10,12 +10,23 @@ export default gql`
 
   extend type Query {
     listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
+    " List all members of the current workspace "
+    listTeamMembers: [TeamMember!]! @requiresAuth
+    " List pending (not yet accepted) invitations for the current workspace "
+    listPendingInvitations: [PendingInvitation!]! @requiresRole(role: "business_owner")
   }
 
   extend type Mutation {
     createInvitation(email: String!, roleId: String!): InvitationPayload!
       @requiresRole(role: "business_owner")
     acceptInvitation(token: String!): AcceptInvitationPayload!
+    " Remove a team member from the workspace "
+    removeTeamMember(userId: ID!): Boolean! @requiresRole(role: "business_owner")
+    " Revoke a pending invitation "
+    revokeInvitation(invitationId: ID!): Boolean! @requiresRole(role: "business_owner")
+    " Change a team member's role "
+    updateTeamMemberRole(userId: ID!, roleId: String!): TeamMember!
+      @requiresRole(role: "business_owner")
     generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
       @requiresRole(role: "business_owner")
     revokeApiKey(id: ID!): Boolean! @requiresRole(role: "business_owner")
@@ -49,6 +60,28 @@ export default gql`
     name: String!
     roleId: String!
     lastUsedAt: DateTime
+    createdAt: DateTime!
+  }
+
+  " A member of the current workspace "
+  type TeamMember {
+    id: ID!
+    userId: ID!
+    email: String
+    roleId: String!
+    " Human-readable display label for the role "
+    roleLabel: String!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+  }
+
+  " A pending (not yet accepted) invitation "
+  type PendingInvitation {
+    id: ID!
+    email: String!
+    roleId: String!
+    roleLabel: String!
+    expiresAt: DateTime!
     createdAt: DateTime!
   }
 `;

@@ -3,6 +3,7 @@
 import React from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
@@ -76,6 +77,7 @@ const baseUserContext: UserInfo = {
     ledgerLock: null,
     financialAccountsBusinessesIds: [],
     locality: 'IL',
+    roleId: 'business_owner',
   },
 };
 
@@ -88,14 +90,18 @@ async function renderUserNav() {
     root = createRoot(container);
     root.render(
       React.createElement(
-        UserContext.Provider,
-        {
-          value: {
-            userContext: baseUserContext,
-            setUserContext: () => void 0,
+        MemoryRouter,
+        null,
+        React.createElement(
+          UserContext.Provider,
+          {
+            value: {
+              userContext: baseUserContext,
+              setUserContext: () => void 0,
+            },
           },
-        },
-        React.createElement(UserNav),
+          React.createElement(UserNav),
+        ),
       ),
     );
 
@@ -191,6 +197,24 @@ describe('UserNav menu', () => {
     expect(document.body.textContent).toContain('John Doe');
     expect(document.body.textContent).toContain('john@example.com');
 
+    await cleanup();
+  });
+
+  it('does not show duplicate settings link in user menu', async () => {
+    useAuth0Mock.mockReturnValue({
+      isAuthenticated: true,
+      user: {
+        name: 'John Doe',
+        email: 'john@example.com',
+      },
+      logout: logoutMock,
+    });
+
+    const { container, cleanup } = await renderUserNav();
+    expect(container.textContent).not.toContain('Workspace Settings');
+    expect(container.textContent).not.toContain('Admin Configurations');
+    const settingsLink = container.querySelector('a[href="/settings"]');
+    expect(settingsLink).toBeNull();
     await cleanup();
   });
 

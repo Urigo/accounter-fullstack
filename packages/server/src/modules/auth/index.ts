@@ -5,8 +5,10 @@ import { Auth0ManagementProvider } from './providers/auth0-management.provider.j
 import { AuthorizationProvider } from './providers/authorization.provider.js';
 import { BusinessUsersProvider } from './providers/business-users.provider.js';
 import { InvitationsProvider } from './providers/invitations.provider.js';
+import { TeamProvider } from './providers/team.provider.js';
 import { apiKeysResolvers } from './resolvers/api-keys.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
+import { teamResolvers } from './resolvers/team.resolver.js';
 import auth from './typeDefs/auth.graphql.js';
 
 const __dirname = new URL('.', import.meta.url).pathname;
@@ -15,7 +17,7 @@ export const authModule = createModule({
   id: 'auth',
   dirname: __dirname,
   typeDefs: [auth],
-  resolvers: [invitationsResolvers, apiKeysResolvers],
+  resolvers: [invitationsResolvers, apiKeysResolvers, teamResolvers],
   providers: () => [
     AcceptInvitationsProvider,
     Auth0ManagementProvider,
@@ -24,6 +26,7 @@ export const authModule = createModule({
     ApiKeysProvider,
     BusinessUsersProvider,
     InvitationsProvider,
+    TeamProvider,
   ],
 });
 

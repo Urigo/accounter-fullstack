@@ -6,6 +6,7 @@ import {
   BarChartBig,
   Book,
   BookOpenCheck,
+  Building2,
   Calculator,
   ChartColumnDecreasing,
   ChartNoAxesCombined,
@@ -16,8 +17,10 @@ import {
   Files,
   HandCoins,
   IdCard,
+  LayoutDashboard,
   ParkingMeter,
   PlaneTakeoff,
+  PlugZap,
   Puzzle,
   Receipt,
   ReceiptText,
@@ -43,6 +46,12 @@ export interface SideLink extends NavLink {
 }
 
 export const sidelinks: SideLink[] = [
+  {
+    title: 'Overview',
+    label: '',
+    href: ROUTES.HOME,
+    icon: <LayoutDashboard size={18} />,
+  },
   {
     title: 'Charges',
     label: '',
@@ -267,5 +276,17 @@ export const sidelinks: SideLink[] = [
     title: 'Tags',
     label: '',
     icon: <Tags size={18} />,
+  },
+  {
+    href: `${ROUTES.SETTINGS}?tab=company`,
+    title: 'Workspace',
+    label: '',
+    icon: <Building2 size={18} />,
+  },
+  {
+    href: ROUTES.SOURCES,
+    title: 'Sources & Credentials',
+    label: '',
+    icon: <PlugZap size={18} />,
   },
 ];

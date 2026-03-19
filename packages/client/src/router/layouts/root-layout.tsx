@@ -9,6 +9,7 @@ import { DocumentTitle } from '../../components/layout/document-title.js';
 import { NavigationProgress } from '../../components/layout/navigation-progress.js';
 import { Toaster } from '../../components/ui/sonner.js';
 import { UrqlProvider, UserProvider } from '../../providers/index.js';
+import { WorkspaceProvider } from '../../providers/workspace-provider.js';
 
 // Create these outside the component to prevent recreation on every render
 const queryClient = new QueryClient({
@@ -53,9 +54,11 @@ export function RootLayout(): ReactElement {
         <UrqlProvider>
           <QueryClientProvider client={queryClient}>
             <UserProvider>
-              <DocumentTitle />
-              <NavigationProgress />
-              <Outlet />
+              <WorkspaceProvider>
+                <DocumentTitle />
+                <NavigationProgress />
+                <Outlet />
+              </WorkspaceProvider>
             </UserProvider>
           </QueryClientProvider>
         </UrqlProvider>

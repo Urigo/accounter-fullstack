@@ -1,4 +1,5 @@
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import type { CommonModule } from '../types.js';
 
 export const userContextResolvers: CommonModule.Resolvers = {
@@ -14,6 +15,9 @@ export const userContextResolvers: CommonModule.Resolvers = {
         locality,
       } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
+      const authContext = await injector.get(AuthContextProvider).getAuthContext();
+      const roleId = authContext?.user?.roleId ?? 'employee';
+
       const financialAccountsBusinessesIds = [...internalWalletsIds];
       if (bankDepositBusinessId) {
         // TODO: this should be removed after bank deposit conversion to financial account is done (then - it should be added to internalWalletsIds)
@@ -26,6 +30,7 @@ export const userContextResolvers: CommonModule.Resolvers = {
         ledgerLock,
         financialAccountsBusinessesIds,
         locality,
+        roleId,
       };
     },
   },

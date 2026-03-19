@@ -1,6 +1,15 @@
 import { GraphQLError } from 'graphql';
 
-export const ALLOWED_ROLES = new Set(['business_owner', 'accountant', 'employee', 'scraper']);
+export const ALLOWED_ROLES = new Set([
+  'business_owner',
+  'accountant',
+  'employee',
+  'viewer',
+  'scraper',
+]);
+
+/** Roles that are not allowed to perform any write mutations. */
+export const READ_ONLY_ROLES = new Set(['viewer']);
 
 type Auth0ErrorLike = Error & {
   status?: number;

@@ -173,6 +173,17 @@ const DepositsScreen = lazy(() =>
 const PageNotFound = lazy(() =>
   import('../components/screens/page-not-found.js').then(m => ({ default: m.PageNotFound })),
 );
+const SourcesPage = lazy(() =>
+  import('../components/screens/sources/index.js').then(m => ({ default: m.SourcesPage })),
+);
+const SettingsPage = lazy(() =>
+  import('../components/screens/settings/index.js').then(m => ({ default: m.SettingsPage })),
+);
+const OnboardingPage = lazy(() =>
+  import('../components/screens/onboarding/index.js').then(m => ({
+    default: m.OnboardingWizard,
+  })),
+);
 
 // Auth
 const LoginPage = lazy(() =>
@@ -581,6 +592,27 @@ export const routes: RouteObject[] = [
             path: 'sort-codes',
             element: withSuspense(SortCodes),
             handle: { title: 'Sort Codes', breadcrumb: 'Sort Codes' },
+          },
+
+          // Sources
+          {
+            path: 'sources',
+            element: withSuspense(SourcesPage),
+            handle: { title: 'Source Connections', breadcrumb: 'Sources' },
+          },
+
+          // Settings
+          {
+            path: 'settings',
+            element: withSuspense(SettingsPage),
+            handle: { title: 'Settings', breadcrumb: 'Settings' },
+          },
+
+          // Onboarding
+          {
+            path: 'onboarding',
+            element: withSuspense(OnboardingPage),
+            handle: { title: 'Setup', breadcrumb: 'Setup' },
           },
 
           // 404 catch-all

@@ -1,5 +1,6 @@
 import { defaultFieldResolver, GraphQLError, GraphQLSchema } from 'graphql';
 import { getDirective, MapperKind, mapSchema } from '@graphql-tools/utils';
+import { READ_ONLY_ROLES } from '../helpers/invitations.helper.js';
 import { AuthContextProvider } from '../providers/auth-context.provider.js';
 
 type RoleDirectiveArgs = {
@@ -143,6 +144,16 @@ export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
           if (!authContext?.user) {
             throw new GraphQLError('Authentication required', {
               extensions: { code: 'UNAUTHENTICATED' },
+            });
+          }
+
+          // Block read-only roles (e.g. viewer/observer) from all mutations.
+          if (
+            READ_ONLY_ROLES.has(authContext.user.roleId) &&
+            info.parentType.name === 'Mutation'
+          ) {
+            throw new GraphQLError('Observers cannot perform write operations', {
+              extensions: { code: 'FORBIDDEN', reason: 'READ_ONLY_ROLE' },
             });
           }
 

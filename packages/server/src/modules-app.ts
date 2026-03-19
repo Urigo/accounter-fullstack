@@ -42,6 +42,7 @@ import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
+import { workspaceSettingsModule } from './modules/workspace-settings/index.js';
 import type { RawAuth } from './plugins/auth-plugin.js';
 import { ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
@@ -90,6 +91,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       contractsModule,
       bankDepositsModule,
       adminContextModule,
+      workspaceSettingsModule,
     ],
     providers: [
       {

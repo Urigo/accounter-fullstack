@@ -1,6 +1,7 @@
 import { useContext, useEffect, type ReactElement } from 'react';
 import {
   ArrowLeftRight,
+  ArrowRight,
   Building2,
   ChartLine,
   DollarSign,
@@ -13,10 +14,12 @@ import {
   Wallet,
   //   TrendingUp,
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { FiltersContext } from '@/providers/filters-context.js';
+import { UserContext } from '@/providers/index.js';
+import { ROUTES } from '../../router/routes.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
 import { AdminBusinessSection } from './admin/admin-business-section.jsx';
 import { FinancialAccountsSection } from './admin/financial-account-section.jsx';
@@ -61,6 +64,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
   const business = getFragmentData(BusinessPageFragmentDoc, data);
   const [searchParams, setSearchParams] = useSearchParams();
   const { setFiltersContext } = useContext(FiltersContext);
+  const { userContext } = useContext(UserContext);
 
   useEffect(() => {
     setFiltersContext(null);
@@ -78,12 +82,28 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
   const isClient = 'clientInfo' in business && !!business.clientInfo;
   const isAdmin = 'adminInfo' in business && !!business.adminInfo;
+  const isOwnerBusiness = business.id === userContext?.context.adminBusinessId;
+  const isSettingsTab = ['contact', 'config', 'integrations', 'accounts', 'admin'].includes(
+    activeTab,
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <BusinessHeader data={business} />
 
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
+        {isOwnerBusiness && isSettingsTab && (
+          <Link
+            to={ROUTES.SETTINGS}
+            className="mb-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 hover:bg-blue-100 transition-colors"
+          >
+            <Settings size={16} />
+            <span>
+              These settings are now managed in Settings.
+            </span>
+            <ArrowRight size={14} className="ml-auto" />
+          </Link>
+        )}
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full lg:grid-cols-8 sm:grid-cols-4 grid-cols-8 mb-6 h-auto gap-1 bg-muted/50 p-1">
             <TabsTrigger
