@@ -20,6 +20,7 @@ const GmailModel = zod.object({
 
 const GeneralModel = zod.object({
   SERVER_URL: zod.url(),
+  PORT: zod.coerce.number().optional().default(3000),
 });
 
 const configs = {
@@ -69,6 +70,7 @@ export const env = {
   },
   general: {
     serverUrl: general.SERVER_URL,
+    port: general.PORT,
   },
 } as const;
 
