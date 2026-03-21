@@ -14,6 +14,45 @@ export default gql`
     sourceConnection(id: UUID!): SourceConnection
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    dashboardStats: DashboardStats!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+  }
+
+  " Monthly transaction count for a source "
+  type MonthlyDataPoint {
+    month: String!
+    count: Int!
+  }
+
+  " Per-source scraping stats shown on the dashboard "
+  type SourceSyncStats {
+    sourceConnectionId: ID!
+    provider: String!
+    displayName: String!
+    status: String!
+    lastSyncAt: DateTime
+    lastSyncError: String
+    rowCount: Int!
+    oldestRecord: String
+    newestRecord: String
+    monthlyData: [MonthlyDataPoint!]!
+  }
+
+  " Financial overview counts for the dashboard "
+  type FinancialPulse {
+    totalCharges: Int!
+    totalTransactions: Int!
+    transactionsThisMonth: Int!
+    transactionsLastMonth: Int!
+    totalDocuments: Int!
+  }
+
+  " Aggregated dashboard data "
+  type DashboardStats {
+    sources: [SourceSyncStats!]!
+    financial: FinancialPulse!
+    generatedAt: DateTime!
   }
 
   extend type Mutation {
@@ -52,6 +91,16 @@ export default gql`
     removeWorkspaceLogo: WorkspaceSettings!
       @requiresAuth
       @requiresRole(role: "business_owner")
+
+    " Trigger a scrape run for a specific source connection (bank or credit card). Runs asynchronously. "
+    triggerSourceSync(id: UUID!): SourceSyncResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
+  }
+
+  type SourceSyncResult {
+    success: Boolean!
+    message: String!
   }
 
   " Company profile and branding settings for a workspace "

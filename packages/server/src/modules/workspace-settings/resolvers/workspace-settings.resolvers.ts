@@ -1,11 +1,47 @@
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { buildMaskedSummary } from '../helpers/masking.js';
+import { extractScraperError } from '../helpers/scraper-error.js';
 import {
   WorkspaceSettingsProvider,
   type SourceConnectionRow,
   type WorkspaceSettingsRow,
 } from '../providers/workspace-settings.provider.js';
+
+const execFileAsync = promisify(execFile);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// In compiled dist: resolvers/ -> workspace-settings/ -> modules/ -> src/ -> server/ -> dist/ -> packages/server/ -> packages/ -> repo root
+const REPO_ROOT = path.resolve(__dirname, '../../../../../../../..');
+const SCRAPER_SRC = path.join(REPO_ROOT, 'packages/scraper-local-app/src/index.ts');
+const TSX_BIN = path.join(REPO_ROOT, 'node_modules/.bin/tsx');
+
+/** Maps source connection credentials to env var names the scraper-local-app reads */
+function buildScraperEnv(provider: string, credentials: Record<string, string>): Record<string, string> | null {
+  switch (provider) {
+    case 'mizrahi':
+      return {
+        MIZRAHI_USERNAME: credentials['username'] ?? '',
+        MIZRAHI_PASSWORD: credentials['password'] ?? '',
+        SCRAPE_PROVIDERS: 'mizrahi',
+      };
+    case 'isracard':
+      return {
+        ISRACARD_ALT_ID: credentials['id'] ?? '',
+        ISRACARD_ALT_PASSWORD: credentials['password'] ?? '',
+        ISRACARD_ALT_6_DIGITS: credentials['last6Digits'] ?? '',
+        SCRAPE_PROVIDERS: 'isracard-alt',
+      };
+    case 'hapoalim':
+      return null; // Hapoalim requires phone verification - not automatable via env
+    default:
+      return null;
+  }
+}
 
 interface ResolverContext {
   injector: Injector;
@@ -14,6 +50,15 @@ interface ResolverContext {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const workspaceSettingsResolvers: Record<string, any> = {
   Query: {
+    dashboardStats: async (
+      _parent: unknown,
+      _args: unknown,
+      { injector }: ResolverContext,
+    ) => {
+      const provider = injector.get(WorkspaceSettingsProvider);
+      return provider.getDashboardStats();
+    },
+
     workspaceSettings: async (
       _parent: unknown,
       _args: unknown,
@@ -230,6 +275,51 @@ export const workspaceSettingsResolvers: Record<string, any> = {
         if (e instanceof GraphQLError) throw e;
         console.error('Error clearing credentials:', e);
         throw new GraphQLError('Error clearing credentials');
+      }
+    },
+
+    triggerSourceSync: async (
+      _parent: unknown,
+      { id }: { id: string },
+      { injector }: ResolverContext,
+    ) => {
+      const wsProvider = injector.get(WorkspaceSettingsProvider);
+      const conn = await wsProvider.getSourceConnectionById(id);
+      if (!conn) throw new GraphQLError('Source connection not found');
+
+      const credentials = await wsProvider.getDecryptedCredentials(id);
+      if (!credentials) {
+        throw new GraphQLError('No credentials configured for this source. Add credentials first.');
+      }
+
+      const scraperEnv = buildScraperEnv(conn.provider, credentials);
+      if (!scraperEnv) {
+        throw new GraphQLError(
+          `Automated sync is not supported for provider "${conn.provider}". Run the scraper manually.`,
+        );
+      }
+
+      const spawnEnv = {
+        ...process.env,
+        ...scraperEnv,
+      };
+
+      try {
+        await wsProvider.updateSyncStatus(id, 'active', null);
+
+        await execFileAsync(TSX_BIN, [SCRAPER_SRC], {
+          env: spawnEnv,
+          cwd: path.join(REPO_ROOT, 'packages/scraper-local-app'),
+          timeout: 10 * 60 * 1000, // 10 minute max
+        });
+
+        await wsProvider.updateSyncStatus(id, 'active', null);
+        return { success: true, message: 'Sync completed successfully' };
+      } catch (e) {
+        console.error(`Scraper failed for ${conn.provider}:`, e);
+        const message = extractScraperError(e);
+        await wsProvider.updateSyncStatus(id, 'error', message).catch(() => null);
+        return { success: false, message: `Sync failed: ${message}` };
       }
     },
   },

@@ -1,0 +1,82 @@
+diff --git a/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js b/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
+index c1a1f32..9feae69 100644
+--- a/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
++++ b/node_modules/israeli-bank-scrapers/lib/scrapers/base-isracard-amex.js
+@@ -21,7 +21,7 @@ function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e
+ const RATE_LIMIT = {
+-  SLEEP_BETWEEN: 1000,
++  SLEEP_BETWEEN: 4000,
+   TRANSACTIONS_BATCH_SIZE: 10
+ };
+@@ -203,9 +203,10 @@ async function fetchAllTransactions(page, options, companyServiceOptions, startM
+   const futureMonthsToScrape = options.futureMonthsToScrape ?? 1;
+   const allMonths = (0, _dates.default)(startMoment, futureMonthsToScrape);
+-  const results = await (0, _waiting.runSerial)(allMonths.map(monthMoment => () => {
+-    return fetchTransactions(page, options, companyServiceOptions, startMoment, monthMoment);
+-  }));
++  const results = await (0, _waiting.runSerial)(allMonths.map(monthMoment => async () => {
++    const result = await fetchTransactions(page, options, companyServiceOptions, startMoment, monthMoment);
++    await (0, _waiting.sleep)(3000);
++    return result;
++  }));
+@@ -250,6 +250,34 @@ class IsracardAmexBaseScraper extends _baseScraperWithBrowser.BaseScraperWithBro
+     await (0, _browser.maskHeadlessUserAgent)(this.page);
+     await this.navigateTo(`${this.baseUrl}/personalarea/Login`);
+     this.emitProgress(_definitions.ScraperProgressTypes.LoggingIn);
++    // Click "login with fixed password" (כניסה עם סיסמה קבועה) to switch from OTP/SMS mode
++    try {
++      // Wait for page to load and button to appear
++      await new Promise(resolve => setTimeout(resolve, 2000));
++      const clicked = await this.page.evaluate(() => {
++        const TARGET = '\u05E1\u05D9\u05E1\u05DE\u05D4 \u05E7\u05D1\u05D5\u05E2\u05D4'; // סיסמה קבועה
++        const all = Array.from(document.querySelectorAll('a, button, [role="button"], li, span'));
++        const btn = all.find(el => {
++          const t = (el.innerText || el.textContent || '').trim();
++          return t.includes(TARGET) || t.includes('SISMA');
++        });
++        if (btn) {
++          btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
++          return true;
++        }
++        return false;
++      });
++      if (clicked) {
++        await new Promise(resolve => setTimeout(resolve, 2500));
++      }
++    } catch (e) {
++      // ignore - proceed with API calls anyway
++    }
+     const validateUrl = `${this.servicesUrl}?reqName=ValidateIdData`;
+     const validateRequest = {
+       id: credentials.id,
+@@ -308,7 +336,17 @@ class IsracardAmexBaseScraper extends _baseScraperWithBrowser.BaseScraperWithBro
+       if (loginResult && loginResult.status === '1') {
+         this.emitProgress(_definitions.ScraperProgressTypes.LoginSuccess);
++        // Navigate to personal area after login so subsequent API calls have the correct
++        // page context and referer. Without this, Isracard returns 429 "Block Automation".
++        try {
++          await this.navigateTo(`${this.baseUrl}/personalarea/`);
++          await new Promise(resolve => setTimeout(resolve, 3000));
++        } catch (e) {
++          // ignore navigation errors - proceed anyway
++        }
+         return {
+           success: true
+         };
+diff --git a/node_modules/israeli-bank-scrapers/lib/scrapers/mizrahi.js b/node_modules/israeli-bank-scrapers/lib/scrapers/mizrahi.js
+index 4aa39d0..851e4ad 100644
+--- a/node_modules/israeli-bank-scrapers/lib/scrapers/mizrahi.js
++++ b/node_modules/israeli-bank-scrapers/lib/scrapers/mizrahi.js
+@@ -217,7 +217,11 @@ class MizrahiScraper extends _baseScraperWithBrowser.BaseScraperWithBrowser {
+     }
+   }
+   async getPendingTransactions() {
+-    await this.page.$eval(`a[href*="${PENDING_TRANSACTIONS_PAGE}"]`, el => el.click());
++    const pendingLink = await this.page.$(`a[href*="${PENDING_TRANSACTIONS_PAGE}"]`);
++    if (!pendingLink) {
++      return [];
++    }
++    await pendingLink.click();
+     const frame = await (0, _elementsInteractions.waitUntilIframeFound)(this.page, f => f.url().includes(PENDING_TRANSACTIONS_IFRAME));
+     const isPending = await (0, _elementsInteractions.waitUntilElementFound)(frame, pendingTrxIdentifierId).then(() => true).catch(() => false);
+     if (!isPending) {

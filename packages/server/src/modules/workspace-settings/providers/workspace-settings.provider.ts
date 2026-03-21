@@ -315,6 +315,150 @@ export class WorkspaceSettingsProvider {
     return result.rows[0];
   }
 
+  /** Maps provider name to the DB table and date column used for row counts. */
+  private static readonly SOURCE_TABLE_MAP: Record<string, { table: string; dateCol: string }> = {
+    mizrahi: { table: 'accounter_schema.bank_mizrahi_transactions', dateCol: 'date' },
+    isracard: { table: 'accounter_schema.isracard_alt_transactions', dateCol: 'date' },
+    priority: { table: 'accounter_schema.priority_invoices', dateCol: 'curdate' },
+    hapoalim: { table: 'accounter_schema.poalim_ils_account_transactions', dateCol: 'event_date' },
+    cal: { table: 'accounter_schema.cal_creditcard_transactions', dateCol: 'event_date' },
+    discount: { table: 'accounter_schema.bank_discount_transactions', dateCol: 'event_date' },
+    max: { table: 'accounter_schema.max_creditcard_transactions', dateCol: 'event_date' },
+    amex: { table: 'accounter_schema.amex_creditcard_transactions', dateCol: 'event_date' },
+  };
+
+  async getDashboardStats(): Promise<{
+    sources: Array<{
+      sourceConnectionId: string;
+      provider: string;
+      displayName: string;
+      status: string;
+      lastSyncAt: Date | null;
+      lastSyncError: string | null;
+      rowCount: number;
+      oldestRecord: string | null;
+      newestRecord: string | null;
+      monthlyData: Array<{ month: string; count: number }>;
+    }>;
+    financial: {
+      totalCharges: number;
+      totalTransactions: number;
+      transactionsThisMonth: number;
+      transactionsLastMonth: number;
+      totalDocuments: number;
+    };
+    generatedAt: Date;
+  }> {
+    const ownerId = await this.getOwnerId();
+    const connections = await this.getSourceConnections();
+
+    const sources = await Promise.all(
+      connections.map(async conn => {
+        const mapping = WorkspaceSettingsProvider.SOURCE_TABLE_MAP[conn.provider];
+        let rowCount = 0;
+        let oldestRecord: string | null = null;
+        let newestRecord: string | null = null;
+        let monthlyData: Array<{ month: string; count: number }> = [];
+
+        if (mapping) {
+          try {
+            const [countRes, rangeRes, monthlyRes] = await Promise.all([
+              this.db.query<{ count: string }>(
+                `SELECT COUNT(*)::text AS count FROM ${mapping.table}`,
+              ),
+              this.db.query<{ oldest: string | null; newest: string | null }>(
+                `SELECT MIN(${mapping.dateCol})::text AS oldest, MAX(${mapping.dateCol})::text AS newest FROM ${mapping.table}`,
+              ),
+              this.db.query<{ month: string; count: string }>(
+                `SELECT TO_CHAR(DATE_TRUNC('month', ${mapping.dateCol}::date), 'YYYY-MM') AS month,
+                        COUNT(*)::text AS count
+                 FROM ${mapping.table}
+                 WHERE ${mapping.dateCol}::date >= NOW() - INTERVAL '26 months'
+                 GROUP BY month
+                 ORDER BY month`,
+              ),
+            ]);
+            rowCount = parseInt(countRes.rows[0]?.count ?? '0', 10);
+            oldestRecord = rangeRes.rows[0]?.oldest ?? null;
+            newestRecord = rangeRes.rows[0]?.newest ?? null;
+            monthlyData = monthlyRes.rows.map(r => ({
+              month: r.month,
+              count: parseInt(r.count, 10),
+            }));
+          } catch {
+            // table may not exist yet
+          }
+        }
+
+        return {
+          sourceConnectionId: conn.id,
+          provider: conn.provider,
+          displayName: conn.display_name,
+          status: conn.status,
+          lastSyncAt: conn.last_sync_at,
+          lastSyncError: conn.last_sync_error,
+          rowCount,
+          oldestRecord,
+          newestRecord,
+          monthlyData,
+        };
+      }),
+    );
+
+    const [chargesRes, txRes, txThisMonthRes, txLastMonthRes, docsRes] = await Promise.all([
+      this.db
+        .query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count FROM accounter_schema.charges WHERE owner_id = $1`,
+          [ownerId],
+        )
+        .catch(() => ({ rows: [{ count: '0' }] })),
+      this.db
+        .query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count FROM accounter_schema.transactions t
+           JOIN accounter_schema.charges c ON c.id = t.charge_id WHERE c.owner_id = $1`,
+          [ownerId],
+        )
+        .catch(() => ({ rows: [{ count: '0' }] })),
+      this.db
+        .query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count FROM accounter_schema.transactions t
+           JOIN accounter_schema.charges c ON c.id = t.charge_id
+           WHERE c.owner_id = $1 AND t.event_date >= date_trunc('month', NOW())`,
+          [ownerId],
+        )
+        .catch(() => ({ rows: [{ count: '0' }] })),
+      this.db
+        .query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count FROM accounter_schema.transactions t
+           JOIN accounter_schema.charges c ON c.id = t.charge_id
+           WHERE c.owner_id = $1
+             AND t.event_date >= date_trunc('month', NOW()) - interval '1 month'
+             AND t.event_date < date_trunc('month', NOW())`,
+          [ownerId],
+        )
+        .catch(() => ({ rows: [{ count: '0' }] })),
+      this.db
+        .query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count FROM accounter_schema.documents d
+           JOIN accounter_schema.charges c ON c.id = d.charge_id WHERE c.owner_id = $1`,
+          [ownerId],
+        )
+        .catch(() => ({ rows: [{ count: '0' }] })),
+    ]);
+
+    return {
+      sources,
+      financial: {
+        totalCharges: parseInt(chargesRes.rows[0]?.count ?? '0', 10),
+        totalTransactions: parseInt(txRes.rows[0]?.count ?? '0', 10),
+        transactionsThisMonth: parseInt(txThisMonthRes.rows[0]?.count ?? '0', 10),
+        transactionsLastMonth: parseInt(txLastMonthRes.rows[0]?.count ?? '0', 10),
+        totalDocuments: parseInt(docsRes.rows[0]?.count ?? '0', 10),
+      },
+      generatedAt: new Date(),
+    };
+  }
+
   async updateSyncStatus(
     id: string,
     status: string,
