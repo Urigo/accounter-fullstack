@@ -302,8 +302,7 @@ async function isTransactionNew(
   try {
     const res = await existingTransactionsChecker.run(
       {
-        // Strip non-digit characters (e.g. "**35") before parsing card number
-        card: parseInt(transaction.card.replace(/\D/g, ''), 10),
+          card: parseInt(transaction.card, 10),
         currentPaymentCurrency: transaction.currentPaymentCurrency,
         fullPaymentDate: transaction.fullPaymentDate,
         fullPurchaseDate: transaction.fullPurchaseDate,
@@ -418,7 +417,7 @@ async function insertTransactions(
       isButton: transaction.isButton,
       siteName: transaction.siteName,
       clientIpAddress: transaction.clientIpAddress ?? null,
-      card: parseInt(transaction.card.replace(/\D/g, ''), 10),
+      card: parseInt(transaction.card, 10),
       chargingDate: null,
       kodMatbeaMekori: transaction.kodMatbeaMekori ?? null,
       esbServicesCall: transaction.EsbServicesCall ?? null,
@@ -528,10 +527,17 @@ export async function getMonthTransactions(
           const cardNumberMapping = ctx[accountKey].options?.cardNumberMapping;
           const cardNumbersToMap = cardNumberMapping ? Object.keys(cardNumberMapping) : [];
           transactionsListBean?.cardNumberList.map((cardInformation, index) => {
-            // Isracard returns card numbers with non-digit separators (e.g. "**35" or "1234-5678-**35").
-            // Strip non-digits before taking the last 4, falling back to raw slice if no digits found.
+            // Isracard returns card identifiers in inconsistent formats across months:
+            //   - Short masked: "**35"         → digits "35"   (2 chars)
+            //   - Full masked:  "7835" / "1235" → digits "7835" / "1235" (4 chars)
+            // The same physical card can appear in any of these formats in different months.
+            // The only stable common suffix is the last 2 digits, so we always normalize to
+            // the last 2 digits of the stripped string. This means "**35", "7835", and "1235"
+            // all resolve to "35", keeping the same card under one identifier across months.
+            // If two cards share the same last 2 digits (rare), use cardNumberMapping to
+            // explicitly assign a unique identifier to each.
             const digits = cardInformation.replace(/\D/g, '');
-            let card = digits.slice(-4) || cardInformation.slice(-4);
+            let card = (digits || cardInformation.replace(/\D/g, '') || cardInformation).slice(-2);
             if (cardNumberMapping && cardNumbersToMap.includes(card)) {
               card = cardNumberMapping[card];
             }
