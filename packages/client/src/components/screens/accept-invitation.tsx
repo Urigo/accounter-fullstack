@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useAcceptInvitation } from '@/hooks/use-accept-invitation.js';
@@ -10,6 +10,7 @@ export function AcceptInvitationPage(): ReactElement {
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0();
   const navigate = useNavigate();
   const { fetching, error, acceptInvitation } = useAcceptInvitation();
+  const [accepted, setAccepted] = useState(false);
 
   if (!token) {
     return (
@@ -38,32 +39,28 @@ export function AcceptInvitationPage(): ReactElement {
     );
   }
 
-  // Unauthenticated users must log in first, then return to this tokenized route.
-  if (!isAuthenticated) {
+  // After accepting without being authenticated, prompt them to log in.
+  if (accepted && !isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center max-w-sm space-y-4">
-          <h1 className="text-2xl font-bold">You&apos;ve been invited!</h1>
+          <h1 className="text-2xl font-bold">Invitation accepted!</h1>
           <p className="text-muted-foreground">
-            Please log in or create an account to accept this invitation.
+            Your account is now active. Please log in to continue.
           </p>
           <Button
-            onClick={() => {
-              const returnTo = ROUTES.ACCEPT_INVITATION(token);
-              sessionStorage.setItem('auth:returnTo', returnTo);
-              sessionStorage.setItem('auth:invitationReturnTo', returnTo);
-
-              return loginWithRedirect({
+            onClick={() =>
+              loginWithRedirect({
                 authorizationParams: {
                   audience: import.meta.env.VITE_AUTH0_AUDIENCE,
                   scope: 'openid profile email offline_access',
                   redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
                 },
-                appState: { returnTo },
-              });
-            }}
+                appState: { returnTo: ROUTES.HOME },
+              })
+            }
           >
-            Login / Create Account
+            Log In
           </Button>
         </div>
       </div>
@@ -73,14 +70,21 @@ export function AcceptInvitationPage(): ReactElement {
   const handleAccept = async () => {
     const success = await acceptInvitation(token);
     if (success?.success) {
-      navigate(ROUTES.HOME, { replace: true });
+      if (isAuthenticated) {
+        navigate(ROUTES.HOME, { replace: true });
+      } else {
+        setAccepted(true);
+      }
     }
   };
 
   return (
     <div className="flex items-center justify-center h-screen">
       <div className="text-center max-w-sm space-y-4">
-        <h1 className="text-2xl font-bold">Accept Invitation</h1>
+        <h1 className="text-2xl font-bold">You&apos;ve been invited!</h1>
+        <p className="text-muted-foreground">
+          Click below to accept the invitation and activate your account.
+        </p>
         {error && (
           <p className="text-destructive">
             {error.graphQLErrors?.[0]?.message === 'TOKEN_EXPIRED'
@@ -91,6 +95,30 @@ export function AcceptInvitationPage(): ReactElement {
         <Button onClick={handleAccept} disabled={fetching}>
           {fetching ? 'Accepting...' : 'Accept Invitation'}
         </Button>
+        {!isAuthenticated && (
+          <p className="text-xs text-muted-foreground">
+            Already have an account?{' '}
+            <button
+              type="button"
+              className="underline"
+              onClick={() => {
+                const returnTo = ROUTES.ACCEPT_INVITATION(token);
+                sessionStorage.setItem('auth:returnTo', returnTo);
+                sessionStorage.setItem('auth:invitationReturnTo', returnTo);
+                loginWithRedirect({
+                  authorizationParams: {
+                    audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+                    scope: 'openid profile email offline_access',
+                    redirect_uri: `${window.location.origin}${ROUTES.AUTH_CALLBACK}`,
+                  },
+                  appState: { returnTo },
+                });
+              }}
+            >
+              Log in first
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );

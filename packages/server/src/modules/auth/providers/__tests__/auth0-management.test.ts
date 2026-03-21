@@ -9,6 +9,7 @@ vi.mock('auth0', () => {
     create: vi.fn(),
     delete: vi.fn(),
     update: vi.fn(),
+    listUsersByEmail: vi.fn(),
   };
   const tickets = {
     changePassword: vi.fn(),
@@ -63,10 +64,11 @@ describe('Auth0ManagementProvider', () => {
     });
   });
 
-  it('should create a blocked user with temporary password', async () => {
+  it('should create a blocked user with temporary password when no existing user', async () => {
     const email = 'test@example.com';
     const mockUserId = 'auth0|123456';
-    
+
+    mockClient.users.listUsersByEmail.mockResolvedValue([]);
     mockClient.users.create.mockResolvedValue({
       user_id: mockUserId,
     });
@@ -95,6 +97,20 @@ describe('Auth0ManagementProvider', () => {
     expect(/[0-9]/.test(password)).toBe(true);
     // eslint-disable-next-line no-useless-escape
     expect(/[!@#$%^&*()_+~`|}{[\]:;?><,./\-=]/.test(password)).toBe(true);
+  });
+
+  it('should reuse and re-block existing Auth0 user instead of creating a new one', async () => {
+    const email = 'existing@example.com';
+    const existingUserId = 'auth0|existing123';
+
+    mockClient.users.listUsersByEmail.mockResolvedValue([{ user_id: existingUserId }]);
+    mockClient.users.update.mockResolvedValue({});
+
+    const userId = await service.createBlockedUser(email);
+
+    expect(userId).toBe(existingUserId);
+    expect(mockClient.users.create).not.toHaveBeenCalled();
+    expect(mockClient.users.update).toHaveBeenCalledWith(existingUserId, { blocked: true });
   });
 
   it('should unblock a user', async () => {
@@ -147,6 +163,7 @@ describe('Auth0ManagementProvider', () => {
   });
 
   it('should throw error if creation fails', async () => {
+    mockClient.users.listUsersByEmail.mockResolvedValue([]);
     mockClient.users.create.mockRejectedValue(new Error('Auth0 Error'));
 
     await expect(service.createBlockedUser('fail@test.com')).rejects.toThrow('Failed to create Auth0 user: Auth0 Error');

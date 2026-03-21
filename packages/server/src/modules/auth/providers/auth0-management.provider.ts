@@ -67,6 +67,17 @@ export class Auth0ManagementProvider {
 
   async createBlockedUser(email: string, password?: string): Promise<string> {
     const client = this.getClient();
+
+    // Reuse existing Auth0 user if one already exists for this email.
+    const existingId = await this.getUserByEmail(email);
+    if (existingId) {
+      // Ensure the existing account is blocked so they cannot log in until invitation is accepted.
+      await client.users.update(existingId, { blocked: true }).catch(err => {
+        console.warn(`Could not re-block existing Auth0 user ${existingId}:`, err);
+      });
+      return existingId;
+    }
+
     const temporaryPassword = password || this.generateTemporaryPassword();
 
     try {
