@@ -80,7 +80,7 @@ __metadata:
     "@mui/material": "npm:7.3.9"
     "@mui/x-charts": "npm:7.29.1"
     "@tailwindcss/vite": "npm:4.2.1"
-    "@tanstack/react-query": "npm:5.91.0"
+    "@tanstack/react-query": "npm:5.94.5"
     "@tanstack/react-table": "npm:8.21.3"
     "@types/chart.js": "npm:4.0.1"
     "@types/deep-equal": "npm:1.0.4"
@@ -8360,21 +8360,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.91.0":
-  version: 5.91.0
-  resolution: "@tanstack/query-core@npm:5.91.0"
-  checksum: 10c0/57f32122f970644b2b4b44e6e212712eadebdbd092d2fee00ecedfe1d8ff7827340d593da4c876303b5a2a7fbc94b58fbddb678b9dfc11fd29206cc9d250630f
+"@tanstack/query-core@npm:5.94.5":
+  version: 5.94.5
+  resolution: "@tanstack/query-core@npm:5.94.5"
+  checksum: 10c0/48e19d57b435160378dff9295d7f59fb84ae0e26fa9a087e124eb4091a89a42ae4c919f2e57515e3094d8c63a27c021ed27ddccbb53996c9759e7962d72a86c6
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:5.91.0":
-  version: 5.91.0
-  resolution: "@tanstack/react-query@npm:5.91.0"
+"@tanstack/react-query@npm:5.94.5":
+  version: 5.94.5
+  resolution: "@tanstack/react-query@npm:5.94.5"
   dependencies:
-    "@tanstack/query-core": "npm:5.91.0"
+    "@tanstack/query-core": "npm:5.94.5"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10c0/f6bdd9b1348179b8f6146a5f5b7cb41da25dade2102314c76f4693412d12ca9c6e98a3f11573acd815b2bb1a18e7cc70625138bf6a8dcf9d2959ca14610cfea2
+  checksum: 10c0/b36e47357e9616a642f1f9da3e8f04786773b3fd7abf1d6ae42f647fd6fc28c7864da51690c87c63264b78f15540c9f5680aff60fc43ffd9b2271aa610d8d06a
   languageName: node
   linkType: hard
 
