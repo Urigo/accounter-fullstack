@@ -181,6 +181,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     SELECT *
     FROM accounter_schema.extended_charges ec
     WHERE ec.id = c.id
+    ORDER BY ec.id
     LIMIT 1
   ) ec
     ON TRUE
