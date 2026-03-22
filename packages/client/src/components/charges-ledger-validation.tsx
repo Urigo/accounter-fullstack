@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon } from '@mantine/core';
+import { ROUTES } from '@/router/routes.js';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
@@ -37,7 +38,7 @@ export function getLedgerValidationHref(filter?: ChargeFilter | null, page?: num
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/charges-ledger-validation${queryParams}`;
+  return `${ROUTES.CHARGES.LEDGER_VALIDATION}${queryParams}`;
 }
 
 export const ChargesLedgerValidation = (): ReactElement => {
