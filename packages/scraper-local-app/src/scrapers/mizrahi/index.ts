@@ -9,6 +9,8 @@ export type MizrahiCredentials = {
   nickname?: string;
 };
 
+export type SaveTransactionResult = 'inserted' | 'duplicate' | 'error';
+
 export async function saveTransaction(
   accountNumber: string,
   transaction: {
@@ -24,7 +26,7 @@ export async function saveTransaction(
     type: string;
   },
   pool: Pool,
-): Promise<boolean> {
+): Promise<SaveTransactionResult> {
   try {
     const result = await pool.query(
       `INSERT INTO accounter_schema.bank_mizrahi_transactions (
@@ -47,10 +49,10 @@ export async function saveTransaction(
         transaction.type,
       ],
     );
-    return (result.rowCount ?? 0) > 0;
+    return (result.rowCount ?? 0) > 0 ? 'inserted' : 'duplicate';
   } catch (error) {
     console.error('Error inserting Mizrahi transaction:', error);
-    return false;
+    return 'error';
   }
 }
 
@@ -72,7 +74,7 @@ export async function scrapeMizrahi(credentials: MizrahiCredentials, pool: Pool)
 
   const scraper = createScraper({
     companyId: CompanyTypes.mizrahi,
-    startDate: new Date(new Date().setFullYear(new Date().getFullYear() - 1)),
+    startDate: new Date(new Date().setFullYear(new Date().getFullYear() - 2)),
     combineInstallments: false,
     browser,
   } as Parameters<typeof createScraper>[0]);
@@ -90,16 +92,22 @@ export async function scrapeMizrahi(credentials: MizrahiCredentials, pool: Pool)
     );
   }
 
-  let total = 0;
   let inserted = 0;
+  let duplicates = 0;
+  let errors = 0;
 
   for (const account of result.accounts ?? []) {
     for (const txn of account.txns) {
-      total++;
-      const saved = await saveTransaction(account.accountNumber, txn, pool);
-      if (saved) inserted++;
+      const outcome = await saveTransaction(account.accountNumber, txn, pool);
+      if (outcome === 'inserted') inserted++;
+      else if (outcome === 'duplicate') duplicates++;
+      else errors++;
     }
   }
 
-  console.log(`Mizrahi [${label}]: ${inserted}/${total} transactions saved`);
+  const total = inserted + duplicates + errors;
+  const parts = [`${inserted} new`];
+  if (duplicates > 0) parts.push(`${duplicates} already synced`);
+  if (errors > 0) parts.push(`${errors} errors`);
+  console.log(`Mizrahi [${label}]: ${total} fetched — ${parts.join(', ')}`);
 }

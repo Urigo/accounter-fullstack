@@ -25,23 +25,23 @@ describe('saveTransaction', () => {
     type: 'normal',
   };
 
-  it('returns true when a new row is inserted', async () => {
+  it('returns "inserted" when a new row is inserted', async () => {
     const pool = makePool({ rowCount: 1 });
     const result = await saveTransaction('123456', baseTransaction, pool as never);
-    expect(result).toBe(true);
+    expect(result).toBe('inserted');
     expect(pool.query).toHaveBeenCalledOnce();
   });
 
-  it('returns false when the transaction already exists (ON CONFLICT DO NOTHING)', async () => {
+  it('returns "duplicate" when the transaction already exists (ON CONFLICT DO NOTHING)', async () => {
     const pool = makePool({ rowCount: 0 });
     const result = await saveTransaction('123456', baseTransaction, pool as never);
-    expect(result).toBe(false);
+    expect(result).toBe('duplicate');
   });
 
-  it('returns false and does not throw when the DB query fails', async () => {
+  it('returns "error" and does not throw when the DB query fails', async () => {
     const pool = makePool({ throws: true });
     const result = await saveTransaction('123456', baseTransaction, pool as never);
-    expect(result).toBe(false);
+    expect(result).toBe('error');
   });
 
   it('converts numeric identifier to string', async () => {
@@ -84,10 +84,10 @@ describe('saveTransaction', () => {
     expect(params[0]).toBe('ACCT-789');
   });
 
-  it('handles rowCount null (some pg driver versions) as not inserted', async () => {
+  it('handles rowCount null (some pg driver versions) as duplicate', async () => {
     const pool = makePool({ rowCount: null });
     const result = await saveTransaction('123456', baseTransaction, pool as never);
-    expect(result).toBe(false);
+    expect(result).toBe('duplicate');
   });
 });
 
