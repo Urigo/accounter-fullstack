@@ -25,7 +25,7 @@ import {
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
 import Step03OpeningBalance from './step-03-opening-balance/index.js';
-// import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
+import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
@@ -157,7 +157,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           />
 
           {/* Step 4 - Financial Charges */}
-          {/* <Step04FinancialCharges
+          <Step04FinancialCharges
             id="4"
             title="Generate Financial Charges"
             description="Create various financial charges and reserves"
@@ -165,7 +165,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             onStatusChange={handleStatusChange}
             year={filter.year}
             adminBusinessId={adminBusinessId}
-          /> */}
+          />
 
           {/* Step 5 - Audit Main Process */}
           <SimpleStep
