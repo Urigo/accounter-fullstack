@@ -162,15 +162,38 @@ export function Step04FinancialCharges(props: Step04Props) {
       if (!adminBusinessId) {
         return;
       }
-      await generateFinancialCharge({
+      const generationSucceeded = await generateFinancialCharge({
         type,
         ownerId: adminBusinessId,
         date: yearEndDate,
       });
-      await refetchFinancialCharges();
+
+      if (generationSucceeded) {
+        await refetchFinancialCharges();
+      }
     },
     [adminBusinessId, generateFinancialCharge, refetchFinancialCharges, yearEndDate],
   );
+
+  const getChargeStatusIcon = (item: { exists: boolean; required: boolean }) => {
+    if (item.exists) {
+      return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    }
+    if (item.required) {
+      return <AlertCircle className="h-4 w-4 text-orange-600" />;
+    }
+    return <AlertCircle className="h-4 w-4 text-gray-400" />;
+  };
+
+  const getChargeBadge = (item: { exists: boolean; required: boolean }) => {
+    if (item.exists) {
+      return <Badge variant="default">Exists</Badge>;
+    }
+    if (item.required) {
+      return <Badge variant="outline">Missing</Badge>;
+    }
+    return <Badge variant="secondary">Optional</Badge>;
+  };
 
   return (
     <BaseStepCard {...props} status={status}>
@@ -182,21 +205,9 @@ export function Step04FinancialCharges(props: Step04Props) {
               className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background"
             >
               <div className="flex items-center gap-2">
-                {item.exists ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
-                ) : item.required ? (
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-gray-400" />
-                )}
+                {getChargeStatusIcon(item)}
                 <span className="text-sm font-medium">{item.label}</span>
-                {item.exists ? (
-                  <Badge variant="default">Exists</Badge>
-                ) : item.required ? (
-                  <Badge variant="outline">Missing</Badge>
-                ) : (
-                  <Badge variant="secondary">Optional</Badge>
-                )}
+                {getChargeBadge(item)}
               </div>
 
               {item.exists && item.chargeId ? (
