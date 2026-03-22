@@ -210,7 +210,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN (ec.event_amount, ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC,
-  ec.id;
+  c.id;
   `;
 
 const getSimilarCharges = sql<IGetSimilarChargesQuery>`
