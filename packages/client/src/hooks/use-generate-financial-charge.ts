@@ -94,7 +94,7 @@ type Variables<T extends FinancialChargeEnum> = {
 
 type UseGenerateFinancialCharge = {
   fetching: boolean;
-  generateFinancialCharge: (variables: Variables<FinancialChargeEnum>) => Promise<void>;
+  generateFinancialCharge: (variables: Variables<FinancialChargeEnum>) => Promise<boolean>;
 };
 
 const NOTIFICATION_ID = 'generateFinancialCharge';
@@ -184,6 +184,7 @@ export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
             id: notificationId,
             description: ChargeLink({ chargeId: charge.id, label: `New ${type} charge created` }),
           });
+          return true;
         }
       } catch (e) {
         console.error(`${message}: ${e}`);
@@ -193,8 +194,9 @@ export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
           duration: 100_000,
           closeButton: true,
         });
+        return false;
       }
-      return void 0;
+      return false;
     },
     [
       mutateBankDepositsRevaluationCharge,
