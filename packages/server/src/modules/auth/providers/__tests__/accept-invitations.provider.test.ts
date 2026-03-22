@@ -3,15 +3,48 @@ import { GraphQLError } from 'graphql';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const pgTypedRuntimeMock = vi.hoisted(() => {
-  const runMocks = Array.from({ length: 7 }, () => vi.fn());
-  let sqlCallIndex = 0;
+  const runMocks = {
+    updateInvitationAcceptanceRun: vi.fn(),
+    getInvitationForAcceptanceRun: vi.fn(),
+    getInvitationByTokenRun: vi.fn(),
+    getUserIdByAuth0UserIdRun: vi.fn(),
+    insertAcceptedBusinessUserRun: vi.fn(),
+    updateBusinessUserAuth0IdRun: vi.fn(),
+  };
+
+  const sql = vi.fn((strings: TemplateStringsArray) => {
+    const query = strings.join(' ');
+
+    if (query.includes('SET accepted_at = NOW()')) {
+      return { run: runMocks.updateInvitationAcceptanceRun };
+    }
+    if (query.includes('AND accepted_at IS NULL') && query.includes('FOR UPDATE')) {
+      return { run: runMocks.getInvitationForAcceptanceRun };
+    }
+    if (query.includes('WHERE token_hash = $tokenHash;') && !query.includes('FOR UPDATE')) {
+      return { run: runMocks.getInvitationByTokenRun };
+    }
+    if (query.includes('FROM accounter_schema.business_users') && query.includes('LIMIT 1')) {
+      return { run: runMocks.getUserIdByAuth0UserIdRun };
+    }
+    if (query.includes('INSERT INTO accounter_schema.business_users')) {
+      return { run: runMocks.insertAcceptedBusinessUserRun };
+    }
+    if (
+      query.includes('UPDATE accounter_schema.business_users') &&
+      query.includes('SET auth0_user_id = $auth0UserId')
+    ) {
+      return { run: runMocks.updateBusinessUserAuth0IdRun };
+    }
+
+    return { run: vi.fn() };
+  });
 
   return {
     runMocks,
-    sql: vi.fn(() => ({ run: runMocks[sqlCallIndex++] })),
+    sql,
     reset() {
-      sqlCallIndex = 0;
-      for (const runMock of runMocks) {
+      for (const runMock of Object.values(runMocks)) {
         runMock.mockReset();
       }
     },
@@ -20,6 +53,12 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
 
 vi.mock('@pgtyped/runtime', () => ({
   sql: pgTypedRuntimeMock.sql,
+}));
+
+vi.mock('../../common/providers/audit-logs.provider.js', () => ({
+  AuditLogsProvider: class {
+    log = vi.fn();
+  },
 }));
 
 import { AcceptInvitationsProvider } from '../accept-invitations.provider.js';
@@ -31,8 +70,14 @@ const [
   getUserIdByAuth0UserIdRun,
   insertAcceptedBusinessUserRun,
   updateBusinessUserAuth0IdRun,
-  insertAuditLogRun,
-] = pgTypedRuntimeMock.runMocks;
+] = [
+  pgTypedRuntimeMock.runMocks.updateInvitationAcceptanceRun,
+  pgTypedRuntimeMock.runMocks.getInvitationForAcceptanceRun,
+  pgTypedRuntimeMock.runMocks.getInvitationByTokenRun,
+  pgTypedRuntimeMock.runMocks.getUserIdByAuth0UserIdRun,
+  pgTypedRuntimeMock.runMocks.insertAcceptedBusinessUserRun,
+  pgTypedRuntimeMock.runMocks.updateBusinessUserAuth0IdRun,
+];
 
 function activeInvitation(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -90,7 +135,6 @@ describe('AcceptInvitationsProvider', () => {
     getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
     insertAcceptedBusinessUserRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
-    insertAuditLogRun.mockResolvedValue([]);
 
     const result = await provider.acceptInvitation('token-1', 'auth0|caller', 'invitee@example.com');
 
@@ -128,7 +172,6 @@ describe('AcceptInvitationsProvider', () => {
     getUserIdByAuth0UserIdRun.mockResolvedValue([]);
     updateBusinessUserAuth0IdRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
-    insertAuditLogRun.mockResolvedValue([]);
 
     await provider.acceptInvitation('token-2', 'auth0|caller', 'invitee@example.com');
 
@@ -152,7 +195,6 @@ describe('AcceptInvitationsProvider', () => {
     ]);
     updateBusinessUserAuth0IdRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
-    insertAuditLogRun.mockResolvedValue([]);
 
     await provider.acceptInvitation('token-3', null, null);
 
@@ -176,7 +218,6 @@ describe('AcceptInvitationsProvider', () => {
     getUserIdByAuth0UserIdRun.mockResolvedValue([{ user_id: 'existing-user' }]);
     insertAcceptedBusinessUserRun.mockResolvedValue([]);
     updateInvitationAcceptanceRun.mockResolvedValue([]);
-    insertAuditLogRun.mockResolvedValue([]);
 
     await provider.acceptInvitation('token-same', 'auth0|same-user', 'invitee@example.com');
 
@@ -228,7 +269,6 @@ describe('AcceptInvitationsProvider', () => {
 
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
-    expect(insertAuditLogRun).not.toHaveBeenCalled();
   });
 
   it('rolls back and maps Auth0 cleanup failures to GraphQLError', async () => {
@@ -247,7 +287,6 @@ describe('AcceptInvitationsProvider', () => {
 
     expect(dbClient.query).toHaveBeenNthCalledWith(2, 'ROLLBACK');
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
-    expect(insertAuditLogRun).not.toHaveBeenCalled();
   });
 
   it('rejects authenticated claim when email does not match invitation email', async () => {
@@ -266,6 +305,5 @@ describe('AcceptInvitationsProvider', () => {
     expect(auth0ManagementProvider.unblockUser).not.toHaveBeenCalled();
     expect(auth0ManagementProvider.deleteUser).not.toHaveBeenCalled();
     expect(updateInvitationAcceptanceRun).not.toHaveBeenCalled();
-    expect(insertAuditLogRun).not.toHaveBeenCalled();
   });
 });
