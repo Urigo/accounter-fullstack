@@ -215,7 +215,7 @@ export function Step04FinancialCharges(props: Step04Props) {
                 {chargeRows.map(item => (
                   <div
                     key={item.key}
-                    className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-white"
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background"
                   >
                     <div className="flex items-center gap-2">
                       {getChargeStatusIcon(item)}
