@@ -204,7 +204,7 @@ export function Step04FinancialCharges(props: Step04Props) {
         status={status}
         hasSubsteps
         isExpanded={isExpanded}
-        onToggleExpanded={() => setIsExpanded(!isExpanded)}
+        onToggleExpanded={() => setIsExpanded(prev => !prev)}
       />
 
       {adminBusinessId && (
