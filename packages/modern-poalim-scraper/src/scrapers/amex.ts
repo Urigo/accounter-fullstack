@@ -1,5 +1,6 @@
 import type { Page } from 'puppeteer';
 import { fetchGetWithinPage, fetchPostWithinPage } from '../utils/fetch.js';
+import { userAgentOverride } from '../utils/user-agent-override.js';
 import {
   IsracardCardsTransactionsListSchema,
   type IsracardCardsTransactionsList,
@@ -81,6 +82,8 @@ export async function amex(
   credentials: AmexCredentials,
   options: AmexOptions = new AmexOptions(),
 ) {
+  await userAgentOverride(page);
+
   const BASE_URL = 'https://he.americanexpress.co.il';
   await page.goto(`${BASE_URL}/personalarea/Login`, {
     waitUntil: 'networkidle2',
