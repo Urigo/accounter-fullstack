@@ -302,7 +302,7 @@ async function isTransactionNew(
   try {
     const res = await existingTransactionsChecker.run(
       {
-          card: parseInt(transaction.card, 10),
+        card: parseInt(transaction.card, 10),
         currentPaymentCurrency: transaction.currentPaymentCurrency,
         fullPaymentDate: transaction.fullPaymentDate,
         fullPurchaseDate: transaction.fullPurchaseDate,
@@ -359,7 +359,8 @@ async function insertTransactions(
       purchaseDate != null &&
       // Guard against inserting unexpectedly old transactions. Defaults to 2 months.
       // Set options.maxTransactionMonths higher (e.g. 36) only on the first run to import history.
-      differenceInMonths(new Date(), new Date(purchaseDate.split('/').reverse().join('-'))) > maxTransactionMonths
+      differenceInMonths(new Date(), new Date(purchaseDate.split('/').reverse().join('-'))) >
+        maxTransactionMonths
     ) {
       logger.error(
         `diff: ${differenceInMonths(new Date(), new Date(purchaseDate))} ${new Date(purchaseDate).toUTCString()}`,
