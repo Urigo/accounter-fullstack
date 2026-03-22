@@ -46,23 +46,23 @@ export function getAnnualAuditFlowHref(filter?: AnnualAuditFlowFilter | null): s
 export const AnnualAuditFlow = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
+  const adminBusinessId = userContext?.context.adminBusinessId;
+
   const { get } = useUrlQuery();
   const initialFilters = useMemo(() => {
     const defaultFilters: AnnualAuditFlowFilter = {
       year: new Date().getFullYear() - 1,
-      adminBusinessId: userContext?.context.adminBusinessId,
     };
     const uriFilters = get(ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM);
     if (uriFilters) {
       try {
         return JSON.parse(decodeURIComponent(uriFilters)) as AnnualAuditFlowFilter;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         console.error('Failed to parse filters from URI:', error);
       }
     }
     return defaultFilters;
-  }, [userContext?.context.adminBusinessId, get]);
+  }, [get]);
   const [filter, setFilter] = useState<AnnualAuditFlowFilter>(initialFilters);
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           <Step01ValidateCharges
             id="1"
             year={filter.year}
-            adminBusinessId={filter.adminBusinessId}
+            adminBusinessId={adminBusinessId}
             title="Validate All Charges"
             description="Ensure all charges of the year were reviewed, handle pending charges"
             onStatusChange={handleStatusChange}
@@ -140,7 +140,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           <Step02LedgerChanges
             id="2"
             year={filter.year}
-            adminBusinessId={filter.adminBusinessId}
+            adminBusinessId={adminBusinessId}
             title="Check Pending Ledger Changes"
             description="Ensure no pending ledger changes exist"
             onStatusChange={handleStatusChange}
@@ -150,7 +150,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           <Step03OpeningBalance
             id="3"
             year={filter.year}
-            adminBusinessId={filter.adminBusinessId}
+            adminBusinessId={adminBusinessId}
             title="Verify Opening Balance"
             description="Handle opening balance verification based on user type"
             onStatusChange={handleStatusChange}
@@ -164,7 +164,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             icon={<Calculator className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
             year={filter.year}
-            adminBusinessId={filter.adminBusinessId}
+            adminBusinessId={adminBusinessId}
           /> */}
 
           {/* Step 5 - Audit Main Process */}
