@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createApplication, createModule, Injectable, Scope, gql, Inject } from 'graphql-modules';
 import { TenantAwareDBClient } from '../tenant-db-client.js';
 import { DBProvider } from '../db.provider.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 
 describe('TenantAwareDBClient DI Integration', () => {
   it('should be injectable into providers and operation-scoped', async () => {
@@ -16,6 +17,15 @@ describe('TenantAwareDBClient DI Integration', () => {
     @Injectable()
     class MockDBProvider {
         pool = mockPool;
+    }
+
+    @Injectable()
+    class MockAuthContextProvider {
+      getAuthContext = vi.fn().mockResolvedValue({
+        authType: 'jwt',
+        tenant: { businessId: 'business-1' },
+        user: { userId: 'user-1', role: 'admin' },
+      });
     }
 
     // 2. Create Test Provider
@@ -41,6 +51,7 @@ describe('TenantAwareDBClient DI Integration', () => {
         TestProvider,
         TenantAwareDBClient,
         { provide: DBProvider, useClass: MockDBProvider },
+        { provide: AuthContextProvider, useClass: MockAuthContextProvider },
       ]
     });
 
@@ -68,6 +79,11 @@ describe('TenantAwareDBClient DI Integration', () => {
      @Injectable()
      class MockDBProvider { pool = mockPool; }
 
+      @Injectable()
+      class MockAuthContextProvider {
+      getAuthContext = vi.fn().mockResolvedValue(null);
+      }
+
      const testModule = createModule({
       id: 'test-module-fail',
       typeDefs: gql`
@@ -81,7 +97,8 @@ describe('TenantAwareDBClient DI Integration', () => {
         modules: [testModule],
         providers: [
             TenantAwareDBClient,
-            { provide: DBProvider, useClass: MockDBProvider }
+          { provide: DBProvider, useClass: MockDBProvider },
+          { provide: AuthContextProvider, useClass: MockAuthContextProvider },
         ]
     });
     

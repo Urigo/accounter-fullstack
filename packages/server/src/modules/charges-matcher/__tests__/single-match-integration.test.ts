@@ -12,6 +12,9 @@ vi.mock('graphql-modules', () => ({
   Injectable: () => (target: any) => target,
   Inject: () => (target: any, propertyKey: string | symbol, parameterIndex: number) => {},
   Injector: class {},
+  InjectionToken: class {
+    constructor(public description?: string) {}
+  },
   Scope: { Operation: 'Operation' },
   CONTEXT: Symbol('CONTEXT'),
 }));
