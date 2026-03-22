@@ -91,7 +91,7 @@ function AnnualAuditFlowFiltersForm({
   const { control, handleSubmit } = form;
 
   const onSubmit: SubmitHandler<AnnualAuditFlowFilter> = data => {
-    setFilter({ ...data, year: clampYear(data.year) });
+    setFilter(data);
     closeModal();
   };
 
