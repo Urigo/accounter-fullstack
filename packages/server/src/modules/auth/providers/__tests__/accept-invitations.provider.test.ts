@@ -10,6 +10,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     getUserIdByAuth0UserIdRun: vi.fn(),
     insertAcceptedBusinessUserRun: vi.fn(),
     updateBusinessUserAuth0IdRun: vi.fn(),
+    insertAuditLogRun: vi.fn(),
   };
 
   const sql = vi.fn((strings: TemplateStringsArray) => {
@@ -30,6 +31,9 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
     if (query.includes('INSERT INTO accounter_schema.business_users')) {
       return { run: runMocks.insertAcceptedBusinessUserRun };
     }
+    if (query.includes('INSERT INTO accounter_schema.audit_logs')) {
+      return { run: runMocks.insertAuditLogRun };
+    }
     if (
       query.includes('UPDATE accounter_schema.business_users') &&
       query.includes('SET auth0_user_id = $auth0UserId')
@@ -37,7 +41,7 @@ const pgTypedRuntimeMock = vi.hoisted(() => {
       return { run: runMocks.updateBusinessUserAuth0IdRun };
     }
 
-    return { run: vi.fn() };
+     throw new Error(`Unexpected SQL in test: ${query}`);
   });
 
   return {
@@ -55,9 +59,13 @@ vi.mock('@pgtyped/runtime', () => ({
   sql: pgTypedRuntimeMock.sql,
 }));
 
-vi.mock('../../common/providers/audit-logs.provider.js', () => ({
+const auditLogsProviderMock = {
+  log: vi.fn(),
+};
+
+vi.mock('../../../common/providers/audit-logs.provider.js', () => ({
   AuditLogsProvider: class {
-    log = vi.fn();
+    log = auditLogsProviderMock.log;
   },
 }));
 
