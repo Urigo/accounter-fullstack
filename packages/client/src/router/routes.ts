@@ -47,7 +47,7 @@ function getContoReportParams(filter?: ContoReportFiltersType | null): string {
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/reports/conto${queryParams}`;
+  return queryParams;
 }
 
 function encodeTrialBalanceReportFilters(filter?: TrialBalanceReportFilters | null): string | null {
@@ -64,7 +64,7 @@ function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): s
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/reports/trial-balance${queryParams}`;
+  return queryParams;
 }
 
 export const ROUTES = {
