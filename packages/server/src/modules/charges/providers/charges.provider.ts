@@ -177,9 +177,14 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     ec.*,
     ABS(ec.event_amount) as abs_event_amount
   FROM accounter_schema.charges c
-  LEFT JOIN accounter_schema.extended_charges ec
-    ON c.id = ec.id
-  WHERE 
+  LEFT JOIN LATERAL (
+    SELECT *
+    FROM accounter_schema.extended_charges ec
+    WHERE ec.id = c.id
+    LIMIT 1
+  ) ec
+    ON TRUE
+  WHERE
   ($isIDs = 0 OR c.id IN $$IDs)
   AND ($isOwnerIds = 0 OR c.owner_id IN $$ownerIds)
   AND ($isBusinessIds = 0 OR ec.business_array && $businessIds)
@@ -204,7 +209,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   CASE WHEN $asc = true AND $sortColumn = 'event_amount' THEN (ec.event_amount, ec.id) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_amount'  THEN (ec.event_amount, ec.id) END DESC,
   CASE WHEN $asc = true AND $sortColumn = 'abs_event_amount' THEN ABS(cast(ec.event_amount as DECIMAL)) END ASC,
-  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC, ID;
+  CASE WHEN $asc = false AND $sortColumn = 'abs_event_amount'  THEN ABS(cast(ec.event_amount as DECIMAL)) END DESC,
+  ec.id;
   `;
 
 const getSimilarCharges = sql<IGetSimilarChargesQuery>`
