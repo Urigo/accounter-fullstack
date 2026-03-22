@@ -99,7 +99,7 @@ export const AnnualAuditFlow = (): ReactElement => {
 
   return (
     <PageLayout
-      title="Annual Audit Flow"
+      title={`Annual Audit Flow - ${filter.year}`}
       description="Complete audit process for annual financial reporting and compliance"
     >
       <div className="container mx-auto p-6 max-w-6xl">
