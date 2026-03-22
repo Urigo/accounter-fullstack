@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, PlusCircle } from 'lucide-react';
 import { useQuery } from 'urql';
-import { useGenerateFinancialCharge, FinancialChargeEnum } from '@/hooks/use-generate-financial-charge.js';
+import {
+  FinancialChargeEnum,
+  useGenerateFinancialCharge,
+} from '@/hooks/use-generate-financial-charge.js';
 import { ROUTES } from '@/router/routes.js';
 import { AnnualFinancialChargesDocument } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
