@@ -1,11 +1,9 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
-import { Filter, Loader2 } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator } from '@mantine/core';
 import { isObjectEmpty } from '../../../../helpers/index.js';
-import { useGetAdminBusinesses } from '../../../../hooks/use-get-admin-businesses.js';
-import { ComboBox, NumberInput } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogTrigger } from '../../../ui/dialog.js';
 import {
@@ -16,10 +14,16 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../../ui/select.js';
 
 export type AnnualAuditFlowFilter = {
   year: number;
-  adminBusinessId?: string;
 };
 
 export function encodeAnnualAuditFlowFilters(filter?: AnnualAuditFlowFilter | null): string | null {
@@ -27,6 +31,43 @@ export function encodeAnnualAuditFlowFilters(filter?: AnnualAuditFlowFilter | nu
 }
 
 export const ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM = 'annualAuditFlowFilters';
+
+const MIN_YEAR = 2000;
+const MAX_YEAR = new Date().getFullYear();
+
+function clampYear(year: number): number {
+  return Math.min(Math.max(year, MIN_YEAR), MAX_YEAR);
+}
+
+interface YearPickerProps {
+  value?: number;
+  onChange: (value: number) => void;
+}
+
+function YearPicker({ value, onChange }: YearPickerProps): ReactElement {
+  const selectedYear = typeof value === 'number' ? clampYear(value) : undefined;
+  const availableYears = Array.from({ length: MAX_YEAR - MIN_YEAR + 1 }, (_, index) =>
+    String(MAX_YEAR - index),
+  );
+
+  return (
+    <Select
+      value={selectedYear ? String(selectedYear) : undefined}
+      onValueChange={year => onChange(Number(year))}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder={`Select year (${MIN_YEAR}-${MAX_YEAR})`} />
+      </SelectTrigger>
+      <SelectContent>
+        {availableYears.map(year => (
+          <SelectItem key={year} value={year}>
+            {year}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
 
 interface AnnualAuditFlowFiltersFormProps {
   filter: AnnualAuditFlowFilter;
@@ -39,12 +80,15 @@ function AnnualAuditFlowFiltersForm({
   setFilter,
   closeModal,
 }: AnnualAuditFlowFiltersFormProps): ReactElement {
+  const normalizedFilter: AnnualAuditFlowFilter = {
+    ...filter,
+    year: clampYear(filter.year),
+  };
+
   const form = useForm<AnnualAuditFlowFilter>({
-    defaultValues: filter,
+    defaultValues: normalizedFilter,
   });
   const { control, handleSubmit } = form;
-  const { selectableAdminBusinesses: adminBusinesses, fetching: adminBusinessesFetching } =
-    useGetAdminBusinesses();
 
   const onSubmit: SubmitHandler<AnnualAuditFlowFilter> = data => {
     setFilter(data);
@@ -52,65 +96,35 @@ function AnnualAuditFlowFiltersForm({
   };
 
   return (
-    <>
-      {adminBusinessesFetching ? (
-        <div className="flex justify-center">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      ) : (
-        <div />
-      )}
-      <Form {...form}>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <FormField
-            name="year"
-            control={control}
-            rules={{
-              required: 'Year is required',
-              validate: (value): boolean | string => {
-                const year = Number(value);
-                return Number.isNaN(year) || year < 2000 || year > 2100 ? 'Invalid year' : true;
-              },
-            }}
-            render={({ field }): ReactElement => (
-              <FormItem>
-                <FormLabel>Year</FormLabel>
-                <FormControl>
-                  <NumberInput {...field} hideControls decimalScale={0} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            name="adminBusinessId"
-            defaultValue={filter?.adminBusinessId}
-            control={control}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Owner</FormLabel>
-                <ComboBox
-                  {...field}
-                  data={adminBusinesses}
-                  value={field.value ?? undefined}
-                  disabled={adminBusinessesFetching}
-                  placeholder="Select a financial entity"
-                  formPart
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <DialogFooter>
-            <Button type="submit" disabled={adminBusinessesFetching}>
-              Filter
-            </Button>
-          </DialogFooter>
-        </form>
-      </Form>
-    </>
+    <Form {...form}>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FormField
+          name="year"
+          control={control}
+          rules={{
+            required: 'Year is required',
+            validate: (value): boolean | string => {
+              const year = Number(value);
+              return Number.isNaN(year) || year < MIN_YEAR || year > MAX_YEAR
+                ? `Year must be between ${MIN_YEAR} and ${MAX_YEAR}`
+                : true;
+            },
+          }}
+          render={({ field }): ReactElement => (
+            <FormItem>
+              <FormLabel>Year</FormLabel>
+              <FormControl>
+                <YearPicker value={Number(field.value)} onChange={field.onChange} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <DialogFooter>
+          <Button type="submit">Filter</Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }
 
