@@ -80,6 +80,6 @@ export const Chart: React.FC<BarChartProps> = ({ data }) => {
 };
 
 const highlightScope = {
-  highlighted: 'series',
-  faded: 'global',
+  highlight: 'series',
+  fade: 'global',
 } as const;
