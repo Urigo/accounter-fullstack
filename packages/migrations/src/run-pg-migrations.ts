@@ -158,6 +158,7 @@ import migration_2026_02_22T19_00_00_fix_overlapping_parallel_function_updates f
 import migration_2026_03_09T10_00_00_hash_invitation_tokens from './actions/2026-03-09T10-00-00.hash-invitation-tokens.js';
 import migration_2026_03_10T15_00_00_add_user_id_to_invitations from './actions/2026-03-10T15-00-00.add-user-id-to-invitations.js';
 import migration_2026_03_16T18_00_00_create_gmail_listener_role from './actions/2026-03-16T18-00-00.create-gmail-listener-role.js';
+import migration_2026_03_23T12_00_00_index_search_strings from './actions/2026-03-23T12-00-00.index-search-strings.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -320,6 +321,7 @@ export const MIGRATIONS = [
   migration_2026_03_09T10_00_00_hash_invitation_tokens,
   migration_2026_03_10T15_00_00_add_user_id_to_invitations,
   migration_2026_03_16T18_00_00_create_gmail_listener_role,
+  migration_2026_03_23T12_00_00_index_search_strings,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
