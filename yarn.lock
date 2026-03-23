@@ -35,7 +35,7 @@ __metadata:
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
-    "@types/pg": "npm:8.18.0"
+    "@types/pg": "npm:8.20.0"
     pg-promise: "npm:12.6.2"
     slonik: "npm:48.10.3"
     tslib: "npm:2.8.1"
@@ -50,7 +50,7 @@ __metadata:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@types/pg": "npm:8.18.0"
+    "@types/pg": "npm:8.20.0"
     date-fns: "npm:4.1.0"
     dotenv: "npm:17.3.1"
     dotenv-cli: "npm:11.0.0"
@@ -316,7 +316,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:24.12.0"
-    "@types/pg": "npm:8.18.0"
+    "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
     ai: "npm:6.0.134"
     async-mutex: "npm:0.5.0"
@@ -8761,14 +8761,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/pg@npm:8.18.0":
-  version: 8.18.0
-  resolution: "@types/pg@npm:8.18.0"
+"@types/pg@npm:8.20.0":
+  version: 8.20.0
+  resolution: "@types/pg@npm:8.20.0"
   dependencies:
     "@types/node": "npm:*"
     pg-protocol: "npm:*"
     pg-types: "npm:^2.2.0"
-  checksum: 10c0/cafece430d8d583a75eb3f7beff7b3e97e05ef0b6326ae5070476bda46ccc42edb72724b9c2bf799cea93a48b1342319bfbbe1217fff5ffa5c322b8d637ea949
+  checksum: 10c0/c8b5aa794ea074aa20d0c1ef6c721ce0fe16f2c084d0ccc32b7f12909a08ec969e6b01a094ce8e7019cc425381c4b59f261bd0133daf0c6d4aca5c6c492e8312
   languageName: node
   linkType: hard
 
@@ -9432,7 +9432,7 @@ __metadata:
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:24.12.0"
-    "@types/pg": "npm:8.18.0"
+    "@types/pg": "npm:8.20.0"
     "@vitest/coverage-v8": "npm:4.1.0"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.1"
