@@ -11,6 +11,7 @@ import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { Badge } from '../../../../ui/badge.jsx';
 import { Button } from '../../../../ui/button.jsx';
 import { CardContent } from '../../../../ui/card.jsx';
+import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -101,6 +102,7 @@ const CHARGE_ITEMS: ChargeItem[] = [
 
 export function Step04FinancialCharges(props: Step04Props) {
   const [status, setStatus] = useState<StepStatus>('loading');
+  const [isExpanded, setIsExpanded] = useState(false);
   const { adminBusinessId, id, onStatusChange, year } = props;
   const yearEndDate = `${year}-12-31` as TimelessDateString;
   const { fetching: generatingCharge, generateFinancialCharge } = useGenerateFinancialCharge();
@@ -196,39 +198,53 @@ export function Step04FinancialCharges(props: Step04Props) {
   };
 
   return (
-    <BaseStepCard {...props} status={status}>
-      <CardContent className="pt-0 border-t">
-        <div className="space-y-2">
-          {chargeRows.map(item => (
-            <div
-              key={item.key}
-              className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background"
-            >
-              <div className="flex items-center gap-2">
-                {getChargeStatusIcon(item)}
-                <span className="text-sm font-medium">{item.label}</span>
-                {getChargeBadge(item)}
-              </div>
+    <>
+      <BaseStepCard
+        {...props}
+        status={status}
+        hasSubsteps
+        isExpanded={isExpanded}
+        onToggleExpanded={() => setIsExpanded(prev => !prev)}
+      />
 
-              {item.exists && item.chargeId ? (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={ROUTES.CHARGES.DETAIL(item.chargeId)}>View</a>
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onGenerateClicked(item.generateType)}
-                  disabled={generatingCharge || status === 'loading'}
-                >
-                  <PlusCircle className="h-4 w-4 mr-1" />
-                  Generate
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </BaseStepCard>
+      {adminBusinessId && (
+        <Collapsible open={isExpanded}>
+          <CollapsibleContent>
+            <CardContent className="pt-0 border-t">
+              <div className="space-y-2 mt-3">
+                {chargeRows.map(item => (
+                  <div
+                    key={item.key}
+                    className="flex items-center justify-between gap-3 p-3 rounded-lg border bg-background"
+                  >
+                    <div className="flex items-center gap-2">
+                      {getChargeStatusIcon(item)}
+                      <span className="text-sm font-medium">{item.label}</span>
+                      {getChargeBadge(item)}
+                    </div>
+
+                    {item.exists && item.chargeId ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={ROUTES.CHARGES.DETAIL(item.chargeId)}>View</a>
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onGenerateClicked(item.generateType)}
+                        disabled={generatingCharge || status === 'loading'}
+                      >
+                        <PlusCircle className="h-4 w-4 mr-1" />
+                        Generate
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+    </>
   );
 }
