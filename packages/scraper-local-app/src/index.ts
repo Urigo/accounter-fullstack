@@ -15,10 +15,12 @@ import { getMaxData, type MaxCredentials } from './scrapers/max.js';
 import { scrapeMizrahi, type MizrahiCredentials } from './scrapers/mizrahi/index.js';
 import type { PoalimContext, PoalimCredentials } from './scrapers/poalim/index.js';
 import { getPoalimData } from './scrapers/poalim/index.js';
+import { scrapePriority, type PriorityScraperCredentials } from './scrapers/priority/index.js';
 
 export type Config = {
   database: PoolConfig;
   showBrowser?: boolean;
+  priorityAccounts?: PriorityScraperCredentials[];
   fetchBankOfIsraelRates?: boolean;
   poalimAccounts?: PoalimCredentials[];
   discountAccounts?: DiscountCredentials[];
@@ -185,7 +187,17 @@ export async function scrape() {
         ({
           title: `Isracard-alt ${creds.nickname ?? i + 1}`,
           task: async (ctx: MainContext) =>
-            await scrapeIsracardAlt(creds, ctx.pool).catch(e => {
+            await scrapeIsracardAlt(creds, ctx.pool, config.showBrowser).catch(e => {
+              logger.error(e);
+            }),
+        }) as ListrTask,
+    ) ?? []),
+    ...(config.priorityAccounts?.filter(() => isProviderEnabled('priority')).map(
+      (creds, i) =>
+        ({
+          title: `Priority ${creds.nickname ?? i + 1}`,
+          task: async (ctx: MainContext) =>
+            await scrapePriority(creds, ctx.pool).catch(e => {
               logger.error(e);
             }),
         }) as ListrTask,

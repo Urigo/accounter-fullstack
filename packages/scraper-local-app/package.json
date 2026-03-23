@@ -27,6 +27,7 @@
     "israeli-bank-scrapers": "^6.7.1",
     "listr2": "10.2.1",
     "pg": "8.20.0",
+    "priority-web-sdk": "^3.0.37",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },

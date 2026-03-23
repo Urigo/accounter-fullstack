@@ -46,6 +46,7 @@ __metadata:
     listr2: "npm:10.2.1"
     patch-package: "npm:^8.0.1"
     pg: "npm:8.20.0"
+    priority-web-sdk: "npm:^3.0.37"
     puppeteer-extra: "npm:^3.3.6"
     puppeteer-extra-plugin-stealth: "npm:^2.11.2"
     rimraf: "npm:6.1.3"
@@ -9969,6 +9970,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"base-64@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "base-64@npm:0.1.0"
+  checksum: 10c0/fe0dcf076e823f04db7ee9b02495be08a91c445fbc6db03cb9913be9680e2fcc0af8b74459041fe08ad16800b1f65a549501d8f08696a8a6d32880789b7de69d
+  languageName: node
+  linkType: hard
+
 "base64-arraybuffer@npm:^1.0.2":
   version: 1.0.2
   resolution: "base64-arraybuffer@npm:1.0.2"
@@ -17683,7 +17691,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment-timezone@npm:^0.5.37":
+"moment-timezone@npm:^0.5.17, moment-timezone@npm:^0.5.37":
   version: 0.5.48
   resolution: "moment-timezone@npm:0.5.48"
   dependencies:
@@ -19453,6 +19461,17 @@ __metadata:
   bin:
     prettier: bin-prettier.js
   checksum: 10c0/463ea8f9a0946cd5b828d8cf27bd8b567345cf02f56562d5ecde198b91f47a76b7ac9eae0facd247ace70e927143af6135e8cf411986b8cb8478784a4d6d724a
+  languageName: node
+  linkType: hard
+
+"priority-web-sdk@npm:^3.0.37":
+  version: 3.0.37
+  resolution: "priority-web-sdk@npm:3.0.37"
+  dependencies:
+    base-64: "npm:^0.1.0"
+    moment-timezone: "npm:^0.5.17"
+    xhr2: "npm:^0.1.4"
+  checksum: 10c0/5f7530cf34b485910e446c2dde41c5502b6b01fd14c191cd441800b92d36357c56332f84e0de93458996677ac951d6b0e5218783413935f2e0a74f9e31ad3918
   languageName: node
   linkType: hard
 
@@ -23903,6 +23922,13 @@ __metadata:
     utf-8-validate:
       optional: true
   checksum: 10c0/4741d9b9bc3f9c791880882414f96e36b8b254e34d4b503279d6400d9a4b87a033834856dbdd94ee4b637944df17ea8afc4bce0ff4a1560d2166be8855da5b04
+  languageName: node
+  linkType: hard
+
+"xhr2@npm:^0.1.4":
+  version: 0.1.4
+  resolution: "xhr2@npm:0.1.4"
+  checksum: 10c0/9fc751dfc5696f239083eeee8a05f5efc6ca4eb09be40b705197d8b5d1aaa4c01a03290f26ed5618862dfaaef8016bb43ab68d26b87f5c46305a34cb81264278
   languageName: node
   linkType: hard
 
