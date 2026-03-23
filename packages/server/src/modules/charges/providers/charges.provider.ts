@@ -546,7 +546,10 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     LEFT JOIN accounter_schema.business_trip_charges btc ON btc.charge_id = c.id
     LEFT JOIN ledger_by_charge lbc ON lbc.charge_id = c.id
     LEFT JOIN years_of_relevance y ON y.charge_id = c.id
-    LEFT JOIN accounter_schema.depreciation d ON d.charge_id = c.id
+    LEFT JOIN (
+      SELECT DISTINCT charge_id
+      FROM accounter_schema.depreciation
+    ) d ON d.charge_id = c.id
   )
   SELECT
     ec.*,
