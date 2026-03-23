@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { C100Schema, encodeC100, parseC100, type C100 } from '../../src/generator/records/c100';
+import { C100Schema, encodeC100, parseC100, type C100 } from '../../src/generator/records/c100.js';
 
 describe('C100 Record', () => {
   const validC100: C100 = {

@@ -89,7 +89,7 @@ export class YearHandler {
       return reports;
     } catch (e) {
       this.page?.browser().close();
-      throw new Error(`getReportsTable - ${(e as Error)?.message || e}`);
+      throw new Error(`getReportsTable - ${(e as Error)?.message || e}`, { cause: e });
     }
   };
 }

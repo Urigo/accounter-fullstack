@@ -1251,7 +1251,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     if (!clientInfo) {
       throw new GraphQLError(`Client with business ID ${initialInput.client.id} not found`);
     }
-    let greenInvoiceId: string | null = null;
+    let greenInvoiceId: string | null;
     try {
       greenInvoiceId =
         validateClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;

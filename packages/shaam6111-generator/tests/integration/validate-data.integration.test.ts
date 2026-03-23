@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { validateData } from '../../src';
-import { IndividualOrCompanyEnum, ReportData } from '../../src/types';
+import { validateData } from '../../src/index.js';
+import { IndividualOrCompanyEnum, ReportData } from '../../src/types/index.js';
 
 // Mock data for testing
 const validReportData: ReportData = {

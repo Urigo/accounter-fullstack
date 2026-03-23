@@ -10,7 +10,7 @@ export function createKraken(options: { apiKey: string; apiSecret: string }) {
 
   return {
     ledgers: async () => {
-      let hasNextPage = false;
+      let hasNextPage: boolean;
       let offset = 0;
       let results: Record<string, KrakenLedgerRecord> = {};
 
@@ -31,7 +31,7 @@ export function createKraken(options: { apiKey: string; apiSecret: string }) {
       return results;
     },
     trades: async () => {
-      let hasNextPage = false;
+      let hasNextPage: boolean;
       let offset = 0;
       let results: Record<string, KrakenLedgerRecord> = {};
 

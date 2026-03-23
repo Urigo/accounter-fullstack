@@ -35,7 +35,7 @@ export class CloudinaryProvider {
     } catch (e) {
       const message = 'Error on uploading file to cloudinary';
       console.error(`${message}: ${(e as Error).message}\n${JSON.stringify(e, null, 2)}`);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 }

@@ -8,7 +8,7 @@ import {
   generatePrimaryIdentifier,
   generateRandomKey,
   KeyGeneratorContext,
-} from '../../src/utils/key-generator';
+} from '../../src/utils/key-generator.js';
 
 describe('Key Generator', () => {
   describe('generateRandomKey', () => {

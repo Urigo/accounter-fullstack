@@ -110,7 +110,7 @@ export function calculateDepreciation(
   pastDepreciationAmount = Math.min(pastDepreciationAmount, valueAmount);
 
   // Calculate depreciation for the calculation year
-  let yearlyDepreciationAmount = 0;
+  let yearlyDepreciationAmount: number;
 
   if (activationYear === calculationYear) {
     // Asset activated during calculation year

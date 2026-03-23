@@ -3,8 +3,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../src/api/generate-report';
-import type { ReportInput } from '../src/types';
+import { generateUniformFormatReport } from '../src/api/generate-report.js';
+import type { ReportInput } from '../src/types/index.js';
 
 describe('Extended Account Schema', () => {
   it('should handle accounts with extended fields', () => {

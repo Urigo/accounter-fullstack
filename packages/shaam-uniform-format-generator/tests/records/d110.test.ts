@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { D110Schema, encodeD110, parseD110, type D110 } from '../../src/generator/records/d110';
+import { D110Schema, encodeD110, parseD110, type D110 } from '../../src/generator/records/d110.js';
 
 describe('D110 Record', () => {
   const validD110: D110 = {

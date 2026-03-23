@@ -92,7 +92,7 @@ export class GoogleDriveProvider {
     } catch (e) {
       const message = `Failed fetching files from Google Drive`;
       console.error(`${message}: ${e}`);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 }

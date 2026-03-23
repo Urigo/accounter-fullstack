@@ -45,7 +45,7 @@ export async function calculateTotalAmount(
     return null;
   } catch (error) {
     console.error('Error calculating total amount for charge:', error);
-    throw new Error('Failed to calculate total amount for charge');
+    throw new Error('Failed to calculate total amount for charge', { cause: error });
   }
 }
 

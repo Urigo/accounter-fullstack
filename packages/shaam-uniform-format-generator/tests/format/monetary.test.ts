@@ -8,7 +8,7 @@ import {
   formatOptionalMonetaryAmount,
   parseMonetaryAmount,
   parseOptionalMonetaryAmount,
-} from '../../src/generator/format/monetary';
+} from '../../src/generator/format/monetary.js';
 
 describe('Monetary Amount Formatting', () => {
   describe('formatMonetaryAmount', () => {

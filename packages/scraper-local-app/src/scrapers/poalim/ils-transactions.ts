@@ -287,7 +287,7 @@ async function isTransactionNew(
     return true;
   } catch (error) {
     logger.error(error);
-    throw new Error('Failed to check if transaction is new');
+    throw new Error('Failed to check if transaction is new', { cause: error });
   }
 }
 
@@ -393,7 +393,7 @@ async function insertTransactions(
       });
     } catch (error) {
       logger.error('Failed to insert Poalim ILS transactions', error);
-      throw new Error('Failed to insert transactions');
+      throw new Error('Failed to insert transactions', { cause: error });
     }
   }
 }

@@ -1,5 +1,5 @@
-import { generateReport } from '../../src';
-import { IndividualOrCompanyEnum, ReportData, ValidationError } from '../../src/types';
+import { generateReport } from '../../src/index.js';
+import { IndividualOrCompanyEnum, ReportData, ValidationError } from '../../src/types/index.js';
 
 describe('Integration Test: generateReport', () => {
   it('should generate a full report string of the correct length and format', () => {

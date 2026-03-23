@@ -220,7 +220,7 @@ export async function uploadDeelInvoice(
   } catch (error) {
     const message = 'Error uploading Deel invoice';
     console.error(`${message}: ${error}`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 
@@ -352,7 +352,7 @@ export async function fetchAndFilterInvoices(injector: Injector) {
   } catch (error) {
     const message = 'Error fetching Deel invoices';
     console.error(`${message}: ${error}`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 
@@ -363,7 +363,7 @@ export async function fetchReceipts(injector: Injector) {
   } catch (error) {
     const message = 'Error fetching Deel receipts';
     console.error(`${message}: ${error}`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 
@@ -452,7 +452,7 @@ export async function validateContracts(
         } catch (error) {
           const message = `Error adding Deel contract [${contractId}] during validation`;
           console.error(message, error);
-          throw new Error(message);
+          throw new Error(message, { cause: error });
         }
       }
     }),
@@ -529,6 +529,6 @@ export async function insertDeelInvoiceRecord(
     if (error instanceof GraphQLError) {
       throw error;
     }
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }

@@ -5,7 +5,7 @@ import {
   parseA000Sum,
   type A000Sum,
   type A000SumInput,
-} from '../../src/generator/records/a000-sum';
+} from '../../src/generator/records/a000-sum.js';
 
 describe('A000Sum Record', () => {
   const validA000Sum: A000Sum = {

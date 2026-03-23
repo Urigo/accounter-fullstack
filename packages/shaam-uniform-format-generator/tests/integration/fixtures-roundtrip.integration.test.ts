@@ -9,8 +9,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../../src/api/generate-report';
-import { parseUniformFormatFiles } from '../../src/api/parse-files';
+import { generateUniformFormatReport } from '../../src/api/generate-report.js';
+import { parseUniformFormatFiles } from '../../src/api/parse-files.js';
 import {
   parseA000,
   parseA000Sum,
@@ -22,7 +22,7 @@ import {
   parseD120,
   parseM100,
   parseZ900,
-} from '../../src/generator/records/index';
+} from '../../src/generator/records/index.js';
 import type {
   Account,
   Document,

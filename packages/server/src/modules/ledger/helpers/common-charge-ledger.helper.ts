@@ -100,7 +100,7 @@ export async function ledgerEntryFromDocument(
 
   // handle non-local currencies
   if (document.currency_code !== defaultLocalCurrency) {
-    let exchangeRate = 1;
+    let exchangeRate: number;
     if (document.exchange_rate_override) {
       exchangeRate = Number(document.exchange_rate_override);
     } else {
@@ -124,10 +124,10 @@ export async function ledgerEntryFromDocument(
 
   let creditAccountID2: string | null = null;
   let debitAccountID2: string | null = null;
-  let creditAmount1: number | null = null;
-  let localCurrencyCreditAmount1 = 0;
-  let debitAmount1: number | null = null;
-  let localCurrencyDebitAmount1 = 0;
+  let creditAmount1: number | null;
+  let localCurrencyCreditAmount1: number;
+  let debitAmount1: number | null;
+  let localCurrencyDebitAmount1: number;
   let creditAmount2: number | null = null;
   let localCurrencyCreditAmount2: number | null = null;
   let debitAmount2: number | null = null;

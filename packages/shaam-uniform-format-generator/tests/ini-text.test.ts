@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../src/index';
+import { generateUniformFormatReport } from '../src/index.js';
 
 describe('INI.TXT Generation', () => {
   it('should generate iniText with A100 summary line for minimal business metadata', () => {

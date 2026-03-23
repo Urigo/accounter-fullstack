@@ -246,9 +246,6 @@ export function PreviewDocumentModal({
   ...props
 }: Props): ReactElement {
   const [internalOpen, setInternalOpen] = useState(false);
-  const [initialFormData, setInitialFormData] = useState<Partial<PreviewDocumentInput> | undefined>(
-    'initialFormData' in props && props.initialFormData ? props.initialFormData : undefined,
-  );
 
   // handle internal/external open state
   const open = useMemo(
@@ -308,27 +305,31 @@ export function PreviewDocumentModal({
     open,
   ]);
 
-  useEffect(() => {
-    let documentDraftDraft: NewDocumentDraftFragment | undefined = undefined;
+  const documentDraftDraft = useMemo(() => {
     if (dataByCharge?.newDocumentDraftByCharge) {
-      documentDraftDraft = getFragmentData(
-        NewDocumentDraftFragmentDoc,
-        dataByCharge.newDocumentDraftByCharge,
-      );
-    } else if (dataByDocument?.newDocumentDraftByDocument) {
-      documentDraftDraft = getFragmentData(
+      return getFragmentData(NewDocumentDraftFragmentDoc, dataByCharge.newDocumentDraftByCharge);
+    }
+    if (dataByDocument?.newDocumentDraftByDocument) {
+      return getFragmentData(
         NewDocumentDraftFragmentDoc,
         dataByDocument.newDocumentDraftByDocument,
       );
     }
+    return undefined;
+  }, [dataByDocument, dataByCharge]);
+
+  const initialFormData = useMemo<Partial<PreviewDocumentInput> | undefined>(() => {
     if (documentDraftDraft) {
-      const draft = convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
+      return convertNewDocumentDraftFragmentIntoPreviewDocumentInput(
         documentDraftDraft,
         documentType,
       );
-      setInitialFormData(draft);
     }
-  }, [dataByCharge, dataByDocument, documentType]);
+    if ('initialFormData' in props && props.initialFormData) {
+      return props.initialFormData;
+    }
+    return undefined;
+  }, [documentDraftDraft, documentType, props]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

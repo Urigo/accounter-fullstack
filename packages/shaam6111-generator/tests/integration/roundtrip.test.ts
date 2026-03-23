@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generateReport } from '../../src/generators/generate-report';
-import { parseReport } from '../../src/parsers/parse-report';
-import { ReportData } from '../../src/types/index';
-import { validReportData1 } from '../fixtures/validDataSets/data1';
+import { generateReport } from '../../src/generators/generate-report.js';
+import { parseReport } from '../../src/parsers/parse-report.js';
+import { ReportData } from '../../src/types/index.js';
+import { validReportData1 } from '../fixtures/validDataSets/data1.js';
 
 describe('Roundtrip Tests', () => {
   describe('Data Fixture Roundtrip', () => {

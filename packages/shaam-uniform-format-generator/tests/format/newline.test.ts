@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CRLF } from '../../src/format/newline';
+import { CRLF } from '../../src/format/newline.js';
 
 describe('Newline constants', () => {
   describe('CRLF', () => {

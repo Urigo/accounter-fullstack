@@ -255,7 +255,7 @@ export function parseB110(line: string): B110 {
   const foreignCurrencyCode = (foreignCurrencyCodeRaw || undefined) as CurrencyCode | undefined;
   pos += 3;
   const reserved = cleanLine.slice(pos, pos + 16).trim();
-  pos += 16;
+  // pos += 16;
 
   // Validate the code field
   if (code !== 'B110') {

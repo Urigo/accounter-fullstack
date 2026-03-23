@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../../src/api/generate-report';
-import type { ReportInput } from '../../src/types';
-import { ShaamFormatError } from '../../src/validation/errors';
-import { validateInput } from '../../src/validation/validate-input';
+import { generateUniformFormatReport } from '../../src/api/generate-report.js';
+import type { ReportInput } from '../../src/types/index.js';
+import { ShaamFormatError } from '../../src/validation/errors.js';
+import { validateInput } from '../../src/validation/validate-input.js';
 
 describe('Input Validation', () => {
   const validInput: ReportInput = {

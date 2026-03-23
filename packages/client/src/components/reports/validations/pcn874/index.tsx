@@ -40,14 +40,13 @@ export const Pcn874Validator = ({ filter }: Props): ReactElement => {
   });
 
   const reports = useMemo(() => {
-    if (!data?.pcnByDate) {
-      return [];
-    }
-    return data.pcnByDate.sort((a, b) => {
-      if (b.date > a.date) return 1;
-      if (b.date < a.date) return -1;
-      return 0;
-    });
+    return (
+      data?.pcnByDate.sort((a, b) => {
+        if (b.date > a.date) return 1;
+        if (b.date < a.date) return -1;
+        return 0;
+      }) ?? []
+    );
   }, [data?.pcnByDate]);
 
   if (fetching) {
