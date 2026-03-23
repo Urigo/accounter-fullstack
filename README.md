@@ -1,167 +1,401 @@
-# Accounter
+# Accounter — neoccounter workspace
 
-Manage your taxes.
+A self-hosted financial accounting platform for Israeli businesses. It scrapes bank and credit-card
+transactions, stores them in PostgreSQL, and exposes a GraphQL API consumed by a React dashboard.
 
-## Getting started
+## What this repo is
 
-1. Switch to the correct version of Node.js:
+This is a private fork of [Urigo/accounter-fullstack](https://github.com/Urigo/accounter-fullstack)
+maintained at `github.com:robotaitai/accounter-fullstack` on the branch `feat/settings-page`.
 
-```sh
-nvm use $(cat .node-version)
+Key additions on top of upstream:
+
+- **Multi-tenant Auth0 setup** — JWT authentication, role-based access (owner / accountant /
+  employee / viewer / scraper), email-invitation flow with automatic Auth0 user creation.
+- **scraper-local-app** — standalone Node.js scraper that runs locally (or on a schedule) and
+  pushes data from Isracard, Mizrahi, and Priority ERP into Postgres via custom triggers.
+- **Priority ERP integration** — GraphQL module to sync invoices from the Priority OData API.
+- **Dashboard enhancements** — per-source data counts, data types, date ranges, and 26-month bar
+  charts.
+
+## Architecture overview
+
+```
+Browser (React/Vite :3001)
+  |-- GraphQL (graphql-yoga :4000)
+       |-- PostgreSQL :5432  (main DB, Row Level Security per tenant)
+       |-- Auth0              (authentication + user management)
+       |-- Priority OData API (invoice sync)
+
+scraper-local-app (Node.js, runs on demand or via cron)
+  |-- Isracard (puppeteer-extra stealth)
+  |-- Mizrahi  (puppeteer-extra stealth)
+  |-- Priority (OData HTTP)
+  |-- PostgreSQL :5432
 ```
 
-2. Install dependencies:
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS, urql (GraphQL client) |
+| Backend | Node.js 24, graphql-yoga, GraphQL Modules, pgtyped |
+| Database | PostgreSQL 16, Row Level Security, custom triggers |
+| Auth | Auth0 (Universal Login, RS256 JWT) |
+| Scrapers | israeli-bank-scrapers, puppeteer-extra, puppeteer-extra-plugin-stealth |
+| Monorepo | Yarn 4 workspaces |
+| Tests | Vitest (unit + integration) |
+
+---
+
+## Prerequisites
+
+Install these before anything else:
+
+- **Node.js 24** via [nvm](https://github.com/nvm-sh/nvm)
+- **Docker** (for the local PostgreSQL container)
+- **Yarn 4** (comes bundled — no separate install needed)
+- **Git**
+- **Chromium** dependencies (for Puppeteer scrapers — on macOS this is automatic)
+
+---
+
+## Installation
+
+### 1. Clone the repo
 
 ```sh
+git clone git@github.com:robotaitai/accounter-fullstack.git
+cd accounter-fullstack
+git checkout feat/settings-page
+```
+
+### 2. Use the correct Node version
+
+```sh
+nvm install 24
+nvm use 24
+```
+
+### 3. Install dependencies
+
+```sh
+node .yarn/releases/yarn-4.13.0.cjs install
+# or simply (if you have the Yarn 4 corepack shim active):
 yarn install
 ```
 
-3. Create `.env` file:
+### 4. Set up environment variables
 
 ```sh
 cp .env.template .env
 ```
 
-4. Run setup:
+Then fill in the values in `.env`. The sections below explain each group.
 
-If you want to create new local database, run:
-
-```sh
-yarn local:setup
-```
-
-In case you already have a database, you can set the database variables in your `.env` file, then
-run:
+### 5. Start the database
 
 ```sh
-yarn setup
+docker compose -f docker/docker-compose.dev.yml up -d
 ```
 
-5. Run client and server:
+This starts a PostgreSQL 16 container on port 5432. Data is persisted in
+`docker/.accounter-dev/postgresql/db`.
+
+### 6. Run migrations
 
 ```sh
-yarn build
-yarn client:dev
-yarn server:dev
-# Also helpful while developing:
-yarn generate:watch
+node .yarn/releases/yarn-4.13.0.cjs db:migrate
 ```
 
-Or use the VSCode Terminals extension: `fabiospampinato.vscode-terminals` to run all this for you in
-different terminals.
+This applies all schema migrations (including our custom scraper triggers).
 
-6. Visit [http://localhost:3001/](http://localhost:3001/) and sign in via Auth0 Universal Login.
-   Configure Auth0 variables in `.env` (`AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`,
-   `AUTH0_CLIENT_SECRET`, `AUTH0_MANAGEMENT_AUDIENCE`) before running the app.
-
-7. Seed the database with your business details. Edit `scripts/seed.ts` with your info, then run
-   `yarn seed`.
-
-8. Load your data into the database (first set correct env vars):
+### 7. Build the project
 
 ```sh
-yarn scrape
+node .yarn/releases/yarn-4.13.0.cjs build
 ```
 
-9. Generate businesses by visiting http://localhost:4000/graphql
+### 8. Run the app
 
-Set your headers at the bottom:
+Open three terminals:
 
-```json
-{
-  "authorization": "Basic [YOUR_TOKEN]"
-}
+```sh
+# Terminal 1 — GraphQL server
+node .yarn/releases/yarn-4.13.0.cjs workspace @accounter/server dev
+
+# Terminal 2 — React frontend
+node .yarn/releases/yarn-4.13.0.cjs workspace @accounter/client dev
+
+# Terminal 3 — (optional) GraphQL code generation watcher
+node .yarn/releases/yarn-4.13.0.cjs generate:watch
 ```
 
-You can find `YOUR_TOKEN` by in the GraphQL request headers in your browser's `Network` tab.
+Visit **http://localhost:3001** — you will be redirected to Auth0 login.
 
-Then run this mutation:
+---
 
-```gql
-mutation {
-  batchGenerateBusinessesOutOfTransactions {
-    id
-    name
-  }
-}
+## Environment variables reference
+
+### Database
+
+```ini
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=accounter
+POSTGRES_SSL=0
 ```
 
-## Authentication
+### Auth0 (required)
 
-Accounter uses Auth0 for user authentication. See:
+You need two Auth0 applications: an **SPA** for the frontend and an **M2M** app for user management.
 
-- [Architecture Documentation](docs/architecture/authentication.md)
-- [Operations Runbook](docs/operations/auth0-runbook.md)
-- [Auth0 Setup Guide](docs/user-authentication-plan/auth0-setup.md)
+```ini
+# JWT verification
+AUTH0_DOMAIN=your-tenant.us.auth0.com
+AUTH0_AUDIENCE=https://api.accounter.com
+
+# SPA app (shown in the browser login screen)
+AUTH0_FRONTEND_CLIENT_ID=your_spa_client_id
+
+# M2M app (server-to-server: create users, send invitations)
+AUTH0_CLIENT_ID=your_m2m_client_id
+AUTH0_CLIENT_SECRET=your_m2m_client_secret
+AUTH0_MANAGEMENT_AUDIENCE=https://your-tenant.us.auth0.com/api/v2/
+```
+
+See **Auth0 setup** section below for how to create these applications.
+
+### Encryption
+
+```ini
+SETTINGS_ENCRYPTION_KEY=64_char_hex_string   # generate: openssl rand -hex 32
+```
+
+Used to encrypt sensitive source credentials stored in the database.
+
+### Scraper credentials (add only what you use)
+
+```ini
+# Isracard
+ISRACARD_ID=your_id
+ISRACARD_PASSWORD=your_password
+ISRACARD_6_DIGITS=last_6_digits_of_id
+
+# Mizrahi
+MIZRAHI_USERNAME=your_username
+MIZRAHI_PASSWORD=your_password
+
+# Priority ERP (stored encrypted in DB via the Sources UI — no .env entry needed)
+```
+
+### Optional integrations
+
+```ini
+ANTHROPIC_API_KEY=...   # OCR on documents
+GREEN_INVOICE_ID=...    # Invoice issuing
+CLOUDINARY_NAME=...     # File uploads
+GOOGLE_DRIVE_API_KEY=...
+```
+
+---
+
+## Auth0 setup
+
+### SPA application
+
+1. Auth0 Dashboard → Applications → Create Application → Single Page Web Applications
+2. Name it `Accounter Dashboard`
+3. Under **Application URIs**:
+   - **Allowed Callback URLs**: `http://localhost:3001/callback`
+   - **Allowed Logout URLs**: `http://localhost:3001`
+   - **Allowed Web Origins**: `http://localhost:3001`
+4. Copy the **Client ID** → `AUTH0_FRONTEND_CLIENT_ID` in `.env`
+5. Under **Advanced → Grant Types**: enable `Implicit`, `Authorization Code`, `Refresh Token`
+
+### API (audience)
+
+1. Auth0 Dashboard → Applications → APIs → Create API
+2. Name: `AccounterAPI`, Identifier: `https://api.accounter.com`
+3. Copy the identifier → `AUTH0_AUDIENCE` in `.env`
+
+### M2M application
+
+1. Auth0 Dashboard → Applications → Create Application → Machine to Machine
+2. Name it `Accounter Server`, authorize it against the Auth0 Management API
+3. Grant scopes: `read:users`, `create:users`, `update:users`, `delete:users`
+4. Copy **Client ID** and **Client Secret** → `AUTH0_CLIENT_ID` / `AUTH0_CLIENT_SECRET` in `.env`
+
+### First login
+
+On first login the setup wizard runs. Enter your company name to create the initial workspace.
+Subsequent users are invited via **Settings → Team**.
+
+---
+
+## Inviting team members
+
+1. Log in as the workspace owner.
+2. Go to **Settings → Team → Add member**, enter their email, click **Send Invite**.
+3. Copy the generated invitation link from the green box.
+4. Send the link to the invitee.
+5. Invitee visits the link → clicks **Accept Invitation** (no login required at this step — their
+   Auth0 account is unblocked automatically).
+6. They click **Log In** and set/use their password.
+
+Roles available: `business_owner`, `accountant`, `employee`, `viewer`.
+
+---
+
+## Running the scrapers
+
+The `scraper-local-app` package fetches transactions and upserts them into Postgres. It can be
+triggered from the **Sources & Sync** dashboard or run directly.
+
+### From the dashboard
+
+In the app, go to **Sources & Sync** and click the **Refresh** button next to a source.
+
+### From the command line
+
+```sh
+export POSTGRES_HOST=localhost
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=postgres
+export POSTGRES_DB=accounter
+
+# Run all configured scrapers
+node .yarn/releases/yarn-4.13.0.cjs workspace @accounter/scraper-local-app scrape
+
+# Run only specific scrapers
+SCRAPE_PROVIDERS=isracard-alt,mizrahi \
+ISRACARD_ID=... ISRACARD_PASSWORD=... ISRACARD_6_DIGITS=... \
+MIZRAHI_USERNAME=... MIZRAHI_PASSWORD=... \
+  node .yarn/releases/yarn-4.13.0.cjs workspace @accounter/scraper-local-app scrape
+```
+
+**Note:** The scrapers use `puppeteer-extra` with stealth mode to bypass bot detection. They run
+headlessly by default. If a scraper fails with a `TIMEOUT` error, the bank's login page may have
+changed — test with `showBrowser: true` in the relevant scraper file.
+
+### Scraper data flow
+
+```
+Bank API / Website
+  --> bank_mizrahi_transactions  (or isracard_alt_transactions)
+       |-- PostgreSQL trigger fires on INSERT
+            --> transactions_raw_list  (deduplication)
+            --> charges                (one per transaction)
+            --> transactions           (linked to financial_accounts via account_number)
+```
+
+The trigger only creates a `transactions` row when the account number matches a record in
+`financial_accounts`. Make sure the relevant financial account is registered in the system.
+
+---
+
+## Priority ERP sync
+
+Priority credentials are stored encrypted in the database (not in `.env`).
+
+1. Go to **Sources & Sync** in the dashboard.
+2. Click **Add Source** → select **Priority**.
+3. Enter the OData URL, company code, API key, and PAT token.
+4. Click **Refresh** to run the first sync.
+
+---
 
 ## Testing
 
-The test suite is organized into three projects for efficiency:
+```sh
+# Fast unit tests (no DB required)
+node .yarn/releases/yarn-4.13.0.cjs test
 
-- **Unit tests** (`yarn test`): Fast, isolated tests with no external dependencies
-- **Integration tests** (`yarn test:integration`): DB-backed tests requiring PostgreSQL and
-  migrations
-- **Demo seed E2E** (`yarn test:demo-seed`): Full seed-and-validate pipeline (slow, ~10-30s)
+# Unit + integration tests (requires running Postgres + migrations)
+node .yarn/releases/yarn-4.13.0.cjs test:integration
 
-### Running Tests
-
-```bash
-# Fast unit tests only (default, no DB required)
-yarn test
-
-# Unit + integration tests (requires DB + migrations)
-yarn test:integration
-
-# Demo seed E2E (requires DB + migrations + ALLOW_DEMO_SEED=1)
-ALLOW_DEMO_SEED=1 yarn test:demo-seed
+# Run a specific test file
+node .yarn/releases/yarn-4.13.0.cjs vitest run path/to/test.ts
 ```
 
-### Prerequisites for Integration/Demo Tests
+Integration tests use an isolated schema created on the fly and torn down after each run.
 
-Integration and demo-seed tests require:
+---
 
-1. **PostgreSQL running**: Start with
-   `docker compose -f docker/docker-compose.dev.yml up -d postgres`
-2. **Migrations applied**: Run `yarn workspace @accounter/migrations migration:run`
-3. **Demo seed only**: Set `ALLOW_DEMO_SEED=1` environment variable
+## GraphQL code generation
 
-If migrations are stale, demo-seed tests fail gracefully with instructions to run migrations.
+After changing any `.graphql` schema or query files, regenerate the TypeScript types:
 
-See [`packages/server/README.md`](packages/server/README.md) for detailed test harness
-documentation.
+```sh
+node .yarn/releases/yarn-4.13.0.cjs generate
+```
 
-## Miscellaneous
+During active development, run the watcher instead:
 
-### Multiple Bank Branches
+```sh
+node .yarn/releases/yarn-4.13.0.cjs generate:watch
+```
 
-For Poalim Bank and Discount Bank accounts, your account may appear under multiple branch numbers:
+---
 
-- Your account number and bank number remain the same
-- The same account might be associated with 2-3 different branch numbers
-- You can configure all relevant branch numbers in the `scripts/seed.ts` file
+## Project structure
 
-### Enable Google Drive
+```
+packages/
+  client/              React frontend (Vite)
+  server/              GraphQL API (graphql-yoga)
+    src/modules/
+      auth/            JWT validation, invitations, team management
+      priority/        Priority ERP GraphQL module
+      workspace-settings/  Dashboard stats, source sync trigger
+  scraper-local-app/   Bank scrapers (runs standalone, not part of server)
+    src/scrapers/
+      isracard-alt/    Isracard credit card scraper
+      mizrahi/         Mizrahi bank scraper
+      priority/        Priority invoice scraper
+    src/migrate.ts     Custom DB triggers for scraper tables
+  migrations/          Postgres schema migrations
+  modern-poalim-scraper/ Zod schemas for Israeli bank API responses
+```
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project or select existing one
-3. Enable Google Drive API:
-   - Navigate to "APIs & Services" > "Library"
-   - Search for and enable "Google Drive API"
-4. Create API key:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "API Key"
-   - Restrict the key to Google Drive API only
-5. Add to your `.env`:
-   ```
-   GOOGLE_DRIVE_API_KEY=your_api_key_here
-   ```
+---
 
-### Enable OCR (with Anthropic)
+## Remote access (Cloudflare Tunnel)
 
-1. Sign up for an Anthropic API key at
-   [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
-2. Add to your `.env`:
-   ```
-   ANTHROPIC_API_KEY=your_api_key_here
-   ```
-3. OCR functionality will now be available for processing images and documents
+To expose the local app to the internet without a static IP:
+
+```sh
+# Expose the GraphQL server
+cloudflared tunnel --url http://localhost:4000 &
+
+# Expose the frontend (pass the server tunnel URL as an env var)
+VITE_GRAPHQL_URL=https://<server-tunnel>.trycloudflare.com/graphql \
+  node .yarn/releases/yarn-4.13.0.cjs workspace @accounter/client dev --host &
+```
+
+After getting the frontend tunnel URL, add it to Auth0's **Allowed Callback URLs**,
+**Allowed Logout URLs**, and **Allowed Web Origins** in the SPA application settings.
+
+---
+
+## Common issues
+
+| Symptom | Fix |
+|---|---|
+| "Something went wrong" on Auth0 login | Add the app URL to Auth0 Allowed Callback/Logout/Web Origin URLs |
+| "Failed to create user in identity provider" | M2M credentials stale — restart the server after updating `AUTH0_CLIENT_ID`/`AUTH0_CLIENT_SECRET` |
+| Scraper returns 0 new transactions | All fetched rows already exist in the DB — this is normal after the first sync |
+| Scraper `TIMEOUT` at login | Bank changed their login page; test with `showBrowser: true` |
+| `null value in column "current_balance"` | Run `yarn db:migrate` to apply the latest trigger fixes |
+| Dashboard shows "GraphQL API Unreachable" | Server is not running on port 4000, or `VITE_GRAPHQL_URL` points to a wrong URL |
+
+---
+
+## Authentication
+
+For more detail on the Auth0 setup and operations:
+
+- [Architecture Documentation](docs/architecture/authentication.md)
+- [Operations Runbook](docs/operations/auth0-runbook.md)
