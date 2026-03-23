@@ -484,7 +484,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     SELECT
       c.id,
       c.owner_id,
-      d.id IS NOT NULL AS is_property,
+      d.charge_id IS NOT NULL AS is_property,
       c.accountant_status,
       c.user_description,
       c.created_at,
