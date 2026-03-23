@@ -21,25 +21,79 @@ const SCRAPER_SRC = path.join(REPO_ROOT, 'packages/scraper-local-app/src/index.t
 const TSX_BIN = path.join(REPO_ROOT, 'node_modules/.bin/tsx');
 
 /** Maps source connection credentials to env var names the scraper-local-app reads */
-function buildScraperEnv(provider: string, credentials: Record<string, string>): Record<string, string> | null {
+/**
+ * Maps source connection credentials to env var overrides for scraper-local-app.
+ * If a credential key is missing (e.g. user stores creds in .env not in DB),
+ * we omit that override so the scraper inherits the value from process.env.
+ */
+function buildScraperEnv(
+  provider: string,
+  credentials: Record<string, string>,
+  ownerId?: string,
+  sourceConnectionId?: string,
+): Record<string, string> | null {
   switch (provider) {
-    case 'mizrahi':
-      return {
-        MIZRAHI_USERNAME: credentials['username'] ?? '',
-        MIZRAHI_PASSWORD: credentials['password'] ?? '',
-        SCRAPE_PROVIDERS: 'mizrahi',
-      };
-    case 'isracard':
-      return {
-        ISRACARD_ALT_ID: credentials['id'] ?? '',
-        ISRACARD_ALT_PASSWORD: credentials['password'] ?? '',
-        ISRACARD_ALT_6_DIGITS: credentials['last6Digits'] ?? '',
+    case 'mizrahi': {
+      const env: Record<string, string> = { SCRAPE_PROVIDERS: 'mizrahi', SHOW_BROWSER: 'false' };
+      if (credentials['username']) env['MIZRAHI_USERNAME'] = credentials['username'];
+      if (credentials['password']) env['MIZRAHI_PASSWORD'] = credentials['password'];
+      return env;
+    }
+    case 'isracard': {
+      const env: Record<string, string> = {
         SCRAPE_PROVIDERS: 'isracard-alt',
+        SHOW_BROWSER: 'false',
       };
+      if (credentials['id']) env['ISRACARD_ALT_ID'] = credentials['id'];
+      if (credentials['password']) env['ISRACARD_ALT_PASSWORD'] = credentials['password'];
+      if (credentials['last6Digits']) env['ISRACARD_ALT_6_DIGITS'] = credentials['last6Digits'];
+      return env;
+    }
+    case 'priority': {
+      if (!credentials['url'] || !credentials['username'] || !credentials['password'] || !ownerId) {
+        return null; // Priority requires URL, credentials, and ownerId
+      }
+      const odataUrl = credentials['url'];
+      // Derive web UI URL from OData URL: https://host/odata/... -> https://host/webui/<INI_COMPANY>/
+      // e.g. https://p.priority-connect.online/odata/Priority/tabab4f6.ini/a240825/
+      //   -> https://p.priority-connect.online/webui/AB4F6/
+      const webUiUrl = deriveWebUiUrl(odataUrl);
+      const env: Record<string, string> = {
+        SCRAPE_PROVIDERS: 'priority',
+        SHOW_BROWSER: 'false',
+        PRIORITY_WEB_URL: webUiUrl,
+        PRIORITY_ODATA_URL: odataUrl,
+        PRIORITY_USERNAME: credentials['username'],
+        PRIORITY_PASSWORD: credentials['password'],
+        PRIORITY_OWNER_ID: ownerId,
+      };
+      if (sourceConnectionId) env['PRIORITY_SOURCE_CONNECTION_ID'] = sourceConnectionId;
+      return env;
+    }
     case 'hapoalim':
       return null; // Hapoalim requires phone verification - not automatable via env
     default:
       return null;
+  }
+}
+
+/**
+ * Derives the Priority web UI URL from the OData service root URL.
+ * OData: https://p.priority-connect.online/odata/Priority/tabab4f6.ini/a240825/
+ * WebUI: https://p.priority-connect.online/webui/AB4F6/
+ * The web UI path uses the ini file name without "tab" prefix, uppercased.
+ */
+function deriveWebUiUrl(odataUrl: string): string {
+  try {
+    const url = new URL(odataUrl);
+    // Extract ini file name: /odata/Priority/tabab4f6.ini/company -> tabab4f6.ini
+    const parts = url.pathname.split('/').filter(Boolean);
+    const iniFile = parts.find(p => p.endsWith('.ini')) ?? '';
+    // Remove "tab" prefix and ".ini" suffix, uppercase -> AB4F6
+    const iniCode = iniFile.replace(/^tab/i, '').replace(/\.ini$/i, '').toUpperCase();
+    return `${url.origin}/webui/${iniCode}/`;
+  } catch {
+    return odataUrl; // fallback — caller will likely fail with a useful error
   }
 }
 
@@ -108,6 +162,7 @@ export const workspaceSettingsResolvers: Record<string, any> = {
       }: {
         input: {
           companyName?: string;
+          companyRegistrationNumber?: string;
           logoUrl?: string;
           defaultCurrency?: string;
           agingThresholdDays?: number;
@@ -287,12 +342,10 @@ export const workspaceSettingsResolvers: Record<string, any> = {
       const conn = await wsProvider.getSourceConnectionById(id);
       if (!conn) throw new GraphQLError('Source connection not found');
 
-      const credentials = await wsProvider.getDecryptedCredentials(id);
-      if (!credentials) {
-        throw new GraphQLError('No credentials configured for this source. Add credentials first.');
-      }
+      // Credentials from DB are optional for bank scrapers — they may use .env vars instead
+      const credentials = (await wsProvider.getDecryptedCredentials(id)) ?? {};
 
-      const scraperEnv = buildScraperEnv(conn.provider, credentials);
+      const scraperEnv = buildScraperEnv(conn.provider, credentials, conn.owner_id, id);
       if (!scraperEnv) {
         throw new GraphQLError(
           `Automated sync is not supported for provider "${conn.provider}". Run the scraper manually.`,
@@ -327,6 +380,7 @@ export const workspaceSettingsResolvers: Record<string, any> = {
     id: (row: WorkspaceSettingsRow) => row.id,
     ownerId: (row: WorkspaceSettingsRow) => row.owner_id,
     companyName: (row: WorkspaceSettingsRow) => row.company_name,
+    companyRegistrationNumber: (row: WorkspaceSettingsRow) => row.company_registration_number,
     logoUrl: (row: WorkspaceSettingsRow) => row.logo_url,
     defaultCurrency: (row: WorkspaceSettingsRow) => row.default_currency,
     agingThresholdDays: (row: WorkspaceSettingsRow) => row.aging_threshold_days,

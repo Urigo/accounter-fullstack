@@ -108,6 +108,8 @@ export default gql`
     id: ID!
     ownerId: UUID!
     companyName: String
+    " Israeli company registration number (מספר ח.פ) "
+    companyRegistrationNumber: String
     logoUrl: String
     defaultCurrency: String
     agingThresholdDays: Int
@@ -121,6 +123,8 @@ export default gql`
   " Input for updating workspace settings "
   input UpdateWorkspaceSettingsInput {
     companyName: String
+    " Israeli company registration number (מספר ח.פ) "
+    companyRegistrationNumber: String
     logoUrl: String
     defaultCurrency: String
     agingThresholdDays: Int

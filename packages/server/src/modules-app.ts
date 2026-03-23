@@ -8,6 +8,7 @@ import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { DeelClientProvider } from './modules/app-providers/deel/deel-client.provider.js';
+import { PriorityClientProvider } from './modules/app-providers/priority/priority-client.provider.js';
 // import { GmailServiceProvider } from './modules/app-providers/gmail-listener/gmail-service.provider.js';
 // import { PubsubServiceProvider } from './modules/app-providers/gmail-listener/pubsub-service.provider.js';
 import { GoogleDriveProvider } from './modules/app-providers/google-drive/google-drive.provider.js';
@@ -43,6 +44,7 @@ import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
 import { vatModule } from './modules/vat/index.js';
 import { workspaceSettingsModule } from './modules/workspace-settings/index.js';
+import { priorityModule } from './modules/priority/index.js';
 import type { RawAuth } from './plugins/auth-plugin.js';
 import { ENVIRONMENT, RAW_AUTH } from './shared/tokens.js';
 import type { Environment } from './shared/types/index.js';
@@ -92,6 +94,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       bankDepositsModule,
       adminContextModule,
       workspaceSettingsModule,
+      priorityModule,
     ],
     providers: [
       {
@@ -118,6 +121,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       AdminContextProvider,
       CloudinaryProvider,
       DeelClientProvider,
+      PriorityClientProvider,
       GreenInvoiceClientProvider,
       CoinMarketCapProvider,
       AnthropicProvider,

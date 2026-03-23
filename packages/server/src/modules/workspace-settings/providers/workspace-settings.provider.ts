@@ -11,6 +11,7 @@ export interface WorkspaceSettingsRow {
   id: string;
   owner_id: string;
   company_name: string | null;
+  company_registration_number: string | null;
   logo_url: string | null;
   default_currency: string | null;
   aging_threshold_days: number | null;
@@ -69,6 +70,7 @@ export class WorkspaceSettingsProvider {
 
   async upsertWorkspaceSettings(input: {
     companyName?: string | null;
+    companyRegistrationNumber?: string | null;
     logoUrl?: string | null;
     defaultCurrency?: string | null;
     agingThresholdDays?: number | null;
@@ -79,22 +81,24 @@ export class WorkspaceSettingsProvider {
     const ownerId = await this.getOwnerId();
     const result = await this.db.query<WorkspaceSettingsRow>(
       `INSERT INTO accounter_schema.workspace_settings
-         (owner_id, company_name, logo_url, default_currency, aging_threshold_days,
-          matching_tolerance_amount, billing_currency, billing_payment_terms_days)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (owner_id, company_name, company_registration_number, logo_url, default_currency,
+          aging_threshold_days, matching_tolerance_amount, billing_currency, billing_payment_terms_days)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        ON CONFLICT (owner_id) DO UPDATE SET
          company_name = COALESCE($2, accounter_schema.workspace_settings.company_name),
-         logo_url = COALESCE($3, accounter_schema.workspace_settings.logo_url),
-         default_currency = COALESCE($4, accounter_schema.workspace_settings.default_currency),
-         aging_threshold_days = COALESCE($5, accounter_schema.workspace_settings.aging_threshold_days),
-         matching_tolerance_amount = COALESCE($6, accounter_schema.workspace_settings.matching_tolerance_amount),
-         billing_currency = COALESCE($7, accounter_schema.workspace_settings.billing_currency),
-         billing_payment_terms_days = COALESCE($8, accounter_schema.workspace_settings.billing_payment_terms_days),
+         company_registration_number = COALESCE($3, accounter_schema.workspace_settings.company_registration_number),
+         logo_url = COALESCE($4, accounter_schema.workspace_settings.logo_url),
+         default_currency = COALESCE($5, accounter_schema.workspace_settings.default_currency),
+         aging_threshold_days = COALESCE($6, accounter_schema.workspace_settings.aging_threshold_days),
+         matching_tolerance_amount = COALESCE($7, accounter_schema.workspace_settings.matching_tolerance_amount),
+         billing_currency = COALESCE($8, accounter_schema.workspace_settings.billing_currency),
+         billing_payment_terms_days = COALESCE($9, accounter_schema.workspace_settings.billing_payment_terms_days),
          updated_at = NOW()
        RETURNING *`,
       [
         ownerId,
         input.companyName ?? null,
+        input.companyRegistrationNumber ?? null,
         input.logoUrl ?? null,
         input.defaultCurrency ?? null,
         input.agingThresholdDays ?? null,
