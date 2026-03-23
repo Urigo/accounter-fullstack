@@ -159,6 +159,10 @@ import migration_2026_03_09T10_00_00_hash_invitation_tokens from './actions/2026
 import migration_2026_03_10T15_00_00_add_user_id_to_invitations from './actions/2026-03-10T15-00-00.add-user-id-to-invitations.js';
 import migration_2026_03_19T10_00_00_workspace_settings_and_source_connections from './actions/2026-03-19T10-00-00.workspace-settings-and-source-connections.js';
 import migration_2026_03_19T11_00_00_workspace_settings_finance_preferences from './actions/2026-03-19T11-00-00.workspace-settings-finance-preferences.js';
+import migration_2026_03_19T12_00_00_add_viewer_role from './actions/2026-03-19T12-00-00.add-viewer-role.js';
+import migration_2026_03_19T13_00_00_add_priority_provider from './actions/2026-03-19T13-00-00.add-priority-provider.js';
+import migration_2026_03_21T10_00_00_priority_invoices_cache from './actions/2026-03-21T10-00-00.priority-invoices-cache.js';
+import migration_2026_03_22T10_00_00_add_company_registration_number from './actions/2026-03-22T10-00-00.add-company-registration-number.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -322,6 +326,10 @@ export const MIGRATIONS = [
   migration_2026_03_10T15_00_00_add_user_id_to_invitations,
   migration_2026_03_19T10_00_00_workspace_settings_and_source_connections,
   migration_2026_03_19T11_00_00_workspace_settings_finance_preferences,
+  migration_2026_03_19T12_00_00_add_viewer_role,
+  migration_2026_03_19T13_00_00_add_priority_provider,
+  migration_2026_03_21T10_00_00_priority_invoices_cache,
+  migration_2026_03_22T10_00_00_add_company_registration_number,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
