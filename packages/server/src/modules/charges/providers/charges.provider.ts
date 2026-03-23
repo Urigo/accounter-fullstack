@@ -176,13 +176,22 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   WITH search_matches AS (
     -- Strategy: Identify IDs via Trigram indexes before doing any heavy math
     SELECT id FROM accounter_schema.charges 
-    WHERE ($freeText::TEXT IS NULL OR user_description ILIKE '%' || $freeText || '%')
+    WHERE ($freeText::TEXT IS NULL
+           OR user_description ILIKE '%' || $freeText || '%'
+    )
     UNION
     SELECT charge_id FROM accounter_schema.transactions 
-    WHERE ($freeText::TEXT IS NULL OR source_description ILIKE '%' || $freeText || '%')
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND (source_description ILIKE '%' || $freeText || '%'
+                OR source_reference ILIKE '%' || $freeText || '%')
+    )
     UNION
     SELECT charge_id FROM accounter_schema.documents 
-    WHERE ($freeText::TEXT IS NULL OR description ILIKE '%' || $freeText || '%')
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND (description ILIKE '%' || $freeText || '%'
+                OR remarks ILIKE '%' || $freeText || '%'
+                OR serial_number ILIKE '%' || $freeText || '%')
+    )
   ),
   filtered_charges AS MATERIALIZED (
     -- This is our "source of truth" for the rest of the query
@@ -522,15 +531,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       c.type,
       c.optional_vat,
       COALESCE(b.no_invoices_required, false) AS no_invoices_required,
-      c.documents_optional_flag,
-      LOWER(
-        CONCAT_WS(
-          ' ',
-          c.user_description,
-          tbc.search_text,
-          dbc.search_text
-        )
-      ) AS merged_search_text
+      c.documents_optional_flag
     FROM filtered_charges c
     LEFT JOIN transactions_by_charge tbc ON tbc.charge_id = c.id
     LEFT JOIN documents_by_charge dbc ON dbc.charge_id = c.id
