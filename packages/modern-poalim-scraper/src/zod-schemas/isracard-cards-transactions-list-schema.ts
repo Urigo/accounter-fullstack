@@ -22,7 +22,7 @@ const HeaderSchema = z
     Status: z.enum(['1', '-2']),
     Message: z.string().nullable(),
   })
-  .strict();
+  ;
 
 // Transaction abroad schema
 const TxnAbroadSchema = z
@@ -88,7 +88,7 @@ const TxnAbroadSchema = z
     isShowLinkForSupplierDetails: z.null(),
     kodMatbeaMekori: z.null(),
     message: z.null(),
-    monthlyRefundCardIndex: z.any().optional(),
+    monthlyRefundCardIndex: z.number().nullable().optional(),
     moreInfo: z.null(),
     paymentDate: z.string().regex(datePatternShort).nullable(),
     paymentSum: z.null(),
@@ -111,7 +111,7 @@ const TxnAbroadSchema = z
     voucherNumberRatz: z.null(),
     voucherNumberRatzOutbound: z.string().regex(nineDigitPattern),
   })
-  .strict();
+  ;
 
 // Transaction Israel schema
 const TxnIsraelSchema = z
@@ -144,7 +144,7 @@ const TxnIsraelSchema = z
     isShowLinkForSupplierDetails: z.enum(['yes', 'NO']),
     kodMatbeaMekori: z.enum(['ש"ח', 'דולר']).nullable(),
     message: z.null(),
-    monthlyRefundCardIndex: z.any().optional(),
+    monthlyRefundCardIndex: z.number().nullable().optional(),
     moreInfo: z.string().nullable(),
     paymentDate: z.null(),
     paymentSum: z.string().nullable(),
@@ -167,7 +167,7 @@ const TxnIsraelSchema = z
     voucherNumberRatz: z.string().regex(nineDigitPattern),
     voucherNumberRatzOutbound: z.null(),
   })
-  .strict();
+  ;
 
 // Current card transactions schema
 const CurrentCardTransactionsSchema = z
@@ -177,7 +177,7 @@ const CurrentCardTransactionsSchema = z
     txnInfo: z.null().optional(),
     txnIsrael: z.array(TxnIsraelSchema).nullable().optional(),
   })
-  .strict();
+  ;
 
 // Index schema
 const IndexSchema = z
@@ -185,7 +185,7 @@ const IndexSchema = z
     '@AllCards': z.literal('AllCards'),
     CurrentCardTransactions: z.array(CurrentCardTransactionsSchema),
   })
-  .strict();
+  ;
 
 // Card item schema
 const CardItemSchema = z
@@ -202,7 +202,7 @@ const CardItemSchema = z
     isCaptcha: z.literal('false'),
     isError: z.literal('false'),
     message: z.null(),
-    monthlyRefundCardIndex: z.any().optional(),
+    monthlyRefundCardIndex: z.number().nullable().optional(),
     requestNumber: z.null(),
     returnCode: z.null(),
     returnMessage: z.null(),
@@ -213,7 +213,7 @@ const CardItemSchema = z
     totalEuro: z.enum(['0']).nullable(),
     totalNis: z.string().nullable(),
   })
-  .strict();
+  ;
 
 // Card schema
 const CardSchema = z.array(CardItemSchema);
@@ -230,7 +230,7 @@ const IdHolderItemSchema = z
     isCaptcha: z.literal('false'),
     isError: z.literal('false'),
     message: z.null(),
-    monthlyRefundCardIndex: z.any().optional(),
+    monthlyRefundCardIndex: z.number().nullable().optional(),
     returnCode: z.null(),
     returnMessage: z.null(),
     siteName: z.null(),
@@ -244,7 +244,7 @@ const IdHolderItemSchema = z
     accountErrorCode: z.null(),
     EsbServicesCall: z.null(),
   })
-  .strict();
+  ;
 
 // Cards transactions list bean schema
 const CardsTransactionsListBeanSchema = z
@@ -274,7 +274,7 @@ const CardsTransactionsListBeanSchema = z
     message: z.null(),
     moed: z.string().regex(sixDigitPattern),
     month: z.enum(['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']),
-    monthlyRefundCardIndex: z.any().optional(),
+    monthlyRefundCardIndex: z.number().nullable().optional(),
     payDay: z.string().nullable(),
     paymentPercent: z.null(),
     paymentSum: z.string(),
@@ -314,7 +314,7 @@ const CardsTransactionsListBeanSchema = z
       '2026',
     ]),
   })
-  .strict()
+  
   .catchall(
     z.union([
       // Index patterns: Index0, Index1, Index2, etc.
@@ -332,6 +332,6 @@ export const IsracardCardsTransactionsListSchema = z
     Header: HeaderSchema,
     CardsTransactionsListBean: CardsTransactionsListBeanSchema,
   })
-  .strict();
+  ;
 
 export type IsracardCardsTransactionsList = z.infer<typeof IsracardCardsTransactionsListSchema>;

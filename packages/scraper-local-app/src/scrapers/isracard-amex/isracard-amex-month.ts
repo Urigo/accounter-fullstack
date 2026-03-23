@@ -529,16 +529,20 @@ export async function getMonthTransactions(
           const cardNumbersToMap = cardNumberMapping ? Object.keys(cardNumberMapping) : [];
           transactionsListBean?.cardNumberList.map((cardInformation, index) => {
             // Isracard returns card identifiers in inconsistent formats across months:
-            //   - Short masked: "**35"         → digits "35"   (2 chars)
-            //   - Full masked:  "7835" / "1235" → digits "7835" / "1235" (4 chars)
-            // The same physical card can appear in any of these formats in different months.
-            // The only stable common suffix is the last 2 digits, so we always normalize to
-            // the last 2 digits of the stripped string. This means "**35", "7835", and "1235"
-            // all resolve to "35", keeping the same card under one identifier across months.
-            // If two cards share the same last 2 digits (rare), use cardNumberMapping to
-            // explicitly assign a unique identifier to each.
+            //   - Short masked: "**35"  → digits "35"   (only 2 digits after stripping)
+            //   - Full:         "7835"  → digits "7835"
+            //   - Combined:     "1235"  → digits "1235"
+            // We strip non-digit characters and take the last 4 digits as the canonical
+            // identifier. If the masked format yields fewer than 4 digits (e.g. "**35" → "35"),
+            // use cardNumberMapping to map it to the correct 4-digit identifier so all formats
+            // for the same physical card resolve to one consistent value.
             const digits = cardInformation.replace(/\D/g, '');
-            let card = (digits || cardInformation.replace(/\D/g, '') || cardInformation).slice(-2);
+
+            if (!digits) {
+              return; // skip cards with no parseable digits
+            }
+
+            let card = digits.slice(-4);
             if (cardNumberMapping && cardNumbersToMap.includes(card)) {
               card = cardNumberMapping[card];
             }
