@@ -8,6 +8,7 @@
 
 export const ROUTES = {
   HOME: '/',
+  DASHBOARD: '/',
   LOGIN: '/login',
   AUTH_CALLBACK: '/auth/callback',
   ACCEPT_INVITATION: (token = ':token') => `/accept-invitation/${token}`,

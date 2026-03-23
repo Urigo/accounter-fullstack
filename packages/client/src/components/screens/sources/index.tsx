@@ -69,6 +69,28 @@ const DELETE_SOURCE_MUTATION = `
   }
 `;
 
+const SYNC_PRIORITY_MUTATION = `
+  mutation SyncPriorityInvoices($input: SyncPriorityInvoicesInput) {
+    syncPriorityInvoices(input: $input) {
+      synced skipped errors message
+    }
+  }
+`;
+
+const TEST_PRIORITY_MUTATION = `
+  mutation TestPriorityConnection {
+    testPriorityConnection { ok message }
+  }
+`;
+
+const TRIGGER_SOURCE_SYNC_MUTATION = `
+  mutation TriggerSourceSync($id: UUID!) {
+    triggerSourceSync(id: $id) {
+      success message
+    }
+  }
+`;
+
 // ---------------------------------------------------------------------------
 // Provider catalog
 // ---------------------------------------------------------------------------
@@ -170,9 +192,15 @@ const PROVIDERS: ProviderDef[] = [
     label: 'Priority',
     category: 'integration',
     fields: [
-      { key: 'url', label: 'Server URL', type: 'text', required: true, placeholder: 'e.g. https://your-company.priority-software.com' },
-      { key: 'company', label: 'Company Name', type: 'text', required: true, placeholder: 'Company code in Priority' },
-      { key: 'apiKey', label: 'API Key', type: 'password', required: true },
+      {
+        key: 'url',
+        label: 'OData URL',
+        type: 'text',
+        required: true,
+        placeholder: 'https://p.priority-connect.online/odata/Priority/tabab4f6.ini/a240825/',
+      },
+      { key: 'username', label: 'Username (email)', type: 'text', required: true },
+      { key: 'password', label: 'Password', type: 'password', required: true },
     ],
   },
   {
@@ -390,7 +418,52 @@ function SourceCard({
   const [{ fetching: saving }, saveCreds] = useMutation(SAVE_CREDENTIALS_MUTATION);
   const [{ fetching: clearing }, clearCreds] = useMutation(CLEAR_CREDENTIALS_MUTATION);
   const [{ fetching: deleting }, deleteSource] = useMutation(DELETE_SOURCE_MUTATION);
+  const [{ fetching: syncing }, syncPriority] = useMutation(SYNC_PRIORITY_MUTATION);
+  const [{ fetching: testing }, testPriority] = useMutation(TEST_PRIORITY_MUTATION);
+  const [{ fetching: triggering }, triggerSync] = useMutation(TRIGGER_SOURCE_SYNC_MUTATION);
   const [editing, setEditing] = useState(false);
+
+  // Providers that support server-triggered scraping (via triggerSourceSync)
+  const SCRAPER_PROVIDERS = ['MIZRAHI', 'ISRACARD', 'PRIORITY'];
+  const isScraper = SCRAPER_PROVIDERS.includes(source.provider);
+  const isPriority = source.provider === 'PRIORITY';
+  // Priority requires credentials in DB; bank scrapers can fall back to .env
+  const canSync = isScraper && (source.provider !== 'PRIORITY' || source.hasCredentials);
+
+  const handleTest = useCallback(async () => {
+    const res = await testPriority({});
+    if (res.error) {
+      toast.error('Test failed: ' + res.error.message);
+    } else {
+      const result = res.data?.testPriorityConnection;
+      if (result?.ok) {
+        toast.success('Connection OK: ' + result.message);
+      } else {
+        toast.error('Connection failed: ' + result?.message);
+      }
+    }
+  }, [testPriority]);
+
+  const handleSync = useCallback(async () => {
+    if (!isScraper) return;
+    toast.info(
+      isPriority
+        ? 'Starting Priority sync (browser login)... this may take a few minutes.'
+        : 'Starting scraper... this may take a few minutes.',
+    );
+    const res = await triggerSync({ id: source.id });
+    if (res.error) {
+      toast.error('Sync failed: ' + res.error.message);
+    } else {
+      const result = res.data?.triggerSourceSync;
+      if (result?.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result?.message ?? 'Sync failed');
+      }
+      onRefetch();
+    }
+  }, [isPriority, isScraper, source.id, triggerSync, onRefetch]);
 
   const providerDef = PROVIDER_BY_ID[source.provider];
 
@@ -464,6 +537,12 @@ function SourceCard({
             <Key size={12} />
             {source.hasCredentials ? 'Configured' : 'No credentials'}
           </Badge>
+          {isPriority && source.hasCredentials && !editing && (
+            <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
+              {testing ? <Loader2 className="animate-spin" size={14} /> : <PlugZap size={14} />}
+              Test
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
             <Key size={14} />
             {editing ? 'Cancel' : source.hasCredentials ? 'Edit' : 'Configure'}
@@ -477,8 +556,26 @@ function SourceCard({
           >
             {deleting ? <Loader2 className="animate-spin" size={14} /> : <Trash2 size={14} />}
           </Button>
-          <Button variant="outline" size="sm" disabled>
-            <RefreshCw size={14} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={canSync ? handleSync : undefined}
+            disabled={!canSync || syncing || triggering}
+            title={
+              !source.hasCredentials
+                ? 'Configure credentials first'
+                : isPriority
+                  ? 'Sync invoices from Priority'
+                  : isScraper
+                    ? 'Scrape transactions from bank/card'
+                    : 'Sync not supported for this provider'
+            }
+          >
+            {syncing || triggering ? (
+              <Loader2 className="animate-spin" size={14} />
+            ) : (
+              <RefreshCw size={14} />
+            )}
           </Button>
         </div>
       </div>

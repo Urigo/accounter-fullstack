@@ -122,25 +122,28 @@ describe('AcceptInvitationPage', () => {
     }));
   });
 
-  it('shows login prompt for unauthenticated users and hides accept action', async () => {
+  it('shows accept button and log-in-first link for unauthenticated users', async () => {
     mockAuthState({ isAuthenticated: false });
 
     const { container, cleanup } = await renderScreen();
 
     expect(container.textContent).toContain("You've been invited!");
-    expect(container.textContent).toContain('Login / Create Account');
-    expect(container.textContent).not.toContain('Accept Invitation');
+    // Primary action: accept without requiring login
+    expect(container.textContent).toContain('Accept Invitation');
+    // Secondary: "log in first" link for users who already have an account
+    expect(container.textContent).toContain('Log in first');
 
     await cleanup();
   });
 
-  it('preserves token in Auth0 login appState.returnTo', async () => {
+  it('preserves token in Auth0 login appState.returnTo via log-in-first link', async () => {
     mockAuthState({ isAuthenticated: false });
 
     const { container, cleanup } = await renderScreen();
 
+    // "Log in first" is rendered as a <button> with type="button"
     const loginButton = Array.from(container.querySelectorAll('button')).find(button =>
-      /login\s*\/\s*create account/i.test(button.textContent ?? ''),
+      /log in first/i.test(button.textContent ?? ''),
     );
     expect(loginButton).toBeTruthy();
 

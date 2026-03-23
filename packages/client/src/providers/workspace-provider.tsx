@@ -6,6 +6,7 @@ export interface WorkspaceInfo {
   id: string;
   ownerId: string;
   companyName: string | null;
+  companyRegistrationNumber: string | null;
   logoUrl: string | null;
   defaultCurrency: string | null;
   agingThresholdDays: number | null;
@@ -46,7 +47,7 @@ export function useWorkspaceLogo(): string | null {
 
 const WORKSPACE_QUERY = `query WorkspaceSettings {
   workspaceSettings {
-    id ownerId companyName logoUrl
+    id ownerId companyName companyRegistrationNumber logoUrl
     defaultCurrency agingThresholdDays matchingToleranceAmount
     billingCurrency billingPaymentTermsDays
   }

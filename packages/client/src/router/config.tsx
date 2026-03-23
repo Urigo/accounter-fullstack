@@ -184,6 +184,9 @@ const OnboardingPage = lazy(() =>
     default: m.OnboardingWizard,
   })),
 );
+const DashboardPage = lazy(() =>
+  import('../components/screens/dashboard/index.js').then(m => ({ default: m.DashboardPage })),
+);
 
 // Auth
 const LoginPage = lazy(() =>
@@ -257,13 +260,13 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <ErrorBoundary />,
         children: [
-          // Home / Charges (default)
+          // Home / Dashboard (default)
           {
             index: true,
-            element: withSuspense(AllCharges, <TableSkeleton />),
+            element: withSuspense(DashboardPage, <PageSkeleton />),
             handle: {
-              title: 'All Charges',
-              breadcrumb: 'Charges',
+              title: 'Dashboard',
+              breadcrumb: 'Dashboard',
             },
           },
 

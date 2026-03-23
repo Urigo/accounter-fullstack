@@ -47,7 +47,7 @@ export interface SideLink extends NavLink {
 
 export const sidelinks: SideLink[] = [
   {
-    title: 'Overview',
+    title: 'Dashboard',
     label: '',
     href: ROUTES.HOME,
     icon: <LayoutDashboard size={18} />,

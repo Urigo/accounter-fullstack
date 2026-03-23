@@ -26,7 +26,7 @@ const STEP_ORDER: OnboardingStep[] = ['welcome', 'identity', 'sources', 'review'
 const UPDATE_WORKSPACE = `
   mutation OnboardingUpdateWorkspace($input: UpdateWorkspaceSettingsInput!) {
     updateWorkspaceSettings(input: $input) {
-      id companyName logoUrl
+      id companyName companyRegistrationNumber logoUrl
     }
   }
 `;
@@ -38,6 +38,25 @@ const SOURCE_CONNECTIONS_QUERY = `
     }
   }
 `;
+
+const CREATE_SOURCE_MUTATION = `
+  mutation OnboardingCreateSource($input: CreateSourceConnectionInput!) {
+    createSourceConnection(input: $input) {
+      id provider displayName status
+    }
+  }
+`;
+
+const PROVIDER_OPTIONS: { value: string; label: string; category: string }[] = [
+  { value: 'HAPOALIM', label: 'Bank Hapoalim', category: 'bank' },
+  { value: 'MIZRAHI', label: 'Bank Mizrahi', category: 'bank' },
+  { value: 'DISCOUNT', label: 'Bank Discount', category: 'bank' },
+  { value: 'LEUMI', label: 'Bank Leumi', category: 'bank' },
+  { value: 'ISRACARD', label: 'Isracard', category: 'card' },
+  { value: 'AMEX', label: 'American Express', category: 'card' },
+  { value: 'CAL', label: 'CAL', category: 'card' },
+  { value: 'MAX', label: 'MAX', category: 'card' },
+];
 
 function StepIndicator({ current }: { current: OnboardingStep }): JSX.Element {
   const displaySteps = STEP_ORDER.filter(s => s !== 'done');
@@ -117,11 +136,15 @@ function IdentityStep({
   const { workspace, refetch } = useWorkspace();
   const [{ fetching }, updateSettings] = useMutation(UPDATE_WORKSPACE);
   const [companyName, setCompanyName] = useState(workspace?.companyName || '');
+  const [registrationNumber, setRegistrationNumber] = useState(
+    workspace?.companyRegistrationNumber || '',
+  );
   const [logoUrl, setLogoUrl] = useState(workspace?.logoUrl || '');
 
   useEffect(() => {
     if (workspace) {
       setCompanyName(workspace.companyName || '');
+      setRegistrationNumber(workspace.companyRegistrationNumber || '');
       setLogoUrl(workspace.logoUrl || '');
     }
   }, [workspace]);
@@ -134,6 +157,7 @@ function IdentityStep({
     const result = await updateSettings({
       input: {
         companyName: companyName.trim(),
+        companyRegistrationNumber: registrationNumber.trim() || null,
         logoUrl: logoUrl.trim() || null,
       },
     });
@@ -143,7 +167,7 @@ function IdentityStep({
       refetch();
       onNext();
     }
-  }, [companyName, logoUrl, updateSettings, refetch, onNext]);
+  }, [companyName, registrationNumber, logoUrl, updateSettings, refetch, onNext]);
 
   return (
     <Card className="max-w-lg mx-auto">
@@ -161,7 +185,16 @@ function IdentityStep({
               onChange={e => setCompanyName(e.target.value)}
               placeholder="e.g. Wright Ltd."
               aria-required="true"
-              
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="onb-reg">Company Registration Number (ח.פ)</Label>
+            <Input
+              id="onb-reg"
+              value={registrationNumber}
+              onChange={e => setRegistrationNumber(e.target.value)}
+              placeholder="e.g. 514123456"
+              inputMode="numeric"
             />
           </div>
           <div className="space-y-2">
@@ -224,15 +257,49 @@ function SourcesStep({
   onNext: () => void;
   onBack: () => void;
 }): JSX.Element {
-  const [{ data, fetching }] = useQuery({ query: SOURCE_CONNECTIONS_QUERY });
+  const [{ data, fetching }, refetchSources] = useQuery({ query: SOURCE_CONNECTIONS_QUERY });
+  const [, createSource] = useMutation(CREATE_SOURCE_MUTATION);
   const sources: SourceItem[] = data?.sourceConnections ?? [];
+
+  const [showForm, setShowForm] = useState(false);
+  const [provider, setProvider] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const handleProviderChange = useCallback((value: string) => {
+    setProvider(value);
+    const opt = PROVIDER_OPTIONS.find(p => p.value === value);
+    if (opt) setDisplayName(opt.label);
+  }, []);
+
+  const handleAddSource = useCallback(async () => {
+    if (!provider || !displayName.trim()) {
+      toast.error('Select a provider and enter a display name');
+      return;
+    }
+    setAdding(true);
+    const result = await createSource({
+      input: { provider, displayName: displayName.trim() },
+    });
+    setAdding(false);
+    if (result.error) {
+      toast.error('Failed to add source: ' + result.error.message);
+    } else {
+      toast.success(`${displayName} added — configure credentials in Settings`);
+      setShowForm(false);
+      setProvider('');
+      setDisplayName('');
+      refetchSources({ requestPolicy: 'network-only' });
+    }
+  }, [provider, displayName, createSource, refetchSources]);
 
   return (
     <Card className="max-w-lg mx-auto">
       <CardHeader>
-        <CardTitle>Connected Sources</CardTitle>
+        <CardTitle>Financial Sources</CardTitle>
         <CardDescription>
-          Your financial data sources. Sources are configured during workspace setup.
+          Add at least one source so your database has data. You can skip and configure in
+          Settings later, but transactions won't import until sources are added.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -240,55 +307,148 @@ function SourcesStep({
           <div className="flex items-center justify-center py-8">
             <Loader2 className="animate-spin text-slate-400" size={24} />
           </div>
-        ) : sources.length === 0 ? (
-          <div className="flex flex-col items-center py-8 gap-3 text-center">
-            <PlugZap size={32} className="text-slate-300" />
-            <p className="text-sm text-slate-500">No sources connected yet.</p>
-            <p className="text-xs text-slate-400">
-              You can connect sources later from Settings.
-            </p>
-          </div>
         ) : (
-          <div className="space-y-3">
-            {sources.map(source => (
-              <div
-                key={source.id}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <PlugZap size={16} className="text-slate-500" />
-                  <div>
-                    <div className="text-sm font-medium">{source.displayName}</div>
-                    <div className="text-xs text-slate-500">{source.provider}</div>
+          <div className="space-y-4">
+            {sources.length === 0 && !showForm && (
+              <div className="flex flex-col items-center py-6 gap-3 text-center">
+                <PlugZap size={28} className="text-slate-300" />
+                <p className="text-sm text-slate-500">No sources connected yet.</p>
+                <p className="text-xs text-slate-400">
+                  Without sources the dashboard will be empty.
+                </p>
+              </div>
+            )}
+
+            {sources.length > 0 && (
+              <div className="space-y-2">
+                {sources.map(source => (
+                  <div
+                    key={source.id}
+                    className="flex items-center justify-between rounded-lg border p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <PlugZap size={16} className="text-slate-500" />
+                      <div>
+                        <div className="text-sm font-medium">{source.displayName}</div>
+                        <div className="text-xs text-slate-500">{source.provider}</div>
+                      </div>
+                    </div>
+                    <div
+                      className={`text-xs font-medium px-2 py-1 rounded ${
+                        source.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-emerald-700'
+                          : source.status === 'ERROR'
+                            ? 'bg-red-50 text-red-700'
+                            : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {source.status === 'ACTIVE'
+                        ? 'Connected'
+                        : source.status === 'ERROR'
+                          ? 'Error'
+                          : 'Pending'}
+                    </div>
                   </div>
+                ))}
+              </div>
+            )}
+
+            {showForm ? (
+              <div className="border rounded-lg p-4 space-y-3 bg-slate-50">
+                <p className="text-sm font-medium text-slate-700">Add a source</p>
+                <div className="space-y-1">
+                  <Label htmlFor="onb-provider" className="text-xs">
+                    Provider
+                  </Label>
+                  <select
+                    id="onb-provider"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={provider}
+                    onChange={e => handleProviderChange(e.target.value)}
+                  >
+                    <option value="">Select provider...</option>
+                    <optgroup label="Banks">
+                      {PROVIDER_OPTIONS.filter(p => p.category === 'bank').map(p => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Credit Cards">
+                      {PROVIDER_OPTIONS.filter(p => p.category === 'card').map(p => (
+                        <option key={p.value} value={p.value}>
+                          {p.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
                 </div>
-                <div
-                  className={`text-xs font-medium px-2 py-1 rounded ${
-                    source.status === 'ACTIVE'
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : source.status === 'ERROR'
-                        ? 'bg-red-50 text-red-700'
-                        : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {source.status === 'ACTIVE'
-                    ? 'Connected'
-                    : source.status === 'ERROR'
-                      ? 'Error'
-                      : 'Pending'}
+                <div className="space-y-1">
+                  <Label htmlFor="onb-srcname" className="text-xs">
+                    Display Name
+                  </Label>
+                  <Input
+                    id="onb-srcname"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    placeholder="e.g. My Business Account"
+                    className="text-sm"
+                  />
+                </div>
+                <p className="text-xs text-slate-400">
+                  Credentials are configured in Settings after onboarding.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowForm(false);
+                      setProvider('');
+                      setDisplayName('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleAddSource}
+                    disabled={adding || !provider || !displayName.trim()}
+                  >
+                    {adding && <Loader2 className="animate-spin" size={14} />}
+                    Add Source
+                  </Button>
                 </div>
               </div>
-            ))}
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowForm(true)}
+              >
+                <PlugZap size={14} />
+                Add a source
+              </Button>
+            )}
           </div>
         )}
+
         <div className="flex justify-between pt-6">
           <Button variant="outline" onClick={onBack}>
             Back
           </Button>
-          <Button onClick={onNext}>
-            Continue
-            <ArrowRight size={16} />
-          </Button>
+          <div className="flex gap-2">
+            {sources.length === 0 && (
+              <Button variant="ghost" onClick={onNext} className="text-slate-500">
+                Skip for now
+              </Button>
+            )}
+            <Button onClick={onNext} disabled={fetching}>
+              Continue
+              <ArrowRight size={16} />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -329,6 +489,12 @@ function ReviewStep({
             </span>
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
+            <span className="text-sm text-slate-600">ח.פ</span>
+            <span className="text-sm font-medium">
+              {workspace?.companyRegistrationNumber || 'Not set'}
+            </span>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
             <span className="text-sm text-slate-600">Logo</span>
             <span className="text-sm font-medium">
               {workspace?.logoUrl ? 'Set' : 'Using default'}
@@ -337,9 +503,7 @@ function ReviewStep({
           <div className="flex items-center justify-between rounded-lg border p-3">
             <span className="text-sm text-slate-600">Sources</span>
             <span className="text-sm font-medium">
-              {activeSources.length > 0
-                ? `${activeSources.length} connected`
-                : 'None yet'}
+              {sources.length > 0 ? `${sources.length} added` : 'None yet'}
             </span>
           </div>
         </div>
