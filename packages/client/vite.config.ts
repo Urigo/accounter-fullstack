@@ -41,11 +41,6 @@ export default defineConfig({
     include: ['react-hook-form'],
     exclude: ['js-big-decimal'],
   },
-  build: {
-    commonjsOptions: {
-      include: [/react-hook-form/, /node_modules/],
-    },
-  },
   define: {
     'import.meta.env.VITE_AUTH0_DOMAIN': JSON.stringify(process.env.AUTH0_DOMAIN),
     'import.meta.env.VITE_AUTH0_FRONTEND_CLIENT_ID': JSON.stringify(
