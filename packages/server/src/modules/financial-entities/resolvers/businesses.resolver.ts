@@ -115,7 +115,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         pcn874RecordTypeOverride: fields.pcn874RecordType,
       };
 
-      let updatedBusiness: IGetBusinessesByIdsResult | undefined = undefined;
+      let updatedBusiness: IGetBusinessesByIdsResult | undefined;
 
       try {
         if (Object.values(adjustedFields).some(field => field != null)) {

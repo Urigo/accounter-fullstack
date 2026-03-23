@@ -9,7 +9,7 @@ import {
   validateNoOrphanedAmounts,
   validatePositiveAmounts,
   validateRecordInternalBalance,
-} from './ledger-validators';
+} from './ledger-validators.js';
 import type { LedgerRecord, ValidationContext } from './types';
 
 const mockContext: ValidationContext = {

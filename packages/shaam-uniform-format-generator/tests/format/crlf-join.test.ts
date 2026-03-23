@@ -3,13 +3,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { CRLF } from '../../src/format/newline';
+import { CRLF } from '../../src/format/newline.js';
 import {
   assembleFile,
   joinFields,
   joinLinesWithCRLF,
   joinRecords,
-} from '../../src/generator/format/encoder';
+} from '../../src/generator/format/encoder.js';
 
 describe('CRLF Join Logic', () => {
   describe('joinFields', () => {

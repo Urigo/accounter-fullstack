@@ -93,7 +93,7 @@ export const DepreciationReport = (): ReactElement => {
       }
     }
     return defaultFilters;
-  }, [userContext?.context.adminBusinessId]);
+  }, [userContext?.context.adminBusinessId, get]);
   const [filter, setFilter] = useState<DepreciationReportFilter>(initialFilters);
 
   const [{ data, fetching }] = useQuery({

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
 import { ZodError } from 'zod';
-import { B100Schema, type B100 } from '../../src/generator/records/b100';
-import { C100Schema, type C100 } from '../../src/generator/records/c100';
-import { D110Schema, type D110 } from '../../src/generator/records/d110';
-import { D120Schema, type D120 } from '../../src/generator/records/d120';
-import { DocumentTypeEnum, type DocumentType } from '../../src/types/index';
+import { B100Schema, type B100 } from '../../src/generator/records/b100.js';
+import { C100Schema, type C100 } from '../../src/generator/records/c100.js';
+import { D110Schema, type D110 } from '../../src/generator/records/d110.js';
+import { D120Schema, type D120 } from '../../src/generator/records/d120.js';
+import { DocumentTypeEnum, type DocumentType } from '../../src/types/index.js';
 
 describe('Document Type Field Validation', () => {
   // Valid document types for testing

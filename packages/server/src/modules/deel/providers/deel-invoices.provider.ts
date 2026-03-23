@@ -158,7 +158,7 @@ export class DeelInvoicesProvider {
     } catch (e) {
       const message = `Error getting Deel invoices by issue dates`;
       console.error(message, e);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 
@@ -199,7 +199,7 @@ export class DeelInvoicesProvider {
     } catch (e) {
       const message = `Error getting receipt to charge mapping`;
       console.error(message, e);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 
@@ -211,7 +211,7 @@ export class DeelInvoicesProvider {
     } catch (e) {
       const message = `Error inserting Deel invoice`;
       console.error(message, e);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 }

@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../../src/api/generate-report';
-import { parseUniformFormatFiles } from '../../src/api/parse-files';
+import { generateUniformFormatReport } from '../../src/api/generate-report.js';
+import { parseUniformFormatFiles } from '../../src/api/parse-files.js';
 import type { ReportInput } from '../../src/types/index';
 
 describe('Comprehensive SHAAM Format Integration Test', () => {

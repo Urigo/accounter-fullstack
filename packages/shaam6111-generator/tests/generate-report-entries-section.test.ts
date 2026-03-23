@@ -1,5 +1,5 @@
-import { generateReportEntriesSection } from '../src/generators/generate-report-entries';
-import { ReportEntry } from '../src/types';
+import { generateReportEntriesSection } from '../src/generators/generate-report-entries.js';
+import { ReportEntry } from '../src/types/index.js';
 
 describe('generateReportEntriesSection', () => {
   it('should generate a string of the correct length', () => {

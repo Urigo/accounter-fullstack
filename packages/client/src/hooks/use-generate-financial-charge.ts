@@ -137,7 +137,7 @@ export const useGenerateFinancialCharge = (): UseGenerateFinancialCharge => {
         id: notificationId,
       });
 
-      let charge: { id: string } | undefined = undefined;
+      let charge: { id: string } | undefined;
       try {
         switch (type) {
           case FinancialChargeEnum.Revaluation:

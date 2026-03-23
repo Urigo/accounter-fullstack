@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../src/index';
+import { generateUniformFormatReport } from '../src/index.js';
 
 describe('SHAAM Uniform Format Generator', () => {
   it('should generate a basic report', () => {

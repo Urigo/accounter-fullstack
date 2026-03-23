@@ -54,7 +54,7 @@ export class FiatExchangeProvider {
     } catch (error) {
       const message = `Error fetching exchange rates for date ${formattedDate}`;
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 

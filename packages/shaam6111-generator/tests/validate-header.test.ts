@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headerSchema } from '../src/schemas/index';
+import { headerSchema } from '../src/schemas/index.js';
 
 // Valid HeaderRecord example
 const validHeaderRecord = {

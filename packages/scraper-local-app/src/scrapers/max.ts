@@ -344,7 +344,7 @@ async function isTransactionNew(
     return true;
   } catch (error) {
     logger.error(error);
-    throw new Error('Failed to check if transaction is new');
+    throw new Error('Failed to check if transaction is new', { cause: error });
   }
 }
 
@@ -411,7 +411,7 @@ async function insertTransactions(
       });
     } catch (error) {
       logger.error(`Failed to insert ${nickname} transactions`, error);
-      throw new Error('Failed to insert transactions');
+      throw new Error('Failed to insert transactions', { cause: error });
     }
   }
 }
@@ -455,7 +455,7 @@ export async function getMaxData(
           ) as FilteredColumns;
         } catch (error) {
           ctx.logger.error(error);
-          throw new Error('Error on getting columns info');
+          throw new Error('Error on getting columns info', { cause: error });
         }
       },
     },
@@ -478,7 +478,7 @@ export async function getMaxData(
           }
         } catch (error) {
           logger.error(`Failed to get transactions: ${error}`);
-          throw new Error(`Failed to get transactions for ${accountKey}`);
+          throw new Error(`Failed to get transactions for ${accountKey}`, { cause: error });
         }
 
         if (!transactions.length) {
@@ -613,7 +613,7 @@ export async function getMaxData(
           task.title = `${task.title} (${ctx[accountKey].newTransactions?.length} new transactions)`;
         } catch (error) {
           ctx.logger.error(`Failed to save transactions: ${error}`);
-          throw new Error(`Failed to check rather transactions are new for ${accountKey}`);
+          throw new Error(`Failed to check rather transactions are new for ${accountKey}`, { cause: error });
         }
       },
     },
@@ -635,7 +635,7 @@ export async function getMaxData(
           );
         } catch (error) {
           ctx.logger.error(`Failed to save transactions: ${error}`);
-          throw new Error(`Failed to save transactions for ${accountKey}`);
+          throw new Error(`Failed to save transactions for ${accountKey}`, { cause: error });
         }
       },
     },

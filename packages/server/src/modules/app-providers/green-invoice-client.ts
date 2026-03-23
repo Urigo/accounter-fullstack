@@ -54,7 +54,7 @@ export class GreenInvoiceClientProvider {
     } catch (e) {
       const message = 'Green Invoice SDK error';
       console.error(`${message}: ${e}`);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 
@@ -165,7 +165,7 @@ export class GreenInvoiceClientProvider {
     } catch (e) {
       const message = 'Green Invoice Add Expense Draft error';
       console.error(`${message}: ${e}`);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 
@@ -283,7 +283,7 @@ export class GreenInvoiceClientProvider {
     } catch (error) {
       const message = 'Green Invoice Create Client error';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -309,7 +309,7 @@ export class GreenInvoiceClientProvider {
       this.invalidateClient(args.id);
       const message = 'Green Invoice Update Client error';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -332,7 +332,7 @@ export class GreenInvoiceClientProvider {
       this.invalidateClient(clientId);
       const message = 'Green Invoice Delete Client error';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 

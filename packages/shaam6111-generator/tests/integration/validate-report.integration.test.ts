@@ -1,4 +1,4 @@
-import { validateReport } from '../../src';
+import { validateReport } from '../../src/index.js';
 
 describe('Integration Test: validateReport', () => {
   it('should validate a valid company report', () => {

@@ -112,7 +112,7 @@ export async function addGreenInvoiceClient(clientId: string, injector: Injector
   } catch (error) {
     const message = 'Error adding Green Invoice client';
     console.error(`${message}: ${error}`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 
@@ -187,7 +187,7 @@ export async function updateGreenInvoiceClient(
     localClientPromise,
   ]);
 
-  let greenInvoiceId: string | undefined = undefined;
+  let greenInvoiceId: string | undefined;
   try {
     greenInvoiceId =
       validateClientIntegrations(localClient?.integrations ?? {}).greenInvoiceId ?? undefined;

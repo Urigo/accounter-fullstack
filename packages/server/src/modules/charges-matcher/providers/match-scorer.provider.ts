@@ -188,7 +188,7 @@ async function calculateScoreWithDate(
     const dateIsEligible = docDate.getTime() <= txDate.getTime();
 
     // Status gating via DataLoader
-    let statusIsEligible = false;
+    let statusIsEligible: boolean;
     try {
       const status = (await injector
         .get(IssuedDocumentsProvider)

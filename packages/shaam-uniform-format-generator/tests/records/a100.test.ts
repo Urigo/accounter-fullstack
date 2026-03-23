@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { A100Schema, encodeA100, parseA100, type A100 } from '../../src/generator/records/a100';
+import { A100Schema, encodeA100, parseA100, type A100 } from '../../src/generator/records/a100.js';
 
 describe('A100 Record', () => {
   const validA100: A100 = {

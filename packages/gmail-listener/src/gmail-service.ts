@@ -74,7 +74,7 @@ export class GmailService {
           const existingLabel = labels.find(label => label.name === path);
           this.labelsDict[key as Labels] = existingLabel?.id ?? (await this.createLabel(path));
         } catch (e) {
-          throw new Error(`Error creating new label [${key}]: ${e}`);
+          throw new Error(`Error creating new label [${key}]: ${e}`, { cause: e });
         }
       }),
     );
@@ -94,7 +94,7 @@ export class GmailService {
       return message.data.labelIds?.includes(labelId) || false;
     } catch (error) {
       console.error('Error checking labels:', error);
-      throw new Error('Error checking message labels');
+      throw new Error('Error checking message labels', { cause: error });
     }
   }
 
@@ -188,7 +188,7 @@ export class GmailService {
     } catch (error) {
       const message = `Error converting HTML to PDF`;
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     } finally {
       // Ensure browser is closed in case of error
       await browser?.close();
@@ -391,7 +391,7 @@ export class GmailService {
       return { ...emailData, documents };
     } catch (error) {
       console.error('Error fetching email:', error);
-      throw new Error('Error fetching email data');
+      throw new Error('Error fetching email data', { cause: error });
     }
   }
 

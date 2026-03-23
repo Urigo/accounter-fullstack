@@ -68,6 +68,6 @@ export const homePageHandler = async (config: Config): Promise<Report[]> => {
     return reports;
   } catch (e) {
     page?.browser().close();
-    throw new Error(`reportsHandler - ${(e as Error)?.message || e}`);
+    throw new Error(`reportsHandler - ${(e as Error)?.message || e}`, { cause: e });
   }
 };

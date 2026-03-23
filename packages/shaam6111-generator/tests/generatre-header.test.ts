@@ -1,4 +1,4 @@
-import { generateHeaderRecord } from '../src/generators/generate-header';
+import { generateHeaderRecord } from '../src/generators/generate-header.js';
 import {
   AccountingMethod,
   AccountingSystem,
@@ -7,7 +7,7 @@ import {
   HeaderRecord,
   ReportingMethod,
   YesNo,
-} from '../src/types/header';
+} from '../src/types/header.js';
 
 describe('generateHeaderRecord', () => {
   it('should generate a string of the correct length', () => {

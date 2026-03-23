@@ -340,7 +340,7 @@ async function isTransactionNew(
     return true;
   } catch (error) {
     logger.error(error);
-    throw new Error('Failed to check if transaction is new');
+    throw new Error('Failed to check if transaction is new', { cause: error });
   }
 }
 
@@ -448,7 +448,7 @@ async function insertTransactions(
       });
     } catch (error) {
       logger.error(`Failed to insert ${type} ${nickname} transactions`, error);
-      throw new Error('Failed to insert transactions');
+      throw new Error('Failed to insert transactions', { cause: error });
     }
   }
 }
@@ -505,6 +505,7 @@ export async function getMonthTransactions(
             logger.error(`Failed to get transactions: ${error}`);
             throw new Error(
               `Failed to get transactions for ${type} ${nickname} ${format(month, 'MM-yyyy')}`,
+              { cause: error },
             );
           }
         },
@@ -593,6 +594,7 @@ export async function getMonthTransactions(
             ctx.logger.error(`Failed to save transactions: ${error}`);
             throw new Error(
               `Failed to check rather transactions are new for ${ctx[accountKey].type} ${ctx[accountKey].nickname}`,
+              { cause: error },
             );
           }
         },
@@ -620,6 +622,7 @@ export async function getMonthTransactions(
             ctx.logger.error(`Failed to save transactions: ${error}`);
             throw new Error(
               `Failed to save transactions for ${ctx[accountKey].type} ${ctx[accountKey].nickname}`,
+              { cause: error },
             );
           }
         },

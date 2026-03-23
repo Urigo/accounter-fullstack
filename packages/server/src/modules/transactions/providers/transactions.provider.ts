@@ -193,7 +193,7 @@ export class TransactionsProvider {
     } catch (error) {
       const message = 'Failed to fetch similar transactions';
       console.error(message, error);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 

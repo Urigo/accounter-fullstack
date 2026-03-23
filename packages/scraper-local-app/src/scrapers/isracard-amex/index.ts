@@ -63,7 +63,7 @@ export async function getIsracardAmexData(
 
         task.output = 'Scraper Init';
 
-        let scraperLogin: typeof ctx.scraper.isracard | typeof ctx.scraper.amex | null = null;
+        let scraperLogin: typeof ctx.scraper.isracard | typeof ctx.scraper.amex | null;
         switch (type) {
           case 'ISRACARD': {
             scraperLogin = ctx.scraper.isracard;
@@ -103,7 +103,7 @@ export async function getIsracardAmexData(
           ) as FilteredColumns;
         } catch (error) {
           ctx.logger.error(error);
-          throw new Error('Error on getting columns info');
+          throw new Error('Error on getting columns info', { cause: error });
         }
       },
     },

@@ -591,7 +591,7 @@ function performCrossValidation(
   // Validate record counts from A000Sum against actual data
   for (const summaryRecord of parsedData.iniData.a000Sum) {
     const expectedCount = parseInt(summaryRecord.recordCount);
-    let actualCount = 0;
+    let actualCount: number;
 
     switch (summaryRecord.code) {
       case 'A100':

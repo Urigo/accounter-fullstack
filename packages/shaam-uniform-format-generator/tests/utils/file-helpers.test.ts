@@ -8,7 +8,7 @@ import {
   getFileInfo,
   readFileAsText,
   validateShaamFile,
-} from '../../src/utils/file-helpers';
+} from '../../src/utils/file-helpers.js';
 
 describe('File Helpers', () => {
   describe('createFile', () => {
