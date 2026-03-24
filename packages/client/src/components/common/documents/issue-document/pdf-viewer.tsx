@@ -32,8 +32,6 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 }
 
 export function PdfViewer(props: PdfProps) {
-  PDFJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS.version}/build/pdf.worker.min.mjs`;
-
   const { src } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const canvas2Ref = useRef<HTMLCanvasElement>(null);
@@ -88,6 +86,10 @@ export function PdfViewer(props: PdfProps) {
       });
     }
   }, [drawerOpen, pdfDoc, currentPage, renderPage]);
+
+  useEffect(() => {
+    PDFJS.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${PDFJS.version}/build/pdf.worker.min.mjs`;
+  }, []);
 
   useEffect(() => {
     const loadingTask = PDFJS.getDocument(base64ToArrayBuffer(src));
