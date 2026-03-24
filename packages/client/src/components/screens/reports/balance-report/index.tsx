@@ -355,7 +355,7 @@ export const BalanceReport = (): ReactElement => {
                 <BarChart
                   accessibilityLayer
                   data={periods}
-                  onClick={e => setExtendedPeriod(e.activeLabel)}
+                  onClick={e => setExtendedPeriod(e.activeLabel?.toString())}
                 >
                   <CartesianGrid vertical={false} />
                   <XAxis
