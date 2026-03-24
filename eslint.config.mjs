@@ -242,6 +242,26 @@ export default [
     },
   },
   {
+    files: ['packages/migrations/**/*.cjs', 'packages/server/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['*.config.mjs', 'eslint.config.mjs', 'prettier.config.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
     files: ['**/resolvers/**/*.ts', '**/services/**/*.ts', '**/providers/**/*.ts'],
     rules: {
       'no-restricted-imports': [
