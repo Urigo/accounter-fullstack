@@ -44,7 +44,9 @@ export class Auth0ManagementProvider {
       return null;
     } catch (error) {
       console.error(`Failed to get Auth0 user by email ${email}:`, error);
-      throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`, { cause: error });
+      throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -100,7 +102,9 @@ export class Auth0ManagementProvider {
       await client.users.update(auth0UserId, { blocked: false });
     } catch (error) {
       console.error(`Failed to unblock Auth0 user ${auth0UserId}:`, error);
-      throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`, { cause: error });
+      throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
   async blockUser(auth0UserId: string): Promise<void> {
@@ -136,7 +140,9 @@ export class Auth0ManagementProvider {
       return ticket;
     } catch (error) {
       console.error('Failed to trigger password change', error);
-      throw new Error(`Failed to trigger password change: ${(error as Error).message}`, { cause: error });
+      throw new Error(`Failed to trigger password change: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 

@@ -613,7 +613,9 @@ export async function getMaxData(
           task.title = `${task.title} (${ctx[accountKey].newTransactions?.length} new transactions)`;
         } catch (error) {
           ctx.logger.error(`Failed to save transactions: ${error}`);
-          throw new Error(`Failed to check rather transactions are new for ${accountKey}`, { cause: error });
+          throw new Error(`Failed to check rather transactions are new for ${accountKey}`, {
+            cause: error,
+          });
         }
       },
     },

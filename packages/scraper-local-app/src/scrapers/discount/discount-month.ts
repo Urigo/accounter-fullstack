@@ -204,7 +204,10 @@ export async function getMonthTransactions(
           }));
         } catch (error) {
           logger.error(`${accountKey} - Failed to get transactions: ${error}`);
-          throw new Error(`Failed to get transactions for ${nickname} ${format(month, 'MM-yyyy')}`, { cause: error });
+          throw new Error(
+            `Failed to get transactions for ${nickname} ${format(month, 'MM-yyyy')}`,
+            { cause: error },
+          );
         }
       },
     },

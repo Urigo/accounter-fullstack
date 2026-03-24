@@ -186,7 +186,9 @@ export async function getPoalimAccounts(bankKey: string) {
               task.output = `Poalim Account ${res.account_number} inserted`;
             } catch (error) {
               ctx.logger.error(error);
-              throw new Error(`Poalim Account ${account.accountNumber} insert failed`, { cause: error });
+              throw new Error(`Poalim Account ${account.accountNumber} insert failed`, {
+                cause: error,
+              });
             }
           }
         }
