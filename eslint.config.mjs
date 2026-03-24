@@ -224,6 +224,9 @@ export default [
         ...globals.browser,
       },
     },
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
   {
     files: ['server/**'],
