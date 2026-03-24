@@ -15,6 +15,10 @@ export default gql`
     syncPriorityInvoices(input: SyncPriorityInvoicesInput): SyncPriorityResult!
       @requiresAuth
       @requiresRole(role: "business_owner")
+
+    importPriorityCSV(csvContent: String!): ImportPriorityCSVResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
 
   type PriorityConnectionResult {
@@ -27,6 +31,14 @@ export default gql`
     skipped: Int!
     errors: Int!
     message: String
+  }
+
+  type ImportPriorityCSVResult {
+    imported: Int!
+    skipped: Int!
+    errors: Int!
+    suppliersCreated: Int!
+    taxCategoriesCreated: Int!
   }
 
   input PriorityInvoiceFilter {

@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import { PriorityClientProvider } from '../../app-providers/priority/priority-client.provider.js';
+import { PriorityCSVImportProvider } from '../providers/priority-csv-import.provider.js';
 import { PriorityInvoicesProvider } from '../providers/priority-invoices.provider.js';
 
 interface ResolverContext {
@@ -31,6 +32,21 @@ export const priorityResolvers: Record<string, any> = {
         return await injector.get(PriorityClientProvider).testConnection();
       } catch (e) {
         return { ok: false, message: e instanceof Error ? e.message : 'Unknown error' };
+      }
+    },
+
+    importPriorityCSV: async (
+      _: unknown,
+      { csvContent }: { csvContent: string },
+      { injector }: ResolverContext,
+    ) => {
+      try {
+        return await injector.get(PriorityCSVImportProvider).importCSV(csvContent);
+      } catch (e) {
+        if (e instanceof GraphQLError) throw e;
+        const message = e instanceof Error ? e.message : 'Import failed';
+        console.error('Error importing Priority CSV:', e);
+        throw new GraphQLError(`Priority CSV import failed: ${message}`);
       }
     },
 

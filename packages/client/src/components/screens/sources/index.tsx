@@ -1,4 +1,5 @@
-import { useCallback, useState, type JSX } from 'react';
+import { useCallback, useRef, useState, type JSX } from 'react';
+import { read as xlsxRead, utils as xlsxUtils } from 'xlsx';
 import {
   AlertCircle,
   CheckCircle2,
@@ -10,6 +11,7 @@ import {
   RefreshCw,
   Trash2,
   Unplug,
+  Upload,
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -87,6 +89,14 @@ const TRIGGER_SOURCE_SYNC_MUTATION = `
   mutation TriggerSourceSync($id: UUID!) {
     triggerSourceSync(id: $id) {
       success message
+    }
+  }
+`;
+
+const IMPORT_PRIORITY_CSV_MUTATION = `
+  mutation ImportPriorityCSV($csvContent: String!) {
+    importPriorityCSV(csvContent: $csvContent) {
+      imported skipped errors suppliersCreated taxCategoriesCreated
     }
   }
 `;
@@ -405,6 +415,135 @@ function CredentialForm({
 }
 
 // ---------------------------------------------------------------------------
+// PriorityCSVImport - drag-and-drop / file-picker CSV import widget
+// ---------------------------------------------------------------------------
+
+function PriorityCSVImport(): JSX.Element {
+  const [{ fetching: importing }, importCSV] = useMutation(IMPORT_PRIORITY_CSV_MUTATION);
+  const [dragging, setDragging] = useState(false);
+  const [result, setResult] = useState<{
+    imported: number;
+    skipped: number;
+    errors: number;
+    suppliersCreated: number;
+    taxCategoriesCreated: number;
+  } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const fileToCSV = useCallback(async (file: File): Promise<string> => {
+    const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    if (!isXlsx) return file.text();
+    const buffer = await file.arrayBuffer();
+    const wb = xlsxRead(buffer, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    return xlsxUtils.sheet_to_csv(ws, { forceQuotes: true });
+  }, []);
+
+  const runImport = useCallback(
+    async (file: File) => {
+      setResult(null);
+      const csvContent = await fileToCSV(file);
+      const res = await importCSV({ csvContent });
+      if (res.error) {
+        toast.error('Import failed: ' + res.error.message);
+      } else {
+        const r = res.data?.importPriorityCSV;
+        setResult(r);
+        toast.success(
+          `Imported ${r?.imported} invoices, skipped ${r?.skipped}${r?.errors ? `, ${r.errors} errors` : ''}`,
+        );
+      }
+    },
+    [importCSV, fileToCSV],
+  );
+
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      const file = files?.[0];
+      if (!file) return;
+      const isSupported =
+        file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+      if (!isSupported) {
+        toast.error('Please select a CSV or Excel file');
+        return;
+      }
+      void runImport(file);
+    },
+    [runImport],
+  );
+
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-xs font-medium text-slate-600">Import invoices from CSV or Excel export</p>
+      <div
+        className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors cursor-pointer ${
+          dragging
+            ? 'border-blue-400 bg-blue-50'
+            : importing
+              ? 'border-slate-200 bg-slate-50 cursor-not-allowed'
+              : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50'
+        }`}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => {
+          e.preventDefault();
+          setDragging(false);
+          handleFiles(e.dataTransfer.files);
+        }}
+        onClick={() => !importing && inputRef.current?.click()}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          className="hidden"
+          onChange={e => handleFiles(e.target.files)}
+        />
+        {importing ? (
+          <div className="flex items-center justify-center gap-2 text-slate-500 text-xs">
+            <Loader2 className="animate-spin" size={16} />
+            Importing...
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-slate-400 text-xs">
+            <Upload size={16} />
+            Drop a Priority CSV or Excel file here or click to browse
+          </div>
+        )}
+      </div>
+
+      {result && (
+        <div className="flex flex-wrap gap-3 text-xs">
+          <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-2 py-0.5">
+            {result.imported} imported
+          </span>
+          {result.skipped > 0 && (
+            <span className="text-slate-600 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+              {result.skipped} skipped
+            </span>
+          )}
+          {result.errors > 0 && (
+            <span className="text-red-700 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+              {result.errors} errors
+            </span>
+          )}
+          {result.suppliersCreated > 0 && (
+            <span className="text-blue-700 bg-blue-50 border border-blue-200 rounded px-2 py-0.5">
+              {result.suppliersCreated} new suppliers
+            </span>
+          )}
+          {result.taxCategoriesCreated > 0 && (
+            <span className="text-purple-700 bg-purple-50 border border-purple-200 rounded px-2 py-0.5">
+              {result.taxCategoriesCreated} new categories
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SourceCard - one connected source
 // ---------------------------------------------------------------------------
 
@@ -604,6 +743,12 @@ function SourceCard({
             saving={saving}
             clearing={clearing}
           />
+        </div>
+      )}
+
+      {isPriority && !editing && (
+        <div className="pl-12">
+          <PriorityCSVImport />
         </div>
       )}
     </div>

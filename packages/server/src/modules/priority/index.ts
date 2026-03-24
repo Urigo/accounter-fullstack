@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { PriorityCSVImportProvider } from './providers/priority-csv-import.provider.js';
 import { PriorityInvoicesProvider } from './providers/priority-invoices.provider.js';
 import { priorityResolvers } from './resolvers/priority.resolvers.js';
 import priority from './typeDefs/priority.graphql.js';
@@ -10,5 +11,5 @@ export const priorityModule = createModule({
   dirname: __dirname,
   typeDefs: [priority],
   resolvers: [priorityResolvers],
-  providers: () => [PriorityInvoicesProvider],
+  providers: () => [PriorityInvoicesProvider, PriorityCSVImportProvider],
 });

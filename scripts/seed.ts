@@ -171,9 +171,10 @@ async function seed() {
 
     console.log('✅ Financial accounts created successfully');
     console.log('✅ Admin business entity created successfully');
-    console.log(`🔑 Admin Entity ID: ${adminEntityId}`);
+    console.log(`Admin Entity ID: ${adminEntityId}`);
     await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminEntityId);
     await createAdminBusinessContext(client, adminEntityId);
+    await ensureAdminInfrastructure(client, adminEntityId);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
@@ -553,6 +554,30 @@ async function createAdminBusinessContext(
     throw new Error('Failed to create context');
   }
   console.log('✅ Admin business context created successfully');
+}
+
+async function ensureAdminInfrastructure(client: pg.Client, adminEntityId: string) {
+  // businesses_admin — required for admin business queries to resolve
+  await client.query(
+    `INSERT INTO accounter_schema.businesses_admin (id, owner_id)
+     VALUES ($1, $1)
+     ON CONFLICT (id) DO NOTHING`,
+    [adminEntityId],
+  );
+  console.log('businesses_admin row ensured');
+
+  // workspace_settings — required so the onboarding guard does not loop forever
+  await client.query(
+    `INSERT INTO accounter_schema.workspace_settings (owner_id)
+     VALUES ($1)
+     ON CONFLICT DO NOTHING`,
+    [adminEntityId],
+  );
+  console.log('workspace_settings row ensured');
+
+  console.log(
+    'To link your Auth0 login to this business run: yarn link-admin <auth0-user-id> <email>',
+  );
 }
 
 // Run the seed function

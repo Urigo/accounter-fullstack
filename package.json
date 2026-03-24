@@ -36,6 +36,7 @@
     "scrape": "yarn workspace @accounter-helper/scraper-local-app start",
     "seed:admin-context": "yarn workspace @accounter/server seed:admin",
     "seed:production": "tsx scripts/seed.ts",
+    "link-admin": "tsx scripts/link-admin.ts --",
     "seed:reset-staging": "echo \"DESTRUCTIVE: Implement seed reset script as needed\"",
     "seed:staging-demo": "tsx scripts/seed-demo-data.ts",
     "setup": "yarn db:init && yarn generate",
