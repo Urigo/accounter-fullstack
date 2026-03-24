@@ -103,7 +103,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.13.1"
-    html2canvas-pro: "npm:1.6.7"
+    html2canvas-pro: "npm:2.0.2"
     iconv-lite: "npm:0.7.2"
     jsdom: "npm:29.0.1"
     json-bigint-patch: "npm:0.0.9"
@@ -14798,13 +14798,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html2canvas-pro@npm:1.6.7":
-  version: 1.6.7
-  resolution: "html2canvas-pro@npm:1.6.7"
+"html2canvas-pro@npm:2.0.2":
+  version: 2.0.2
+  resolution: "html2canvas-pro@npm:2.0.2"
   dependencies:
     css-line-break: "npm:^2.1.0"
     text-segmentation: "npm:^1.0.3"
-  checksum: 10c0/bc8f8ca563a3d33dbce301c9edfb69b912e095dcba0576af27251af0ed0776f3b5f54ba1af9b585b476b3d1411045e4bbccf38ec08e8b3f6e7e1059ee3963171
+  checksum: 10c0/15268678f32010437a91b65cfc8420cbba3090b5f1871e581cebcc4cce6f957126aae39b9587dd8495a728f4a3fad307b7314d289e6d593c4ea378b771a6bee0
   languageName: node
   linkType: hard
 
