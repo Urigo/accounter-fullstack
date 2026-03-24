@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   CircleSlash,
@@ -143,25 +143,22 @@ export function IntegrationsSection({ data }: Props) {
   const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
   const hiveClient = integrations?.hiveId;
 
-  const updateIdByAttribute = useCallback(
-    (
-      id: string,
-      attribute: keyof Pick<
-        ClientIntegrationsInput,
-        'hiveId' | 'greenInvoiceId' | 'linearId' | 'slackChannelKey' | 'notionId' | 'workflowyUrl'
-      >,
-    ) => {
-      if (!business?.id) return;
+  const updateIdByAttribute = (
+    id: string,
+    attribute: keyof Pick<
+      ClientIntegrationsInput,
+      'hiveId' | 'greenInvoiceId' | 'linearId' | 'slackChannelKey' | 'notionId' | 'workflowyUrl'
+    >,
+  ) => {
+    if (!business?.id) return;
 
-      const integrations: ClientIntegrationsInput = {};
-      integrations[attribute] = id;
-      updateClient({
-        businessId: business?.id,
-        fields: { integrations },
-      });
-    },
-    [business?.id, updateClient],
-  );
+    const integrations: ClientIntegrationsInput = {};
+    integrations[attribute] = id;
+    updateClient({
+      businessId: business?.id,
+      fields: { integrations },
+    });
+  };
 
   useEffect(() => {
     if (

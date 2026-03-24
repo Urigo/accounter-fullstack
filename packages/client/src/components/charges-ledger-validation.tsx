@@ -86,13 +86,9 @@ export const ChargesLedgerValidation = (): ReactElement => {
     setMergeSelectedCharges([]);
   }
 
-  const progress = useMemo(
-    () =>
-      data?.chargesWithLedgerChanges?.length
-        ? data.chargesWithLedgerChanges[data.chargesWithLedgerChanges.length - 1].progress
-        : 0,
-    [data?.chargesWithLedgerChanges],
-  );
+  const progress = data?.chargesWithLedgerChanges?.length
+    ? data.chargesWithLedgerChanges[data.chargesWithLedgerChanges.length - 1].progress
+    : 0;
 
   const onFilterChange = useCallback(
     (newFilter: ChargeFilter): void => {
