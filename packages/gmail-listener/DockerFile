@@ -1,0 +1,38 @@
+# /packages/gmail-listener/Dockerfile
+FROM mcr.microsoft.com/playwright:v1.58.2 AS builder
+
+WORKDIR /app
+
+# Copy manifests to leverage Docker cache
+COPY package.json yarn.lock .yarnrc.yml* ./
+COPY .yarn ./.yarn
+# For a monorepo, we need all workspace package.json files. This is a simple way to copy them.
+COPY packages/ ./packages/
+RUN yarn install --immutable
+
+# Copy the rest of the source code
+COPY . .
+
+# Build the application
+RUN yarn generate:graphql
+RUN yarn workspace @accounter/gmail-listener build
+
+# Prune dependencies to only what's needed for production
+RUN yarn workspaces focus @accounter/gmail-listener --production
+
+# --- Production Stage ---
+FROM mcr.microsoft.com/playwright:v1.58.2
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy only necessary artifacts from the builder stage for a minimal production image
+COPY --from=builder /app/package.json /app/yarn.lock /app/.yarnrc.yml* ./
+COPY --from=builder /app/.yarn ./.yarn
+COPY --from=builder /app/node_modules ./node_modules
+RUN mkdir -p packages/gmail-listener
+COPY --from=builder /app/packages/gmail-listener/package.json ./packages/gmail-listener/package.json
+COPY --from=builder /app/packages/gmail-listener/dist ./packages/gmail-listener/dist
+
+# Start the specific workspace service
+CMD ["yarn", "workspace", "@accounter/gmail-listener", "start"]
