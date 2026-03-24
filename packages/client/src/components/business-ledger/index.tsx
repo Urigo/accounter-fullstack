@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import {
   ChevronsLeftRightEllipsis,
   ChevronsRightLeft,
@@ -141,17 +141,13 @@ export const BusinessLedgerRecordsSummery = (): ReactElement => {
     isExpandedCurrencies,
   ]);
 
-  const businessLedgerRecordsSum = useMemo(() => {
-    if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
-      return [];
-    }
-    if (!data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum) {
-      return [];
-    }
-    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum.sort((a, b) =>
-      a.business.name.localeCompare(b.business.name),
-    );
-  }, [data?.businessTransactionsSumFromLedgerRecords]);
+  const businessTransactionsSum =
+    data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'
+      ? undefined
+      : data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum;
+  const businessLedgerRecordsSum = businessTransactionsSum
+    ? [...businessTransactionsSum].sort((a, b) => a.business.name.localeCompare(b.business.name))
+    : [];
 
   const columns: Array<CellInfo> = [
     {

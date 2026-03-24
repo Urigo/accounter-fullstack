@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactElement, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Mark } from '@mantine/core';
@@ -46,17 +46,13 @@ export const BusinessLedgerRecordsSingle = ({ businessId }: Props): ReactElement
     setFiltersContext(<BusinessLedgerRecordsFilters filter={filter} setFilter={setFilter} />);
   }, [data, filter, setFiltersContext, setFilter]);
 
-  const businessLedgerRecordsSum = useMemo(() => {
-    if (data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError') {
-      return [];
-    }
-    if (!data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum) {
-      return [];
-    }
-    return data.businessTransactionsSumFromLedgerRecords.businessTransactionsSum.sort((a, b) =>
-      a.business.name.localeCompare(b.business.name),
-    );
-  }, [data?.businessTransactionsSumFromLedgerRecords]);
+  const businessTransactionsSum =
+    data?.businessTransactionsSumFromLedgerRecords.__typename === 'CommonError'
+      ? undefined
+      : data?.businessTransactionsSumFromLedgerRecords.businessTransactionsSum;
+  const businessLedgerRecordsSum = businessTransactionsSum
+    ? [...businessTransactionsSum].sort((a, b) => a.business.name.localeCompare(b.business.name))
+    : [];
 
   return fetching ? (
     <AccounterLoader />
