@@ -39,7 +39,6 @@ export default [
       '**/.*rc.*js',
       '**/.bob/',
       '**/tsup.config.ts',
-      'eslint.config.mjs',
       '.pnp.*',
       '.yarn/',
       '**/*.pdf',

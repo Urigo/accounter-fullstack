@@ -265,7 +265,6 @@ export function parseB100(line: string): B100 {
   const operatorUsername = cleanLine.slice(pos, pos + 9).trim();
   pos += 9;
   const reserved = cleanLine.slice(pos, pos + 25).trim();
-  // pos += 25;
 
   // Validate the code field
   if (code !== 'B100') {

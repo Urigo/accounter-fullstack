@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   CircleSlash,
@@ -127,7 +127,10 @@ interface Props {
 
 export function IntegrationsSection({ data }: Props) {
   const [openSections, setOpenSections] = useState<string[]>([]);
-  const business = getFragmentData(ClientIntegrationsSectionFragmentDoc, data);
+  const business = useMemo(
+    () => getFragmentData(ClientIntegrationsSectionFragmentDoc, data),
+    [data],
+  );
   const integrations = business?.clientInfo?.integrations;
   const { updateClient } = useUpdateClient();
 
@@ -143,22 +146,25 @@ export function IntegrationsSection({ data }: Props) {
   const greenInvoiceClient = greenInvoiceData?.greenInvoiceClient;
   const hiveClient = integrations?.hiveId;
 
-  const updateIdByAttribute = (
-    id: string,
-    attribute: keyof Pick<
-      ClientIntegrationsInput,
-      'hiveId' | 'greenInvoiceId' | 'linearId' | 'slackChannelKey' | 'notionId' | 'workflowyUrl'
-    >,
-  ) => {
-    if (!business?.id) return;
+  const updateIdByAttribute = useCallback(
+    (
+      id: string,
+      attribute: keyof Pick<
+        ClientIntegrationsInput,
+        'hiveId' | 'greenInvoiceId' | 'linearId' | 'slackChannelKey' | 'notionId' | 'workflowyUrl'
+      >,
+    ) => {
+      if (!business?.id) return;
 
-    const integrations: ClientIntegrationsInput = {};
-    integrations[attribute] = id;
-    updateClient({
-      businessId: business?.id,
-      fields: { integrations },
-    });
-  };
+      const integrations: ClientIntegrationsInput = {};
+      integrations[attribute] = id;
+      updateClient({
+        businessId: business?.id,
+        fields: { integrations },
+      });
+    },
+    [business?.id, updateClient],
+  );
 
   useEffect(() => {
     if (
