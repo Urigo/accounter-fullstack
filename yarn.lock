@@ -119,7 +119,7 @@ __metadata:
     iconv-lite: "npm:0.7.2"
     jsdom: "npm:29.0.1"
     json-bigint-patch: "npm:0.0.9"
-    lucide-react: "npm:0.577.0"
+    lucide-react: "npm:1.0.1"
     next-themes: "npm:0.4.6"
     pdfjs-dist: "npm:5.5.207"
     radix-ui: "npm:1.4.3"
@@ -16959,12 +16959,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lucide-react@npm:0.577.0":
-  version: 0.577.0
-  resolution: "lucide-react@npm:0.577.0"
+"lucide-react@npm:1.0.1":
+  version: 1.0.1
+  resolution: "lucide-react@npm:1.0.1"
   peerDependencies:
     react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/f5f56d66d5072b69ab74af2196833e35b888c18d92906d75aff81afc0aeabf00a4092a5b9dbc1bddd250bf54ec3c5d5933c7353589b5cb7efd75b21651cda399
+  checksum: 10c0/dc5834ef128bbdb9f7d1c6b8cc37b70807203b3dcb91977d3dfa28cbe995c7a0f099689e4191625292238fd18a5f815883d829bef26f318c35b79b336413862a
   languageName: node
   linkType: hard
 
