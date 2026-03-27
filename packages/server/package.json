@@ -29,7 +29,7 @@
     "server:build": "yarn build",
     "server:build:prod": "yarn generate && yarn workspaces foreach --all --parallel --include @accounter/green-invoice-graphql --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build && yarn build",
     "server:dev": "yarn dev",
-    "start": "node dist/server/src/index.js",
+    "start": "node --import ./dist/server/src/bootstrap-telemetry.js dist/server/src/index.js",
     "validate:demo": "tsx src/demo-fixtures/validate-demo-data.ts"
   },
   "dependencies": {
