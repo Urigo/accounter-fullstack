@@ -89,7 +89,7 @@ export async function validateDocumentAllocation(
   } catch (error) {
     const message = `Error validating document allocation for document ID=${document.id}`;
     console.error(`${message}: ${error}`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 

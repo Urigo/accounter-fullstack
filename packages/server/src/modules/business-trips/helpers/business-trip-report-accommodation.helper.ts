@@ -384,7 +384,7 @@ async function sumAccommodatedNightsOnPreviousConsecutiveTrips(
   attendeeId: string,
   arrival: Date,
 ): Promise<number> {
-  let attendeePreviousTrip: IGetLastFlightByDateAndAttendeeIdResult | undefined = undefined;
+  let attendeePreviousTrip: IGetLastFlightByDateAndAttendeeIdResult | undefined;
   [attendeePreviousTrip] = await injector
     .get(BusinessTripAttendeesProvider)
     .getLastFlightByDateAndAttendeeId({

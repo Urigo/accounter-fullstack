@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../../src/api/generate-report';
+import { generateUniformFormatReport } from '../../src/api/generate-report.js';
 
 describe('vatId Validation', () => {
   const validTestInput = {

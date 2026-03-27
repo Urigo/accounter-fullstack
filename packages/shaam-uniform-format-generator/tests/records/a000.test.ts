@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SHAAM_VERSION } from '../../src/constants';
+import { SHAAM_VERSION } from '../../src/constants.js';
 import {
   A000Schema,
   encodeA000,
   parseA000,
   type A000,
   type A000Input,
-} from '../../src/generator/records/a000';
-import { defaultKeyGenerator } from '../../src/utils/key-generator';
+} from '../../src/generator/records/a000.js';
+import { defaultKeyGenerator } from '../../src/utils/key-generator.js';
 
 describe('A000 Record', () => {
   // Reset key generator before each test for consistent results

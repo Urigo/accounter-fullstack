@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { format, sub } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
@@ -60,14 +60,10 @@ export const MonthlyIncomeExpenseChart = (): ReactElement => {
     );
   }, [data, filter, fetching, setFiltersContext, error]);
 
-  const description = useMemo(() => {
-    const basicDescription = 'Total Income and Expense';
-    if (!data?.incomeExpenseChart) {
-      return basicDescription + ' per Month';
-    }
-
-    return `${basicDescription}, currency ${currencyCodeToSymbol(data.incomeExpenseChart.currency)}, ${format(new Date(data.incomeExpenseChart.fromDate), "MMM ''yy")} - ${format(new Date(data.incomeExpenseChart.toDate), "MMM ''yy")}`;
-  }, [data?.incomeExpenseChart]);
+  const basicDescription = 'Total Income and Expense';
+  const description = data?.incomeExpenseChart
+    ? `${basicDescription}, currency ${currencyCodeToSymbol(data.incomeExpenseChart.currency)}, ${format(new Date(data.incomeExpenseChart.fromDate), "MMM ''yy")} - ${format(new Date(data.incomeExpenseChart.toDate), "MMM ''yy")}`
+    : `${basicDescription} per Month`;
 
   return (
     <PageLayout title="Monthly Income / Expense Chart" description={description}>

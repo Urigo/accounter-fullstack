@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { profitLossArraySchema } from '../src/schemas/profit-and-loss';
+import { profitLossArraySchema } from '../src/schemas/profit-and-loss.js';
 
 // Valid profit and loss records example
 const validProfitLossRecords = [

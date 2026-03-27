@@ -120,7 +120,7 @@ export class PubsubService {
       this.historyId = historyId;
     } catch (err) {
       console.error(`[Gmail] Error handling push message:`, err);
-      throw new Error(`Error handling push message: ${err}`);
+      throw new Error(`Error handling push message: ${err}`, { cause: err });
     }
   }
 

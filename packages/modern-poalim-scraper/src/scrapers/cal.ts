@@ -111,7 +111,7 @@ async function login(credentials: CalCredentials, page: Page) {
     // Check if we successfully reached the dashboard
     const currentUrl = page.url();
     if (!currentUrl.includes('dashboard')) {
-      throw new Error('Login failed');
+      throw new Error('Login failed', { cause: e });
     }
   }
 }

@@ -204,7 +204,10 @@ export async function getMonthTransactions(
           }));
         } catch (error) {
           logger.error(`${accountKey} - Failed to get transactions: ${error}`);
-          throw new Error(`Failed to get transactions for ${nickname} ${format(month, 'MM-yyyy')}`);
+          throw new Error(
+            `Failed to get transactions for ${nickname} ${format(month, 'MM-yyyy')}`,
+            { cause: error },
+          );
         }
       },
     },
@@ -232,7 +235,7 @@ export async function getMonthTransactions(
           });
         } catch (error) {
           ctx.logger.error(`${accountKey} - Failed to save transactions: ${error}`);
-          throw new Error(`Failed to save transactions for ${accountKey}`);
+          throw new Error(`Failed to save transactions for ${accountKey}`, { cause: error });
         }
       },
     },

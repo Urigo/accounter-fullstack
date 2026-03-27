@@ -201,7 +201,7 @@ async function isTransactionNew(
     return true;
   } catch (error) {
     logger.error(error);
-    throw new Error('Failed to check if swift transaction is new');
+    throw new Error('Failed to check if swift transaction is new', { cause: error });
   }
 }
 
@@ -347,7 +347,7 @@ async function normalizeTransaction(
     return insertableTransaction;
   } catch (error) {
     logger.error(error);
-    throw new Error('Failed to normalize swift transaction');
+    throw new Error('Failed to normalize swift transaction', { cause: error });
   }
 }
 
@@ -410,7 +410,7 @@ export async function getSwiftTransactions(bankKey: string, account: ScrapedAcco
           }
         } catch (error) {
           ctx.logger.error(error);
-          throw new Error('Failed to insert swift transactions');
+          throw new Error('Failed to insert swift transactions', { cause: error });
         }
       },
     },

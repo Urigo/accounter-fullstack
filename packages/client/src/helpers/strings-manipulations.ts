@@ -24,7 +24,6 @@ export const stringComparer = (string1: string, string2: string): number => {
     if (identLength > longestMatch) {
       longestMatch = identLength;
     }
-    identLength = 0;
   }
 
   return longestMatch;

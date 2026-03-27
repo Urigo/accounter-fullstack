@@ -86,6 +86,7 @@ function validateSourceAggregation(
   } catch (error) {
     throw new Error(
       `Source charge ${charge.chargeId} failed validation: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 }

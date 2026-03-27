@@ -75,7 +75,7 @@ export const validateCharge = async (
   if (isGeneralFees || business?.no_invoices_required === true || charge.documents_optional_flag) {
     shouldHaveDocuments = false;
   }
-  let documentsAreFine = false;
+  let documentsAreFine: boolean;
   if (shouldHaveDocuments) {
     const documents = await injector
       .get(DocumentsProvider)

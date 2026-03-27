@@ -10,6 +10,6 @@ export const parseDate = (rawDate: string): Date => {
         throw new Error(`Unable to parse "${rawDate} into date"`);
     }
   } catch (e) {
-    throw new Error(`Error parsing date: cannot parse ${(e as Error)?.message || e}`);
+    throw new Error(`Error parsing date: cannot parse ${(e as Error)?.message || e}`, { cause: e });
   }
 };

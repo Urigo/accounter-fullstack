@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { padLeft, padRight } from '../../src/format/padding';
+import { padLeft, padRight } from '../../src/format/padding.js';
 
 describe('Padding utilities', () => {
   describe('padLeft', () => {

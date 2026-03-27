@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
 import {
   ChargesTableDescriptionFieldsFragmentDoc,
@@ -32,16 +32,10 @@ type Props = {
 export const Description = ({ data, onChange }: Props): ReactElement => {
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
   const charge = getFragmentData(ChargesTableDescriptionFieldsFragmentDoc, data);
-  const isError = useMemo(
-    () => charge?.validationData?.missingInfo?.includes(MissingChargeInfo.Description),
-    [charge?.validationData?.missingInfo],
-  );
-  const hasAlternative = useMemo(
-    () => isError && !!charge.missingInfoSuggestions?.description?.trim().length,
-    [isError, charge.missingInfoSuggestions?.description],
-  );
+  const isError = charge.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
+  const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
   const { userDescription, id: chargeId } = charge;
-  const cellText = useMemo(() => {
+  const cellText = (() => {
     if (userDescription && userDescription?.trim() !== '') {
       return userDescription;
     }
@@ -49,7 +43,7 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
       return charge.missingInfoSuggestions.description;
     }
     return 'Missing';
-  }, [userDescription, charge.missingInfoSuggestions?.description]);
+  })();
 
   const { updateCharge, fetching } = useUpdateCharge();
 

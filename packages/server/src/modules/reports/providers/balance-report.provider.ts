@@ -76,7 +76,7 @@ export class BalanceReportProvider {
     } catch (error) {
       const message = 'Failed to get balance transactions';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 }

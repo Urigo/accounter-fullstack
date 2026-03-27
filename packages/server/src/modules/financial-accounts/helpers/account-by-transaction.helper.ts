@@ -19,7 +19,7 @@ export async function getFinancialAccountByTransactionId(
     throw new Error(`Transaction ID="${transactionId}" is missing account_id`);
   }
 
-  let account: IGetFinancialAccountsByAccountIDsResult | undefined = undefined;
+  let account: IGetFinancialAccountsByAccountIDsResult | undefined;
   if (!!foreignSecuritiesBusinessId && transaction.business_id === foreignSecuritiesBusinessId) {
     const accounts = await injector
       .get(FinancialAccountsProvider)

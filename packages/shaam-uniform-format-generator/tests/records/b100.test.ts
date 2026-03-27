@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { B100Schema, encodeB100, parseB100, type B100 } from '../../src/generator/records/b100';
+import { B100Schema, encodeB100, parseB100, type B100 } from '../../src/generator/records/b100.js';
 
 describe('B100 Record', () => {
   const validB100: B100 = {

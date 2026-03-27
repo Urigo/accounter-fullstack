@@ -36,6 +36,6 @@ export const vatScraper = async (
 
     return reports;
   } catch (e) {
-    throw new Error(`VatScraper - ${(e as Error)?.message || e}`);
+    throw new Error(`VatScraper - ${(e as Error)?.message || e}`, { cause: e });
   }
 };

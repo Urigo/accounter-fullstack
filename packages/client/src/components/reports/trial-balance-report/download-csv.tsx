@@ -83,7 +83,5 @@ function handleSortCode(sortCode: ExtendedSortCode): string {
 }
 
 function sanitizeString(desc: string): string {
-  let itemDesc = '';
-  itemDesc = desc.replace(/"/g, '""');
-  return itemDesc;
+  return desc.replace(/"/g, '""');
 }

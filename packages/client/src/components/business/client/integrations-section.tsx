@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
   CircleSlash,
@@ -127,7 +127,10 @@ interface Props {
 
 export function IntegrationsSection({ data }: Props) {
   const [openSections, setOpenSections] = useState<string[]>([]);
-  const business = getFragmentData(ClientIntegrationsSectionFragmentDoc, data);
+  const business = useMemo(
+    () => getFragmentData(ClientIntegrationsSectionFragmentDoc, data),
+    [data],
+  );
   const integrations = business?.clientInfo?.integrations;
   const { updateClient } = useUpdateClient();
 

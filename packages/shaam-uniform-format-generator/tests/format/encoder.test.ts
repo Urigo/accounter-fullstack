@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { encodeFixedWidth, formatField } from '../../src/generator/format/encoder';
+import { encodeFixedWidth, formatField } from '../../src/generator/format/encoder.js';
 
 describe('Encoder utilities', () => {
   describe('formatField', () => {

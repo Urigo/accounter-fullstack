@@ -1,5 +1,5 @@
-import { parseReport } from '../../src/parsers';
-import { IndividualOrCompanyEnum } from '../../src/types';
+import { parseReport } from '../../src/parsers/index.js';
+import { IndividualOrCompanyEnum } from '../../src/types/index.js';
 
 describe('Integration Test: parseReport', () => {
   it('should correctly parse a valid company report', () => {

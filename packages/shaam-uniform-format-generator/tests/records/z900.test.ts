@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SHAAM_VERSION } from '../../src/constants';
-import { encodeZ900, parseZ900, Z900Schema, type Z900 } from '../../src/generator/records/z900';
+import { SHAAM_VERSION } from '../../src/constants.js';
+import { encodeZ900, parseZ900, Z900Schema, type Z900 } from '../../src/generator/records/z900.js';
 
 describe('Z900 Record', () => {
   const validZ900: Z900 = {

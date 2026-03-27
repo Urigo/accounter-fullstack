@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Merge } from 'lucide-react';
 import {
   Dialog,
@@ -19,14 +19,7 @@ export function MergeChargesButton(props: {
   const { selected, resetMerge } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
   const isMergeable = distinctIDs.size > 1;
-
-  const [variant, setVariant] = useState<'outline' | 'default'>(
-    isMergeable ? 'default' : 'outline',
-  );
-
-  useEffect(() => {
-    setVariant(isMergeable ? 'default' : 'outline');
-  }, [isMergeable]);
+  const variant = isMergeable ? 'default' : 'outline';
 
   const onDone = useCallback(() => {
     setOpen(false);

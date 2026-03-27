@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { balanceSheetArraySchema } from '../src/schemas/balance-sheet';
+import { balanceSheetArraySchema } from '../src/schemas/balance-sheet.js';
 
 // Valid balance sheet records example
 const validBalanceSheetRecords = [

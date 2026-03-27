@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateUniformFormatReport } from '../src/api/generate-report';
+import { generateUniformFormatReport } from '../src/api/generate-report.js';
 import type { ReportInput } from '../src/types';
 
 describe('Extended Journal Entry Schema', () => {

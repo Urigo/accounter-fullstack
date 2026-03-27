@@ -464,7 +464,7 @@ async function getKeyByValue(
     const conditions = object[key];
 
     for (const condition of conditions ?? []) {
-      let result = false;
+      let result: boolean;
 
       if (condition instanceof RegExp) {
         result = condition.test(value);
@@ -620,7 +620,7 @@ export async function max(page: Page, credentials: MaxCredentials, options: MaxO
     await login(page, credentials);
   } catch (e) {
     console.error(e);
-    throw new Error((e as Error).message);
+    throw new Error((e as Error).message, { cause: e });
   }
 
   return {
@@ -629,7 +629,7 @@ export async function max(page: Page, credentials: MaxCredentials, options: MaxO
         return await fetchTransactions(page, options);
       } catch (e) {
         console.error(e);
-        throw new Error((e as Error).message);
+        throw new Error((e as Error).message, { cause: e });
       }
     },
   };

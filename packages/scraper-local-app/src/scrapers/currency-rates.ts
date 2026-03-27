@@ -84,7 +84,7 @@ async function getDatabaseRates(pool: Pool, ctx: CurrencyRatesContext, logger: L
     return dbData;
   } catch (e) {
     logger.error(e);
-    throw new Error('Failed to get currency rates from DB');
+    throw new Error('Failed to get currency rates from DB', { cause: e });
   }
 }
 
@@ -135,7 +135,7 @@ async function getBoiRates(ctx: CurrencyRatesContext, logger: Logger) {
     return boiData;
   } catch (e) {
     logger.error(e);
-    throw new Error('Failed to fetch currency rates from BOI');
+    throw new Error('Failed to fetch currency rates from BOI', { cause: e });
   }
 }
 
