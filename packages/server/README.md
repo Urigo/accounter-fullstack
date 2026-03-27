@@ -1,5 +1,58 @@
 # @accounter-helper/server
 
+## Observability
+
+The server supports OpenTelemetry tracing export over OTLP/HTTP. Configuration is read from the
+repository-level `.env` file through [packages/server/src/environment.ts](src/environment.ts).
+
+### Environment Variables
+
+- `OTEL_ENABLED`: Enables tracing when set to `1`. Default: `0`.
+- `OTEL_SERVICE_NAME`: Service name attached to emitted spans. Default: `accounter-server`.
+- `OTEL_SERVICE_NAMESPACE`: Service namespace attached to emitted spans. Default: `accounter`.
+- `OTEL_DEPLOYMENT_ENV`: Deployment environment attribute. Defaults to `NODE_ENV` or `development`.
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: OTLP/HTTP trace endpoint. Required when `OTEL_ENABLED=1`.
+- `OTEL_EXPORTER_OTLP_HEADERS`: Optional comma-separated `key=value` header string for exporter auth
+  or tenant routing.
+- `OTEL_TRACES_SAMPLER`: Trace sampler strategy. Supported values: `parentbased_traceidratio`,
+  `always_on`, `always_off`. Default: `always_on`.
+- `OTEL_TRACES_SAMPLER_ARG`: Optional numeric ratio from `0` to `1` used with
+  `parentbased_traceidratio`.
+- `OTEL_STARTUP_STRICT`: Optional strict startup flag. When `true`, invalid OTEL startup causes the
+  server to fail fast. When omitted or `false`, the server logs and continues without tracing.
+
+### Local Tracing
+
+To enable tracing locally:
+
+1. Run a local OTLP-compatible backend such as Grafana Tempo or Jaeger all-in-one with OTLP/HTTP
+   enabled.
+2. Add the OTEL variables to the repository `.env` file.
+3. Set `OTEL_ENABLED=1` and point `OTEL_EXPORTER_OTLP_ENDPOINT` to the collector's HTTP ingest
+   endpoint.
+4. Start the server normally and execute a few GraphQL operations.
+5. Open your tracing UI and filter by service name `accounter-server`.
+
+Typical local endpoints:
+
+- Tempo via OTLP/HTTP: `http://localhost:4318/v1/traces`
+- Jaeger all-in-one with OTLP enabled: `http://localhost:4318/v1/traces`
+
+For local development, `OTEL_TRACES_SAMPLER=always_on` is the simplest option. For shared
+environments, prefer `parentbased_traceidratio` with a conservative ratio such as `0.1`.
+
+### Example `.env`
+
+```dotenv
+OTEL_ENABLED=1
+OTEL_SERVICE_NAME=accounter-server
+OTEL_SERVICE_NAMESPACE=accounter
+OTEL_DEPLOYMENT_ENV=development
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces
+OTEL_TRACES_SAMPLER=always_on
+OTEL_STARTUP_STRICT=false
+```
+
 ## Test Suites
 
 The test suite is split into three Vitest projects for efficiency and isolation:
