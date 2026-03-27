@@ -45,7 +45,7 @@ export const headerInfoToHeaderAndFooterStrings = (
         parsedHeader = headerTransformerSchema.parse(parsedHeader);
       } catch (e) {
         console.log(e);
-        throw new Error('Error auto-fixing header');
+        throw new Error('Error auto-fixing header', { cause: e });
       }
     }
 
@@ -56,7 +56,7 @@ export const headerInfoToHeaderAndFooterStrings = (
       footer: footerBuilder(validatedHeader),
     };
   } catch (e) {
-    throw new Error(`Header validation error: ${(e as Error).message}`);
+    throw new Error(`Header validation error: ${(e as Error).message}`, { cause: e });
   }
 };
 
@@ -94,7 +94,7 @@ export function transactionToString(transaction: Transaction, options: Options):
         parsedTransaction = transactionTransformerSchema.parse(parsedTransaction);
       } catch (e) {
         console.log(e);
-        throw new Error('Error auto-fixing transaction');
+        throw new Error('Error auto-fixing transaction', { cause: e });
       }
     }
 
@@ -104,6 +104,7 @@ export function transactionToString(transaction: Transaction, options: Options):
   } catch (e) {
     throw new Error(
       `Transaction validation error: ${(e as Error).message}\n\n${JSON.stringify(transaction)}`,
+      { cause: e },
     );
   }
 }

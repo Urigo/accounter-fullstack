@@ -21,7 +21,7 @@ export const uploadToCloudinary = async (injector: Injector, file: File | Blob) 
   } catch (e) {
     const message = 'Error on uploading file to cloudinary';
     console.error(`${message}: ${e}`);
-    throw new Error(message);
+    throw new Error(message, { cause: e });
   }
 };
 
@@ -200,6 +200,6 @@ export async function getDocumentFromFile(
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);
-    throw new Error(message);
+    throw new Error(message, { cause: e });
   }
 }

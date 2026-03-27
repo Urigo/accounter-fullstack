@@ -213,7 +213,7 @@ export class IssuedDocumentsProvider {
     } catch (e) {
       const message = 'Error fetching issued documents by client IDs';
       console.error(message, e);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 
@@ -240,7 +240,7 @@ export class IssuedDocumentsProvider {
     } catch (e) {
       const message = 'Error fetching issued documents status by charge IDs';
       console.error(message, e);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 

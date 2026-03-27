@@ -70,7 +70,7 @@ export class DeelClientProvider {
     } catch (error) {
       const message = 'Failed to fetch Deel payment receipts';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -101,7 +101,7 @@ export class DeelClientProvider {
     } catch (error) {
       const message = 'Failed to fetch Deel payment breakdown';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -162,7 +162,7 @@ export class DeelClientProvider {
     } catch (error) {
       const message = 'Failed to fetch Deel salary invoices';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -210,7 +210,7 @@ export class DeelClientProvider {
     } catch (error) {
       const message = 'Failed to fetch Deel invoice file';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 
@@ -253,7 +253,7 @@ export class DeelClientProvider {
     } catch (error) {
       const message = 'Failed to fetch Deel contract details';
       console.error(`${message}: ${error}`);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     }
   }
 }

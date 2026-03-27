@@ -44,7 +44,9 @@ export class Auth0ManagementProvider {
       return null;
     } catch (error) {
       console.error(`Failed to get Auth0 user by email ${email}:`, error);
-      throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`);
+      throw new Error(`Failed to get Auth0 user by email: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -90,7 +92,7 @@ export class Auth0ManagementProvider {
       return user.user_id;
     } catch (error) {
       console.error('Failed to create Auth0 user:', error);
-      throw new Error(`Failed to create Auth0 user: ${(error as Error).message}`);
+      throw new Error(`Failed to create Auth0 user: ${(error as Error).message}`, { cause: error });
     }
   }
 
@@ -100,7 +102,9 @@ export class Auth0ManagementProvider {
       await client.users.update(auth0UserId, { blocked: false });
     } catch (error) {
       console.error(`Failed to unblock Auth0 user ${auth0UserId}:`, error);
-      throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`);
+      throw new Error(`Failed to unblock Auth0 user: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
   async blockUser(auth0UserId: string): Promise<void> {
@@ -109,7 +113,7 @@ export class Auth0ManagementProvider {
       await client.users.update(auth0UserId, { blocked: true });
     } catch (error) {
       console.error(`Failed to block Auth0 user ${auth0UserId}:`, error);
-      throw new Error(`Failed to block Auth0 user: ${(error as Error).message}`);
+      throw new Error(`Failed to block Auth0 user: ${(error as Error).message}`, { cause: error });
     }
   }
   async deleteUser(auth0UserId: string): Promise<void> {
@@ -119,7 +123,7 @@ export class Auth0ManagementProvider {
       await client.users.delete(auth0UserId);
     } catch (error) {
       console.error(`Failed to delete Auth0 user ${auth0UserId}:`, error);
-      throw new Error(`Failed to delete Auth0 user: ${(error as Error).message}`);
+      throw new Error(`Failed to delete Auth0 user: ${(error as Error).message}`, { cause: error });
     }
   }
 
@@ -136,7 +140,9 @@ export class Auth0ManagementProvider {
       return ticket;
     } catch (error) {
       console.error('Failed to trigger password change', error);
-      throw new Error(`Failed to trigger password change: ${(error as Error).message}`);
+      throw new Error(`Failed to trigger password change: ${(error as Error).message}`, {
+        cause: error,
+      });
     }
   }
 

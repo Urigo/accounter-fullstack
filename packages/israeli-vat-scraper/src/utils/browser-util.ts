@@ -15,7 +15,7 @@ const nevigateYearToMonth = async (
 
     return;
   } catch (e) {
-    throw new Error(`nevigateYearToMonth - ${(e as Error)?.message}`);
+    throw new Error(`nevigateYearToMonth - ${(e as Error)?.message}`, { cause: e });
   }
 };
 
@@ -32,7 +32,7 @@ export const newPageByMonth = async (
 
     return page;
   } catch (e) {
-    throw new Error(`newPageByYear - ${(e as Error)?.message}`);
+    throw new Error(`newPageByYear - ${(e as Error)?.message}`, { cause: e });
   }
 };
 
@@ -48,7 +48,7 @@ export const navigateHomeToYear = async (
 
     return;
   } catch (e) {
-    throw new Error(`navigateHomeToYear - ${(e as Error)?.message}`);
+    throw new Error(`navigateHomeToYear - ${(e as Error)?.message}`, { cause: e });
   }
 };
 
@@ -64,7 +64,7 @@ export const newPageByYear = async (
 
     return page;
   } catch (e) {
-    throw new Error(`newPageByYear - ${(e as Error)?.message}`);
+    throw new Error(`newPageByYear - ${(e as Error)?.message}`, { cause: e });
   }
 };
 
@@ -89,6 +89,6 @@ export const newHomePage = async (showBrowser: boolean, logger: Logger): Promise
 
     return page;
   } catch (e) {
-    throw new Error(`newHomePage - ${(e as Error)?.message}`);
+    throw new Error(`newHomePage - ${(e as Error)?.message}`, { cause: e });
   }
 };

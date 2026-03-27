@@ -1,14 +1,19 @@
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import gitignore from 'eslint-config-flat-gitignore';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
+import { fixupConfigRules } from '@eslint/compat';
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import graphqlPlugin from '@graphql-eslint/eslint-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const guildBaseConfig = require('@theguild/eslint-config/base');
+const guildReactBaseConfig = require('@theguild/eslint-config/react-base');
 const compat = new FlatCompat({
   baseDirectory: __dirname,
   recommendedConfig: js.configs.recommended,
@@ -39,7 +44,9 @@ export default [
       '**/*.pdf',
     ],
   },
-  ...compat.extends('@theguild').map(replaceUnicornRules),
+  // @theguild entrypoint currently patches ESLint via @rushstack/eslint-patch,
+  // which fails on ESLint 10. Load equivalent base configs directly.
+  ...fixupConfigRules(compat.config(guildBaseConfig)).map(replaceUnicornRules),
   {
     languageOptions: {
       ecmaVersion: 5,
@@ -52,6 +59,7 @@ export default [
 
     rules: {
       'no-console': 1,
+      'import/no-default-export': 'off',
     },
   },
   {
@@ -201,7 +209,7 @@ export default [
       ],
     },
   },
-  ...compat.extends('@theguild/eslint-config/react').map(config => {
+  ...fixupConfigRules(compat.config(guildReactBaseConfig)).map(config => {
     return {
       ...replaceUnicornRules(config),
       files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
@@ -214,6 +222,9 @@ export default [
       globals: {
         ...globals.browser,
       },
+    },
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   {
@@ -230,6 +241,26 @@ export default [
     rules: {
       'unicorn/filename-case': 0,
       'promise/no-nesting': 1,
+    },
+  },
+  {
+    files: ['packages/migrations/**/*.cjs', 'packages/server/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ['*.config.mjs', 'eslint.config.mjs', 'prettier.config.mjs'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
     },
   },
   {

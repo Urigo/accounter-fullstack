@@ -73,7 +73,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
       });
       setSimilarChargesOpen(true);
     },
-    [chargeId, updateCharge],
+    [chargeId, updateCharge, setSimilarChargesOpen],
   );
 
   return (

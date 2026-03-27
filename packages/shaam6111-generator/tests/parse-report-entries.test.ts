@@ -1,4 +1,4 @@
-import { parseReportEntries } from '../src/parsers/parse-report-entries';
+import { parseReportEntries } from '../src/parsers/parse-report-entries.js';
 
 describe('parseReportEntries', () => {
   // Test for valid profit and loss entries

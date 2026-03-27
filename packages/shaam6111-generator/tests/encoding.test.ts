@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromWindows1255, toWindows1255 } from '../src/utils/encoding';
+import { fromWindows1255, toWindows1255 } from '../src/utils/encoding.js';
 
 describe('Windows-1255 Encoding Tests', () => {
   // Basic functionality tests

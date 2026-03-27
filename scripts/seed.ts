@@ -372,7 +372,7 @@ async function createAdminBusinessContext(
     financialEntities.push(...res.rows);
   } catch (e) {
     console.error('Failed to create financial entities:', e);
-    throw new Error('Failed to create financial entities');
+    throw new Error('Failed to create financial entities', { cause: e });
   }
 
   if (financialEntities.length === 0) {
@@ -395,7 +395,7 @@ async function createAdminBusinessContext(
     }
   } catch (e) {
     console.error('Failed to create businesses:', e);
-    throw new Error('Failed to create businesses');
+    throw new Error('Failed to create businesses', { cause: e });
   }
   console.log('✅ Required businesses created successfully');
 
@@ -414,7 +414,7 @@ async function createAdminBusinessContext(
     }
   } catch (e) {
     console.error('Failed to create tax categories:', e);
-    throw new Error('Failed to create tax categories');
+    throw new Error('Failed to create tax categories', { cause: e });
   }
   console.log('✅ Required tax categories created successfully');
 
@@ -432,7 +432,7 @@ async function createAdminBusinessContext(
     tags.push(...res.rows);
   } catch (e) {
     console.error('Failed to create tags:', e);
-    throw new Error('Failed to create tags');
+    throw new Error('Failed to create tags', { cause: e });
   }
   console.log('✅ Required tags created successfully');
 
@@ -441,7 +441,7 @@ async function createAdminBusinessContext(
     type: 'tag' | 'business' | 'tax_category',
     nullable: T = false as T,
   ): R {
-    let id: string | null = null;
+    let id: string | null;
     if (type === 'tag') {
       id = tags.find(tag => tag.name === name)?.id ?? null;
     } else {
@@ -549,7 +549,7 @@ async function createAdminBusinessContext(
       `);
   } catch (e) {
     console.error('Failed to create context:', e);
-    throw new Error('Failed to create context');
+    throw new Error('Failed to create context', { cause: e });
   }
   console.log('✅ Admin business context created successfully');
 }

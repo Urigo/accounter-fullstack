@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { taxAdjustmentArraySchema } from '../src/schemas/tax-adjustment';
+import { taxAdjustmentArraySchema } from '../src/schemas/tax-adjustment.js';
 
 // Valid tax adjustment records example
 const validTaxAdjustmentRecords = [

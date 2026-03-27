@@ -38,7 +38,7 @@ import {
   type RecordType,
   type SoftwareType,
   type TrialBalanceCode,
-} from '../../src/types/enums';
+} from '../../src/types/enums.js';
 
 describe('SHAAM Format Enums', () => {
   describe('DocumentTypeEnum', () => {

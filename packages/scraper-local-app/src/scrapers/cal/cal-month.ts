@@ -225,6 +225,7 @@ export async function getMonthTransactions(
           logger.error(`CAL ${accountKey} - Failed to get transactions: ${error}`);
           throw new Error(
             `Failed to get transactions for CAL ${accountKey} ${format(month, 'MM-yyyy')}`,
+            { cause: error },
           );
         }
       },
@@ -248,7 +249,7 @@ export async function getMonthTransactions(
           });
         } catch (error) {
           ctx.logger.error(`${accountKey} - Failed to save transactions: ${error}`);
-          throw new Error(`Failed to save transactions for ${accountKey}`);
+          throw new Error(`Failed to save transactions for ${accountKey}`, { cause: error });
         }
       },
     },

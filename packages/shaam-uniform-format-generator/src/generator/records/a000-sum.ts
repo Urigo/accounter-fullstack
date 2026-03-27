@@ -56,17 +56,13 @@ export function parseA000Sum(line: string): A000Sum {
     );
   }
 
-  let offset = 0;
-
   // Extract fields at their fixed positions
-  const code = cleanLine.slice(offset, offset + 4).trim();
-  offset += 4; // Field 1050 (4)
+  const code = cleanLine.slice(0, 4).trim(); // Field 1050 (4)
   const recordCount =
     cleanLine
-      .slice(offset, offset + 15)
+      .slice(4, 19) // Field 1051 (15)
       .trim()
       .replace(/^0+/, '') || '0';
-  offset += 15; // Field 1051 (15)
 
   const parsed: A000Sum = {
     code,

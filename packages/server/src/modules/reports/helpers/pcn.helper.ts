@@ -33,7 +33,6 @@ export const getHeaderDataFromRecords = (
   let otherInputsVat = 0;
   let equipmentInputsVat = 0;
   let inputsCount = 0;
-  let totalVat = 0;
 
   for (const t of transactions) {
     const invoiceSumFactor = t.invoiceSum >= 0 ? 1 : -1;
@@ -87,7 +86,7 @@ export const getHeaderDataFromRecords = (
     }
   }
 
-  totalVat = taxableSalesVat - otherInputsVat - equipmentInputsVat;
+  const totalVat = taxableSalesVat - otherInputsVat - equipmentInputsVat;
 
   const header: Header = {
     licensedDealerId,

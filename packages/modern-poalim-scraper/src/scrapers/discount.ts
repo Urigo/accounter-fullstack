@@ -93,13 +93,13 @@ async function login(credentials: DiscountCredentials, page: Page) {
     // Check if login failed
     const errorElement = await page.$('#general-error');
     if (errorElement) {
-      throw new Error('Login failed');
+      throw new Error('Login failed', { cause: e });
     }
 
     // Check if we successfully reached the dashboard
     const currentUrl = page.url();
     if (!currentUrl.includes('MY_ACCOUNT_HOMEPAGE')) {
-      throw new Error('Login failed');
+      throw new Error('Login failed', { cause: e });
     }
   }
 }

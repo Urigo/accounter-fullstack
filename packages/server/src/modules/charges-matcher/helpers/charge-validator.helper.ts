@@ -1,4 +1,3 @@
-import { DocumentType } from '../../../shared/enums.js';
 import { isAccountingDocument, isReceipt } from '../../documents/helpers/common.helper.js';
 import type { Document, Transaction } from '../types.js';
 

@@ -39,6 +39,6 @@ export const login = async (page: Page, logger: Logger): Promise<void> => {
 
     return;
   } catch (e) {
-    throw new Error(`login - ${(e as Error)?.message || e}`);
+    throw new Error(`login - ${(e as Error)?.message || e}`, { cause: e });
   }
 };

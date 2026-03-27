@@ -95,7 +95,7 @@ export class DeelContractsProvider {
     } catch (e) {
       const message = `Error inserting Deel contract [${params.contractId}]`;
       console.error(`${message}: ${e}`);
-      throw new Error(message);
+      throw new Error(message, { cause: e });
     }
   }
 }

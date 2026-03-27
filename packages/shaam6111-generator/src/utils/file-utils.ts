@@ -17,7 +17,7 @@ export function convertReportToFile(
   validate: boolean = true,
 ): File {
   // If report is a ReportData object, convert it to a string
-  let reportString = '';
+  let reportString: string;
   if (typeof report === 'string') {
     if (validate) {
       validateReport(report);
@@ -32,7 +32,9 @@ export function convertReportToFile(
   try {
     encodedReport = toWindows1255(reportString);
   } catch (error) {
-    throw new Error(`Failed to encode report to Windows-1255: ${(error as Error).message}`);
+    throw new Error(`Failed to encode report to Windows-1255: ${(error as Error).message}`, {
+      cause: error,
+    });
   }
 
   // Create and return a File object with .dat extension
@@ -60,7 +62,9 @@ export async function readReportFromFile(
   try {
     reportString = fromWindows1255(buffer);
   } catch (error) {
-    throw new Error(`Failed to decode report from Windows-1255: ${(error as Error).message}`);
+    throw new Error(`Failed to decode report from Windows-1255: ${(error as Error).message}`, {
+      cause: error,
+    });
   }
 
   if (parseToObject) {

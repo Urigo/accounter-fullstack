@@ -1,4 +1,4 @@
-import { parseHeaderRecord } from '../src/parsers/parse-header';
+import { parseHeaderRecord } from '../src/parsers/parse-header.js';
 import {
   AccountingMethod,
   AccountingSystem,
@@ -6,7 +6,7 @@ import {
   CurrencyType,
   ReportingMethod,
   YesNo,
-} from '../src/types';
+} from '../src/types/index.js';
 
 describe('parseHeaderRecord', () => {
   // Test for valid header line

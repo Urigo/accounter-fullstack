@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Download } from 'lucide-react';
 import { useQuery } from 'urql';
 import { YearPickerInput } from '@mantine/dates';
@@ -91,7 +91,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     return total;
   }, [data?.annualRevenueReport.countries]);
 
-  const downloadCSV = useCallback(() => {
+  const downloadCSV = () => {
     const rows: string[] = [];
 
     // Header
@@ -135,7 +135,7 @@ export const AnnualRevenueReport = (): ReactElement => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [data, year]);
+  };
 
   useEffect(() => {
     setFiltersContext(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, type ReactElement } from 'react';
 import { Merge } from 'lucide-react';
 import { Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
@@ -14,14 +14,7 @@ export function MergeBusinessesButton(props: {
   const { selected, resetMerge } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
   const isMergeable = distinctIDs.size >= 1;
-
-  const [variant, setVariant] = useState<'default' | 'outline'>(
-    isMergeable ? 'default' : 'outline',
-  );
-
-  useEffect(() => {
-    setVariant(isMergeable ? 'default' : 'outline');
-  }, [isMergeable]);
+  const variant = isMergeable ? 'default' : 'outline';
 
   const onDone = useCallback(() => {
     close();
