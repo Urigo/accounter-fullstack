@@ -5,6 +5,21 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_NAMESPACE } from '@opentelemetry/semant
 import { env } from '../environment.js';
 
 const ATTR_DEPLOYMENT_ENVIRONMENT_NAME = 'deployment.environment.name';
+const HEALTH_CHECK_PATHS = new Set(['/health', '/ready', '/readiness']);
+
+function shouldIgnoreIncomingRequest(url: string | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+
+  try {
+    const pathname = new URL(url, 'http://localhost').pathname;
+    return HEALTH_CHECK_PATHS.has(pathname);
+  } catch {
+    const pathname = url.split('?')[0] ?? '';
+    return HEALTH_CHECK_PATHS.has(pathname);
+  }
+}
 
 /**
  * Parses an OTLP header string of the form "key1=value1,key2=value2" into a
@@ -95,6 +110,18 @@ export function buildOtelSdk(): NodeSDK | null {
     resource,
     traceExporter,
     sampler,
-    instrumentations: [getNodeAutoInstrumentations()],
+    instrumentations: [
+      getNodeAutoInstrumentations({
+        '@opentelemetry/instrumentation-fs': {
+          enabled: false,
+        },
+        '@opentelemetry/instrumentation-http': {
+          ignoreIncomingRequestHook: request => shouldIgnoreIncomingRequest(request.url),
+        },
+        '@opentelemetry/instrumentation-graphql': {
+          enabled: true,
+        },
+      }),
+    ],
   });
 }

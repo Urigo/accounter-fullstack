@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { buildOtelSdk } from '../builder.js';
 
 // Prevent dotenv from loading any .env file during tests
@@ -167,6 +168,24 @@ describe('buildOtelSdk', () => {
 
       const [sdkConfig] = MockNodeSDK.mock.calls[0];
       expect(sdkConfig.instrumentations).toContain(mockInstrumentationBundle);
+    });
+
+    it('configures fs/http/graphql auto-instrumentations', () => {
+      buildOtelSdk();
+
+      expect(getNodeAutoInstrumentations).toHaveBeenCalledWith(
+        expect.objectContaining({
+          '@opentelemetry/instrumentation-fs': expect.objectContaining({
+            enabled: false,
+          }),
+          '@opentelemetry/instrumentation-http': expect.objectContaining({
+            ignoreIncomingRequestHook: expect.any(Function),
+          }),
+          '@opentelemetry/instrumentation-graphql': expect.objectContaining({
+            enabled: true,
+          }),
+        }),
+      );
     });
 
     // ---- sampler selection ----

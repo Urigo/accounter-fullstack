@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { createYoga } from 'graphql-yoga';
+import { createYoga, useReadinessCheck } from 'graphql-yoga';
 import pg from 'pg';
 import { shutdownTelemetry, startTelemetry } from './telemetry/index.js';
 import 'reflect-metadata';
@@ -97,6 +97,15 @@ async function main() {
         enabled: !!env.hive,
         token: env.hive?.hiveToken ?? '',
         usage: !!env.hive,
+      }),
+      useReadinessCheck({
+        check: async () => {
+          const isHealthy = await dbProvider.healthCheck();
+          if (!isHealthy) {
+            throw new Error('Database health check failed');
+          }
+          return isHealthy;
+        },
       }),
     ],
     context: (yogaContext): AccounterContext => {
