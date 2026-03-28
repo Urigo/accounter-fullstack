@@ -81,7 +81,7 @@ export class FiatExchangeProvider {
   public getExchangeRatesByDatesLoader = new DataLoader(
     (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
     {
-      cacheKeyFn: key => `exchange-${dateToTimelessDateString(key)}`,
+      cacheKeyFn: key => dateToTimelessDateString(key),
       cacheMap: this.cache,
     },
   );
