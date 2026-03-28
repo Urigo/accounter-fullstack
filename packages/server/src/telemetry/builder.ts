@@ -121,6 +121,9 @@ export function buildOtelSdk(): NodeSDK | null {
         '@opentelemetry/instrumentation-graphql': {
           enabled: true,
         },
+        '@opentelemetry/instrumentation-pg': {
+          enhancedDatabaseReporting: false,
+        },
       }),
     ],
   });
