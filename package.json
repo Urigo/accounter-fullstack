@@ -11,7 +11,7 @@
   },
   "packageManager": "yarn@4.13.0",
   "engines": {
-    "node": "24.14.0"
+    "node": "24.14.1"
   },
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
@@ -70,7 +70,7 @@
     "@types/pg": "8.20.0",
     "@typescript-eslint/eslint-plugin": "8.57.2",
     "@typescript-eslint/parser": "8.57.2",
-    "@vitest/coverage-v8": "4.1.0",
+    "@vitest/coverage-v8": "4.1.2",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.2.1",
     "dotenv": "17.3.1",
@@ -87,7 +87,7 @@
     "eslint-plugin-unicorn": "63.0.0",
     "glob": "13.0.6",
     "globals": "17.4.0",
-    "graphql": "16.13.1",
+    "graphql": "16.13.2",
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
     "pg": "8.20.0",
@@ -98,11 +98,11 @@
     "tsx": "4.21.0",
     "typescript": "5.9.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.0"
+    "vitest": "4.1.2"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^48.10.3": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch",
-    "graphql": "16.13.1"
+    "graphql": "16.13.2"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
