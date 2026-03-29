@@ -1,26 +1,13 @@
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
-import {
-  ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM,
-  AnnualAuditFlowFilters,
-  encodeAnnualAuditFlowFilters,
-  type AnnualAuditFlowFilter,
-} from './annual-audit-filters.js';
 // Import step components
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
@@ -29,77 +16,104 @@ import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
+import { YearPicker } from './year-picker.js';
 
-export function getAnnualAuditFlowHref(filter?: AnnualAuditFlowFilter | null): string {
-  const params = new URLSearchParams();
-
-  const annualAuditFlowFilters = encodeAnnualAuditFlowFilters(filter);
-  if (annualAuditFlowFilters) {
-    // Add it as a single encoded parameter
-    params.append(ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM, annualAuditFlowFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/workflows/annual-audit${queryParams}`;
-}
-
-export const AnnualAuditFlow = (): ReactElement => {
+export const AnnualAuditFlow = (): ReactNode => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
   const adminBusinessId = userContext?.context.adminBusinessId;
 
-  const { get } = useUrlQuery();
-  const initialFilters = useMemo(() => {
-    const defaultFilters: AnnualAuditFlowFilter = {
-      year: new Date().getFullYear() - 1,
-    };
-    const uriFilters = get(ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM);
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as AnnualAuditFlowFilter;
-      } catch (error) {
-        console.error('Failed to parse filters from URI:', error);
-      }
+  const { year: yearFromUrl } = useParams<{ year: string }>();
+  const navigate = useNavigate();
+  const currentFullYear = new Date().getFullYear();
+  const defaultYear = currentFullYear - 1;
+  const parsedYear = yearFromUrl ? Number(yearFromUrl) : defaultYear;
+  const isValidYear =
+    !Number.isNaN(parsedYear) && parsedYear >= 2000 && parsedYear <= currentFullYear;
+  const year = isValidYear ? parsedYear : defaultYear;
+  useEffect(() => {
+    if (!isValidYear) {
+      navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(defaultYear), { replace: true });
     }
-    return defaultFilters;
-  }, [get]);
-  const [filter, setFilter] = useState<AnnualAuditFlowFilter>(initialFilters);
+  }, [isValidYear, navigate, defaultYear]);
+
+  const changeYear = useCallback(
+    (newYear: number) => {
+      if (newYear !== year) {
+        navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(newYear));
+      }
+    },
+    [year, navigate],
+  );
 
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <AnnualAuditFlowFilters filter={filter} setFilter={setFilter} />
+        <YearPicker value={year} onChange={changeYear} />
       </div>,
     );
-  }, [filter, setFiltersContext, setFilter]);
+  }, [year, setFiltersContext, changeYear]);
 
   const totalSteps = 21;
 
   // Track step statuses to avoid double counting
   const stepStatusesRef = useRef<Map<string, StepStatus>>(new Map());
   const [completedSteps, setCompletedSteps] = useState(0);
+  const [step7Status, setStep7Status] = useState<StepStatus>('pending');
 
-  const handleStatusChange = useCallback((stepId: string, status: StepStatus) => {
-    const previousStatus = stepStatusesRef.current.get(stepId);
-
-    // Only update if status actually changed
-    if (previousStatus !== status) {
-      stepStatusesRef.current.set(stepId, status);
-
-      // Recalculate completed steps count
-      const completedCount = Array.from(stepStatusesRef.current.values()).filter(
-        s => s === 'completed',
-      ).length;
-
-      setCompletedSteps(completedCount);
+  const calculateStep7Status = useCallback(() => {
+    const step1Status = stepStatusesRef.current.get('1');
+    const step2Status = stepStatusesRef.current.get('2');
+    const step7NewStatus =
+      step1Status === 'completed' && step2Status === 'completed' ? 'completed' : 'pending';
+    const step7CurrentStatus = stepStatusesRef.current.get('7');
+    if (step7CurrentStatus === step7NewStatus) {
+      // No change in status, do nothing
+      return;
     }
+    stepStatusesRef.current.set('7', step7NewStatus);
+    setStep7Status(step7NewStatus);
   }, []);
+
+  const handleStatusChange = useCallback(
+    (stepId: string, status: StepStatus) => {
+      const previousStatus = stepStatusesRef.current.get(stepId);
+
+      // Only update if status actually changed
+      if (previousStatus !== status) {
+        stepStatusesRef.current.set(stepId, status);
+
+        // Recalculate completed steps count
+        const completedCount = Array.from(stepStatusesRef.current.values()).filter(
+          s => s === 'completed',
+        ).length;
+
+        setCompletedSteps(completedCount);
+      }
+
+      if (stepId === '1' || stepId === '2') {
+        calculateStep7Status();
+      }
+    },
+    [calculateStep7Status],
+  );
 
   const progressPercentage = (completedSteps / totalSteps) * 100;
 
+  const step1Ref = useRef<HTMLDivElement>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    calculateStep7Status();
+  }, [calculateStep7Status]);
+
+  if (!isValidYear) {
+    return null;
+  }
+
   return (
     <PageLayout
-      title={`Annual Audit Flow - ${filter.year}`}
+      title={`Annual Audit Flow - ${year}`}
       description="Complete audit process for annual financial reporting and compliance"
     >
       <div className="container mx-auto p-6 max-w-6xl">
@@ -129,7 +143,8 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 1 - Charges Validation */}
           <Step01ValidateCharges
             id="1"
-            year={filter.year}
+            ref={step1Ref}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Validate All Charges"
             description="Ensure all charges of the year were reviewed, handle pending charges"
@@ -139,7 +154,8 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 2 - Pending Ledger Changes */}
           <Step02LedgerChanges
             id="2"
-            year={filter.year}
+            ref={step2Ref}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Check Pending Ledger Changes"
             description="Ensure no pending ledger changes exist"
@@ -149,7 +165,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 3 - Opening Balance Verification */}
           <Step03OpeningBalance
             id="3"
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Verify Opening Balance"
             description="Handle opening balance verification based on user type"
@@ -163,7 +179,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             description="Create various financial charges and reserves"
             icon={<Calculator className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
           />
 
@@ -205,9 +221,26 @@ export const AnnualAuditFlow = (): ReactElement => {
             description="Ensure no charges approval or ledger regeneration pending"
             icon={<Eye className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
+            defaultStatus={step7Status}
             actions={[
-              { label: 'Check Pending Approvals', href: '/approvals/pending' },
-              { label: 'Ledger Status', href: '/ledger/status' },
+              {
+                label: 'Check Pending Approvals',
+                onClick: () => {
+                  step1Ref.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                },
+              },
+              {
+                label: 'Ledger Status',
+                onClick: () => {
+                  step2Ref.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                },
+              },
             ]}
           />
 
@@ -216,7 +249,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             id="8"
             title="Lock Ledger"
             description="Lock ledger by records and by date"
-            year={filter.year}
+            year={year}
             icon={<Lock className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
           />

@@ -481,8 +481,9 @@ export const routes: RouteObject[] = [
                     element: withSuspense(TaxReport, <ReportSkeleton />),
                     handle: {
                       title: 'Tax Report',
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loader data type varies by route
-                      breadcrumb: (data: any) => data?.year || 'Year',
+                      breadcrumb: (data: { year?: string }) => {
+                        return data?.year || 'Year';
+                      },
                     },
                   },
                 ],
@@ -533,8 +534,7 @@ export const routes: RouteObject[] = [
                     element: withSuspense(CorporateTaxRulingComplianceReport, <ReportSkeleton />),
                     handle: {
                       title: 'Corporate Tax Ruling Compliance Report',
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- loader data type varies by route
-                      breadcrumb: (data: any) => data?.year || 'Year',
+                      breadcrumb: (data: { year?: string }) => data?.year || 'Year',
                     },
                   },
                 ],
@@ -565,11 +565,25 @@ export const routes: RouteObject[] = [
             children: [
               {
                 path: 'annual-audit',
-                element: withSuspense(AnnualAudit),
                 handle: {
-                  title: 'Annual Audit',
                   breadcrumb: 'Annual Audit',
                 },
+                children: [
+                  {
+                    index: true,
+                    element: withSuspense(AnnualAudit),
+                    handle: { title: 'Annual Audit' },
+                  },
+                  {
+                    path: ':year',
+                    element: withSuspense(AnnualAudit),
+                    handle: {
+                      title: (data: { year?: string }) =>
+                        data?.year ? `${data.year} Annual Audit` : 'Annual Audit',
+                      breadcrumb: (data: { year?: string }) => data?.year || '',
+                    },
+                  },
+                ],
               },
             ],
           },

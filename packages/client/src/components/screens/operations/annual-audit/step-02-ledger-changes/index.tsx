@@ -32,21 +32,22 @@ interface Step02Props extends BaseStepProps {
 export function Step02LedgerChanges(props: Step02Props) {
   const [status, setStatus] = useState<StepStatus>('blocked');
   const [pendingChanges, setPendingChanges] = useState<number>(Infinity);
+  const { year, adminBusinessId, onStatusChange, id } = props;
 
   const [{ data, fetching }, fetchStatus] = useQuery({
     query: LedgerValidationStatusDocument,
     variables: {
       filters: {
-        byOwners: props.adminBusinessId ? [props.adminBusinessId] : [],
-        fromAnyDate: `${props.year}-01-01` as TimelessDateString,
-        toAnyDate: `${props.year}-12-31` as TimelessDateString,
+        byOwners: adminBusinessId ? [adminBusinessId] : [],
+        fromAnyDate: `${year}-01-01` as TimelessDateString,
+        toAnyDate: `${year}-12-31` as TimelessDateString,
       },
     },
     pause: true,
   });
 
   useEffect(() => {
-    if (!data && !fetching && props.adminBusinessId) {
+    if (!data && !fetching && adminBusinessId) {
       fetchStatus();
     }
   });
@@ -57,10 +58,10 @@ export function Step02LedgerChanges(props: Step02Props) {
 
   // Report status changes to parent
   useEffect(() => {
-    if (props.onStatusChange) {
-      props.onStatusChange(props.id, status);
+    if (onStatusChange) {
+      onStatusChange(id, status);
     }
-  }, [status, props.onStatusChange, props.id]);
+  }, [status, onStatusChange, id]);
 
   useEffect(() => {
     if (data?.chargesWithLedgerChanges) {
@@ -79,15 +80,15 @@ export function Step02LedgerChanges(props: Step02Props) {
 
   const href = useMemo(() => {
     return getLedgerValidationHref({
-      byOwners: props.adminBusinessId ? [props.adminBusinessId] : undefined,
-      fromAnyDate: `${props.year}-01-01` as TimelessDateString,
-      toAnyDate: `${props.year}-12-31` as TimelessDateString,
+      byOwners: adminBusinessId ? [adminBusinessId] : undefined,
+      fromAnyDate: `${year}-01-01` as TimelessDateString,
+      toAnyDate: `${year}-12-31` as TimelessDateString,
       sortBy: {
         field: ChargeSortByField.Date,
         asc: false,
       },
     });
-  }, [props.adminBusinessId, props.year]);
+  }, [adminBusinessId, year]);
 
   const actions: StepAction[] = [{ label: 'View Ledger Status', href }];
 
@@ -99,7 +100,7 @@ export function Step02LedgerChanges(props: Step02Props) {
       actions={actions}
     >
       {pendingChanges > 0 && (
-        <CardContent className="pt-0 border-t">
+        <CardContent className="pt-3 border-t">
           {fetching ? (
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-pulse">
               <Settings className="h-4 w-4 text-gray-400" />

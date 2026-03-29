@@ -216,7 +216,7 @@ export function Step01ValidateCharges(props: Step01Props) {
                     <div className="w-3 h-3 bg-green-500 rounded-full" />
                     <div>
                       <div className="font-medium text-green-700">
-                        Approved ({chargeData.approvedPercentage}%)
+                        Approved ({chargeData.approvedPercentage.toFixed(2)}%)
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {chargeData.approvedCount.toLocaleString()} charges
@@ -228,7 +228,7 @@ export function Step01ValidateCharges(props: Step01Props) {
                     <div className="w-3 h-3 bg-orange-500 rounded-full" />
                     <div>
                       <div className="font-medium text-orange-700">
-                        Pending ({chargeData.pendingPercentage}%)
+                        Pending ({chargeData.pendingPercentage.toFixed(2)}%)
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {chargeData.pendingCount.toLocaleString()} charges
@@ -240,7 +240,7 @@ export function Step01ValidateCharges(props: Step01Props) {
                     <div className="w-3 h-3 bg-red-500 rounded-full" />
                     <div>
                       <div className="font-medium text-red-700">
-                        Unapproved ({chargeData.unapprovedPercentage}%)
+                        Unapproved ({chargeData.unapprovedPercentage.toFixed(2)}%)
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {chargeData.unapprovedCount.toLocaleString()} charges

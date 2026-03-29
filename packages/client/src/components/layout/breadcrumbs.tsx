@@ -26,7 +26,7 @@ export function Breadcrumbs(): ReactElement {
       const handle = match.handle as RouteHandle;
       const title =
         typeof handle.breadcrumb === 'function'
-          ? handle.breadcrumb(match.data)
+          ? handle.breadcrumb(match.params)
           : handle.breadcrumb || 'Page';
 
       return {
