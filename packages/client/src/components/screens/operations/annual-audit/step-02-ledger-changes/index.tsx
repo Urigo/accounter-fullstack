@@ -101,7 +101,7 @@ export function Step02LedgerChanges(props: Step02Props) {
       actions={actions}
     >
       {pendingChanges > 0 && (
-        <CardContent className="pt-0 border-t">
+        <CardContent className="pt-3 border-t">
           {fetching ? (
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200 animate-pulse">
               <Settings className="h-4 w-4 text-gray-400" />

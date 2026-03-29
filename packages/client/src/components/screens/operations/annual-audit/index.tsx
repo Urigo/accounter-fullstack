@@ -1,26 +1,14 @@
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, type ReactElement } from 'react';
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
-import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ROUTES } from '@/router/routes.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
-import {
-  ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM,
-  AnnualAuditFlowFilters,
-  encodeAnnualAuditFlowFilters,
-  type AnnualAuditFlowFilter,
-} from './annual-audit-filters.js';
+import { YearPicker } from './annual-audit-filters.js';
 // Import step components
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
@@ -30,48 +18,39 @@ import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
 
-export function getAnnualAuditFlowHref(filter?: AnnualAuditFlowFilter | null): string {
-  const params = new URLSearchParams();
-
-  const annualAuditFlowFilters = encodeAnnualAuditFlowFilters(filter);
-  if (annualAuditFlowFilters) {
-    // Add it as a single encoded parameter
-    params.append(ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM, annualAuditFlowFilters);
-  }
-
-  const queryParams = params.size > 0 ? `?${params}` : '';
-  return `/workflows/annual-audit${queryParams}`;
-}
-
 export const AnnualAuditFlow = (): ReactElement => {
+  const { year: yearFromUrl } = useParams<{ year: string }>();
+  const year = yearFromUrl ? Number(yearFromUrl) : new Date().getFullYear() - 1;
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
+  const navigate = useNavigate();
   const adminBusinessId = userContext?.context.adminBusinessId;
 
-  const { get } = useUrlQuery();
-  const initialFilters = useMemo(() => {
-    const defaultFilters: AnnualAuditFlowFilter = {
-      year: new Date().getFullYear() - 1,
-    };
-    const uriFilters = get(ANNUAL_AUDIT_FLOW_FILTERS_QUERY_PARAM);
-    if (uriFilters) {
-      try {
-        return JSON.parse(decodeURIComponent(uriFilters)) as AnnualAuditFlowFilter;
-      } catch (error) {
-        console.error('Failed to parse filters from URI:', error);
+  if (
+    !yearFromUrl ||
+    Number.isNaN(Number(yearFromUrl)) ||
+    Number(yearFromUrl) < 2000 ||
+    Number(yearFromUrl) > new Date().getFullYear()
+  ) {
+    navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(year), { replace: true });
+  }
+
+  const changeYear = useCallback(
+    (newYear: number) => {
+      if (newYear !== year) {
+        navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(newYear));
       }
-    }
-    return defaultFilters;
-  }, [get]);
-  const [filter, setFilter] = useState<AnnualAuditFlowFilter>(initialFilters);
+    },
+    [year, navigate],
+  );
 
   useEffect(() => {
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <AnnualAuditFlowFilters filter={filter} setFilter={setFilter} />
+        <YearPicker value={year} onChange={changeYear} />
       </div>,
     );
-  }, [filter, setFiltersContext, setFilter]);
+  }, [year, setFiltersContext, changeYear]);
 
   const totalSteps = 21;
 
@@ -128,7 +107,7 @@ export const AnnualAuditFlow = (): ReactElement => {
 
   return (
     <PageLayout
-      title={`Annual Audit Flow - ${filter.year}`}
+      title={`Annual Audit Flow - ${year}`}
       description="Complete audit process for annual financial reporting and compliance"
     >
       <div className="container mx-auto p-6 max-w-6xl">
@@ -159,7 +138,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           <Step01ValidateCharges
             id="1"
             ref={step1Ref}
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Validate All Charges"
             description="Ensure all charges of the year were reviewed, handle pending charges"
@@ -170,7 +149,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           <Step02LedgerChanges
             id="2"
             ref={step2Ref}
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Check Pending Ledger Changes"
             description="Ensure no pending ledger changes exist"
@@ -180,7 +159,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 3 - Opening Balance Verification */}
           <Step03OpeningBalance
             id="3"
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
             title="Verify Opening Balance"
             description="Handle opening balance verification based on user type"
@@ -194,7 +173,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             description="Create various financial charges and reserves"
             icon={<Calculator className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            year={filter.year}
+            year={year}
             adminBusinessId={adminBusinessId}
           />
 
@@ -264,7 +243,7 @@ export const AnnualAuditFlow = (): ReactElement => {
             id="8"
             title="Lock Ledger"
             description="Lock ledger by records and by date"
-            year={filter.year}
+            year={year}
             icon={<Lock className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
           />

@@ -140,7 +140,8 @@ export const ROUTES = {
 
   WORKFLOWS: {
     ROOT: '/workflows',
-    ANNUAL_AUDIT: '/workflows/annual-audit',
+    ANNUAL_AUDIT: (year?: number) =>
+      year ? `/workflows/annual-audit/${year}` : '/workflows/annual-audit',
   },
 
   ACCOUNTANT_APPROVALS: '/accountant-approvals',
