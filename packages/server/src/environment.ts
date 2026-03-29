@@ -140,6 +140,76 @@ const GeneralModel = zod.object({
   FRONTEND_URL: zod.url().optional(),
 });
 
+const OtelModel = zod
+  .object({
+    OTEL_ENABLED: emptyString(
+      zod
+        .union([zod.literal('1'), zod.literal('0')])
+        .optional()
+        .default('0'),
+    ),
+    OTEL_SERVICE_NAME: emptyString(zod.string().optional().default('accounter-server')),
+    OTEL_SERVICE_NAMESPACE: emptyString(zod.string().optional().default('accounter')),
+    OTEL_DEPLOYMENT_ENV: emptyString(
+      zod
+        .string()
+        .optional()
+        .default(process.env.NODE_ENV ?? 'development'),
+    ),
+    OTEL_EXPORTER_OTLP_ENDPOINT: emptyString(zod.string().optional()),
+    OTEL_EXPORTER_OTLP_HEADERS: emptyString(zod.string().optional()),
+    OTEL_TRACES_SAMPLER: emptyString(
+      zod
+        .enum([
+          'parentbased_traceidratio',
+          'always_on',
+          'always_off',
+          'traceidratio',
+          'parentbased_always_on',
+          'parentbased_always_off',
+        ])
+        .optional()
+        .default('always_on'),
+    ),
+    OTEL_TRACES_SAMPLER_ARG: emptyString(zod.string().optional()),
+    OTEL_STARTUP_STRICT: emptyString(
+      zod.union([zod.literal('true'), zod.literal('false')]).optional(),
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.OTEL_ENABLED === '1' && !data.OTEL_EXPORTER_OTLP_ENDPOINT) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OTEL_EXPORTER_OTLP_ENDPOINT'],
+        message: 'OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_ENABLED is "1".',
+      });
+    }
+
+    const usesRatioSampler =
+      data.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
+      data.OTEL_TRACES_SAMPLER === 'traceidratio';
+
+    if (usesRatioSampler) {
+      if (data.OTEL_TRACES_SAMPLER_ARG === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['OTEL_TRACES_SAMPLER_ARG'],
+          message:
+            'OTEL_TRACES_SAMPLER_ARG is required when OTEL_TRACES_SAMPLER is a ratio sampler ("traceidratio" or "parentbased_traceidratio").',
+        });
+      } else {
+        const num = Number(data.OTEL_TRACES_SAMPLER_ARG);
+        if (!Number.isFinite(num) || num < 0 || num > 1) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['OTEL_TRACES_SAMPLER_ARG'],
+            message: 'OTEL_TRACES_SAMPLER_ARG must be a numeric string between 0 and 1.',
+          });
+        }
+      }
+    }
+  });
+
 const Auth0Model = zod.union([
   zod.object({
     AUTH0_DOMAIN: zod.string().min(1),
@@ -172,6 +242,7 @@ const configs = {
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
+  otel: OtelModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -205,6 +276,7 @@ const gmail = extractConfig(configs.gmail);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
 const general = extractConfig(configs.general);
+const otel = extractConfig(configs.otel);
 
 export const env = {
   postgres: {
@@ -271,5 +343,21 @@ export const env = {
     : undefined,
   general: {
     frontendUrl: general?.FRONTEND_URL,
+  },
+  otel: {
+    enabled: otel.OTEL_ENABLED === '1',
+    serviceName: otel.OTEL_SERVICE_NAME,
+    serviceNamespace: otel.OTEL_SERVICE_NAMESPACE,
+    deploymentEnv: otel.OTEL_DEPLOYMENT_ENV,
+    exporterEndpoint: otel.OTEL_EXPORTER_OTLP_ENDPOINT,
+    exporterHeaders: otel.OTEL_EXPORTER_OTLP_HEADERS,
+    tracesSampler: otel.OTEL_TRACES_SAMPLER,
+    tracesSamplerArg:
+      (otel.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
+        otel.OTEL_TRACES_SAMPLER === 'traceidratio') &&
+      otel.OTEL_TRACES_SAMPLER_ARG !== undefined
+        ? Number(otel.OTEL_TRACES_SAMPLER_ARG)
+        : undefined,
+    startupStrict: otel.OTEL_STARTUP_STRICT === 'true',
   },
 } as const;

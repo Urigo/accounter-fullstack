@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
-import { createYoga } from 'graphql-yoga';
+import { createYoga, useReadinessCheck } from 'graphql-yoga';
 import pg from 'pg';
+import { shutdownTelemetry, startTelemetry } from './telemetry/index.js';
 import 'reflect-metadata';
 import { useSchema } from '@envelop/core';
 import { useGraphQLModules } from '@envelop/graphql-modules';
@@ -22,6 +23,8 @@ const CLEANUP_SCHEDULE_HOUR_UTC = 2;
 const CLEANUP_SCHEDULE_MINUTE_UTC = 0;
 
 async function main() {
+  await startTelemetry();
+
   // Create a shared connection pool for the entire application
   const pool = new Pool({
     user: env.postgres.user,
@@ -95,6 +98,15 @@ async function main() {
         token: env.hive?.hiveToken ?? '',
         usage: !!env.hive,
       }),
+      useReadinessCheck({
+        check: async () => {
+          const isHealthy = await dbProvider.healthCheck();
+          if (!isHealthy) {
+            throw new Error('Database health check failed');
+          }
+          return isHealthy;
+        },
+      }),
     ],
     context: (yogaContext): AccounterContext => {
       return {
@@ -143,6 +155,12 @@ async function main() {
       await pool.end();
     } catch (e) {
       process.stderr.write(`[shutdown] Error while closing DB pool ${String(e)}\n`);
+    }
+
+    try {
+      await shutdownTelemetry();
+    } catch (e) {
+      process.stderr.write(`[shutdown] Error while shutting down telemetry ${String(e)}\n`);
     } finally {
       clearTimeout(forceExitTimer);
       process.exit(exitCode);
