@@ -78,24 +78,53 @@ export const AnnualAuditFlow = (): ReactElement => {
   // Track step statuses to avoid double counting
   const stepStatusesRef = useRef<Map<string, StepStatus>>(new Map());
   const [completedSteps, setCompletedSteps] = useState(0);
+  const [step7Status, setStep7Status] = useState<StepStatus>('pending');
 
-  const handleStatusChange = useCallback((stepId: string, status: StepStatus) => {
-    const previousStatus = stepStatusesRef.current.get(stepId);
-
-    // Only update if status actually changed
-    if (previousStatus !== status) {
-      stepStatusesRef.current.set(stepId, status);
-
-      // Recalculate completed steps count
-      const completedCount = Array.from(stepStatusesRef.current.values()).filter(
-        s => s === 'completed',
-      ).length;
-
-      setCompletedSteps(completedCount);
+  const calculateStep7Status = useCallback(() => {
+    const step1Status = stepStatusesRef.current.get('1');
+    const step2Status = stepStatusesRef.current.get('2');
+    const step7NewStatus =
+      step1Status === 'completed' && step2Status === 'completed' ? 'completed' : 'pending';
+    const step7CurrentStatus = stepStatusesRef.current.get('7');
+    if (step7CurrentStatus === step7NewStatus) {
+      // No change in status, do nothing
+      return;
     }
+    stepStatusesRef.current.set('7', step7NewStatus);
+    setStep7Status(step7NewStatus);
   }, []);
 
+  const handleStatusChange = useCallback(
+    (stepId: string, status: StepStatus) => {
+      const previousStatus = stepStatusesRef.current.get(stepId);
+
+      // Only update if status actually changed
+      if (previousStatus !== status) {
+        stepStatusesRef.current.set(stepId, status);
+
+        // Recalculate completed steps count
+        const completedCount = Array.from(stepStatusesRef.current.values()).filter(
+          s => s === 'completed',
+        ).length;
+
+        setCompletedSteps(completedCount);
+      }
+
+      if (stepId === '1' || stepId === '2') {
+        calculateStep7Status();
+      }
+    },
+    [calculateStep7Status],
+  );
+
   const progressPercentage = (completedSteps / totalSteps) * 100;
+
+  const step1Ref = useRef<HTMLDivElement>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    calculateStep7Status();
+  }, [calculateStep7Status]);
 
   return (
     <PageLayout
@@ -129,6 +158,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 1 - Charges Validation */}
           <Step01ValidateCharges
             id="1"
+            ref={step1Ref}
             year={filter.year}
             adminBusinessId={adminBusinessId}
             title="Validate All Charges"
@@ -139,6 +169,7 @@ export const AnnualAuditFlow = (): ReactElement => {
           {/* Step 2 - Pending Ledger Changes */}
           <Step02LedgerChanges
             id="2"
+            ref={step2Ref}
             year={filter.year}
             adminBusinessId={adminBusinessId}
             title="Check Pending Ledger Changes"
@@ -205,9 +236,26 @@ export const AnnualAuditFlow = (): ReactElement => {
             description="Ensure no charges approval or ledger regeneration pending"
             icon={<Eye className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
+            defaultStatus={step7Status}
             actions={[
-              { label: 'Check Pending Approvals', href: '/approvals/pending' },
-              { label: 'Ledger Status', href: '/ledger/status' },
+              {
+                label: 'Check Pending Approvals',
+                onClick: () => {
+                  step1Ref.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                },
+              },
+              {
+                label: 'Ledger Status',
+                onClick: () => {
+                  step2Ref.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                  });
+                },
+              },
             ]}
           />
 

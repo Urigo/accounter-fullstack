@@ -10,6 +10,7 @@ export type StepStatus = 'completed' | 'in-progress' | 'pending' | 'blocked' | '
 
 export interface BaseStepProps {
   id: string;
+  ref?: React.RefObject<HTMLDivElement | null>;
   title: string;
   description?: string;
   icon?: ReactNode;
@@ -71,6 +72,7 @@ interface BaseStepCardProps extends BaseStepProps {
 
 export function BaseStepCard({
   id,
+  ref,
   title,
   description,
   icon,
@@ -84,7 +86,10 @@ export function BaseStepCard({
   disabled = false,
 }: BaseStepCardProps) {
   return (
-    <div className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''} relative`}>
+    <div
+      ref={ref}
+      className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''} relative`}
+    >
       <Card className="mb-4">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

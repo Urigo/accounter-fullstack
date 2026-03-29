@@ -22,6 +22,10 @@ export default function SimpleStep({
 }: SimpleStepProps) {
   const [status, setStatus] = useState<StepStatus>(fetchStatus ? 'loading' : defaultStatus);
 
+  useEffect(() => {
+    setStatus(defaultStatus);
+  }, [defaultStatus]);
+
   // Report status changes to parent
   useEffect(() => {
     if (onStatusChange) {
