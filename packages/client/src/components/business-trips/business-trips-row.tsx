@@ -7,7 +7,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
-import { EditableBusinessTrip } from './editable-business-trip.jsx';
+import { EditableBusinessTrip } from './editable-business-trip.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

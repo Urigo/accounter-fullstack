@@ -14,7 +14,7 @@ import {
 import {
   ModifyContractDialog,
   type ContractFormValues,
-} from '../../clients/contracts/modify-contract-dialog.jsx';
+} from '../../clients/contracts/modify-contract-dialog.js';
 import { IssueDocumentFromContractModal } from './issue-document-from-contract-button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

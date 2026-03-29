@@ -2,15 +2,15 @@ import { useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
 import type { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
 import { useAddSortCode } from '../../../hooks/use-add-sort-code.js';
-import { Button } from '../../ui/button.jsx';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../ui/dialog.jsx';
-import { Form } from '../../ui/form.jsx';
+} from '../../ui/dialog.js';
+import { Form } from '../../ui/form.js';
 import { ModifySortCodeFields } from '../forms/index.js';
 import type { EditSortCodeVariables } from './edit-sort-code.js';
 

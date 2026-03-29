@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 import type { AddSortCodeMutationVariables } from '../../../gql/graphql.js';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.jsx';
-import { Input } from '../../ui/input.jsx';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { Input } from '../../ui/input.js';
 import { NumberInput } from '../index.js';
 import type { EditSortCodeVariables } from '../modals/edit-sort-code.js';
 

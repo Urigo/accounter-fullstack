@@ -8,8 +8,8 @@ import {
   TableDocumentsRowFieldsFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData } from '../../../../gql/index.js';
-import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
+import { columns, type DocumentsTableRowType } from '../../../documents-table/columns.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../ui/table.jsx';
+} from '../../../ui/table.js';
 import { EditDocumentModal } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

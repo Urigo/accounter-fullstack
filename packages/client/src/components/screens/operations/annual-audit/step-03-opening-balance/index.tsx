@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { Calculator } from 'lucide-react';
 import { ROUTES } from '@/router/routes.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
-import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.jsx';
+import { BalanceChargeModal } from '../../../../common/modals/balance-charge-modal.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
+import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
 interface UserType {
   type: 'new' | 'migrating' | 'continuing';

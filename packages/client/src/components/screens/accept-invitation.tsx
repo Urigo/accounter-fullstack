@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useAcceptInvitation } from '@/hooks/use-accept-invitation.js';
 import { ROUTES } from '@/router/routes.js';
-import { Button } from '../ui/button.jsx';
+import { Button } from '../ui/button.js';
 
 export function AcceptInvitationPage(): ReactElement {
   const { token } = useParams<{ token: string }>();

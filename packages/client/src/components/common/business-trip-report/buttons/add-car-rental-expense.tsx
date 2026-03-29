@@ -16,7 +16,7 @@ import {
 } from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
 import { Tooltip } from '../../index.js';
-import { AddExpenseFields } from './add-expense-fields.jsx';
+import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddCarRentalExpense(props: {
   businessTripId: string;

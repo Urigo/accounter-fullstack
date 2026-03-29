@@ -3,10 +3,10 @@
 import React, { useEffect, type ComponentProps } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { Button } from '../../ui/button.jsx';
-import { Calendar } from '../../ui/calendar.jsx';
-import { Input } from '../../ui/input.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.jsx';
+import { Button } from '../../ui/button.js';
+import { Calendar } from '../../ui/calendar.js';
+import { Input } from '../../ui/input.js';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
 function formatDate(date: Date | undefined) {
   if (!date) {

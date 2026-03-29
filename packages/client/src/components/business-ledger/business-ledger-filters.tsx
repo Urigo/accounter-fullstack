@@ -9,9 +9,9 @@ import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { UserContext } from '../../providers/user-provider.jsx';
+import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
-import { Button } from '../ui/button.jsx';
+import { Button } from '../ui/button.js';
 
 export function encodeLedgerRecordsFilters(
   filter?: BusinessTransactionsFilter | null,

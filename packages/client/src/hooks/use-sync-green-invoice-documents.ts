@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { NewDocumentsList } from '../components/common/new-documents-list.jsx';
+import { NewDocumentsList } from '../components/common/new-documents-list.js';
 import {
   SyncGreenInvoiceDocumentsDocument,
   type SyncGreenInvoiceDocumentsMutation,

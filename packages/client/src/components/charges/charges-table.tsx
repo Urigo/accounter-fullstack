@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { ChargesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { ChargesTableRow } from './charges-row.jsx';
+import { ChargesTableRow } from './charges-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

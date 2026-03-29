@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { getAuth0ErrorMessage, isNetworkError } from '../../lib/auth0-errors.js';
 import { ROUTES } from '../../router/routes.js';
-import { Button } from '../ui/button.jsx';
+import { Button } from '../ui/button.js';
 
 const MAX_NETWORK_RETRY_ATTEMPTS = 2;
 const NETWORK_RETRY_DELAY_MS = 750;

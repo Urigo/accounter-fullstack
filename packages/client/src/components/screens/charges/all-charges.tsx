@@ -7,7 +7,7 @@ import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
 import { ChargesTable } from '../../charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
-import { PageLayout } from '../../layout/page-layout.jsx';
+import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

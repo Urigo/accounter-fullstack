@@ -2,7 +2,7 @@ import { type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { TableMiscExpensesFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.jsx';
+import { DeleteMiscExpenseButton } from '../../common/buttons/delete-misc-expense-button.js';
 import { EditMiscExpenseModal } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

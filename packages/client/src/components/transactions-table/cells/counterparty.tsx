@@ -5,9 +5,9 @@ import { ROUTES } from '@/router/routes.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
 import { SelectWithSearch, Tooltip } from '../../common/index.js';
-import { InsertBusiness } from '../../common/modals/insert-business.jsx';
-import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.jsx';
-import { Button } from '../../ui/button.jsx';
+import { InsertBusiness } from '../../common/modals/insert-business.js';
+import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
+import { Button } from '../../ui/button.js';
 import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {

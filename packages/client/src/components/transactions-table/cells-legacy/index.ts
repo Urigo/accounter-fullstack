@@ -1,6 +1,6 @@
-export { DebitDate } from './debit-date.jsx';
-export { EventDate } from './event-date.jsx';
-export { Account } from './account.jsx';
-export { Description } from './description.jsx';
-export { SourceID } from './source-id.jsx';
-export { Counterparty } from './counterparty.jsx';
+export { DebitDate } from './debit-date.js';
+export { EventDate } from './event-date.js';
+export { Account } from './account.js';
+export { Description } from './description.js';
+export { SourceID } from './source-id.js';
+export { Counterparty } from './counterparty.js';

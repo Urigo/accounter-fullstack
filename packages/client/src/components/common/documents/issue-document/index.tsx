@@ -11,8 +11,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { useIssueDocument } from '../../../../hooks/use-issue-document.js';
 import { usePreviewDocument } from '../../../../hooks/use-preview-document.js';
-import { Button } from '../../../ui/button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
+import { Button } from '../../../ui/button.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import {
   EditIssuedDocumentForm,
   getDocumentTypeOptions,

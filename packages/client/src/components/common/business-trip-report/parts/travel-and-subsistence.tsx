@@ -4,7 +4,7 @@ import { BusinessTripReportTravelAndSubsistenceFieldsFragmentDoc } from '../../.
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { AddTravelAndSubsistenceExpense } from '../buttons/add-travel-and-subsistence-expense.js';
 import { CoreExpenseHeader } from './core-expense-row.js';
-import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.jsx';
+import { TravelAndSubsistenceRow } from './travel-and-subsistence-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

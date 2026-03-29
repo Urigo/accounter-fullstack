@@ -16,7 +16,7 @@ import {
 } from '../../../ui/form.js';
 import { Input } from '../../../ui/input.js';
 import { Tooltip } from '../../index.js';
-import { AddExpenseFields } from './add-expense-fields.jsx';
+import { AddExpenseFields } from './add-expense-fields.js';
 
 export function AddTravelAndSubsistenceExpense(props: {
   businessTripId: string;

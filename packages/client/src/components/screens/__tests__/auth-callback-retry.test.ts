@@ -3,7 +3,7 @@ import { retryWithBackoff } from '../auth-callback.js';
 
 // auth-callback.tsx imports Button, which in turn pulls in Radix/UI and DOM-dependent code.
 // In this non-jsdom Node test environment, mock Button so those dependencies are never loaded.
-vi.mock('../../ui/button.jsx', () => ({}));
+vi.mock('../../ui/button.js', () => ({}));
 
 // isNetworkError (from auth0-errors) uses `error.error === 'network_error'` or message
 // keywords 'network' / 'fetch'.  We replicate the same pattern in our test helpers.

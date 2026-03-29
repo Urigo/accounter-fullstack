@@ -74,7 +74,7 @@ const MonthlyIncomeExpenseChart = lazy(() =>
 
 // Documents
 const DocumentsReport = lazy(() =>
-  import('../components/screens/documents/all-documents/index.jsx').then(m => ({
+  import('../components/screens/documents/all-documents/index.js').then(m => ({
     default: m.DocumentsReport,
   })),
 );
