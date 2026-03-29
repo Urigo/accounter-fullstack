@@ -13,14 +13,8 @@ import { Currency, type GenerateBalanceChargeMutationVariables } from '../../../
 import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGenerateBalanceCharge } from '../../../hooks/use-balance-charge.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
-import { Button } from '../../ui/button.jsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../ui/dialog.jsx';
+import { Button } from '../../ui/button.js';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
 import { CurrencyInput } from '../index.js';

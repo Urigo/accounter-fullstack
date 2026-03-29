@@ -4,7 +4,7 @@ import { Burger, Menu, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
-import { Depreciation } from '../common/depreciation/index.jsx';
+import { Depreciation } from '../common/depreciation/index.js';
 import {
   ConfirmationModal,
   EditChargeModal,
@@ -14,7 +14,7 @@ import {
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
-import { Dialog, DialogContent } from '../ui/dialog.jsx';
+import { Dialog, DialogContent } from '../ui/dialog.js';
 
 interface ChargeActionsMenuProps {
   chargeId: string;

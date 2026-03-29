@@ -3,7 +3,7 @@ import { Trash } from 'lucide-react';
 import { useDeleteDepreciationRecord } from '../../../hooks/use-delete-depreciation-record.js';
 import { Button } from '../../ui/button.js';
 import { Tooltip } from '../index.js';
-import { ConfirmationModal } from '../modals/confirmation-modal.jsx';
+import { ConfirmationModal } from '../modals/confirmation-modal.js';
 
 export function DeleteDepreciationRecord(props: {
   depreciationRecordId: string;

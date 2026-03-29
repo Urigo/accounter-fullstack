@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import type { DocumentsTableRowType } from '../columns.jsx';
+import type { DocumentsTableRowType } from '../columns.js';
 
 type Props = {
   document: DocumentsTableRowType;

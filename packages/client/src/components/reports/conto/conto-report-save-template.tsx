@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { NodeModel } from '@minoru/react-dnd-treeview';
 import { useInsertDynamicReportTemplate } from '../../../hooks/use-insert-dynamic-report-template.js';
 import { Tooltip } from '../../common/index.js';
-import { Button } from '../../ui/button.jsx';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../ui/dialog.jsx';
+} from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import type { CustomData } from './types.js';

@@ -13,7 +13,7 @@ import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';
 import { ToggleExpansionButton, Tooltip } from '../../index.js';
-import { DeleteAttendee } from '../buttons/delete-attendee.jsx';
+import { DeleteAttendee } from '../buttons/delete-attendee.js';
 import { AccommodationsTable } from './accommodations-table.js';
 import { FlightsTable } from './flights-table.js';
 

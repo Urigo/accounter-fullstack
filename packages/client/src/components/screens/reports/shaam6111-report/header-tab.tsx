@@ -12,8 +12,8 @@ import {
   Shaam6111DataContentHeaderFragmentDoc,
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
-import { TabsContent } from '../../../ui/tabs.jsx';
-import { DataField } from './data-field.jsx';
+import { TabsContent } from '../../../ui/tabs.js';
+import { DataField } from './data-field.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

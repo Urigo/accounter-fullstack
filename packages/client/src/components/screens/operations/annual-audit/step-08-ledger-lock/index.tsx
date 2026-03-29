@@ -6,7 +6,7 @@ import { useLedgerLock } from '@/hooks/use-ledger-lock.js';
 import { UserContext } from '@/providers/user-provider.js';
 import { AdminLedgerLockDateDocument } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
-import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
+import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

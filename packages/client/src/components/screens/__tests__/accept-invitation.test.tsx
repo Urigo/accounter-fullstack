@@ -46,7 +46,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-vi.mock('../../ui/button.jsx', () => ({
+vi.mock('../../ui/button.js', () => ({
   Button: ({ children, ...props }: React.ComponentProps<'button'>) =>
     React.createElement('button', props, children),
 }));

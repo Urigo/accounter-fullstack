@@ -2,9 +2,9 @@ import { type ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportFlightsTableFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
-import { AddFlightExpense } from '../buttons/add-flight-expense.jsx';
-import { CoreExpenseHeader } from './core-expense-row.jsx';
-import { FlightsRow } from './flights-row.jsx';
+import { AddFlightExpense } from '../buttons/add-flight-expense.js';
+import { CoreExpenseHeader } from './core-expense-row.js';
+import { FlightsRow } from './flights-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -17,7 +17,7 @@ const { buttonClickMode } = vi.hoisted(() => ({
   buttonClickMode: { clickRetryOnRender: false },
 }));
 
-vi.mock('../../ui/button.jsx', () => ({
+vi.mock('../../ui/button.js', () => ({
   Button: ({ children, onClick, ...props }: React.ComponentProps<'button'>) => {
     if (buttonClickMode.clickRetryOnRender && children === 'Try Again') {
       onClick?.({} as never);

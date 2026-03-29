@@ -4,7 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { AUTH0_ERROR_MESSAGES } from '../lib/auth0-errors.js';
 import { clearStoredAuth0Session } from '../lib/auth0-session.js';
 import { ROUTES } from '../router/routes.js';
-import { Button } from './ui/button.jsx';
+import { Button } from './ui/button.js';
 
 export function LoginPage(): ReactElement {
   const { loginWithRedirect, isAuthenticated, isLoading } = useAuth0();

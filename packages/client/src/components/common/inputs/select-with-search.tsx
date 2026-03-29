@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CheckIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
-import { Button } from '../../ui/button.jsx';
+import { Button } from '../../ui/button.js';
 import {
   Command,
   CommandEmpty,
@@ -9,8 +9,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '../../ui/command.jsx';
-import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.jsx';
+} from '../../ui/command.js';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
 function SelectWithSearch({
   options,

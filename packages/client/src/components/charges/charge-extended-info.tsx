@@ -29,15 +29,15 @@ import { DocumentsTable } from '../documents-table/index.js';
 import { LedgerTable } from '../ledger-table/index.js';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion.js';
 import { Button } from '../ui/button.js';
-import { ChargeErrors } from './charge-errors.jsx';
-import { ChargeTransactionsTable } from './charge-transactions-table.jsx';
+import { ChargeErrors } from './charge-errors.js';
+import { ChargeTransactionsTable } from './charge-transactions-table.js';
 import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
 import { ChargeMatches } from './extended-info/charge-matches.js';
-import { ConversionInfo } from './extended-info/conversion-info.jsx';
-import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.jsx';
+import { ConversionInfo } from './extended-info/conversion-info.js';
+import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
 import { ExchangeRates } from './extended-info/exchange-rates.js';
-import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.jsx';
-import { SalariesTable } from './extended-info/salaries-info.jsx';
+import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.js';
+import { SalariesTable } from './extended-info/salaries-info.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

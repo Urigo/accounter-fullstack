@@ -7,7 +7,7 @@ import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { PageLayout } from '../../layout/page-layout.js';
-import { ReportCommentaryRow } from '../shared/report-commentary-row.jsx';
+import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { ProfitAndLossReportFilter } from './profit-and-loss-report-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

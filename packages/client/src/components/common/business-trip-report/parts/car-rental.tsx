@@ -2,9 +2,9 @@ import type { ReactElement } from 'react';
 import { Table } from '@mantine/core';
 import { BusinessTripReportCarRentalFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
-import { AddCarRentalExpense } from '../buttons/add-car-rental-expense.jsx';
-import { CarRentalRow } from './car-rental-row.jsx';
-import { CoreExpenseHeader } from './core-expense-row.jsx';
+import { AddCarRentalExpense } from '../buttons/add-car-rental-expense.js';
+import { CarRentalRow } from './car-rental-row.js';
+import { CoreExpenseHeader } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

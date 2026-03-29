@@ -26,14 +26,14 @@ import {
   PopUpModal,
   UploadDocumentsModal,
 } from '../../../common/index.js';
-import { PageLayout } from '../../../layout/page-layout.jsx';
-import { Button } from '../../../ui/button.jsx';
+import { PageLayout } from '../../../layout/page-layout.js';
+import { Button } from '../../../ui/button.js';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '../../../ui/dropdown-menu.jsx';
+} from '../../../ui/dropdown-menu.js';
 import {
   Table,
   TableBody,
@@ -41,8 +41,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../../ui/table.jsx';
-import { DocumentsFilters } from './documents-filters.jsx';
+} from '../../../ui/table.js';
+import { DocumentsFilters } from './documents-filters.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

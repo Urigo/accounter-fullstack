@@ -7,7 +7,7 @@ import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../g
 import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { Tooltip } from '../../common/index.js';
-import { PageLayout } from '../../layout/page-layout.jsx';
+import { PageLayout } from '../../layout/page-layout.js';
 import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
 import { RuleCell } from './rule-cell.js';

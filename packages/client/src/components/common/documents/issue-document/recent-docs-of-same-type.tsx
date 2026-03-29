@@ -2,8 +2,8 @@
 
 import { useQuery } from 'urql';
 import { DocumentType, RecentIssuedDocumentsOfSameTypeDocument } from '../../../../gql/graphql.js';
-import { DocumentsTable } from '../../../documents-table/index.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.jsx';
+import { DocumentsTable } from '../../../documents-table/index.js';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

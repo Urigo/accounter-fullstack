@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { flexRender, type Row } from '@tanstack/react-table';
 import { ToggleExpansionButton } from '../common/index.js';
-import { TableCell, TableRow } from '../ui/table.jsx';
+import { TableCell, TableRow } from '../ui/table.js';
 import type { ChargeMatchRow } from './index.js';
 import { ChargeMatchesRowExtensions } from './row-extension.js';
 

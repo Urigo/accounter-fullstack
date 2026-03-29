@@ -8,11 +8,11 @@ import {
 import { ROUTES } from '@/router/routes.js';
 import { AnnualFinancialChargesDocument } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
-import { Badge } from '../../../../ui/badge.jsx';
-import { Button } from '../../../../ui/button.jsx';
-import { CardContent } from '../../../../ui/card.jsx';
+import { Badge } from '../../../../ui/badge.js';
+import { Button } from '../../../../ui/button.js';
+import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.jsx';
+import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

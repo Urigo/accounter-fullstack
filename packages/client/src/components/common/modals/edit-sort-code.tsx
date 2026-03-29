@@ -10,15 +10,15 @@ import {
 } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/index.js';
 import { useUpdateSortCode } from '../../../hooks/use-update-sort-code.js';
-import { Button } from '../../ui/button.jsx';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../ui/dialog.jsx';
-import { Form } from '../../ui/form.jsx';
+} from '../../ui/dialog.js';
+import { Form } from '../../ui/form.js';
 import { ModifySortCodeFields } from '../forms/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

@@ -9,14 +9,14 @@ import {
   type UpdateTaxCategoryInput,
 } from '../../../gql/graphql.js';
 import { useUpdateTaxCategory } from '../../../hooks/use-update-tax-category.js';
-import { Button } from '../../ui/button.jsx';
+import { Button } from '../../ui/button.js';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../ui/dialog.jsx';
+} from '../../ui/dialog.js';
 import { Form } from '../../ui/form.js';
 import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js';
 

@@ -15,7 +15,7 @@ import { Switch } from '../../../ui/switch.js';
 import { Tooltip } from '../../index.js';
 import { CategorizeIntoExistingExpense } from '../buttons/categorize-into-existing-expense.js';
 import { DeleteBusinessTripExpense } from '../buttons/delete-business-trip-expense.js';
-import { CoreExpenseRow } from './core-expense-row.jsx';
+import { CoreExpenseRow } from './core-expense-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

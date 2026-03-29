@@ -3,7 +3,7 @@ import { Table } from '@mantine/core';
 import { ReportCommentaryTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ToggleExpansionButton } from '../../common/index.js';
-import { ReportSubCommentaryRow } from './report-sub-commentary-row.jsx';
+import { ReportSubCommentaryRow } from './report-sub-commentary-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

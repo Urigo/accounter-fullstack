@@ -26,7 +26,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '../../ui/accordion.jsx';
+} from '../../ui/accordion.js';
 import {
   Dialog,
   DialogContent,
@@ -35,9 +35,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '../../ui/dialog.jsx';
-import { Input } from '../../ui/input.jsx';
-import { Label } from '../../ui/label.jsx';
+} from '../../ui/dialog.js';
+import { Input } from '../../ui/input.js';
+import { Label } from '../../ui/label.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

@@ -9,7 +9,7 @@ import {
   ToggleExpansionButton,
   ToggleMergeSelected,
 } from '../../../common/index.js';
-import { AccountantApproval } from '../cells/accountant-approval.jsx';
+import { AccountantApproval } from '../cells/accountant-approval.js';
 import { getRecordTypeName } from '../utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
