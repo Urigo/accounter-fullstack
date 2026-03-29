@@ -17,9 +17,7 @@ export function ToggleExpansionButton(props: {
         onClick={event => {
           event.stopPropagation();
           toggleExpansion(i => {
-            if (onClickAction) {
-              onClickAction(i);
-            }
+            onClickAction?.(i);
             return !i;
           });
         }}
