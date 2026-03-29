@@ -585,15 +585,6 @@ export const routes: RouteObject[] = [
                   },
                 ],
               },
-              {
-                path: ':year',
-                element: withSuspense(AnnualAudit),
-                handle: {
-                  title: (data: { year?: string }) =>
-                    data?.year ? `${data.year} Annual Audit` : 'Annual Audit',
-                  breadcrumb: (data: { year?: string }) => data?.year || '',
-                },
-              },
             ],
           },
 

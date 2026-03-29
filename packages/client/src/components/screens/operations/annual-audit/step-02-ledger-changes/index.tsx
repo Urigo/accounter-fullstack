@@ -48,7 +48,6 @@ export function Step02LedgerChanges(props: Step02Props) {
 
   useEffect(() => {
     if (!data && !fetching && adminBusinessId) {
-      console.log('Fetching ledger validation status...');
       fetchStatus();
     }
   });

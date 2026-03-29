@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
@@ -8,7 +8,6 @@ import { PageLayout } from '../../../layout/page-layout.js';
 import { Button } from '../../../ui/button.js';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card.js';
 import { Progress } from '../../../ui/progress.js';
-import { YearPicker } from './annual-audit-filters.js';
 // Import step components
 import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
@@ -17,23 +16,26 @@ import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import type { StepStatus } from './step-base.js';
 import SimpleStep from './step-simple.js';
+import { YearPicker } from './year-picker.js';
 
-export const AnnualAuditFlow = (): ReactElement => {
-  const { year: yearFromUrl } = useParams<{ year: string }>();
-  const year = yearFromUrl ? Number(yearFromUrl) : new Date().getFullYear() - 1;
+export const AnnualAuditFlow = (): ReactNode => {
   const { setFiltersContext } = useContext(FiltersContext);
   const { userContext } = useContext(UserContext);
-  const navigate = useNavigate();
   const adminBusinessId = userContext?.context.adminBusinessId;
 
-  if (
-    !yearFromUrl ||
-    Number.isNaN(Number(yearFromUrl)) ||
-    Number(yearFromUrl) < 2000 ||
-    Number(yearFromUrl) > new Date().getFullYear()
-  ) {
-    navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(year), { replace: true });
-  }
+  const { year: yearFromUrl } = useParams<{ year: string }>();
+  const navigate = useNavigate();
+  const currentFullYear = new Date().getFullYear();
+  const defaultYear = currentFullYear - 1;
+  const parsedYear = yearFromUrl ? Number(yearFromUrl) : defaultYear;
+  const isValidYear =
+    !Number.isNaN(parsedYear) && parsedYear >= 2000 && parsedYear <= currentFullYear;
+  const year = isValidYear ? parsedYear : defaultYear;
+  useEffect(() => {
+    if (!isValidYear) {
+      navigate(ROUTES.WORKFLOWS.ANNUAL_AUDIT(defaultYear), { replace: true });
+    }
+  }, [isValidYear, navigate, defaultYear]);
 
   const changeYear = useCallback(
     (newYear: number) => {
@@ -104,6 +106,10 @@ export const AnnualAuditFlow = (): ReactElement => {
   useEffect(() => {
     calculateStep7Status();
   }, [calculateStep7Status]);
+
+  if (!isValidYear) {
+    return null;
+  }
 
   return (
     <PageLayout
