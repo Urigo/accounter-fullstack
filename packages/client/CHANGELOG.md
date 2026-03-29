@@ -1,5 +1,658 @@
 # @accounter/client
 
+## 0.0.11
+
+### Patch Changes
+
+- [#2066](https://github.com/Urigo/accounter-fullstack/pull/2066)
+  [`d4a0f8b`](https://github.com/Urigo/accounter-fullstack/commit/d4a0f8be2ef98dd36f9e9d079736a637149911ab)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/x-charts@8.28.0` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/8.28.0) (from `7.29.1`,
+    in `dependencies`)
+
+- [#3034](https://github.com/Urigo/accounter-fullstack/pull/3034)
+  [`88e8bb9`](https://github.com/Urigo/accounter-fullstack/commit/88e8bb914be1965333e0b899537562c8877782a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@3.25.28` ↗︎](https://www.npmjs.com/package/zod/v/3.25.28) (from
+    `3.25.14`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.5` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.5) (from
+    `5.0.4`, in `dependencies`)
+
+- [#2233](https://github.com/Urigo/accounter-fullstack/pull/2233)
+  [`70d6e09`](https://github.com/Urigo/accounter-fullstack/commit/70d6e0930f48ba1dbdda1cbd762a9d0937a521dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`recharts@3.8.0` ↗︎](https://www.npmjs.com/package/recharts/v/3.8.0) (from
+    `2.15.4`, in `dependencies`)
+
+- [#2954](https://github.com/Urigo/accounter-fullstack/pull/2954)
+  [`79fef66`](https://github.com/Urigo/accounter-fullstack/commit/79fef668ca7a7f2b2411ae5f5d4d0bdc5bb2fa2b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.90.20` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.20)
+    (from `5.90.19`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.6` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.6) (from
+    `1.6.5`, in `dependencies`)
+  - Updated dependency [`zod@4.3.6` ↗︎](https://www.npmjs.com/package/zod/v/4.3.6) (from `4.3.5`, in
+    `dependencies`)
+
+- [#2961](https://github.com/Urigo/accounter-fullstack/pull/2961)
+  [`ec845a7`](https://github.com/Urigo/accounter-fullstack/commit/ec845a705ca5e1a5992c5899055d18ebe561ae3e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.563.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.563.0) (from
+    `0.562.0`, in `dependencies`)
+
+- [#2963](https://github.com/Urigo/accounter-fullstack/pull/2963)
+  [`e528d48`](https://github.com/Urigo/accounter-fullstack/commit/e528d48225c7b9bf6b620bcfa970c226a7c4e754)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.13.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.0) (from
+    `7.12.0`, in `dependencies`)
+
+- [#2978](https://github.com/Urigo/accounter-fullstack/pull/2978)
+  [`8f6d661`](https://github.com/Urigo/accounter-fullstack/commit/8f6d66108bd088388673e7cd53d1c1016d03c762)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react@19.2.4` ↗︎](https://www.npmjs.com/package/react/v/19.2.4) (from
+    `19.2.3`, in `dependencies`)
+  - Updated dependency [`react-dom@19.2.4` ↗︎](https://www.npmjs.com/package/react-dom/v/19.2.4)
+    (from `19.2.3`, in `dependencies`)
+
+- [#2982](https://github.com/Urigo/accounter-fullstack/pull/2982)
+  [`859a42a`](https://github.com/Urigo/accounter-fullstack/commit/859a42a4fd67574f9c45d5f721f83e2df93b921e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.4` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.4) (from
+    `17.2.3`, in `dependencies`)
+  - Updated dependency
+    [`react-day-picker@9.13.1` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.1) (from
+    `9.13.0`, in `dependencies`)
+
+- [#2988](https://github.com/Urigo/accounter-fullstack/pull/2988)
+  [`3c2df4f`](https://github.com/Urigo/accounter-fullstack/commit/3c2df4f4cb79ec90fc5cfe372f7cede5e56f27e7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@5.4.624` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.624)
+    (from `5.4.530`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.11` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.11) (from
+    `5.0.10`, in `dependencies`)
+
+- [#2995](https://github.com/Urigo/accounter-fullstack/pull/2995)
+  [`48b4897`](https://github.com/Urigo/accounter-fullstack/commit/48b48977e7bd74a58b49e984ca2d1a257614890a)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react-to-pdf@3.1.0` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.1.0)
+    (from `3.0.0`, in `dependencies`)
+
+- [#2999](https://github.com/Urigo/accounter-fullstack/pull/2999)
+  [`1f9675e`](https://github.com/Urigo/accounter-fullstack/commit/1f9675e5ae7e516770b7a052a79bbcfcd758b748)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@5.4.624` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.4.624)
+    (from `5.4.530`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.11` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.11) (from
+    `5.0.10`, in `dependencies`)
+
+- [#3025](https://github.com/Urigo/accounter-fullstack/pull/3025)
+  [`0b5b2ea`](https://github.com/Urigo/accounter-fullstack/commit/0b5b2ea65abe31286a97615a46cad149da72f235)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.2.4` ↗︎](https://www.npmjs.com/package/dotenv/v/17.2.4) (from
+    `17.2.3`, in `dependencies`)
+  - Updated dependency
+    [`react-day-picker@9.13.1` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.1) (from
+    `9.13.0`, in `dependencies`)
+
+- [#3031](https://github.com/Urigo/accounter-fullstack/pull/3031)
+  [`211446a`](https://github.com/Urigo/accounter-fullstack/commit/211446a6757b501d71131f2b4689bcefcf46d580)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.13.2` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.13.2) (from
+    `9.13.1`, in `dependencies`)
+
+- [#3034](https://github.com/Urigo/accounter-fullstack/pull/3034)
+  [`88e8bb9`](https://github.com/Urigo/accounter-fullstack/commit/88e8bb914be1965333e0b899537562c8877782a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@7.3.8` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.3.8) (from `7.3.7`, in
+    `dependencies`)
+  - Updated dependency
+    [`@tanstack/react-query@5.90.21` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.90.21)
+    (from `5.90.20`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@1.6.7` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/1.6.7) (from
+    `1.6.6`, in `dependencies`)
+  - Updated dependency
+    [`react-error-boundary@6.1.1` ↗︎](https://www.npmjs.com/package/react-error-boundary/v/6.1.1)
+    (from `6.1.0`, in `dependencies`)
+  - Updated dependency
+    [`tailwind-merge@3.4.1` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.4.1) (from `3.4.0`,
+    in `dependencies`)
+
+- [#3041](https://github.com/Urigo/accounter-fullstack/pull/3041)
+  [`352ee1b`](https://github.com/Urigo/accounter-fullstack/commit/352ee1b16018745057219979280d49a86e645d4c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.3.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.3.1) (from
+    `17.2.4`, in `dependencies`)
+
+- [#3042](https://github.com/Urigo/accounter-fullstack/pull/3042)
+  [`6258a07`](https://github.com/Urigo/accounter-fullstack/commit/6258a07f6997717f5fe6a5ed41928ecd8ed45118)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.564.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.564.0) (from
+    `0.563.0`, in `dependencies`)
+
+- [#3066](https://github.com/Urigo/accounter-fullstack/pull/3066)
+  [`560aaa4`](https://github.com/Urigo/accounter-fullstack/commit/560aaa4e320f71cc9a721945d3ead070c4b5cfed)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.71.2` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.71.2) (from
+    `7.71.1`, in `dependencies`)
+
+- [#3070](https://github.com/Urigo/accounter-fullstack/pull/3070)
+  [`26d8e49`](https://github.com/Urigo/accounter-fullstack/commit/26d8e496ac9a3e24bf3275548e5bc71b2bf2915f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.566.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.566.0) (from
+    `0.564.0`, in `dependencies`)
+
+- [#3074](https://github.com/Urigo/accounter-fullstack/pull/3074)
+  [`68b6d18`](https://github.com/Urigo/accounter-fullstack/commit/68b6d18f14f27d702f9669602c7964f1dffda3e4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.574.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.574.0) (from
+    `0.566.0`, in `dependencies`)
+
+- [#3087](https://github.com/Urigo/accounter-fullstack/pull/3087)
+  [`3f09f1a`](https://github.com/Urigo/accounter-fullstack/commit/3f09f1a37c680c2c83906022739807e6544a6be8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`tailwind-merge@3.5.0` ↗︎](https://www.npmjs.com/package/tailwind-merge/v/3.5.0) (from `3.4.1`,
+    in `dependencies`)
+
+- [#3089](https://github.com/Urigo/accounter-fullstack/pull/3089)
+  [`acd3d75`](https://github.com/Urigo/accounter-fullstack/commit/acd3d75db4ac8c7c13fc3919f1988ebaccfa7a35)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.575.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.575.0) (from
+    `0.574.0`, in `dependencies`)
+
+- [#3094](https://github.com/Urigo/accounter-fullstack/pull/3094)
+  [`83e65c7`](https://github.com/Urigo/accounter-fullstack/commit/83e65c7d3f9818e854555d654e606a2e6b2f1e46)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`react-to-pdf@3.2.1` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.2.1)
+    (from `3.1.0`, in `dependencies`)
+
+- [#3095](https://github.com/Urigo/accounter-fullstack/pull/3095)
+  [`0abf19f`](https://github.com/Urigo/accounter-fullstack/commit/0abf19f2c05113eb3f24ae24e00cfe2bb1b364d6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@2.0.2` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.0.2) (from
+    `1.6.7`, in `dependencies`)
+
+- [#3113](https://github.com/Urigo/accounter-fullstack/pull/3113)
+  [`49fa797`](https://github.com/Urigo/accounter-fullstack/commit/49fa7976ee4078e86d935d77b14914c94ea45234)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.13.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.1) (from
+    `7.13.0`, in `dependencies`)
+
+- [#3114](https://github.com/Urigo/accounter-fullstack/pull/3114)
+  [`84f9e20`](https://github.com/Urigo/accounter-fullstack/commit/84f9e203c696c8b76a7cef2128547e8cde7559f0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`react-router-dom@7.13.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.1) (from
+    `7.13.0`, in `dependencies`)
+
+- [#3121](https://github.com/Urigo/accounter-fullstack/pull/3121)
+  [`992e2ed`](https://github.com/Urigo/accounter-fullstack/commit/992e2edb1507dcb64ccf07b24b7b850fe6fe815b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`graphql@16.13.0` ↗︎](https://www.npmjs.com/package/graphql/v/16.13.0) (from
+    `16.12.0`, in `dependencies`)
+
+- [#3138](https://github.com/Urigo/accounter-fullstack/pull/3138)
+  [`93e5f5a`](https://github.com/Urigo/accounter-fullstack/commit/93e5f5a253d525c849eb888eb3596bf407972ba4)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-day-picker@9.14.0` ↗︎](https://www.npmjs.com/package/react-day-picker/v/9.14.0) (from
+    `9.13.2`, in `dependencies`)
+
+- [#3145](https://github.com/Urigo/accounter-fullstack/pull/3145)
+  [`3d07cf4`](https://github.com/Urigo/accounter-fullstack/commit/3d07cf41635eb0c55e8082fd3282c1249368af01)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@5.5.207` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/5.5.207)
+    (from `5.4.624`, in `dependencies`)
+
+- [#3147](https://github.com/Urigo/accounter-fullstack/pull/3147)
+  [`f540bbb`](https://github.com/Urigo/accounter-fullstack/commit/f540bbbbe279e4d7028b4ee6fc8e4cc7d239f8af)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.576.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.576.0) (from
+    `0.575.0`, in `dependencies`)
+
+- [#3157](https://github.com/Urigo/accounter-fullstack/pull/3157)
+  [`9a8873e`](https://github.com/Urigo/accounter-fullstack/commit/9a8873e55f27cba92356be7ac5ea17938c56f3b9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@0.577.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/0.577.0) (from
+    `0.576.0`, in `dependencies`)
+
+- [#3166](https://github.com/Urigo/accounter-fullstack/pull/3166)
+  [`26474f3`](https://github.com/Urigo/accounter-fullstack/commit/26474f32495cc9fe028476840bd3d15fee8b5143)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@7.3.9` ↗︎](https://www.npmjs.com/package/@mui/material/v/7.3.9) (from `7.3.8`, in
+    `dependencies`)
+  - Updated dependency [`dayjs@1.11.20` ↗︎](https://www.npmjs.com/package/dayjs/v/1.11.20) (from
+    `1.11.19`, in `dependencies`)
+  - Updated dependency [`graphql@16.13.1` ↗︎](https://www.npmjs.com/package/graphql/v/16.13.1) (from
+    `16.13.0`, in `dependencies`)
+
+- [#3170](https://github.com/Urigo/accounter-fullstack/pull/3170)
+  [`376a3a5`](https://github.com/Urigo/accounter-fullstack/commit/376a3a5a9fc8b3ff6b7ca28f3de04365109a9bb6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@auth0/auth0-react@2.15.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.15.0) (to
+    `dependencies`)
+
+- [#3170](https://github.com/Urigo/accounter-fullstack/pull/3170)
+  [`376a3a5`](https://github.com/Urigo/accounter-fullstack/commit/376a3a5a9fc8b3ff6b7ca28f3de04365109a9bb6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`@auth0/auth0-react@2.15.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.15.0) (to
+    `dependencies`)
+
+- [#3207](https://github.com/Urigo/accounter-fullstack/pull/3207)
+  [`556b274`](https://github.com/Urigo/accounter-fullstack/commit/556b274ac6f4ed6481c22646505d86ff4760e5a6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.15.1` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.15.1) (from
+    `2.15.0`, in `dependencies`)
+
+- [#3212](https://github.com/Urigo/accounter-fullstack/pull/3212)
+  [`95c4343`](https://github.com/Urigo/accounter-fullstack/commit/95c43430ce5ee3dc29e9f36b0c4453b7dfe2b989)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency [`radix-ui@1.4.3` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.4.3) (to
+    `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-accordion@1.2.12` ↗︎](https://www.npmjs.com/package/@radix-ui/react-accordion/v/1.2.12)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-avatar@1.1.11` ↗︎](https://www.npmjs.com/package/@radix-ui/react-avatar/v/1.1.11)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-checkbox@1.3.3` ↗︎](https://www.npmjs.com/package/@radix-ui/react-checkbox/v/1.3.3)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-collapsible@1.1.12` ↗︎](https://www.npmjs.com/package/@radix-ui/react-collapsible/v/1.1.12)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-dialog@1.1.15` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dialog/v/1.1.15)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-dropdown-menu@2.1.16` ↗︎](https://www.npmjs.com/package/@radix-ui/react-dropdown-menu/v/2.1.16)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-icons@1.3.2` ↗︎](https://www.npmjs.com/package/@radix-ui/react-icons/v/1.3.2)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-label@2.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-label/v/2.1.8)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-popover@1.1.15` ↗︎](https://www.npmjs.com/package/@radix-ui/react-popover/v/1.1.15)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-progress@^1.1.7` ↗︎](https://www.npmjs.com/package/@radix-ui/react-progress/v/1.1.7)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-scroll-area@1.2.10` ↗︎](https://www.npmjs.com/package/@radix-ui/react-scroll-area/v/1.2.10)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-select@2.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-select/v/2.2.6)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-separator@1.1.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-separator/v/1.1.8)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-slot@1.2.4` ↗︎](https://www.npmjs.com/package/@radix-ui/react-slot/v/1.2.4)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-switch@1.2.6` ↗︎](https://www.npmjs.com/package/@radix-ui/react-switch/v/1.2.6)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-tabs@1.1.13` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.13)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-toggle@1.1.10` ↗︎](https://www.npmjs.com/package/@radix-ui/react-toggle/v/1.1.10)
+    (from `dependencies`)
+  - Removed dependency
+    [`@radix-ui/react-tooltip@1.2.8` ↗︎](https://www.npmjs.com/package/@radix-ui/react-tooltip/v/1.2.8)
+    (from `dependencies`)
+
+- [#3214](https://github.com/Urigo/accounter-fullstack/pull/3214)
+  [`69a150b`](https://github.com/Urigo/accounter-fullstack/commit/69a150bcb25903593316b4c9d3f344b428585a72)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`csv-parse@6.2.1` ↗︎](https://www.npmjs.com/package/csv-parse/v/6.2.1) (from
+    `6.2.0`, in `dependencies`)
+  - Updated dependency
+    [`react-number-format@5.4.5` ↗︎](https://www.npmjs.com/package/react-number-format/v/5.4.5) (from
+    `5.4.4`, in `dependencies`)
+  - Updated dependency [`react-to-pdf@3.2.2` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.2.2)
+    (from `3.2.1`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.12` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.12) (from
+    `5.0.11`, in `dependencies`)
+
+- [#3224](https://github.com/Urigo/accounter-fullstack/pull/3224)
+  [`93aebdf`](https://github.com/Urigo/accounter-fullstack/commit/93aebdf329f957e1a1a90783e27a5b3f171691c7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`csv-parse@6.2.0` ↗︎](https://www.npmjs.com/package/csv-parse/v/6.2.0) (from
+    `6.1.0`, in `dependencies`)
+
+- [#3226](https://github.com/Urigo/accounter-fullstack/pull/3226)
+  [`be0a48e`](https://github.com/Urigo/accounter-fullstack/commit/be0a48ee0e288b129b940a4ce5bc0c8a7d6d0dd5)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.91.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.91.0)
+    (from `5.90.21`, in `dependencies`)
+
+- [#3233](https://github.com/Urigo/accounter-fullstack/pull/3233)
+  [`0c4035d`](https://github.com/Urigo/accounter-fullstack/commit/0c4035d223b941117ba7df6ea08a3be9ec028719)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.94.5` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.94.5)
+    (from `5.91.0`, in `dependencies`)
+
+- [#3246](https://github.com/Urigo/accounter-fullstack/pull/3246)
+  [`cb0dbc5`](https://github.com/Urigo/accounter-fullstack/commit/cb0dbc518e8f31a0e69180d83c444658a6ca019e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`csv-parse@6.2.1` ↗︎](https://www.npmjs.com/package/csv-parse/v/6.2.1) (from
+    `6.2.0`, in `dependencies`)
+  - Updated dependency
+    [`react-number-format@5.4.5` ↗︎](https://www.npmjs.com/package/react-number-format/v/5.4.5) (from
+    `5.4.4`, in `dependencies`)
+  - Updated dependency [`react-to-pdf@3.2.2` ↗︎](https://www.npmjs.com/package/react-to-pdf/v/3.2.2)
+    (from `3.2.1`, in `dependencies`)
+  - Updated dependency [`zustand@5.0.12` ↗︎](https://www.npmjs.com/package/zustand/v/5.0.12) (from
+    `5.0.11`, in `dependencies`)
+
+- [#3247](https://github.com/Urigo/accounter-fullstack/pull/3247)
+  [`43dab70`](https://github.com/Urigo/accounter-fullstack/commit/43dab70e682bd96b4e7c252a2bbda94df8f0e0ba)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`graphql@16.13.2` ↗︎](https://www.npmjs.com/package/graphql/v/16.13.2) (from
+    `16.13.1`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.13.2` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.13.2) (from
+    `7.13.1`, in `dependencies`)
+  - Updated dependency [`recharts@3.8.1` ↗︎](https://www.npmjs.com/package/recharts/v/3.8.1) (from
+    `3.8.0`, in `dependencies`)
+
+- [#3248](https://github.com/Urigo/accounter-fullstack/pull/3248)
+  [`66d3eae`](https://github.com/Urigo/accounter-fullstack/commit/66d3eae136b258a32cf4f46b524658b3a88610dc)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`lucide-react@1.0.1` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.0.1)
+    (from `0.577.0`, in `dependencies`)
+
+- [#3252](https://github.com/Urigo/accounter-fullstack/pull/3252)
+  [`0bdd19a`](https://github.com/Urigo/accounter-fullstack/commit/0bdd19a322d252be5882e1bd74dc0ba8cd95971b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`lucide-react@1.7.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.7.0)
+    (from `1.0.1`, in `dependencies`)
+
+- [#3254](https://github.com/Urigo/accounter-fullstack/pull/3254)
+  [`562f8b6`](https://github.com/Urigo/accounter-fullstack/commit/562f8b69bfdefb93b1982ac76dc7180495f0d558)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.16.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.16.0) (from
+    `2.15.1`, in `dependencies`)
+
+- [#3073](https://github.com/Urigo/accounter-fullstack/pull/3073)
+  [`ba24801`](https://github.com/Urigo/accounter-fullstack/commit/ba24801ea67f67df5c1f80e952f661c5969468a9)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Component Structure**: Reordered the
+  `Button` and `Tooltip` components within the `CloseDocumentButton` to ensure correct rendering and
+  interaction.
+  - **Clickability Fix**: Resolved an issue where the 'Close Document' button was unclickable by
+    adjusting the nesting of the `Button` inside the `Tooltip`.
+
+- [#3000](https://github.com/Urigo/accounter-fullstack/pull/3000)
+  [`653f97c`](https://github.com/Urigo/accounter-fullstack/commit/653f97cb5ed3a4d420023d22494452ac3e80b1ec)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Account Filtering for Balance Report**:
+  The 'Transactions Balance' report now supports filtering by financial accounts, allowing users to
+  include or exclude specific accounts from the report.
+  - **Frontend UI Enhancements**: The balance report filter form has been updated with new account
+    selection fields, improved form validation using Zod, and UI component adjustments for better
+    responsiveness.
+  - **Backend GraphQL Integration**: The GraphQL schema and resolvers have been extended to include
+    financial account data for transactions and to support the new account-based filtering logic.
+  - **Reusable Account Fetching Logic**: A new helper function and a client-side hook were
+    introduced to centralize and streamline the fetching and management of financial account data.
+
+- [#3003](https://github.com/Urigo/accounter-fullstack/pull/3003)
+  [`7809f6d`](https://github.com/Urigo/accounter-fullstack/commit/7809f6dc1a16373a205d76bdc2458d6132785e2c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Swift Code Integration**: This PR
+  introduces the 'swiftCode' field to financial bank accounts, enhancing the system's ability to
+  manage international banking details.
+  - **Schema and UI Updates**: The changes include updates to the financial account schema, UI
+    components, and database migrations to accommodate the new 'swiftCode' field.
+  - **Database Migration**: A new migration script is added to update the 'financial_bank_accounts'
+    table with a 'swift_code' column.
+
+- [#3071](https://github.com/Urigo/accounter-fullstack/pull/3071)
+  [`77b31c8`](https://github.com/Urigo/accounter-fullstack/commit/77b31c84714cf92a15f280df00ddb6fbd403d661)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Form Initialization Refactor**: The
+  `defaultValues` for the `useForm` hook in the `EditCharge` component have been refactored to
+  explicitly map properties from the `charge` object to the `UpdateChargeInput` type. This prevents
+  unknown attributes from being passed to the form manager.
+  - **Explicit Input Data Definition**: A new `chargeInputData` variable, memoized with `useMemo`,
+    was introduced to clearly define the structure of the data used for form initialization,
+    ensuring only expected fields are included.
+  - **Default Value Updates**: All form field `defaultValue` props within the `EditCharge` component
+    were updated to reference the newly created `chargeInputData` object, ensuring consistency with
+    the refactored form initialization.
+
+- [#3202](https://github.com/Urigo/accounter-fullstack/pull/3202)
+  [`cf98582`](https://github.com/Urigo/accounter-fullstack/commit/cf9858233b3201a9dbbc4c603a64888dd863b4d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Auth0 Configuration Documentation**:
+  Updated `auth0-setup.md` to include detailed requirements for refresh token rotation,
+  `offline_access` scope, and a comprehensive troubleshooting guide for token renewal failures.
+  - **Enhanced URQL Auth Exchange**: Refactored the client-side URQL authentication exchange to
+    manage access tokens more effectively, including silent renewal, handling `UNAUTHENTICATED`
+    GraphQL errors, and preventing redirect loops during reauthentication.
+  - **Improved Reauthentication Flow**: Modified the login page to detect session expiry (`reauth=1`
+    query parameter) and display an appropriate message, while also ensuring that
+    `loginWithRedirect` requests the `offline_access` scope and prompts for re-login when necessary.
+
+- [#3064](https://github.com/Urigo/accounter-fullstack/pull/3064)
+  [`6d31136`](https://github.com/Urigo/accounter-fullstack/commit/6d31136abbd7949a217e84f92a3ea9eab5988cc3)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New `onClose` Prop**: Introduced an
+  `onClose` prop to the `GenerateDocument` component to allow external control over its closure.
+  - **Automated Dialog Closure**: Implemented logic to automatically call the `onClose` prop when a
+    document is successfully issued, ensuring related dialogs close as expected.
+
+- [#3072](https://github.com/Urigo/accounter-fullstack/pull/3072)
+  [`1b54fbd`](https://github.com/Urigo/accounter-fullstack/commit/1b54fbd83e0c2c9ed829b8fca2da2b879da0138d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - The `modify-financial-account-dialog.tsx`
+  component has been updated to use a simplified `taxCategoryId` in its schema, replacing a nested
+  `taxCategory` object.
+  - A new helper function, `convertToFinancialAccountForm`, was added to correctly map financial
+    account data to the form's structure, ensuring proper handling of `taxCategory.id` to
+    `taxCategoryId` conversion during editing.
+  - The `useGetTaxCategories` hook is now integrated to fetch available tax categories, which are
+    then presented to the user via a `ComboBox` component for selection, improving user experience
+    and data validation.
+
+- [#3212](https://github.com/Urigo/accounter-fullstack/pull/3212)
+  [`95c4343`](https://github.com/Urigo/accounter-fullstack/commit/95c43430ce5ee3dc29e9f36b0c4453b7dfe2b989)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Dependency Consolidation**: Replaced
+  numerous individual `@radix-ui/react-*` packages with a single `radix-ui` package in
+  `package.json` and `yarn.lock`. Updated import statements across various UI component files to use
+  the consolidated `radix-ui` package instead of individual `@radix-ui/react-*` imports.
+
+- [#3218](https://github.com/Urigo/accounter-fullstack/pull/3218)
+  [`8c049ac`](https://github.com/Urigo/accounter-fullstack/commit/8c049ac8cfa2d55d80d2539868dac2df8e018f3e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Introduced Annual Audit Flow UI**: A
+  new, comprehensive 'Annual Audit Flow' user interface has been added, providing a structured,
+  multi-step process for managing yearly financial operations and compliance. This includes a
+  progress overview, filtering capabilities, and dedicated steps for various audit tasks.
+  - **New GraphQL API Endpoints for Audit Operations**: New GraphQL queries and mutations were
+    implemented on the server-side to support the annual audit flow, including fetching accountant
+    approval status for charges, retrieving annual financial charges, and locking ledger records.
+  - **Enhanced Confirmation Modal and New Hooks**: The `ConfirmationModal` component was enhanced to
+    allow external control of its open state, and new React hooks (`useGenerateFinancialCharge`,
+    `useLedgerLock`) were introduced to streamline financial charge generation and ledger locking
+    operations with integrated toast notifications.
+  - **Updated Navigation and Routing**: The application's sidebar navigation and routing
+    configuration were updated to include the new 'Workflows' section and the 'Annual Audit' page,
+    making the new feature accessible.
+
+- [#3038](https://github.com/Urigo/accounter-fullstack/pull/3038)
+  [`4d4e60d`](https://github.com/Urigo/accounter-fullstack/commit/4d4e60dd85f6c7779c556b513e2de844615dd293)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Configurable NPM Registry in CI**: The
+  GitHub Actions setup now includes a `registryUrl` input, allowing for flexible specification of
+  the NPM registry during package publishing.
+  - **Deterministic Dependency Installation**: The `yarn install` command in the CI workflow was
+    updated to use `--frozen-lockfile`, ensuring consistent and reproducible builds by preventing
+    modifications to the `yarn.lock` file.
+  - **Standardized Package Metadata**: `package.json` files across several packages were updated to
+    include comprehensive and consistent metadata, such as `description`, `repository` details,
+    `homepage`, `bugs` URL, and `author` information.
+  - **Explicit NPM Registry Configuration**: The `publishConfig` in multiple `package.json` files
+    was modified to explicitly set the `registry` to `https://registry.npmjs.org`, clarifying the
+    target for package publication.
+
+- [#3210](https://github.com/Urigo/accounter-fullstack/pull/3210)
+  [`b34befb`](https://github.com/Urigo/accounter-fullstack/commit/b34befba8ff2a70823ef27f3da339460e8b20fae)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Replaces the flat tags list with a
+  collapsible hierarchical tree view, search input, and edit/delete dialogs
+  - Adds new shared UI components: `Spinner`, `InputGroup`, `Field`, `Empty`, `AlertDialog`
+  - Updates the `addTag` mutation to support a `parentTag` parameter and fixes tag description
+    display in combo-box/multi-select
+
+- [#3079](https://github.com/Urigo/accounter-fullstack/pull/3079)
+  [`5b2f4ac`](https://github.com/Urigo/accounter-fullstack/commit/5b2f4acd65af85cdf39ceebb12978720a955f4bb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Charge Merging Functionality**:
+  Introduced the ability to select and merge charges directly from the Business screen's charges
+  tab, enhancing charge management capabilities.
+
+- [#3030](https://github.com/Urigo/accounter-fullstack/pull/3030)
+  [`767bca6`](https://github.com/Urigo/accounter-fullstack/commit/767bca6a2080c2876766f4eb0f147e026450665b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Period Summary Component**: A new
+  component, `PeriodSummary`, has been introduced to display a detailed financial summary for each
+  period, including income, expense, delta, and cumulative balance.
+  - **Multi-Currency Delta Breakdown**: The `PeriodSummary` component now provides a breakdown of
+    the delta by individual currencies, offering more granular insights into financial movements.
+
+- [#2975](https://github.com/Urigo/accounter-fullstack/pull/2975)
+  [`4b37fc8`](https://github.com/Urigo/accounter-fullstack/commit/4b37fc85d294571c0a209901e64f7b4a1c7dc5ab)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **GraphQL Schema Update**: The 'zip'
+  field in the 'ClientInput' GraphQL type has been renamed to 'zipCode' for better clarity and
+  consistency across the system.
+  - **Green Invoice Client Data Mapping**: The logic for converting local client data to Green
+    Invoice client input has been updated to correctly use 'city' and 'zip_code' from local business
+    data and to ensure all client details are sourced from the initial input, resolving potential
+    data discrepancies.
+  - **UI Event Propagation Prevention**: The 'stopPropagation' method has been added to key UI
+    elements in document generation and preview modals to prevent unintended click event bubbling,
+    improving user interaction and preventing unexpected behavior.
+  - **UI Text Refinement**: A dialog title in the merge charges component has been updated from
+    'Issue New Document' to 'Merge Charges' for improved clarity and accuracy.
+
+- [#3202](https://github.com/Urigo/accounter-fullstack/pull/3202)
+  [`cf98582`](https://github.com/Urigo/accounter-fullstack/commit/cf9858233b3201a9dbbc4c603a64888dd863b4d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Enhanced Error Handling**: Improved
+  error handling in the authentication callback page to provide a better user experience.
+  - **Network Error Retries**: Implemented retry logic for transient network errors during
+    authentication callback.
+  - **User-Friendly Error Messages**: Added user-friendly error messages for common authentication
+    issues.
+
+- [#3238](https://github.com/Urigo/accounter-fullstack/pull/3238)
+  [`e91dd94`](https://github.com/Urigo/accounter-fullstack/commit/e91dd941bbaba5d5d89a234bd7cad9f03b059292)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Step 04 Financial Charges**: This PR
+  introduces the `Step04FinancialCharges` component, enabling the generation of various financial
+  charges and reserves within the annual audit process. the new component into the
+  `AnnualAuditFlow`, making it a functional part of the audit workflow.
+
+- [#3174](https://github.com/Urigo/accounter-fullstack/pull/3174)
+  [`b7621b3`](https://github.com/Urigo/accounter-fullstack/commit/b7621b343dd8e49a24903e2f42f56589f76d7892)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Authentication Component Renaming**:
+  Renamed core authentication files and classes, including `AuthContextV2Provider` to
+  `AuthContextProvider` and `authPluginV2` to `authPlugin`, removing the 'V2' suffix to signify
+  their stable status.
+
+- [#3202](https://github.com/Urigo/accounter-fullstack/pull/3202)
+  [`cf98582`](https://github.com/Urigo/accounter-fullstack/commit/cf9858233b3201a9dbbc4c603a64888dd863b4d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Rename `RequireAuthGuard` to
+  `ProtectedRoute` and update route config usage.
+  - Preserve attempted path via `returnTo` state and use it in `LoginPage` redirect + Auth0
+    `appState`.
+  - Add a `ProtectedRoute` unit test running under `jsdom` and add `jsdom`/`@types/jsdom` dev
+    dependencies.
+
+- [#3170](https://github.com/Urigo/accounter-fullstack/pull/3170)
+  [`376a3a5`](https://github.com/Urigo/accounter-fullstack/commit/376a3a5a9fc8b3ff6b7ca28f3de04365109a9bb6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Backend Authentication Refactoring**:
+  Transitioned the backend's dependency injection pattern from `AUTH_CONTEXT` injection tokens to
+  direct provider injection for `AuthContextProvider` and `AdminContextProvider` to handle
+  asynchronous context loading more effectively.
+  - **Frontend Auth0 Integration**: Implemented Auth0 login on the client-side, including a new
+    dedicated callback page and modifications to the existing login page to support a dual
+    authentication mechanism during the transition period.
+  - **Enhanced Row-Level Security (RLS) Enforcement**: Modified the `TenantAwareDBClient` to
+    exclusively rely on the `AuthContextProvider` for RLS variables, removing temporary fallbacks to
+    legacy user context.
+
+- [#3067](https://github.com/Urigo/accounter-fullstack/pull/3067)
+  [`fbfad66`](https://github.com/Urigo/accounter-fullstack/commit/fbfad66dae7876e2d6f0e7c064a11304d9768892)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Frontend Enhancement**: Implemented a
+  new free text search input field within the charges filter user interface, allowing users to
+  search for charges using keywords.
+  - **Database Schema Update**: Introduced a database migration to enhance the `extended_charges`
+    view with a `merged_search_text` column, which concatenates various textual fields (user
+    descriptions, transaction details, document information) for comprehensive search capabilities.
+  - **API and Backend Integration**: Extended the GraphQL schema to support a `freeText` filter for
+    charges and integrated this filter into the backend charges provider, utilizing the new
+    `merged_search_text` column for efficient filtering.
+
+- [#2999](https://github.com/Urigo/accounter-fullstack/pull/2999)
+  [`1f9675e`](https://github.com/Urigo/accounter-fullstack/commit/1f9675e5ae7e516770b7a052a79bbcfcd758b748)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Charge Editing Flow**: The
+  `EditChargeModal` now correctly closes itself and triggers the `onChange` callback when an edit
+  operation is completed, improving the user experience for charge modifications.
+  - **UI Layering Fix**: A `zIndex` property has been added to the 'Year of relevance' date picker
+    within the `ChargeSpreadInput` to ensure its popover renders above other UI elements, preventing
+    display issues.
+  - **Similar Charges Modal Logic**: The `SimilarChargesByIdModal` now includes logic to
+    automatically close if it's opened without any valid search criteria (i.e., `tagIds` or
+    `description`), preventing an empty or irrelevant modal from appearing.
+  - **Drawer Interaction**: An `onClick` event handler with `stopPropagation()` has been added to
+    the `DrawerContent` component to prevent clicks within the drawer from propagating to underlying
+    elements, enhancing interaction isolation.
+
+- [#3205](https://github.com/Urigo/accounter-fullstack/pull/3205)
+  [`3eb28e0`](https://github.com/Urigo/accounter-fullstack/commit/3eb28e045b6403a6da039c5af2d79bff069ff6ac)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Adds a new client-side
+  `AcceptInvitationPage` with login-redirect support, a `useAcceptInvitation` hook, and routing
+  configuration, plus associated session storage plumbing in `auth-callback` and `PublicOnlyGuard`
+  to preserve the invitation return-to URL across the Auth0 login flow.
+  - Introduces `getJwtIdentity()` on `AuthContextProvider` and `getUserEmailById()` on
+    `Auth0ManagementProvider` to support fallback identity resolution when the full auth context
+    isn't established, and adds verified-email-based relinking of Auth0 subjects in
+    `mapAuth0UserToLocal`.
+  - Reorders `insertBusinessUser` before `insertInvitation` in the invitation creation flow and
+    updates vitest config to support `@` alias and `.tsx` test files.
+
+- [#3202](https://github.com/Urigo/accounter-fullstack/pull/3202)
+  [`cf98582`](https://github.com/Urigo/accounter-fullstack/commit/cf9858233b3201a9dbbc4c603a64888dd863b4d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Auth0 Integration**: The UserNav
+  component now directly integrates with Auth0 to fetch user authentication status and profile
+  information.
+  - **Enhanced User Profile Display**: The user menu dynamically displays the user's avatar image,
+    falls back to initials if no image is present, and shows the user's email and role within the
+    dropdown.
+
+- [#3202](https://github.com/Urigo/accounter-fullstack/pull/3202)
+  [`cf98582`](https://github.com/Urigo/accounter-fullstack/commit/cf9858233b3201a9dbbc4c603a64888dd863b4d1)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Centralized Logout Logic**: Introduced
+  a new `useLogout` custom React hook to centralize the logout functionality, making it reusable and
+  testable. The `useLogout` hook now handles clearing `sessionStorage`, (preparation for) resetting
+  the URQL client store, and initiating the Auth0 logout process with a specified return URL.
+
 ## 0.0.10
 
 ### Patch Changes
