@@ -19,7 +19,6 @@ describe('Environment Configuration', () => {
     process.env.POSTGRES_DB = 'test_db';
     process.env.POSTGRES_USER = 'test_user';
     process.env.POSTGRES_PASSWORD = 'test_password';
-    process.env.DEFAULT_FINANCIAL_ENTITY_ID = 'some-id';
   });
 
   afterEach(() => {

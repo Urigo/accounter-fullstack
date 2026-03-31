@@ -1,8 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import type { PoolClient } from 'pg';
 import { makeUUID } from '../src/__tests__/factories/index.js';
-import { writeEnvVar } from '../src/__tests__/helpers/env-file.js';
 import {
   ensureBusinessForEntity,
   ensureFinancialEntity,
@@ -201,22 +198,6 @@ export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId
     console.log('✅ user_context created');
   } else {
     console.log('ℹ️  user_context already exists, skipping insert');
-  }
-
-  // 7. Write to environment file (isolated in tests via TEST_ENV_FILE)
-  const targetEnvFile =
-    process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
-      ? path.resolve(process.env.TEST_ENV_FILE)
-      : path.resolve(process.cwd(), '.env');
-  try {
-    // Ensure file exists (non-destructive create if missing)
-    if (!fs.existsSync(targetEnvFile)) {
-      fs.writeFileSync(targetEnvFile, '', 'utf8');
-    }
-    await writeEnvVar(targetEnvFile, 'DEFAULT_FINANCIAL_ENTITY_ID', adminEntityId);
-    console.log(`✅ Updated ${path.basename(targetEnvFile)} with DEFAULT_FINANCIAL_ENTITY_ID`);
-  } catch (e) {
-    console.warn('⚠️  Failed to write DEFAULT_FINANCIAL_ENTITY_ID to env file:', e);
   }
 
   console.log('🎉 Admin context seed complete!');

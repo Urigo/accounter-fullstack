@@ -56,11 +56,7 @@ export function createLedgerTestContext(options: {
   pool: Pool;
   moduleId?: string;
   env?: unknown;
-  /**
-   * Optional authenticated tenant business id for tests.
-   * Falls back to DEFAULT_FINANCIAL_ENTITY_ID for legacy tests.
-   */
-  businessId?: string;
+  businessId: string;
   /**
    * Optional mock function to override ExchangeProvider.getExchangeRates.
    * Use this to fix exchange rates for deterministic tests.
@@ -70,11 +66,9 @@ export function createLedgerTestContext(options: {
 }): ModuleContextLike {
   const { pool, moduleId = 'test', env, businessId, mockExchangeRates } = options;
 
-  const resolvedBusinessId = businessId ?? process.env.DEFAULT_FINANCIAL_ENTITY_ID;
+  const resolvedBusinessId = businessId;
   if (!resolvedBusinessId) {
-    throw new Error(
-      'createLedgerTestContext requires businessId or DEFAULT_FINANCIAL_ENTITY_ID for auth context',
-    );
+    throw new Error('createLedgerTestContext requires businessId for auth context');
   }
 
   const dbProvider = new DBProvider(pool);
