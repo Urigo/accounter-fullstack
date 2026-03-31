@@ -67,7 +67,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
-    "@auth0/auth0-react": "npm:2.16.0"
+    "@auth0/auth0-react": "npm:2.16.1"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:5.2.2"
@@ -526,15 +526,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@auth0/auth0-react@npm:2.16.0":
-  version: 2.16.0
-  resolution: "@auth0/auth0-react@npm:2.16.0"
+"@auth0/auth0-react@npm:2.16.1":
+  version: 2.16.1
+  resolution: "@auth0/auth0-react@npm:2.16.1"
   dependencies:
     "@auth0/auth0-spa-js": "npm:^2.18.0"
   peerDependencies:
     react: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
     react-dom: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
-  checksum: 10c0/ec08105f3a0088fcdbfcd51f86e759ec830bad8e51c17eeb165baa0eeab5602ffab20a74960a1ac672923091dd8bcdc92f9583a0fe708f936379a2b53fe6fc17
+  checksum: 10c0/59698ea9ff3205a83cfd6ab47152711bd74e7fc4328a9909fe063d9d3c0f0813db0a5e4e6e9767e7b8c77722355b0a64270dc7079d442a237a160baf604c2c52
   languageName: node
   linkType: hard
 
