@@ -432,7 +432,8 @@ export class DocumentsProvider {
       }
       this.invalidateById(params.documentId);
     }
-    return updateDocument.run(params, this.db);
+    const totalAmount = params.totalAmount == null ? undefined : Math.abs(params.totalAmount); // ensure amount is positive, as the sign is determined by debtor/creditor
+    return updateDocument.run({ ...params, totalAmount }, this.db);
   }
 
   public async deleteDocument(params: IDeleteDocumentParams) {
@@ -453,7 +454,12 @@ export class DocumentsProvider {
       });
     }
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    const documentsWithOwnerId = params.documents.map(doc => reassureOwnerIdExists(doc, ownerId));
+    const documentsWithOwnerId = params.documents.map(doc =>
+      reassureOwnerIdExists(
+        { ...doc, amount: doc.amount == null ? undefined : Math.abs(doc.amount) }, // ensure amount is positive, as the sign is determined by debtor/creditor
+        ownerId,
+      ),
+    );
     return insertDocuments.run({ documents: documentsWithOwnerId }, dbConnection ?? this.db);
   }
 
