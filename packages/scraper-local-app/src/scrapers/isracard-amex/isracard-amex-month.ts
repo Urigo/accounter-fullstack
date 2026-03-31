@@ -20,6 +20,7 @@ import type {
 } from '../../helpers/types.js';
 import type { Logger } from '../../logger.js';
 import type { IsracardAmexAccountContext, IsracardAmexContext } from './index.js';
+import { randomDelay } from './utils.js';
 
 type Index = IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0'];
 
@@ -469,6 +470,7 @@ export async function getMonthTransactions(
           const { logger } = ctx;
           const { scraper, type, nickname } = ctx[accountKey];
           try {
+            await randomDelay();
             const monthTransactions = await scraper!.getMonthTransactions(month);
 
             if (!monthTransactions.data) {
