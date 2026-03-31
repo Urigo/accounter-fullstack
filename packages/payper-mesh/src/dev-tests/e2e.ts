@@ -1,11 +1,11 @@
 import { config } from 'dotenv';
 import { init } from '../index.js';
 
-config({ path: '../../.env' });
+config({ path: [`.env`, `../../.env`] });
 
 const testRun = async () => {
-  const authToken = process.env['PAYPER_MESH_AUTH_TOKEN'] as string;
-  const userName = process.env['PAYPER_MESH_USER_NAME'] as string;
+  const authToken = process.env['PAYPER_AUTH_TOKEN'] as string;
+  const userName = process.env['PAYPER_USER_NAME'] as string;
   const app = await init(authToken, userName);
 
   const data = await app.sdk.getExpenses_query();

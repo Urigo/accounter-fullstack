@@ -1,7 +1,7 @@
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
 
-dotenv();
+dotenv({ path: [`.env`, `../../.env`] });
 
 const AuthorizationModel = zod.object({
   GMAIL_LISTENER_API_KEY: zod.string(),

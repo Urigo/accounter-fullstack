@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 
 dotenv({
-  path: '../../.env',
+  path: [`.env`, `../../.env`],
 });
 
 // https://vitejs.dev/config/

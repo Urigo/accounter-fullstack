@@ -6,7 +6,7 @@ dotenv({
   path:
     process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
       ? process.env.TEST_ENV_FILE
-      : '../../.env',
+      : ['.env', '../../.env'],
   debug: process.env.RELEASE ? false : true,
 });
 
@@ -77,11 +77,6 @@ const GreenInvoiceModel = zod.union([
   zod.void(),
 ]);
 
-const AuthorizationModel = zod.object({
-  AUTHORIZED_USERS: zod.union([zod.string(), zod.void()]),
-  DEFAULT_FINANCIAL_ENTITY_ID: zod.string(),
-});
-
 const HiveModel = zod.union([
   zod.object({
     HIVE_TOKEN: zod.string().optional(),
@@ -93,39 +88,6 @@ const GoogleDriveModel = zod.union([
   zod.object({
     GOOGLE_DRIVE_API_KEY: zod.string().optional(),
   }),
-  zod.void(),
-]);
-
-const GmailModel = zod.union([
-  zod
-    .object({
-      GMAIL_CLIENT_ID: zod.string().optional(),
-      GMAIL_CLIENT_SECRET: zod.string().optional(),
-      GMAIL_REFRESH_TOKEN: zod.string().optional(),
-      GMAIL_LABEL_PATH: zod.string().optional(),
-      GOOGLE_CLOUD_PROJECT_ID: zod.string().optional(),
-      GOOGLE_APPLICATION_CREDENTIALS: zod.string().optional(),
-      PUBSUB_TOPIC: zod.string().optional(),
-      PUBSUB_SUBSCRIPTION: zod.string().optional(),
-    })
-    .superRefine((data, ctx) => {
-      const gmailVars = [
-        data.GMAIL_CLIENT_ID,
-        data.GMAIL_CLIENT_SECRET,
-        data.GMAIL_REFRESH_TOKEN,
-        data.GOOGLE_CLOUD_PROJECT_ID,
-        data.GOOGLE_APPLICATION_CREDENTIALS,
-      ];
-      // GMAIL_LABEL_PATH, PUBSUB_TOPIC and PUBSUB_SUBSCRIPTION are optional and can be omitted
-      const definedCount = gmailVars.filter(v => !!v).length;
-      if (definedCount !== 0 && definedCount !== gmailVars.length) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'Gmail variables (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS) must be provided together or all omitted.',
-        });
-      }
-    }),
   zod.void(),
 ]);
 
@@ -235,10 +197,8 @@ const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
   greenInvoice: GreenInvoiceModel.safeParse(process.env),
-  authorization: AuthorizationModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
   googleDrive: GoogleDriveModel.safeParse(process.env),
-  gmail: GmailModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
@@ -269,10 +229,8 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 const postgres = extractConfig(configs.postgres);
 const cloudinary = extractConfig(configs.cloudinary);
 const greenInvoice = extractConfig(configs.greenInvoice);
-const authorization = extractConfig(configs.authorization);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
-const gmail = extractConfig(configs.gmail);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
 const general = extractConfig(configs.general);
@@ -301,10 +259,6 @@ export const env = {
         secret: greenInvoice.GREEN_INVOICE_SECRET!,
       }
     : undefined,
-  authorization: {
-    users: authorization?.AUTHORIZED_USERS,
-    adminBusinessId: authorization?.DEFAULT_FINANCIAL_ENTITY_ID,
-  },
   hive: hive?.HIVE_TOKEN
     ? {
         hiveToken: hive.HIVE_TOKEN!,
@@ -318,18 +272,6 @@ export const env = {
   deel: deel?.DEEL_TOKEN
     ? {
         apiToken: deel.DEEL_TOKEN!,
-      }
-    : undefined,
-  gmail: gmail?.GMAIL_CLIENT_ID
-    ? {
-        clientId: gmail.GMAIL_CLIENT_ID!,
-        clientSecret: gmail.GMAIL_CLIENT_SECRET!,
-        refreshToken: gmail.GMAIL_REFRESH_TOKEN!,
-        labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
-        cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID!,
-        appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS!,
-        topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
-        subscriptionName: gmail.PUBSUB_SUBSCRIPTION || 'gmail-notifications-sub',
       }
     : undefined,
   auth0: auth0

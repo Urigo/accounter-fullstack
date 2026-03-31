@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { vatScraper } from '../index.js';
 
-config({ path: '../../.env' });
+config({ path: [`.env`, `../../.env`] });
 
 const testRun = async () => {
   vatScraper(undefined, { years: [[2020, [5]]], visibleBrowser: true });

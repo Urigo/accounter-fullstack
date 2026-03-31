@@ -2,7 +2,7 @@ import type { PoolConfig } from 'pg';
 import { config } from 'dotenv';
 
 // Load environment variables
-config();
+config({ path: [`.env`, `../../.env`] });
 
 /**
  * Shared database configuration for test environments

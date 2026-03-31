@@ -1,7 +1,7 @@
 import { config as dotenv } from 'dotenv';
 import type { Config } from './index.js';
 
-dotenv({ path: '../../.env', quiet: true });
+dotenv({ path: ['.env', '../../.env'], quiet: true });
 
 export const config: Config = {
   database: {
