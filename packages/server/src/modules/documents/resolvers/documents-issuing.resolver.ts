@@ -3,6 +3,7 @@ import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
+import { errorSimplifier } from '../../../shared/errors.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
@@ -523,26 +524,46 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       });
     },
     previewDocument: async (_, { input: initialInput }, { injector }) => {
-      const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
-      const document = await injector.get(GreenInvoiceClientProvider).previewDocuments({ input });
+      try {
+        const input = await convertDocumentInputIntoGreenInvoiceInput(initialInput, injector);
+        const document = await injector
+          .get(GreenInvoiceClientProvider)
+          .previewDocuments({ input })
+          .catch(e => {
+            if (e instanceof GraphQLError) {
+              const response = e.extensions?.response as {
+                status?: number;
+                body?: { errorMessage?: string };
+              };
+              if (response && response.status === 400 && response.body?.errorMessage) {
+                throw new GraphQLError(
+                  `Failed to generate document preview, Green Invoice returned: ${response.body!.errorMessage}`,
+                );
+              }
+            }
+            throw e;
+          });
 
-      if (!document) {
-        throw new GraphQLError('Failed to generate document preview');
+        if (!document) {
+          throw new GraphQLError('Failed to generate document preview');
+        }
+
+        if ('errorMessage' in document) {
+          console.error('Failed to generate document preview', document);
+          throw new GraphQLError(
+            `Failed to generate document preview, Green Invoice returned: ${document.errorMessage}`,
+          );
+        }
+
+        if ('file' in document && document.file) {
+          return document.file;
+        }
+
+        console.error('Document preview does not contain a file', document);
+        throw new GraphQLError('Document preview does not contain a file');
+      } catch (e) {
+        throw errorSimplifier('Error generating document preview', e);
       }
-
-      if ('errorMessage' in document) {
-        console.error('Failed to generate document preview', document);
-        throw new GraphQLError(
-          `Failed to generate document preview, Green Invoice returned: ${document.errorMessage}`,
-        );
-      }
-
-      if ('file' in document && document.file) {
-        return document.file;
-      }
-
-      console.error('Document preview does not contain a file', document);
-      throw new GraphQLError('Document preview does not contain a file');
     },
   },
 };

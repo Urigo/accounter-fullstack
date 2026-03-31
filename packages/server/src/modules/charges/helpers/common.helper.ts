@@ -143,9 +143,6 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     if (d.debtor_id === charge.owner_id) {
       factor *= -1;
     }
-    if (d.type === DocumentType.CreditInvoice) {
-      factor *= -1;
-    }
 
     if (d.date) {
       documentsMinAnyDate ??= d.date;
