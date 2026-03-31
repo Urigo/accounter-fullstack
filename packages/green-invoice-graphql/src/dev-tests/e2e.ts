@@ -1,7 +1,7 @@
 import { config } from 'dotenv';
 import { init } from '../index.js';
 
-config({ path: `../../.env` });
+config({ path: [`.env`, `../../.env`] });
 
 const testRun = async () => {
   const id = process.env['GREEN_INVOICE_ID'] as string;

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { init } from '../index.js';
 import { DiscountOptions } from '../scrapers/discount.js';
 
-dotenv.config();
+dotenv.config({ path: [`.env`, `../../.env`] });
 
 async function main() {
   if (!process.env['DISCOUNT_ID'] || !process.env['DISCOUNT_PASSWORD'])

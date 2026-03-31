@@ -2,9 +2,9 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { TestDatabase } from './db-setup.js';
 import { ExchangeProvider } from '../../modules/exchange-rates/providers/exchange.provider.js';
 import { createLedgerTestContext } from '../../test-utils/ledger-injector.js';
-import { buildAdminContextFromDb } from './admin-context-builder.js';
 import { mockExchangeRate } from './exchange-mock.js';
 import { Currency } from '../../shared/enums.js';
+import { EMPTY_UUID } from '../../shared/constants.js';
 
 describe('exchange-mock integration', () => {
   let db: TestDatabase;
@@ -27,6 +27,7 @@ describe('exchange-mock integration', () => {
       const context = createLedgerTestContext({
         pool: db.getPool(),
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
+        businessId: EMPTY_UUID,
       });
 
       // Retrieve exchange provider and verify mock works
@@ -49,6 +50,7 @@ describe('exchange-mock integration', () => {
       const context = createLedgerTestContext({
         pool: db.getPool(),
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 4.0),
+        businessId: EMPTY_UUID,
       });
 
       const exchangeProvider = context.injector.get<ExchangeProvider>(ExchangeProvider);
@@ -70,6 +72,7 @@ describe('exchange-mock integration', () => {
       const context = createLedgerTestContext({
         pool: db.getPool(),
         mockExchangeRates: mockExchangeRate(Currency.Usd, Currency.Ils, 3.5),
+        businessId: EMPTY_UUID,
       });
 
       const exchangeProvider = context.injector.get<ExchangeProvider>(ExchangeProvider);
@@ -88,6 +91,7 @@ describe('exchange-mock integration', () => {
       // Create context WITHOUT mock - should use real provider
       const context = createLedgerTestContext({
         pool: db.getPool(),
+        businessId: EMPTY_UUID,
         // No mockExchangeRates provided
       });
 

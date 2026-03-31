@@ -116,7 +116,6 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
-          DEFAULT_FINANCIAL_ENTITY_ID: '00000000-0000-0000-0000-000000000000'
           DEBUG: ''
         run: |
           yarn test:integration --reporter=default --coverage
@@ -129,7 +128,6 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
-          DEFAULT_FINANCIAL_ENTITY_ID: '00000000-0000-0000-0000-000000000000'
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |

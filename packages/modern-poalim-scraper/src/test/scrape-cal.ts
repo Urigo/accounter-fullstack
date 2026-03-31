@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { init } from '../index.js';
 import { CalOptions } from '../scrapers/cal.js';
 
-dotenv.config();
+dotenv.config({ path: [`.env`, `../../.env`] });
 
 async function main() {
   if (

@@ -143,9 +143,7 @@ Enable harness diagnostics to see pool metrics and lifecycle events:
 
 ### Environment File Isolation
 
-By default `seedAdminCore` writes `DEFAULT_FINANCIAL_ENTITY_ID` to the project `.env`. For test runs
-this can cause noisy diffs or race conditions in parallel execution. The harness supports setting a
-custom env file via `TEST_ENV_FILE`.
+The harness supports setting a custom env file via `TEST_ENV_FILE`.
 
 Example (manual):
 

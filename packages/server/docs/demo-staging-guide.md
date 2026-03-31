@@ -72,7 +72,6 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 📦 Shareholder Dividend (Q4 2024) (shareholder-dividend)
 📦 Client Payment with Refund (client-payment-with-refund)
 ✅ All use-cases seeded successfully
-✅ Updated .env file with DEFAULT_FINANCIAL_ENTITY_ID
 ✅ Demo data seed complete
 ```
 
@@ -554,7 +553,6 @@ ALLOW_DEMO_SEED=1
 
 # Auth (set manually in dashboard)
 AUTHORIZED_USERS=demo@accounter.local,admin@accounter.local
-DEFAULT_FINANCIAL_ENTITY_ID=<auto-written-by-seed-script>
 ```
 
 ### Deployment Workflow

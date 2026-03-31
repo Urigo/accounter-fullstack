@@ -1,5 +1,3 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { config } from 'dotenv';
 import pg from 'pg';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
@@ -286,9 +284,6 @@ async function seedDemoData() {
       throw new DemoSeedError('Fixture insertion failed', fixtureError);
     }
 
-    // 6. Write env vars (if not already set)
-    await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminBusinessId);
-
     console.log('✅ Demo data seed complete');
   } catch (error) {
     console.error('❌ Seed failed:');
@@ -304,28 +299,6 @@ async function seedDemoData() {
     throw new DemoSeedError('Demo data seed failed', error);
   } finally {
     await client.end();
-  }
-}
-
-async function updateEnvFile(key: string, value: string) {
-  const envPath = path.resolve(process.cwd(), '.env');
-
-  try {
-    let envContent = fs.readFileSync(envPath, 'utf8');
-
-    // Check if the variable already exists
-    if (envContent.match(new RegExp(`^${key}=`, 'm'))) {
-      // Replace existing value
-      envContent = envContent.replace(new RegExp(`^${key}=.*`, 'm'), `${key}=${value}`);
-    } else {
-      // Add new value
-      envContent += `\n${key}=${value}`;
-    }
-
-    fs.writeFileSync(envPath, envContent);
-    console.log(`✅ Updated .env file with ${key}`);
-  } catch (error) {
-    console.warn(`⚠️ Failed to update .env file for ${key}:`, error);
   }
 }
 

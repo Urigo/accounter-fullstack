@@ -4,7 +4,7 @@ const pgpFactory = require('pg-promise');
 const cn = require('./db-connection-string.cjs');
 
 dotenv.config({
-  path: '../../.env',
+  path: [`.env`, `../../.env`],
 });
 
 const pgp = pgpFactory();

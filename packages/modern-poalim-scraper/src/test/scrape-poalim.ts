@@ -3,7 +3,7 @@
 import dotenv from 'dotenv';
 import { init } from '../index.js';
 
-dotenv.config({ path: '../../.env' });
+dotenv.config({ path: [`.env`, `../../.env`] });
 
 async function main() {
   if (!process.env['USER_CODE'] || !process.env['PASSWORD'])

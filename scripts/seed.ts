@@ -1,5 +1,3 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { config } from 'dotenv';
 import pg from 'pg';
 import { seedCountries as seedCountriesUtil } from '../packages/server/src/modules/countries/helpers/seed-countries.helper.js';
@@ -171,7 +169,6 @@ async function seed() {
     console.log('✅ Financial accounts created successfully');
     console.log('✅ Admin business entity created successfully');
     console.log(`🔑 Admin Entity ID: ${adminEntityId}`);
-    await updateEnvFile('DEFAULT_FINANCIAL_ENTITY_ID', adminEntityId);
     await createAdminBusinessContext(client, adminEntityId);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
@@ -193,28 +190,6 @@ async function seedCountries(client: pg.Client) {
     console.log(`✅ All countries have been successfully inserted`);
   } else {
     console.log('ℹ️ Countries table already populated, skipping insertion');
-  }
-}
-
-async function updateEnvFile(key: string, value: string) {
-  const envPath = path.resolve(process.cwd(), '.env');
-
-  try {
-    let envContent = fs.readFileSync(envPath, 'utf8');
-
-    // Check if the variable already exists
-    if (envContent.match(new RegExp(`^${key}=`, 'm'))) {
-      // Replace existing value
-      envContent = envContent.replace(new RegExp(`^${key}=.*`, 'm'), `${key}=${value}`);
-    } else {
-      // Add new value
-      envContent += `\n${key}=${value}`;
-    }
-
-    fs.writeFileSync(envPath, envContent);
-    console.log(`✅ Updated .env file with ${key}`);
-  } catch (error) {
-    console.warn(`⚠️ Failed to update .env file for ${key}:`, error);
   }
 }
 

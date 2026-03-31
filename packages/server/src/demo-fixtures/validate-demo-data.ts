@@ -27,7 +27,7 @@ import { validateLedgerRecords } from './validators/ledger-validators.js';
 import type { LedgerRecord, ValidationContext } from './validators/types.js';
 
 config({
-  path: '../../.env',
+  path: [`.env`, `../../.env`],
 });
 
 const DEFAULT_CURRENCY = 'ILS';

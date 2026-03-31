@@ -35,8 +35,6 @@ Steps performed (transactional recommended for tests):
 3. Ensure authority businesses (VAT, Tax, Social Security).
 4. Ensure general & cross-year tax categories.
 5. Upsert `user_context` with defaults (local currency ILS).
-6. Write `DEFAULT_FINANCIAL_ENTITY_ID` to env file (isolated if `TEST_ENV_FILE` set; atomic write
-   pattern).
 
 Idempotency: All helpers perform `SELECT` checks before `INSERT` or rely on
 `ON CONFLICT DO NOTHING`.
