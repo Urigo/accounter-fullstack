@@ -72,7 +72,7 @@ runs:
         source docker/.ci.env
         docker compose \
           -f docker/docker-compose.dev.yml \
-          up -d --wait
+          up -d db --wait
 
     - name: Run DB Migrations
       shell: bash
