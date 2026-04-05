@@ -52,7 +52,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@types/pg": "npm:8.20.0"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     dotenv-cli: "npm:11.0.0"
     fast-xml-parser: "npm:5.5.9"
     listr2: "npm:10.2.1"
@@ -99,7 +99,7 @@ __metadata:
     dayjs: "npm:1.11.20"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.13.2"
@@ -142,7 +142,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.13"
     csv-parse: "npm:6.2.1"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     pg-promise: "npm:12.6.2"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -154,7 +154,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     pg-promise: "npm:12.6.2"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -168,7 +168,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@whatwg-node/fetch": "npm:0.10.13"
     "@whatwg-node/node-fetch": "npm:0.8.5"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     googleapis: "npm:171.4.0"
     graphql: "npm:16.13.2"
     inline-css: "npm:4.0.3"
@@ -237,7 +237,7 @@ __metadata:
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     node-kraken-api: "npm:2.2.2"
     pg-promise: "npm:12.6.2"
     tsup: "npm:8.5.1"
@@ -332,7 +332,7 @@ __metadata:
     cloudinary: "npm:2.9.0"
     dataloader: "npm:2.2.3"
     date-fns: "npm:4.1.0"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:171.4.0"
     graphql: "npm:16.13.2"
@@ -10639,7 +10639,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:4.1.2"
     bob-the-bundler: "npm:7.0.1"
     concurrently: "npm:9.2.1"
-    dotenv: "npm:17.3.1"
+    dotenv: "npm:17.4.0"
     eslint: "npm:10.2.0"
     eslint-config-flat-gitignore: "npm:2.3.0"
     eslint-config-prettier: "npm:10.1.8"
@@ -13385,10 +13385,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv@npm:17.3.1, dotenv@npm:^17.1.0, dotenv@npm:^17.3.1":
-  version: 17.3.1
-  resolution: "dotenv@npm:17.3.1"
-  checksum: 10c0/c78e0c2d5a549c751e544cc60e2b95e7cb67e0c551f42e094d161c6b297aa44b630a3c2dcacf5569e529a6c2a6b84e2ab9be8d37b299d425df5a18b81ce4a35f
+"dotenv@npm:17.4.0":
+  version: 17.4.0
+  resolution: "dotenv@npm:17.4.0"
+  checksum: 10c0/f040215466f9a0b0eef5053951c048ee613f587bf050d4e73b39261ec315a5e0331d246a99a2fdcfd38051fce13e9bd7e2801ae83c4368fc86c2ff0f758dd1db
   languageName: node
   linkType: hard
 
@@ -13396,6 +13396,13 @@ __metadata:
   version: 16.6.1
   resolution: "dotenv@npm:16.6.1"
   checksum: 10c0/15ce56608326ea0d1d9414a5c8ee6dcf0fffc79d2c16422b4ac2268e7e2d76ff5a572d37ffe747c377de12005f14b3cc22361e79fc7f1061cce81f77d2c973dc
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^17.1.0, dotenv@npm:^17.3.1":
+  version: 17.3.1
+  resolution: "dotenv@npm:17.3.1"
+  checksum: 10c0/c78e0c2d5a549c751e544cc60e2b95e7cb67e0c551f42e094d161c6b297aa44b630a3c2dcacf5569e529a6c2a6b84e2ab9be8d37b299d425df5a18b81ce4a35f
   languageName: node
   linkType: hard
 
