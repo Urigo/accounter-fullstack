@@ -162,8 +162,9 @@ export class DeelInvoicesProvider {
     }
   }
 
-  public getInvoicesByIssueDateLoader = new DataLoader((dates: readonly Date[]) =>
-    this.batchInvoicesByIssueDates(dates),
+  public getInvoicesByIssueDateLoader = new DataLoader(
+    (dates: readonly Date[]) => this.batchInvoicesByIssueDates(dates),
+    { cacheKeyFn: date => date.getTime().toString() },
   );
 
   private async batchInvoicesByIds(ids: readonly string[]) {
