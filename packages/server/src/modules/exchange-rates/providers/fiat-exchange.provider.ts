@@ -44,12 +44,12 @@ export class FiatExchangeProvider {
   public async getExchangeRates(date: Date) {
     const formattedDate = dateToTimelessDateString(date);
     try {
-      const cached = this.cache.get<IGetExchangeRatesByDateResult[]>(`exchange-${formattedDate}`);
+      const cached = this.cache.get<IGetExchangeRatesByDateResult[]>(formattedDate);
       if (cached) {
         return Promise.resolve(cached);
       }
       const [result] = await getExchangeRatesByDate.run({ date: formattedDate }, this.dbProvider);
-      this.cache.set(`exchange-${formattedDate}`, result);
+      this.cache.set(formattedDate, result);
       return result;
     } catch (error) {
       const message = `Error fetching exchange rates for date ${formattedDate}`;
@@ -81,7 +81,7 @@ export class FiatExchangeProvider {
   public getExchangeRatesByDatesLoader = new DataLoader(
     (keys: readonly Date[]) => this.batchExchangeRatesByDates(keys),
     {
-      cacheKeyFn: key => `exchange-${dateToTimelessDateString(key)}`,
+      cacheKeyFn: key => dateToTimelessDateString(key),
       cacheMap: this.cache,
     },
   );
