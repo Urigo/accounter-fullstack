@@ -124,8 +124,7 @@ export const businessTripsResolvers: BusinessTripsModule.Resolvers = {
       };
     },
     purpose: dbBusinessTrip => dbBusinessTrip.trip_purpose,
-    destination: dbBusinessTrip =>
-      dbBusinessTrip.destination ? (dbBusinessTrip.destination as CountryCode) : null,
+    destination: dbBusinessTrip => (dbBusinessTrip.destination as CountryCode) ?? null,
     attendees: async (dbBusinessTrip, _, { injector }) => {
       return injector
         .get(BusinessTripAttendeesProvider)
