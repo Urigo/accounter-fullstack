@@ -54,19 +54,19 @@
     "test": "node --import ../../scripts/register-esm.js ./src/dev-tests/e2e.ts"
   },
   "dependencies": {
-    "@graphql-mesh/config": "0.108.39",
+    "@graphql-mesh/config": "0.108.41",
     "@graphql-mesh/cross-helpers": "0.4.12",
-    "@graphql-mesh/http": "0.106.37",
-    "@graphql-mesh/json-schema": "0.109.38",
-    "@graphql-mesh/runtime": "0.106.35",
-    "@graphql-mesh/store": "0.104.35",
-    "@graphql-mesh/transform-resolvers-composition": "0.104.33",
-    "@graphql-mesh/types": "0.104.25",
-    "@graphql-mesh/utils": "0.104.33",
+    "@graphql-mesh/http": "0.106.39",
+    "@graphql-mesh/json-schema": "0.109.39",
+    "@graphql-mesh/runtime": "0.106.36",
+    "@graphql-mesh/store": "0.104.36",
+    "@graphql-mesh/transform-resolvers-composition": "0.104.34",
+    "@graphql-mesh/types": "0.104.26",
+    "@graphql-mesh/utils": "0.104.34",
     "graphql": "16.13.2"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.100.44",
+    "@graphql-mesh/cli": "0.100.47",
     "tsup": "8.5.1"
   },
   "publishConfig": {

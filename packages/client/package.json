@@ -35,7 +35,7 @@
     "@mantine/hooks": "6.0.22",
     "@minoru/react-dnd-treeview": "3.5.3",
     "@mui/material": "7.3.9",
-    "@mui/x-charts": "8.28.0",
+    "@mui/x-charts": "8.28.2",
     "@tanstack/react-query": "5.96.2",
     "@tanstack/react-table": "8.21.3",
     "@urql/exchange-auth": "3.0.0",
@@ -88,7 +88,7 @@
     "tailwindcss": "4.2.2",
     "tailwindcss-animate": "1.0.7",
     "typescript": "5.9.3",
-    "vite": "8.0.3",
+    "vite": "8.0.5",
     "vite-plugin-node-polyfills": "0.26.0"
   },
   "overrides": {
