@@ -11,7 +11,7 @@ import {
   AttendeesByBusinessTripDocument,
   BusinessTripReportCoreExpenseRowFieldsFragmentDoc,
   Currency,
-  type UpdateBusinessTripFlightsExpenseInput,
+  type UpdateBusinessTripTravelAndSubsistenceExpenseInput,
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
@@ -39,10 +39,15 @@ import { CurrencyInput } from '../../index.js';
   }
 `;
 
+export type UpdateBusinessTripExpenseInput = Omit<
+  UpdateBusinessTripTravelAndSubsistenceExpenseInput,
+  'expenseType'
+>;
+
 interface Props {
   data: FragmentType<typeof BusinessTripReportCoreExpenseRowFieldsFragmentDoc>;
   isEditMode: boolean;
-  control: Control<UpdateBusinessTripFlightsExpenseInput, unknown>;
+  control: Control<UpdateBusinessTripExpenseInput, unknown>;
   businessTripId: string;
 }
 
