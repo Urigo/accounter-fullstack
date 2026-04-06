@@ -1,3 +1,4 @@
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
 import type { NodeSDK } from '@opentelemetry/sdk-node';
 import { env } from '../environment.js';
 import { buildOtelSdk } from './builder.js';
@@ -6,6 +7,7 @@ let sdk: NodeSDK | null = null;
 let startPromise: Promise<void> | null = null;
 
 export async function startTelemetry() {
+  // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.DEBUG);
   if (sdk) {
     return;
   }
