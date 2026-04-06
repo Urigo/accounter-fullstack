@@ -74,14 +74,6 @@ function buildSampler(
   }
 }
 
-function normalizeTracesEndpoint(url: string): string {
-  const parsed = new URL(url);
-  if (!parsed.pathname || parsed.pathname === '/') {
-    parsed.pathname = '/v1/traces';
-  }
-  return parsed.href;
-}
-
 /**
  * Builds and returns a configured (but not yet started) NodeSDK instance using
  * the OTEL settings from `env`. Returns null when OTEL is disabled.
@@ -100,7 +92,7 @@ export function buildOtelSdk(): NodeSDK | null {
   });
 
   const traceExporter = new OTLPTraceExporter({
-    url: otel.exporterEndpoint ? normalizeTracesEndpoint(otel.exporterEndpoint) : undefined,
+    url: otel.exporterEndpoint,
     headers: parseHeaders(otel.exporterHeaders),
   });
 
