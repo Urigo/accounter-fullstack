@@ -1,5 +1,111 @@
 # @accounter-toolkit/israeli-vat-scraper
 
+## 0.1.11
+
+### Patch Changes
+
+- [#2959](https://github.com/Urigo/accounter-fullstack/pull/2959)
+  [`e537756`](https://github.com/Urigo/accounter-fullstack/commit/e53775641982f103baa9f02a250d2a05b36acd8f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.36.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.36.0)
+    (from `24.35.0`, in `dependencies`)
+
+- [#2982](https://github.com/Urigo/accounter-fullstack/pull/2982)
+  [`859a42a`](https://github.com/Urigo/accounter-fullstack/commit/859a42a4fd67574f9c45d5f721f83e2df93b921e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.37.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.37.2)
+    (from `24.37.0`, in `dependencies`)
+
+- [#2988](https://github.com/Urigo/accounter-fullstack/pull/2988)
+  [`3c2df4f`](https://github.com/Urigo/accounter-fullstack/commit/3c2df4f4cb79ec90fc5cfe372f7cede5e56f27e7)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.36.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.36.1)
+    (from `24.36.0`, in `dependencies`)
+
+- [#2999](https://github.com/Urigo/accounter-fullstack/pull/2999)
+  [`1f9675e`](https://github.com/Urigo/accounter-fullstack/commit/1f9675e5ae7e516770b7a052a79bbcfcd758b748)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.36.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.36.1)
+    (from `24.36.0`, in `dependencies`)
+
+- [#3006](https://github.com/Urigo/accounter-fullstack/pull/3006)
+  [`65a1eb6`](https://github.com/Urigo/accounter-fullstack/commit/65a1eb649dc9271a4fbd0a135eae98fd21474243)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.37.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.37.0)
+    (from `24.36.1`, in `dependencies`)
+
+- [#3025](https://github.com/Urigo/accounter-fullstack/pull/3025)
+  [`0b5b2ea`](https://github.com/Urigo/accounter-fullstack/commit/0b5b2ea65abe31286a97615a46cad149da72f235)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.37.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.37.2)
+    (from `24.37.0`, in `dependencies`)
+
+- [#3034](https://github.com/Urigo/accounter-fullstack/pull/3034)
+  [`88e8bb9`](https://github.com/Urigo/accounter-fullstack/commit/88e8bb914be1965333e0b899537562c8877782a1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.37.3` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.37.3)
+    (from `24.37.2`, in `dependencies`)
+
+- [#3043](https://github.com/Urigo/accounter-fullstack/pull/3043)
+  [`366e395`](https://github.com/Urigo/accounter-fullstack/commit/366e395cbb9638348e04dc268cc0eaf0e06e0c85)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`ajv@8.18.0` ↗︎](https://www.npmjs.com/package/ajv/v/8.18.0) (from `8.17.1`,
+    in `dependencies`)
+
+- [#3066](https://github.com/Urigo/accounter-fullstack/pull/3066)
+  [`560aaa4`](https://github.com/Urigo/accounter-fullstack/commit/560aaa4e320f71cc9a721945d3ead070c4b5cfed)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.37.5` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.37.5)
+    (from `24.37.3`, in `dependencies`)
+
+- [#3158](https://github.com/Urigo/accounter-fullstack/pull/3158)
+  [`494cf3f`](https://github.com/Urigo/accounter-fullstack/commit/494cf3f49c62f76de9f95dbec9b606fac2daa01f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.38.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.38.0)
+    (from `24.37.5`, in `dependencies`)
+
+- [#3188](https://github.com/Urigo/accounter-fullstack/pull/3188)
+  [`0e5f15c`](https://github.com/Urigo/accounter-fullstack/commit/0e5f15cca0258136adbc66f3552169b269e70422)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.39.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.39.0)
+    (from `24.38.0`, in `dependencies`)
+
+- [#3207](https://github.com/Urigo/accounter-fullstack/pull/3207)
+  [`556b274`](https://github.com/Urigo/accounter-fullstack/commit/556b274ac6f4ed6481c22646505d86ff4760e5a6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.39.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.39.1)
+    (from `24.39.0`, in `dependencies`)
+
+- [#3229](https://github.com/Urigo/accounter-fullstack/pull/3229)
+  [`ac3fcb6`](https://github.com/Urigo/accounter-fullstack/commit/ac3fcb6c14332669fa11fce514cc5ec720c88dc1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.40.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.40.0)
+    (from `24.39.1`, in `dependencies`)
+
+- [#3038](https://github.com/Urigo/accounter-fullstack/pull/3038)
+  [`4d4e60d`](https://github.com/Urigo/accounter-fullstack/commit/4d4e60dd85f6c7779c556b513e2de844615dd293)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Configurable NPM Registry in CI**: The
+  GitHub Actions setup now includes a `registryUrl` input, allowing for flexible specification of
+  the NPM registry during package publishing.
+  - **Deterministic Dependency Installation**: The `yarn install` command in the CI workflow was
+    updated to use `--frozen-lockfile`, ensuring consistent and reproducible builds by preventing
+    modifications to the `yarn.lock` file.
+  - **Standardized Package Metadata**: `package.json` files across several packages were updated to
+    include comprehensive and consistent metadata, such as `description`, `repository` details,
+    `homepage`, `bugs` URL, and `author` information.
+  - **Explicit NPM Registry Configuration**: The `publishConfig` in multiple `package.json` files
+    was modified to explicitly set the `registry` to `https://registry.npmjs.org`, clarifying the
+    target for package publication.
+
+- [#3270](https://github.com/Urigo/accounter-fullstack/pull/3270)
+  [`1815013`](https://github.com/Urigo/accounter-fullstack/commit/181501367c4dbdeb0010296e7d418af955f4e75e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Environment Variable Cleanup**: Removed
+  hardcoded and auto-generated environment variables like DEFAULT_FINANCIAL_ENTITY_ID and Gmail
+  credentials from the main configuration, promoting a cleaner and more secure setup.
+  - **Configuration Loading Improvements**: Updated various packages to support loading environment
+    variables from both local and parent directory files, improving flexibility across different
+    environments.
+
 ## 0.1.10
 
 ### Patch Changes
