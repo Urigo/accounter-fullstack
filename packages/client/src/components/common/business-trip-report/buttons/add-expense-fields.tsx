@@ -8,15 +8,20 @@ import { DatePickerInput } from '@mantine/dates';
 import {
   AttendeesByBusinessTripDocument,
   Currency,
-  type AddBusinessTripFlightsExpenseInput,
+  type AddBusinessTripTravelAndSubsistenceExpenseInput,
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';
 import { CurrencyInput } from '../../index.js';
 
+export type AddBusinessTripExpenseInput = Omit<
+  AddBusinessTripTravelAndSubsistenceExpenseInput,
+  'expenseType'
+>;
+
 type ModalProps = {
   businessTripId: string;
-  control: Control<AddBusinessTripFlightsExpenseInput, unknown>;
+  control: Control<AddBusinessTripExpenseInput, unknown>;
   setFetching: (fetching: boolean) => void;
 };
 
