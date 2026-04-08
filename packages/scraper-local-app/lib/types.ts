@@ -95,6 +95,8 @@ export function isIsracardAccount(account: AccountConfig): account is IsracardAc
 
 export interface ScraperConfig {
   serverUrl: string;
+  apiKey: string;
+  databaseConnectionString: string;
   accounts: AccountConfig[];
 }
 

@@ -7,6 +7,7 @@ import { AccountsList } from '@/components/accounts-list';
 import { ConfiguredSourceCard } from '@/components/configured-source-card';
 import { ExecutionPanel } from '@/components/execution-panel';
 import { ServerConfig } from '@/components/server-config';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -25,6 +26,8 @@ type View = { type: 'sources' } | { type: 'accounts'; source: Source };
 export function ScraperApp() {
   const [config, setConfig] = useState<ScraperConfig>({
     serverUrl: '',
+    apiKey: '',
+    databaseConnectionString: '',
     accounts: [],
   });
 
@@ -105,7 +108,7 @@ export function ScraperApp() {
         <div className="container max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-semibold">Accounter Scraper</h1>
+              <h1 className="text-xl font-semibold">Financial Scraper</h1>
               <p className="text-sm text-muted-foreground">
                 {totalAccounts} {totalAccounts === 1 ? 'account' : 'accounts'} configured
               </p>

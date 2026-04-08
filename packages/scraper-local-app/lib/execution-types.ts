@@ -9,6 +9,7 @@ export interface StepResult {
 
 export interface TransactionFlowStep {
   fetch: StepResult;
+  insertOriginToDb?: StepResult; // Only present if databaseConnectionString is configured
   normalize: StepResult;
   insert: StepResult;
 }
@@ -108,9 +109,10 @@ export interface ExecutionState {
   summary?: ExecutionSummary;
 }
 
-export function createInitialTransactionFlow(): TransactionFlowStep {
+export function createInitialTransactionFlow(includeDbStep: boolean = false): TransactionFlowStep {
   return {
     fetch: { status: 'idle' },
+    ...(includeDbStep ? { insertOriginToDb: { status: 'idle' } } : {}),
     normalize: { status: 'idle' },
     insert: { status: 'idle' },
   };
