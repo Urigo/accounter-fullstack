@@ -63,6 +63,12 @@ export default [
     },
   },
   {
+    files: ['packages/scraper-local-app/**/*'],
+    rules: {
+      'import/extensions': 'off',
+    },
+  },
+  {
     files: ['**/*.{graphql,gql}'],
 
     plugins: {
