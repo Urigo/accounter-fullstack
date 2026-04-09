@@ -7,6 +7,7 @@ import type {
 } from '../packages/server/src/__tests__/helpers/fixture-types.js';
 import { createAdminBusinessContext } from '../packages/server/src/demo-fixtures/helpers/admin-context.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
+import { seedDemoUsers } from '../packages/server/src/demo-fixtures/helpers/seed-demo-users.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
 import { seedVATDefault } from '../packages/server/src/demo-fixtures/helpers/seed-vat.js';
 import { getAllUseCases } from '../packages/server/src/demo-fixtures/use-cases/index.js';
@@ -210,6 +211,8 @@ async function seedDemoData() {
                      accounter_schema.charges,
                      accounter_schema.financial_accounts_tax_categories,
                      accounter_schema.financial_accounts,
+                     accounter_schema.invitations,
+                     accounter_schema.business_users,
                      accounter_schema.tags,
                      accounter_schema.tax_categories,
                      accounter_schema.businesses,
@@ -233,6 +236,12 @@ async function seedDemoData() {
     console.log('✅ Creating admin business context...');
     const adminBusinessId = await createAdminBusinessContext(client);
     console.log(`✅ Admin Business ID: ${adminBusinessId}`);
+
+    const { adminUserId, accountantUserId } = await seedDemoUsers(client, adminBusinessId);
+    console.log(
+      `✅ Demo users seeded for local dev bypass. Copy to .env: VITE_DEV_AUTH_USER_ID=${adminUserId} (admin) or ${accountantUserId} (accountant)`,
+    );
+    console.log(`   adminUserId=${adminUserId}, accountantUserId=${accountantUserId}`);
 
     // 5. Load all use-cases
     const useCases = getAllUseCases();
