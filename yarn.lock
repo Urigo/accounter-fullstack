@@ -134,9 +134,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/etana-scrapper@workspace:packages/etana-scrapper":
+"@accounter/etana-scraper@workspace:packages/etana-scraper":
   version: 0.0.0-use.local
-  resolution: "@accounter/etana-scrapper@workspace:packages/etana-scrapper"
+  resolution: "@accounter/etana-scraper@workspace:packages/etana-scraper"
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     csv-parse: "npm:6.2.1"
@@ -147,9 +147,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/etherscan-scrapper@workspace:packages/etherscan-scrapper":
+"@accounter/etherscan-scraper@workspace:packages/etherscan-scraper":
   version: 0.0.0-use.local
-  resolution: "@accounter/etherscan-scrapper@workspace:packages/etherscan-scrapper"
+  resolution: "@accounter/etherscan-scraper@workspace:packages/etherscan-scraper"
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"
@@ -230,9 +230,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@accounter/kraken-scrapper@workspace:packages/kraken-scrapper":
+"@accounter/kraken-scraper@workspace:packages/kraken-scraper":
   version: 0.0.0-use.local
-  resolution: "@accounter/kraken-scrapper@workspace:packages/kraken-scrapper"
+  resolution: "@accounter/kraken-scraper@workspace:packages/kraken-scraper"
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
     diary: "npm:0.4.5"

@@ -10,7 +10,7 @@ export const config: Config = {
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: process.env.POSTGRES_PORT ? Number(process.env.POSTGRES_PORT) : 5432,
     database: process.env.POSTGRES_DB ?? 'accounter',
-    ssl: process.env.POSTGRES_SSL ? true : false,
+    ssl: process.env.POSTGRES_SSL === '1' ? true : false,
   },
   poalimAccounts: [],
   isracardAccounts: [],

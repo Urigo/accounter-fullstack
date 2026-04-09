@@ -10,7 +10,7 @@ enableLogger(ensureEnv('DEBUG_LOG', '*'));
 const logger = diary('main');
 
 async function main() {
-  logger.info(`🚀 Etherscan Accounter Scrapper started`);
+  logger.info(`🚀 Etherscan Accounter Scraper started`);
   const etherscanApiKey = ensureEnv('ETHERSCAN_API_KEY');
   const etherscan = createEtherscan({ apiKey: etherscanApiKey });
   const walletsToScan = ensureEnv('WALLETS_TO_SCAN').split(',');

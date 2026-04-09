@@ -1,6 +1,6 @@
-## Etana Scrapper
+## Etana Scraper
 
-The goal of this package is to implement a scrapper based on Etana export files.
+The goal of this package is to implement a scraper based on Etana export files.
 
 ### Getting Started
 
@@ -14,4 +14,4 @@ DATABASE_URL="<>"
 CSV_EXPORT_FILEPATH="<RELATIVE_OR_ABSOLUTE_PATH_TO_CSV_FILE>"
 ```
 
-1. Run the scrapper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.
+1. Run the scraper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.

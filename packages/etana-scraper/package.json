@@ -1,5 +1,5 @@
 {
-  "name": "@accounter/etherscan-scrapper",
+  "name": "@accounter/etana-scraper",
   "version": "0.0.1",
   "type": "module",
   "private": true,
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@whatwg-node/fetch": "0.10.13",
+    "csv-parse": "6.2.1",
     "diary": "0.4.5",
     "dotenv": "17.4.1",
     "pg-promise": "12.6.2"
