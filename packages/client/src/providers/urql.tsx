@@ -181,6 +181,9 @@ export function getUrqlClient(): Client {
           addAuthToOperation(operation): Operation<void, AnyVariables> {
             if (isDevAuthEnabled) {
               if (!devAuthUserId) {
+                console.warn(
+                  'VITE_DEV_AUTH is enabled but VITE_DEV_AUTH_USER_ID is not set. Dev auth header will be omitted.',
+                );
                 return operation;
               }
 
