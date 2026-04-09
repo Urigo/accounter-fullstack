@@ -38,7 +38,7 @@ the bypass header.
 
 8. **Log startup warning** when `ALLOW_DEV_AUTH=1`: `⚠️ DEV AUTH BYPASS ENABLED`.
 
-### Phase 3: Client — VITE_DEV_AUTH Mode (_parallel with Phase 2_)
+### Phase 3: Client — VITE_DEV_AUTH Mode (\_parallel with Phase 2\_)
 
 9. **Modify index.tsx** — when `VITE_DEV_AUTH=1`, skip `Auth0Provider`, render `RouterProvider`
    directly.
