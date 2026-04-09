@@ -3,7 +3,8 @@
 **Owner**: Accounter Fullstack Team  
 **Status**: Active  
 **Last Updated**: 2024-11-30  
-**Related**: `docs/demo-staging-dataset-spec.md`, `docs/demo-staging-dataset-todo.md`
+**Related**: `docs/archive/demo-staging-dataset-spec.md`,
+`docs/archive/demo-staging-dataset-todo.md`
 
 ---
 
