@@ -188,23 +188,14 @@ export class DeelClientProvider {
         throw new Error('Deel invoice file download URL is missing');
       }
 
-      const { body } = await fetch(data.data.url);
+      const invoiceFileRes = await fetch(data.data.url);
 
-      if (!body) {
+      if (!invoiceFileRes.ok) {
         throw new Error('Deel invoice file download failed');
       }
 
-      // Read all chunks from the stream
-      const chunks = [];
-      for await (const chunk of body) {
-        chunks.push(chunk);
-      }
-
-      // Concatenate chunks into a single buffer
-      const buffer = Buffer.concat(chunks);
-
-      // Create a Blob from the buffer
-      const blob = new Blob([buffer], { type: 'application/pdf' });
+      const invoiceFileBuffer = await invoiceFileRes.arrayBuffer();
+      const blob = new Blob([invoiceFileBuffer], { type: 'application/pdf' });
 
       return blob;
     } catch (error) {
