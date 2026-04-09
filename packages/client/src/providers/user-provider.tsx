@@ -44,7 +44,17 @@ export const UserContext = createContext<ContextType>({
   setUserContext: () => void 0,
 });
 
+const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
+
 export function UserProvider({ children }: { children?: ReactNode }): ReactNode {
+  if (isDevAuthEnabled) {
+    return <DevAuthUserProvider>{children}</DevAuthUserProvider>;
+  }
+
+  return <Auth0UserProvider>{children}</Auth0UserProvider>;
+}
+
+function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
   const { isAuthenticated, user: auth0User } = useAuth0();
   const [userContext, setUserContext] = useState<UserInfo | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -93,6 +103,43 @@ export function UserProvider({ children }: { children?: ReactNode }): ReactNode 
       context: defaults,
     });
   }, [defaults, user]);
+
+  if (fetching) {
+    return <AccounterLoader />;
+  }
+
+  return (
+    <UserContext.Provider value={{ userContext, setUserContext }}>{children}</UserContext.Provider>
+  );
+}
+
+function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode {
+  const [userContext, setUserContext] = useState<UserInfo | null>(null);
+  const [defaults, setDefaults] = useState<UserContextQuery['userContext']>(null);
+
+  const [{ data, fetching }] = useQuery({
+    query: UserContextDocument,
+    variables: {},
+    pause: false,
+  });
+
+  useEffect(() => {
+    if (data && !fetching) {
+      setDefaults(data.userContext);
+    }
+  }, [data, fetching]);
+
+  useEffect(() => {
+    if (!defaults) {
+      setUserContext(null);
+      return;
+    }
+
+    setUserContext({
+      username: 'dev-user',
+      context: defaults,
+    });
+  }, [defaults]);
 
   if (fetching) {
     return <AccounterLoader />;

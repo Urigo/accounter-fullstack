@@ -11,6 +11,7 @@ import { setUrqlAccessTokenProvider } from './providers/urql.js';
 
 const rootElement = document.getElementById('root');
 const root = createRoot(rootElement!);
+const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
 
 // Create router with object-based configuration
 const router = createBrowserRouter(routes);
@@ -66,21 +67,31 @@ function Auth0UrqlTokenBridge() {
   return <RouterProvider router={router} />;
 }
 
+function DevAuthApp() {
+  // Dev auth mode does not require token provider wiring.
+  setUrqlAccessTokenProvider(null);
+  return <RouterProvider router={router} />;
+}
+
 root.render(
   <StrictMode>
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        redirect_uri: redirectUri,
-        audience,
-        scope: 'openid profile email offline_access',
-      }}
-      useRefreshTokens
-      cacheLocation="localstorage"
-      skipRedirectCallback={shouldSkipRedirectCallback}
-    >
-      <Auth0UrqlTokenBridge />
-    </Auth0Provider>
+    {isDevAuthEnabled ? (
+      <DevAuthApp />
+    ) : (
+      <Auth0Provider
+        domain={domain}
+        clientId={clientId}
+        authorizationParams={{
+          redirect_uri: redirectUri,
+          audience,
+          scope: 'openid profile email offline_access',
+        }}
+        useRefreshTokens
+        cacheLocation="localstorage"
+        skipRedirectCallback={shouldSkipRedirectCallback}
+      >
+        <Auth0UrqlTokenBridge />
+      </Auth0Provider>
+    )}
   </StrictMode>,
 );

@@ -69,6 +69,7 @@ describe('URQL auth exchange hardening', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   async function initializeAuth(
@@ -100,6 +101,24 @@ describe('URQL auth exchange hardening', () => {
       Authorization: 'Bearer token-123',
     });
     expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBe('Bearer token-123');
+  });
+
+  it('adds X-Dev-Auth header instead of Authorization when VITE_DEV_AUTH=1', async () => {
+    vi.stubEnv('VITE_DEV_AUTH', '1');
+    vi.stubEnv('VITE_DEV_AUTH_USER_ID', 'dev-user-123');
+
+    const provider = vi.fn(async () => 'token-123');
+    const { authConfig } = await initializeAuth(provider);
+
+    const operation = { context: {} };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(appendHeadersMock).toHaveBeenCalledWith(operation, {
+      'X-Dev-Auth': 'dev-user-123',
+    });
+    expect(enrichedOperation.context.fetchOptions.headers['X-Dev-Auth']).toBe('dev-user-123');
+    expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBeUndefined();
+    expect(provider).not.toHaveBeenCalled();
   });
 
   it('detects only UNAUTHENTICATED GraphQL auth errors', async () => {
@@ -215,5 +234,19 @@ describe('URQL auth exchange hardening', () => {
     expect(postRefreshOperation.context.fetchOptions.headers.Authorization).toBe(
       'Bearer token-after-refresh',
     );
+  });
+
+  it('keeps existing Auth0 token flow untouched when VITE_DEV_AUTH is disabled', async () => {
+    vi.stubEnv('VITE_DEV_AUTH', '0');
+    vi.stubEnv('VITE_DEV_AUTH_USER_ID', 'dev-user-123');
+
+    const provider = vi.fn(async () => 'token-abc');
+    const { authConfig } = await initializeAuth(provider);
+
+    const operation = { context: {} };
+    const enrichedOperation = authConfig.addAuthToOperation(operation);
+
+    expect(enrichedOperation.context.fetchOptions.headers.Authorization).toBe('Bearer token-abc');
+    expect(enrichedOperation.context.fetchOptions.headers['X-Dev-Auth']).toBeUndefined();
   });
 });

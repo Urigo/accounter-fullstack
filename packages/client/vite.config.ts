@@ -47,5 +47,7 @@ export default defineConfig({
       process.env.AUTH0_FRONTEND_CLIENT_ID,
     ),
     'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
+    'import.meta.env.VITE_DEV_AUTH': JSON.stringify(process.env.ALLOW_DEV_AUTH),
+    'import.meta.env.VITE_DEV_AUTH_USER_ID': JSON.stringify(process.env.DEV_AUTH_USER_ID),
   },
 });

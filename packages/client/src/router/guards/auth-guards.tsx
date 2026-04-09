@@ -8,7 +8,17 @@ type GuardProps = {
   children: ReactElement;
 };
 
+const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
+
 export function ProtectedRoute({ children }: GuardProps): ReactElement {
+  if (isDevAuthEnabled) {
+    return children;
+  }
+
+  return <Auth0ProtectedRoute>{children}</Auth0ProtectedRoute>;
+}
+
+function Auth0ProtectedRoute({ children }: GuardProps): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
 
@@ -30,6 +40,14 @@ export function ProtectedRoute({ children }: GuardProps): ReactElement {
 }
 
 export function PublicOnlyGuard({ children }: GuardProps): ReactElement {
+  if (isDevAuthEnabled) {
+    return children;
+  }
+
+  return <Auth0PublicOnlyGuard>{children}</Auth0PublicOnlyGuard>;
+}
+
+function Auth0PublicOnlyGuard({ children }: GuardProps): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
   const isForcedReauth = new URLSearchParams(location.search).get('reauth') === '1';

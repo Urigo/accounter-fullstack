@@ -1,4 +1,4 @@
-export type AuthType = 'jwt' | 'apiKey' | 'system';
+export type AuthType = 'jwt' | 'apiKey' | 'system' | 'devBypass';
 
 export interface AuthUser {
   userId: string;

@@ -3,7 +3,8 @@
 **Owner**: Accounter Fullstack Team  
 **Status**: Active  
 **Last Updated**: 2024-11-30  
-**Related**: `docs/demo-staging-dataset-spec.md`, `docs/demo-staging-dataset-todo.md`
+**Related**: `docs/archive/demo-staging-dataset-spec.md`,
+`docs/archive/demo-staging-dataset-todo.md`
 
 ---
 
@@ -80,6 +81,38 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 ```
 ✅ Demo data validation passed
 ```
+
+### Local Development (No Auth0)
+
+Use this flow when you want to run the app locally without logging in through Auth0.
+
+1. Seed demo data and copy the printed demo user ids:
+
+```bash
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+The seed script prints both `adminUserId` and `accountantUserId`.
+
+2. Configure local environment variables:
+
+```bash
+# Bypass toggle (server + client)
+ALLOW_DEV_AUTH=1
+
+# Optional: attach real Auth0 id to seeded demo admin user
+DEMO_AUTH0_USER_ID=
+
+# Choose which seeded user to impersonate
+DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
+```
+
+3. Switch roles by swapping `DEV_AUTH_USER_ID`:
+
+- Use `adminUserId` for `business_owner` context.
+- Use `accountantUserId` for `accountant` context.
+
+Restart client and server after changing environment variables.
 
 ---
 

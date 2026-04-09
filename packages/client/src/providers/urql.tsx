@@ -140,6 +140,9 @@ export function getUrqlClient(): Client {
     return globalClient;
   }
 
+  const isDevAuthEnabled = import.meta.env.VITE_DEV_AUTH === '1';
+  const devAuthUserId = import.meta.env.VITE_DEV_AUTH_USER_ID?.trim() ?? '';
+
   let url: string;
   switch (import.meta.env.MODE) {
     case 'production': {
@@ -165,8 +168,10 @@ export function getUrqlClient(): Client {
         },
       }),
       authExchange(async utils => {
-        const initialToken = await getAccessToken();
-        bearerToken = initialToken.status === 'token' ? `Bearer ${initialToken.token}` : null;
+        if (!isDevAuthEnabled) {
+          const initialToken = await getAccessToken();
+          bearerToken = initialToken.status === 'token' ? `Bearer ${initialToken.token}` : null;
+        }
 
         return {
           willAuthError(): boolean {
@@ -174,6 +179,19 @@ export function getUrqlClient(): Client {
             return false;
           },
           addAuthToOperation(operation): Operation<void, AnyVariables> {
+            if (isDevAuthEnabled) {
+              if (!devAuthUserId) {
+                console.warn(
+                  'VITE_DEV_AUTH is enabled but VITE_DEV_AUTH_USER_ID is not set. Dev auth header will be omitted.',
+                );
+                return operation;
+              }
+
+              return utils.appendHeaders(operation, {
+                'X-Dev-Auth': devAuthUserId,
+              });
+            }
+
             if (!bearerToken) {
               return operation;
             }
@@ -187,6 +205,10 @@ export function getUrqlClient(): Client {
             );
           },
           async refreshAuth(): Promise<void> {
+            if (isDevAuthEnabled) {
+              return;
+            }
+
             const refreshedToken = await getAccessToken({ cacheMode: 'off' });
 
             if (refreshedToken.status === 'error') {
