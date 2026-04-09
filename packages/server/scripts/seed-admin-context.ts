@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { Client, PoolClient } from 'pg';
 import { makeUUID } from '../src/__tests__/factories/index.js';
 import {
   ensureBusinessForEntity,
@@ -19,7 +19,9 @@ import {
  * @param client - PostgreSQL client (should be in a transaction for rollback safety)
  * @returns Promise resolving to admin entity ID
  */
-export async function seedAdminCore(client: PoolClient): Promise<{ adminEntityId: string }> {
+export async function seedAdminCore(
+  client: PoolClient | Client,
+): Promise<{ adminEntityId: string }> {
   console.log('🌱 Starting admin context seed...');
 
   // 0. Ensure required reference data exists for FKs inside this transaction

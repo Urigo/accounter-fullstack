@@ -32,8 +32,9 @@ export async function createAdminBusinessContext(client: Client): Promise<string
   );
 
   if (findResult.rows.length > 0) {
-    await ensureAdminBusinessAdminRow(client, findResult.rows[0].id);
-    return findResult.rows[0].id;
+    const adminId = findResult.rows[0].id;
+    await ensureAdminBusinessAdminRow(client, adminId);
+    return adminId;
   }
 
   // 2) Handle circular FK: financial_entities.owner_id → businesses.id ← businesses.id → financial_entities.id

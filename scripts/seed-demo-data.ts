@@ -1,11 +1,11 @@
 import { config } from 'dotenv';
 import pg from 'pg';
+import { seedAdminCore } from '../packages/server/scripts/seed-admin-context.js';
 import { insertFixture } from '../packages/server/src/__tests__/helpers/fixture-loader.js';
 import type {
   Fixture,
   FixtureAccountTaxCategories,
 } from '../packages/server/src/__tests__/helpers/fixture-types.js';
-import { createAdminBusinessContext } from '../packages/server/src/demo-fixtures/helpers/admin-context.js';
 import { resolveAdminPlaceholders } from '../packages/server/src/demo-fixtures/helpers/placeholder.js';
 import { seedDemoUsers } from '../packages/server/src/demo-fixtures/helpers/seed-demo-users.js';
 import { seedExchangeRates } from '../packages/server/src/demo-fixtures/helpers/seed-exchange-rates.js';
@@ -234,7 +234,13 @@ async function seedDemoData() {
 
     // 4. Create admin business context
     console.log('✅ Creating admin business context...');
-    const adminBusinessId = await createAdminBusinessContext(client);
+    const { adminEntityId: adminBusinessId } = await seedAdminCore(client);
+    await client.query(
+      `INSERT INTO accounter_schema.businesses_admin (id, owner_id)
+       VALUES ($1, $1)
+       ON CONFLICT (id) DO UPDATE SET owner_id = EXCLUDED.owner_id`,
+      [adminBusinessId],
+    );
     console.log(`✅ Admin Business ID: ${adminBusinessId}`);
 
     const { adminUserId, accountantUserId } = await seedDemoUsers(client, adminBusinessId);
