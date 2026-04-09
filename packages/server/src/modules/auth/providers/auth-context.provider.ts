@@ -11,6 +11,56 @@ import { ALLOWED_API_KEY_ROLES } from '../helpers/api-keys.helper.js';
 // Global cache for JWKS functions to prevent re-fetching on every request
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
+type QueryableDB = Pick<DBProvider, 'query'>;
+
+export async function handleDevBypassAuth(
+  db: QueryableDB,
+  userId: string,
+): Promise<AuthContext | null> {
+  const normalizedUserId = userId.trim();
+  if (!normalizedUserId) {
+    return null;
+  }
+
+  const { rows } = await db.query<{
+    user_id: string;
+    business_id: string;
+    role_id: string;
+    auth0_user_id: string | null;
+  }>(
+    `SELECT user_id, business_id, role_id, auth0_user_id
+     FROM accounter_schema.business_users
+     WHERE user_id = $1
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [normalizedUserId],
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const user = rows[0];
+
+  return {
+    authType: 'devBypass',
+    token: normalizedUserId,
+    user: {
+      userId: user.user_id,
+      auth0UserId: user.auth0_user_id,
+      email: 'dev-user',
+      roleId: user.role_id,
+      permissions: [],
+      emailVerified: true,
+      permissionsVersion: 0,
+    },
+    tenant: {
+      businessId: user.business_id,
+      roleId: user.role_id,
+    },
+  };
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -94,7 +144,30 @@ export class AuthContextProvider {
       return this.handlingAuth;
     }
 
+    if (this.rawAuth.authType === 'devBypass') {
+      this.handlingAuth = this.handleDevBypassAuth();
+      return this.handlingAuth;
+    }
+
     return null;
+  }
+
+  private async handleDevBypassAuth(): Promise<AuthContext | null> {
+    const userId = this.rawAuth.token;
+    if (!userId) {
+      return null;
+    }
+
+    try {
+      const context = await handleDevBypassAuth(this.db, userId);
+      this.cachedContext = context;
+      this.handlingAuth = null;
+      return context;
+    } catch (error) {
+      console.error('AuthContext: Failed to process dev bypass auth', error);
+      this.handlingAuth = null;
+      return null;
+    }
   }
 
   private async handleApiKeyAuth(): Promise<AuthContext | null> {

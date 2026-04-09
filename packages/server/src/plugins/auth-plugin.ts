@@ -2,7 +2,7 @@ import { useExtendContext, YogaInitialContext } from 'graphql-yoga';
 import type { Plugin } from '@envelop/types';
 
 export interface RawAuth {
-  authType: 'jwt' | 'apiKey' | null;
+  authType: 'jwt' | 'apiKey' | 'devBypass' | null;
   token: string | null;
 }
 

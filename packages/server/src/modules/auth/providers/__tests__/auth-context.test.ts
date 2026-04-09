@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
-import { AuthContextProvider } from '../auth-context.provider.js';
+import { AuthContextProvider, handleDevBypassAuth } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
 import type { Environment } from '../../../../shared/types/index.js';
 
@@ -189,5 +189,56 @@ describe('AuthContextProvider', () => {
    
         expect(result).toBeNull();
     });
+  });
+});
+
+describe('handleDevBypassAuth', () => {
+  it('returns devBypass auth context when user exists', async () => {
+    const db = {
+      query: vi.fn().mockResolvedValue({
+        rows: [
+          {
+            user_id: 'user-123',
+            business_id: 'biz-456',
+            role_id: 'business_owner',
+            auth0_user_id: 'auth0|demo',
+          },
+        ],
+      }),
+    } as unknown as Pick<DBProvider, 'query'>;
+
+    const result = await handleDevBypassAuth(db, 'user-123');
+
+    expect(db.query).toHaveBeenCalledWith(
+      expect.stringContaining('FROM accounter_schema.business_users'),
+      ['user-123'],
+    );
+    expect(result).toEqual({
+      authType: 'devBypass',
+      token: 'user-123',
+      user: {
+        userId: 'user-123',
+        auth0UserId: 'auth0|demo',
+        email: 'dev-user',
+        roleId: 'business_owner',
+        permissions: [],
+        emailVerified: true,
+        permissionsVersion: 0,
+      },
+      tenant: {
+        businessId: 'biz-456',
+        roleId: 'business_owner',
+      },
+    });
+  });
+
+  it('returns null when user is not found', async () => {
+    const db = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+    } as unknown as Pick<DBProvider, 'query'>;
+
+    const result = await handleDevBypassAuth(db, 'missing-user');
+
+    expect(result).toBeNull();
   });
 });
