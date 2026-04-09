@@ -1,6 +1,16 @@
 import type { Client } from 'pg';
 import { makeUUID } from './deterministic-uuid.js';
 
+async function ensureAdminBusinessAdminRow(client: Client, adminId: string): Promise<void> {
+  await client.query(
+    `INSERT INTO accounter_schema.businesses_admin (id, owner_id)
+     VALUES ($1, $1)
+     ON CONFLICT (id) DO UPDATE
+     SET owner_id = EXCLUDED.owner_id`,
+    [adminId],
+  );
+}
+
 /**
  * Create (or fetch) the Accounter Admin Business financial entity and return its id.
  *
@@ -22,6 +32,7 @@ export async function createAdminBusinessContext(client: Client): Promise<string
   );
 
   if (findResult.rows.length > 0) {
+    await ensureAdminBusinessAdminRow(client, findResult.rows[0].id);
     return findResult.rows[0].id;
   }
 
@@ -46,6 +57,8 @@ export async function createAdminBusinessContext(client: Client): Promise<string
      VALUES ($1, $1)`,
     [adminId],
   );
+
+  await ensureAdminBusinessAdminRow(client, adminId);
 
   // 4) Update financial_entity to set owner_id (self-reference)
   await client.query(

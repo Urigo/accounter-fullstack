@@ -1,5 +1,5 @@
 import { createSchema, createYoga } from 'graphql-yoga';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { authPlugin, type RawAuth } from '../auth-plugin.js';
 import { handleDevBypassAuth } from '../../modules/auth/providers/auth-context.provider.js';
 
@@ -34,7 +34,7 @@ describe('authPlugin', () => {
         typeDefs: `type Query { test: String }`,
         resolvers: {
           Query: {
-            test: (_: unknown, __: unknown, context: { rawAuth: RawAuth }) => {
+            test: (_: unknown, __: unknown, context: { rawAuth: RawAuth, pool: typeof mockPool }) => {
               return JSON.stringify(context.rawAuth);
             },
           },
@@ -43,6 +43,7 @@ describe('authPlugin', () => {
       context: ({ request }) => ({
         request,
         pool: mockPool,
+        rawAuth: { authType: null, token: null } as RawAuth,
       }),
     });
   };

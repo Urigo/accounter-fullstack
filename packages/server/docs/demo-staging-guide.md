@@ -97,20 +97,17 @@ The seed script prints both `adminUserId` and `accountantUserId`.
 2. Configure local environment variables:
 
 ```bash
-# Server-side bypass toggle
+# Bypass toggle (server + client)
 ALLOW_DEV_AUTH=1
 
 # Optional: attach real Auth0 id to seeded demo admin user
 DEMO_AUTH0_USER_ID=
 
-# Client-side bypass toggle
-VITE_DEV_AUTH=1
-
 # Choose which seeded user to impersonate
-VITE_DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
+DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
 ```
 
-3. Switch roles by swapping `VITE_DEV_AUTH_USER_ID`:
+3. Switch roles by swapping `DEV_AUTH_USER_ID`:
 
 - Use `adminUserId` for `business_owner` context.
 - Use `accountantUserId` for `accountant` context.

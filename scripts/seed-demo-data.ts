@@ -239,7 +239,7 @@ async function seedDemoData() {
 
     const { adminUserId, accountantUserId } = await seedDemoUsers(client, adminBusinessId);
     console.log(
-      `✅ Demo users seeded for local dev bypass. Copy to .env: VITE_DEV_AUTH_USER_ID=${adminUserId} (admin) or ${accountantUserId} (accountant)`,
+      `✅ Demo users seeded for local dev bypass. Copy to .env: DEV_AUTH_USER_ID=${adminUserId} (admin) or ${accountantUserId} (accountant)`,
     );
     console.log(`   adminUserId=${adminUserId}, accountantUserId=${accountantUserId}`);
 
