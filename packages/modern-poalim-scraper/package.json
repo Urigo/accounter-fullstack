@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "date-fns": "4.1.0",
-    "inquirer": "13.3.2",
+    "inquirer": "13.4.1",
     "node-fetch": "3.3.2",
     "puppeteer": "24.40.0",
     "uuid": "13.0.0",
