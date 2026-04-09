@@ -82,6 +82,41 @@ ALLOW_DEMO_SEED=1 yarn seed:staging-demo && yarn validate:demo
 ✅ Demo data validation passed
 ```
 
+### Local Development (No Auth0)
+
+Use this flow when you want to run the app locally without logging in through Auth0.
+
+1. Seed demo data and copy the printed demo user ids:
+
+```bash
+ALLOW_DEMO_SEED=1 yarn seed:staging-demo
+```
+
+The seed script prints both `adminUserId` and `accountantUserId`.
+
+2. Configure local environment variables:
+
+```bash
+# Server-side bypass toggle
+ALLOW_DEV_AUTH=1
+
+# Optional: attach real Auth0 id to seeded demo admin user
+DEMO_AUTH0_USER_ID=
+
+# Client-side bypass toggle
+VITE_DEV_AUTH=1
+
+# Choose which seeded user to impersonate
+VITE_DEV_AUTH_USER_ID=<adminUserId-or-accountantUserId>
+```
+
+3. Switch roles by swapping `VITE_DEV_AUTH_USER_ID`:
+
+- Use `adminUserId` for `business_owner` context.
+- Use `accountantUserId` for `accountant` context.
+
+Restart client and server after changing environment variables.
+
 ---
 
 ## Adding a Use-Case
