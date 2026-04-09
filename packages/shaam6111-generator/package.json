@@ -60,7 +60,7 @@
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
     "eslint": "10.2.0",
-    "vitest": "4.1.2"
+    "vitest": "4.1.4"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
