@@ -1,7 +1,7 @@
-## Etherscan Scrapper
+## Etherscan Scraper
 
-The goal of this package is to implement a scrapper based on Etherscan API, to fetch information
-about wallets recieveing tokens on the ERC-20 protocol.
+The goal of this package is to implement a scraper based on Etherscan API, to fetch information
+about wallets receiving tokens on the ERC-20 protocol.
 
 ### Getting Started
 
@@ -15,10 +15,10 @@ DATABASE_URL="<>"
 
 > The `ETHERSCAN_API_KEY` can be fetched from Etherscan account page.
 
-> The `WALLETS_TO_SCAN` needs to be build in the construct of `WALLET:CONTRACT_ADDRESS` - and many
+> The `WALLETS_TO_SCAN` needs to be built in the construct of `WALLET:CONTRACT_ADDRESS` - and many
 > can be specified.
 
-2. Run the scrapper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.
+2. Run the scraper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.
 
 ### Contracts Examples
 

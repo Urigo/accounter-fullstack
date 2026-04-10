@@ -1,6 +1,6 @@
-## Kraken Scrapper
+## Kraken Scraper
 
-The goal of this package is to implement a scrapper based on Kraken API, and fetches ledger records
+The goal of this package is to implement a scraper based on Kraken API, and fetches ledger records
 and trade records.
 
 ### Getting Started
@@ -22,4 +22,4 @@ ACCOUNT_PREFIX="<>"
 > to have a unique name and link to the trades and ledger records (since Kraken API doesn't provide
 > a unique ID for accounts/wallets).
 
-1. Run the scrapper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.
+1. Run the scraper using `yarn dev` (watch mode) or `yarn build` and then `yarn start`.

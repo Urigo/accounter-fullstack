@@ -1,4 +1,4 @@
-# @accounter/etana-scrapper
+# @accounter/etherscan-scraper
 
 ## 0.0.1
 

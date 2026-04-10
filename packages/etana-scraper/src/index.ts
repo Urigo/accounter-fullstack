@@ -11,7 +11,7 @@ enableLogger(ensureEnv('DEBUG_LOG', '*'));
 const logger = diary('main');
 
 async function main() {
-  logger.info(`🚀 Etana Accounter Scrapper started`);
+  logger.info(`🚀 Etana Accounter Scraper started`);
   const csvFilePath = ensureEnv('CSV_EXPORT_FILEPATH');
   logger.info(`Using CSV file path: "${csvFilePath}"`);
 

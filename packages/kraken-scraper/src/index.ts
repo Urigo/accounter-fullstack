@@ -10,7 +10,7 @@ enableLogger(ensureEnv('DEBUG_LOG', '*'));
 const logger = diary('main');
 
 async function main() {
-  logger.info(`🚀 Kraken Accounter Scrapper started`);
+  logger.info(`🚀 Kraken Accounter Scraper started`);
   const accountPrefix = ensureEnv('ACCOUNT_PREFIX', 'kraken');
   const kraken = createKraken({
     apiKey: ensureEnv('KRAKEN_API_KEY'),

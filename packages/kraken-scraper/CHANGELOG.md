@@ -1,4 +1,4 @@
-# @accounter/kraken-scrapper
+# @accounter/kraken-scraper
 
 ## 0.0.1
 
