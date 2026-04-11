@@ -8,33 +8,31 @@ export async function fetchPostWithinPage<TResult>(
   extraHeaders: Record<string, string> = {},
 ): Promise<TResult | null> {
   return page.evaluate(
-    (url, data, extraHeaders) => {
-      return new Promise<TResult | null>((resolve, reject) => {
-        fetch(url, {
-          method: 'POST',
-          body: JSON.stringify(data),
-          credentials: 'include',
-          headers: new Headers(
-            Object.assign(
-              {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-              },
-              extraHeaders,
-            ),
+    async (url, data, extraHeaders) => {
+      const res = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        credentials: 'include',
+        headers: new Headers(
+          Object.assign(
+            {
+              'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            extraHeaders,
           ),
-        })
-          .then(result => {
-            if (result.status === 204) {
-              // No content response
-              resolve(null);
-            } else {
-              resolve(result.json());
-            }
-          })
-          .catch(e => {
-            reject(e);
-          });
+        ),
       });
+
+      if (res.status === 204) {
+        return null;
+      }
+
+      if (res.headers.get('Content-Type')?.includes('application/json')) {
+        return res.json() as Promise<TResult>;
+      }
+
+      const text = await res.text();
+      throw new Error(`Unexpected response: ${text}`);
     },
     url,
     data,
@@ -46,20 +44,19 @@ export async function fetchGetWithinPage<TResult>(
   page: Page,
   url: string,
 ): Promise<TResult | null> {
-  return page.evaluate(url => {
-    return new Promise<TResult | null>((resolve, reject) => {
-      fetch(url, { credentials: 'include' })
-        .then(result => {
-          if (result.status === 204) {
-            resolve(null);
-          } else {
-            resolve(result.json());
-          }
-        })
-        .catch(e => {
-          reject(e);
-        });
-    });
+  return page.evaluate(async url => {
+    const result = await fetch(url, { credentials: 'include' });
+
+    if (result.status === 204) {
+      return null;
+    }
+
+    if (result.headers.get('Content-Type')?.includes('application/json')) {
+      return result.json() as Promise<TResult>;
+    }
+
+    const text = await result.text();
+    throw new Error(`Unexpected response: ${text}`);
   }, url);
 }
 
