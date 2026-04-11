@@ -3,7 +3,7 @@ import { login } from '../handlers/login-handler.js';
 import { waitAndClick, waitForSelectorPlus } from './page-util.js';
 import type { Logger } from './types.js';
 
-const nevigateYearToMonth = async (
+const navigateYearToMonth = async (
   page: Page,
   monthIndex: number,
   logger: Logger,
@@ -15,7 +15,7 @@ const nevigateYearToMonth = async (
 
     return;
   } catch (e) {
-    throw new Error(`nevigateYearToMonth - ${(e as Error)?.message}`, { cause: e });
+    throw new Error(`navigateYearToMonth - ${(e as Error)?.message}`, { cause: e });
   }
 };
 
@@ -28,7 +28,7 @@ export const newPageByMonth = async (
   try {
     const page = await newPageByYear(showBrowser, year, logger);
 
-    await nevigateYearToMonth(page, monthIndex, logger);
+    await navigateYearToMonth(page, monthIndex, logger);
 
     return page;
   } catch (e) {
@@ -77,9 +77,10 @@ export const newHomePage = async (showBrowser: boolean, logger: Logger): Promise
     if (!page) {
       throw new Error('Failed to get browser page');
     }
-    await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3419.0 Safari/537.36',
-    );
+    await page.setUserAgent({
+      userAgent:
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3419.0 Safari/537.36',
+    });
 
     await login(page, logger);
 
