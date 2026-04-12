@@ -25,7 +25,7 @@ transactions, vat, workspace-settings
 ## Provider Patterns
 
 - Must have `@Injectable()` decorator — DI fails silently without it.
-- Inject `DatabaseService` via constructor for DB access.
+- Inject TenantAwareDBClient via constructor for DB access.
 - Use DataLoader pattern for N+1 prevention in field resolvers.
 - Resolvers must never query the DB directly — always go through providers.
 
