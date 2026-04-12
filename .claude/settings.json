@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(git commit *)",
+      "Bash(git add *)",
+      "Bash(git checkout *)",
+      "Bash(git branch *)",
+      "Bash(node *)",
+      "Bash(tsx *)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(grep *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(echo *)",
+      "Bash(yarn graphql-codegen *)",
+      "Edit(packages/**)",
+      "Edit(CLAUDE.md)",
+      "Edit(.claude/**)",
+      "Edit(**/.env.template)",
+      "Edit(**/.env.example)",
+      "Edit(.env.template)",
+      "Edit(.env.example)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(yarn npm publish *)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "yarn prettier --write $FILE_PATH 2>/dev/null || true"
+      }
+    ]
+  }
+}
