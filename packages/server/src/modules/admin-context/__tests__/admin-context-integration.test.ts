@@ -43,6 +43,8 @@ describe('AdminContext DI Integration', () => {
         owner_id: 'owner-a',
         default_local_currency: 'USD',
         default_fiat_currency_for_crypto_conversions: 'USD',
+        date_established: null,
+        initial_accounter_year: null,
       },
     });
 
@@ -61,6 +63,8 @@ describe('AdminContext DI Integration', () => {
         owner_id: 'owner-a',
         default_local_currency: 'USD',
         default_fiat_currency_for_crypto_conversions: 'USD',
+        date_established: null,
+        initial_accounter_year: null,
       },
     });
 
@@ -70,6 +74,8 @@ describe('AdminContext DI Integration', () => {
         owner_id: 'owner-b',
         default_local_currency: 'EUR',
         default_fiat_currency_for_crypto_conversions: 'EUR',
+        date_established: null,
+        initial_accounter_year: null,
       },
     });
 
@@ -91,6 +97,8 @@ describe('AdminContext DI Integration', () => {
         owner_id: 'owner-a',
         default_local_currency: 'USD',
         default_fiat_currency_for_crypto_conversions: 'USD',
+        date_established: null,
+        initial_accounter_year: null,
       },
     });
 

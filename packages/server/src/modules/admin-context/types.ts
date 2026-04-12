@@ -11,6 +11,8 @@ export type AdminContext = {
   defaultTaxCategoryId: string;
   locality: string;
   ledgerLock?: TimelessDateString;
+  dateEstablished?: TimelessDateString;
+  initialAccounterYear?: number;
   authorities: {
     vatBusinessId: string;
     inputVatTaxCategoryId: string;

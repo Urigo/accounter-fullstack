@@ -266,6 +266,14 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $foreignSecuritiesFeesCategoryId,
       foreign_securities_fees_category_id
     ),
+    date_established = COALESCE(
+      $dateEstablished,
+      date_established
+    ),
+    initial_accounter_year = COALESCE(
+      $initialAccounterYear,
+      initial_accounter_year
+    ),
     locality = COALESCE(
       $locality,
       locality
@@ -321,6 +329,8 @@ export class AdminContextProvider {
       defaultTaxCategoryId: rawContext.default_tax_category_id,
       locality: rawContext.locality,
       ledgerLock: optionalDateToTimelessDateString(rawContext.ledger_lock) ?? undefined,
+      dateEstablished: optionalDateToTimelessDateString(rawContext.date_established) ?? undefined,
+      initialAccounterYear: rawContext.initial_accounter_year ?? undefined,
 
       authorities: {
         vatBusinessId: rawContext.vat_business_id,

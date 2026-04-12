@@ -56,6 +56,10 @@ describe('seedAdminCore integration', () => {
       expect(context.default_local_currency).toBe('ILS');
       expect(context.default_fiat_currency_for_crypto_conversions).toBe('USD');
 
+      // Verify business dates
+      expect(context.date_established).toBeTruthy();
+      expect(context.initial_accounter_year).toBe(2020);
+
       // Verify required authority businesses exist
       const vatBusiness = await client.query(
         `SELECT * FROM accounter_schema.businesses WHERE id = $1`,
