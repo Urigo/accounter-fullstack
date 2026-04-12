@@ -21,3 +21,5 @@ docker/.*
 !.yarn/versions
 
 **/accounter-gmail-service-key.json
+CLAUDE.local.md
+.claude/settings.local.json
