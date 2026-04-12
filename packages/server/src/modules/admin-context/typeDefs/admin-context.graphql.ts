@@ -78,6 +78,8 @@ export default gql`
     ledgerLock: TimelessDate
     foreignSecuritiesBusinessId: UUID
     foreignSecuritiesFeesCategoryId: UUID
+    dateEstablished: TimelessDate
+    initialAccounterYear: Int
   }
 
   " defines a tag / category for charge arrangement"
@@ -146,5 +148,7 @@ export default gql`
     ledgerLock: TimelessDate
     foreignSecuritiesBusiness: Business
     foreignSecuritiesFeesCategory: TaxCategory
+    dateEstablished: TimelessDate
+    initialAccounterYear: Int
   }
 `;

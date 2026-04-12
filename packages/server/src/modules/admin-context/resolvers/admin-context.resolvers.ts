@@ -445,6 +445,8 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
         dbAdminContext.general.taxCategories.salaryExcessExpensesTaxCategoryId,
       ),
     ledgerLock: dbAdminContext => dbAdminContext.ledgerLock ?? null,
+    dateEstablished: dbAdminContext => dbAdminContext.dateEstablished ?? null,
+    initialAccounterYear: dbAdminContext => dbAdminContext.initialAccounterYear ?? null,
     foreignSecuritiesBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.foreignSecurities.foreignSecuritiesBusinessId
         ? fetchBusiness(

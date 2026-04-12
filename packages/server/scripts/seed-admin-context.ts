@@ -177,6 +177,8 @@ export async function seedAdminCore(
     income_to_collect_tax_category_id: crossYearTaxCategoryIds['Income to Collect'],
     income_in_advance_tax_category_id: crossYearTaxCategoryIds['Income in Advance'],
     salary_excess_expenses_tax_category_id: generalTaxCategoryIds['Salary Excess Expenses'],
+    date_established: '2020-01-01',
+    initial_accounter_year: 2020,
   };
 
   // Check if user_context already exists
