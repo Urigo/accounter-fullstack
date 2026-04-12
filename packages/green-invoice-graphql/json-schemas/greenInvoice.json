@@ -2871,8 +2871,7 @@
     "DocumentAmountOpened": {
       "description": "Amount that is still left to be paid, exists only in payment request documents",
       "type": "number",
-      "examples": [300],
-      "minimum": 0
+      "examples": [300]
     },
     "ExpenseDocumentType": {
       "type": "number",
