@@ -86,7 +86,7 @@
     "eslint-plugin-sonarjs": "4.0.2",
     "eslint-plugin-unicorn": "64.0.0",
     "glob": "13.0.6",
-    "globals": "17.4.0",
+    "globals": "17.5.0",
     "graphql": "16.13.2",
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
