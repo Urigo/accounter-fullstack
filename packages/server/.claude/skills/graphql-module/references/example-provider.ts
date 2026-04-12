@@ -66,7 +66,8 @@ export class ItemsProvider {
       },
       this.db,
     );
-    return ids.map(id => items.find(item => item.id === id));
+    const itemsMap = new Map(items.map(item => [item.id, item]));
+    return ids.map(id => itemsMap.get(id));
   }
 
   // Public DataLoader — resolvers call this instead of querying directly
