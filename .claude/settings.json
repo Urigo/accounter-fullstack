@@ -39,5 +39,13 @@
       "Edit(.env)",
       "Edit(.env.*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "yarn prettier --write $FILE_PATH 2>/dev/null || true"
+      }
+    ]
   }
 }
