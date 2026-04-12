@@ -113,7 +113,7 @@ export const VatMonthlyReport = (): ReactElement => {
   );
 
   return (
-    <PageLayout title="VAT Monthly Report">
+    <PageLayout title={`VAT Monthly Report, ${format(filter.monthDate, 'MMMM yyyy')}`}>
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
