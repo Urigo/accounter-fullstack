@@ -14,6 +14,8 @@ Each module in `packages/server/src/modules/<name>/` contains:
 - `providers/<name>.provider.ts` — data access layer with `@Injectable()` decorator
 - `helpers/` (optional) — shared helper functions used across resolvers/providers, or to break up
   large resolvers for readability
+- `types.ts` — centralizes re-exports of module-related types (from `__generated__/` and custom
+  wrappers)
 - `index.ts` — module registration via `createModule()`
 
 ## Resolver Patterns
