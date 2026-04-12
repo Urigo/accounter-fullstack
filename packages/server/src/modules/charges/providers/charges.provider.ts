@@ -26,38 +26,6 @@ import type {
 } from '../types.js';
 import { ChargesAuthorizationProvider } from './charges-authorization.provider.js';
 
-export type ChargeRequiredWrapper<
-  T extends {
-    id: unknown;
-    owner_id: unknown;
-    is_property: unknown;
-    accountant_status: unknown;
-    updated_at: unknown;
-    created_at: unknown;
-    documents_optional_flag: unknown;
-    optional_vat: unknown;
-  },
-> = Omit<
-  T,
-  | 'id'
-  | 'owner_id'
-  | 'is_property'
-  | 'accountant_status'
-  | 'updated_at'
-  | 'created_at'
-  | 'documents_optional_flag'
-  | 'optional_vat'
-> & {
-  id: NonNullable<T['id']>;
-  owner_id: NonNullable<T['owner_id']>;
-  is_property: NonNullable<T['is_property']>;
-  accountant_status: NonNullable<T['accountant_status']>;
-  updated_at: NonNullable<T['updated_at']>;
-  created_at: NonNullable<T['created_at']>;
-  documents_optional_flag: NonNullable<T['documents_optional_flag']>;
-  optional_vat: NonNullable<T['optional_vat']>;
-};
-
 const getChargesByIds = sql<IGetChargesByIdsQuery>`
     SELECT *
     FROM accounter_schema.charges
