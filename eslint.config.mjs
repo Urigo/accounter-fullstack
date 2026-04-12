@@ -42,6 +42,7 @@ export default [
       '.pnp.*',
       '.yarn/',
       '**/*.pdf',
+      '**/.claude/',
     ],
   },
   // @theguild entrypoint currently patches ESLint via @rushstack/eslint-patch,
