@@ -152,7 +152,7 @@ describe('buildOtelSdk', () => {
       buildOtelSdk();
 
       expect(MockOTLPTraceExporter).toHaveBeenCalledWith(
-        expect.objectContaining({ url: 'http://localhost:4318/v1/traces' }),
+        expect.objectContaining({ url: 'http://localhost:4318' }),
       );
     });
 
