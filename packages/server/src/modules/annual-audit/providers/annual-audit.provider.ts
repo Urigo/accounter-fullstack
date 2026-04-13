@@ -1,9 +1,14 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { DynamicReportProvider } from '../../reports/providers/dynamic-report.provider.js';
 import type {
+  AnnualAuditOpeningBalanceStatusResult,
+  AnnualAuditOpeningBalanceUserType,
   AnnualAuditStepStatus,
   AnnualAuditStepStatusResult,
+  IGetBalanceChargeQuery,
   IGetStepStatusesQuery,
   IUpsertStepStatusQuery,
   SetAnnualAuditStepStatusInput,
@@ -32,12 +37,150 @@ const upsertStepStatus = sql<IUpsertStepStatusQuery>`
   RETURNING owner_id, year, step_id, status, notes, updated_at, completed_at;
 `;
 
+const getBalanceCharge = sql<IGetBalanceChargeQuery>`
+  WITH ledger_by_charge AS (
+    SELECT count(DISTINCT x.id) AS ledger_count,
+           array_remove(array_agg(DISTINCT x.financial_entity), NULL::uuid) AS ledger_financial_entities,
+           min(x.value_date) AS min_value_date,
+           max(x.value_date) AS max_value_date,
+           min(x.invoice_date) AS min_invoice_date,
+           max(x.invoice_date) AS max_invoice_date,
+           x.charge_id
+    FROM (
+      SELECT lr.charge_id,
+             lr.id,
+             lr.value_date,
+             lr.invoice_date,
+             unnest(
+               ARRAY[
+                 lr.credit_entity1,
+                 lr.credit_entity2,
+                 lr.debit_entity1,
+                 lr.debit_entity2
+               ]
+             ) AS financial_entity
+      FROM accounter_schema.ledger_records lr
+      WHERE lr.charge_id IS NOT NULL
+      AND lr.owner_id = $ownerId
+    ) x
+    GROUP BY x.charge_id
+  )
+  SELECT c.id
+  FROM accounter_schema.charges c
+  LEFT JOIN ledger_by_charge l ON l.charge_id = c.id
+  WHERE c.owner_id = $ownerId
+    AND type = 'FINANCIAL'
+    AND l.min_value_date <= make_date($year, 12, 31)
+    AND l.max_value_date >= make_date($year, 12, 31)
+    AND user_description ILIKE '%balance%'`;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
 })
 export class AnnualAuditProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private adminContextProvider: AdminContextProvider,
+    private dynamicReportProvider: DynamicReportProvider,
+    private db: TenantAwareDBClient,
+  ) {}
+
+  public async getOpeningBalanceStatus(
+    ownerId: string,
+    year: number,
+  ): Promise<AnnualAuditOpeningBalanceStatusResult> {
+    const adminContext = await this.adminContextProvider.getVerifiedAdminContext();
+    const { initialAccounterYear, dateEstablished } = adminContext;
+
+    // Guard: missing configuration
+    if (initialAccounterYear == null || dateEstablished == null) {
+      return {
+        id: `${ownerId}:${year}`,
+        userType: 'BLOCKED' as AnnualAuditOpeningBalanceUserType,
+        balanceChargeId: null,
+        derivedStatus: 'BLOCKED',
+        errorMessage:
+          'Business configuration is incomplete. Please set initialAccounterYear and dateEstablished in Settings > Admin Context.',
+      };
+    }
+
+    const establishedYear = new Date(dateEstablished).getFullYear();
+    const userType = this.classifyUserType(year, initialAccounterYear, establishedYear);
+
+    if (userType === 'ERROR') {
+      return {
+        id: `${ownerId}:${year}`,
+        userType: 'ERROR',
+        balanceChargeId: null,
+        derivedStatus: 'BLOCKED',
+        errorMessage: `Report year ${year} precedes the first year tracked in Accounter (${initialAccounterYear}). Verify the business configuration (initialAccounterYear, dateEstablished) and try again.`,
+      };
+    }
+
+    if (userType === 'NEW') {
+      return {
+        id: `${ownerId}:${year}`,
+        userType: 'NEW',
+        balanceChargeId: null,
+        derivedStatus: 'COMPLETED',
+      };
+    }
+
+    if (userType === 'CONTINUING') {
+      // Prior-year data is already in-system; no DB checks needed.
+      // derivedStatus is always PENDING — accountant approval is required.
+      return {
+        id: `${ownerId}:${year}`,
+        userType: 'CONTINUING',
+        balanceChargeId: null,
+        derivedStatus: 'PENDING',
+      };
+    }
+
+    // MIGRATING: check for balance charge
+    const balanceChargeId = await this.checkBalanceChargeExists(ownerId, year - 1);
+
+    const derivedStatus = this.computeMigratingDerivedStatus(balanceChargeId);
+
+    return {
+      id: `${ownerId}:${year}`,
+      userType,
+      balanceChargeId,
+      derivedStatus,
+    };
+  }
+
+  private classifyUserType(
+    reportYear: number,
+    initialAccounterYear: number,
+    establishedYear: number,
+  ): AnnualAuditOpeningBalanceUserType {
+    if (reportYear < initialAccounterYear) {
+      return 'ERROR';
+    }
+    if (reportYear === initialAccounterYear && establishedYear === initialAccounterYear) {
+      return 'NEW';
+    }
+    if (reportYear === initialAccounterYear && establishedYear < initialAccounterYear) {
+      return 'MIGRATING';
+    }
+    return 'CONTINUING';
+  }
+
+  private computeMigratingDerivedStatus(balanceChargeId: string | null): AnnualAuditStepStatus {
+    // COMPLETED is never set automatically; accountant approval is required.
+    if (balanceChargeId) {
+      return 'IN_PROGRESS';
+    }
+    return 'PENDING';
+  }
+
+  private async checkBalanceChargeExists(ownerId: string, year: number): Promise<string | null> {
+    const result = await getBalanceCharge.run({ ownerId, year }, this.db);
+    return result[0]?.id || null;
+  }
+
+  // ─── Persistence: manual step statuses ───────────────────────────────────
 
   public async getStepStatuses(
     ownerId: string,
