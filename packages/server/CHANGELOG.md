@@ -1,5 +1,111 @@
 # @accounter/server
 
+## 0.0.12
+
+### Patch Changes
+
+- [#3276](https://github.com/Urigo/accounter-fullstack/pull/3276)
+  [`6edc9b2`](https://github.com/Urigo/accounter-fullstack/commit/6edc9b27187a9b891b58ae08abdbddff9dcb1fde)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.21.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.21.0)
+    (from `3.18.1`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.21.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.21.0) (from `5.18.1`,
+    in `dependencies`)
+
+- [#3277](https://github.com/Urigo/accounter-fullstack/pull/3277)
+  [`a584921`](https://github.com/Urigo/accounter-fullstack/commit/a58492135ab1cac146b0a04885bc968b5c5579e8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.4.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.4.1) (from
+    `17.3.1`, in `dependencies`)
+
+- [#3281](https://github.com/Urigo/accounter-fullstack/pull/3281)
+  [`917f31e`](https://github.com/Urigo/accounter-fullstack/commit/917f31e956d267704f6d74fb7f3a22d366062135)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@3.0.66` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/3.0.66) (from
+    `3.0.64`, in `dependencies`)
+  - Updated dependency [`ai@6.0.146` ↗︎](https://www.npmjs.com/package/ai/v/6.0.146) (from `6.0.141`,
+    in `dependencies`)
+  - Updated dependency [`playwright@1.59.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.59.1)
+    (from `1.59.0`, in `dependencies`)
+
+- [`623ed2b`](https://github.com/Urigo/accounter-fullstack/commit/623ed2b39788764e206241a9c3a628dfec25889e)
+  Thanks [@renovate[bot]](https://github.com/renovate%5Bbot%5D)! - dependencies updates:
+  - Updated dependency
+    [`@ai-sdk/anthropic@3.0.68` ↗︎](https://www.npmjs.com/package/@ai-sdk/anthropic/v/3.0.68) (from
+    `3.0.66`, in `dependencies`)
+  - Updated dependency
+    [`@graphql-tools/utils@11.0.1` ↗︎](https://www.npmjs.com/package/@graphql-tools/utils/v/11.0.1)
+    (from `11.0.0`, in `dependencies`)
+  - Updated dependency [`ai@6.0.154` ↗︎](https://www.npmjs.com/package/ai/v/6.0.154) (from `6.0.146`,
+    in `dependencies`)
+
+- [#3297](https://github.com/Urigo/accounter-fullstack/pull/3297)
+  [`82f07c2`](https://github.com/Urigo/accounter-fullstack/commit/82f07c25cd88fbcef8d29ef3d32230cfce168caa)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@graphql-yoga/plugin-defer-stream@3.21.0` ↗︎](https://www.npmjs.com/package/@graphql-yoga/plugin-defer-stream/v/3.21.0)
+    (from `3.18.1`, in `dependencies`)
+  - Updated dependency
+    [`graphql-yoga@5.21.0` ↗︎](https://www.npmjs.com/package/graphql-yoga/v/5.21.0) (from `5.18.1`,
+    in `dependencies`)
+
+- [#3301](https://github.com/Urigo/accounter-fullstack/pull/3301)
+  [`49651b7`](https://github.com/Urigo/accounter-fullstack/commit/49651b79e6b2cd8b1c01d4c10d12f3be43859d99)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`auth0@5.6.0` ↗︎](https://www.npmjs.com/package/auth0/v/5.6.0) (from `5.5.0`,
+    in `dependencies`)
+
+- [#3297](https://github.com/Urigo/accounter-fullstack/pull/3297)
+  [`82f07c2`](https://github.com/Urigo/accounter-fullstack/commit/82f07c25cd88fbcef8d29ef3d32230cfce168caa)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Developer Authentication Bypass**:
+  Introduced a new development-only authentication mechanism that allows bypassing Auth0. This
+  enables developers to impersonate seeded demo users by setting specific environment variables and
+  passing an `X-Dev-Auth` header.
+  - **Client-Side Integration**: Modified the client application to conditionally use the new dev
+    authentication flow, affecting how authentication tokens are provided to URQL and how user
+    context and protected routes are handled. New environment variables (`VITE_DEV_AUTH`,
+    `VITE_DEV_AUTH_USER_ID`) were added for client-side configuration.
+  - **Server-Side Authentication Plugin**: Updated the server's authentication plugin to detect and
+    prioritize the `X-Dev-Auth` header when the `ALLOW_DEV_AUTH` environment variable is enabled. A
+    new `handleDevBypassAuth` function was implemented to resolve user context based on the provided
+    user ID from the dev auth header.
+  - **Enhanced Demo Data Seeding**: The demo data seeding script (`seed-demo-data.ts`) was updated
+    to automatically seed deterministic demo users (admin and accountant) and print their IDs. This
+    facilitates easy setup for local development using the new dev authentication bypass.
+  - **Documentation Update**: The `demo-staging-guide.md` documentation was updated with clear
+    instructions on how to set up and use the local development authentication bypass, including
+    environment variable configuration and role switching.
+
+- [#3311](https://github.com/Urigo/accounter-fullstack/pull/3311)
+  [`b201e9e`](https://github.com/Urigo/accounter-fullstack/commit/b201e9eae9a6c8be4d3aba338448cffc40403956)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Schema Update**: Added
+  'date_established' and 'initial_accounter_year' columns to the 'user_context' table via a new
+  migration.
+  - **API and Type Updates**: Updated GraphQL type definitions, resolvers, and internal TypeScript
+    types to include the new business context fields.
+  - **Testing**: Updated integration tests and context builders to support and verify the new
+    business date fields.
+
+- [`1388d18`](https://github.com/Urigo/accounter-fullstack/commit/1388d1853c367ea777f79aa2f72970c05a46a2ba)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Claude Code Configuration**: Added
+  comprehensive configuration for Claude Code, including root instructions, path-scoped rules, and
+  team-shared settings to ensure consistent behavior across the monorepo.
+  - **Domain-Specific Skills and Agents**: Implemented custom skills for issue fixing and GraphQL
+    module management, along with specialized agents for code review and schema analysis to improve
+    developer productivity.
+  - **Package-Level Conventions**: Introduced package-specific CLAUDE.md files for server and client
+    packages to provide targeted guidance on architecture, testing, and development workflows.
+  - **Slash Commands**: Added slash commands for common tasks like scaffolding new GraphQL modules,
+    running code generation, and executing module-specific tests.
+- Updated dependencies
+  [[`917f31e`](https://github.com/Urigo/accounter-fullstack/commit/917f31e956d267704f6d74fb7f3a22d366062135),
+  [`623ed2b`](https://github.com/Urigo/accounter-fullstack/commit/623ed2b39788764e206241a9c3a628dfec25889e),
+  [`161c8f9`](https://github.com/Urigo/accounter-fullstack/commit/161c8f9a5bc755a488b1a14125c2c14425765e59)]:
+  - @accounter/green-invoice-graphql@0.8.6
+
 ## 0.0.11
 
 ### Patch Changes

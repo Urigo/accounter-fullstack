@@ -1,5 +1,108 @@
 # @accounter/client
 
+## 0.0.12
+
+### Patch Changes
+
+- [#3234](https://github.com/Urigo/accounter-fullstack/pull/3234)
+  [`7dd206b`](https://github.com/Urigo/accounter-fullstack/commit/7dd206b8d1706736bcca241f87c5e288c22b5809)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.72.1` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.72.1) (from
+    `7.71.2`, in `dependencies`)
+
+- [#3243](https://github.com/Urigo/accounter-fullstack/pull/3243)
+  [`cf58692`](https://github.com/Urigo/accounter-fullstack/commit/cf5869226a4551e2cf5969cec0fec3e54c29d844)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.96.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.96.2)
+    (from `5.94.5`, in `dependencies`)
+
+- [#3277](https://github.com/Urigo/accounter-fullstack/pull/3277)
+  [`a584921`](https://github.com/Urigo/accounter-fullstack/commit/a58492135ab1cac146b0a04885bc968b5c5579e8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.4.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.4.1) (from
+    `17.3.1`, in `dependencies`)
+
+- [#3281](https://github.com/Urigo/accounter-fullstack/pull/3281)
+  [`917f31e`](https://github.com/Urigo/accounter-fullstack/commit/917f31e956d267704f6d74fb7f3a22d366062135)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/x-charts@8.28.2` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/8.28.2) (from `8.28.0`,
+    in `dependencies`)
+
+- [`623ed2b`](https://github.com/Urigo/accounter-fullstack/commit/623ed2b39788764e206241a9c3a628dfec25889e)
+  Thanks [@renovate[bot]](https://github.com/renovate%5Bbot%5D)! - dependencies updates:
+  - Updated dependency [`react@19.2.5` ↗︎](https://www.npmjs.com/package/react/v/19.2.5) (from
+    `19.2.4`, in `dependencies`)
+  - Updated dependency [`react-dom@19.2.5` ↗︎](https://www.npmjs.com/package/react-dom/v/19.2.5)
+    (from `19.2.4`, in `dependencies`)
+
+- [#3291](https://github.com/Urigo/accounter-fullstack/pull/3291)
+  [`0f1a983`](https://github.com/Urigo/accounter-fullstack/commit/0f1a983134f14b01026daf17b604e5b20ea7e80d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@9.0.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.0.0) (from `7.3.9`, in
+    `dependencies`)
+
+- [#3295](https://github.com/Urigo/accounter-fullstack/pull/3295)
+  [`73a6623`](https://github.com/Urigo/accounter-fullstack/commit/73a6623d4a16370b289749ffd0ac54e915d46f01)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`lucide-react@1.8.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.8.0)
+    (from `1.7.0`, in `dependencies`)
+
+- [#3296](https://github.com/Urigo/accounter-fullstack/pull/3296)
+  [`d57236c`](https://github.com/Urigo/accounter-fullstack/commit/d57236cb11c1b2901a09b0291a981e2c468ae980)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.97.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.97.0)
+    (from `5.96.2`, in `dependencies`)
+
+- [#3297](https://github.com/Urigo/accounter-fullstack/pull/3297)
+  [`82f07c2`](https://github.com/Urigo/accounter-fullstack/commit/82f07c25cd88fbcef8d29ef3d32230cfce168caa)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`lucide-react@1.8.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.8.0)
+    (from `1.7.0`, in `dependencies`)
+
+- [`448d0fa`](https://github.com/Urigo/accounter-fullstack/commit/448d0fa5196f83d31aa45c75c179d6b55eacaf23)
+  Thanks [@renovate[bot]](https://github.com/renovate%5Bbot%5D)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.98.0` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.98.0)
+    (from `5.97.0`, in `dependencies`)
+
+- [#3297](https://github.com/Urigo/accounter-fullstack/pull/3297)
+  [`82f07c2`](https://github.com/Urigo/accounter-fullstack/commit/82f07c25cd88fbcef8d29ef3d32230cfce168caa)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Developer Authentication Bypass**:
+  Introduced a new development-only authentication mechanism that allows bypassing Auth0. This
+  enables developers to impersonate seeded demo users by setting specific environment variables and
+  passing an `X-Dev-Auth` header.
+  - **Client-Side Integration**: Modified the client application to conditionally use the new dev
+    authentication flow, affecting how authentication tokens are provided to URQL and how user
+    context and protected routes are handled. New environment variables (`VITE_DEV_AUTH`,
+    `VITE_DEV_AUTH_USER_ID`) were added for client-side configuration.
+  - **Server-Side Authentication Plugin**: Updated the server's authentication plugin to detect and
+    prioritize the `X-Dev-Auth` header when the `ALLOW_DEV_AUTH` environment variable is enabled. A
+    new `handleDevBypassAuth` function was implemented to resolve user context based on the provided
+    user ID from the dev auth header.
+  - **Enhanced Demo Data Seeding**: The demo data seeding script (`seed-demo-data.ts`) was updated
+    to automatically seed deterministic demo users (admin and accountant) and print their IDs. This
+    facilitates easy setup for local development using the new dev authentication bypass.
+  - **Documentation Update**: The `demo-staging-guide.md` documentation was updated with clear
+    instructions on how to set up and use the local development authentication bypass, including
+    environment variable configuration and role switching.
+
+- [`1388d18`](https://github.com/Urigo/accounter-fullstack/commit/1388d1853c367ea777f79aa2f72970c05a46a2ba)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Claude Code Configuration**: Added
+  comprehensive configuration for Claude Code, including root instructions, path-scoped rules, and
+  team-shared settings to ensure consistent behavior across the monorepo.
+  - **Domain-Specific Skills and Agents**: Implemented custom skills for issue fixing and GraphQL
+    module management, along with specialized agents for code review and schema analysis to improve
+    developer productivity.
+  - **Package-Level Conventions**: Introduced package-specific CLAUDE.md files for server and client
+    packages to provide targeted guidance on architecture, testing, and development workflows.
+  - **Slash Commands**: Added slash commands for common tasks like scaffolding new GraphQL modules,
+    running code generation, and executing module-specific tests.
+
 ## 0.0.11
 
 ### Patch Changes
