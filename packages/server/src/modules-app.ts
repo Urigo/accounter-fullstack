@@ -3,6 +3,7 @@ import pg from 'pg';
 import { accountantApprovalModule } from './modules/accountant-approval/index.js';
 import { adminContextModule } from './modules/admin-context/index.js';
 import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js';
+import { annualAuditModule } from './modules/annual-audit/index.js';
 import { AnthropicProvider } from './modules/app-providers/anthropic.js';
 import { CloudinaryProvider } from './modules/app-providers/cloudinary.js';
 import { CoinMarketCapProvider } from './modules/app-providers/coinmarketcap.js';
@@ -89,6 +90,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       contractsModule,
       bankDepositsModule,
       adminContextModule,
+      annualAuditModule,
       gmailListenerModule,
     ],
     providers: [
