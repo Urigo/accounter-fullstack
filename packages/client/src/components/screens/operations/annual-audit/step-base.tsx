@@ -60,6 +60,25 @@ export const getStatusBadge = (status: StepStatus) => {
   return <Badge variant={variants[status]}>{labels[status]}</Badge>;
 };
 
+export const SubstepWrapper = ({
+  children,
+  ref,
+  level,
+}: {
+  children: ReactNode;
+  level: number;
+  ref?: React.RefObject<HTMLDivElement | null>;
+}) => {
+  return (
+    <div
+      ref={ref}
+      className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''} relative`}
+    >
+      {children}
+    </div>
+  );
+};
+
 interface BaseStepCardProps extends BaseStepProps {
   status: StepStatus;
   actions?: StepAction[];
@@ -86,10 +105,7 @@ export function BaseStepCard({
   disabled = false,
 }: BaseStepCardProps) {
   return (
-    <div
-      ref={ref}
-      className={`${level > 0 ? 'ml-6 border-l-2 border-gray-200 pl-4' : ''} relative`}
-    >
+    <SubstepWrapper ref={ref} level={level}>
       <Card className="mb-4">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -126,18 +142,20 @@ export function BaseStepCard({
         {actions && actions.length > 0 && (
           <CardContent className="pt-0">
             <div className="flex flex-wrap gap-2">
-              {actions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  disabled={action.disabled || disabled}
-                  onClick={action.onClick}
-                  asChild={!!action.href && !disabled}
-                >
-                  {action.href ? <a href={action.href}>{action.label}</a> : action.label}
-                </Button>
-              ))}
+              {actions.map((action, index) => {
+                return (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    size="sm"
+                    disabled={action.disabled || disabled}
+                    onClick={action.onClick}
+                    asChild={!!action.href && !disabled && !action.disabled}
+                  >
+                    {action.href ? <a href={action.href}>{action.label}</a> : action.label}
+                  </Button>
+                );
+              })}
             </div>
           </CardContent>
         )}
@@ -150,6 +168,6 @@ export function BaseStepCard({
           className={`absolute inset-0 bg-gray-500 opacity-50 pointer-events-auto z-10 ${level > 0 ? 'ml-4' : ''}`}
         />
       )}
-    </div>
+    </SubstepWrapper>
   );
 }

@@ -4,6 +4,16 @@ import type { AnnualAuditModule } from '../types.js';
 
 export const annualAuditResolvers: AnnualAuditModule.Resolvers = {
   Query: {
+    annualAuditOpeningBalanceStatus: async (_, { ownerId, year }, { injector }) => {
+      try {
+        return await injector.get(AnnualAuditProvider).getOpeningBalanceStatus(ownerId, year);
+      } catch (error) {
+        throw errorSimplifier(
+          `Failed to get annual audit opening balance status for owner ${ownerId}, year ${year}`,
+          error,
+        );
+      }
+    },
     annualAuditStepStatuses: async (_, { ownerId, year }, { injector }) => {
       try {
         return await injector.get(AnnualAuditProvider).getStepStatuses(ownerId, year);

@@ -8,7 +8,7 @@ interface SimpleStepProps extends BaseStepProps {
   onStatusChange?: (id: string, status: StepStatus) => void;
 }
 
-export default function SimpleStep({
+export function SimpleStep({
   defaultStatus = 'pending',
   actions = [],
   fetchStatus,
