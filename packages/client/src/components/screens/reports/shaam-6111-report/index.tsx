@@ -8,8 +8,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { Card, CardContent, CardHeader } from '../../../ui/card.js';
-import { Shaam6111Filters } from './shaam6111-filters.js';
-import { Shaam6111ReportContent } from './shaam6111-report-content.js';
+import { Shaam6111Filters } from './shaam-6111-filters.js';
+import { Shaam6111ReportContent } from './shaam-6111-report-content.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

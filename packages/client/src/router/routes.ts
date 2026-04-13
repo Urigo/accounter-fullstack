@@ -122,7 +122,7 @@ export const ROUTES = {
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',
     TAX: (year?: number) => (year ? `/reports/tax/${year}` : '/reports/tax'),
     DEPRECIATION: '/reports/depreciation',
-    SHAAM_6111: '/reports/shaam6111',
+    SHAAM_6111: '/reports/shaam-6111',
     YEARLY_LEDGER: '/reports/yearly-ledger',
     ANNUAL_REVENUE: '/reports/annual-revenue',
     CORPORATE_TAX_RULING_COMPLIANCE: (year?: number) =>

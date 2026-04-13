@@ -122,7 +122,7 @@ const AnnualRevenueReport = lazy(() =>
   })),
 );
 const Shaam6111Report = lazy(() =>
-  import('../components/screens/reports/shaam6111-report/index.js').then(m => ({
+  import('../components/screens/reports/shaam-6111-report/index.js').then(m => ({
     default: m.Shaam6111Report,
   })),
 );

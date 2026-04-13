@@ -321,7 +321,7 @@ export const AnnualAuditFlow = (): ReactNode => {
             title="Generate 6111 Report"
             icon={<FileText className="h-4 w-4" />}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate 6111', href: '/reports/6111' }]}
+            actions={[{ label: 'Generate 6111', href: ROUTES.REPORTS.SHAAM_6111 }]}
           />
 
           <SimpleStep
