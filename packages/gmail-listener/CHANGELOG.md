@@ -1,5 +1,21 @@
 # @accounter/gmail-listener
 
+## 0.1.2
+
+### Patch Changes
+
+- [#3277](https://github.com/Urigo/accounter-fullstack/pull/3277)
+  [`a584921`](https://github.com/Urigo/accounter-fullstack/commit/a58492135ab1cac146b0a04885bc968b5c5579e8)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`dotenv@17.4.1` ↗︎](https://www.npmjs.com/package/dotenv/v/17.4.1) (from
+    `17.3.1`, in `dependencies`)
+
+- [#3281](https://github.com/Urigo/accounter-fullstack/pull/3281)
+  [`917f31e`](https://github.com/Urigo/accounter-fullstack/commit/917f31e956d267704f6d74fb7f3a22d366062135)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.59.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.59.1)
+    (from `1.59.0`, in `dependencies`)
+
 ## 0.1.1
 
 ### Patch Changes
