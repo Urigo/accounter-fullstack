@@ -23,6 +23,12 @@ export default gql`
     deleteDynamicReportTemplate(name: String!): String!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    lockDynamicReportTemplate(name: String!): DynamicReportInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    unlockDynamicReportTemplate(name: String!): DynamicReportInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " dynamic report data "
@@ -32,6 +38,7 @@ export default gql`
     template: [DynamicReportNode!]!
     created: DateTime!
     updated: DateTime!
+    isLocked: Boolean!
   }
 
   " a single node of dynamic report template "

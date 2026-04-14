@@ -9,15 +9,25 @@ import type {
   AnnualAuditStepStatus,
   AnnualAuditStepStatusResult,
   IGetBalanceChargeQuery,
+  IGetStepStatusQuery,
   IGetStepStatusesQuery,
+  IResetStep09ForTemplateQuery,
+  IUpsertStep09StatusQuery,
   IUpsertStepStatusQuery,
+  SetAnnualAuditStep09StatusInput,
   SetAnnualAuditStepStatusInput,
 } from '../types.js';
 
 const getStepStatuses = sql<IGetStepStatusesQuery>`
-  SELECT owner_id, year, step_id, status, notes, updated_at, completed_at
+  SELECT owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at
   FROM accounter_schema.annual_audit_step_status
   WHERE owner_id = $ownerId AND year = $year;
+`;
+
+const getStepStatus = sql<IGetStepStatusQuery>`
+  SELECT owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at
+  FROM accounter_schema.annual_audit_step_status
+  WHERE owner_id = $ownerId AND year = $year AND step_id = $stepId;
 `;
 
 const upsertStepStatus = sql<IUpsertStepStatusQuery>`
@@ -34,7 +44,29 @@ const upsertStepStatus = sql<IUpsertStepStatusQuery>`
             THEN NULL
           ELSE annual_audit_step_status.completed_at
         END
-  RETURNING owner_id, year, step_id, status, notes, updated_at, completed_at;
+  RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
+`;
+
+const upsertStep09Status = sql<IUpsertStep09StatusQuery>`
+  INSERT INTO accounter_schema.annual_audit_step_status
+    (owner_id, year, step_id, status, notes, evidence_json, completed_at)
+  VALUES ($ownerId, $year, '9', 'COMPLETED', NULL, $evidenceJson::jsonb, now())
+  ON CONFLICT (owner_id, year, step_id) DO UPDATE
+    SET status        = 'COMPLETED',
+        notes         = EXCLUDED.notes,
+        evidence_json = EXCLUDED.evidence_json,
+        completed_at  = COALESCE(annual_audit_step_status.completed_at, now())
+  RETURNING owner_id, year, step_id, status, notes, evidence_json, updated_at, completed_at;
+`;
+
+const resetStep09ForTemplate = sql<IResetStep09ForTemplateQuery>`
+  UPDATE accounter_schema.annual_audit_step_status
+  SET status        = 'PENDING',
+      evidence_json = NULL,
+      completed_at  = NULL
+  WHERE owner_id = $ownerId
+    AND step_id   = '9'
+    AND evidence_json->>'lockedTemplateName' = $templateName;
 `;
 
 const getBalanceCharge = sql<IGetBalanceChargeQuery>`
@@ -187,16 +219,7 @@ export class AnnualAuditProvider {
     year: number,
   ): Promise<AnnualAuditStepStatusResult[]> {
     const rows = await getStepStatuses.run({ ownerId, year }, this.db);
-    return rows.map(r => ({
-      id: `${r.owner_id}:${r.year}:${r.step_id}`,
-      ownerId: r.owner_id,
-      year: r.year,
-      stepId: r.step_id,
-      status: r.status as AnnualAuditStepStatus,
-      notes: r.notes,
-      updatedAt: r.updated_at,
-      completedAt: r.completed_at,
-    }));
+    return rows.map(r => this.mapStepStatusRow(r));
   }
 
   public async upsertStepStatus(
@@ -212,15 +235,67 @@ export class AnnualAuditProvider {
     if (!row) {
       throw new Error(`Failed to upsert annual audit step status for step ${stepId}`);
     }
+    return this.mapStepStatusRow(row);
+  }
+
+  public async setStep09Status(
+    input: SetAnnualAuditStep09StatusInput,
+  ): Promise<AnnualAuditStepStatusResult> {
+    const { ownerId, year, templateName } = input;
+
+    // Find currently locked template for this step (if any) so we can unlock it
+    const existingRows = await getStepStatus.run({ ownerId, year, stepId: '9' }, this.db);
+    const existing = existingRows[0];
+    if (existing?.evidence_json) {
+      const prevEvidence = existing.evidence_json as { lockedTemplateName?: string };
+      const prevTemplateName = prevEvidence.lockedTemplateName;
+      if (prevTemplateName && prevTemplateName !== templateName) {
+        // Unlock the previously locked template (best-effort; don't fail if already gone)
+        try {
+          await this.dynamicReportProvider.unlockTemplate({ name: prevTemplateName, ownerId });
+        } catch {
+          // Template may have been deleted; ignore
+        }
+      }
+    }
+
+    // Lock the newly selected template
+    await this.dynamicReportProvider.lockTemplate({ name: templateName, ownerId });
+
+    // Upsert step 09 as COMPLETED with the locked template name as evidence
+    const evidenceJson = JSON.stringify({ lockedTemplateName: templateName });
+    const [row] = await upsertStep09Status.run({ ownerId, year, evidenceJson }, this.db);
+
+    if (!row) {
+      throw new Error('Failed to upsert annual audit step 09 status');
+    }
+    return this.mapStepStatusRow(row);
+  }
+
+  public async resetStep09ForTemplate(ownerId: string, templateName: string): Promise<void> {
+    await resetStep09ForTemplate.run({ ownerId, templateName }, this.db);
+  }
+
+  private mapStepStatusRow(r: {
+    owner_id: string;
+    year: number;
+    step_id: string;
+    status: string;
+    notes?: string | null;
+    evidence_json?: unknown;
+    updated_at: Date;
+    completed_at?: Date | null;
+  }): AnnualAuditStepStatusResult {
     return {
-      id: `${row.owner_id}:${row.year}:${row.step_id}`,
-      ownerId: row.owner_id,
-      year: row.year,
-      stepId: row.step_id,
-      status: row.status as AnnualAuditStepStatus,
-      notes: row.notes,
-      updatedAt: row.updated_at,
-      completedAt: row.completed_at,
+      id: `${r.owner_id}:${r.year}:${r.step_id}`,
+      ownerId: r.owner_id,
+      year: r.year,
+      stepId: r.step_id,
+      status: r.status as AnnualAuditStepStatus,
+      notes: r.notes ?? null,
+      evidence: r.evidence_json == null ? null : JSON.stringify(r.evidence_json),
+      updatedAt: r.updated_at,
+      completedAt: r.completed_at ?? null,
     };
   }
 }

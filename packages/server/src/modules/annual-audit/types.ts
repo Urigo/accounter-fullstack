@@ -19,6 +19,7 @@ export interface AnnualAuditStepStatusResult {
   stepId: string;
   status: AnnualAuditStepStatus;
   notes?: string | null;
+  evidence?: string | null;
   updatedAt: Date;
   completedAt?: Date | null;
 }
@@ -29,4 +30,10 @@ export interface SetAnnualAuditStepStatusInput {
   stepId: string;
   status: AnnualAuditStepStatus;
   notes?: string | null;
+}
+
+export interface SetAnnualAuditStep09StatusInput {
+  ownerId: string;
+  year: number;
+  templateName: string;
 }

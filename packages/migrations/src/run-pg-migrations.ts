@@ -161,6 +161,7 @@ import migration_2026_03_16T18_00_00_create_gmail_listener_role from './actions/
 import migration_2026_03_23T12_00_00_index_search_strings from './actions/2026-03-23T12-00-00.index-search-strings.js';
 import migration_2026_04_13T10_00_00_add_business_dates_to_user_context from './actions/2026-04-13T10-00-00.add-business-dates-to-user-context.js';
 import migration_2026_04_13T12_00_00_annual_audit_step_status from './actions/2026-04-13T12-00-00.annual-audit-step-status.js';
+import migration_2026_04_13T13_00_00_dynamic_report_templates_lock from './actions/2026-04-13T13-00-00.dynamic-report-templates-lock.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -326,6 +327,7 @@ export const MIGRATIONS = [
   migration_2026_03_23T12_00_00_index_search_strings,
   migration_2026_04_13T10_00_00_add_business_dates_to_user_context,
   migration_2026_04_13T12_00_00_annual_audit_step_status,
+  migration_2026_04_13T13_00_00_dynamic_report_templates_lock,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

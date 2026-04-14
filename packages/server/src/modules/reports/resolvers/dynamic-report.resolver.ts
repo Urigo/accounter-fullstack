@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import type { DynamicReportNode } from '../../../__generated__/types.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
 import { parseTemplate, validateTemplate } from '../helpers/dynamic-report.helper.js';
 import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
@@ -126,12 +127,40 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
+    lockDynamicReportTemplate: async (_, { name }, { injector }) => {
+      try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        return injector.get(DynamicReportProvider).lockTemplate({ name, ownerId });
+      } catch (error) {
+        const message = `Failed to lock dynamic report template "${name}"`;
+        console.log(`${message}: ${error}`);
+        throw new GraphQLError(message);
+      }
+    },
+    unlockDynamicReportTemplate: async (_, { name }, { injector }) => {
+      try {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        const result = await injector.get(DynamicReportProvider).unlockTemplate({ name, ownerId });
+
+        // Auto-reset Step 09 status for all years that referenced this template
+        await injector.get(AnnualAuditProvider).resetStep09ForTemplate(ownerId, name);
+
+        return result;
+      } catch (error) {
+        const message = `Failed to unlock dynamic report template "${name}"`;
+        console.log(`${message}: ${error}`);
+        throw new GraphQLError(message);
+      }
+    },
   },
   DynamicReportInfo: {
     id: report => `${report.owner_id}-${report.name}`,
     name: report => report.name,
     created: report => report.created_at,
     updated: report => report.updated_at,
+    isLocked: report => report.is_locked ?? false,
     template: report => {
       try {
         return parseTemplate(report.template) as DynamicReportNode[];
