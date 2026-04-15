@@ -115,7 +115,7 @@ export const sidelinks: SideLink[] = [
       {
         title: 'Depreciation Report',
         label: '',
-        href: ROUTES.REPORTS.DEPRECIATION,
+        href: ROUTES.REPORTS.DEPRECIATION(),
         icon: <ChartColumnDecreasing size={18} />,
       },
       {
