@@ -28,7 +28,7 @@ type Shaam6111FiltersProps = {
   setReferenceYear: (year?: string) => void;
 };
 
-const availableYears = ['2020', '2021', '2022', '2023']; // TODO: replace with business-specific years
+const availableYears = ['2020', '2021', '2022', '2023', '2024']; // TODO: replace with business-specific years
 
 export function Shaam6111Filters({
   selectedBusiness,

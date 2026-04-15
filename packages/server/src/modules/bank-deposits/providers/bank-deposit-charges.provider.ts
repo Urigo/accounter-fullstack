@@ -51,9 +51,9 @@ const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQu
     AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
 const upsertBankDepositCharge = sql<IUpsertBankDepositChargeQuery>`
-  INSERT INTO accounter_schema.charges_bank_deposits (id, new_deposit_id, owner_id)
-  VALUES ($chargeId, $depositId, $ownerId)
-  ON CONFLICT (id) DO UPDATE SET new_deposit_id = EXCLUDED.new_deposit_id, owner_id = EXCLUDED.owner_id;
+  INSERT INTO accounter_schema.charges_bank_deposits (id, new_deposit_id, owner_id, account_id)
+  VALUES ($chargeId, $depositId, $ownerId, $accountId)
+  ON CONFLICT (id) DO UPDATE SET new_deposit_id = EXCLUDED.new_deposit_id, owner_id = EXCLUDED.owner_id, account_id = EXCLUDED.account_id;
 `;
 
 const unlinkChargesFromBankDepositsByChargeIds = sql<IUnlinkChargesFromBankDepositsByChargeIdsQuery>`
@@ -307,7 +307,7 @@ export class BankDepositChargesProvider {
       }
     }
 
-    await this.upsertBankDepositCharge({ chargeId, depositId });
+    await this.upsertBankDepositCharge({ chargeId, depositId, accountId });
   }
 
   public async createDepositFromCharge(chargeId: string, name: string) {
