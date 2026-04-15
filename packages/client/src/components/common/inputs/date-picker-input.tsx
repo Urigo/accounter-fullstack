@@ -3,9 +3,13 @@
 import React, { useEffect, type ComponentProps } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { Button } from '../../ui/button.js';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group.js';
 import { Calendar } from '../../ui/calendar.js';
-import { Input } from '../../ui/input.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
 function formatDate(date: Date | undefined) {
@@ -28,28 +32,29 @@ type Props = Omit<ComponentProps<'input'>, 'value' | 'onChange'> & {
   onChange?: (date?: Date | null) => void;
 };
 
-export function DatePickerInput({ value: date, onChange, disabled, ...props }: Props) {
+export function DatePickerInput({ value: valueDate, onChange, disabled, ...props }: Props) {
   const [open, setOpen] = React.useState(false);
+  const [date, setDate] = React.useState<Date | undefined>(valueDate);
   const [month, setMonth] = React.useState<Date | undefined>(date);
   const [value, setValue] = React.useState(formatDate(date));
 
   useEffect(() => {
-    if (date) {
-      setValue(formatDate(date));
-    }
-  }, [date]);
+    onChange?.(date ?? null);
+  }, [date, onChange]);
 
   return (
-    <div className="relative flex gap-2">
-      <Input
+    <InputGroup>
+      <InputGroupInput
         {...props}
         disabled={disabled}
+        id="date-required"
         value={value}
+        placeholder="Select date"
         onChange={e => {
+          const date = new Date(e.target.value);
           setValue(e.target.value);
-          const date = e.target.value ? new Date(e.target.value) : undefined;
           if (isValidDate(date)) {
-            onChange?.(date);
+            setDate(date);
             setMonth(date);
           }
         }}
@@ -60,38 +65,38 @@ export function DatePickerInput({ value: date, onChange, disabled, ...props }: P
           }
         }}
       />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id="date-picker"
-            variant="ghost"
-            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
-            disabled={disabled}
+      <InputGroupAddon align="inline-end">
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <InputGroupButton
+              id="date-picker"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Select date"
+            >
+              <CalendarIcon />
+              <span className="sr-only">Select date</span>
+            </InputGroupButton>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-auto overflow-hidden p-0"
+            align="end"
+            alignOffset={-8}
+            sideOffset={10}
           >
-            <CalendarIcon className="size-3.5" />
-            <span className="sr-only">Select date</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto overflow-hidden p-0"
-          align="end"
-          alignOffset={-8}
-          sideOffset={10}
-        >
-          <Calendar
-            mode="single"
-            selected={date}
-            captionLayout="dropdown"
-            month={month}
-            onMonthChange={setMonth}
-            onSelect={(date?: Date | null) => {
-              onChange?.(date);
-              setValue(formatDate(date ?? undefined));
-              setOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+            <Calendar
+              mode="single"
+              selected={date}
+              month={month}
+              onMonthChange={setMonth}
+              onSelect={(date?: Date | null) => {
+                setValue(formatDate(date ?? undefined));
+                setOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      </InputGroupAddon>
+    </InputGroup>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import { DatePickerInput, MonthPickerInput } from '@mantine/dates';
+import { MonthPickerInput } from '@mantine/dates';
 import {
   Currency,
   DocumentType,
@@ -21,7 +21,7 @@ import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entiti
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
-import { ComboBox, CurrencyInput, NumberInput } from '../index.js';
+import { ComboBox, CurrencyInput, DatePickerInput, NumberInput } from '../index.js';
 
 export interface ModifyDocumentFieldsProps {
   formManager: UseFormReturn<
@@ -95,7 +95,7 @@ export const ModifyDocumentFields = ({
       />
       {showExtendedFields && (
         <>
-          <Controller
+          <FormField
             name="date"
             control={control}
             defaultValue={isDocumentProcessed ? document?.date : undefined}
@@ -106,21 +106,20 @@ export const ModifyDocumentFields = ({
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                error={fieldState.error?.message}
-                label="Date"
-                popoverProps={{ withinPortal: true }}
-              />
+              <FormItem>
+                <FormLabel>Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    value={field.value ? new Date(field.value) : undefined}
+                    onChange={(date?: Date | null): void => {
+                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
 
