@@ -15,6 +15,8 @@ import { Step03OpeningBalance } from './step-03-opening-balance/index.js';
 import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import { Step09SaveTemplate } from './step-09-save-template/index.js';
+import { Step10ExportTrialBalance } from './step-10-export-trial-balance/index.js';
+import { Step11DepreciationReport } from './step-11-depreciation-report/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { YearPicker } from './year-picker.js';
@@ -264,21 +266,22 @@ export const AnnualAuditFlow = (): ReactNode => {
             onStatusChange={handleStatusChange}
           />
 
-          <SimpleStep
+          <Step10ExportTrialBalance
             id="10"
             title="Export Year-end Trial Balance"
-            description="For future validations"
             icon={<Download className="h-4 w-4" />}
+            year={year}
+            adminBusinessId={adminBusinessId}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Export Trial Balance', href: '/export/trial-balance' }]}
           />
 
-          <SimpleStep
+          <Step11DepreciationReport
             id="11"
             title="Generate Final Depreciation Report"
             icon={<FileText className="h-4 w-4" />}
+            year={year}
+            adminBusinessId={adminBusinessId}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate Report', href: '/depreciation/final' }]}
           />
 
           <SimpleStep

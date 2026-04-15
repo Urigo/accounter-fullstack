@@ -8,7 +8,11 @@
 
 import type { ContoReportFiltersType } from '@/components/reports/conto/conto-report-filters.js';
 import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
-import type { ChargeFilter } from '@/gql/graphql.js';
+import {
+  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
+  encodeDepreciationReportFilters,
+} from '@/components/screens/reports/depreciation-report/depreciation-report-filters.js';
+import type { ChargeFilter, DepreciationReportFilter } from '@/gql/graphql.js';
 import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import { isObjectEmpty } from '@/helpers/form.js';
 
@@ -48,6 +52,15 @@ function getContoReportParams(filter?: ContoReportFiltersType | null): string {
 
   const queryParams = params.size > 0 ? `?${params}` : '';
   return queryParams;
+}
+
+function getDepreciationReportParams(filter?: DepreciationReportFilter | null): string {
+  const params = new URLSearchParams();
+  const encoded = encodeDepreciationReportFilters(filter);
+  if (encoded) {
+    params.append(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, encoded);
+  }
+  return params.size > 0 ? `?${params}` : '';
 }
 
 function encodeTrialBalanceReportFilters(filter?: TrialBalanceReportFilters | null): string | null {
@@ -121,7 +134,8 @@ export const ROUTES = {
     PROFIT_AND_LOSS: (year?: number) =>
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',
     TAX: (year?: number) => (year ? `/reports/tax/${year}` : '/reports/tax'),
-    DEPRECIATION: '/reports/depreciation',
+    DEPRECIATION: (filter?: DepreciationReportFilter | null) =>
+      `/reports/depreciation${getDepreciationReportParams(filter)}`,
     SHAAM_6111: '/reports/shaam-6111',
     YEARLY_LEDGER: '/reports/yearly-ledger',
     ANNUAL_REVENUE: '/reports/annual-revenue',
