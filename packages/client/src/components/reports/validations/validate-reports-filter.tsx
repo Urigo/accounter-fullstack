@@ -5,8 +5,9 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import type { ValidatePcn874ReportsQueryVariables } from '../../../gql/graphql.js';
-import { isObjectEmpty, type TimelessDateString } from '../../../helpers/index.js';
+import { type TimelessDateString } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
@@ -115,9 +116,7 @@ export function ValidateReportsFilter({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter ?? {})
-      ? null
-      : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter ?? {});
     const oldFilter = get('validateReportsFilters');
     if (newFilter !== oldFilter) {
       set('validateReportsFilters', newFilter);

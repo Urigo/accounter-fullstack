@@ -8,15 +8,12 @@
 
 import type { ContoReportFiltersType } from '@/components/reports/conto/conto-report-filters.js';
 import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
-import {
-  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
-  encodeDepreciationReportFilters,
-} from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
+import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
 import type { ChargeFilter, DepreciationReportFilter } from '@/gql/graphql.js';
 import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import { isObjectEmpty } from '@/helpers/form.js';
 
-export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
+export function encodeFilters(filter?: Record<string, unknown> | null): string | null {
   return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
 }
 
@@ -26,7 +23,7 @@ export function getAllChargesParams(filter?: ChargeFilter | null, page?: number)
     params.append('page', String(page));
   }
 
-  const chargesFilters = encodeChargesFilters(filter);
+  const chargesFilters = encodeFilters(filter);
   if (chargesFilters) {
     // Add it as a single encoded parameter
     params.append('chargesFilters', chargesFilters);
@@ -36,15 +33,10 @@ export function getAllChargesParams(filter?: ChargeFilter | null, page?: number)
   return queryParams;
 }
 
-function encodeContoReportFilters(filter?: ContoReportFiltersType | null): string | null {
-  if (!filter || isObjectEmpty(filter)) return null;
-  return encodeURIComponent(JSON.stringify(filter));
-}
-
 function getContoReportParams(filter?: ContoReportFiltersType | null): string {
   const params = new URLSearchParams();
 
-  const contoReportFilters = encodeContoReportFilters(filter);
+  const contoReportFilters = encodeFilters(filter);
   if (contoReportFilters) {
     // Add it as a single encoded parameter
     params.append(CONTO_REPORT_FILTERS_KEY, contoReportFilters);
@@ -56,21 +48,17 @@ function getContoReportParams(filter?: ContoReportFiltersType | null): string {
 
 function getDepreciationReportParams(filter?: DepreciationReportFilter | null): string {
   const params = new URLSearchParams();
-  const encoded = encodeDepreciationReportFilters(filter);
+  const encoded = encodeFilters(filter);
   if (encoded) {
     params.append(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, encoded);
   }
   return params.size > 0 ? `?${params}` : '';
 }
 
-function encodeTrialBalanceReportFilters(filter?: TrialBalanceReportFilters | null): string | null {
-  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-}
-
 function getTrialBalanceReportHref(filter?: TrialBalanceReportFilters | null): string {
   const params = new URLSearchParams();
 
-  const trialBalanceReportFilters = encodeTrialBalanceReportFilters(filter);
+  const trialBalanceReportFilters = encodeFilters(filter);
   if (trialBalanceReportFilters) {
     // Add it as a single encoded parameter
     params.append('trialBalanceReportFilters', trialBalanceReportFilters);

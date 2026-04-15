@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
+import { encodeFilters } from '@/router/routes.js';
 import type { DepreciationReportFilter } from '../../../../gql/graphql.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
@@ -16,10 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
-import {
-  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
-  encodeDepreciationReportFilters,
-} from './depreciation-report-filters-utils.js';
+import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from './depreciation-report-filters-utils.js';
 
 interface DepreciationReportFiltersFormProps {
   filter: DepreciationReportFilter;
@@ -111,7 +109,7 @@ export function DepreciationReportFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = encodeDepreciationReportFilters(filter);
+    const newFilter = encodeFilters(filter);
     const oldFilter = get(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM);
     if (newFilter !== oldFilter) {
       set(DEPRECIATION_REPORT_FILTERS_QUERY_PARAM, newFilter);

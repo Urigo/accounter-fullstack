@@ -2,11 +2,11 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon } from '@mantine/core';
-import { ROUTES } from '@/router/routes.js';
+import { encodeFilters, ROUTES } from '@/router/routes.js';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
-import { ChargesFilters, encodeChargesFilters } from './charges/charges-filters.js';
+import { ChargesFilters } from './charges/charges-filters.js';
 import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
@@ -31,7 +31,7 @@ export function getLedgerValidationHref(filter?: ChargeFilter | null, page?: num
     params.append('page', String(page));
   }
 
-  const chargesFilters = encodeChargesFilters(filter);
+  const chargesFilters = encodeFilters(filter);
   if (chargesFilters) {
     // Add it as a single encoded parameter
     params.append('chargesFilters', chargesFilters);
