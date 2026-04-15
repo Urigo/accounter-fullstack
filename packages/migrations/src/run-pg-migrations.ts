@@ -162,6 +162,7 @@ import migration_2026_03_23T12_00_00_index_search_strings from './actions/2026-0
 import migration_2026_04_13T10_00_00_add_business_dates_to_user_context from './actions/2026-04-13T10-00-00.add-business-dates-to-user-context.js';
 import migration_2026_04_13T12_00_00_annual_audit_step_status from './actions/2026-04-13T12-00-00.annual-audit-step-status.js';
 import migration_2026_04_14T10_00_00_bank_deposits_table from './actions/2026-04-14T10-00-00.bank-deposits-table.js';
+import migration_2026_04_14T10_00_00_bank_deposits_table2 from './actions/2026-04-14T11-00-00.bank-deposits-table2.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -328,6 +329,7 @@ export const MIGRATIONS = [
   migration_2026_04_13T10_00_00_add_business_dates_to_user_context,
   migration_2026_04_13T12_00_00_annual_audit_step_status,
   migration_2026_04_14T10_00_00_bank_deposits_table,
+  migration_2026_04_14T10_00_00_bank_deposits_table2,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
