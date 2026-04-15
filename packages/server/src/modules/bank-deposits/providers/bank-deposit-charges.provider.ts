@@ -311,4 +311,56 @@ export class BankDepositChargesProvider {
 
     await this.upsertBankDepositCharge({ chargeId, depositId });
   }
+
+  public async createDepositFromCharge(chargeId: string, name: string) {
+    const transactions =
+      await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
+
+    if (transactions.length === 0) {
+      throw new GraphQLError(
+        'createDepositFromCharge can only be called for charges that have at least one transaction',
+      );
+    }
+
+    // Validate single currency and single account across all transactions
+    const currencies = new Set(transactions.map(t => t.currency));
+    if (currencies.size > 1) {
+      throw new GraphQLError(
+        `Cannot create deposit: charge has transactions in multiple currencies (${[...currencies].join(', ')})`,
+      );
+    }
+    const accountIds = new Set(transactions.map(t => t.account_id).filter(Boolean));
+    if (accountIds.size > 1) {
+      throw new GraphQLError(
+        `Cannot create deposit: charge has transactions from multiple accounts`,
+      );
+    }
+
+    const currency = [...currencies][0];
+    const accountId = [...accountIds][0] ?? null;
+
+    // Derive open_date from the earliest debit_date, falling back to event_date
+    const openDate = transactions.reduce<Date | null>((min, t) => {
+      const d = t.debit_date ?? t.event_date;
+      if (!d) return min;
+      return min === null || d < min ? d : min;
+    }, null);
+
+    const deposit = await this.bankDepositsProvider.insertBankDeposit({
+      name,
+      currency,
+      accountId,
+      openDate,
+      closeDate: null,
+    });
+
+    if (!deposit) {
+      throw new GraphQLError('Failed to create bank deposit');
+    }
+
+    await this.upsertBankDepositCharge({ chargeId, depositId: deposit.id });
+    this.getBankDepositByChargeIdLoader.clear(chargeId);
+
+    return deposit;
+  }
 }

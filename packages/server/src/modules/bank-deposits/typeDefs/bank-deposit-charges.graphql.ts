@@ -9,6 +9,9 @@ export default gql`
     assignChargeToDeposit(chargeId: UUID!, depositId: String!): BankDeposit!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    createDepositFromCharge(chargeId: UUID!, name: String!): BankDeposit!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Metadata for Bank Deposit, including current balance, total interest, total deposit amount, and associated transactions. "
