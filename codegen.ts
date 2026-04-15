@@ -67,11 +67,13 @@ const config: CodegenConfig = {
           AdminContextInfo: '../modules/admin-context/types.js#AdminContext',
           BalanceTransactions:
             '../modules/reports/types.js#IGetNormalizedBalanceTransactionsResult',
+          BankDeposit: '../modules/bank-deposits/types.js#IGetAllBankDepositsResult',
           BankDepositCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           BankFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           BankDepositFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
+          BankDepositMetadata: '../modules/bank-deposits/types.js#BankDepositMetadataProto',
           Business: '../modules/financial-entities/types.js#IGetBusinessesByIdsResult',
           BusinessTransaction: '../shared/types#BusinessTransactionProto',
           BusinessTransactionSum: '../shared/types#RawBusinessTransactionsSum',

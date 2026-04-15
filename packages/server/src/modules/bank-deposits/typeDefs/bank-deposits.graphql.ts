@@ -2,31 +2,27 @@ import { gql } from 'graphql-modules';
 
 export default gql`
   extend type Query {
-    deposit(depositId: String!): BankDeposit! @requiresAuth
-    depositByCharge(chargeId: UUID!): BankDeposit @requiresAuth
+    deposit(id: UUID!): BankDeposit! @requiresAuth
     allDeposits: [BankDeposit!]! @requiresAuth
   }
 
   extend type Mutation {
-    createDeposit(currency: Currency!): BankDeposit!
-      @requiresAuth
-      @requiresAnyRole(roles: ["business_owner", "accountant"])
-    assignChargeToDeposit(chargeId: UUID!, depositId: String!): BankDeposit!
-      @requiresAuth
-      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    createDeposit(
+      name: String!
+      currency: Currency!
+      openDate: TimelessDate!
+      accountId: UUID
+    ): BankDeposit! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Bank Deposit "
   type BankDeposit {
     id: ID!
-    currency: Currency!
-    openDate: TimelessDate!
+    name: String!
+    currency: Currency
+    account: FinancialAccount
+    openDate: TimelessDate
     closeDate: TimelessDate
-    currentBalance: FinancialAmount!
-    totalInterest: FinancialAmount!
-    totalDeposit: FinancialAmount!
     isOpen: Boolean!
-    currencyError: [UUID!]!
-    transactions: [Transaction!]!
   }
 `;

@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { dateToTimelessDateString, reassureOwnerIdExists } from '../../../shared/helpers/index.js';
@@ -7,65 +8,75 @@ import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type {
-  IDeleteBankDepositChargesByChargeIdsQuery,
+  BankDepositMetadataProto,
   IGetAllDepositsWithTransactionsQuery,
+  IGetBankDepositsByChargeIdsQuery,
+  IGetBankDepositsByChargeIdsResult,
   IGetDepositTransactionsByChargeIdQuery,
   IGetTransactionsByBankDepositsQuery,
-  IInsertOrUpdateBankDepositChargeParams,
-  IInsertOrUpdateBankDepositChargeQuery,
+  IUnlinkChargesFromBankDepositsByChargeIdsQuery,
+  IUpsertBankDepositChargeParams,
+  IUpsertBankDepositChargeQuery,
 } from '../types.js';
+import { BankDepositsProvider } from './bank-deposits.provider.js';
 
 const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     SELECT 
-      cbd.deposit_id,
+      cbd.new_deposit_id,
       cbd.account_id as deposit_account_id,
       t.*
     FROM accounter_schema.charges_bank_deposits cbd
     INNER JOIN accounter_schema.transactions t
       ON cbd.id = t.charge_id
-    WHERE deposit_id IN $$depositIds;`;
+    WHERE new_deposit_id IN $$depositIds;`;
+
+const getBankDepositsByChargeIds = sql<IGetBankDepositsByChargeIdsQuery>`
+  SELECT bd.id, bd.name, bd.currency, bd.account_id, bd.open_date, bd.close_date, cbd.id as charge_id
+  FROM accounter_schema.charges_bank_deposits cbd
+  INNER JOIN accounter_schema.bank_deposits bd
+    ON cbd.new_deposit_id = bd.id
+  WHERE cbd.id IN $$chargeIds;`;
 
 const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQuery>`
     SELECT
-      cbd.deposit_id,
+      cbd.new_deposit_id,
       cbd.account_id as deposit_account_id,
       t.*
     FROM accounter_schema.charges_bank_deposits cbd
     LEFT JOIN accounter_schema.transactions t
       ON cbd.id = t.charge_id
-    WHERE deposit_id IN (
-      SELECT cbd2.deposit_id
+    WHERE new_deposit_id IN (
+      SELECT cbd2.new_deposit_id
       FROM accounter_schema.charges_bank_deposits cbd2
       WHERE cbd2.id = $chargeId
     )
     AND ($includeCharge OR t.charge_id <> $chargeId);`;
 
-const insertOrUpdateBankDepositCharge = sql<IInsertOrUpdateBankDepositChargeQuery>`
-  INSERT INTO accounter_schema.charges_bank_deposits (id, deposit_id, account_id, owner_id)
-  VALUES ($chargeId, $depositId, $accountId, $ownerId)
-  ON CONFLICT (id) DO UPDATE SET deposit_id = EXCLUDED.deposit_id, account_id = EXCLUDED.account_id, owner_id = EXCLUDED.owner_id;
+const upsertBankDepositCharge = sql<IUpsertBankDepositChargeQuery>`
+  INSERT INTO accounter_schema.charges_bank_deposits (id, new_deposit_id, owner_id)
+  VALUES ($chargeId, $depositId, $ownerId)
+  ON CONFLICT (id) DO UPDATE SET new_deposit_id = EXCLUDED.new_deposit_id, owner_id = EXCLUDED.owner_id;
 `;
 
-const deleteBankDepositChargesByChargeIds = sql<IDeleteBankDepositChargesByChargeIdsQuery>`
+const unlinkChargesFromBankDepositsByChargeIds = sql<IUnlinkChargesFromBankDepositsByChargeIdsQuery>`
   DELETE FROM accounter_schema.charges_bank_deposits
   WHERE id IN $$chargeIds;
 `;
 
 const getAllDepositsWithTransactions = sql<IGetAllDepositsWithTransactionsQuery>`
-    SELECT 
-      cbd.deposit_id,
-      t.id,
-      t.currency,
-      t.debit_date,
-      t.event_date,
-      t.amount,
-      t.current_balance,
-      t.charge_id
-    FROM accounter_schema.charges_bank_deposits cbd
+    SELECT
+      bd.id as new_deposit_id,
+      bd.name as deposit_name,
+      bd.currency as deposit_currency,
+      bd.open_date,
+      bd.close_date,
+      t.*
+    FROM accounter_schema.bank_deposits bd
+    LEFT JOIN accounter_schema.charges_bank_deposits cbd
+        ON cbd.new_deposit_id = bd.id
     LEFT JOIN accounter_schema.transactions t
         ON cbd.id = t.charge_id
-    WHERE cbd.deposit_id IS NOT NULL
-    ORDER BY cbd.deposit_id, COALESCE(t.debit_date, t.event_date);`;
+    ORDER BY bd.id, COALESCE(t.debit_date, t.event_date);`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -76,6 +87,7 @@ export class BankDepositChargesProvider {
     private db: TenantAwareDBClient,
     private adminContextProvider: AdminContextProvider,
     private transactionsProvider: TransactionsProvider,
+    private bankDepositsProvider: BankDepositsProvider,
   ) {}
 
   private async batchTransactionsByBankDeposits(depositIds: readonly string[]) {
@@ -85,83 +97,152 @@ export class BankDepositChargesProvider {
       },
       this.db,
     );
-    return depositIds.map(id => transactions.filter(t => t.deposit_id === id));
+    return depositIds.map(id => transactions.filter(t => t.new_deposit_id === id));
   }
 
   public getTransactionsByBankDepositLoader = new DataLoader((keys: readonly string[]) =>
     this.batchTransactionsByBankDeposits(keys),
   );
 
+  private async batchBankDepositsByChargeIds(chargeIds: readonly string[]) {
+    const rows = await getBankDepositsByChargeIds.run(
+      { chargeIds: Array.from(new Set(chargeIds)) },
+      this.db,
+    );
+    const chargeIdToDepositMap = new Map<string, IGetBankDepositsByChargeIdsResult>();
+    for (const row of rows) {
+      if (row.charge_id) {
+        chargeIdToDepositMap.set(row.charge_id, row);
+      }
+    }
+    return chargeIds.map(chargeId => chargeIdToDepositMap.get(chargeId) ?? null);
+  }
+
+  public getBankDepositByChargeIdLoader = new DataLoader(async (chargeIds: readonly string[]) =>
+    this.batchBankDepositsByChargeIds(chargeIds),
+  );
+
   public async getDepositTransactionsByChargeId(chargeId: string, includeCharge = false) {
     return getDepositTransactionsByChargeId.run({ chargeId, includeCharge }, this.db);
   }
 
-  public async insertOrUpdateBankDepositCharge(params: IInsertOrUpdateBankDepositChargeParams) {
+  public async upsertBankDepositCharge(params: IUpsertBankDepositChargeParams) {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
-    return insertOrUpdateBankDepositCharge.run(reassureOwnerIdExists(params, ownerId), this.db);
+    return upsertBankDepositCharge.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
-  public async getAllDepositsWithMetadata() {
-    const rows = await getAllDepositsWithTransactions.run(undefined, this.db);
+  private async batchBankDepositsMetadata(
+    depositIds: readonly string[],
+  ): Promise<(BankDepositMetadataProto | Error)[]> {
+    const uniqueDepositIds = Array.from(new Set(depositIds));
+    const depositsTransactions =
+      await this.getTransactionsByBankDepositLoader.loadMany(uniqueDepositIds);
 
-    // Group transactions by deposit_id
+    const depositIdToMetadataMap = new Map<string, BankDepositMetadataProto | Error>();
+
+    for (let i = 0; i < uniqueDepositIds.length; i++) {
+      const depositId = uniqueDepositIds[i];
+      const transactions = depositsTransactions[i] ?? [];
+      if (transactions instanceof Error) {
+        depositIdToMetadataMap.set(depositId, transactions);
+        continue;
+      }
+      const interestTransactionIds = identifyInterestTransactionIds(transactions, {
+        getId: r => r.id,
+        getChargeId: r => r.charge_id,
+        getAmount: r => Number(r.amount ?? 0),
+      });
+
+      let currentBalance = 0;
+      let totalInterest = 0;
+      let totalDeposit = 0;
+      let potentialCloseDate: Date | null = null;
+      const transactionIds: string[] = [];
+      for (const tx of transactions) {
+        if (!tx.id) continue;
+        transactionIds.push(tx.id);
+        const amount = Number(tx.amount ?? 0);
+        if (interestTransactionIds.has(tx.id)) {
+          totalInterest += amount;
+        } else {
+          currentBalance += amount;
+          if (amount > 0) {
+            totalDeposit += amount;
+          }
+        }
+        const transactionDate = tx.debit_date ?? tx.event_date;
+        if (!potentialCloseDate || transactionDate > potentialCloseDate) {
+          potentialCloseDate = transactionDate;
+        }
+      }
+
+      depositIdToMetadataMap.set(depositId, {
+        id: depositId,
+        potentialCloseDate: potentialCloseDate
+          ? dateToTimelessDateString(potentialCloseDate)
+          : null,
+        currentBalance,
+        totalInterest,
+        totalDeposit,
+        transactionIds,
+      });
+    }
+    return depositIds.map(id => {
+      const metadata = depositIdToMetadataMap.get(id);
+      if (!metadata) {
+        return {
+          id,
+          potentialCloseDate: null,
+          currentBalance: 0,
+          totalInterest: 0,
+          totalDeposit: 0,
+          transactionIds: [],
+        };
+      }
+      if (metadata instanceof Error) {
+        return metadata;
+      }
+      return metadata;
+    });
+  }
+
+  public getBankDepositMetadataLoader = new DataLoader(async (depositIds: readonly string[]) =>
+    this.batchBankDepositsMetadata(depositIds),
+  );
+
+  public async getAllDepositsWithMetadata(): Promise<Array<BankDepositMetadataProto>> {
+    const transactionRows = await getAllDepositsWithTransactions.run(undefined, this.db);
+
     const depositMap = new Map<
       string,
-      {
-        id: string;
-        currency: string | null;
-        openDate: Date | null;
-        closeDate: Date | null;
-        currentBalance: number;
-        totalInterest: number;
-        totalDeposit: number;
-        currencyError: string[];
-        transactionIds: string[];
-      }
+      Omit<BankDepositMetadataProto, 'potentialCloseDate'> & { potentialCloseDate: Date | null }
     >();
 
-    // Identify interest transactions using shared helper
-    const interestTransactionIds = identifyInterestTransactionIds(rows, {
+    const interestTransactionIds = identifyInterestTransactionIds(transactionRows, {
       getId: r => r.id,
       getChargeId: r => r.charge_id,
       getAmount: r => Number(r.amount ?? 0),
     });
 
-    for (const row of rows) {
-      if (!row.deposit_id) continue;
+    for (const row of transactionRows) {
+      if (!row.new_deposit_id) continue;
 
-      if (!depositMap.has(row.deposit_id)) {
-        depositMap.set(row.deposit_id, {
-          id: row.deposit_id,
-          currency: row.currency,
-          openDate: row.debit_date ?? row.event_date,
-          closeDate: null,
+      if (!depositMap.has(row.new_deposit_id)) {
+        depositMap.set(row.new_deposit_id, {
+          id: row.new_deposit_id,
+          potentialCloseDate: row.close_date,
           currentBalance: 0,
           totalInterest: 0,
           totalDeposit: 0,
-          currencyError: [],
           transactionIds: [],
         });
       }
 
-      const deposit = depositMap.get(row.deposit_id)!;
+      if (!row.id) continue;
+
+      const deposit = depositMap.get(row.new_deposit_id)!;
       deposit.transactionIds.push(row.id);
 
-      // Validate single currency
-      if (deposit.currency && row.currency && deposit.currency !== row.currency) {
-        const alreadyInErrors = deposit.currencyError.includes(row.id);
-        if (!alreadyInErrors) {
-          deposit.currencyError.push(row.id);
-        }
-      }
-
-      // Update openDate (earliest transaction)
-      const txDate = row.debit_date ?? row.event_date;
-      if (!deposit.openDate || (txDate && txDate < deposit.openDate)) {
-        deposit.openDate = txDate;
-      }
-
-      // Track balance and interest separately
       if (row.amount) {
         const amount = Number(row.amount);
         if (interestTransactionIds.has(row.id)) {
@@ -173,99 +254,61 @@ export class BankDepositChargesProvider {
           }
         }
       }
-
-      // If balance reaches zero, update closeDate (interest doesn't affect closure)
-      if (Math.abs(deposit.currentBalance) < 0.005 && txDate) {
-        deposit.closeDate = txDate;
-      }
-    }
-
-    // Ensure closeDate reflects final state: if not closed, closeDate must be null
-    for (const d of depositMap.values()) {
-      if (Math.abs(d.currentBalance) >= 0.005) {
-        d.closeDate = null;
-      }
     }
 
     return Array.from(depositMap.values()).map(deposit => ({
       id: deposit.id,
-      currency: deposit.currency,
-      openDate: deposit.openDate ? dateToTimelessDateString(deposit.openDate) : null,
-      closeDate: deposit.closeDate ? dateToTimelessDateString(deposit.closeDate) : null,
+      potentialCloseDate: deposit.potentialCloseDate
+        ? dateToTimelessDateString(deposit.potentialCloseDate)
+        : null,
       currentBalance: deposit.currentBalance,
       totalInterest: deposit.totalInterest,
       totalDeposit: deposit.totalDeposit,
-      currencyError: deposit.currencyError,
       transactionIds: deposit.transactionIds,
     }));
   }
 
-  public async createDeposit(currency: string) {
-    // Generate unique deposit ID using timestamp and random suffix
-    const depositId = `${currency}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-
-    return {
-      id: depositId,
-      currency,
-      openDate: null,
-      closeDate: null,
-      currentBalance: 0,
-      totalInterest: 0,
-      currencyError: [],
-      transactionIds: [],
-    };
-  }
-
-  public async deleteChargeDepositsByChargeIds(chargeIds: string[]) {
-    return deleteBankDepositChargesByChargeIds.run({ chargeIds }, this.db);
+  public async unlinkChargesFromBankDepositsByChargeIds(chargeIds: string[]) {
+    return unlinkChargesFromBankDepositsByChargeIds.run({ chargeIds }, this.db);
   }
 
   public async assignChargeToDeposit(chargeId: string, depositId: string) {
-    const [depositTransactions, transactions] = await Promise.all([
+    const [deposit, transactions] = await Promise.all([
       // Get target deposit transactions to validate currency
-      this.getTransactionsByBankDepositLoader.load(depositId),
+      this.bankDepositsProvider.bankDepositByIdLoader.load(depositId),
       this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId),
     ]);
 
-    let accountId: string | null = null;
+    if (!deposit) {
+      throw new GraphQLError(`Deposit ${depositId} not found`);
+    }
 
-    // Check currency conflict
-    if (depositTransactions.length > 0) {
-      const depositCurrency = depositTransactions[0].currency;
-      const depositAccountId = depositTransactions[0].deposit_account_id;
-      for (const transaction of transactions) {
-        const transactionCurrency = transaction.currency;
-        if (depositCurrency && transactionCurrency !== depositCurrency) {
-          throw new Error(
-            `Currency conflict: Transaction currency (${transactionCurrency}) does not match deposit currency (${depositCurrency})`,
-          );
-        }
-        if (depositAccountId !== transaction.account_id) {
-          throw new Error(
-            `Account conflict: Transaction account (${transaction.account_id}) does not match deposit account (${depositAccountId})`,
-          );
-        }
-      }
-      accountId = depositAccountId;
-    } else {
-      for (const transaction of transactions) {
+    if (transactions.length < 1) {
+      throw new GraphQLError(`No transactions found for charge ID="${chargeId}"`);
+    }
+
+    let accountId = deposit.account_id;
+    let currency = deposit.currency;
+
+    // Check currency or account conflict
+    for (const transaction of transactions) {
+      if (!accountId || !currency) {
         accountId ??= transaction.account_id;
-        if (accountId !== transaction.account_id) {
-          throw new Error(`Account conflict: Transactions accounts are inconsistent`);
-        }
+        currency ??= transaction.currency;
+        await this.bankDepositsProvider.updateBankDeposit({
+          depositId: deposit.id,
+          accountId,
+          currency,
+        });
+      }
+      if (accountId !== transaction.account_id) {
+        throw new Error(`Account conflict: Transactions accounts are inconsistent`);
+      }
+      if (currency !== transaction.currency) {
+        throw new Error(`Currency conflict: Transactions currencies are inconsistent`);
       }
     }
 
-    await this.insertOrUpdateBankDepositCharge({ chargeId, depositId, accountId });
-
-    // Return updated deposit metadata
-    const allDeposits = await this.getAllDepositsWithMetadata();
-    const updatedDeposit = allDeposits.find(d => d.id === depositId);
-
-    if (!updatedDeposit) {
-      throw new Error('Deposit not found after assignment');
-    }
-
-    return updatedDeposit;
+    await this.upsertBankDepositCharge({ chargeId, depositId });
   }
 }
