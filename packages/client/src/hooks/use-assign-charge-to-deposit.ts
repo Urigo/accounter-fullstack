@@ -9,13 +9,6 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
   mutation AssignChargeToDeposit($chargeId: UUID!, $depositId: String!) {
     assignChargeToDeposit(chargeId: $chargeId, depositId: $depositId) {
       id
-      isOpen
-      currentBalance {
-        formatted
-      }
-      transactions {
-        id
-      }
     }
   }
 `;

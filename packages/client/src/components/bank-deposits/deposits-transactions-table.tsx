@@ -23,13 +23,16 @@ import { identifyInterestTransactionIds } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query SharedDepositTransactions($depositId: String!) {
-    deposit(depositId: $depositId) {
+  query SharedDepositTransactions($depositId: UUID!) {
+    deposit(id: $depositId) {
       id
       currency
-      transactions {
+      metadata {
         id
-        ...DepositTransactionFields
+        transactions {
+          id
+          ...DepositTransactionFields
+        }
       }
     }
   }
@@ -67,11 +70,11 @@ export function DepositsTransactionsTable({
   });
 
   const tableData: DepositTransactionRowType[] = useMemo(() => {
-    if (!data?.deposit?.transactions) {
+    if (!data?.deposit?.metadata.transactions) {
       return [];
     }
 
-    const transactions = data.deposit.transactions.map(rawTx =>
+    const transactions = data.deposit.metadata.transactions.map(rawTx =>
       getFragmentData(DepositTransactionFieldsFragmentDoc, rawTx),
     );
 
