@@ -9,8 +9,8 @@ import type {
   AnnualAuditStepStatus,
   AnnualAuditStepStatusResult,
   IGetBalanceChargeQuery,
-  IGetStepStatusQuery,
   IGetStepStatusesQuery,
+  IGetStepStatusQuery,
   IResetStep09ForTemplateQuery,
   IUpsertStep09StatusQuery,
   IUpsertStepStatusQuery,
@@ -256,6 +256,8 @@ export class AnnualAuditProvider {
         } catch {
           // Template may have been deleted; ignore
         }
+        // Reset step 09 for any other audit years still referencing the unlocked template
+        await this.resetStep09ForTemplate(ownerId, prevTemplateName);
       }
     }
 
