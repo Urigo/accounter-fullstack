@@ -52,8 +52,8 @@ export function Step09SaveTemplate(props: Step09Props) {
 
   // Derive step 9 evidence from fetched step statuses
   const step09Record = useMemo(
-    () => statusData?.annualAuditStepStatuses.find(s => s.stepId === '9'),
-    [statusData],
+    () => statusData?.annualAuditStepStatuses.find(s => s.stepId === id),
+    [statusData, id],
   );
 
   const lockedTemplateName = useMemo<string | null>(() => {

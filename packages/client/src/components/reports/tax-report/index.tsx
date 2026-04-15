@@ -6,6 +6,7 @@ import { Table } from '@mantine/core';
 import { TaxReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
+import { PrintToPdfButton } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { ReportCommentaryRow } from '../shared/report-commentary-row.js';
 import { TaxReportFilter } from './tax-report-filters.js';
@@ -174,7 +175,10 @@ export const TaxReport = (): ReactElement => {
   const referenceYearsData = yearlyReports?.reference ?? [];
 
   return (
-    <PageLayout title="Tax Report">
+    <PageLayout
+      title="Tax Report"
+      headerActions={<PrintToPdfButton filename={`tax_report_${year}`} />}
+    >
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
