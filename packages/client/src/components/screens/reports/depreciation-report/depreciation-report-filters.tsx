@@ -3,7 +3,6 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import type { DepreciationReportFilter } from '../../../../gql/graphql.js';
-import { isObjectEmpty } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { ComboBox, NumberInput } from '../../../common/index.js';
@@ -17,14 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
-
-export function encodeDepreciationReportFilters(
-  filter?: DepreciationReportFilter | null,
-): string | null {
-  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-}
-
-export const DEPRECIATION_REPORT_FILTERS_QUERY_PARAM = 'depreciationReportFilters';
+import {
+  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
+  encodeDepreciationReportFilters,
+} from './depreciation-report-filters-utils.js';
 
 interface DepreciationReportFiltersFormProps {
   filter: DepreciationReportFilter;

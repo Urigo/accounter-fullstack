@@ -11,7 +11,7 @@ import type { TrialBalanceReportFilters } from '@/components/reports/trial-balan
 import {
   DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
   encodeDepreciationReportFilters,
-} from '@/components/screens/reports/depreciation-report/depreciation-report-filters.js';
+} from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
 import type { ChargeFilter, DepreciationReportFilter } from '@/gql/graphql.js';
 import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import { isObjectEmpty } from '@/helpers/form.js';

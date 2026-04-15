@@ -19,10 +19,8 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { DepreciationRecordRow } from './depreciation-record-row.js';
-import {
-  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
-  DepreciationReportFilters,
-} from './depreciation-report-filters.js';
+import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from './depreciation-report-filters-utils.js';
+import { DepreciationReportFilters } from './depreciation-report-filters.js';
 import { DepreciationSummaryRow } from './depreciation-summary-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
