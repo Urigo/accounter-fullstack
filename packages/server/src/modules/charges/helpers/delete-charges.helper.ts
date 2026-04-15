@@ -90,7 +90,7 @@ export async function deleteCharges(chargeIds: string[], injector: Injector): Pr
   // clear assigned bank deposits
   const clearAssignedBankDepositsPromise = injector
     .get(BankDepositChargesProvider)
-    .deleteChargeDepositsByChargeIds(chargeIds)
+    .unlinkChargesFromBankDepositsByChargeIds(chargeIds)
     .catch(e => {
       const message = `Failed to clear assigned bank deposits for charge IDs="${chargeIds.join(', ')}"`;
       console.error(`${message}: ${e}`);

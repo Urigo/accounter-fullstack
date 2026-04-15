@@ -1,271 +1,58 @@
 import { GraphQLError } from 'graphql';
-import { Currency } from '../../../shared/enums.js';
-import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
-import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { identifyInterestTransactionIds } from '../../ledger/helpers/bank-deposit-ledger-generation.helper.js';
+import { errorSimplifier } from '../../../shared/errors.js';
+import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { BankDepositChargesProvider } from '../providers/bank-deposit-charges.provider.js';
 import type { BankDepositsModule } from '../types.js';
 
 export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
   Query: {
-    deposit: async (_, { depositId }, { injector }) => {
-      try {
-        const { defaultLocalCurrency } = await injector
-          .get(AdminContextProvider)
-          .getVerifiedAdminContext();
-        const transactions = await injector
-          .get(BankDepositChargesProvider)
-          .getTransactionsByBankDepositLoader.load(depositId);
-
-        // Identify interest transactions via shared helper
-        const interestTransactionIds = identifyInterestTransactionIds(transactions, {
-          getId: t => t.id,
-          getChargeId: t => t.charge_id,
-          getAmount: t => Number(t.amount ?? 0),
-        });
-
-        let currentBalance = 0;
-        let totalInterest = 0;
-        let totalDeposit = 0;
-        for (const tx of transactions) {
-          const amount = Number(tx.amount);
-          if (interestTransactionIds.has(tx.id)) {
-            totalInterest += amount;
-          } else {
-            currentBalance += amount;
-            if (amount > 0) {
-              totalDeposit += amount;
-            }
-          }
-        }
-
-        const currency = (transactions[0]?.currency ?? defaultLocalCurrency) as Currency;
-        const sortedByDebit = [...transactions].sort((a, b) => {
-          const ad = a.debit_date ?? a.event_date;
-          const bd = b.debit_date ?? b.event_date;
-          return ad.getTime() - bd.getTime();
-        });
-        const openDate =
-          sortedByDebit.length > 0
-            ? dateToTimelessDateString(
-                (sortedByDebit[0].debit_date ?? sortedByDebit[0].event_date) as Date,
-              )
-            : dateToTimelessDateString(new Date());
-
-        // Find closeDate (last transaction where running balance reached zero)
-        let runningBalance = 0;
-        let closeDate = null;
-        for (const tx of sortedByDebit) {
-          if (!interestTransactionIds.has(tx.id)) {
-            runningBalance += Number(tx.amount);
-          }
-          if (Math.abs(runningBalance) < 0.005) {
-            closeDate = dateToTimelessDateString((tx.debit_date ?? tx.event_date) as Date);
-          }
-        }
-
-        // If final balance is not closed, ensure closeDate is null
-        if (Math.abs(currentBalance) >= 0.005) {
-          closeDate = null;
-        }
-
-        // Check for currency conflicts
-        const currencies = new Set(transactions.map(tx => tx.currency));
-        const currencyError =
-          currencies.size > 1
-            ? transactions.filter(tx => tx.currency !== currency).map(tx => tx.id)
-            : [];
-
-        return {
-          id: depositId,
-          currency,
-          openDate,
-          closeDate,
-          currentBalance: formatFinancialAmount(currentBalance),
-          totalInterest: formatFinancialAmount(totalInterest),
-          totalDeposit: formatFinancialAmount(totalDeposit),
-          isOpen: Math.abs(currentBalance) >= 0.005,
-          currencyError,
-          transactions: transactions.map(tx => tx.id),
-          balance: formatFinancialAmount(currentBalance),
-        };
-      } catch (e) {
-        if (e instanceof GraphQLError) throw e;
-        throw new GraphQLError('Error fetching bank deposit');
-      }
-    },
     depositByCharge: async (_, { chargeId }, { injector }) => {
       try {
-        const { defaultLocalCurrency } = await injector
-          .get(AdminContextProvider)
-          .getVerifiedAdminContext();
-        const transactions = await injector
+        return await injector
           .get(BankDepositChargesProvider)
-          .getDepositTransactionsByChargeId(chargeId, true);
-
-        // Identify interest transactions via shared helper
-        const interestTransactionIds = identifyInterestTransactionIds(transactions, {
-          getId: t => t.id,
-          getChargeId: t => t.charge_id,
-          getAmount: t => Number(t.amount ?? 0),
-        });
-
-        let currentBalance = 0;
-        let totalInterest = 0;
-        let totalDeposit = 0;
-        for (const tx of transactions) {
-          const amount = Number(tx.amount);
-          if (interestTransactionIds.has(tx.id)) {
-            totalInterest += amount;
-          } else {
-            currentBalance += amount;
-            if (amount > 0) {
-              totalDeposit += amount;
-            }
-          }
-        }
-
-        const depositIds = new Set(
-          transactions.map(tx => tx.deposit_id).filter(Boolean) as string[],
-        );
-        if (depositIds.size === 0) {
-          return null;
-        }
-        if (depositIds.size > 1) {
-          throw new GraphQLError('Multiple deposits found');
-        }
-
-        const id = [...depositIds][0];
-        const currency = (transactions[0]?.currency ?? defaultLocalCurrency) as Currency;
-        const sortedByDebit = [...transactions].sort((a, b) => {
-          const ad = a.debit_date ?? a.event_date;
-          const bd = b.debit_date ?? b.event_date;
-          return ad.getTime() - bd.getTime();
-        });
-        const openDate =
-          sortedByDebit.length > 0
-            ? dateToTimelessDateString(
-                (sortedByDebit[0].debit_date ?? sortedByDebit[0].event_date) as Date,
-              )
-            : dateToTimelessDateString(new Date());
-
-        // Find closeDate
-        let runningBalance = 0;
-        let closeDate = null;
-        for (const tx of sortedByDebit) {
-          if (!interestTransactionIds.has(tx.id)) {
-            runningBalance += Number(tx.amount);
-          }
-          if (Math.abs(runningBalance) < 0.005) {
-            closeDate = dateToTimelessDateString((tx.debit_date ?? tx.event_date) as Date);
-          }
-        }
-
-        // If final balance is not closed, ensure closeDate is null
-        if (Math.abs(currentBalance) >= 0.005) {
-          closeDate = null;
-        }
-
-        const currencies = new Set(transactions.map(tx => tx.currency));
-        const currencyError =
-          currencies.size > 1
-            ? transactions.filter(tx => tx.currency !== currency).map(tx => tx.id)
-            : [];
-
-        return {
-          id,
-          currency,
-          openDate,
-          closeDate,
-          currentBalance: formatFinancialAmount(currentBalance),
-          totalInterest: formatFinancialAmount(totalInterest),
-          totalDeposit: formatFinancialAmount(totalDeposit),
-          isOpen: Math.abs(currentBalance) >= 0.005,
-          currencyError,
-          transactions: transactions.map(tx => tx.id),
-          balance: formatFinancialAmount(currentBalance),
-        };
+          .getBankDepositByChargeIdLoader.load(chargeId);
       } catch (e) {
-        if (e instanceof GraphQLError) throw e;
-        throw new GraphQLError('Error fetching bank deposit');
-      }
-    },
-    allDeposits: async (_, __, { injector }) => {
-      try {
-        const { defaultLocalCurrency } = await injector
-          .get(AdminContextProvider)
-          .getVerifiedAdminContext();
-        const deposits = await injector
-          .get(BankDepositChargesProvider)
-          .getAllDepositsWithMetadata();
-
-        return deposits.map(deposit => ({
-          id: deposit.id,
-          currency: (deposit.currency as Currency) ?? defaultLocalCurrency,
-          openDate: deposit.openDate ?? dateToTimelessDateString(new Date()),
-          closeDate: deposit.closeDate,
-          currentBalance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
-          totalDeposit: formatFinancialAmount(deposit.totalDeposit, deposit.currency),
-          totalInterest: formatFinancialAmount(deposit.totalInterest, deposit.currency),
-          isOpen: Math.abs(deposit.currentBalance) >= 0.005,
-          currencyError: deposit.currencyError,
-          transactions: deposit.transactionIds,
-          balance: formatFinancialAmount(deposit.currentBalance, deposit.currency),
-        }));
-      } catch (e) {
-        if (e instanceof GraphQLError) throw e;
-        throw new GraphQLError('Error fetching all deposits');
+        throw errorSimplifier('Error fetching deposit by charge', e);
       }
     },
   },
   Mutation: {
-    createDeposit: async (_, { currency }, { injector }) => {
-      try {
-        const deposit = await injector.get(BankDepositChargesProvider).createDeposit(currency);
-
-        return {
-          id: deposit.id,
-          currency: currency as Currency,
-          openDate: dateToTimelessDateString(new Date()),
-          closeDate: null,
-          currentBalance: formatFinancialAmount(0),
-          totalInterest: formatFinancialAmount(0),
-          totalDeposit: formatFinancialAmount(0),
-          isOpen: false,
-          currencyError: [],
-          transactions: [],
-          balance: formatFinancialAmount(0),
-        };
-      } catch (e) {
-        if (e instanceof GraphQLError) throw e;
-        throw new GraphQLError('Error creating deposit');
-      }
-    },
     assignChargeToDeposit: async (_, { chargeId, depositId }, { injector }) => {
       try {
-        const { defaultLocalCurrency } = await injector
-          .get(AdminContextProvider)
-          .getVerifiedAdminContext();
-        const updatedDeposit = await injector
-          .get(BankDepositChargesProvider)
-          .assignChargeToDeposit(chargeId, depositId);
+        await injector.get(BankDepositChargesProvider).assignChargeToDeposit(chargeId, depositId);
 
-        return {
-          id: updatedDeposit.id,
-          currency: (updatedDeposit.currency as Currency) ?? defaultLocalCurrency,
-          openDate: updatedDeposit.openDate ?? dateToTimelessDateString(new Date()),
-          closeDate: updatedDeposit.closeDate,
-          currentBalance: formatFinancialAmount(updatedDeposit.currentBalance),
-          totalInterest: formatFinancialAmount(updatedDeposit.totalInterest),
-          totalDeposit: formatFinancialAmount(updatedDeposit.totalDeposit),
-          isOpen: Math.abs(updatedDeposit.currentBalance) >= 0.005,
-          currencyError: updatedDeposit.currencyError,
-          transactions: updatedDeposit.transactionIds,
-          balance: formatFinancialAmount(updatedDeposit.currentBalance),
-        };
+        return injector
+          .get(BankDepositChargesProvider)
+          .getBankDepositByChargeIdLoader.load(chargeId)
+          .then(deposit => {
+            if (!deposit) {
+              throw new GraphQLError('Deposit not found for charge after assignment');
+            }
+            return deposit;
+          });
       } catch (e) {
-        throw new GraphQLError((e as Error).message || 'Error assigning transaction to deposit');
+        throw errorSimplifier('Error assigning transaction to deposit', e);
       }
     },
+  },
+  BankDeposit: {
+    metadata: async (deposit, _, { injector }) => {
+      try {
+        return await injector
+          .get(BankDepositChargesProvider)
+          .getBankDepositMetadataLoader.load(deposit.id);
+      } catch (e) {
+        throw errorSimplifier(`Error fetching metadata for deposit ${deposit.name}`, e);
+      }
+    },
+  },
+  BankDepositMetadata: {
+    id: metadata => metadata.id,
+    currentBalance: metadata => formatFinancialAmount(metadata.currentBalance),
+    totalInterest: metadata => formatFinancialAmount(metadata.totalInterest),
+    totalDeposit: metadata => formatFinancialAmount(metadata.totalDeposit),
+    potentialCloseDate: metadata =>
+      Math.abs(metadata.currentBalance) >= 0.005 ? metadata.potentialCloseDate : null,
+    transactions: metadata => metadata.transactionIds,
   },
 };
