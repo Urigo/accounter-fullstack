@@ -28,6 +28,7 @@ import { AllDepositsDocument } from '@/gql/graphql.js';
   query AllDeposits {
     allDeposits {
       id
+      name
       currency
       openDate
       closeDate
@@ -74,6 +75,7 @@ export function DepositsScreen(): ReactElement {
     const deposits = data?.allDeposits ?? [];
     return deposits.map(d => ({
       id: d.id,
+      name: d.name,
       currency: d.currency ?? null,
       openDate: d.openDate ?? null,
       closeDate: d.closeDate ?? null,
@@ -104,8 +106,8 @@ export function DepositsScreen(): ReactElement {
       enableSorting: false,
     },
     {
-      accessorKey: 'id',
-      header: 'Deposit ID',
+      accessorKey: 'name',
+      header: 'Deposit Name',
       cell: info => <span className="font-mono text-xs">{info.getValue<string>()}</span>,
     },
     {
