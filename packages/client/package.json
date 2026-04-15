@@ -83,7 +83,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
-    "autoprefixer": "10.4.27",
+    "autoprefixer": "10.5.0",
     "happy-dom": "20.8.9",
     "tailwindcss": "4.2.2",
     "tailwindcss-animate": "1.0.7",
