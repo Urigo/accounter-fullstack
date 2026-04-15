@@ -1,9 +1,29 @@
 import { ROUTES } from '../router/routes.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const createClientMock = vi.fn(() => ({ mockClient: true }));
-const mapExchangeMock = vi.fn(() => ({ mockMapExchange: true }));
-const authExchangeMock = vi.fn();
+const { createClientMock, mapExchangeMock, authExchangeMock, appendHeadersMock } = vi.hoisted(() => {
+  const appendHeaders = vi.fn((operation: any, headers: Record<string, string>) => ({
+    ...operation,
+    context: {
+      ...(operation.context ?? {}),
+      fetchOptions: {
+        ...((operation.context?.fetchOptions as Record<string, unknown>) ?? {}),
+        headers: {
+          ...(((operation.context?.fetchOptions as { headers?: Record<string, string> })?.headers ??
+            {}) as Record<string, string>),
+          ...headers,
+        },
+      },
+    },
+  }));
+  return {
+    createClientMock: vi.fn(() => ({ mockClient: true })),
+    mapExchangeMock: vi.fn(() => ({ mockMapExchange: true })),
+    authExchangeMock: vi.fn(),
+    appendHeadersMock: appendHeaders,
+  };
+});
+
 type TestAccessTokenResult =
   | string
   | null
@@ -12,21 +32,6 @@ type TestAccessTokenResult =
   | { status: 'error'; error: unknown };
 
 type TestAccessTokenProvider = (options?: { cacheMode?: 'on' | 'off' }) => Promise<TestAccessTokenResult>;
-
-const appendHeadersMock = vi.fn((operation: any, headers: Record<string, string>) => ({
-  ...operation,
-  context: {
-    ...(operation.context ?? {}),
-    fetchOptions: {
-      ...((operation.context?.fetchOptions as Record<string, unknown>) ?? {}),
-      headers: {
-        ...(((operation.context?.fetchOptions as { headers?: Record<string, string> })?.headers ??
-          {}) as Record<string, string>),
-        ...headers,
-      },
-    },
-  },
-}));
 
 let authFactory:
   | ((utils: { appendHeaders: typeof appendHeadersMock }) => Promise<{

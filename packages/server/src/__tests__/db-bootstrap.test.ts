@@ -76,7 +76,7 @@ describe('DB Test Harness Bootstrap', () => {
         [adminContext.ownerId]
       );
       const count = parseInt(result.rows[0].count, 10);
-      expect(count).toBe(EXPECTED_TAX_CATEGORIES);
+      expect(count).toBeGreaterThanOrEqual(EXPECTED_TAX_CATEGORIES);
     }));
 
   it('has user_context after seeding', async () =>

@@ -21,6 +21,9 @@ export default gql`
     setAnnualAuditStep09Status(input: SetAnnualAuditStep09StatusInput!): AnnualAuditStepStatusInfo!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    setAnnualAuditStepStatus(input: SetAnnualAuditStepStatusInput!): AnnualAuditStepStatusInfo!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " User type classification for annual audit opening balance step "
@@ -77,5 +80,14 @@ export default gql`
     year: Int!
     " The name of the dynamic report template to lock as the final draft "
     templateName: String!
+  }
+
+  " Generic input for manually setting any annual audit step status "
+  input SetAnnualAuditStepStatusInput {
+    ownerId: UUID!
+    year: Int!
+    stepId: String!
+    status: AnnualAuditStepStatus!
+    notes: String
   }
 `;

@@ -8,7 +8,7 @@ import { formatStringifyAmount } from '../../../../helpers/index.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { AccounterLoader } from '../../../common/index.js';
+import { AccounterLoader, PrintToPdfButton } from '../../../common/index.js';
 import { PageLayout } from '../../../layout/page-layout.js';
 import {
   Table,
@@ -19,10 +19,8 @@ import {
   TableRow,
 } from '../../../ui/table.js';
 import { DepreciationRecordRow } from './depreciation-record-row.js';
-import {
-  DEPRECIATION_REPORT_FILTERS_QUERY_PARAM,
-  DepreciationReportFilters,
-} from './depreciation-report-filters.js';
+import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from './depreciation-report-filters-utils.js';
+import { DepreciationReportFilters } from './depreciation-report-filters.js';
 import { DepreciationSummaryRow } from './depreciation-summary-row.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -116,7 +114,11 @@ export const DepreciationReport = (): ReactElement => {
   }, [filter.year]);
 
   return (
-    <PageLayout title="Depreciation Report" description={description}>
+    <PageLayout
+      title="Depreciation Report"
+      description={description}
+      headerActions={<PrintToPdfButton filename={`depreciation_report_${filter.year ?? ''}`} />}
+    >
       {fetching ? (
         <AccounterLoader />
       ) : (
