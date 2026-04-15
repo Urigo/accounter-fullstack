@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactElement } from 'react';
-import { AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -28,35 +28,37 @@ import { AllDepositsDocument } from '@/gql/graphql.js';
   query AllDeposits {
     allDeposits {
       id
+      name
       currency
       openDate
       closeDate
       isOpen
-      currencyError
-      currentBalance {
-        raw
-        formatted
+      metadata {
+        id
+        currentBalance {
+          raw
+          formatted
+        }
+        totalDeposit {
+          raw
+          formatted
+        }
+        totalInterest {
+          raw
+          formatted
+        }
+        # transactions field exists but we don't need to pull ids here
       }
-      totalDeposit {
-        raw
-        formatted
-      }
-      totalInterest {
-        raw
-        formatted
-      }
-      # transactions field exists but we don't need to pull ids here
     }
   }
 `;
 
 type DepositRow = {
   id: string;
-  currency: string;
-  openDate: string;
+  currency: string | null;
+  openDate: string | null;
   closeDate: string | null;
   isOpen: boolean;
-  currencyError: string[];
   currentBalanceRaw: number;
   currentBalanceFormatted: string;
   totalDepositRaw: number;
@@ -73,17 +75,17 @@ export function DepositsScreen(): ReactElement {
     const deposits = data?.allDeposits ?? [];
     return deposits.map(d => ({
       id: d.id,
-      currency: d.currency,
-      openDate: d.openDate,
+      name: d.name,
+      currency: d.currency ?? null,
+      openDate: d.openDate ?? null,
       closeDate: d.closeDate ?? null,
       isOpen: d.isOpen,
-      currencyError: d.currencyError ?? [],
-      currentBalanceRaw: d.currentBalance?.raw ?? 0,
-      currentBalanceFormatted: d.currentBalance?.formatted ?? '',
-      totalDepositRaw: d.totalDeposit?.raw ?? 0,
-      totalDepositFormatted: d.totalDeposit?.formatted ?? '',
-      totalInterestRaw: d.totalInterest?.raw ?? 0,
-      totalInterestFormatted: d.totalInterest?.formatted ?? '',
+      currentBalanceRaw: d.metadata.currentBalance?.raw ?? 0,
+      currentBalanceFormatted: d.metadata.currentBalance?.formatted ?? '',
+      totalDepositRaw: d.metadata.totalDeposit?.raw ?? 0,
+      totalDepositFormatted: d.metadata.totalDeposit?.formatted ?? '',
+      totalInterestRaw: d.metadata.totalInterest?.raw ?? 0,
+      totalInterestFormatted: d.metadata.totalInterest?.formatted ?? '',
     }));
   }, [data]);
 
@@ -104,8 +106,8 @@ export function DepositsScreen(): ReactElement {
       enableSorting: false,
     },
     {
-      accessorKey: 'id',
-      header: 'Deposit ID',
+      accessorKey: 'name',
+      header: 'Deposit Name',
       cell: info => <span className="font-mono text-xs">{info.getValue<string>()}</span>,
     },
     {
@@ -220,17 +222,6 @@ export function DepositsScreen(): ReactElement {
                   {row.getIsExpanded() ? (
                     <TableRow>
                       <TableCell colSpan={columns.length}>
-                        {row.original.currencyError.length > 0 && (
-                          <div className="mb-3 flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-                            <AlertCircle className="size-4" />
-                            <div>
-                              <div className="font-medium">Currency Conflict</div>
-                              <div className="opacity-90">
-                                Affected transaction IDs: {row.original.currencyError.join(', ')}
-                              </div>
-                            </div>
-                          </div>
-                        )}
                         <DepositsTransactionsTable
                           depositId={row.original.id}
                           enableReassign

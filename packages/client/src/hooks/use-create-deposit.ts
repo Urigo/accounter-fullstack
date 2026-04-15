@@ -1,13 +1,19 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
+import type { TimelessDateString } from '@/helpers/index.js';
 import { CreateDepositDocument, type Currency } from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  mutation CreateDeposit($currency: Currency!) {
-    createDeposit(currency: $currency) {
+  mutation CreateDeposit(
+    $name: String!
+    $currency: Currency!
+    $openDate: TimelessDate!
+    $accountId: UUID
+  ) {
+    createDeposit(name: $name, currency: $currency, openDate: $openDate, accountId: $accountId) {
       id
       currency
       isOpen
@@ -17,7 +23,12 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 type UseCreateDeposit = {
   creating: boolean;
-  createDeposit: (variables: { currency: Currency }) => Promise<string | null>;
+  createDeposit: (variables: {
+    name: string;
+    currency: Currency;
+    openDate: TimelessDateString;
+    accountId?: string;
+  }) => Promise<string | null>;
 };
 
 const NOTIFICATION_ID = 'createDeposit';
@@ -26,9 +37,14 @@ export const useCreateDeposit = (): UseCreateDeposit => {
   const [{ fetching }, mutate] = useMutation(CreateDepositDocument);
 
   const createDeposit = useCallback(
-    async (variables: { currency: Currency }): Promise<string | null> => {
-      const message = `Error creating new deposit in currency ${variables.currency}`;
-      const notificationId = `${NOTIFICATION_ID}-${variables.currency}`;
+    async (variables: {
+      name: string;
+      currency: Currency;
+      openDate: TimelessDateString;
+      accountId?: string;
+    }): Promise<string | null> => {
+      const message = `Error creating new deposit ${variables.name}`;
+      const notificationId = `${NOTIFICATION_ID}-${variables.name}-${variables.currency}-${variables.openDate}-${variables.accountId ?? 'noAccount'}`;
       toast.loading('Creating deposit', { id: notificationId });
       try {
         const res = await mutate(variables);

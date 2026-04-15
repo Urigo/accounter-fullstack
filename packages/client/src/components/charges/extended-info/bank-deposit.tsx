@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
+import { Alert, AlertDescription } from '@/components/ui/alert.js';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -10,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog.js';
+import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import {
   Select,
@@ -18,36 +20,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.js';
-import { AllDepositsDocument, BankDepositInfoDocument, Currency } from '../../../gql/graphql.js';
+import { BankDepositInfoDocument } from '../../../gql/graphql.js';
 import { useAssignChargeToDeposit } from '../../../hooks/use-assign-charge-to-deposit.js';
-import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
+import { useCreateDepositFromCharge } from '../../../hooks/use-create-deposit-from-charge.js';
+import { useRelevantDepositsForCharge } from '../../../hooks/use-relevant-deposits-for-charge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query BankDepositInfo($chargeId: UUID!) {
     depositByCharge(chargeId: $chargeId) {
       id
-      currentBalance {
-        formatted
-      }
-      transactions {
+      name
+      metadata {
         id
-        chargeId
-        ...TransactionForTransactionsTableFields
+        currentBalance {
+          formatted
+        }
+        transactions {
+          id
+          chargeId
+          ...TransactionForTransactionsTableFields
+        }
       }
       isOpen
-    }
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ChargeTransactionIds($chargeId: UUID!) {
-    charge(chargeId: $chargeId) {
-      id
-      transactions {
-        id
-      }
     }
   }
 `;
@@ -64,76 +59,141 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     variables: { chargeId },
   });
 
-  // All deposits for selection (we filter open client-side)
-  const [{ data: allDepositsData, fetching: fetchingAllDeposits }] = useQuery({
-    query: AllDepositsDocument,
-  });
+  const {
+    fetching: fetchingRelevant,
+    deposits: relevantDeposits,
+    conflictError,
+  } = useRelevantDepositsForCharge(chargeId);
 
-  const { creating: creatingDeposit, createDeposit } = useCreateDeposit();
+  const { creating: creatingDeposit, createDepositFromCharge } = useCreateDepositFromCharge();
   const { assigning: assigningDeposit, assignChargeToDeposit } = useAssignChargeToDeposit();
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | undefined>(undefined);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newDepositCurrency, setNewDepositCurrency] = useState<Currency>('ILS');
-
-  const openDeposits = useMemo(
-    () => (allDepositsData?.allDeposits ?? []).filter(d => d.isOpen),
-    [allDepositsData?.allDeposits],
-  );
+  const [newDepositName, setNewDepositName] = useState('');
 
   const onCreateDeposit = useCallback(async () => {
-    const depositId = await createDeposit({ currency: newDepositCurrency });
+    const depositId = await createDepositFromCharge({ chargeId, name: newDepositName });
     if (depositId) {
-      await assignChargeToDeposit({
-        chargeId,
-        depositId,
-      });
       setCreateDialogOpen(false);
+      setNewDepositName('');
       onChange?.();
     }
-  }, [createDeposit, assignChargeToDeposit, newDepositCurrency, chargeId, onChange]);
+  }, [createDepositFromCharge, newDepositName, chargeId, onChange]);
 
-  const onAssign = useCallback(async () => {
-    if (!selectedDepositId) return;
-    await assignChargeToDeposit({
-      chargeId,
-      depositId: selectedDepositId,
-    });
-    onChange?.();
-  }, [assignChargeToDeposit, selectedDepositId, chargeId, onChange]);
+  const onAssign = useCallback(
+    async (depositId: string) => {
+      await assignChargeToDeposit({ chargeId, depositId });
+      onChange?.();
+    },
+    [assignChargeToDeposit, chargeId, onChange],
+  );
 
-  const isLoading = fetchingDeposit || fetchingAllDeposits || creatingDeposit || assigningDeposit;
+  const isLoading = fetchingDeposit || fetchingRelevant || creatingDeposit || assigningDeposit;
 
-  return isLoading ? (
-    <Loader2 className="h-10 w-10 animate-spin" />
-  ) : depositData?.depositByCharge ? (
-    <div>
-      <div className="text-lg font-semibold mb-4">
-        Bank Deposit "{depositData?.depositByCharge?.id}" Balance:{' '}
-        {depositData?.depositByCharge?.currentBalance.formatted}
+  const createDialogNode = (
+    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create Bank Deposit</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="deposit-name-input">Deposit Name</Label>
+            <Input
+              id="deposit-name-input"
+              value={newDepositName}
+              onChange={e => setNewDepositName(e.target.value)}
+              placeholder="e.g. Savings Deposit 2026"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="secondary"
+            disabled={creatingDeposit || !newDepositName.trim()}
+            onClick={onCreateDeposit}
+          >
+            {creatingDeposit ? 'Creating…' : 'Create'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  if (isLoading) {
+    return <Loader2 className="h-10 w-10 animate-spin" />;
+  }
+
+  if (depositData?.depositByCharge) {
+    const dep = depositData.depositByCharge;
+    return (
+      <div>
+        <div className="text-lg font-semibold mb-4">
+          Bank Deposit &quot;{dep.name}&quot; Balance: {dep.metadata.currentBalance.formatted}
+        </div>
+        <div className="mb-4">
+          <span className="text-sm text-gray-500">
+            {dep.isOpen ? 'Deposit is open' : 'Deposit is closed'}
+          </span>
+        </div>
+        <DepositsTransactionsTable depositId={dep.id} />
       </div>
-      <div className="mb-4">
-        <span className="text-sm text-gray-500">
-          {depositData?.depositByCharge?.isOpen ? 'Deposit is open' : 'Deposit is closed'}
-        </span>
+    );
+  }
+
+  if (conflictError) {
+    return (
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertDescription>{conflictError}</AlertDescription>
+        </Alert>
       </div>
-      <DepositsTransactionsTable depositId={depositData.depositByCharge.id} />
-    </div>
-  ) : (
+    );
+  }
+
+  if (relevantDeposits.length === 1) {
+    const suggested = relevantDeposits[0];
+    return (
+      <div className="space-y-4">
+        <div className="text-sm text-gray-500">Suggested deposit:</div>
+        <div className="flex items-center gap-3">
+          <span className="font-medium">
+            {suggested.name} ({suggested.currency})
+          </span>
+          <Button
+            variant="secondary"
+            disabled={assigningDeposit}
+            onClick={() => onAssign(suggested.id)}
+          >
+            {assigningDeposit ? 'Assigning…' : 'Assign'}
+          </Button>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setCreateDialogOpen(true)}>
+          Create New Deposit Instead
+        </Button>
+        {createDialogNode}
+      </div>
+    );
+  }
+
+  return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-500">No bank deposit found for this charge.</div>
-      <div className="flex items-center gap-4 flex-wrap">
+      <div className="text-sm text-gray-500">
+        {relevantDeposits.length === 0
+          ? 'No matching open deposits found.'
+          : 'Select an open deposit to assign this charge to:'}
+      </div>
+      {relevantDeposits.length > 1 && (
         <div className="flex items-center gap-2">
-          <Select value={selectedDepositId} onValueChange={val => setSelectedDepositId(val)}>
+          <Select value={selectedDepositId} onValueChange={setSelectedDepositId}>
             <SelectTrigger className="min-w-[220px]">
-              <SelectValue
-                placeholder={openDeposits.length ? 'Select open deposit' : 'No open deposits'}
-              />
+              <SelectValue placeholder="Select deposit" />
             </SelectTrigger>
             <SelectContent>
-              {openDeposits.map(d => (
+              {relevantDeposits.map(d => (
                 <SelectItem key={d.id} value={d.id}>
-                  {d.id} ({d.currency})
+                  {d.name} ({d.currency})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -141,47 +201,16 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
           <Button
             variant="secondary"
             disabled={!selectedDepositId || assigningDeposit}
-            onClick={onAssign}
+            onClick={() => selectedDepositId && onAssign(selectedDepositId)}
           >
             {assigningDeposit ? 'Assigning…' : 'Assign'}
           </Button>
         </div>
-        <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
-          Create New Deposit
-        </Button>
-      </div>
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create Bank Deposit</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="deposit-currency-select">Currency</Label>
-              <Select
-                value={newDepositCurrency}
-                onValueChange={val => setNewDepositCurrency(val as Currency)}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue id="deposit-currency-select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(Currency).map(([key, value]) => (
-                    <SelectItem key={key} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="secondary" disabled={creatingDeposit} onClick={onCreateDeposit}>
-              {creatingDeposit ? 'Creating…' : 'Create'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      )}
+      <Button variant="outline" onClick={() => setCreateDialogOpen(true)}>
+        Create New Deposit
+      </Button>
+      {createDialogNode}
     </div>
   );
 };
