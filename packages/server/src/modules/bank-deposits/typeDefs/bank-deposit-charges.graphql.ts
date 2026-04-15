@@ -3,6 +3,15 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     depositByCharge(chargeId: UUID!): BankDeposit @requiresAuth
+    relevantDepositsForCharge(chargeId: UUID!): RelevantDepositsResult! @requiresAuth
+  }
+
+  " Result of relevantDepositsForCharge: matched open deposits, or an error if the charge has multiple currencies or accounts "
+  type RelevantDepositsResult {
+    id: ID!
+    deposits: [BankDeposit!]!
+    " Set when the charge transactions have multiple currencies or multiple accounts "
+    error: String
   }
 
   extend type Mutation {

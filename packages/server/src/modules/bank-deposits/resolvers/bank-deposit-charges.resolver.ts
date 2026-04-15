@@ -18,6 +18,56 @@ export const bankDepositChargesResolvers: BankDepositsModule.Resolvers = {
         throw errorSimplifier('Error fetching deposit by charge', e);
       }
     },
+    relevantDepositsForCharge: async (_, { chargeId }, { injector }) => {
+      try {
+        const transactions = await injector
+          .get(TransactionsProvider)
+          .transactionsByChargeIDLoader.load(chargeId);
+
+        if (transactions.length === 0) {
+          return { id: chargeId, deposits: [], error: null };
+        }
+
+        const currencies = new Set(transactions.map(t => t.currency).filter(Boolean));
+        const accountIds = new Set(transactions.map(t => t.account_id).filter(Boolean));
+
+        if (currencies.size > 1) {
+          return {
+            id: chargeId,
+            deposits: [],
+            error: `Charge has transactions in multiple currencies (${[...currencies].join(', ')})`,
+          };
+        }
+        if (accountIds.size > 1) {
+          return {
+            id: chargeId,
+            deposits: [],
+            error: 'Charge has transactions from multiple accounts',
+          };
+        }
+
+        const chargeCurrency = currencies.size === 1 ? ([...currencies][0] as Currency) : null;
+        const chargeAccountId = accountIds.size === 1 ? [...accountIds][0] : null;
+
+        const allOpen = await injector.get(BankDepositsProvider).getAllOpenBankDeposits();
+
+        const relevant = allOpen.filter(deposit => {
+          const currencyMatch =
+            deposit.currency == null ||
+            chargeCurrency == null ||
+            deposit.currency === chargeCurrency;
+          const accountMatch =
+            deposit.account_id == null ||
+            chargeAccountId == null ||
+            deposit.account_id === chargeAccountId;
+          return currencyMatch && accountMatch;
+        });
+
+        return { id: chargeId, deposits: relevant, error: null };
+      } catch (e) {
+        throw errorSimplifier('Error fetching relevant deposits for charge', e);
+      }
+    },
   },
   Mutation: {
     assignChargeToDeposit: async (_, { chargeId, depositId }, { injector }) => {
