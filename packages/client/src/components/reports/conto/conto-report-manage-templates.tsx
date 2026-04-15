@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { ArrowUpDown, CloudCog, Loader2, MoreHorizontal } from 'lucide-react';
+import { ArrowUpDown, CloudCog, Loader2, Lock, MoreHorizontal } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -15,6 +15,7 @@ import {
 } from '@tanstack/react-table';
 import { AllContoReportsDocument, type AllContoReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
+import { useUnlockDynamicReportTemplate } from '../../../hooks/use-unlock-dynamic-report-template.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -41,6 +42,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
     allDynamicReports {
       id
       name
+      isLocked
       updated
     }
   }
@@ -69,6 +71,7 @@ function ContoReportTemplates({
   });
 
   const { deleteDynamicReportTemplate } = useDeleteDynamicReportTemplate();
+  const { unlockDynamicReportTemplate } = useUnlockDynamicReportTemplate();
 
   const onDeleteTemplate = useCallback(
     async (name: string) => {
@@ -76,6 +79,14 @@ function ContoReportTemplates({
       fetchTemplates();
     },
     [deleteDynamicReportTemplate, fetchTemplates],
+  );
+
+  const onUnlockTemplate = useCallback(
+    async (name: string) => {
+      await unlockDynamicReportTemplate({ name });
+      fetchTemplates();
+    },
+    [unlockDynamicReportTemplate, fetchTemplates],
   );
 
   const onSelectTemplate = useCallback(
@@ -101,7 +112,14 @@ function ContoReportTemplates({
             </Button>
           );
         },
-        cell: ({ row }) => <div className="lowercase">{row.getValue('name')}</div>,
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2 lowercase">
+            {row.original.isLocked && (
+              <Lock className="h-3 w-3 text-amber-500 shrink-0" aria-label="Template is locked" />
+            )}
+            {row.getValue('name')}
+          </div>
+        ),
       },
       {
         accessorKey: 'updated',
@@ -123,7 +141,7 @@ function ContoReportTemplates({
       {
         id: 'actions',
         cell: ({ row }) => {
-          const { name } = row.original;
+          const { name, isLocked } = row.original;
 
           return (
             <DropdownMenu>
@@ -136,8 +154,11 @@ function ContoReportTemplates({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {/* <DropdownMenuItem>Rename</DropdownMenuItem> */}
-                <DropdownMenuItem onClick={() => onDeleteTemplate(name)}>Delete</DropdownMenuItem>
+                {isLocked ? (
+                  <DropdownMenuItem onClick={() => onUnlockTemplate(name)}>Unlock</DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => onDeleteTemplate(name)}>Delete</DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onSelectTemplate(name)}>Select</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -146,7 +167,7 @@ function ContoReportTemplates({
       },
     ];
     return columns;
-  }, [onDeleteTemplate, onSelectTemplate]);
+  }, [onDeleteTemplate, onSelectTemplate, onUnlockTemplate]);
 
   const table = useReactTable({
     data: data?.allDynamicReports || [],

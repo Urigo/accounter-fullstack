@@ -14,6 +14,7 @@ import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
 import { Step03OpeningBalance } from './step-03-opening-balance/index.js';
 import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
+import { Step09SaveTemplate } from './step-09-save-template/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { YearPicker } from './year-picker.js';
@@ -254,12 +255,13 @@ export const AnnualAuditFlow = (): ReactNode => {
             onStatusChange={handleStatusChange}
           />
 
-          <SimpleStep
+          <Step09SaveTemplate
             id="9"
             title="Save Final Dynamic Report Template"
             icon={<FileText className="h-4 w-4" />}
+            year={year}
+            adminBusinessId={adminBusinessId}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Save Template', href: '/reports/save-template' }]}
           />
 
           <SimpleStep

@@ -42,5 +42,22 @@ export const annualAuditResolvers: AnnualAuditModule.Resolvers = {
         );
       }
     },
+    setAnnualAuditStep09Status: async (_, { input }, { injector }) => {
+      try {
+        return await injector.get(AnnualAuditProvider).setStep09Status({
+          ownerId: input.ownerId,
+          year: input.year,
+          templateName: input.templateName,
+        });
+      } catch (error) {
+        throw errorSimplifier(
+          `Failed to set annual audit step 09 status for owner ${input.ownerId}, year ${input.year}`,
+          error,
+        );
+      }
+    },
+  },
+  AnnualAuditStepStatusInfo: {
+    evidence: stepStatus => stepStatus.evidence ?? null,
   },
 };
