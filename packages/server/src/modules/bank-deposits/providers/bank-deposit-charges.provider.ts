@@ -23,7 +23,6 @@ import { BankDepositsProvider } from './bank-deposits.provider.js';
 const getTransactionsByBankDeposits = sql<IGetTransactionsByBankDepositsQuery>`
     SELECT 
       cbd.new_deposit_id,
-      cbd.account_id as deposit_account_id,
       t.*
     FROM accounter_schema.charges_bank_deposits cbd
     INNER JOIN accounter_schema.transactions t
@@ -40,7 +39,6 @@ const getBankDepositsByChargeIds = sql<IGetBankDepositsByChargeIdsQuery>`
 const getDepositTransactionsByChargeId = sql<IGetDepositTransactionsByChargeIdQuery>`
     SELECT
       cbd.new_deposit_id,
-      cbd.account_id as deposit_account_id,
       t.*
     FROM accounter_schema.charges_bank_deposits cbd
     LEFT JOIN accounter_schema.transactions t
