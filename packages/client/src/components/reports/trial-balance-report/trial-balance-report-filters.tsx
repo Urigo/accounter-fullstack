@@ -5,6 +5,7 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
@@ -234,7 +235,7 @@ export function TrialBalanceReportFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter);
     const oldFilter = get('trialBalanceReportFilters');
     if (newFilter !== oldFilter) {
       set('trialBalanceReportFilters', newFilter);

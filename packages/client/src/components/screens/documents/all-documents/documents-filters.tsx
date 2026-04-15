@@ -5,6 +5,7 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import type { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
@@ -216,7 +217,7 @@ export function DocumentsFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter);
     const oldFilter = get('documentsFilters');
     if (newFilter !== oldFilter) {
       set('documentsFilters', newFilter);

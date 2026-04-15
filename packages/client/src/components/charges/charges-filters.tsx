@@ -14,6 +14,7 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import { ChargeFilterType, ChargeSortByField, type ChargeFilter } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
@@ -33,10 +34,6 @@ import { Input } from '../ui/input.js';
 import { Label } from '../ui/label.js';
 import { Switch } from '../ui/switch.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip.js';
-
-export function encodeChargesFilters(filter?: ChargeFilter | null): string | null {
-  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-}
 
 interface ChargesFiltersFormProps {
   filter: ChargeFilter;
@@ -521,7 +518,7 @@ export function ChargesFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = encodeChargesFilters(filter);
+    const newFilter = encodeFilters(filter);
     const oldFilter = get('chargesFilters');
     if (newFilter !== oldFilter) {
       set('chargesFilters', newFilter);

@@ -5,6 +5,7 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
@@ -12,12 +13,6 @@ import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
-
-export function encodeLedgerRecordsFilters(
-  filter?: BusinessTransactionsFilter | null,
-): string | null {
-  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
-}
 
 interface BusinessLedgerRecordsFilterFormProps {
   filter: BusinessTransactionsFilter;
@@ -235,7 +230,7 @@ export function BusinessLedgerRecordsFilters({
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter);
     const oldFilter = get('ledgerRecordsFilters');
     if (newFilter !== oldFilter) {
       set('ledgerRecordsFilters', newFilter);

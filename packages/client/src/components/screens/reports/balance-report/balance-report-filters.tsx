@@ -9,8 +9,9 @@ import { Indicator, SimpleGrid } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
 import { useGetFinancialAccounts } from '@/hooks/use-get-financial-accounts.js';
+import { encodeFilters } from '@/router/routes.js';
 import type { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
-import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
@@ -26,7 +27,7 @@ import {
 } from '../../../ui/form.js';
 
 export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null): string | null {
-  return !filter || isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+  return encodeFilters(filter ?? null);
 }
 
 export const BALANCE_REPORT_FILTERS_QUERY_PARAM = 'balanceReportFilters';

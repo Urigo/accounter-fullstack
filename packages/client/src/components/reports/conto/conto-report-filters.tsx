@@ -5,6 +5,7 @@ import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect } from '@mantine/core';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import {
   CONTO_REPORT_FILTERS_KEY,
@@ -204,7 +205,7 @@ export function ContoReportFilters({ filter, setFilter }: ContoReportFilterProps
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter);
     const oldFilter = get(CONTO_REPORT_FILTERS_KEY);
     if (newFilter !== oldFilter) {
       set(CONTO_REPORT_FILTERS_KEY, newFilter);

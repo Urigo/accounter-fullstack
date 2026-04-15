@@ -4,9 +4,9 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { DatePickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import type { ChargeFilter } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
-import { isObjectEmpty } from '../../helpers/form.js';
 import { TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { PopUpModal } from '../common/index.js';
@@ -140,9 +140,7 @@ export function ChargeFilterFilter({ filter, setFilter }: ChargeFilterProps): Re
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter ?? {})
-      ? null
-      : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter ?? {});
     const oldFilter = get('ChargeMonthlyChartsFilters');
     if (newFilter !== oldFilter) {
       set('ChargeMonthlyChartsFilters', newFilter);

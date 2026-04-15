@@ -7,8 +7,9 @@ import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { MultiSelect } from '@mantine/core';
 import { MonthPickerInput } from '@mantine/dates';
+import { encodeFilters } from '@/router/routes.js';
 import { AllEmployeesByEmployerDocument } from '../../gql/graphql.js';
-import { isObjectEmpty, type TimelessDateString } from '../../helpers/index.js';
+import { type TimelessDateString } from '../../helpers/index.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
@@ -186,7 +187,7 @@ export function SalariesFilters({ filter, setFilter }: SalariesFiltersProps): Re
 
   // update url on filter change
   useEffect(() => {
-    const newFilter = isObjectEmpty(filter) ? null : encodeURIComponent(JSON.stringify(filter));
+    const newFilter = encodeFilters(filter);
     const oldFilter = get('salariesFilters');
     if (newFilter !== oldFilter) {
       set('salariesFilters', newFilter);
