@@ -82,6 +82,6 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
     openDate: deposit => (deposit.open_date ? dateToTimelessDateString(deposit.open_date) : null),
     closeDate: deposit =>
       deposit.close_date ? dateToTimelessDateString(deposit.close_date) : null,
-    isOpen: deposit => !!deposit.close_date,
+    isOpen: deposit => !deposit.close_date,
   },
 };
