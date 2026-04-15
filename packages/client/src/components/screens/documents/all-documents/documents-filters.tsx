@@ -2,9 +2,8 @@ import { useCallback, useContext, useEffect, useState, type ReactElement } from 
 import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, SimpleGrid } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import type { DocumentsFilters as DocumentsFiltersType } from '../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../helpers/dates.js';
@@ -12,9 +11,16 @@ import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../../helpers/index.js
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { PopUpModal } from '../../../common/index.js';
+import { DatePickerInput, PopUpModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../ui/form.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
 import { Switch } from '../../../ui/switch.js';
 
 interface DocumentsFiltersFormProps {
@@ -59,45 +65,51 @@ function DocumentsFiltersForm({
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <SimpleGrid cols={2}>
-            <Controller
+            <FormField
               name="ownerIDs"
               control={control}
               defaultValue={filter.ownerIDs}
               render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={financialEntities}
-                  value={field.value ?? []}
-                  disabled={financialEntitiesFetching}
-                  label="Owners"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+                <FormItem>
+                  <FormLabel>Owners</FormLabel>
+                  <MultiSelect
+                    {...field}
+                    data={financialEntities}
+                    value={field.value ?? []}
+                    disabled={financialEntitiesFetching}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                    withinPortal
+                  />
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="businessIDs"
               control={control}
               defaultValue={filter.businessIDs}
               render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={financialEntities}
-                  value={field.value ?? []}
-                  disabled={financialEntitiesFetching}
-                  label="Financial Entities"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+                <FormItem>
+                  <FormLabel>Financial Entities</FormLabel>
+                  <MultiSelect
+                    {...field}
+                    data={financialEntities}
+                    value={field.value ?? []}
+                    disabled={financialEntitiesFetching}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                    withinPortal
+                  />
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="fromDate"
               control={control}
               defaultValue={filter.fromDate}
@@ -108,24 +120,24 @@ function DocumentsFiltersForm({
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <DatePickerInput
-                  {...field}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={field.value ? new Date(field.value) : undefined}
-                  error={fieldState.error?.message}
-                  label="From Date"
-                  popoverProps={{ withinPortal: true }}
-                />
+                <FormItem>
+                  <FormLabel>From Date</FormLabel>
+                  <FormControl>
+                    <DatePickerInput
+                      id="documents-from-date"
+                      onChange={(date?: Date | null): void => {
+                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                        if (newDate !== field.value) field.onChange(newDate);
+                      }}
+                      value={field.value ? new Date(field.value) : undefined}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="toDate"
               control={control}
               defaultValue={filter.toDate}
@@ -136,21 +148,21 @@ function DocumentsFiltersForm({
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <DatePickerInput
-                  {...field}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={field.value ? new Date(field.value) : undefined}
-                  error={fieldState.error?.message}
-                  label="To Date"
-                  popoverProps={{ withinPortal: true }}
-                />
+                <FormItem>
+                  <FormLabel>To Date</FormLabel>
+                  <FormControl>
+                    <DatePickerInput
+                      id="documents-to-date"
+                      onChange={(date?: Date | null): void => {
+                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                        if (newDate !== field.value) field.onChange(newDate);
+                      }}
+                      value={field.value ? new Date(field.value) : undefined}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
             <FormField

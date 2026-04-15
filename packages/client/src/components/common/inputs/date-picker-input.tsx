@@ -32,7 +32,13 @@ type Props = Omit<ComponentProps<'input'>, 'value' | 'onChange'> & {
   onChange?: (date?: Date | null) => void;
 };
 
-export function DatePickerInput({ value: valueDate, onChange, disabled, ...props }: Props) {
+export function DatePickerInput({
+  value: valueDate,
+  onChange,
+  disabled,
+  id = 'date-input',
+  ...props
+}: Props) {
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<Date | undefined>(valueDate);
   const [month, setMonth] = React.useState<Date | undefined>(date);
@@ -47,7 +53,7 @@ export function DatePickerInput({ value: valueDate, onChange, disabled, ...props
       <InputGroupInput
         {...props}
         disabled={disabled}
-        id="date-required"
+        id={id}
         value={value}
         placeholder="Select date"
         onChange={e => {

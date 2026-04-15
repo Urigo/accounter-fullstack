@@ -4,7 +4,6 @@ import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
@@ -12,6 +11,7 @@ import { useGetBusinesses } from '../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
+import { DatePickerInput } from '../common/inputs/date-picker-input.js';
 import { Button } from '../ui/button.js';
 
 interface BusinessLedgerRecordsFilterFormProps {
@@ -106,21 +106,23 @@ function BusinessLedgerRecordsFilterForm({
             },
           }}
           render={({ field, fieldState }): ReactElement => (
-            <DatePickerInput
-              {...field}
-              onChange={(date?: Date | string | null): void => {
-                const newDate = date
-                  ? typeof date === 'string'
-                    ? date
-                    : format(date, 'yyyy-MM-dd')
-                  : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              value={field.value ? new Date(field.value) : undefined}
-              error={fieldState.error?.message}
-              label="From Date"
-              popoverProps={{ withinPortal: true }}
-            />
+            <div>
+              <label htmlFor="from-date" className="text-sm font-medium">
+                From Date
+              </label>
+              <DatePickerInput
+                id="from-date"
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={(date?: Date | null): void => {
+                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+              {fieldState.error && (
+                <p className="text-sm text-red-500">{fieldState.error.message}</p>
+              )}
+            </div>
           )}
         />
         <Controller
@@ -134,21 +136,23 @@ function BusinessLedgerRecordsFilterForm({
             },
           }}
           render={({ field, fieldState }): ReactElement => (
-            <DatePickerInput
-              {...field}
-              onChange={(date?: Date | string | null): void => {
-                const newDate = date
-                  ? typeof date === 'string'
-                    ? date
-                    : format(date, 'yyyy-MM-dd')
-                  : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              value={field.value ? new Date(field.value) : undefined}
-              error={fieldState.error?.message}
-              label="To Date"
-              popoverProps={{ withinPortal: true }}
-            />
+            <div>
+              <label htmlFor="to-date" className="text-sm font-medium">
+                To Date
+              </label>
+              <DatePickerInput
+                id="to-date"
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={(date?: Date | null): void => {
+                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+              {fieldState.error && (
+                <p className="text-sm text-red-500">{fieldState.error.message}</p>
+              )}
+            </div>
           )}
         />
         {!single && (

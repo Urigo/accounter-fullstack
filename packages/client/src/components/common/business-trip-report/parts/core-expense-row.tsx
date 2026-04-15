@@ -1,11 +1,10 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Controller, type Control } from 'react-hook-form';
+import { type Control } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select, Text } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { ROUTES } from '@/router/routes.js';
 import {
   AttendeesByBusinessTripDocument,
@@ -15,7 +14,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
-import { CurrencyInput } from '../../index.js';
+import { FormField } from '../../../ui/form.js';
+import { CurrencyInput, DatePickerInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -99,7 +99,7 @@ export const CoreExpenseRow = ({
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode && businessTripExpense.payedByEmployee ? (
             <>
-              <Controller
+              <FormField
                 name="date"
                 control={control}
                 defaultValue={businessTripExpense.date}
@@ -110,26 +110,25 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <DatePickerInput
-                    {...field}
-                    form={`form ${businessTripExpense.id}`}
-                    data-autofocus
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
-                    }}
-                    value={field.value ? new Date(field.value) : undefined}
-                    label="Date"
-                    error={fieldState.error?.message}
-                    popoverProps={{ withinPortal: true }}
-                  />
+                  <div>
+                    <DatePickerInput
+                      aria-label="Date"
+                      form={`form ${businessTripExpense.id}`}
+                      data-autofocus
+                      value={field.value ? new Date(field.value) : undefined}
+                      onChange={(date?: Date | null): void => {
+                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                        if (newDate !== field.value) field.onChange(newDate);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                    {fieldState.error?.message && (
+                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
+                    )}
+                  </div>
                 )}
               />
-              <Controller
+              <FormField
                 name="valueDate"
                 control={control}
                 defaultValue={businessTripExpense.valueDate}
@@ -140,22 +139,21 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <DatePickerInput
-                    {...field}
-                    form={`form ${businessTripExpense.id}`}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
-                    }}
-                    value={field.value ? new Date(field.value) : undefined}
-                    label="Value Date"
-                    error={fieldState.error?.message}
-                    popoverProps={{ withinPortal: true }}
-                  />
+                  <div>
+                    <DatePickerInput
+                      aria-label="Value Date"
+                      form={`form ${businessTripExpense.id}`}
+                      value={field.value ? new Date(field.value) : undefined}
+                      onChange={(date?: Date | null): void => {
+                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                        if (newDate !== field.value) field.onChange(newDate);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                    {fieldState.error?.message && (
+                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
+                    )}
+                  </div>
                 )}
               />
             </>
@@ -172,12 +170,12 @@ export const CoreExpenseRow = ({
       </td>
       <td>
         {isEditMode && businessTripExpense.payedByEmployee ? (
-          <Controller
+          <FormField
             name="amount"
             control={control}
             defaultValue={businessTripExpense.amount?.raw ?? undefined}
             render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-              <Controller
+              <FormField
                 name="currency"
                 control={control}
                 defaultValue={businessTripExpense.amount?.currency ?? Currency.Ils}
@@ -208,7 +206,7 @@ export const CoreExpenseRow = ({
       <td>
         <div className="flex flex-col gap-2 justify-center">
           {isEditMode && businessTripExpense.payedByEmployee ? (
-            <Controller
+            <FormField
               name="employeeBusinessId"
               control={control}
               defaultValue={businessTripExpense.employee?.id}

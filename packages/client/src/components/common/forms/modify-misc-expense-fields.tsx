@@ -1,14 +1,14 @@
 import type { ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import { DatePickerInput, DateTimePicker } from '@mantine/dates';
+import { DateTimePicker } from '@mantine/dates';
 import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { ComboBox, CurrencyInput } from '../index.js';
+import { ComboBox, CurrencyInput, DatePickerInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
@@ -115,28 +115,24 @@ export const ModifyMiscExpenseFields = ({
             message: 'Date must be im format yyyy-mm-dd',
           },
         }}
-        render={({ field }) => {
+        render={({ field, fieldState }) => {
           const date = field.value ? new Date(field.value) : undefined;
           return (
             <FormItem>
               <FormLabel>Invoice Date</FormLabel>
               <FormControl>
                 <DatePickerInput
-                  {...field}
+                  id="misc-expense-invoice-date"
                   required={isInsert}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
+                  onChange={(date?: Date | null): void => {
+                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
                     if (newDate !== field.value) {
                       setValue('invoiceDate', newDate as TimelessDateString);
                       field.onChange(newDate);
                     }
                   }}
                   value={date}
-                  valueFormat="DD/MM/YYYY"
+                  aria-invalid={!!fieldState.error}
                 />
               </FormControl>
               <FormMessage />

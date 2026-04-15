@@ -4,7 +4,6 @@ import { Controller, type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import {
   AttendeesByBusinessTripDocument,
   Currency,
@@ -12,7 +11,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { CurrencyInput } from '../../index.js';
+import { CurrencyInput, DatePickerInput } from '../../index.js';
 
 export type AddBusinessTripExpenseInput = Omit<
   AddBusinessTripTravelAndSubsistenceExpenseInput,
@@ -83,22 +82,22 @@ export function AddExpenseFields({
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <DatePickerInput
-            data-autofocus
-            {...field}
-            onChange={(date?: Date | string | null): void => {
-              const newDate = date
-                ? typeof date === 'string'
-                  ? date
-                  : format(date, 'yyyy-MM-dd')
-                : undefined;
-              if (newDate !== field.value) field.onChange(newDate);
-            }}
-            value={field.value ? new Date(field.value) : undefined}
-            error={fieldState.error?.message}
-            label="Date"
-            popoverProps={{ withinPortal: true }}
-          />
+          <div>
+            <label htmlFor="expense-date" className="text-sm font-medium">
+              Date
+            </label>
+            <DatePickerInput
+              id="expense-date"
+              data-autofocus
+              value={field.value ? new Date(field.value) : undefined}
+              onChange={(date?: Date | null): void => {
+                const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                if (newDate !== field.value) field.onChange(newDate);
+              }}
+              aria-invalid={!!fieldState.error}
+            />
+            {fieldState.error && <p className="text-sm text-red-500">{fieldState.error.message}</p>}
+          </div>
         )}
       />
       <Controller
@@ -117,21 +116,21 @@ export function AddExpenseFields({
             : undefined,
         }}
         render={({ field, fieldState }): ReactElement => (
-          <DatePickerInput
-            {...field}
-            onChange={(date?: Date | string | null): void => {
-              const newDate = date
-                ? typeof date === 'string'
-                  ? date
-                  : format(date, 'yyyy-MM-dd')
-                : undefined;
-              if (newDate !== field.value) field.onChange(newDate);
-            }}
-            value={field.value ? new Date(field.value) : undefined}
-            error={fieldState.error?.message}
-            label="Value Date"
-            popoverProps={{ withinPortal: true }}
-          />
+          <div>
+            <label htmlFor="expense-value-date" className="text-sm font-medium">
+              Value Date
+            </label>
+            <DatePickerInput
+              id="expense-value-date"
+              value={field.value ? new Date(field.value) : undefined}
+              onChange={(date?: Date | null): void => {
+                const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                if (newDate !== field.value) field.onChange(newDate);
+              }}
+              aria-invalid={!!fieldState.error}
+            />
+            {fieldState.error && <p className="text-sm text-red-500">{fieldState.error.message}</p>}
+          </div>
         )}
       />
       <Controller

@@ -141,17 +141,18 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                         message: 'Date must be im format yyyy-mm-dd',
                       },
                     }}
-                    render={({ field }): ReactElement => (
+                    render={({ field, fieldState }): ReactElement => (
                       <FormItem>
                         <FormLabel>Effective Date</FormLabel>
                         <FormControl>
                           <DatePickerInput
-                            {...field}
+                            id="transaction-effective-date"
                             onChange={(date?: Date | null): void => {
                               const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
                               if (newDate !== field.value) field.onChange(newDate);
                             }}
                             value={field.value ? new Date(field.value) : undefined}
+                            aria-invalid={!!fieldState.error}
                           />
                         </FormControl>
                         <FormMessage />

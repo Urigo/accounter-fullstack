@@ -4,7 +4,6 @@ import { Check, Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import {
   AllDepreciationCategoriesDocument,
   DepreciationRecordRowFieldsFragmentDoc,
@@ -18,7 +17,7 @@ import {
 } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { Button } from '../../ui/button.js';
-import { CurrencyInput, Tooltip } from '../index.js';
+import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationTypes } from './index.js';
 
@@ -158,22 +157,28 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
               render={({ field: { value, ...field }, fieldState }): ReactElement => {
                 const date = value ? new Date(value) : undefined;
                 return (
-                  <DatePickerInput
-                    {...field}
-                    form={`form ${depreciationRecord.id}`}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== value) field.onChange(newDate);
-                    }}
-                    value={date}
-                    label="Activation Date"
-                    error={fieldState.error?.message}
-                    popoverProps={{ withinPortal: true }}
-                  />
+                  <div>
+                    <label
+                      htmlFor={`activation-date-${depreciationRecord.id}`}
+                      className="text-sm font-medium"
+                    >
+                      Activation Date
+                    </label>
+                    <DatePickerInput
+                      id={`activation-date-${depreciationRecord.id}`}
+                      aria-label="Activation Date"
+                      form={`form ${depreciationRecord.id}`}
+                      value={date}
+                      onChange={(date?: Date | null): void => {
+                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                        if (newDate !== value) field.onChange(newDate);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                    {fieldState.error?.message && (
+                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
+                    )}
+                  </div>
                 );
               }}
             />
