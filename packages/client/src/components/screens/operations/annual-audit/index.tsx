@@ -17,6 +17,8 @@ import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import { Step09SaveTemplate } from './step-09-save-template/index.js';
 import { Step10ExportTrialBalance } from './step-10-export-trial-balance/index.js';
 import { Step11DepreciationReport } from './step-11-depreciation-report/index.js';
+import { Step13TaxReport } from './step-13-tax-report/index.js';
+import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index.js';
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { YearPicker } from './year-picker.js';
@@ -293,21 +295,22 @@ export const AnnualAuditFlow = (): ReactNode => {
             actions={[{ label: 'Generate Reports', href: '/reports/financial' }]}
           />
 
-          <SimpleStep
+          <Step13TaxReport
             id="13"
             title="Generate Tax Report"
             icon={<FileText className="h-4 w-4" />}
+            year={year}
+            adminBusinessId={adminBusinessId}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate Tax Report', href: '/tax/generate' }]}
           />
 
-          <SimpleStep
+          <Step14TaxComplianceReport
             id="14"
             title="Generate Tax Compliance Reports"
-            description="For Yossi's review"
             icon={<FileText className="h-4 w-4" />}
+            year={year}
+            adminBusinessId={adminBusinessId}
             onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate Report', href: '/compliance/clients-country' }]}
           />
 
           <SimpleStep

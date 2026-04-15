@@ -6,7 +6,7 @@ import { Indicator, Table } from '@mantine/core';
 import { CorporateTaxRulingComplianceReportDocument, Currency } from '../../../gql/graphql.js';
 import { dedupeFragments, getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { Tooltip } from '../../common/index.js';
+import { PrintToPdfButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { AmountCell } from './amount-cell.js';
 import { CorporateTaxRulingComplianceReportFilter } from './corporate-tax-ruling-compliance-report-filters.js';
@@ -135,7 +135,12 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
   const yearlyReports = data?.corporateTaxRulingComplianceReport ?? [];
 
   return (
-    <PageLayout title="Corporate Tax Ruling Compliance Report">
+    <PageLayout
+      title="Corporate Tax Ruling Compliance Report"
+      headerActions={
+        <PrintToPdfButton filename={`corporate_tax_ruling_compliance_${years[0] ?? ''}`} />
+      }
+    >
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
