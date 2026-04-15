@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog.js';
+import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import {
   Select,
@@ -18,9 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.js';
-import { AllDepositsDocument, BankDepositInfoDocument, Currency } from '../../../gql/graphql.js';
+import { AllDepositsDocument, BankDepositInfoDocument } from '../../../gql/graphql.js';
 import { useAssignChargeToDeposit } from '../../../hooks/use-assign-charge-to-deposit.js';
-import { useCreateDeposit } from '../../../hooks/use-create-deposit.js';
+import { useCreateDepositFromCharge } from '../../../hooks/use-create-deposit-from-charge.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -72,12 +73,12 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     query: AllDepositsDocument,
   });
 
-  const { creating: creatingDeposit, createDeposit } = useCreateDeposit();
+  const { creating: creatingDeposit, createDepositFromCharge } = useCreateDepositFromCharge();
   const { assigning: assigningDeposit, assignChargeToDeposit } = useAssignChargeToDeposit();
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | undefined>(undefined);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newDepositCurrency, setNewDepositCurrency] = useState<Currency>('ILS');
+  const [newDepositName, setNewDepositName] = useState('');
 
   const openDeposits = useMemo(
     () => (allDepositsData?.allDeposits ?? []).filter(d => d.isOpen),
@@ -85,16 +86,13 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
   );
 
   const onCreateDeposit = useCallback(async () => {
-    const depositId = await createDeposit({ currency: newDepositCurrency });
+    const depositId = await createDepositFromCharge({ chargeId, name: newDepositName });
     if (depositId) {
-      await assignChargeToDeposit({
-        chargeId,
-        depositId,
-      });
       setCreateDialogOpen(false);
+      setNewDepositName('');
       onChange?.();
     }
-  }, [createDeposit, assignChargeToDeposit, newDepositCurrency, chargeId, onChange]);
+  }, [createDepositFromCharge, newDepositName, chargeId, onChange]);
 
   const onAssign = useCallback(async () => {
     if (!selectedDepositId) return;
@@ -160,26 +158,21 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="deposit-currency-select">Currency</Label>
-              <Select
-                value={newDepositCurrency}
-                onValueChange={val => setNewDepositCurrency(val as Currency)}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue id="deposit-currency-select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(Currency).map(([key, value]) => (
-                    <SelectItem key={key} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="deposit-name-input">Deposit Name</Label>
+              <Input
+                id="deposit-name-input"
+                value={newDepositName}
+                onChange={e => setNewDepositName(e.target.value)}
+                placeholder="e.g. Savings Deposit 2026"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="secondary" disabled={creatingDeposit} onClick={onCreateDeposit}>
+            <Button
+              variant="secondary"
+              disabled={creatingDeposit || !newDepositName.trim()}
+              onClick={onCreateDeposit}
+            >
               {creatingDeposit ? 'Creating…' : 'Create'}
             </Button>
           </DialogFooter>
