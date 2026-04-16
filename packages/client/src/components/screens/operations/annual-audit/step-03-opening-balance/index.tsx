@@ -5,6 +5,7 @@ import { ROUTES } from '@/router/routes.js';
 import {
   AnnualAuditOpeningBalanceStatusDocument,
   AnnualAuditOpeningBalanceUserType,
+  AnnualAuditStep03StatusDocument,
   AnnualAuditStepStatus,
 } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
@@ -23,6 +24,18 @@ import { MigratingSubsteps } from './migrating-substep.js';
       balanceChargeId
       derivedStatus
       errorMessage
+    }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query AnnualAuditStep03Status($ownerId: UUID!, $year: Int!) {
+    annualAuditStepStatuses(ownerId: $ownerId, year: $year) {
+      id
+      stepId
+      status
+      notes
     }
   }
 `;
@@ -59,12 +72,36 @@ export function Step03OpeningBalance(props: Step03Props) {
     pause: !adminBusinessId,
   });
 
+  const [{ data: manualData, fetching: fetchingManual }] = useQuery({
+    query: AnnualAuditStep03StatusDocument,
+    variables: { ownerId: adminBusinessId!, year },
+    pause: !adminBusinessId,
+  });
+
+  const persistedStep03Record = useMemo(() => {
+    const records = manualData?.annualAuditStepStatuses;
+    if (!Array.isArray(records)) return undefined;
+    return records.find(record => record.stepId === id);
+  }, [manualData, id]);
+
+  const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
+    const persistedStatus = persistedStep03Record?.status;
+    if (!persistedStatus) return undefined;
+    return gqlStatusToStepStatus(persistedStatus as AnnualAuditStepStatus);
+  }, [persistedStep03Record]);
+
+  const persistedManualNotes = persistedStep03Record?.notes ?? null;
+
+  useEffect(() => {
+    setApprovalStatus(persistedManualStatus ?? props.manualStatus);
+  }, [persistedManualStatus, props.manualStatus]);
+
   const derivedStatus = useMemo<StepStatus>(() => {
     if (!adminBusinessId) return 'blocked';
-    if (fetching) return 'loading';
+    if (fetching || fetchingManual) return 'loading';
     if (error || !data?.annualAuditOpeningBalanceStatus) return 'pending';
     return gqlStatusToStepStatus(data.annualAuditOpeningBalanceStatus.derivedStatus);
-  }, [adminBusinessId, fetching, error, data]);
+  }, [adminBusinessId, fetching, fetchingManual, error, data]);
 
   // Final status: manual approval overrides derived
   const finalStatus = approvalStatus ?? derivedStatus;
@@ -135,6 +172,8 @@ export function Step03OpeningBalance(props: Step03Props) {
                   <ApprovalControl
                     ownerId={adminBusinessId}
                     year={year}
+                    initialStatus={persistedStep03Record?.status as AnnualAuditStepStatus}
+                    initialNotes={persistedManualNotes}
                     onSaved={setApprovalStatus}
                   />
                 </SubstepWrapper>
@@ -170,6 +209,8 @@ export function Step03OpeningBalance(props: Step03Props) {
                   <ApprovalControl
                     ownerId={adminBusinessId}
                     year={year}
+                    initialStatus={persistedStep03Record?.status as AnnualAuditStepStatus}
+                    initialNotes={persistedManualNotes}
                     onSaved={setApprovalStatus}
                   />
                 </SubstepWrapper>
