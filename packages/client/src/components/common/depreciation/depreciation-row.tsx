@@ -154,32 +154,28 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                   message: 'Date must be in format yyyy-mm-dd',
                 },
               }}
-              render={({ field: { value, ...field }, fieldState }): ReactElement => {
-                const date = value ? new Date(value) : undefined;
-                return (
-                  <div>
-                    <label
-                      htmlFor={`activation-date-${depreciationRecord.id}`}
-                      className="text-sm font-medium"
-                    >
-                      Activation Date
-                    </label>
-                    <DatePickerInput
-                      id={`activation-date-${depreciationRecord.id}`}
-                      form={`form ${depreciationRecord.id}`}
-                      value={date}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== value) field.onChange(newDate);
-                      }}
-                      aria-invalid={!!fieldState.error}
-                    />
-                    {fieldState.error?.message && (
-                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
-                    )}
-                  </div>
-                );
-              }}
+              render={({ field, fieldState }): ReactElement => (
+                <div>
+                  <label
+                    htmlFor={`activation-date-${depreciationRecord.id}`}
+                    className="text-sm font-medium"
+                  >
+                    Activation Date
+                  </label>
+                  <DatePickerInput
+                    id={`activation-date-${depreciationRecord.id}`}
+                    form={`form ${depreciationRecord.id}`}
+                    value={field.value ?? undefined}
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
+                    }}
+                    aria-invalid={!!fieldState.error}
+                  />
+                  {fieldState.error?.message && (
+                    <p className="text-sm text-red-500">{fieldState.error.message}</p>
+                  )}
+                </div>
+              )}
             />
           ) : (
             <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>

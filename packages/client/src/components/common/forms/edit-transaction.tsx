@@ -1,5 +1,4 @@
 import { useEffect, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
@@ -147,11 +146,10 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                         <FormControl>
                           <DatePickerInput
                             id="transaction-effective-date"
-                            onChange={(date?: Date | null): void => {
-                              const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                              if (newDate !== field.value) field.onChange(newDate);
+                            onChange={date => {
+                              if (date !== field.value) field.onChange(date);
                             }}
-                            value={field.value ? new Date(field.value) : undefined}
+                            value={field.value ?? undefined}
                             aria-invalid={!!fieldState.error}
                           />
                         </FormControl>

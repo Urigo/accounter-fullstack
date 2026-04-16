@@ -1,10 +1,8 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { DateTimePicker } from '@mantine/dates';
 import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
-import type { TimelessDateString } from '../../../helpers/dates.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
@@ -115,30 +113,23 @@ export const ModifyMiscExpenseFields = ({
             message: 'Date must be in format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }) => {
-          const date = field.value ? new Date(field.value) : undefined;
-          return (
-            <FormItem>
-              <FormLabel>Invoice Date</FormLabel>
-              <FormControl>
-                <DatePickerInput
-                  id="misc-expense-invoice-date"
-                  required={isInsert}
-                  onChange={(date?: Date | null): void => {
-                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                    if (newDate !== field.value) {
-                      setValue('invoiceDate', newDate as TimelessDateString);
-                      field.onChange(newDate);
-                    }
-                  }}
-                  value={date}
-                  aria-invalid={!!fieldState.error}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field, fieldState }) => (
+          <FormItem>
+            <FormLabel>Invoice Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="misc-expense-invoice-date"
+                required={isInsert}
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
+                }}
+                value={field.value ?? undefined}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
       <FormField
         name="valueDate"

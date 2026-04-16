@@ -9,45 +9,21 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '@/components/ui/input-group.js';
+import { TIMELESS_DATE_REGEX, type TimelessDateString } from '@/helpers/index.js';
 import { Calendar } from '../../ui/calendar.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
-function formatDate(date: Date | undefined) {
-  if (!date) {
-    return '';
-  }
-
-  return format(date, 'yyyy-MM-dd');
-}
-
-function isValidDate(date: Date | undefined) {
-  if (!date) {
-    return false;
-  }
-  return !Number.isNaN(date.getTime());
-}
-
-function parseFullDateInput(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+function parseFullDateInput(value: string): TimelessDateString | undefined {
+  if (!TIMELESS_DATE_REGEX.test(value)) {
     return undefined;
   }
 
-  const parsedDate = new Date(`${value}T00:00:00`);
-
-  if (!isValidDate(parsedDate)) {
-    return undefined;
-  }
-
-  if (format(parsedDate, 'yyyy-MM-dd') !== value) {
-    return undefined;
-  }
-
-  return parsedDate;
+  return value as TimelessDateString;
 }
 
 type Props = Omit<ComponentProps<'input'>, 'value' | 'onChange'> & {
-  value?: Date;
-  onChange?: (date?: Date | null) => void;
+  value?: TimelessDateString;
+  onChange?: (date?: TimelessDateString | null) => void;
 };
 
 export function DatePickerInput({
@@ -58,9 +34,9 @@ export function DatePickerInput({
   ...props
 }: Props) {
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(valueDate);
-  const [month, setMonth] = React.useState<Date | undefined>(date);
-  const [value, setValue] = React.useState(formatDate(date));
+  const [date, setDate] = React.useState<TimelessDateString | undefined>(valueDate);
+  const [month, setMonth] = React.useState<Date | undefined>(date ? new Date(date) : undefined);
+  const [value, setValue] = React.useState(date ?? '');
   const invalidStructure = value.trim() !== '' && !parseFullDateInput(value);
   const invalidMessageId = `${id}-date-format-error`;
   const describedBy = [
@@ -71,13 +47,13 @@ export function DatePickerInput({
     .join(' ');
 
   useEffect(() => {
-    const externalDateTime = valueDate?.getTime() ?? null;
-    const internalDateTime = date?.getTime() ?? null;
+    const externalDate = valueDate ?? null;
+    const internalDate = date ?? null;
 
-    if (externalDateTime !== internalDateTime) {
+    if (externalDate !== internalDate) {
       setDate(valueDate);
-      setMonth(valueDate);
-      setValue(formatDate(valueDate));
+      setMonth(valueDate ? new Date(valueDate) : undefined);
+      setValue(valueDate ?? '');
     }
   }, [valueDate, date]);
 
@@ -107,7 +83,7 @@ export function DatePickerInput({
 
             if (nextDate) {
               setDate(nextDate);
-              setMonth(nextDate);
+              setMonth(nextDate ? new Date(nextDate) : undefined);
               onChange?.(nextDate);
             }
           }}
@@ -121,12 +97,7 @@ export function DatePickerInput({
         <InputGroupAddon align="inline-end">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              <InputGroupButton
-                id="date-picker"
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Select date"
-              >
+              <InputGroupButton variant="ghost" size="icon-xs" aria-label="Select date">
                 <CalendarIcon />
                 <span className="sr-only">Select date</span>
               </InputGroupButton>
@@ -139,13 +110,16 @@ export function DatePickerInput({
             >
               <Calendar
                 mode="single"
-                selected={date}
+                selected={date ? new Date(date) : undefined}
                 month={month}
                 onMonthChange={setMonth}
                 onSelect={(date?: Date | null) => {
-                  setValue(formatDate(date ?? undefined));
-                  setDate(date ?? undefined);
-                  onChange?.(date ?? null);
+                  const newDate = date
+                    ? (format(date, 'yyyy-MM-dd') as TimelessDateString)
+                    : undefined;
+                  setValue(newDate ?? '');
+                  setDate(newDate);
+                  onChange?.(newDate ?? null);
                   setOpen(false);
                 }}
               />

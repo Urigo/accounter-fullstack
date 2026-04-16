@@ -1,5 +1,4 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
 import { type Control } from 'react-hook-form';
 import { Select } from '@mantine/core';
 import type { InsertBusinessTripInput } from '../../../gql/graphql.js';
@@ -42,26 +41,22 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
             message: 'Date must be in format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }): ReactElement => {
-          const date = field.value ? new Date(field.value) : undefined;
-          return (
-            <FormItem>
-              <FormLabel>Start Date</FormLabel>
-              <FormControl>
-                <DatePickerInput
-                  id="business-trip-from-date"
-                  onChange={(date?: Date | null): void => {
-                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={date}
-                  aria-invalid={!!fieldState.error}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field, fieldState }): ReactElement => (
+          <FormItem>
+            <FormLabel>Start Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="business-trip-from-date"
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
+                }}
+                value={field.value ?? undefined}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
 
       <FormField
@@ -73,26 +68,22 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
             message: 'Date must be in format yyyy-mm-dd',
           },
         }}
-        render={({ field, fieldState }): ReactElement => {
-          const date = field.value ? new Date(field.value) : undefined;
-          return (
-            <FormItem>
-              <FormLabel>End Date</FormLabel>
-              <FormControl>
-                <DatePickerInput
-                  id="business-trip-to-date"
-                  onChange={(date?: Date | null): void => {
-                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={date}
-                  aria-invalid={!!fieldState.error}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field, fieldState }): ReactElement => (
+          <FormItem>
+            <FormLabel>End Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="business-trip-to-date"
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
+                }}
+                value={field.value ?? undefined}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
 
       <FormField

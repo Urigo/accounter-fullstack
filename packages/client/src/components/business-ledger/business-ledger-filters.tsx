@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -124,10 +123,9 @@ function BusinessLedgerRecordsFilterForm({
                 <FormControl>
                   <DatePickerInput
                     id="from-date"
-                    value={field.value ? new Date(field.value) : undefined}
-                    onChange={(date?: Date | null): void => {
-                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    value={field.value ?? undefined}
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
                     aria-invalid={!!fieldState.error}
                   />
@@ -152,10 +150,9 @@ function BusinessLedgerRecordsFilterForm({
                 <FormControl>
                   <DatePickerInput
                     id="to-date"
-                    value={field.value ? new Date(field.value) : undefined}
-                    onChange={(date?: Date | null): void => {
-                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    value={field.value ?? undefined}
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
                     aria-invalid={!!fieldState.error}
                   />

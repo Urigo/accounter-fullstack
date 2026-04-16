@@ -1,5 +1,4 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -109,11 +108,10 @@ function ContoReportFilterForm({
                 <FormControl>
                   <DatePickerInput
                     id="conto-from-date"
-                    onChange={(date?: Date | null): void => {
-                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
-                    value={field.value ? new Date(field.value) : undefined}
+                    value={field.value ?? undefined}
                     aria-invalid={!!fieldState.error}
                   />
                 </FormControl>
@@ -137,11 +135,10 @@ function ContoReportFilterForm({
                 <FormControl>
                   <DatePickerInput
                     id="conto-to-date"
-                    onChange={(date?: Date | null): void => {
-                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
-                    value={field.value ? new Date(field.value) : undefined}
+                    value={field.value ?? undefined}
                     aria-invalid={!!fieldState.error}
                   />
                 </FormControl>

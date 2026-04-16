@@ -55,10 +55,9 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
               <FormControl>
                 <DatePickerInput
                   id="from-any-date"
-                  value={field.value ? new Date(field.value) : undefined}
-                  onChange={(date?: Date | null): void => {
-                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
+                  value={field.value ?? undefined}
+                  onChange={date => {
+                    if (date !== field.value) field.onChange(date);
                   }}
                   aria-invalid={!!fieldState.error}
                 />
@@ -83,10 +82,9 @@ function ChargeFilterForm({ filter, setFilter, closeModal }: ChargeFilterFormPro
               <FormControl>
                 <DatePickerInput
                   id="to-any-date"
-                  value={field.value ? new Date(field.value) : undefined}
-                  onChange={(date?: Date | null): void => {
-                    const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
+                  value={field.value ?? undefined}
+                  onChange={date => {
+                    if (date !== field.value) field.onChange(date);
                   }}
                   aria-invalid={!!fieldState.error}
                 />

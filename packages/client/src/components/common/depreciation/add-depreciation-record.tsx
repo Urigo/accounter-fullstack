@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
@@ -102,10 +101,9 @@ function ModalContent({ chargeId, opened, close, onAdd }: ModalProps): ReactElem
                   <FormControl>
                     <DatePickerInput
                       id="activation-date"
-                      value={field.value ? new Date(field.value) : undefined}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
                       }}
                       aria-invalid={!!fieldState.error}
                     />

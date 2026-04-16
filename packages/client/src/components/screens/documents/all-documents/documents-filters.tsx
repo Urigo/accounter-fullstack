@@ -129,11 +129,10 @@ function DocumentsFiltersForm({
                   <FormControl>
                     <DatePickerInput
                       id="documents-from-date"
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
                       }}
-                      value={field.value ? new Date(field.value) : undefined}
+                      value={field.value ?? undefined}
                       aria-invalid={!!fieldState.error}
                     />
                   </FormControl>
@@ -157,11 +156,10 @@ function DocumentsFiltersForm({
                   <FormControl>
                     <DatePickerInput
                       id="documents-to-date"
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
                       }}
-                      value={field.value ? new Date(field.value) : undefined}
+                      value={field.value ?? undefined}
                       aria-invalid={!!fieldState.error}
                     />
                   </FormControl>

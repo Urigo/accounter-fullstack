@@ -1,5 +1,4 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -89,10 +88,9 @@ export function AddExpenseFields({
               <DatePickerInput
                 id="expense-date"
                 data-autofocus
-                value={field.value ? new Date(field.value) : undefined}
-                onChange={(date?: Date | null): void => {
-                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
+                value={field.value ?? undefined}
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
                 }}
                 aria-invalid={!!fieldState.error}
               />
@@ -122,10 +120,9 @@ export function AddExpenseFields({
             <FormControl>
               <DatePickerInput
                 id="expense-value-date"
-                value={field.value ? new Date(field.value) : undefined}
-                onChange={(date?: Date | null): void => {
-                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
+                value={field.value ?? undefined}
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
                 }}
                 aria-invalid={!!fieldState.error}
               />

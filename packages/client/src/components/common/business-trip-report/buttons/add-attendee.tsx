@@ -1,5 +1,4 @@
 import type { ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, Overlay, Select } from '@mantine/core';
@@ -112,10 +111,9 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
                   <FormControl>
                     <DatePickerInput
                       id="arrival-date"
-                      value={field.value ? new Date(field.value) : undefined}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
                       }}
                       aria-invalid={!!fieldState.error}
                     />
@@ -140,10 +138,9 @@ function ModalContent({ businessTripId, opened, close, onAdd }: ModalProps): Rea
                   <FormControl>
                     <DatePickerInput
                       id="departure-date"
-                      value={field.value ? new Date(field.value) : undefined}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
                       }}
                       aria-invalid={!!fieldState.error}
                     />
