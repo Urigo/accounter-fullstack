@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { AnnualAuditStepStatus } from '../../../../../gql/graphql.js';
 import { useSetAnnualAuditStep03Status } from '../../../../../hooks/use-set-annual-audit-step03-status.js';
@@ -39,6 +39,14 @@ export function ApprovalControl({
   );
   const [notes, setNotes] = useState(initialNotes ?? '');
   const { fetching, setStep03Status } = useSetAnnualAuditStep03Status();
+
+  useEffect(() => {
+    setSelectedStatus(initialStatus ?? AnnualAuditStepStatus.Pending);
+  }, [initialStatus]);
+
+  useEffect(() => {
+    setNotes(initialNotes ?? '');
+  }, [initialNotes]);
 
   const handleSave = useCallback(async () => {
     const result = await setStep03Status({
