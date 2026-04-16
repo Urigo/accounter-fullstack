@@ -5,14 +5,13 @@ import { ROUTES } from '@/router/routes.js';
 import {
   AnnualAuditOpeningBalanceStatusDocument,
   AnnualAuditOpeningBalanceUserType,
-  AnnualAuditStep03StatusDocument,
   AnnualAuditStepStatus,
 } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { Alert, AlertDescription, AlertTitle } from '../../../../ui/alert.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { BaseStepCard, SubstepWrapper, type BaseStepProps, type StepStatus } from '../step-base.js';
-import { ApprovalControl } from './approval-control.js';
+import { ApprovalControl } from '../approval-control.js';
+import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 import { MigratingSubsteps } from './migrating-substep.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -24,18 +23,6 @@ import { MigratingSubsteps } from './migrating-substep.js';
       balanceChargeId
       derivedStatus
       errorMessage
-    }
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query AnnualAuditStep03Status($ownerId: UUID!, $year: Int!) {
-    annualAuditStepStatuses(ownerId: $ownerId, year: $year) {
-      id
-      stepId
-      status
-      notes
     }
   }
 `;
@@ -56,13 +43,11 @@ export function gqlStatusToStepStatus(status: AnnualAuditStepStatus): StepStatus
 interface Step03Props extends BaseStepProps {
   year: number;
   adminBusinessId?: string;
-  /** Manual override status persisted in annual_audit_step_status table */
-  manualStatus?: StepStatus;
 }
 
 export function Step03OpeningBalance(props: Step03Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState<StepStatus | undefined>(props.manualStatus);
+  const [approvalStatus, setApprovalStatus] = useState<StepStatus>('pending');
 
   const { adminBusinessId, id, onStatusChange, year } = props;
 
@@ -72,17 +57,10 @@ export function Step03OpeningBalance(props: Step03Props) {
     pause: !adminBusinessId,
   });
 
-  const [{ data: manualData, fetching: fetchingManual }] = useQuery({
-    query: AnnualAuditStep03StatusDocument,
-    variables: { ownerId: adminBusinessId!, year },
-    pause: !adminBusinessId,
-  });
-
   const persistedStep03Record = useMemo(() => {
-    const records = manualData?.annualAuditStepStatuses;
-    if (!Array.isArray(records)) return undefined;
-    return records.find(record => record.stepId === id);
-  }, [manualData, id]);
+    if (!Array.isArray(props.manualData)) return undefined;
+    return props.manualData.find(record => record.stepId === id);
+  }, [props.manualData, id]);
 
   const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
     const persistedStatus = persistedStep03Record?.status;
@@ -93,15 +71,15 @@ export function Step03OpeningBalance(props: Step03Props) {
   const persistedManualNotes = persistedStep03Record?.notes ?? null;
 
   useEffect(() => {
-    setApprovalStatus(persistedManualStatus ?? props.manualStatus);
-  }, [persistedManualStatus, props.manualStatus]);
+    setApprovalStatus(persistedManualStatus ?? 'pending');
+  }, [persistedManualStatus]);
 
   const derivedStatus = useMemo<StepStatus>(() => {
     if (!adminBusinessId) return 'blocked';
-    if (fetching || fetchingManual) return 'loading';
+    if (fetching) return 'loading';
     if (error || !data?.annualAuditOpeningBalanceStatus) return 'pending';
     return gqlStatusToStepStatus(data.annualAuditOpeningBalanceStatus.derivedStatus);
-  }, [adminBusinessId, fetching, fetchingManual, error, data]);
+  }, [adminBusinessId, fetching, error, data]);
 
   // Final status: manual approval overrides derived
   const finalStatus = approvalStatus ?? derivedStatus;
@@ -118,7 +96,6 @@ export function Step03OpeningBalance(props: Step03Props) {
         {...props}
         status={finalStatus}
         icon={<Calculator className="h-4 w-4" />}
-        hasSubsteps
         isExpanded={isExpanded}
         onToggleExpanded={() => setIsExpanded(!isExpanded)}
       />
@@ -168,52 +145,52 @@ export function Step03OpeningBalance(props: Step03Props) {
                   balanceChargeId={statusInfo.balanceChargeId ?? null}
                 />
 
-                <SubstepWrapper level={1}>
+                <div className="pl-8">
                   <ApprovalControl
                     ownerId={adminBusinessId}
                     year={year}
+                    stepId={props.id}
                     initialStatus={persistedStep03Record?.status as AnnualAuditStepStatus}
                     initialNotes={persistedManualNotes}
                     onSaved={setApprovalStatus}
                   />
-                </SubstepWrapper>
+                </div>
               </>
             )}
 
             {/* ── CONTINUING: review link + approval ── */}
             {statusInfo?.userType === AnnualAuditOpeningBalanceUserType.Continuing && (
               <>
-                <SubstepWrapper level={1}>
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Verify Prior-Year Closing Balance</AlertTitle>
-                    <AlertDescription className="pb-4">
-                      Prior-year closing balances are already in the system. Review the prior-year
-                      data and approve once confirmed.
-                    </AlertDescription>
-                    <a
-                      href={ROUTES.REPORTS.TRIAL_BALANCE({
-                        toDate: `${year - 1}-12-31` as TimelessDateString,
-                        ownerIds: [adminBusinessId],
-                      })}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={event => event.stopPropagation()}
-                      className="text-sm text-primary underline-offset-4 hover:underline"
-                    >
-                      View prior-year ({year - 1}) trial balance →
-                    </a>
-                  </Alert>
-                </SubstepWrapper>
-                <SubstepWrapper level={1}>
+                <Alert className="ml-8">
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Verify Prior-Year Closing Balance</AlertTitle>
+                  <AlertDescription className="pb-4">
+                    Prior-year closing balances are already in the system. Review the prior-year
+                    data and approve once confirmed.
+                  </AlertDescription>
+                  <a
+                    href={ROUTES.REPORTS.TRIAL_BALANCE({
+                      toDate: `${year - 1}-12-31` as TimelessDateString,
+                      ownerIds: [adminBusinessId],
+                    })}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={event => event.stopPropagation()}
+                    className="text-sm text-primary underline-offset-4 hover:underline"
+                  >
+                    View prior-year ({year - 1}) trial balance →
+                  </a>
+                </Alert>
+                <div className="pl-8">
                   <ApprovalControl
                     ownerId={adminBusinessId}
                     year={year}
+                    stepId={props.id}
                     initialStatus={persistedStep03Record?.status as AnnualAuditStepStatus}
                     initialNotes={persistedManualNotes}
                     onSaved={setApprovalStatus}
                   />
-                </SubstepWrapper>
+                </div>
               </>
             )}
           </CollapsibleContent>

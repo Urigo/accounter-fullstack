@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, PlusCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, PlusCircle } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   FinancialChargeEnum,
   useGenerateFinancialCharge,
 } from '@/hooks/use-generate-financial-charge.js';
 import { ROUTES } from '@/router/routes.js';
-import { AnnualFinancialChargesDocument } from '../../../../../gql/graphql.js';
+import {
+  AnnualAuditStepStatus,
+  AnnualFinancialChargesDocument,
+} from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
+import { ApprovalControl } from '../approval-control.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -103,6 +107,7 @@ const CHARGE_ITEMS: ChargeItem[] = [
 export function Step04FinancialCharges(props: Step04Props) {
   const [status, setStatus] = useState<StepStatus>('loading');
   const [isExpanded, setIsExpanded] = useState(false);
+  const [overriddenStatus, setOverriddenStatus] = useState<StepStatus | undefined>(undefined);
   const { adminBusinessId, id, onStatusChange, year } = props;
   const yearEndDate = `${year}-12-31` as TimelessDateString;
   const { fetching: generatingCharge, generateFinancialCharge } = useGenerateFinancialCharge();
@@ -115,8 +120,43 @@ export function Step04FinancialCharges(props: Step04Props) {
     },
   });
 
+  const persistedStepRecord = useMemo(() => {
+    if (!Array.isArray(props.manualData)) return undefined;
+    return props.manualData.find(record => record.stepId === id);
+  }, [props.manualData, id]);
+
+  const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
+    const persistedStatus = persistedStepRecord?.status;
+    if (!persistedStatus) return undefined;
+    // Convert GQL status to StepStatus
+    switch (persistedStatus) {
+      case 'COMPLETED':
+        return 'completed';
+      case 'IN_PROGRESS':
+        return 'in-progress';
+      case 'BLOCKED':
+        return 'blocked';
+      default:
+        return 'pending';
+    }
+  }, [persistedStepRecord]);
+
+  const persistedManualNotes = persistedStepRecord?.notes ?? null;
+
+  // Apply persisted override if it exists
+  useEffect(() => {
+    if (persistedManualStatus) {
+      setOverriddenStatus(persistedManualStatus);
+    }
+  }, [persistedManualStatus]);
+
   // Report status changes to parent
-  useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
+  useEffect(() => {
+    const finalStatus = overriddenStatus ?? status;
+    if (onStatusChange) {
+      onStatusChange(id, finalStatus);
+    }
+  }, [status, overriddenStatus, onStatusChange, id]);
 
   const chargeRows = useMemo(() => {
     const result = data?.annualFinancialCharges;
@@ -196,17 +236,25 @@ export function Step04FinancialCharges(props: Step04Props) {
     }
     return <Badge variant="secondary">Optional</Badge>;
   };
+  const finalStatus = overriddenStatus ?? status;
+  const statusMismatch = overriddenStatus && overriddenStatus !== status;
 
   return (
-    <>
-      <BaseStepCard
-        {...props}
-        status={status}
-        hasSubsteps
-        isExpanded={isExpanded}
-        onToggleExpanded={() => setIsExpanded(prev => !prev)}
-      />
-
+    <BaseStepCard
+      {...props}
+      status={finalStatus}
+      statusIndicator={
+        fetching ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : statusMismatch ? (
+          <Badge variant="outline" className="text-xs border-blue-200 text-blue-700">
+            Manual override
+          </Badge>
+        ) : undefined
+      }
+      isExpanded={isExpanded}
+      onToggleExpanded={() => setIsExpanded(prev => !prev)}
+    >
       {adminBusinessId && (
         <Collapsible open={isExpanded}>
           <CollapsibleContent>
@@ -242,9 +290,23 @@ export function Step04FinancialCharges(props: Step04Props) {
                 ))}
               </div>
             </CardContent>
+            {adminBusinessId && (
+              <div className="px-6 pb-4 pt-2 border-t">
+                <ApprovalControl
+                  ownerId={adminBusinessId}
+                  year={year}
+                  stepId={id}
+                  initialStatus={
+                    (persistedStepRecord?.status as AnnualAuditStepStatus | undefined) ?? undefined
+                  }
+                  initialNotes={persistedManualNotes}
+                  onSaved={status => setOverriddenStatus(status)}
+                />
+              </div>
+            )}
           </CollapsibleContent>
         </Collapsible>
       )}
-    </>
+    </BaseStepCard>
   );
 }
