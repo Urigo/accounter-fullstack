@@ -118,7 +118,7 @@ function TrialBalanceReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel>From Date</FormLabel>
+                <FormLabel htmlFor="trial-balance-from-date">From Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="trial-balance-from-date"
@@ -146,7 +146,7 @@ function TrialBalanceReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel>To Date</FormLabel>
+                <FormLabel htmlFor="trial-balance-to-date">To Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="trial-balance-to-date"

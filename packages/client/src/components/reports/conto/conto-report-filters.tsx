@@ -104,7 +104,7 @@ function ContoReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel>From Date</FormLabel>
+                <FormLabel htmlFor="conto-from-date">From Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="conto-from-date"
@@ -131,7 +131,7 @@ function ContoReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel>To Date</FormLabel>
+                <FormLabel htmlFor="conto-to-date">To Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="conto-to-date"
@@ -152,10 +152,14 @@ function ContoReportFilterForm({
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
-                  <FormLabel>Show zeroed accounts</FormLabel>
+                  <FormLabel htmlFor="conto-show-zeroed-accounts">Show zeroed accounts</FormLabel>
                 </div>
                 <FormControl>
-                  <Switch checked={field.value === true} onCheckedChange={field.onChange} />
+                  <Switch
+                    id="conto-show-zeroed-accounts"
+                    checked={field.value === true}
+                    onCheckedChange={field.onChange}
+                  />
                 </FormControl>
               </FormItem>
             )}

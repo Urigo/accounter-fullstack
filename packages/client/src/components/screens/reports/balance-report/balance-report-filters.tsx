@@ -156,7 +156,7 @@ function BalanceReportFiltersForm({
             name="fromDate"
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>From Date</FormLabel>
+                <FormLabel htmlFor="balance-report-from-date">From Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="balance-report-from-date"
@@ -176,7 +176,7 @@ function BalanceReportFiltersForm({
             name="toDate"
             render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>To Date</FormLabel>
+                <FormLabel htmlFor="balance-report-to-date">To Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
                     id="balance-report-to-date"

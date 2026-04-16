@@ -92,9 +92,12 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                 }}
                 render={({ field, fieldState }): ReactElement => (
                   <FormItem className="h-min">
-                    <FormLabel className="sr-only">Arrival</FormLabel>
+                    <FormLabel className="sr-only" htmlFor={`arrival-date-${attendee.id}`}>
+                      Arrival
+                    </FormLabel>
                     <FormControl>
                       <DatePickerInput
+                        id={`arrival-date-${attendee.id}`}
                         data-autofocus
                         value={field.value ?? undefined}
                         onChange={date => {
@@ -126,9 +129,12 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
               }}
               render={({ field, fieldState }): ReactElement => (
                 <FormItem className="h-min">
-                  <FormLabel className="sr-only">Departure</FormLabel>
+                  <FormLabel className="sr-only" htmlFor={`departure-date-${attendee.id}`}>
+                    Departure
+                  </FormLabel>
                   <FormControl>
                     <DatePickerInput
+                      id={`departure-date-${attendee.id}`}
                       value={field.value ?? undefined}
                       onChange={date => {
                         if (date !== field.value) field.onChange(date);

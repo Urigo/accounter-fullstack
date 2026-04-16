@@ -43,7 +43,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         }}
         render={({ field, fieldState }): ReactElement => (
           <FormItem>
-            <FormLabel>Start Date</FormLabel>
+            <FormLabel htmlFor="business-trip-from-date">Start Date</FormLabel>
             <FormControl>
               <DatePickerInput
                 id="business-trip-from-date"
@@ -70,7 +70,7 @@ export const ModifyBusinessTripFields = ({ control }: Props): ReactElement => {
         }}
         render={({ field, fieldState }): ReactElement => (
           <FormItem>
-            <FormLabel>End Date</FormLabel>
+            <FormLabel htmlFor="business-trip-to-date">End Date</FormLabel>
             <FormControl>
               <DatePickerInput
                 id="business-trip-to-date"

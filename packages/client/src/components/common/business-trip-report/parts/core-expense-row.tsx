@@ -111,9 +111,12 @@ export const CoreExpenseRow = ({
                 }}
                 render={({ field, fieldState }): ReactElement => (
                   <FormItem className="h-min">
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel htmlFor={`business-trip-expense-date-${businessTripExpense.id}`}>
+                      Date
+                    </FormLabel>
                     <FormControl>
                       <DatePickerInput
+                        id={`business-trip-expense-date-${businessTripExpense.id}`}
                         form={`form ${businessTripExpense.id}`}
                         data-autofocus
                         value={field.value ?? undefined}

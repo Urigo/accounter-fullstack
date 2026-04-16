@@ -125,7 +125,7 @@ function DocumentsFiltersForm({
               }}
               render={({ field, fieldState }): ReactElement => (
                 <FormItem>
-                  <FormLabel>From Date</FormLabel>
+                  <FormLabel htmlFor="documents-from-date">From Date</FormLabel>
                   <FormControl>
                     <DatePickerInput
                       id="documents-from-date"
@@ -152,7 +152,7 @@ function DocumentsFiltersForm({
               }}
               render={({ field, fieldState }): ReactElement => (
                 <FormItem>
-                  <FormLabel>To Date</FormLabel>
+                  <FormLabel htmlFor="documents-to-date">To Date</FormLabel>
                   <FormControl>
                     <DatePickerInput
                       id="documents-to-date"

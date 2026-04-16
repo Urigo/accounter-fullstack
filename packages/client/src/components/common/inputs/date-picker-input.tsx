@@ -21,24 +21,27 @@ function parseFullDateInput(value: string): TimelessDateString | undefined {
   return value as TimelessDateString;
 }
 
+function timelessDateStringToDate(value: TimelessDateString): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 type Props = Omit<ComponentProps<'input'>, 'value' | 'onChange'> & {
   value?: TimelessDateString;
   onChange?: (date?: TimelessDateString | null) => void;
 };
 
-export function DatePickerInput({
-  value: valueDate,
-  onChange,
-  disabled,
-  id = 'date-input',
-  ...props
-}: Props) {
+export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...props }: Props) {
+  const generatedId = React.useId();
+  const inputId = id ?? generatedId;
   const [open, setOpen] = React.useState(false);
   const [date, setDate] = React.useState<TimelessDateString | undefined>(valueDate);
-  const [month, setMonth] = React.useState<Date | undefined>(date ? new Date(date) : undefined);
+  const [month, setMonth] = React.useState<Date | undefined>(
+    date ? timelessDateStringToDate(date) : undefined,
+  );
   const [value, setValue] = React.useState(date ?? '');
   const invalidStructure = value.trim() !== '' && !parseFullDateInput(value);
-  const invalidMessageId = `${id}-date-format-error`;
+  const invalidMessageId = `${inputId}-date-format-error`;
   const describedBy = [
     typeof props['aria-describedby'] === 'string' ? props['aria-describedby'] : undefined,
     invalidStructure ? invalidMessageId : undefined,
@@ -47,15 +50,19 @@ export function DatePickerInput({
     .join(' ');
 
   useEffect(() => {
-    const externalDate = valueDate ?? null;
-    const internalDate = date ?? null;
+    setDate(prevDate => {
+      const externalDate = valueDate ?? null;
+      const internalDate = prevDate ?? null;
 
-    if (externalDate !== internalDate) {
-      setDate(valueDate);
-      setMonth(valueDate ? new Date(valueDate) : undefined);
+      if (externalDate === internalDate) {
+        return prevDate;
+      }
+
+      setMonth(valueDate ? timelessDateStringToDate(valueDate) : undefined);
       setValue(valueDate ?? '');
-    }
-  }, [valueDate, date]);
+      return valueDate;
+    });
+  }, [valueDate]);
 
   return (
     <div className="space-y-1">
@@ -63,7 +70,7 @@ export function DatePickerInput({
         <InputGroupInput
           {...props}
           disabled={disabled}
-          id={id}
+          id={inputId}
           value={value}
           placeholder="Select date"
           aria-invalid={invalidStructure}
@@ -83,7 +90,7 @@ export function DatePickerInput({
 
             if (nextDate) {
               setDate(nextDate);
-              setMonth(nextDate ? new Date(nextDate) : undefined);
+              setMonth(nextDate ? timelessDateStringToDate(nextDate) : undefined);
               onChange?.(nextDate);
             }
           }}
@@ -110,7 +117,7 @@ export function DatePickerInput({
             >
               <Calendar
                 mode="single"
-                selected={date ? new Date(date) : undefined}
+                selected={date ? timelessDateStringToDate(date) : undefined}
                 month={month}
                 onMonthChange={setMonth}
                 onSelect={(date?: Date | null) => {

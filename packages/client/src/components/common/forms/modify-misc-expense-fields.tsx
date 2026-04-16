@@ -115,7 +115,7 @@ export const ModifyMiscExpenseFields = ({
         }}
         render={({ field, fieldState }) => (
           <FormItem>
-            <FormLabel>Invoice Date</FormLabel>
+            <FormLabel htmlFor="misc-expense-invoice-date">Invoice Date</FormLabel>
             <FormControl>
               <DatePickerInput
                 id="misc-expense-invoice-date"
@@ -143,9 +143,10 @@ export const ModifyMiscExpenseFields = ({
         }}
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Value Date</FormLabel>
+            <FormLabel htmlFor="misc-expense-value-date">Value Date</FormLabel>
             <FormControl>
               <DateTimePicker
+                id="misc-expense-value-date"
                 {...field}
                 onChange={(date?: Date | null): void => {
                   setValue('valueDate', date);

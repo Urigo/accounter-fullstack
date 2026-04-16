@@ -142,7 +142,7 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                     }}
                     render={({ field, fieldState }): ReactElement => (
                       <FormItem>
-                        <FormLabel>Effective Date</FormLabel>
+                        <FormLabel htmlFor="transaction-effective-date">Effective Date</FormLabel>
                         <FormControl>
                           <DatePickerInput
                             id="transaction-effective-date"
