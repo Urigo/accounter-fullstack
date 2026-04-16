@@ -2,7 +2,6 @@ import { useContext, useState, type JSX } from 'react';
 import { CircleCheckBig, FileDown, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { useDisclosure } from '@mantine/hooks';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
 import { UserContext } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
@@ -22,8 +21,7 @@ import {
 export function UserNav(): JSX.Element | null {
   const { userContext } = useContext(UserContext);
   const { isAuthenticated, user } = useAuth0();
-  const [pullDocumentsOpened, { close: closePullDocuments, open: openPullDocuments }] =
-    useDisclosure(false);
+  const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const { executeJobs } = useCornJobs();
 
@@ -105,7 +103,12 @@ export function UserNav(): JSX.Element | null {
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Tooltip content="Pull Green Invoice Documents">
-              <Button variant="ghost" size="icon" className="size-7.5" onClick={openPullDocuments}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7.5"
+                onClick={() => setPullDocumentsOpened(true)}
+              >
                 <FileDown className="size-5" />
               </Button>
             </Tooltip>
@@ -127,7 +130,10 @@ export function UserNav(): JSX.Element | null {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <SyncDocumentsModal close={closePullDocuments} opened={pullDocumentsOpened} />
+      <SyncDocumentsModal
+        close={() => setPullDocumentsOpened(false)}
+        opened={pullDocumentsOpened}
+      />
 
       <BalanceChargeModal
         open={balanceChargeModalOpen}

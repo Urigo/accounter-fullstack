@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { MapPlus } from 'lucide-react';
 import { Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { Button } from '../../ui/button.js';
 import { InsertBusinessTrip, Tooltip } from '../index.js';
 
@@ -10,7 +9,8 @@ interface Props {
 }
 
 export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
-  const [opened, { open, close }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
+  const close = (): void => setOpened(false);
 
   function onInsertDone(): void {
     close();
@@ -19,7 +19,7 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
   return (
     <>
       <Tooltip content="Add New Business Trip">
-        <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
+        <Button variant="ghost" size="icon" className="size-7.5" onClick={() => setOpened(true)}>
           <MapPlus className="size-5" />
         </Button>
       </Tooltip>

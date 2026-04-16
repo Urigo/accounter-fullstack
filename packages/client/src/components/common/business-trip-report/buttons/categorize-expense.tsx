@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Edit } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, NumberInput, Overlay, Select } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   BusinessTripExpenseCategories,
   type CategorizeBusinessTripExpenseInput,
@@ -18,7 +17,7 @@ export function CategorizeExpense(props: {
   onChange: () => void;
 }): ReactElement {
   const { businessTripId, transactionId, onChange, defaultAmount } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -29,7 +28,7 @@ export function CategorizeExpense(props: {
           className="size-7.5"
           onClick={(event): void => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
         >
           <Edit className="size-5" />
@@ -40,7 +39,7 @@ export function CategorizeExpense(props: {
           businessTripId={businessTripId}
           transactionId={transactionId}
           opened={opened}
-          close={close}
+          close={() => setOpened(false)}
           onChange={onChange}
           defaultAmount={defaultAmount}
         />

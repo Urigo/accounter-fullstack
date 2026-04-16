@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Modal, MultiSelect, Overlay, Select } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   AttendeesByBusinessTripDocument,
   FlightClass,
@@ -21,7 +20,7 @@ export function AddFlightExpense(props: {
   onAdd?: () => void;
 }): ReactElement {
   const { businessTripId, onAdd } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -32,14 +31,19 @@ export function AddFlightExpense(props: {
           className="size-7.5"
           onClick={(event): void => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
         >
           <Plus className="size-5" />
         </Button>
       </Tooltip>
       {opened && (
-        <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />
+        <ModalContent
+          businessTripId={businessTripId}
+          opened={opened}
+          close={() => setOpened(false)}
+          onAdd={onAdd}
+        />
       )}
     </>
   );

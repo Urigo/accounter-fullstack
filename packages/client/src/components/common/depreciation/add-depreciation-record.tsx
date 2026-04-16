@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader, Modal, Overlay, Select } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   AllDepreciationCategoriesDocument,
   type InsertDepreciationRecordInput,
@@ -20,7 +19,7 @@ export function AddDepreciationRecord(props: {
   onAdd?: () => void;
 }): ReactElement {
   const { chargeId, onAdd } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -31,13 +30,20 @@ export function AddDepreciationRecord(props: {
           className="size-7.5"
           onClick={event => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
         >
           <Plus className="size-5" />
         </Button>
       </Tooltip>
-      {opened && <ModalContent chargeId={chargeId} opened={opened} close={close} onAdd={onAdd} />}
+      {opened && (
+        <ModalContent
+          chargeId={chargeId}
+          opened={opened}
+          close={() => setOpened(false)}
+          onAdd={onAdd}
+        />
+      )}
     </>
   );
 }

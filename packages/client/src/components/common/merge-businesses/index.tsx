@@ -1,7 +1,6 @@
-import { useCallback, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { Merge } from 'lucide-react';
 import { Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { cn } from '../../../lib/utils.js';
 import { Button } from '../../ui/button.js';
 import { MergeBusinessesSelectionForm } from './merge-businesses-selection-form.js';
@@ -10,7 +9,8 @@ export function MergeBusinessesButton(props: {
   selected: { id: string; onChange: () => void }[];
   resetMerge: () => void;
 }): ReactElement {
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
+  const close = useCallback((): void => setOpened(false), []);
   const { selected, resetMerge } = props;
   const distinctIDs = new Set(selected.map(({ id }) => id));
   const isMergeable = distinctIDs.size >= 1;
@@ -25,7 +25,7 @@ export function MergeBusinessesButton(props: {
     <>
       <Button
         onClick={(): void => {
-          if (isMergeable) open();
+          if (isMergeable) setOpened(true);
         }}
         disabled={!isMergeable}
         variant={variant}

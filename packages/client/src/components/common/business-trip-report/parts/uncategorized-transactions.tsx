@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Popover, Table, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { ROUTES } from '@/router/routes.js';
 import {
   BusinessTripUncategorizedTransactionsFieldsFragmentDoc,
@@ -188,11 +187,11 @@ export const Amount = ({ data }: AmountProps): ReactElement => {
 };
 
 export const ErrorsPopover = ({ errors }: { errors: string[] }): ReactElement => {
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
   return (
     <Popover width={200} position="bottom" shadow="md" opened={opened}>
       <Popover.Target>
-        <AlertCircle onMouseEnter={open} onMouseLeave={close} />
+        <AlertCircle onMouseEnter={() => setOpened(true)} onMouseLeave={() => setOpened(false)} />
       </Popover.Target>
       <Popover.Dropdown sx={{ pointerEvents: 'none' }} className="whitespace-normal text-red-500">
         {errors.map((error, i) => (

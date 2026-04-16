@@ -4,7 +4,6 @@ import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Grid, Loader, Modal, NumberInput, Overlay, Select, Text } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   UncategorizedTransactionsByBusinessTripDocument,
   type CategorizeIntoExistingBusinessTripExpenseInput,
@@ -45,7 +44,7 @@ export function CategorizeIntoExistingExpense(props: {
   onChange: () => void;
 }): ReactElement {
   const { businessTripExpenseId, businessTripId, onChange } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -56,7 +55,7 @@ export function CategorizeIntoExistingExpense(props: {
           className="size-7.5"
           onClick={(event): void => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
         >
           <Plus className="size-5" />
@@ -67,7 +66,7 @@ export function CategorizeIntoExistingExpense(props: {
           businessTripExpenseId={businessTripExpenseId}
           businessTripId={businessTripId}
           opened={opened}
-          close={close}
+          close={() => setOpened(false)}
           onChange={onChange}
         />
       )}

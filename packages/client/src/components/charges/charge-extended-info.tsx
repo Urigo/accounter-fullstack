@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from 're
 import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Box, Collapse, Loader } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import {
   ChargeLedgerRecordsTableFieldsFragmentDoc,
   ChargesTableErrorsFieldsFragmentDoc,
@@ -131,7 +130,7 @@ export function ChargeExtendedInfo({
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
-  const [opened, { toggle }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
   const [charge, setCharge] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
   const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
@@ -350,7 +349,7 @@ export function ChargeExtendedInfo({
                           <Button
                             onClick={event => {
                               event.stopPropagation();
-                              toggle();
+                              setOpened(value => !value);
                             }}
                             variant="outline"
                             disabled={!galleryIsReady}
