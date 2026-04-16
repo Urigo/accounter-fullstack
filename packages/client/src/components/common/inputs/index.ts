@@ -9,5 +9,4 @@ export * from './number-input.js';
 export * from './select-with-search.js';
 export * from './string-array-input.js';
 export * from './tag-input.js';
-export * from './tags-input.js';
 export * from './update-accountant-status.js';
