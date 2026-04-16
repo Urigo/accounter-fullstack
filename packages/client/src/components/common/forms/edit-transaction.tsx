@@ -1,5 +1,4 @@
 import { useEffect, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Loader } from '@mantine/core';
@@ -138,20 +137,20 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                     rules={{
                       pattern: {
                         value: TIMELESS_DATE_REGEX,
-                        message: 'Date must be im format yyyy-mm-dd',
+                        message: 'Date must be in format yyyy-mm-dd',
                       },
                     }}
-                    render={({ field }): ReactElement => (
+                    render={({ field, fieldState }): ReactElement => (
                       <FormItem>
-                        <FormLabel>Effective Date</FormLabel>
+                        <FormLabel htmlFor="transaction-effective-date">Effective Date</FormLabel>
                         <FormControl>
                           <DatePickerInput
-                            {...field}
-                            onChange={(date?: Date | null): void => {
-                              const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                              if (newDate !== field.value) field.onChange(newDate);
+                            id="transaction-effective-date"
+                            onChange={date => {
+                              if (date !== field.value) field.onChange(date);
                             }}
-                            value={field.value ? new Date(field.value) : undefined}
+                            value={field.value ?? undefined}
+                            aria-invalid={!!fieldState.error}
                           />
                         </FormControl>
                         <FormMessage />

@@ -3,95 +3,142 @@
 import React, { useEffect, type ComponentProps } from 'react';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
-import { Button } from '../../ui/button.js';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/components/ui/input-group.js';
+import { TIMELESS_DATE_REGEX, type TimelessDateString } from '@/helpers/index.js';
 import { Calendar } from '../../ui/calendar.js';
-import { Input } from '../../ui/input.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
-function formatDate(date: Date | undefined) {
-  if (!date) {
-    return '';
+function parseFullDateInput(value: string): TimelessDateString | undefined {
+  if (!TIMELESS_DATE_REGEX.test(value)) {
+    return undefined;
   }
 
-  return format(date, 'yyyy-MM-dd');
+  return value as TimelessDateString;
 }
 
-function isValidDate(date: Date | undefined) {
-  if (!date) {
-    return false;
-  }
-  return !Number.isNaN(date.getTime());
+function timelessDateStringToDate(value: TimelessDateString): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 type Props = Omit<ComponentProps<'input'>, 'value' | 'onChange'> & {
-  value?: Date;
-  onChange?: (date?: Date | null) => void;
+  value?: TimelessDateString;
+  onChange?: (date?: TimelessDateString | null) => void;
 };
 
-export function DatePickerInput({ value: date, onChange, disabled, ...props }: Props) {
+export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...props }: Props) {
+  const generatedId = React.useId();
+  const inputId = id ?? generatedId;
   const [open, setOpen] = React.useState(false);
-  const [month, setMonth] = React.useState<Date | undefined>(date);
-  const [value, setValue] = React.useState(formatDate(date));
+  const [date, setDate] = React.useState<TimelessDateString | undefined>(valueDate);
+  const [month, setMonth] = React.useState<Date | undefined>(
+    date ? timelessDateStringToDate(date) : undefined,
+  );
+  const [value, setValue] = React.useState(date ?? '');
+  const invalidStructure = value.trim() !== '' && !parseFullDateInput(value);
+  const invalidMessageId = `${inputId}-date-format-error`;
+  const describedBy = [
+    typeof props['aria-describedby'] === 'string' ? props['aria-describedby'] : undefined,
+    invalidStructure ? invalidMessageId : undefined,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   useEffect(() => {
-    if (date) {
-      setValue(formatDate(date));
-    }
-  }, [date]);
+    setDate(prevDate => {
+      const externalDate = valueDate ?? null;
+      const internalDate = prevDate ?? null;
+
+      if (externalDate === internalDate) {
+        return prevDate;
+      }
+
+      setMonth(valueDate ? timelessDateStringToDate(valueDate) : undefined);
+      setValue(valueDate ?? '');
+      return valueDate;
+    });
+  }, [valueDate]);
 
   return (
-    <div className="relative flex gap-2">
-      <Input
-        {...props}
-        disabled={disabled}
-        value={value}
-        onChange={e => {
-          setValue(e.target.value);
-          const date = e.target.value ? new Date(e.target.value) : undefined;
-          if (isValidDate(date)) {
-            onChange?.(date);
-            setMonth(date);
-          }
-        }}
-        onKeyDown={e => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            setOpen(true);
-          }
-        }}
-      />
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id="date-picker"
-            variant="ghost"
-            className="absolute top-1/2 right-2 size-6 -translate-y-1/2"
-            disabled={disabled}
-          >
-            <CalendarIcon className="size-3.5" />
-            <span className="sr-only">Select date</span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent
-          className="w-auto overflow-hidden p-0"
-          align="end"
-          alignOffset={-8}
-          sideOffset={10}
-        >
-          <Calendar
-            mode="single"
-            selected={date}
-            captionLayout="dropdown"
-            month={month}
-            onMonthChange={setMonth}
-            onSelect={(date?: Date | null) => {
-              onChange?.(date);
-              setValue(formatDate(date ?? undefined));
-              setOpen(false);
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+    <div className="space-y-1">
+      <InputGroup>
+        <InputGroupInput
+          {...props}
+          disabled={disabled}
+          id={inputId}
+          value={value}
+          placeholder="Select date"
+          aria-invalid={invalidStructure}
+          aria-describedby={describedBy || undefined}
+          onChange={e => {
+            const nextValue = e.target.value;
+
+            setValue(nextValue);
+
+            if (nextValue.trim() === '') {
+              setDate(undefined);
+              onChange?.(null);
+              return;
+            }
+
+            const nextDate = parseFullDateInput(nextValue);
+
+            if (nextDate) {
+              setDate(nextDate);
+              setMonth(nextDate ? timelessDateStringToDate(nextDate) : undefined);
+              onChange?.(nextDate);
+            }
+          }}
+          onKeyDown={e => {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setOpen(true);
+            }
+          }}
+        />
+        <InputGroupAddon align="inline-end">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <InputGroupButton variant="ghost" size="icon-xs" aria-label="Select date">
+                <CalendarIcon />
+                <span className="sr-only">Select date</span>
+              </InputGroupButton>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto overflow-hidden p-0"
+              align="end"
+              alignOffset={-8}
+              sideOffset={10}
+            >
+              <Calendar
+                mode="single"
+                selected={date ? timelessDateStringToDate(date) : undefined}
+                month={month}
+                onMonthChange={setMonth}
+                onSelect={(date?: Date | null) => {
+                  const newDate = date
+                    ? (format(date, 'yyyy-MM-dd') as TimelessDateString)
+                    : undefined;
+                  setValue(newDate ?? '');
+                  setDate(newDate);
+                  onChange?.(newDate ?? null);
+                  setOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+        </InputGroupAddon>
+      </InputGroup>
+      {invalidStructure ? (
+        <p id={invalidMessageId} className="text-destructive text-xs">
+          Date must use YYYY-MM-DD format.
+        </p>
+      ) : null}
     </div>
   );
 }

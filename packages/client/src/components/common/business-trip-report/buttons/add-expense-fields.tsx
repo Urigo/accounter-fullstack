@@ -1,10 +1,8 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
-import { Controller, type Control } from 'react-hook-form';
+import { type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import {
   AttendeesByBusinessTripDocument,
   Currency,
@@ -12,7 +10,8 @@ import {
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';
-import { CurrencyInput } from '../../index.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
+import { CurrencyInput, DatePickerInput } from '../../index.js';
 
 export type AddBusinessTripExpenseInput = Omit<
   AddBusinessTripTravelAndSubsistenceExpenseInput,
@@ -67,7 +66,7 @@ export function AddExpenseFields({
 
   return (
     <>
-      <Controller
+      <FormField
         name="date"
         control={control}
         rules={{
@@ -79,35 +78,34 @@ export function AddExpenseFields({
             : undefined,
           pattern: {
             value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+            message: 'Date must be in format yyyy-mm-dd',
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <DatePickerInput
-            data-autofocus
-            {...field}
-            onChange={(date?: Date | string | null): void => {
-              const newDate = date
-                ? typeof date === 'string'
-                  ? date
-                  : format(date, 'yyyy-MM-dd')
-                : undefined;
-              if (newDate !== field.value) field.onChange(newDate);
-            }}
-            value={field.value ? new Date(field.value) : undefined}
-            error={fieldState.error?.message}
-            label="Date"
-            popoverProps={{ withinPortal: true }}
-          />
+          <FormItem>
+            <FormLabel htmlFor="expense-date">Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="expense-date"
+                data-autofocus
+                value={field.value ?? undefined}
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
-      <Controller
+      <FormField
         name="valueDate"
         control={control}
         rules={{
           pattern: {
             value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+            message: 'Date must be in format yyyy-mm-dd',
           },
           min: ledgerLock
             ? {
@@ -117,28 +115,27 @@ export function AddExpenseFields({
             : undefined,
         }}
         render={({ field, fieldState }): ReactElement => (
-          <DatePickerInput
-            {...field}
-            onChange={(date?: Date | string | null): void => {
-              const newDate = date
-                ? typeof date === 'string'
-                  ? date
-                  : format(date, 'yyyy-MM-dd')
-                : undefined;
-              if (newDate !== field.value) field.onChange(newDate);
-            }}
-            value={field.value ? new Date(field.value) : undefined}
-            error={fieldState.error?.message}
-            label="Value Date"
-            popoverProps={{ withinPortal: true }}
-          />
+          <FormItem>
+            <FormLabel htmlFor="expense-value-date">Value Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="expense-value-date"
+                value={field.value ?? undefined}
+                onChange={date => {
+                  if (date !== field.value) field.onChange(date);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
-      <Controller
+      <FormField
         name="amount"
         control={control}
         render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-          <Controller
+          <FormField
             name="currency"
             control={control}
             defaultValue={Currency.Ils}
@@ -160,22 +157,27 @@ export function AddExpenseFields({
           />
         )}
       />
-      <Controller
+      <FormField
         name="employeeBusinessId"
         control={control}
         render={({ field, fieldState }): ReactElement => (
-          <Select
-            {...field}
-            data={attendees}
-            value={field.value}
-            disabled={fetchingAttendees}
-            label="Attendee"
-            placeholder="Scroll to see all options"
-            maxDropdownHeight={160}
-            searchable
-            error={fieldState.error?.message}
-            withinPortal
-          />
+          <FormItem>
+            <FormLabel>Attendee</FormLabel>
+            <FormControl>
+              <Select
+                {...field}
+                data={attendees}
+                value={field.value}
+                disabled={fetchingAttendees}
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                withinPortal
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

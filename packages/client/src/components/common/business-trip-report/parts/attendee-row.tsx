@@ -1,9 +1,7 @@
 import { useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Card } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import {
   BusinessTripReportAttendeeRowFieldsFragmentDoc,
   type BusinessTripAttendeeUpdateInput,
@@ -12,7 +10,16 @@ import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
 import { useUpdateBusinessTripAttendee } from '../../../../hooks/use-update-business-trip-attendee.js';
 import { Button } from '../../../ui/button.js';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../../ui/form.js';
 import { ToggleExpansionButton, Tooltip } from '../../index.js';
+import { DatePickerInput } from '../../inputs/date-picker-input.js';
 import { DeleteAttendee } from '../buttons/delete-attendee.js';
 import { AccommodationsTable } from './accommodations-table.js';
 import { FlightsTable } from './flights-table.js';
@@ -46,7 +53,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
   const [isEditMode, setIsEditMode] = useState(false);
   const [isExtended, setIsExtended] = useState(false);
 
-  const { control, handleSubmit } = useForm<BusinessTripAttendeeUpdateInput>({
+  const form = useForm<BusinessTripAttendeeUpdateInput>({
     defaultValues: {
       businessTripId,
       attendeeId: attendee.id,
@@ -54,6 +61,7 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
       departureDate: attendee.departureDate,
     },
   });
+  const { control, handleSubmit } = form;
 
   const { updateBusinessTripAttendee, fetching: updatingInProcess } =
     useUpdateBusinessTripAttendee();
@@ -66,39 +74,40 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
   };
 
   return (
-    <>
+    <Form {...form}>
       <tr key={attendee.id}>
         <td>{attendee.name}</td>
         <td>
           {isEditMode ? (
             <form id={`form ${attendee.id}`} onSubmit={handleSubmit(onSubmit)}>
-              <Controller
+              <FormField
                 name="arrivalDate"
                 control={control}
                 defaultValue={attendee.arrivalDate}
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
-                    message: 'Date must be im format yyyy-mm-dd',
+                    message: 'Date must be in format yyyy-mm-dd',
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <DatePickerInput
-                    {...field}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
-                    }}
-                    data-autofocus
-                    value={field.value ? new Date(field.value) : undefined}
-                    error={fieldState.error?.message}
-                    label="Arrival"
-                    popoverProps={{ withinPortal: true }}
-                  />
+                  <FormItem className="h-min">
+                    <FormLabel className="sr-only" htmlFor={`arrival-date-${attendee.id}`}>
+                      Arrival
+                    </FormLabel>
+                    <FormControl>
+                      <DatePickerInput
+                        id={`arrival-date-${attendee.id}`}
+                        data-autofocus
+                        value={field.value ?? undefined}
+                        onChange={date => {
+                          if (date !== field.value) field.onChange(date);
+                        }}
+                        aria-invalid={!!fieldState.error}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </form>
@@ -108,32 +117,33 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
         </td>
         <td>
           {isEditMode ? (
-            <Controller
+            <FormField
               name="departureDate"
               control={control}
               defaultValue={attendee.departureDate}
               rules={{
                 pattern: {
                   value: TIMELESS_DATE_REGEX,
-                  message: 'Date must be im format yyyy-mm-dd',
+                  message: 'Date must be in format yyyy-mm-dd',
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <DatePickerInput
-                  {...field}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={field.value ? new Date(field.value) : undefined}
-                  error={fieldState.error?.message}
-                  label="Departure"
-                  popoverProps={{ withinPortal: true }}
-                />
+                <FormItem className="h-min">
+                  <FormLabel className="sr-only" htmlFor={`departure-date-${attendee.id}`}>
+                    Departure
+                  </FormLabel>
+                  <FormControl>
+                    <DatePickerInput
+                      id={`departure-date-${attendee.id}`}
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
           ) : (
@@ -207,6 +217,6 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
           </td>
         </tr>
       )}
-    </>
+    </Form>
   );
 };

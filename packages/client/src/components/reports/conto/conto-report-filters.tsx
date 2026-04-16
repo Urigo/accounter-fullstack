@@ -1,10 +1,8 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import {
@@ -15,6 +13,7 @@ import {
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
+import { DatePickerInput } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -23,7 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '../../ui/dialog.js';
-import { Label } from '../../ui/label.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Switch } from '../../ui/switch.js';
 
 export type ContoReportFiltersType = BusinessTransactionsFilter & {
@@ -41,17 +40,14 @@ function ContoReportFilterForm({
   setFilter,
   closeModal,
 }: ContoReportFilterFormProps): ReactElement {
-  const [isShowZeroedAccounts, setIsShowZeroedAccounts] = useState<boolean>(
-    filter.isShowZeroedAccounts ?? false,
-  );
-  const { control, handleSubmit } = useForm<ContoReportFiltersType>({
+  const form = useForm<ContoReportFiltersType>({
     defaultValues: { ...filter },
   });
+  const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
   const { userContext } = useContext(UserContext);
 
   const onSubmit: SubmitHandler<ContoReportFiltersType> = data => {
-    data.isShowZeroedAccounts = isShowZeroedAccounts ?? false;
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
     if (data.toDate?.trim() === '') data.toDate = undefined;
     setFilter(data);
@@ -66,114 +62,132 @@ function ContoReportFilterForm({
   return (
     <>
       {businessesLoading ? <div>Loading...</div> : <div />}
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
-        <Controller
-          name="ownerIds"
-          control={control}
-          defaultValue={undefined}
-          render={({ field, fieldState }): ReactElement => (
-            <MultiSelect
-              {...field}
-              data={businesses}
-              value={
-                field.value ??
-                (userContext?.context.adminBusinessId
-                  ? [userContext?.context.adminBusinessId]
-                  : undefined)
-              }
-              disabled={businessesLoading}
-              label="Owners"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="fromDate"
-          control={control}
-          defaultValue={filter.fromDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <DatePickerInput
-              {...field}
-              onChange={(date?: Date | string | null): void => {
-                const newDate = date
-                  ? typeof date === 'string'
-                    ? date
-                    : format(date, 'yyyy-MM-dd')
-                  : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              value={field.value ? new Date(field.value) : undefined}
-              label="From Date"
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          name="toDate"
-          control={control}
-          defaultValue={filter.toDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <DatePickerInput
-              {...field}
-              onChange={(date?: Date | string | null): void => {
-                const newDate = date
-                  ? typeof date === 'string'
-                    ? date
-                    : format(date, 'yyyy-MM-dd')
-                  : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              value={field.value ? new Date(field.value) : undefined}
-              label="To Date"
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <div className="flex items-center space-x-2">
-          <Switch
-            checked={isShowZeroedAccounts ?? false}
-            onCheckedChange={(): void => setIsShowZeroedAccounts(value => !value)}
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+          <FormField
+            name="ownerIds"
+            control={control}
+            defaultValue={undefined}
+            render={({ field, fieldState }): ReactElement => (
+              <FormItem>
+                <FormLabel>Owners</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    {...field}
+                    data={businesses}
+                    value={
+                      field.value ??
+                      (userContext?.context.adminBusinessId
+                        ? [userContext?.context.adminBusinessId]
+                        : undefined)
+                    }
+                    disabled={businessesLoading}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Label htmlFor="enable-dnd">Show zeroed accounts</Label>
-        </div>
-        <div className="flex justify-center mt-5 gap-3">
-          <button
-            type="submit"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-          >
-            Filter
-          </button>
-          <button
-            type="button"
-            className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
-            onClick={clearFilter}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+          <FormField
+            name="fromDate"
+            control={control}
+            defaultValue={filter.fromDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be in format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <FormItem>
+                <FormLabel htmlFor="conto-from-date">From Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="conto-from-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
+                    }}
+                    value={field.value ?? undefined}
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="toDate"
+            control={control}
+            defaultValue={filter.toDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be in format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <FormItem>
+                <FormLabel htmlFor="conto-to-date">To Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="conto-to-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
+                    }}
+                    value={field.value ?? undefined}
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="isShowZeroedAccounts"
+            control={control}
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel htmlFor="conto-show-zeroed-accounts">Show zeroed accounts</FormLabel>
+                </div>
+                <FormControl>
+                  <Switch
+                    id="conto-show-zeroed-accounts"
+                    checked={field.value === true}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Filter
+            </button>
+            <button
+              type="button"
+              className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
+              onClick={clearFilter}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Form>
     </>
   );
 }

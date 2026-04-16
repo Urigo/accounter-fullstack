@@ -1,19 +1,17 @@
 import { useContext, useEffect, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { UserContext } from '../../../providers/user-provider.js';
-import { PopUpModal } from '../../common/index.js';
+import { DatePickerInput, PopUpModal } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../ui/form.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Switch } from '../../ui/switch.js';
 
 export type TrialBalanceReportFilters = BusinessTransactionsFilter & {
@@ -56,48 +54,58 @@ function TrialBalanceReportFilterForm({
       {businessesLoading ? <div>Loading...</div> : <div />}
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
-          <Controller
+          <FormField
             name="ownerIds"
             control={control}
             defaultValue={undefined}
             render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                data={businesses}
-                value={
-                  field.value ??
-                  (userContext?.context.adminBusinessId
-                    ? [userContext?.context.adminBusinessId]
-                    : undefined)
-                }
-                disabled={businessesLoading}
-                label="Owners"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
+              <FormItem>
+                <FormLabel>Owners</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    {...field}
+                    data={businesses}
+                    value={
+                      field.value ??
+                      (userContext?.context.adminBusinessId
+                        ? [userContext?.context.adminBusinessId]
+                        : undefined)
+                    }
+                    disabled={businessesLoading}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
-          <Controller
+          <FormField
             name="businessIDs"
             control={control}
             defaultValue={undefined}
             render={({ field, fieldState }): ReactElement => (
-              <MultiSelect
-                {...field}
-                data={businesses}
-                value={field.value ?? undefined}
-                disabled={businessesLoading}
-                label="Businesses"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-              />
+              <FormItem>
+                <FormLabel>Businesses</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    {...field}
+                    data={businesses}
+                    value={field.value ?? undefined}
+                    disabled={businessesLoading}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
-          <Controller
+          <FormField
             name="fromDate"
             control={control}
             defaultValue={filter.fromDate}
@@ -105,55 +113,53 @@ function TrialBalanceReportFilterForm({
               required: 'Required',
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                label="From Date"
-                error={fieldState.error?.message}
-                required
-                popoverProps={{ withinPortal: true }}
-              />
+              <FormItem>
+                <FormLabel htmlFor="trial-balance-from-date">From Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="trial-balance-from-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
+                    }}
+                    value={field.value ?? undefined}
+                    required
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
-          <Controller
+          <FormField
             name="toDate"
             control={control}
             defaultValue={filter.toDate}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (
-              <DatePickerInput
-                {...field}
-                onChange={(date?: Date | string | null): void => {
-                  const newDate = date
-                    ? typeof date === 'string'
-                      ? date
-                      : format(date, 'yyyy-MM-dd')
-                    : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                value={field.value ? new Date(field.value) : undefined}
-                label="To Date"
-                error={fieldState.error?.message}
-                required
-                popoverProps={{ withinPortal: true }}
-              />
+              <FormItem>
+                <FormLabel htmlFor="trial-balance-to-date">To Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="trial-balance-to-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
+                    }}
+                    value={field.value ?? undefined}
+                    required
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
           <FormField

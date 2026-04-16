@@ -11,9 +11,8 @@ import {
 import { format, sub } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { encodeFilters } from '@/router/routes.js';
 import { ChargeFilterType, ChargeSortByField, type ChargeFilter } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
@@ -28,6 +27,7 @@ import {
   PopUpModal,
   SelectTagItem,
 } from '../common/index.js';
+import { DatePickerInput } from '../common/inputs/date-picker-input.js';
 import { Button } from '../ui/button.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
 import { Input } from '../ui/input.js';
@@ -119,188 +119,210 @@ function ChargesFiltersForm({
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <SimpleGrid cols={2}>
-            <Controller
+            <FormField
               name="byOwners"
               control={control}
               defaultValue={filter.byOwners}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={financialEntities}
-                  value={field.value ?? []}
-                  disabled={financialEntitiesFetching}
-                  label="Owners"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Owners</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={financialEntities}
+                      value={field.value ?? []}
+                      disabled={financialEntitiesFetching}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="byBusinesses"
               control={control}
               defaultValue={filter.byBusinesses}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={financialEntities}
-                  value={field.value ?? []}
-                  disabled={financialEntitiesFetching}
-                  label="Financial Entities"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Financial Entities</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={financialEntities}
+                      value={field.value ?? []}
+                      disabled={financialEntitiesFetching}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="byTags"
               control={control}
               defaultValue={filter.byTags}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={tags}
-                  itemComponent={SelectTagItem}
-                  value={field.value ?? []}
-                  disabled={tagsFetching}
-                  label="Tags"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  withinPortal
-                  filter={(value, _, item) =>
-                    item.label?.toLowerCase().includes(value.toLowerCase().trim()) ||
-                    item.description?.toLowerCase().includes(value.toLowerCase().trim())
-                  }
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={tags}
+                      itemComponent={SelectTagItem}
+                      value={field.value ?? []}
+                      disabled={tagsFetching}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      withinPortal
+                      filter={(value, _, item) =>
+                        item.label?.toLowerCase().includes(value.toLowerCase().trim()) ||
+                        item.description?.toLowerCase().includes(value.toLowerCase().trim())
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="fromAnyDate"
               control={control}
               defaultValue={filter.fromAnyDate}
               rules={{
                 pattern: {
                   value: TIMELESS_DATE_REGEX,
-                  message: 'Date must be im format yyyy-mm-dd',
+                  message: 'Date must be in format yyyy-mm-dd',
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <DatePickerInput
-                  {...field}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={field.value ? new Date(field.value) : undefined}
-                  error={fieldState.error?.message}
-                  label="From Date"
-                  popoverProps={{ withinPortal: true }}
-                />
+                <FormItem className="h-min">
+                  <FormLabel htmlFor="from-any-date">From Date</FormLabel>
+                  <FormControl>
+                    <DatePickerInput
+                      id="from-any-date"
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="toAnyDate"
               control={control}
               defaultValue={filter.toAnyDate}
               rules={{
                 pattern: {
                   value: TIMELESS_DATE_REGEX,
-                  message: 'Date must be im format yyyy-mm-dd',
+                  message: 'Date must be in format yyyy-mm-dd',
                 },
               }}
               render={({ field, fieldState }): ReactElement => (
-                <DatePickerInput
-                  {...field}
-                  onChange={(date?: Date | string | null): void => {
-                    const newDate = date
-                      ? typeof date === 'string'
-                        ? date
-                        : format(date, 'yyyy-MM-dd')
-                      : undefined;
-                    if (newDate !== field.value) field.onChange(newDate);
-                  }}
-                  value={field.value ? new Date(field.value) : undefined}
-                  error={fieldState.error?.message}
-                  label="To Date"
-                  popoverProps={{ withinPortal: true }}
-                />
+                <FormItem className="h-min">
+                  <FormLabel htmlFor="to-any-date">To Date</FormLabel>
+                  <FormControl>
+                    <DatePickerInput
+                      id="to-any-date"
+                      value={field.value ?? undefined}
+                      onChange={date => {
+                        if (date !== field.value) field.onChange(date);
+                      }}
+                      aria-invalid={!!fieldState.error}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="chargesType"
               control={control}
               defaultValue={filter.chargesType}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={chargesTypeFilterOptions}
-                  value={field.value ?? ChargeFilterType.All}
-                  disabled={financialEntitiesFetching}
-                  label="Charge Type"
-                  placeholder="Filter income/expense"
-                  maxDropdownHeight={160}
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Charge Type</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...field}
+                      data={chargesTypeFilterOptions}
+                      value={field.value ?? ChargeFilterType.All}
+                      disabled={financialEntitiesFetching}
+                      placeholder="Filter income/expense"
+                      maxDropdownHeight={160}
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="sortBy.field"
               control={control}
               defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
-              render={({ field, fieldState }): ReactElement => (
-                <Select
-                  {...field}
-                  data={fieldsToSort}
-                  label="Field to sort by"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                  rightSectionProps={{ style: { width: '5rem' } }}
-                  withinPortal
-                  rightSection={
-                    <div className="flex flex-row items-center gap-1">
-                      <Switch
-                        defaultChecked={filter.sortBy?.asc ?? false}
-                        checked={asc ?? false}
-                        disabled={!enableAsc}
-                        onCheckedChange={setAsc}
-                      />
-                      <span className="text-xs">{asc ? 'ASC' : 'DESC'}</span>
-                    </div>
-                  }
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Field to sort by</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...field}
+                      data={fieldsToSort}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      rightSectionProps={{ style: { width: '5rem' } }}
+                      withinPortal
+                      rightSection={
+                        <div className="flex flex-row items-center gap-1">
+                          <Switch
+                            defaultChecked={filter.sortBy?.asc ?? false}
+                            checked={asc ?? false}
+                            disabled={!enableAsc}
+                            onCheckedChange={setAsc}
+                          />
+                          <span className="text-xs">{asc ? 'ASC' : 'DESC'}</span>
+                        </div>
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
-            <Controller
+            <FormField
               name="accountantStatus"
               control={control}
               defaultValue={filter.accountantStatus}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  value={field.value ?? []}
-                  itemComponent={AccountantStatusMultiSelectItem}
-                  data={Object.values(accountantApprovalOptions)}
-                  disabled={financialEntitiesFetching}
-                  label="Accountant Status"
-                  placeholder="All"
-                  maxDropdownHeight={160}
-                  error={fieldState.error?.message}
-                  withinPortal
-                />
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Accountant Status</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      value={field.value ?? []}
+                      itemComponent={AccountantStatusMultiSelectItem}
+                      data={Object.values(accountantApprovalOptions)}
+                      disabled={financialEntitiesFetching}
+                      placeholder="All"
+                      maxDropdownHeight={160}
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
             <FormField

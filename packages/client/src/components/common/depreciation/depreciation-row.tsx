@@ -1,10 +1,9 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Check, Edit } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import {
   AllDepreciationCategoriesDocument,
   DepreciationRecordRowFieldsFragmentDoc,
@@ -18,7 +17,8 @@ import {
 } from '../../../helpers/index.js';
 import { useUpdateDepreciationRecord } from '../../../hooks/use-update-depreciation-record.js';
 import { Button } from '../../ui/button.js';
-import { CurrencyInput, Tooltip } from '../index.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
+import { CurrencyInput, DatePickerInput, Tooltip } from '../index.js';
 import { DeleteDepreciationRecord } from './delete-depreciation-record.js';
 import { depreciationTypes } from './index.js';
 
@@ -63,15 +63,16 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
     pause: true,
   });
 
-  const {
-    control,
-    handleSubmit,
-    formState: { dirtyFields },
-  } = useForm<UpdateDepreciationRecordInput>({
+  const form = useForm<UpdateDepreciationRecordInput>({
     defaultValues: {
       id: depreciationRecord.id,
     },
   });
+  const {
+    control,
+    handleSubmit,
+    formState: { dirtyFields },
+  } = form;
 
   const { updateDepreciationRecord, fetching: updatingInProcess } = useUpdateDepreciationRecord();
 
@@ -97,175 +98,186 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
   }, [isEditMode, categoriesData, fetchCategories]);
 
   return (
-    <tr key={depreciationRecord.id}>
-      <td>
-        <form id={`form ${depreciationRecord.id}`} onSubmit={handleSubmit(onSubmit)}>
+    <Form {...form}>
+      <tr key={depreciationRecord.id}>
+        <td>
+          <form id={`form ${depreciationRecord.id}`} onSubmit={handleSubmit(onSubmit)}>
+            {isEditMode ? (
+              <FormField
+                name="amount"
+                control={control}
+                render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
+                  <FormField
+                    name="currency"
+                    control={control}
+                    render={({
+                      field: currencyCodeField,
+                      fieldState: currencyCodeFieldState,
+                    }): ReactElement => (
+                      <CurrencyInput
+                        {...amountField}
+                        defaultValue={
+                          depreciationRecord.amount?.raw ??
+                          depreciationRecord.charge.totalAmount?.raw
+                        }
+                        value={amountField.value ?? undefined}
+                        error={
+                          amountFieldState.error?.message || currencyCodeFieldState.error?.message
+                        }
+                        label="Amount"
+                        currencyCodeProps={{
+                          ...currencyCodeField,
+                          label: 'Currency',
+                          defaultValue:
+                            depreciationRecord.amount?.currency ??
+                            depreciationRecord.charge.totalAmount?.currency,
+                        }}
+                      />
+                    )}
+                  />
+                )}
+              />
+            ) : (
+              <div>
+                {depreciationRecord.amount?.formatted ??
+                  depreciationRecord.charge.totalAmount?.formatted}
+              </div>
+            )}
+          </form>
+        </td>
+        <td>
+          <div className="flex flex-col gap-2 justify-center">
+            {isEditMode ? (
+              <FormField
+                name="activationDate"
+                control={control}
+                defaultValue={depreciationRecord.activationDate}
+                rules={{
+                  pattern: {
+                    value: TIMELESS_DATE_REGEX,
+                    message: 'Date must be in format yyyy-mm-dd',
+                  },
+                }}
+                render={({ field, fieldState }): ReactElement => (
+                  <FormItem>
+                    <FormLabel htmlFor={`activation-date-${depreciationRecord.id}`}>
+                      Activation Date
+                    </FormLabel>
+                    <FormControl>
+                      <DatePickerInput
+                        id={`activation-date-${depreciationRecord.id}`}
+                        form={`form ${depreciationRecord.id}`}
+                        value={field.value ?? undefined}
+                        onChange={date => {
+                          if (date !== field.value) field.onChange(date);
+                        }}
+                        aria-invalid={!!fieldState.error}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>
+            )}
+          </div>
+        </td>
+        <td>
           {isEditMode ? (
-            <Controller
-              name="amount"
+            <FormField
+              name="categoryId"
               control={control}
-              render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-                <Controller
-                  name="currency"
-                  control={control}
-                  render={({
-                    field: currencyCodeField,
-                    fieldState: currencyCodeFieldState,
-                  }): ReactElement => (
-                    <CurrencyInput
-                      {...amountField}
-                      defaultValue={
-                        depreciationRecord.amount?.raw ?? depreciationRecord.charge.totalAmount?.raw
-                      }
-                      value={amountField.value ?? undefined}
-                      error={
-                        amountFieldState.error?.message || currencyCodeFieldState.error?.message
-                      }
-                      label="Amount"
-                      currencyCodeProps={{
-                        ...currencyCodeField,
-                        label: 'Currency',
-                        defaultValue:
-                          depreciationRecord.amount?.currency ??
-                          depreciationRecord.charge.totalAmount?.currency,
-                      }}
+              render={({ field, fieldState }): ReactElement => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...field}
+                      form={`form ${depreciationRecord.id}`}
+                      disabled={fetchingCategories}
+                      data={categories ?? []}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                      withinPortal
                     />
-                  )}
-                />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
           ) : (
             <div>
-              {depreciationRecord.amount?.formatted ??
-                depreciationRecord.charge.totalAmount?.formatted}
+              {depreciationRecord.category.name} ({depreciationRecord.category.percentage}%)
             </div>
           )}
-        </form>
-      </td>
-      <td>
-        <div className="flex flex-col gap-2 justify-center">
+        </td>
+        <td>
           {isEditMode ? (
-            <Controller
-              name="activationDate"
+            <FormField
+              name="type"
               control={control}
-              defaultValue={depreciationRecord.activationDate}
-              rules={{
-                pattern: {
-                  value: TIMELESS_DATE_REGEX,
-                  message: 'Date must be im format yyyy-mm-dd',
-                },
-              }}
-              render={({ field: { value, ...field }, fieldState }): ReactElement => {
-                const date = value ? new Date(value) : undefined;
-                return (
-                  <DatePickerInput
-                    {...field}
-                    form={`form ${depreciationRecord.id}`}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== value) field.onChange(newDate);
-                    }}
-                    value={date}
-                    label="Activation Date"
-                    error={fieldState.error?.message}
-                    popoverProps={{ withinPortal: true }}
-                  />
-                );
-              }}
+              render={({ field, fieldState }): ReactElement => (
+                <FormItem>
+                  <FormLabel>Type</FormLabel>
+                  <FormControl>
+                    <Select
+                      {...field}
+                      form={`form ${depreciationRecord.id}`}
+                      data={depreciationTypes}
+                      value={field.value}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           ) : (
-            <div>{format(new Date(depreciationRecord.activationDate), 'dd/MM/yy')}</div>
+            <div>{depreciationRecord.type}</div>
           )}
-        </div>
-      </td>
-      <td>
-        {isEditMode ? (
-          <Controller
-            name="categoryId"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                form={`form ${depreciationRecord.id}`}
-                disabled={fetchingCategories}
-                data={categories ?? []}
-                label="Category"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
-        ) : (
-          <div>
-            {depreciationRecord.category.name} ({depreciationRecord.category.percentage}%)
-          </div>
-        )}
-      </td>
-      <td>
-        {isEditMode ? (
-          <Controller
-            name="type"
-            control={control}
-            render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                form={`form ${depreciationRecord.id}`}
-                data={depreciationTypes}
-                value={field.value}
-                label="Type"
-                placeholder="Scroll to see all options"
-                maxDropdownHeight={160}
-                searchable
-                error={fieldState.error?.message}
-                withinPortal
-              />
-            )}
-          />
-        ) : (
-          <div>{depreciationRecord.type}</div>
-        )}
-      </td>
-      <td>
-        <Tooltip content="Edit">
-          <Button
-            disabled={updatingInProcess || fetchingCategories}
-            variant={isEditMode ? 'default' : 'outline'}
-            size="icon"
-            className="size-7.5"
-            onClick={(event): void => {
-              event.stopPropagation();
-              setIsEditMode(curr => !curr);
-            }}
-          >
-            <Edit className="size-5" />
-          </Button>
-        </Tooltip>
-        {isEditMode && (
-          <Tooltip content="Confirm Changes">
+        </td>
+        <td>
+          <Tooltip content="Edit">
             <Button
-              type="submit"
-              form={`form ${depreciationRecord.id}`}
-              variant="outline"
+              disabled={updatingInProcess || fetchingCategories}
+              variant={isEditMode ? 'default' : 'outline'}
               size="icon"
-              className="size-7.5 text-green-500"
+              className="size-7.5"
+              onClick={(event): void => {
+                event.stopPropagation();
+                setIsEditMode(curr => !curr);
+              }}
             >
-              <Check className="size-5" />
+              <Edit className="size-5" />
             </Button>
           </Tooltip>
-        )}
+          {isEditMode && (
+            <Tooltip content="Confirm Changes">
+              <Button
+                type="submit"
+                form={`form ${depreciationRecord.id}`}
+                variant="outline"
+                size="icon"
+                className="size-7.5 text-green-500"
+              >
+                <Check className="size-5" />
+              </Button>
+            </Tooltip>
+          )}
 
-        <DeleteDepreciationRecord
-          depreciationRecordId={depreciationRecord.id}
-          onDelete={onChange}
-        />
-      </td>
-    </tr>
+          <DeleteDepreciationRecord
+            depreciationRecordId={depreciationRecord.id}
+            onDelete={onChange}
+          />
+        </td>
+      </tr>
+    </Form>
   );
 };

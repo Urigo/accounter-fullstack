@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Indicator, SimpleGrid } from '@mantine/core';
-import { DatePickerInput } from '@mantine/dates';
 import { useGetAdminBusinesses } from '@/hooks/use-get-admin-businesses.js';
 import { useGetFinancialAccounts } from '@/hooks/use-get-financial-accounts.js';
 import { encodeFilters } from '@/router/routes.js';
 import type { BalanceReportScreenQueryVariables } from '../../../../gql/graphql.js';
-import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
+import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
-import { ComboBox, MultiSelect, PopUpModal } from '../../../common/index.js';
+import { ComboBox, DatePickerInput, MultiSelect, PopUpModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import {
   Form,
@@ -156,22 +154,17 @@ function BalanceReportFiltersForm({
           <FormField
             control={form.control}
             name="fromDate"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>From Date</FormLabel>
+                <FormLabel htmlFor="balance-report-from-date">From Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
-                    {...field}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    id="balance-report-from-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
-                    value={field.value ? new Date(field.value) : undefined}
-                    popoverProps={{ withinPortal: true }}
+                    value={(field.value as TimelessDateString) ?? undefined}
+                    aria-invalid={!!fieldState.error}
                   />
                 </FormControl>
                 <FormMessage />
@@ -181,22 +174,17 @@ function BalanceReportFiltersForm({
           <FormField
             control={form.control}
             name="toDate"
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <FormItem>
-                <FormLabel>To Date</FormLabel>
+                <FormLabel htmlFor="balance-report-to-date">To Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
-                    {...field}
-                    onChange={(date?: Date | string | null): void => {
-                      const newDate = date
-                        ? typeof date === 'string'
-                          ? date
-                          : format(date, 'yyyy-MM-dd')
-                        : undefined;
-                      if (newDate !== field.value) field.onChange(newDate);
+                    id="balance-report-to-date"
+                    onChange={date => {
+                      if (date !== field.value) field.onChange(date);
                     }}
-                    value={field.value ? new Date(field.value) : undefined}
-                    popoverProps={{ withinPortal: true }}
+                    value={(field.value as TimelessDateString) ?? undefined}
+                    aria-invalid={!!fieldState.error}
                   />
                 </FormControl>
                 <FormMessage />
