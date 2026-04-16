@@ -96,7 +96,6 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                     <FormLabel className="sr-only">Arrival</FormLabel>
                     <FormControl>
                       <DatePickerInput
-                        aria-label="Arrival"
                         data-autofocus
                         value={field.value ? new Date(field.value) : undefined}
                         onChange={(date?: Date | null): void => {
@@ -132,7 +131,6 @@ export const AttendeeRow = ({ data, businessTripId, onChange }: Props): ReactEle
                   <FormLabel className="sr-only">Departure</FormLabel>
                   <FormControl>
                     <DatePickerInput
-                      aria-label="Departure"
                       value={field.value ? new Date(field.value) : undefined}
                       onChange={(date?: Date | null): void => {
                         const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;

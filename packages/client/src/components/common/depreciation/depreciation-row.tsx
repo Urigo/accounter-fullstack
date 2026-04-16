@@ -166,7 +166,6 @@ export const DepreciationRow = ({ data, onChange }: Props): ReactElement => {
                     </label>
                     <DatePickerInput
                       id={`activation-date-${depreciationRecord.id}`}
-                      aria-label="Activation Date"
                       form={`form ${depreciationRecord.id}`}
                       value={date}
                       onChange={(date?: Date | null): void => {

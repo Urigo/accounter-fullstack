@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
-import { Controller, type Control } from 'react-hook-form';
+import { type Control } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
@@ -11,6 +11,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { UserContext } from '../../../../providers/user-provider.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
 import { CurrencyInput, DatePickerInput } from '../../index.js';
 
 export type AddBusinessTripExpenseInput = Omit<
@@ -66,7 +67,7 @@ export function AddExpenseFields({
 
   return (
     <>
-      <Controller
+      <FormField
         name="date"
         control={control}
         rules={{
@@ -82,25 +83,25 @@ export function AddExpenseFields({
           },
         }}
         render={({ field, fieldState }): ReactElement => (
-          <div>
-            <label htmlFor="expense-date" className="text-sm font-medium">
-              Date
-            </label>
-            <DatePickerInput
-              id="expense-date"
-              data-autofocus
-              value={field.value ? new Date(field.value) : undefined}
-              onChange={(date?: Date | null): void => {
-                const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              aria-invalid={!!fieldState.error}
-            />
-            {fieldState.error && <p className="text-sm text-red-500">{fieldState.error.message}</p>}
-          </div>
+          <FormItem>
+            <FormLabel htmlFor="expense-date">Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="expense-date"
+                data-autofocus
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={(date?: Date | null): void => {
+                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
-      <Controller
+      <FormField
         name="valueDate"
         control={control}
         rules={{
@@ -116,28 +117,28 @@ export function AddExpenseFields({
             : undefined,
         }}
         render={({ field, fieldState }): ReactElement => (
-          <div>
-            <label htmlFor="expense-value-date" className="text-sm font-medium">
-              Value Date
-            </label>
-            <DatePickerInput
-              id="expense-value-date"
-              value={field.value ? new Date(field.value) : undefined}
-              onChange={(date?: Date | null): void => {
-                const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                if (newDate !== field.value) field.onChange(newDate);
-              }}
-              aria-invalid={!!fieldState.error}
-            />
-            {fieldState.error && <p className="text-sm text-red-500">{fieldState.error.message}</p>}
-          </div>
+          <FormItem>
+            <FormLabel htmlFor="expense-value-date">Value Date</FormLabel>
+            <FormControl>
+              <DatePickerInput
+                id="expense-value-date"
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={(date?: Date | null): void => {
+                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                  if (newDate !== field.value) field.onChange(newDate);
+                }}
+                aria-invalid={!!fieldState.error}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
         )}
       />
-      <Controller
+      <FormField
         name="amount"
         control={control}
         render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
-          <Controller
+          <FormField
             name="currency"
             control={control}
             defaultValue={Currency.Ils}
@@ -159,22 +160,25 @@ export function AddExpenseFields({
           />
         )}
       />
-      <Controller
+      <FormField
         name="employeeBusinessId"
         control={control}
         render={({ field, fieldState }): ReactElement => (
-          <Select
-            {...field}
-            data={attendees}
-            value={field.value}
-            disabled={fetchingAttendees}
-            label="Attendee"
-            placeholder="Scroll to see all options"
-            maxDropdownHeight={160}
-            searchable
-            error={fieldState.error?.message}
-            withinPortal
-          />
+          <FormItem>
+            <FormLabel>Attendee</FormLabel>
+            <Select
+              {...field}
+              data={attendees}
+              value={field.value}
+              disabled={fetchingAttendees}
+              placeholder="Scroll to see all options"
+              maxDropdownHeight={160}
+              searchable
+              error={fieldState.error?.message}
+              withinPortal
+            />
+            <FormMessage />
+          </FormItem>
         )}
       />
     </>

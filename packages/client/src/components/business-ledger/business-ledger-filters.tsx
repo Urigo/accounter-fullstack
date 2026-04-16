@@ -2,7 +2,7 @@ import { useContext, useEffect, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import { type BusinessTransactionsFilter } from '../../gql/graphql.js';
@@ -13,6 +13,7 @@ import { UserContext } from '../../providers/user-provider.js';
 import { PopUpModal } from '../common/index.js';
 import { DatePickerInput } from '../common/inputs/date-picker-input.js';
 import { Button } from '../ui/button.js';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
 
 interface BusinessLedgerRecordsFilterFormProps {
   filter: BusinessTransactionsFilter;
@@ -27,9 +28,10 @@ function BusinessLedgerRecordsFilterForm({
   closeModal,
   single = false,
 }: BusinessLedgerRecordsFilterFormProps): ReactElement {
-  const { control, handleSubmit } = useForm<BusinessTransactionsFilter>({
+  const form = useForm<BusinessTransactionsFilter>({
     defaultValues: { ...filter },
   });
+  const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
 
   const { userContext } = useContext(UserContext);
@@ -49,155 +51,162 @@ function BusinessLedgerRecordsFilterForm({
   return (
     <>
       {businessesLoading ? <div>Loading...</div> : <div />}
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {!single && (
-          <>
-            <Controller
-              name="ownerIds"
-              control={control}
-              defaultValue={filter.ownerIds}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={businesses}
-                  value={
-                    field.value ??
-                    (userContext?.context.adminBusinessId
-                      ? [userContext.context.adminBusinessId]
-                      : undefined)
-                  }
-                  disabled={businessesLoading}
-                  label="Owners"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-            <Controller
-              name="businessIDs"
-              control={control}
-              defaultValue={filter.businessIDs}
-              render={({ field, fieldState }): ReactElement => (
-                <MultiSelect
-                  {...field}
-                  data={businesses}
-                  value={field.value ?? undefined}
-                  disabled={businessesLoading}
-                  label="Businesses"
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-          </>
-        )}
-        <Controller
-          name="fromDate"
-          control={control}
-          defaultValue={filter.fromDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <div>
-              <label htmlFor="from-date" className="text-sm font-medium">
-                From Date
-              </label>
-              <DatePickerInput
-                id="from-date"
-                value={field.value ? new Date(field.value) : undefined}
-                onChange={(date?: Date | null): void => {
-                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                aria-invalid={!!fieldState.error}
+      <Form {...form}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          {!single && (
+            <>
+              <FormField
+                name="ownerIds"
+                control={control}
+                defaultValue={filter.ownerIds}
+                render={({ field, fieldState }): ReactElement => (
+                  <FormItem>
+                    <FormLabel>Owners</FormLabel>
+                    <MultiSelect
+                      {...field}
+                      data={businesses}
+                      value={
+                        field.value ??
+                        (userContext?.context.adminBusinessId
+                          ? [userContext.context.adminBusinessId]
+                          : undefined)
+                      }
+                      disabled={businessesLoading}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {fieldState.error && (
-                <p className="text-sm text-red-500">{fieldState.error.message}</p>
-              )}
-            </div>
-          )}
-        />
-        <Controller
-          name="toDate"
-          control={control}
-          defaultValue={filter.toDate}
-          rules={{
-            pattern: {
-              value: TIMELESS_DATE_REGEX,
-              message: 'Date must be im format yyyy-mm-dd',
-            },
-          }}
-          render={({ field, fieldState }): ReactElement => (
-            <div>
-              <label htmlFor="to-date" className="text-sm font-medium">
-                To Date
-              </label>
-              <DatePickerInput
-                id="to-date"
-                value={field.value ? new Date(field.value) : undefined}
-                onChange={(date?: Date | null): void => {
-                  const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                  if (newDate !== field.value) field.onChange(newDate);
-                }}
-                aria-invalid={!!fieldState.error}
+              <FormField
+                name="businessIDs"
+                control={control}
+                defaultValue={filter.businessIDs}
+                render={({ field, fieldState }): ReactElement => (
+                  <FormItem>
+                    <FormLabel>Businesses</FormLabel>
+                    <MultiSelect
+                      {...field}
+                      data={businesses}
+                      value={field.value ?? undefined}
+                      disabled={businessesLoading}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      error={fieldState.error?.message}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {fieldState.error && (
-                <p className="text-sm text-red-500">{fieldState.error.message}</p>
-              )}
-            </div>
+            </>
           )}
-        />
-        {!single && (
-          <Controller
-            name="type"
+          <FormField
+            name="fromDate"
             control={control}
-            defaultValue={null}
+            defaultValue={filter.fromDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be im format yyyy-mm-dd',
+              },
+            }}
             render={({ field, fieldState }): ReactElement => (
-              <Select
-                {...field}
-                onChange={value => field.onChange(value === 'NULL' ? null : value)}
-                data={[
-                  { value: 'NULL', label: 'All' },
-                  { value: 'BUSINESS', label: 'Business' },
-                  { value: 'TAX_CATEGORY', label: 'Tax Category' },
-                ]}
-                error={fieldState.error?.message}
-                label="Type"
-              />
+              <FormItem>
+                <FormLabel htmlFor="from-date">From Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="from-date"
+                    value={field.value ? new Date(field.value) : undefined}
+                    onChange={(date?: Date | null): void => {
+                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
           />
-        )}
-        <div className="flex justify-center mt-5 gap-3">
-          <button
-            type="submit"
-            className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
-          >
-            Filter
-          </button>
-          <button
-            type="button"
-            className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
-            onClick={clearFilter}
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
-            onClick={closeModal}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+          <FormField
+            name="toDate"
+            control={control}
+            defaultValue={filter.toDate}
+            rules={{
+              pattern: {
+                value: TIMELESS_DATE_REGEX,
+                message: 'Date must be im format yyyy-mm-dd',
+              },
+            }}
+            render={({ field, fieldState }): ReactElement => (
+              <FormItem>
+                <FormLabel htmlFor="to-date">To Date</FormLabel>
+                <FormControl>
+                  <DatePickerInput
+                    id="to-date"
+                    value={field.value ? new Date(field.value) : undefined}
+                    onChange={(date?: Date | null): void => {
+                      const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                      if (newDate !== field.value) field.onChange(newDate);
+                    }}
+                    aria-invalid={!!fieldState.error}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {!single && (
+            <FormField
+              name="type"
+              control={control}
+              defaultValue={null}
+              render={({ field, fieldState }): ReactElement => (
+                <FormItem>
+                  <FormLabel>Type</FormLabel>
+                  <Select
+                    {...field}
+                    onChange={value => field.onChange(value === 'NULL' ? null : value)}
+                    data={[
+                      { value: 'NULL', label: 'All' },
+                      { value: 'BUSINESS', label: 'Business' },
+                      { value: 'TAX_CATEGORY', label: 'Tax Category' },
+                    ]}
+                    error={fieldState.error?.message}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+          <div className="flex justify-center mt-5 gap-3">
+            <button
+              type="submit"
+              className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
+            >
+              Filter
+            </button>
+            <button
+              type="button"
+              className="text-white bg-orange-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-orange-600 rounded-sm text-lg"
+              onClick={clearFilter}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="text-white bg-rose-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-rose-600 rounded-sm text-lg"
+              onClick={closeModal}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </Form>
     </>
   );
 }

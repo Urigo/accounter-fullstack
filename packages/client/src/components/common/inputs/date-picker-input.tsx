@@ -45,8 +45,15 @@ export function DatePickerInput({
   const [value, setValue] = React.useState(formatDate(date));
 
   useEffect(() => {
-    onChange?.(date ?? null);
-  }, [date, onChange]);
+    const externalDateTime = valueDate?.getTime() ?? null;
+    const internalDateTime = date?.getTime() ?? null;
+
+    if (externalDateTime !== internalDateTime) {
+      setDate(valueDate);
+      setMonth(valueDate);
+      setValue(formatDate(valueDate));
+    }
+  }, [valueDate, date]);
 
   return (
     <InputGroup>
@@ -57,11 +64,21 @@ export function DatePickerInput({
         value={value}
         placeholder="Select date"
         onChange={e => {
-          const date = new Date(e.target.value);
-          setValue(e.target.value);
-          if (isValidDate(date)) {
-            setDate(date);
-            setMonth(date);
+          const nextValue = e.target.value;
+          const nextDate = new Date(nextValue);
+
+          setValue(nextValue);
+
+          if (nextValue.trim() === '') {
+            setDate(undefined);
+            onChange?.(null);
+            return;
+          }
+
+          if (isValidDate(nextDate)) {
+            setDate(nextDate);
+            setMonth(nextDate);
+            onChange?.(nextDate);
           }
         }}
         onKeyDown={e => {
@@ -97,6 +114,8 @@ export function DatePickerInput({
               onMonthChange={setMonth}
               onSelect={(date?: Date | null) => {
                 setValue(formatDate(date ?? undefined));
+                setDate(date ?? undefined);
+                onChange?.(date ?? null);
                 setOpen(false);
               }}
             />

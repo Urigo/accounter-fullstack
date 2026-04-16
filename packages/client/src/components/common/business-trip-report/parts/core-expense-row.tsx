@@ -14,7 +14,7 @@ import {
 } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/consts.js';
-import { FormField } from '../../../ui/form.js';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../ui/form.js';
 import { CurrencyInput, DatePickerInput } from '../../index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -110,22 +110,22 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <div>
-                    <DatePickerInput
-                      aria-label="Date"
-                      form={`form ${businessTripExpense.id}`}
-                      data-autofocus
-                      value={field.value ? new Date(field.value) : undefined}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
-                      }}
-                      aria-invalid={!!fieldState.error}
-                    />
-                    {fieldState.error?.message && (
-                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
-                    )}
-                  </div>
+                  <FormItem className="h-min">
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <DatePickerInput
+                        form={`form ${businessTripExpense.id}`}
+                        data-autofocus
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date?: Date | null): void => {
+                          const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                          if (newDate !== field.value) field.onChange(newDate);
+                        }}
+                        aria-invalid={!!fieldState.error}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
               <FormField
@@ -139,21 +139,21 @@ export const CoreExpenseRow = ({
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
-                  <div>
-                    <DatePickerInput
-                      aria-label="Value Date"
-                      form={`form ${businessTripExpense.id}`}
-                      value={field.value ? new Date(field.value) : undefined}
-                      onChange={(date?: Date | null): void => {
-                        const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
-                        if (newDate !== field.value) field.onChange(newDate);
-                      }}
-                      aria-invalid={!!fieldState.error}
-                    />
-                    {fieldState.error?.message && (
-                      <p className="text-sm text-red-500">{fieldState.error.message}</p>
-                    )}
-                  </div>
+                  <FormItem className="h-min">
+                    <FormLabel>Value Date</FormLabel>
+                    <FormControl>
+                      <DatePickerInput
+                        form={`form ${businessTripExpense.id}`}
+                        value={field.value ? new Date(field.value) : undefined}
+                        onChange={(date?: Date | null): void => {
+                          const newDate = date ? format(date, 'yyyy-MM-dd') : undefined;
+                          if (newDate !== field.value) field.onChange(newDate);
+                        }}
+                        aria-invalid={!!fieldState.error}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </>
