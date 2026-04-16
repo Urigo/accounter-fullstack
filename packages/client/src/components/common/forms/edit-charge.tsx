@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { Select } from '@mantine/core';
@@ -16,6 +16,7 @@ import {
   type MakeBoolean,
   type TimelessDateString,
 } from '../../../helpers/index.js';
+import { useGetTags } from '../../../hooks/use-get-tags.js';
 import { useGetTaxCategories } from '../../../hooks/use-get-tax-categories.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
@@ -24,9 +25,9 @@ import { Switch } from '../../ui/switch.js';
 import {
   ChargeSpreadInput,
   InsertBusinessTripModal,
+  MultiSelect,
   SimilarChargesByIdModal,
   SimpleGrid,
-  TagsInput,
 } from '../index.js';
 
 const chargeTypes = Object.entries(CHARGE_TYPE_NAME).map(([value, label]) => ({
@@ -54,6 +55,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
 
   const chargeInputData: UpdateChargeInput = useMemo(
     () => ({
+      tags: charge.tags?.map(tag => ({ id: tag.id })),
       counterpartyId: charge.counterparty?.id,
       businessTripID: 'businessTrip' in charge ? charge.businessTrip?.id : undefined,
       defaultTaxCategoryID: charge.taxCategory?.id,
@@ -98,7 +100,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
         },
       });
       if (dataToUpdate.tags?.length || dataToUpdate.userDescription) {
-        const nonsimilarData: {
+        const nonSimilarData: {
           tagIds?: { id: string }[];
           description?: string;
         } = {};
@@ -113,16 +115,16 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
             [...suggestedTagIds].some(id => !updatedTagIds.has(id));
 
           if (tagsAreDifferent) {
-            nonsimilarData.tagIds = dataToUpdate.tags.map(tag => ({ id: tag.id }));
+            nonSimilarData.tagIds = dataToUpdate.tags.map(tag => ({ id: tag.id }));
           }
         }
         // if (
         //   dataToUpdate.userDescription &&
         //   dataToUpdate.userDescription !== charge.missingInfoSuggestions?.description
         // ) {
-        //   nonsimilarData.description = dataToUpdate.userDescription;
+        //   nonSimilarData.description = dataToUpdate.userDescription;
         // }
-        setSimilarChargesData(nonsimilarData);
+        setSimilarChargesData(nonSimilarData);
         setSimilarChargesOpen(true);
       } else {
         close();
@@ -134,6 +136,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   // handle tax categories
   const { selectableTaxCategories: taxCategories, fetching: fetchingTaxCategories } =
     useGetTaxCategories();
+  const { selectableTags, fetching: fetchingTags } = useGetTags();
 
   // handle business trips
   const [
@@ -192,60 +195,106 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                   </FormItem>
                 )}
               />
-              <Controller
+              <FormField
                 name="defaultTaxCategoryID"
                 control={control}
                 defaultValue={chargeInputData.defaultTaxCategoryID}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    {...field}
-                    data={taxCategories}
-                    value={field.value}
-                    disabled={fetchingTaxCategories}
-                    label="Tax Category Override"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                  />
+                  <FormItem>
+                    <FormLabel>Tax Category Override</FormLabel>
+                    <FormControl>
+                      <Select
+                        {...field}
+                        data={taxCategories}
+                        value={field.value}
+                        disabled={fetchingTaxCategories}
+                        placeholder="Scroll to see all options"
+                        maxDropdownHeight={160}
+                        searchable
+                        error={fieldState.error?.message}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              <Controller
+              <FormField
                 name="businessTripID"
                 control={control}
                 defaultValue={chargeInputData.businessTripID}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    {...field}
-                    data={businessTrips}
-                    value={field.value}
-                    disabled={fetchingBusinessTrips}
-                    label="Business Trip"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                    rightSection={<InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />}
-                  />
+                  <FormItem>
+                    <FormLabel>Business Trip</FormLabel>
+                    <FormControl>
+                      <Select
+                        {...field}
+                        data={businessTrips}
+                        value={field.value}
+                        disabled={fetchingBusinessTrips}
+                        placeholder="Scroll to see all options"
+                        maxDropdownHeight={160}
+                        searchable
+                        error={fieldState.error?.message}
+                        rightSection={
+                          <InsertBusinessTripModal onDone={refetchBusinessTripsCallback} />
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
-              <TagsInput formManager={formManager} tagsPath="tags" />
+              <FormField
+                name="tags"
+                control={control}
+                defaultValue={chargeInputData.tags}
+                render={({ field, fieldState }): ReactElement => {
+                  const selectedTagIds = field.value?.map(tag => tag.id) ?? [];
 
-              <Controller
+                  return (
+                    <FormItem>
+                      <FormLabel>Tags</FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          asChild
+                          options={Object.values(selectableTags)}
+                          onValueChange={selectedIds =>
+                            field.onChange(selectedIds.map(id => ({ id })))
+                          }
+                          defaultValue={selectedTagIds}
+                          value={selectedTagIds}
+                          placeholder="Select Tags"
+                          variant="default"
+                          disabled={fetchingTags}
+                          className={fieldState.error ? 'border-red-500' : undefined}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              <FormField
                 name="type"
                 control={control}
                 defaultValue={chargeInputData.type}
                 render={({ field, fieldState }): ReactElement => (
-                  <Select
-                    {...field}
-                    data={chargeTypes}
-                    value={field.value}
-                    label="Charge Type"
-                    placeholder="Scroll to see all options"
-                    maxDropdownHeight={160}
-                    searchable
-                    error={fieldState.error?.message}
-                  />
+                  <FormItem>
+                    <FormLabel>Charge Type</FormLabel>
+                    <FormControl>
+                      <Select
+                        {...field}
+                        data={chargeTypes}
+                        value={field.value}
+                        placeholder="Scroll to see all options"
+                        maxDropdownHeight={160}
+                        searchable
+                        error={fieldState.error?.message}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
 
