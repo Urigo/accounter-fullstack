@@ -72,21 +72,23 @@ function ContoReportFilterForm({
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
                 <FormLabel>Owners</FormLabel>
-                <MultiSelect
-                  {...field}
-                  data={businesses}
-                  value={
-                    field.value ??
-                    (userContext?.context.adminBusinessId
-                      ? [userContext?.context.adminBusinessId]
-                      : undefined)
-                  }
-                  disabled={businessesLoading}
-                  placeholder="Scroll to see all options"
-                  maxDropdownHeight={160}
-                  searchable
-                  error={fieldState.error?.message}
-                />
+                <FormControl>
+                  <MultiSelect
+                    {...field}
+                    data={businesses}
+                    value={
+                      field.value ??
+                      (userContext?.context.adminBusinessId
+                        ? [userContext?.context.adminBusinessId]
+                        : undefined)
+                    }
+                    disabled={businessesLoading}
+                    placeholder="Scroll to see all options"
+                    maxDropdownHeight={160}
+                    searchable
+                    error={fieldState.error?.message}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -98,7 +100,7 @@ function ContoReportFilterForm({
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (
@@ -126,7 +128,7 @@ function ContoReportFilterForm({
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (

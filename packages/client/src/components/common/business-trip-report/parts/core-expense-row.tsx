@@ -106,7 +106,7 @@ export const CoreExpenseRow = ({
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
-                    message: 'Date must be im format yyyy-mm-dd',
+                    message: 'Date must be in format yyyy-mm-dd',
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (
@@ -135,7 +135,7 @@ export const CoreExpenseRow = ({
                 rules={{
                   pattern: {
                     value: TIMELESS_DATE_REGEX,
-                    message: 'Date must be im format yyyy-mm-dd',
+                    message: 'Date must be in format yyyy-mm-dd',
                   },
                 }}
                 render={({ field, fieldState }): ReactElement => (

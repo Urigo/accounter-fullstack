@@ -79,7 +79,7 @@ export function AddExpenseFields({
             : undefined,
           pattern: {
             value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+            message: 'Date must be in format yyyy-mm-dd',
           },
         }}
         render={({ field, fieldState }): ReactElement => (
@@ -107,7 +107,7 @@ export function AddExpenseFields({
         rules={{
           pattern: {
             value: TIMELESS_DATE_REGEX,
-            message: 'Date must be im format yyyy-mm-dd',
+            message: 'Date must be in format yyyy-mm-dd',
           },
           min: ledgerLock
             ? {
@@ -166,17 +166,19 @@ export function AddExpenseFields({
         render={({ field, fieldState }): ReactElement => (
           <FormItem>
             <FormLabel>Attendee</FormLabel>
-            <Select
-              {...field}
-              data={attendees}
-              value={field.value}
-              disabled={fetchingAttendees}
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              error={fieldState.error?.message}
-              withinPortal
-            />
+            <FormControl>
+              <Select
+                {...field}
+                data={attendees}
+                value={field.value}
+                disabled={fetchingAttendees}
+                placeholder="Scroll to see all options"
+                maxDropdownHeight={160}
+                searchable
+                error={fieldState.error?.message}
+                withinPortal
+              />
+            </FormControl>
             <FormMessage />
           </FormItem>
         )}

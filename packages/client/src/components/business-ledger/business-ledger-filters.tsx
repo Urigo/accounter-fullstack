@@ -62,21 +62,23 @@ function BusinessLedgerRecordsFilterForm({
                 render={({ field, fieldState }): ReactElement => (
                   <FormItem>
                     <FormLabel>Owners</FormLabel>
-                    <MultiSelect
-                      {...field}
-                      data={businesses}
-                      value={
-                        field.value ??
-                        (userContext?.context.adminBusinessId
-                          ? [userContext.context.adminBusinessId]
-                          : undefined)
-                      }
-                      disabled={businessesLoading}
-                      placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                    />
+                    <FormControl>
+                      <MultiSelect
+                        {...field}
+                        data={businesses}
+                        value={
+                          field.value ??
+                          (userContext?.context.adminBusinessId
+                            ? [userContext.context.adminBusinessId]
+                            : undefined)
+                        }
+                        disabled={businessesLoading}
+                        placeholder="Scroll to see all options"
+                        maxDropdownHeight={160}
+                        searchable
+                        error={fieldState.error?.message}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -88,16 +90,18 @@ function BusinessLedgerRecordsFilterForm({
                 render={({ field, fieldState }): ReactElement => (
                   <FormItem>
                     <FormLabel>Businesses</FormLabel>
-                    <MultiSelect
-                      {...field}
-                      data={businesses}
-                      value={field.value ?? undefined}
-                      disabled={businessesLoading}
-                      placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      error={fieldState.error?.message}
-                    />
+                    <FormControl>
+                      <MultiSelect
+                        {...field}
+                        data={businesses}
+                        value={field.value ?? undefined}
+                        disabled={businessesLoading}
+                        placeholder="Scroll to see all options"
+                        maxDropdownHeight={160}
+                        searchable
+                        error={fieldState.error?.message}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -111,7 +115,7 @@ function BusinessLedgerRecordsFilterForm({
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (
@@ -139,7 +143,7 @@ function BusinessLedgerRecordsFilterForm({
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
-                message: 'Date must be im format yyyy-mm-dd',
+                message: 'Date must be in format yyyy-mm-dd',
               },
             }}
             render={({ field, fieldState }): ReactElement => (
@@ -168,16 +172,18 @@ function BusinessLedgerRecordsFilterForm({
               render={({ field, fieldState }): ReactElement => (
                 <FormItem>
                   <FormLabel>Type</FormLabel>
-                  <Select
-                    {...field}
-                    onChange={value => field.onChange(value === 'NULL' ? null : value)}
-                    data={[
-                      { value: 'NULL', label: 'All' },
-                      { value: 'BUSINESS', label: 'Business' },
-                      { value: 'TAX_CATEGORY', label: 'Tax Category' },
-                    ]}
-                    error={fieldState.error?.message}
-                  />
+                  <FormControl>
+                    <Select
+                      {...field}
+                      onChange={value => field.onChange(value === 'NULL' ? null : value)}
+                      data={[
+                        { value: 'NULL', label: 'All' },
+                        { value: 'BUSINESS', label: 'Business' },
+                        { value: 'TAX_CATEGORY', label: 'Tax Category' },
+                      ]}
+                      error={fieldState.error?.message}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
