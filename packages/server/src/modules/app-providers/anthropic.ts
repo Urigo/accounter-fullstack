@@ -105,6 +105,8 @@ export class AnthropicProvider {
                         - Allocation number (if VAT exists and applicable)
                         - Description or remarks
 
+                        Note that some receipts (e.g. by Stripe) carry the invoice details; pay extra attention not to misclassify them as INVOICE_RECEIPT.
+
                         Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
             },
             fileType === 'application/pdf'
