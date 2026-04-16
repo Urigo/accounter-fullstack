@@ -2,7 +2,6 @@ import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, NumberInput, Overlay } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import type { AddBusinessTripCarRentalExpenseInput } from '../../../../gql/graphql.js';
 import { useAddBusinessTripCarRentalExpense } from '../../../../hooks/use-add-business-trip-car-rental-expense.js';
 import { Button } from '../../../ui/button.js';
@@ -23,7 +22,7 @@ export function AddCarRentalExpense(props: {
   onAdd?: () => void;
 }): ReactElement {
   const { businessTripId, onAdd } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -33,7 +32,7 @@ export function AddCarRentalExpense(props: {
           size="icon"
           onClick={event => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
           className="size-7.5"
         >
@@ -41,7 +40,12 @@ export function AddCarRentalExpense(props: {
         </Button>
       </Tooltip>
       {opened && (
-        <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />
+        <ModalContent
+          businessTripId={businessTripId}
+          opened={opened}
+          close={() => setOpened(false)}
+          onAdd={onAdd}
+        />
       )}
     </>
   );

@@ -1,7 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
@@ -33,11 +32,11 @@ export function ChargeActionsMenu({
 }: ChargeActionsMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
   const [opened, setOpened] = useState(false);
-  const [depreciationOpened, { open: openDepreciation, close: closeDepreciation }] =
-    useDisclosure(false);
+  const [depreciationOpened, setDepreciationOpened] = useState(false);
+  const closeDepreciation = useCallback((): void => setDepreciationOpened(false), []);
   const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
-  const [uploadSalariesOpened, { open: openUploadSalaries, close: closeUploadSalaries }] =
-    useDisclosure(false);
+  const [uploadSalariesOpened, setUploadSalariesOpened] = useState(false);
+  const closeUploadSalaries = useCallback((): void => setUploadSalariesOpened(false), []);
   const [previewIssueDocument, setPreviewIssueDocument] = useState(false);
   const [editingCharge, setEditingCharge] = useState(false);
   const [insertingDocument, setInsertingDocument] = useState(false);
@@ -145,7 +144,7 @@ export function ChargeActionsMenu({
                 icon={<ArrowDownWideNarrow size={14} />}
                 onClick={(event: ClickEvent): void => {
                   event.stopPropagation();
-                  openDepreciation();
+                  setDepreciationOpened(true);
                   closeMenu();
                 }}
               >
@@ -162,7 +161,7 @@ export function ChargeActionsMenu({
                 onClick={(event: ClickEvent): void => {
                   event.stopPropagation();
                   closeMenu();
-                  openUploadSalaries();
+                  setUploadSalariesOpened(true);
                 }}
               >
                 Payroll file upload

@@ -1,7 +1,6 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Edit } from 'lucide-react';
 import { Modal } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { EditTagFieldsFragmentDoc } from '../../../gql/graphql.js';
 import type { FragmentType } from '../../../gql/index.js';
 import { Button } from '../../ui/button.js';
@@ -13,7 +12,8 @@ interface Props {
 }
 
 export const EditTagModal = ({ onDone, data }: Props): ReactElement => {
-  const [opened, { open, close }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
+  const close = (): void => setOpened(false);
 
   function onEditDone(): void {
     close();
@@ -22,7 +22,7 @@ export const EditTagModal = ({ onDone, data }: Props): ReactElement => {
   return (
     <>
       <Tooltip content="Edit Tag">
-        <Button variant="ghost" size="icon" className="size-7.5" onClick={open}>
+        <Button variant="ghost" size="icon" className="size-7.5" onClick={() => setOpened(true)}>
           <Edit className="size-5" />
         </Button>
       </Tooltip>

@@ -1,8 +1,7 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Plus } from 'lucide-react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import { Loader, Modal, Overlay, Select } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import type { InsertBusinessTripAttendeeInput } from '../../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../../helpers/index.js';
 import { useGetBusinesses } from '../../../../hooks/use-get-businesses.js';
@@ -21,7 +20,7 @@ import { DatePickerInput } from '../../inputs/date-picker-input.js';
 
 export function AddAttendee(props: { businessTripId: string; onAdd?: () => void }): ReactElement {
   const { businessTripId, onAdd } = props;
-  const [opened, { close, open }] = useDisclosure(false);
+  const [opened, setOpened] = useState(false);
 
   return (
     <>
@@ -31,7 +30,7 @@ export function AddAttendee(props: { businessTripId: string; onAdd?: () => void 
           size="icon"
           onClick={event => {
             event.stopPropagation();
-            open();
+            setOpened(true);
           }}
           className="size-7.5"
         >
@@ -39,7 +38,12 @@ export function AddAttendee(props: { businessTripId: string; onAdd?: () => void 
         </Button>
       </Tooltip>
       {opened && (
-        <ModalContent businessTripId={businessTripId} opened={opened} close={close} onAdd={onAdd} />
+        <ModalContent
+          businessTripId={businessTripId}
+          opened={opened}
+          close={() => setOpened(false)}
+          onAdd={onAdd}
+        />
       )}
     </>
   );
