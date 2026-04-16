@@ -211,7 +211,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
                         placeholder="Scroll to see all options"
                         maxDropdownHeight={160}
                         searchable
-                        error={fieldState.error?.message}
+                        error={!!fieldState.error}
                       />
                     </FormControl>
                     <FormMessage />
