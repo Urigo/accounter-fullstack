@@ -88,6 +88,8 @@ vi.mock('../../approval-control.js', () => ({
   true;
 
 import { Step03OpeningBalance } from '../index.js';
+import type { StepStatus } from '../../step-base.js';
+import type { AnnualAuditStepsStatusQuery } from '@/gql/graphql.js';
 
 type QueryState = {
   data?: unknown;
@@ -95,25 +97,17 @@ type QueryState = {
   error?: unknown;
 };
 
-type ManualStatusesQueryData = {
-  annualAuditStepStatuses?: unknown[];
-};
-
 async function renderStep03(params: {
   openingState: QueryState;
-  manualState: QueryState;
+  manualData?: AnnualAuditStepsStatusQuery['annualAuditStepStatuses'];
   adminBusinessId?: string;
+  onStatusChange?: (stepId: string, status: StepStatus) => void;
 }): Promise<{ container: HTMLDivElement; cleanup: () => Promise<void> }> {
-  const { openingState, manualState, adminBusinessId = 'owner-1' } = params;
+  const { openingState, manualData, adminBusinessId, onStatusChange = vi.fn() } = params;
 
   useQueryMock.mockReturnValue([
     { data: openingState.data, fetching: !!openingState.fetching, error: openingState.error },
   ]);
-
-  const manualData =
-    Array.isArray(manualState.data)
-      ? manualState.data
-      : ((manualState.data as ManualStatusesQueryData | undefined)?.annualAuditStepStatuses ?? []);
 
   const container = document.createElement('div');
   document.body.append(container);
@@ -128,7 +122,7 @@ async function renderStep03(params: {
         description: 'desc',
         year: 2024,
         adminBusinessId,
-        onStatusChange: vi.fn(),
+        onStatusChange,
         manualData,
       }),
     );
@@ -146,35 +140,30 @@ async function renderStep03(params: {
   return { container, cleanup };
 }
 
+const CONTINUING_STATUS_INFO = {
+  id: 'owner-1:2024',
+  userType: 'CONTINUING',
+  balanceChargeId: null,
+  derivedStatus: 'PENDING',
+  errorMessage: null,
+};
+
 describe('Step03OpeningBalance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  // ── status derivation ──────────────────────────────────────────────────────
+
   it('uses persisted manual status for the base step and hydrates notes', async () => {
-    const openingState = {
-      data: {
-        annualAuditOpeningBalanceStatus: {
-          id: 'owner-1:2024',
-          userType: 'CONTINUING',
-          balanceChargeId: null,
-          derivedStatus: 'PENDING',
-          errorMessage: null,
-        },
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        data: { annualAuditOpeningBalanceStatus: CONTINUING_STATUS_INFO },
+        fetching: false,
       },
-      fetching: false,
-    };
-
-    const manualState = {
-      data: {
-        annualAuditStepStatuses: [
-          { id: 'owner-1:2024:3', stepId: '3', status: 'COMPLETED', notes: 'already reviewed' },
-        ],
-      },
-      fetching: false,
-    };
-
-    const { container, cleanup } = await renderStep03({ openingState, manualState });
+      adminBusinessId: 'owner-1',
+      manualData: [{ id: 'owner-1:2024:3', stepId: '3', status: 'COMPLETED', notes: 'already reviewed' }],
+    });
 
     const card = container.querySelector('[data-testid="base-step-card"]');
     expect(card?.getAttribute('data-status')).toBe('completed');
@@ -187,27 +176,14 @@ describe('Step03OpeningBalance', () => {
   });
 
   it('falls back to derived status when no persisted step record exists', async () => {
-    const openingState = {
-      data: {
-        annualAuditOpeningBalanceStatus: {
-          id: 'owner-1:2024',
-          userType: 'CONTINUING',
-          balanceChargeId: null,
-          derivedStatus: 'PENDING',
-          errorMessage: null,
-        },
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        data: { annualAuditOpeningBalanceStatus: CONTINUING_STATUS_INFO },
+        fetching: false,
       },
-      fetching: false,
-    };
-
-    const manualState = {
-      data: {
-        annualAuditStepStatuses: [],
-      },
-      fetching: false,
-    };
-
-    const { container, cleanup } = await renderStep03({ openingState, manualState });
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
 
     const card = container.querySelector('[data-testid="base-step-card"]');
     expect(card?.getAttribute('data-status')).toBe('pending');
@@ -215,29 +191,181 @@ describe('Step03OpeningBalance', () => {
     await cleanup();
   });
 
-  it('uses derived status while manual statuses are not provided yet', async () => {
-    const openingState = {
-      data: {
-        annualAuditOpeningBalanceStatus: {
-          id: 'owner-1:2024',
-          userType: 'CONTINUING',
-          balanceChargeId: null,
-          derivedStatus: 'PENDING',
-          errorMessage: null,
-        },
+  it('uses derived status while manualData is not yet available', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        data: { annualAuditOpeningBalanceStatus: CONTINUING_STATUS_INFO },
+        fetching: false,
       },
-      fetching: false,
-    };
-
-    const manualState = {
-      data: undefined,
-      fetching: true,
-    };
-
-    const { container, cleanup } = await renderStep03({ openingState, manualState });
+      adminBusinessId: 'owner-1',
+      manualData: undefined,
+    });
 
     const card = container.querySelector('[data-testid="base-step-card"]');
     expect(card?.getAttribute('data-status')).toBe('pending');
+
+    await cleanup();
+  });
+
+  it('shows blocked status when adminBusinessId is absent', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: { fetching: false },
+      manualData: [],
+      adminBusinessId: undefined,
+    });
+
+    const card = container.querySelector('[data-testid="base-step-card"]');
+    expect(card?.getAttribute('data-status')).toBe('blocked');
+    expect(container.querySelector('[data-testid="approval-control"]')).toBeNull();
+
+    await cleanup();
+  });
+
+  it('shows loading status while the query is fetching', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: { fetching: true },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    const card = container.querySelector('[data-testid="base-step-card"]');
+    expect(card?.getAttribute('data-status')).toBe('loading');
+
+    await cleanup();
+  });
+
+  it('falls back to pending on query error', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: { fetching: false, error: new Error('Network error') },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    const card = container.querySelector('[data-testid="base-step-card"]');
+    expect(card?.getAttribute('data-status')).toBe('pending');
+
+    await cleanup();
+  });
+
+  it('calls onStatusChange with the final status on mount', async () => {
+    const onStatusChange = vi.fn();
+    const { cleanup } = await renderStep03({
+      openingState: {
+        fetching: false,
+        data: {
+          annualAuditOpeningBalanceStatus: {
+            ...CONTINUING_STATUS_INFO,
+            derivedStatus: 'COMPLETED',
+          },
+        },
+      },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+      onStatusChange,
+    });
+
+    expect(onStatusChange).toHaveBeenCalledWith('3', 'completed');
+
+    await cleanup();
+  });
+
+  // ── userType branch rendering ──────────────────────────────────────────────
+
+  it('renders Configuration Incomplete alert when statusInfo is null after fetch', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: { fetching: false, data: { annualAuditOpeningBalanceStatus: null } },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    expect(container.textContent).toContain('Configuration Incomplete');
+
+    await cleanup();
+  });
+
+  it('renders No Opening Balance Required alert for NEW userType', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        fetching: false,
+        data: {
+          annualAuditOpeningBalanceStatus: {
+            id: 'owner-1:2024',
+            userType: 'NEW',
+            balanceChargeId: null,
+            derivedStatus: 'COMPLETED',
+            errorMessage: null,
+          },
+        },
+      },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    expect(container.textContent).toContain('No Opening Balance Required');
+
+    await cleanup();
+  });
+
+  it('renders Configuration Error alert with message for ERROR userType', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        fetching: false,
+        data: {
+          annualAuditOpeningBalanceStatus: {
+            id: 'owner-1:2024',
+            userType: 'ERROR',
+            balanceChargeId: null,
+            derivedStatus: 'PENDING',
+            errorMessage: 'Missing dateEstablished',
+          },
+        },
+      },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    expect(container.textContent).toContain('Configuration Error');
+    expect(container.textContent).toContain('Missing dateEstablished');
+
+    await cleanup();
+  });
+
+  it('renders MigratingSubsteps and ApprovalControl for MIGRATING userType', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        fetching: false,
+        data: {
+          annualAuditOpeningBalanceStatus: {
+            id: 'owner-1:2024',
+            userType: 'MIGRATING',
+            balanceChargeId: 'charge-abc',
+            derivedStatus: 'IN_PROGRESS',
+            errorMessage: null,
+          },
+        },
+      },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    expect(container.querySelector('[data-testid="migrating-substeps"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="approval-control"]')).not.toBeNull();
+
+    await cleanup();
+  });
+
+  it('renders ApprovalControl but not MigratingSubsteps for CONTINUING userType', async () => {
+    const { container, cleanup } = await renderStep03({
+      openingState: {
+        fetching: false,
+        data: { annualAuditOpeningBalanceStatus: CONTINUING_STATUS_INFO },
+      },
+      adminBusinessId: 'owner-1',
+      manualData: [],
+    });
+
+    expect(container.querySelector('[data-testid="approval-control"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="migrating-substeps"]')).toBeNull();
 
     await cleanup();
   });
