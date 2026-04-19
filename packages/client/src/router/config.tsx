@@ -433,11 +433,23 @@ export const routes: RouteObject[] = [
               },
               {
                 path: 'dynamic-report',
-                element: withSuspense(DynamicReport, <ReportSkeleton />),
-                handle: {
-                  title: 'Dynamic Report',
-                  breadcrumb: 'Dynamic Report',
-                },
+                handle: { breadcrumb: 'Dynamic Report' },
+                children: [
+                  {
+                    index: true,
+                    element: withSuspense(DynamicReport, <ReportSkeleton />),
+                    handle: { title: 'Dynamic Report' },
+                  },
+                  {
+                    path: ':templateName',
+                    element: withSuspense(DynamicReport, <ReportSkeleton />),
+                    handle: {
+                      title: 'Dynamic Report',
+                      breadcrumb: (data: { templateName?: string }) =>
+                        data?.templateName || 'Template',
+                    },
+                  },
+                ],
               },
               {
                 path: 'vat-monthly',

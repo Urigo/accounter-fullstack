@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { FolderPlus, Loader2 } from 'lucide-react';
 import { DndProvider } from 'react-dnd';
+import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
@@ -196,10 +197,10 @@ function randomId(length: number) {
 }
 
 export const DynamicReport: React.FC = () => {
+  const { templateName } = useParams<{ templateName: string }>();
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
   const [enableDnd, setEnableDnd] = useState(false);
-  const [templateName, setTemplateName] = useState<string | undefined>(undefined);
   const { get } = useUrlQuery();
   const [filter, setFilter] = useState<DynamicReportFiltersType>(
     get(DYNAMIC_REPORT_FILTERS_KEY)
@@ -381,7 +382,7 @@ export const DynamicReport: React.FC = () => {
     setFiltersContext(
       <div className="flex flex-row gap-2">
         <DownloadCSV tree={tree} filters={filter} />
-        <ManageTemplates template={templateName} setTemplate={setTemplateName} />
+        <ManageTemplates template={templateName} />
         <SaveTemplate tree={tree} />
         <Tooltip content="Add new category">
           <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">

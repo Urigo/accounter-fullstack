@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, CloudCog, Loader2, Lock, MoreHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -16,6 +17,7 @@ import {
 import { AllDynamicReportsDocument, type AllDynamicReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
 import { useUnlockDynamicReportTemplate } from '../../../hooks/use-unlock-dynamic-report-template.js';
+import { ROUTES } from '../../../router/routes.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -53,14 +55,13 @@ type RowType = AllDynamicReportsQuery['allDynamicReports'][number];
 interface DynamicReportTemplatesProps {
   closeModal: () => void;
   template?: string;
-  setTemplate: (template: string) => void;
 }
 
 function DynamicReportTemplates({
   closeModal,
-  setTemplate,
   template,
 }: DynamicReportTemplatesProps): ReactElement {
+  const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -91,10 +92,10 @@ function DynamicReportTemplates({
 
   const onSelectTemplate = useCallback(
     (name: string) => {
-      setTemplate(name);
+      navigate(ROUTES.REPORTS.DYNAMIC_REPORT(null, name));
       closeModal();
     },
-    [setTemplate, closeModal],
+    [navigate, closeModal],
   );
 
   const columns = useMemo(() => {
@@ -273,10 +274,9 @@ function DynamicReportTemplates({
 
 interface Props {
   template?: string;
-  setTemplate: (template: string) => void;
 }
 
-export function ManageTemplates({ template, setTemplate }: Props): ReactElement {
+export function ManageTemplates({ template }: Props): ReactElement {
   const [opened, setOpened] = useState(false);
 
   return (
@@ -292,11 +292,7 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
         <DialogHeader>
           <DialogTitle>Dynamic report templates</DialogTitle>
         </DialogHeader>
-        <DynamicReportTemplates
-          closeModal={(): void => setOpened(false)}
-          template={template}
-          setTemplate={setTemplate}
-        />
+        <DynamicReportTemplates closeModal={(): void => setOpened(false)} template={template} />
       </DialogContent>
     </Dialog>
   );

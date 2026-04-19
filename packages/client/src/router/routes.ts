@@ -116,8 +116,10 @@ export const ROUTES = {
     ROOT: '/reports',
     TRIAL_BALANCE: (filter?: TrialBalanceReportFilters | null) =>
       `/reports/trial-balance${getTrialBalanceReportHref(filter)}`,
-    DYNAMIC_REPORT: (filter?: DynamicReportFiltersType | null) =>
-      `/reports/dynamic-report${getDynamicReportParams(filter)}`,
+    DYNAMIC_REPORT: (filter?: DynamicReportFiltersType | null, templateName?: string | null) =>
+      templateName
+        ? `/reports/dynamic-report/${encodeURIComponent(templateName)}${getDynamicReportParams(filter)}`
+        : `/reports/dynamic-report${getDynamicReportParams(filter)}`,
     VAT_MONTHLY: '/reports/vat-monthly',
     PROFIT_AND_LOSS: (year?: number) =>
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',
