@@ -49,7 +49,7 @@ export function Step05MainProcess(props: Step05Props) {
 
   const actions = useMemo((): StepAction[] => {
     return [
-      { label: 'Manage Conto Tree', href: ROUTES.REPORTS.CONTO({}) },
+      { label: 'Manage Conto Tree', href: ROUTES.REPORTS.DYNAMIC_REPORT({}) },
       // { label: 'Open Checklist', href: '/validations/checklist' },
       // { label: 'Compare VAT', href: '/vat/comparison' },
       // { label: 'Generate Draft', href: '/depreciation/draft' },

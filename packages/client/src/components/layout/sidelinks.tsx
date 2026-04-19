@@ -89,9 +89,9 @@ export const sidelinks: SideLink[] = [
         icon: <Scale size={18} />,
       },
       {
-        title: 'Conto Report',
+        title: 'Dynamic Report',
         label: '',
-        href: ROUTES.REPORTS.CONTO(),
+        href: ROUTES.REPORTS.DYNAMIC_REPORT(),
         icon: <Puzzle size={18} />,
       },
       {

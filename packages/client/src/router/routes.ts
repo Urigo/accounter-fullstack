@@ -6,11 +6,11 @@
  * - <Link to={ROUTES.REPORTS.TAX(2024)}>Tax Report</Link>
  */
 
-import type { ContoReportFiltersType } from '@/components/reports/conto/conto-report-filters.js';
+import type { DynamicReportFiltersType } from '@/components/reports/dynamic-report/dynamic-report-filters.js';
 import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
 import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
 import type { ChargeFilter, DepreciationReportFilter } from '@/gql/graphql.js';
-import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
+import { DYNAMIC_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import { isObjectEmpty } from '@/helpers/form.js';
 
 export function encodeFilters(filter?: Record<string, unknown> | null): string | null {
@@ -33,13 +33,13 @@ export function getAllChargesParams(filter?: ChargeFilter | null, page?: number)
   return queryParams;
 }
 
-function getContoReportParams(filter?: ContoReportFiltersType | null): string {
+function getDynamicReportParams(filter?: DynamicReportFiltersType | null): string {
   const params = new URLSearchParams();
 
-  const contoReportFilters = encodeFilters(filter);
-  if (contoReportFilters) {
+  const dynamicReportFilters = encodeFilters(filter);
+  if (dynamicReportFilters) {
     // Add it as a single encoded parameter
-    params.append(CONTO_REPORT_FILTERS_KEY, contoReportFilters);
+    params.append(DYNAMIC_REPORT_FILTERS_KEY, dynamicReportFilters);
   }
 
   const queryParams = params.size > 0 ? `?${params}` : '';
@@ -116,8 +116,10 @@ export const ROUTES = {
     ROOT: '/reports',
     TRIAL_BALANCE: (filter?: TrialBalanceReportFilters | null) =>
       `/reports/trial-balance${getTrialBalanceReportHref(filter)}`,
-    CONTO: (filter?: ContoReportFiltersType | null) =>
-      `/reports/conto${getContoReportParams(filter)}`,
+    DYNAMIC_REPORT: (filter?: DynamicReportFiltersType | null, templateName?: string | null) =>
+      templateName
+        ? `/reports/dynamic-report/${encodeURIComponent(templateName)}${getDynamicReportParams(filter)}`
+        : `/reports/dynamic-report${getDynamicReportParams(filter)}`,
     VAT_MONTHLY: '/reports/vat-monthly',
     PROFIT_AND_LOSS: (year?: number) =>
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',

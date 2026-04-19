@@ -34,7 +34,7 @@ vi.mock('@/hooks/use-set-annual-audit-step09-status', () => ({
 // Stub graphql documents so the module doesn't complain about missing codegen
 vi.mock('../../../../../../gql/graphql.js', () => ({
   Step09SaveTemplateStatusDocument: {},
-  AllContoReportsDocument: {},
+  AllDynamicReportsDocument: {},
   AnnualAuditStepStatus: {
     Completed: 'COMPLETED',
     InProgress: 'IN_PROGRESS',
@@ -120,7 +120,7 @@ async function render(props: {
   const adminBusinessId = props.adminBusinessId;
 
   // First useQuery call → Step09SaveTemplateStatus (step statuses)
-  // Second useQuery call → AllContoReports (templates)
+  // Second useQuery call → AllDynamicReports (templates)
   let callCount = 0;
   useQueryMock.mockImplementation(() => {
     callCount++;

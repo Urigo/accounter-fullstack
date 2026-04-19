@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.js';
 import { Input } from '../../ui/input.js';
-import type { ContoReportFiltersType } from './conto-report-filters.js';
+import type { DynamicReportFiltersType } from './dynamic-report-filters.js';
 import { TypeIcon } from './type-icon.js';
 import type { CustomData } from './types.js';
 
@@ -42,7 +42,7 @@ type Props = {
   onTextChange: (id: NodeModel['id'], value: string) => void;
   onDeleteCategory: (id: NodeModel['id']) => void;
   descendants: NodeModel<CustomData>[];
-  filter: ContoReportFiltersType;
+  filter: DynamicReportFiltersType;
 };
 
 export const CustomNode: React.FC<Props> = props => {

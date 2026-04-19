@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { ArrowUpDown, CloudCog, Loader2, Lock, MoreHorizontal } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -13,9 +14,10 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
-import { AllContoReportsDocument, type AllContoReportsQuery } from '../../../gql/graphql.js';
+import { AllDynamicReportsDocument, type AllDynamicReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
 import { useUnlockDynamicReportTemplate } from '../../../hooks/use-unlock-dynamic-report-template.js';
+import { ROUTES } from '../../../router/routes.js';
 import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -38,7 +40,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllContoReports {
+  query AllDynamicReports {
     allDynamicReports {
       id
       name
@@ -48,26 +50,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
   }
 `;
 
-type RowType = AllContoReportsQuery['allDynamicReports'][number];
+type RowType = AllDynamicReportsQuery['allDynamicReports'][number];
 
-interface ContoReportTemplatesProps {
+interface DynamicReportTemplatesProps {
   closeModal: () => void;
   template?: string;
-  setTemplate: (template: string) => void;
 }
 
-function ContoReportTemplates({
+function DynamicReportTemplates({
   closeModal,
-  setTemplate,
   template,
-}: ContoReportTemplatesProps): ReactElement {
+}: DynamicReportTemplatesProps): ReactElement {
+  const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   // fetch data
   const [{ data, fetching }, fetchTemplates] = useQuery({
-    query: AllContoReportsDocument,
+    query: AllDynamicReportsDocument,
   });
 
   const { deleteDynamicReportTemplate } = useDeleteDynamicReportTemplate();
@@ -91,10 +92,10 @@ function ContoReportTemplates({
 
   const onSelectTemplate = useCallback(
     (name: string) => {
-      setTemplate(name);
+      navigate(ROUTES.REPORTS.DYNAMIC_REPORT(null, name));
       closeModal();
     },
-    [setTemplate, closeModal],
+    [navigate, closeModal],
   );
 
   const columns = useMemo(() => {
@@ -273,10 +274,9 @@ function ContoReportTemplates({
 
 interface Props {
   template?: string;
-  setTemplate: (template: string) => void;
 }
 
-export function ManageTemplates({ template, setTemplate }: Props): ReactElement {
+export function ManageTemplates({ template }: Props): ReactElement {
   const [opened, setOpened] = useState(false);
 
   return (
@@ -290,13 +290,9 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
       </Tooltip>
       <DialogContent className="max-w-screen-md">
         <DialogHeader>
-          <DialogTitle>Conto report templates</DialogTitle>
+          <DialogTitle>Dynamic report templates</DialogTitle>
         </DialogHeader>
-        <ContoReportTemplates
-          closeModal={(): void => setOpened(false)}
-          template={template}
-          setTemplate={setTemplate}
-        />
+        <DynamicReportTemplates closeModal={(): void => setOpened(false)} template={template} />
       </DialogContent>
     </Dialog>
   );

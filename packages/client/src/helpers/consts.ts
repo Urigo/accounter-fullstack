@@ -7,4 +7,4 @@ export const UUID_REGEX =
 
 export const EMPTY_UUID = '00000000-0000-0000-0000-000000000000';
 
-export const CONTO_REPORT_FILTERS_KEY = 'contoReportFilters';
+export const DYNAMIC_REPORT_FILTERS_KEY = 'dynamicReportFilters';

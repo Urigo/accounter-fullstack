@@ -6,7 +6,7 @@ import { Indicator, MultiSelect } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
 import type { BusinessTransactionsFilter } from '../../../gql/graphql.js';
 import {
-  CONTO_REPORT_FILTERS_KEY,
+  DYNAMIC_REPORT_FILTERS_KEY,
   isObjectEmpty,
   TIMELESS_DATE_REGEX,
 } from '../../../helpers/index.js';
@@ -25,29 +25,29 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Switch } from '../../ui/switch.js';
 
-export type ContoReportFiltersType = BusinessTransactionsFilter & {
+export type DynamicReportFiltersType = BusinessTransactionsFilter & {
   isShowZeroedAccounts?: boolean;
 };
 
-interface ContoReportFilterFormProps {
-  filter: ContoReportFiltersType;
-  setFilter: (filter: ContoReportFiltersType) => void;
+interface DynamicReportFilterFormProps {
+  filter: DynamicReportFiltersType;
+  setFilter: (filter: DynamicReportFiltersType) => void;
   closeModal: () => void;
 }
 
-function ContoReportFilterForm({
+function DynamicReportFilterForm({
   filter,
   setFilter,
   closeModal,
-}: ContoReportFilterFormProps): ReactElement {
-  const form = useForm<ContoReportFiltersType>({
+}: DynamicReportFilterFormProps): ReactElement {
+  const form = useForm<DynamicReportFiltersType>({
     defaultValues: { ...filter },
   });
   const { control, handleSubmit } = form;
   const { selectableBusinesses: businesses, fetching: businessesLoading } = useGetBusinesses();
   const { userContext } = useContext(UserContext);
 
-  const onSubmit: SubmitHandler<ContoReportFiltersType> = data => {
+  const onSubmit: SubmitHandler<DynamicReportFiltersType> = data => {
     if (data.fromDate?.trim() === '') data.fromDate = undefined;
     if (data.toDate?.trim() === '') data.toDate = undefined;
     setFilter(data);
@@ -104,10 +104,10 @@ function ContoReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel htmlFor="conto-from-date">From Date</FormLabel>
+                <FormLabel htmlFor="dynamic-report-from-date">From Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
-                    id="conto-from-date"
+                    id="dynamic-report-from-date"
                     onChange={date => {
                       if (date !== field.value) field.onChange(date);
                     }}
@@ -131,10 +131,10 @@ function ContoReportFilterForm({
             }}
             render={({ field, fieldState }): ReactElement => (
               <FormItem>
-                <FormLabel htmlFor="conto-to-date">To Date</FormLabel>
+                <FormLabel htmlFor="dynamic-report-to-date">To Date</FormLabel>
                 <FormControl>
                   <DatePickerInput
-                    id="conto-to-date"
+                    id="dynamic-report-to-date"
                     onChange={date => {
                       if (date !== field.value) field.onChange(date);
                     }}
@@ -152,11 +152,13 @@ function ContoReportFilterForm({
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                 <div className="space-y-0.5">
-                  <FormLabel htmlFor="conto-show-zeroed-accounts">Show zeroed accounts</FormLabel>
+                  <FormLabel htmlFor="dynamic-report-show-zeroed-accounts">
+                    Show zeroed accounts
+                  </FormLabel>
                 </div>
                 <FormControl>
                   <Switch
-                    id="conto-show-zeroed-accounts"
+                    id="dynamic-report-show-zeroed-accounts"
                     checked={field.value === true}
                     onCheckedChange={field.onChange}
                   />
@@ -192,24 +194,27 @@ function ContoReportFilterForm({
   );
 }
 
-interface ContoReportFilterProps {
-  filter: ContoReportFiltersType;
-  setFilter: (filter: ContoReportFiltersType) => void;
+interface DynamicReportFilterProps {
+  filter: DynamicReportFiltersType;
+  setFilter: (filter: DynamicReportFiltersType) => void;
 }
 
-export function ContoReportFilters({ filter, setFilter }: ContoReportFilterProps): ReactElement {
+export function DynamicReportFilters({
+  filter,
+  setFilter,
+}: DynamicReportFilterProps): ReactElement {
   const [opened, setOpened] = useState(false);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
   const { get, set } = useUrlQuery();
 
-  function isFilterApplied(filter: ContoReportFiltersType): boolean {
+  function isFilterApplied(filter: DynamicReportFiltersType): boolean {
     const changed = Object.entries(filter ?? {}).filter(
       ([_key, value]) => value !== undefined && Array.isArray(value) && value.length > 0,
     );
     return changed.length > 0;
   }
 
-  function onSetFilter(newFilter: ContoReportFiltersType): void {
+  function onSetFilter(newFilter: DynamicReportFiltersType): void {
     // looks for actual changes before triggering update
     if (!equal(newFilter, filter)) {
       setFilter(newFilter);
@@ -220,9 +225,9 @@ export function ContoReportFilters({ filter, setFilter }: ContoReportFilterProps
   // update url on filter change
   useEffect(() => {
     const newFilter = encodeFilters(filter);
-    const oldFilter = get(CONTO_REPORT_FILTERS_KEY);
+    const oldFilter = get(DYNAMIC_REPORT_FILTERS_KEY);
     if (newFilter !== oldFilter) {
-      set(CONTO_REPORT_FILTERS_KEY, newFilter);
+      set(DYNAMIC_REPORT_FILTERS_KEY, newFilter);
     }
   }, [filter, get, set]);
 
@@ -237,9 +242,9 @@ export function ContoReportFilters({ filter, setFilter }: ContoReportFilterProps
       </DialogTrigger>
       <DialogContent className="w-100 max-w-screen-md">
         <DialogHeader>
-          <DialogTitle>Conto report filters</DialogTitle>
+          <DialogTitle>Dynamic report filters</DialogTitle>
         </DialogHeader>
-        <ContoReportFilterForm
+        <DynamicReportFilterForm
           filter={filter}
           setFilter={onSetFilter}
           closeModal={(): void => setOpened(false)}

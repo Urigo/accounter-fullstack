@@ -6,9 +6,9 @@ import {
   type NodeModel,
   type TreeProps,
 } from '@minoru/react-dnd-treeview';
-import type { ContoReportFiltersType } from './conto-report-filters.js';
 import { CustomDragPreview } from './custom-drag-preview.js';
 import { CustomNode } from './custom-node.js';
+import type { DynamicReportFiltersType } from './dynamic-report-filters.js';
 import { Placeholder } from './palceholder.js';
 import type { CustomData } from './types.js';
 
@@ -17,7 +17,7 @@ type Props<T> = Pick<TreeProps<T>, 'tree' | 'onDrop' | 'rootId'> & {
   handleTextChange: (id: NodeModel['id'], value: string) => void;
   handleIsOpenChange: (id: NodeModel['id'], value: boolean) => void;
   handleDeleteCategory: (id: NodeModel['id']) => void;
-  filter: ContoReportFiltersType;
+  filter: DynamicReportFiltersType;
 };
 
 export const TreeView: React.FC<Props<CustomData>> = ({

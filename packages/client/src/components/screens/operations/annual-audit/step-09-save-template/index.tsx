@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
 import { useSetAnnualAuditStep09Status } from '@/hooks/use-set-annual-audit-step09-status.js';
 import {
-  AllContoReportsDocument,
+  AllDynamicReportsDocument,
   AnnualAuditStepStatus,
   Step09SaveTemplateStatusDocument,
 } from '../../../../../gql/graphql.js';
@@ -44,7 +44,7 @@ export function Step09SaveTemplate(props: Step09Props) {
   });
 
   const [{ data: templatesData, fetching: fetchingTemplates }] = useQuery({
-    query: AllContoReportsDocument,
+    query: AllDynamicReportsDocument,
   });
 
   // Report status changes to parent
