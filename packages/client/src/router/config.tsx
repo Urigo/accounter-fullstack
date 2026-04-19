@@ -95,8 +95,8 @@ const TrialBalanceReport = lazy(() =>
     default: m.TrialBalanceReport,
   })),
 );
-const ContoReport = lazy(() =>
-  import('../components/reports/conto/index.js').then(m => ({ default: m.ContoReport })),
+const DynamicReport = lazy(() =>
+  import('../components/reports/dynamic-report/index.js').then(m => ({ default: m.DynamicReport })),
 );
 const VatMonthlyReport = lazy(() =>
   import('../components/reports/vat-monthly-report/index.js').then(m => ({
@@ -432,11 +432,11 @@ export const routes: RouteObject[] = [
                 },
               },
               {
-                path: 'conto',
-                element: withSuspense(ContoReport, <ReportSkeleton />),
+                path: 'dynamic-report',
+                element: withSuspense(DynamicReport, <ReportSkeleton />),
                 handle: {
-                  title: 'Conto Report',
-                  breadcrumb: 'Conto',
+                  title: 'Dynamic Report',
+                  breadcrumb: 'Dynamic Report',
                 },
               },
               {

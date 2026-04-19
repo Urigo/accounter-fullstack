@@ -13,7 +13,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
-import { AllContoReportsDocument, type AllContoReportsQuery } from '../../../gql/graphql.js';
+import { AllDynamicReportsDocument, type AllDynamicReportsQuery } from '../../../gql/graphql.js';
 import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
 import { useUnlockDynamicReportTemplate } from '../../../hooks/use-unlock-dynamic-report-template.js';
 import { Tooltip } from '../../common/index.js';
@@ -38,7 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllContoReports {
+  query AllDynamicReports {
     allDynamicReports {
       id
       name
@@ -48,26 +48,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
   }
 `;
 
-type RowType = AllContoReportsQuery['allDynamicReports'][number];
+type RowType = AllDynamicReportsQuery['allDynamicReports'][number];
 
-interface ContoReportTemplatesProps {
+interface DynamicReportTemplatesProps {
   closeModal: () => void;
   template?: string;
   setTemplate: (template: string) => void;
 }
 
-function ContoReportTemplates({
+function DynamicReportTemplates({
   closeModal,
   setTemplate,
   template,
-}: ContoReportTemplatesProps): ReactElement {
+}: DynamicReportTemplatesProps): ReactElement {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState({});
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   // fetch data
   const [{ data, fetching }, fetchTemplates] = useQuery({
-    query: AllContoReportsDocument,
+    query: AllDynamicReportsDocument,
   });
 
   const { deleteDynamicReportTemplate } = useDeleteDynamicReportTemplate();
@@ -290,9 +290,9 @@ export function ManageTemplates({ template, setTemplate }: Props): ReactElement 
       </Tooltip>
       <DialogContent className="max-w-screen-md">
         <DialogHeader>
-          <DialogTitle>Conto report templates</DialogTitle>
+          <DialogTitle>Dynamic report templates</DialogTitle>
         </DialogHeader>
-        <ContoReportTemplates
+        <DynamicReportTemplates
           closeModal={(): void => setOpened(false)}
           template={template}
           setTemplate={setTemplate}

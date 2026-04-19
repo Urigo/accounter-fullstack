@@ -13,7 +13,7 @@ export function MigratingSubsteps({
   adminBusinessId: string;
   balanceChargeId: string | null;
 }) {
-  const contoHref = ROUTES.REPORTS.CONTO({
+  const dynamicReportHref = ROUTES.REPORTS.DYNAMIC_REPORT({
     fromDate: `${year - 1}-01-01` as TimelessDateString,
     toDate: `${year - 1}-12-31` as TimelessDateString,
     ownerIds: [adminBusinessId],
@@ -26,7 +26,7 @@ export function MigratingSubsteps({
     <BaseStepCard
       id="3a"
       title="Enter Opening Balances"
-      description="Create a balance charge and save the opening balance Conto snapshot template to import prior-year balances"
+      description="Create a balance charge and save the opening balance snapshot template to import prior-year balances"
       status={subStatus}
       level={1}
       actions={[
@@ -40,8 +40,8 @@ export function MigratingSubsteps({
               onClick: () => setBalanceChargeModalOpen(true),
             },
         {
-          label: 'Upload Conto Report',
-          href: contoHref,
+          label: 'Upload Dynamic Report',
+          href: dynamicReportHref,
           disabled: true,
         },
       ]}

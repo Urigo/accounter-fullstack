@@ -1,13 +1,13 @@
 import { useCallback, type ReactElement } from 'react';
 import { getDescendants, type NodeModel } from '@minoru/react-dnd-treeview';
 import { DownloadCSVButton } from '../../common/index.js';
-import type { ContoReportFiltersType } from './conto-report-filters.js';
+import type { DynamicReportFiltersType } from './dynamic-report-filters.js';
 import { REPORT_TREE_ROOT_ID } from './index.js';
 import type { CustomData } from './types.js';
 
 interface Props {
   tree: NodeModel<CustomData>[];
-  filters: ContoReportFiltersType;
+  filters: DynamicReportFiltersType;
 }
 
 export const DownloadCSV = ({ tree, filters }: Props): ReactElement => {
@@ -15,7 +15,7 @@ export const DownloadCSV = ({ tree, filters }: Props): ReactElement => {
     const datesString = getDatesString(filters.fromDate, filters.toDate);
 
     const csvData = convertToCSV(tree);
-    const fileName = 'conto_report' + datesString;
+    const fileName = 'dynamic_report' + datesString;
 
     return { fileContent: csvData, fileName };
   }, [filters.fromDate, filters.toDate, tree]);

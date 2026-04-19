@@ -25,17 +25,17 @@ const FormSchema = z.object({
   template: z.string(),
 });
 
-interface ContoReportTemplateSaveFormProps {
+interface DynamicReportTemplateSaveFormProps {
   tree: NodeModel<CustomData>[];
   setFetching: (fetching: boolean) => void;
   closeModal: () => void;
 }
 
-function ContoReportTemplateSaveForm({
+function DynamicReportTemplateSaveForm({
   tree,
   setFetching,
   closeModal,
-}: ContoReportTemplateSaveFormProps): ReactElement {
+}: DynamicReportTemplateSaveFormProps): ReactElement {
   const template = useMemo(() => {
     const strippedTree = tree.filter(
       node => node.data?.sortCode == null && node.data?.value == null,
@@ -145,9 +145,9 @@ export function SaveTemplate({ tree }: Props): ReactElement {
       </DialogTrigger>
       <DialogContent className="w-100 max-w-screen-md">
         <DialogHeader>
-          <DialogTitle>Save Conto report template</DialogTitle>
+          <DialogTitle>Save Dynamic report template</DialogTitle>
         </DialogHeader>
-        <ContoReportTemplateSaveForm
+        <DynamicReportTemplateSaveForm
           tree={tree}
           setFetching={setFetching}
           closeModal={(): void => setOpened(false)}

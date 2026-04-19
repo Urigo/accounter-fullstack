@@ -6,12 +6,12 @@ import { useQuery } from 'urql';
 import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
 import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
 import { Typography } from '@mui/material';
-import { CONTO_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
+import { DYNAMIC_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import {
-  ContoReportDocument,
-  TemplateForContoReportDocument,
+  DynamicReportDocument,
+  TemplateForDynamicReportDocument,
   type AllSortCodesQuery,
-  type ContoReportQuery,
+  type DynamicReportQuery,
 } from '../../../gql/graphql.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -20,16 +20,16 @@ import { Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import { Label } from '../../ui/label.js';
 import { Switch } from '../../ui/switch.js';
-import { ContoReportFilters, type ContoReportFiltersType } from './conto-report-filters.js';
-import { ManageTemplates } from './conto-report-manage-templates.js';
-import { SaveTemplate } from './conto-report-save-template.js';
 import { DownloadCSV } from './download-csv.js';
+import { DynamicReportFilters, type DynamicReportFiltersType } from './dynamic-report-filters.js';
+import { ManageTemplates } from './dynamic-report-manage-templates.js';
+import { SaveTemplate } from './dynamic-report-save-template.js';
 import { TreeView } from './tree-view.js';
 import type { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query ContoReport($filters: BusinessTransactionsFilter) {
+  query DynamicReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
@@ -65,7 +65,7 @@ import type { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query TemplateForContoReport($name: String!) {
+  query TemplateForDynamicReport($name: String!) {
     dynamicReport(name: $name) {
       id
       name
@@ -135,7 +135,7 @@ function updateSortCodesTreeNodes(
 function updateFinancialEntitiesTreeNodes(
   tree: NodeModel<CustomData>[],
   businessesSum: Extract<
-    NonNullable<ContoReportQuery['businessTransactionsSumFromLedgerRecords']>,
+    NonNullable<DynamicReportQuery['businessTransactionsSumFromLedgerRecords']>,
     { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
   >['businessTransactionsSum'],
   financialEntitiesMap: Map<string, string | number>,
@@ -195,17 +195,17 @@ function randomId(length: number) {
   return str;
 }
 
-export const ContoReport: React.FC = () => {
+export const DynamicReport: React.FC = () => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
   const [enableDnd, setEnableDnd] = useState(false);
   const [templateName, setTemplateName] = useState<string | undefined>(undefined);
   const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<ContoReportFiltersType>(
-    get(CONTO_REPORT_FILTERS_KEY)
+  const [filter, setFilter] = useState<DynamicReportFiltersType>(
+    get(DYNAMIC_REPORT_FILTERS_KEY)
       ? (JSON.parse(
-          decodeURIComponent(get(CONTO_REPORT_FILTERS_KEY) as string),
-        ) as ContoReportFiltersType)
+          decodeURIComponent(get(DYNAMIC_REPORT_FILTERS_KEY) as string),
+        ) as DynamicReportFiltersType)
       : {},
   );
   const [
@@ -215,7 +215,7 @@ export const ContoReport: React.FC = () => {
       error: businessesSumError,
     },
   ] = useQuery({
-    query: ContoReportDocument,
+    query: DynamicReportDocument,
     variables: {
       filters: {
         fromDate: filter?.fromDate,
@@ -231,7 +231,7 @@ export const ContoReport: React.FC = () => {
   // new template structure fetch
   const [{ data: templateData, fetching: fetchingTemplate, error: templateError }, fetchTemplate] =
     useQuery({
-      query: TemplateForContoReportDocument,
+      query: TemplateForDynamicReportDocument,
       variables: {
         name: templateName ?? '',
       },
@@ -388,7 +388,7 @@ export const ContoReport: React.FC = () => {
             <FolderPlus size={20} />
           </Button>
         </Tooltip>
-        <ContoReportFilters filter={filter} setFilter={setFilter} />
+        <DynamicReportFilters filter={filter} setFilter={setFilter} />
         <div className="flex items-center space-x-2">
           <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
           <Label htmlFor="enable-dnd">Form is {enableDnd ? 'editable' : 'locked'}</Label>
