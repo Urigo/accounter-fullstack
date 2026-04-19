@@ -25,6 +25,7 @@ import { Step01ValidateCharges } from './step-01-validate-charges/index.js';
 import { Step02LedgerChanges } from './step-02-ledger-changes/index.js';
 import { Step03OpeningBalance } from './step-03-opening-balance/index.js';
 import { Step04FinancialCharges } from './step-04-financial-charges/index.js';
+import { Step05MainProcess } from './step-05-main-process/index.js';
 import { Step08LedgerLock } from './step-08-ledger-lock/index.js';
 import { Step09SaveTemplate } from './step-09-save-template/index.js';
 import { Step10ExportTrialBalance } from './step-10-export-trial-balance/index.js';
@@ -232,22 +233,15 @@ export const AnnualAuditFlow = (): ReactNode => {
             />
 
             {/* Step 5 - Audit Main Process */}
-            <SimpleStep
+            <Step05MainProcess
               id="5"
               title="Audit Main Process"
               description="Task management system for comprehensive audit checks"
               icon={<FileText className="h-4 w-4" />}
               onStatusChange={handleStatusChange}
               manualData={data?.annualAuditStepStatuses}
-              actions={[
-                { label: 'Manage Conto Tree', href: '/conto/tree' },
-                { label: 'Open Checklist', href: '/validations/checklist' },
-                { label: 'Compare VAT', href: '/vat/comparison' },
-                { label: 'Generate Draft', href: '/depreciation/draft' },
-                { label: 'Manage Audit Checks', href: '/audit/checks' },
-                { label: 'Review Tax Report', href: '/tax/review' },
-                { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
-              ]}
+              year={year}
+              adminBusinessId={adminBusinessId}
             />
 
             {/* Steps 6 - Shareholders Data */}
