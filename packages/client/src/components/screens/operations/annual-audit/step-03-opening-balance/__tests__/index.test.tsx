@@ -11,6 +11,7 @@ const { useQueryMock } = vi.hoisted(() => ({
 
 vi.mock('urql', () => ({
   useQuery: useQueryMock,
+  useMutation: vi.fn(() => [{ fetching: false }, vi.fn()]),
 }));
 
 vi.mock('@/router/routes.js', () => ({
@@ -67,7 +68,7 @@ vi.mock('../../step-base.js', () => ({
   SubstepWrapper: ({ children }: { children: React.ReactNode }) => React.createElement('div', null, children),
 }));
 
-vi.mock('../approval-control.js', () => ({
+vi.mock('../../approval-control.js', () => ({
   ApprovalControl: ({
     initialStatus,
     initialNotes,
@@ -80,6 +81,7 @@ vi.mock('../approval-control.js', () => ({
       'data-initial-status': initialStatus ?? '',
       'data-initial-notes': initialNotes ?? '',
     }),
+  gqlStatusToStepStatus: (status: string) => status.toLowerCase(),
 }));
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -93,6 +95,10 @@ type QueryState = {
   error?: unknown;
 };
 
+type ManualStatusesQueryData = {
+  annualAuditStepStatuses?: unknown[];
+};
+
 async function renderStep03(params: {
   openingState: QueryState;
   manualState: QueryState;
@@ -100,14 +106,14 @@ async function renderStep03(params: {
 }): Promise<{ container: HTMLDivElement; cleanup: () => Promise<void> }> {
   const { openingState, manualState, adminBusinessId = 'owner-1' } = params;
 
-  let callCount = 0;
-  useQueryMock.mockImplementation(() => {
-    callCount++;
-    if (callCount % 2 === 1) {
-      return [{ data: openingState.data, fetching: !!openingState.fetching, error: openingState.error }];
-    }
-    return [{ data: manualState.data, fetching: !!manualState.fetching, error: manualState.error }];
-  });
+  useQueryMock.mockReturnValue([
+    { data: openingState.data, fetching: !!openingState.fetching, error: openingState.error },
+  ]);
+
+  const manualData =
+    Array.isArray(manualState.data)
+      ? manualState.data
+      : ((manualState.data as ManualStatusesQueryData | undefined)?.annualAuditStepStatuses ?? []);
 
   const container = document.createElement('div');
   document.body.append(container);
@@ -123,6 +129,7 @@ async function renderStep03(params: {
         year: 2024,
         adminBusinessId,
         onStatusChange: vi.fn(),
+        manualData,
       }),
     );
     await Promise.resolve();
@@ -208,7 +215,7 @@ describe('Step03OpeningBalance', () => {
     await cleanup();
   });
 
-  it('stays loading while manual statuses are still fetching', async () => {
+  it('uses derived status while manual statuses are not provided yet', async () => {
     const openingState = {
       data: {
         annualAuditOpeningBalanceStatus: {
@@ -230,7 +237,7 @@ describe('Step03OpeningBalance', () => {
     const { container, cleanup } = await renderStep03({ openingState, manualState });
 
     const card = container.querySelector('[data-testid="base-step-card"]');
-    expect(card?.getAttribute('data-status')).toBe('loading');
+    expect(card?.getAttribute('data-status')).toBe('pending');
 
     await cleanup();
   });

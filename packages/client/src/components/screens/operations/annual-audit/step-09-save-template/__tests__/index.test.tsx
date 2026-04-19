@@ -148,6 +148,7 @@ async function render(props: {
         year,
         adminBusinessId: adminBusinessId,
         onStatusChange: vi.fn(),
+        manualData: [],
       }),
     );
     await Promise.resolve();

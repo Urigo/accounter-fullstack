@@ -34,7 +34,7 @@ interface Step03Props extends BaseStepProps {
 
 export function Step03OpeningBalance(props: Step03Props) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState<StepStatus>('pending');
+  const [approvalStatus, setApprovalStatus] = useState<StepStatus | null>(null);
 
   const { adminBusinessId, id, onStatusChange, year } = props;
 
@@ -58,7 +58,7 @@ export function Step03OpeningBalance(props: Step03Props) {
   const persistedManualNotes = persistedStep03Record?.notes ?? null;
 
   useEffect(() => {
-    setApprovalStatus(persistedManualStatus ?? 'pending');
+    setApprovalStatus(persistedManualStatus ?? null);
   }, [persistedManualStatus]);
 
   const derivedStatus = useMemo<StepStatus>(() => {
