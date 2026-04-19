@@ -221,14 +221,19 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
       return;
     }
 
-    const dataToUpdate = relevantDataPicker(
-      values,
-      form.formState.dirtyFields as MakeBoolean<typeof values>,
-    );
+    const dirtyFields = form.formState.dirtyFields as MakeBoolean<typeof values>;
+    const isIrsCodeCleared = dirtyFields.irsCode === true && values.irsCode === null;
+    const valuesForDirtyPicker = isIrsCodeCleared ? { ...values, irsCode: undefined } : values;
 
-    if (!dataToUpdate) return;
+    const dataToUpdate = relevantDataPicker(valuesForDirtyPicker, dirtyFields);
 
-    const updateBusinessInput = convertFormDataToUpdateBusinessInput(dataToUpdate);
+    const normalizedDataToUpdate = isIrsCodeCleared
+      ? { ...dataToUpdate, irsCode: null }
+      : dataToUpdate;
+
+    if (!normalizedDataToUpdate) return;
+
+    const updateBusinessInput = convertFormDataToUpdateBusinessInput(normalizedDataToUpdate);
 
     await updateDbBusiness({
       businessId: business.id,
@@ -236,11 +241,11 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
       fields: updateBusinessInput,
     });
 
-    if (dataToUpdate.tags?.length || dataToUpdate.description) {
+    if (normalizedDataToUpdate.tags?.length || normalizedDataToUpdate.description) {
       // Show similar charges modal if tags or description were updated
       setSimilarChargesData({
-        tagIds: dataToUpdate.tags?.map(id => ({ id })),
-        description: dataToUpdate.description,
+        tagIds: normalizedDataToUpdate.tags?.map(id => ({ id })),
+        description: normalizedDataToUpdate.description,
       });
       setSimilarChargesOpen(true);
     } else {
