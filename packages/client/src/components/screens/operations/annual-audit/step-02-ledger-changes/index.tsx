@@ -151,7 +151,7 @@ export function Step02LedgerChanges(props: Step02Props) {
       isExpanded={isDetailsExpanded}
       onToggleExpanded={() => setIsDetailsExpanded(prev => !prev)}
     >
-      {(pendingChanges > 0 || !persistedManualStatus) && (
+      {pendingChanges > 0 && !persistedManualStatus && (
         <CardContent className="p-2 border-t">
           {fetching ? (
             <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg border border-gray-200 animate-pulse">
