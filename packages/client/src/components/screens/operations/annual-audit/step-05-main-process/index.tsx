@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { AnnualAuditStepStatus } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/index.js';
 import { ROUTES } from '@/router/routes.js';
-import { CardContent } from '../../../../ui/card.js';
+// import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import {
@@ -79,23 +79,21 @@ export function Step05MainProcess(props: Step05Props) {
       {adminBusinessId && (
         <Collapsible open={isExpanded}>
           <CollapsibleContent>
-            <CardContent className="pt-0 border-t">
+            {/* <CardContent className="pt-0 border-t">
               <div className="space-y-2 mt-3" />
-            </CardContent>
-            {adminBusinessId && (
-              <div className="px-6 pb-4 pt-2 border-t">
-                <ApprovalControl
-                  ownerId={adminBusinessId}
-                  year={props.year}
-                  stepId={id}
-                  initialStatus={
-                    (persistedStepRecord?.status as AnnualAuditStepStatus | undefined) ?? undefined
-                  }
-                  initialNotes={persistedManualNotes}
-                  onSaved={status => setStatus(status)}
-                />
-              </div>
-            )}
+            </CardContent> */}
+            <div className="px-6 pb-4 pt-2 border-t">
+              <ApprovalControl
+                ownerId={adminBusinessId}
+                year={props.year}
+                stepId={id}
+                initialStatus={
+                  (persistedStepRecord?.status as AnnualAuditStepStatus | undefined) ?? undefined
+                }
+                initialNotes={persistedManualNotes}
+                onSaved={status => setStatus(status)}
+              />
+            </div>
           </CollapsibleContent>
         </Collapsible>
       )}
