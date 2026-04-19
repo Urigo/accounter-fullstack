@@ -17,6 +17,7 @@ import {
 /* GraphQL */ `
   fragment TransactionForTransactionsTableFields on Transaction {
     id
+    isFee
     chargeId
     eventDate
     effectiveDate
