@@ -38,7 +38,7 @@ export function Step05MainProcess(props: Step05Props) {
 
   const [{ data: prevYearData }] = useQuery({
     query: Step05PrevYearTemplateDocument,
-    variables: { ownerId: adminBusinessId!, year: props.year - 1 },
+    variables: { ownerId: adminBusinessId ?? '', year: props.year - 1 },
     pause: !adminBusinessId,
   });
 
