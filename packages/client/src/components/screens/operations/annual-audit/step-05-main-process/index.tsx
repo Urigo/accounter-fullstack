@@ -43,7 +43,7 @@ export function Step05MainProcess(props: Step05Props) {
   });
 
   const prevYearLockedTemplateName = useMemo<string | null>(() => {
-    const step09 = prevYearData?.annualAuditStepStatuses.find(s => s.stepId === '9');
+    const step09 = prevYearData?.annualAuditStepStatuses?.find(s => s.stepId === '9');
     if (!step09?.evidence) return null;
     try {
       const parsed = JSON.parse(step09.evidence) as { lockedTemplateName?: string };
