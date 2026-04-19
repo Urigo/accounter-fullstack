@@ -1,10 +1,18 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronRight, Clock, Loader2 } from 'lucide-react';
+import type { AnnualAuditStepsStatusQuery } from '@/gql/graphql.js';
 import { Badge } from '../../../ui/badge.js';
 import { Button } from '../../../ui/button.js';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../ui/card.js';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '../../../ui/card.js';
 
 export type StepStatus = 'completed' | 'in-progress' | 'pending' | 'blocked' | 'loading';
 
@@ -16,6 +24,7 @@ export interface BaseStepProps {
   icon?: ReactNode;
   level?: number;
   onStatusChange?: (stepId: string, status: StepStatus) => void;
+  manualData: AnnualAuditStepsStatusQuery['annualAuditStepStatuses'] | undefined;
 }
 
 export interface StepAction {
@@ -81,9 +90,10 @@ export const SubstepWrapper = ({
 
 interface BaseStepCardProps extends BaseStepProps {
   status: StepStatus;
+  statusIndicator?: ReactNode;
   actions?: StepAction[];
   children?: ReactNode;
-  hasSubsteps?: boolean;
+  footer?: ReactNode;
   isExpanded?: boolean;
   onToggleExpanded?: () => void;
   disabled?: boolean;
@@ -96,21 +106,31 @@ export function BaseStepCard({
   description,
   icon,
   status,
+  statusIndicator,
   actions,
   children,
-  hasSubsteps = false,
-  isExpanded = false,
+  footer,
+  isExpanded,
   onToggleExpanded,
   level = 0,
   disabled = false,
+  manualData,
 }: BaseStepCardProps) {
+  const persistedStepRecord = useMemo(() => {
+    if (!Array.isArray(manualData)) return undefined;
+    return manualData.find(record => record.stepId === id);
+  }, [manualData, id]);
+
+  const persistedManualNotes = persistedStepRecord?.notes ?? null;
   return (
     <SubstepWrapper ref={ref} level={level}>
       <Card className="mb-4">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {hasSubsteps ? (
+              {isExpanded == null ? (
+                <div className="w-4" />
+              ) : (
                 <Button
                   disabled={disabled}
                   variant="ghost"
@@ -124,8 +144,6 @@ export function BaseStepCard({
                     <ChevronRight className="h-4 w-4" />
                   )}
                 </Button>
-              ) : (
-                <div className="w-4" />
               )}
               {getStatusIcon(status)}
               {icon}
@@ -136,7 +154,10 @@ export function BaseStepCard({
                 {description && <CardDescription className="mt-1">{description}</CardDescription>}
               </div>
             </div>
-            {getStatusBadge(status)}
+            <div className="flex items-center gap-2">
+              {statusIndicator}
+              {getStatusBadge(status)}
+            </div>
           </div>
         </CardHeader>
         {actions && actions.length > 0 && (
@@ -158,6 +179,16 @@ export function BaseStepCard({
               })}
             </div>
           </CardContent>
+        )}
+        {(footer || persistedManualNotes) && (
+          <CardFooter className="flex flex-col gap-2 items-start">
+            {footer}
+            {persistedManualNotes && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                Notes: {persistedManualNotes}
+              </div>
+            )}
+          </CardFooter>
         )}
         {children}
       </Card>

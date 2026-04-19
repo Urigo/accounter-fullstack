@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { ROUTES } from '@/router/routes.js';
 import {
   AccountantApprovalStatusDocument,
   AccountantStatus,
+  AnnualAuditStepStatus,
   ChargeSortByField,
 } from '../../../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
@@ -12,6 +13,7 @@ import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
+import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -59,38 +61,73 @@ export function Step01ValidateCharges(props: Step01Props) {
   });
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
   const [hasReportedCompletion, setHasReportedCompletion] = useState(false);
+  const [overriddenStatus, setOverriddenStatus] = useState<StepStatus | undefined>(undefined);
 
   const { adminBusinessId, id, onStatusChange, year } = props;
 
-  // Report status changes to parent
-  useEffect(() => {
-    if (onStatusChange) {
-      onStatusChange(id, status);
-    }
-
-    // Track if we've reported completion to avoid double counting
-    if (status === 'completed' && !hasReportedCompletion) {
-      setHasReportedCompletion(true);
-    } else if (status !== 'completed' && hasReportedCompletion) {
-      setHasReportedCompletion(false);
-    }
-  }, [status, onStatusChange, id, hasReportedCompletion]);
-
-  const [{ data, fetching }, fetchStatus] = useQuery({
+  const [{ data, fetching, error }, fetchStatus] = useQuery({
     query: AccountantApprovalStatusDocument,
     variables: {
       fromDate: `${year}-01-01` as TimelessDateString,
       toDate: `${year}-12-31` as TimelessDateString,
     },
+    pause: true,
   });
+
+  const refreshData = useCallback(async () => {
+    await fetchStatus();
+  }, [fetchStatus]);
+
+  const persistedStep01Record = useMemo(() => {
+    if (!Array.isArray(props.manualData)) return undefined;
+    return props.manualData.find(record => record.stepId === id);
+  }, [props.manualData, id]);
+
+  const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
+    const persistedStatus = persistedStep01Record?.status;
+    if (!persistedStatus) {
+      return undefined;
+    }
+    return gqlStatusToStepStatus(persistedStatus as AnnualAuditStepStatus);
+  }, [persistedStep01Record]);
+
+  useEffect(() => {
+    if (adminBusinessId && !persistedManualStatus && !fetching && !data && !error) {
+      refreshData();
+    }
+  }, [adminBusinessId, persistedManualStatus, fetching, data, error, refreshData]);
+
+  const persistedManualNotes = persistedStep01Record?.notes ?? null;
+
+  // Apply persisted override if it exists
+  useEffect(() => {
+    if (persistedManualStatus) {
+      setOverriddenStatus(persistedManualStatus);
+    }
+  }, [persistedManualStatus]);
+
+  // Report status changes to parent
+  useEffect(() => {
+    const finalStatus = overriddenStatus ?? status;
+    if (onStatusChange) {
+      onStatusChange(id, finalStatus);
+    }
+
+    // Track if we've reported completion to avoid double counting
+    if (finalStatus === 'completed' && !hasReportedCompletion) {
+      setHasReportedCompletion(true);
+    } else if (finalStatus !== 'completed' && hasReportedCompletion) {
+      setHasReportedCompletion(false);
+    }
+  }, [status, overriddenStatus, onStatusChange, id, hasReportedCompletion]);
 
   useEffect(() => {
     if (!adminBusinessId) {
       setStatus('blocked');
-    } else if (fetching) {
+    } else if (fetching && !persistedManualStatus) {
       setStatus('loading');
     }
-  }, [adminBusinessId, fetching]);
+  }, [adminBusinessId, fetching, persistedManualStatus]);
 
   useEffect(() => {
     if (data?.accountantApprovalStatus) {
@@ -138,35 +175,46 @@ export function Step01ValidateCharges(props: Step01Props) {
     });
   }, [adminBusinessId, year]);
 
-  const actions: StepAction[] = [{ label: 'Review Charges', href }];
+  const actions = useMemo((): StepAction[] => {
+    if (persistedManualStatus) {
+      return [
+        { label: 'Review Charges', href },
+        { label: 'Revalidate', onClick: refreshData, disabled: fetching },
+      ];
+    }
+    return [{ label: 'Review Charges', href }];
+  }, [persistedManualStatus, href, refreshData, fetching]);
 
-  const refreshData = async () => {
-    await fetchStatus();
-  };
+  const finalStatus = overriddenStatus ?? status;
+  const statusMismatch = overriddenStatus && overriddenStatus !== status;
 
   return (
-    <BaseStepCard {...props} status={status} icon={<Eye className="h-4 w-4" />} actions={actions}>
+    <BaseStepCard
+      {...props}
+      status={finalStatus}
+      statusIndicator={
+        fetching ? (
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        ) : statusMismatch ? (
+          <Badge variant="outline" className="text-xs border-blue-200 text-blue-700">
+            Manual override
+          </Badge>
+        ) : undefined
+      }
+      icon={<Eye className="h-4 w-4" />}
+      actions={actions}
+      isExpanded={isDetailsExpanded}
+      footer={
+        <div className="w-full flex items-center gap-2 pt-2 border-t">
+          <span className="text-sm font-medium">Charge Validation Details</span>
+          <Badge variant="outline" className="text-xs">
+            {chargeData.pendingCount + chargeData.unapprovedCount} need attention
+          </Badge>
+        </div>
+      }
+      onToggleExpanded={() => setIsDetailsExpanded(prev => !prev)}
+    >
       <Collapsible open={isDetailsExpanded}>
-        <CardContent className="pt-0 border-t">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
-            className="w-full justify-between p-2 h-auto"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Charge Validation Details</span>
-              <Badge variant="outline" className="text-xs">
-                {chargeData.pendingCount + chargeData.unapprovedCount} need attention
-              </Badge>
-            </div>
-            {isDetailsExpanded ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </Button>
-        </CardContent>
         <CollapsibleContent>
           <CardContent className="pt-0">
             <div className="space-y-4">
@@ -261,6 +309,20 @@ export function Step01ValidateCharges(props: Step01Props) {
               )}
             </div>
           </CardContent>
+          {adminBusinessId && (
+            <div className="px-6 pb-4 pt-2 border-t">
+              <ApprovalControl
+                ownerId={adminBusinessId}
+                year={year}
+                stepId={id}
+                initialStatus={
+                  (persistedStep01Record?.status as AnnualAuditStepStatus | undefined) ?? undefined
+                }
+                initialNotes={persistedManualNotes}
+                onSaved={status => setOverriddenStatus(status)}
+              />
+            </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
     </BaseStepCard>

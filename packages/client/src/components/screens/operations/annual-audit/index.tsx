@@ -1,6 +1,18 @@
 import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Calculator, Download, Eye, FileText, Lock, Settings, Upload, Users } from 'lucide-react';
+import {
+  Calculator,
+  Download,
+  Eye,
+  FileText,
+  Loader2,
+  Lock,
+  Settings,
+  Upload,
+  Users,
+} from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from 'urql';
+import { AnnualAuditStepsStatusDocument } from '@/gql/graphql.js';
 import { ROUTES } from '@/router/routes.js';
 import { FiltersContext } from '../../../../providers/filters-context.js';
 import { UserContext } from '../../../../providers/user-provider.js';
@@ -22,6 +34,18 @@ import { Step14TaxComplianceReport } from './step-14-tax-compliance-report/index
 import type { StepStatus } from './step-base.js';
 import { SimpleStep } from './step-simple.js';
 import { YearPicker } from './year-picker.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query AnnualAuditStepsStatus($ownerId: UUID!, $year: Int!) {
+    annualAuditStepStatuses(ownerId: $ownerId, year: $year) {
+      id
+      stepId
+      status
+      notes
+    }
+  }
+`;
 
 export const AnnualAuditFlow = (): ReactNode => {
   const { setFiltersContext } = useContext(FiltersContext);
@@ -58,6 +82,13 @@ export const AnnualAuditFlow = (): ReactNode => {
       </div>,
     );
   }, [year, setFiltersContext, changeYear]);
+
+  const [{ data, fetching }] = useQuery({
+    query: AnnualAuditStepsStatusDocument,
+    variables: { ownerId: adminBusinessId!, year },
+    pause: !adminBusinessId,
+  });
+  const isLoadingStepStatuses: boolean = !!(adminBusinessId && fetching);
 
   const totalSteps = 21;
 
@@ -144,243 +175,273 @@ export const AnnualAuditFlow = (): ReactNode => {
           </Card>
         </div>
 
-        <div className="space-y-4">
-          {/* Step 1 - Charges Validation */}
-          <Step01ValidateCharges
-            id="1"
-            ref={step1Ref}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            title="Validate All Charges"
-            description="Ensure all charges of the year were reviewed, handle pending charges"
-            onStatusChange={handleStatusChange}
-          />
+        {isLoadingStepStatuses ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
+              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Loading annual audit step statuses...</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {/* Step 1 - Charges Validation */}
+            <Step01ValidateCharges
+              id="1"
+              ref={step1Ref}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              title="Validate All Charges"
+              description="Ensure all charges of the year were reviewed, handle pending charges"
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          {/* Step 2 - Pending Ledger Changes */}
-          <Step02LedgerChanges
-            id="2"
-            ref={step2Ref}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            title="Check Pending Ledger Changes"
-            description="Ensure no pending ledger changes exist"
-            onStatusChange={handleStatusChange}
-          />
+            {/* Step 2 - Pending Ledger Changes */}
+            <Step02LedgerChanges
+              id="2"
+              ref={step2Ref}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              title="Check Pending Ledger Changes"
+              description="Ensure no pending ledger changes exist"
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          {/* Step 3 - Opening Balance Verification */}
-          <Step03OpeningBalance
-            id="3"
-            year={year}
-            adminBusinessId={adminBusinessId}
-            title="Verify Opening Balance"
-            description="Handle opening balance verification based on user type"
-            onStatusChange={handleStatusChange}
-          />
+            {/* Step 3 - Opening Balance Verification */}
+            <Step03OpeningBalance
+              id="3"
+              year={year}
+              adminBusinessId={adminBusinessId}
+              title="Verify Opening Balance"
+              description="Handle opening balance verification based on user type"
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          {/* Step 4 - Financial Charges */}
-          <Step04FinancialCharges
-            id="4"
-            title="Generate Financial Charges"
-            description="Create various financial charges and reserves"
-            icon={<Calculator className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            year={year}
-            adminBusinessId={adminBusinessId}
-          />
+            {/* Step 4 - Financial Charges */}
+            <Step04FinancialCharges
+              id="4"
+              title="Generate Financial Charges"
+              description="Create various financial charges and reserves"
+              icon={<Calculator className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              year={year}
+              adminBusinessId={adminBusinessId}
+            />
 
-          {/* Step 5 - Audit Main Process */}
-          <SimpleStep
-            id="5"
-            title="Audit Main Process"
-            description="Task management system for comprehensive audit checks"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Manage Conto Tree', href: '/conto/tree' },
-              { label: 'Open Checklist', href: '/validations/checklist' },
-              { label: 'Compare VAT', href: '/vat/comparison' },
-              { label: 'Generate Draft', href: '/depreciation/draft' },
-              { label: 'Manage Audit Checks', href: '/audit/checks' },
-              { label: 'Review Tax Report', href: '/tax/review' },
-              { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
-            ]}
-          />
+            {/* Step 5 - Audit Main Process */}
+            <SimpleStep
+              id="5"
+              title="Audit Main Process"
+              description="Task management system for comprehensive audit checks"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[
+                { label: 'Manage Conto Tree', href: '/conto/tree' },
+                { label: 'Open Checklist', href: '/validations/checklist' },
+                { label: 'Compare VAT', href: '/vat/comparison' },
+                { label: 'Generate Draft', href: '/depreciation/draft' },
+                { label: 'Manage Audit Checks', href: '/audit/checks' },
+                { label: 'Review Tax Report', href: '/tax/review' },
+                { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
+              ]}
+            />
 
-          {/* Steps 6 - Shareholders Data */}
-          <SimpleStep
-            id="6"
-            title="Add Shareholders Data (1214)"
-            description="For 1214 report preparation"
-            icon={<Users className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Manage Shareholders', href: '/shareholders/manage' },
-              { label: 'Import Data', href: '/shareholders/import' },
-            ]}
-          />
+            {/* Steps 6 - Shareholders Data */}
+            <SimpleStep
+              id="6"
+              title="Add Shareholders Data (1214)"
+              description="For 1214 report preparation"
+              icon={<Users className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[
+                { label: 'Manage Shareholders', href: '/shareholders/manage' },
+                { label: 'Import Data', href: '/shareholders/import' },
+              ]}
+            />
 
-          {/* Steps 7 - Revalidate Charges And Ledger */}
-          <SimpleStep
-            id="7"
-            title="Revalidate Pending Items"
-            description="Ensure no charges approval or ledger regeneration pending"
-            icon={<Eye className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            defaultStatus={step7Status}
-            actions={[
-              {
-                label: 'Check Pending Approvals',
-                onClick: () => {
-                  step1Ref.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
-                  });
+            {/* Steps 7 - Revalidate Charges And Ledger */}
+            <SimpleStep
+              id="7"
+              title="Revalidate Pending Items"
+              description="Ensure no charges approval or ledger regeneration pending"
+              icon={<Eye className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              defaultStatus={step7Status}
+              actions={[
+                {
+                  label: 'Check Pending Approvals',
+                  onClick: () => {
+                    step1Ref.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  },
                 },
-              },
-              {
-                label: 'Ledger Status',
-                onClick: () => {
-                  step2Ref.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start',
-                  });
+                {
+                  label: 'Ledger Status',
+                  onClick: () => {
+                    step2Ref.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    });
+                  },
                 },
-              },
-            ]}
-          />
+              ]}
+            />
 
-          {/* Steps 8 - Ledger Lock */}
-          <Step08LedgerLock
-            id="8"
-            title="Lock Ledger"
-            description="Lock ledger by records and by date"
-            year={year}
-            icon={<Lock className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-          />
+            {/* Steps 8 - Ledger Lock */}
+            <Step08LedgerLock
+              id="8"
+              title="Lock Ledger"
+              description="Lock ledger by records and by date"
+              year={year}
+              icon={<Lock className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <Step09SaveTemplate
-            id="9"
-            title="Save Final Dynamic Report Template"
-            icon={<FileText className="h-4 w-4" />}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            onStatusChange={handleStatusChange}
-          />
+            <Step09SaveTemplate
+              id="9"
+              title="Save Final Dynamic Report Template"
+              icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <Step10ExportTrialBalance
-            id="10"
-            title="Export Year-end Trial Balance"
-            icon={<Download className="h-4 w-4" />}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            onStatusChange={handleStatusChange}
-          />
+            <Step10ExportTrialBalance
+              id="10"
+              title="Export Year-end Trial Balance"
+              icon={<Download className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <Step11DepreciationReport
-            id="11"
-            title="Generate Final Depreciation Report"
-            icon={<FileText className="h-4 w-4" />}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            onStatusChange={handleStatusChange}
-          />
+            <Step11DepreciationReport
+              id="11"
+              title="Generate Final Depreciation Report"
+              icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <SimpleStep
-            id="12"
-            title="Generate Financial Reports"
-            description="With comparison numbers from last year"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate Reports', href: '/reports/financial' }]}
-          />
+            <SimpleStep
+              id="12"
+              title="Generate Financial Reports"
+              description="With comparison numbers from last year"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[{ label: 'Generate Reports', href: '/reports/financial' }]}
+            />
 
-          <Step13TaxReport
-            id="13"
-            title="Generate Tax Report"
-            icon={<FileText className="h-4 w-4" />}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            onStatusChange={handleStatusChange}
-          />
+            <Step13TaxReport
+              id="13"
+              title="Generate Tax Report"
+              icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <Step14TaxComplianceReport
-            id="14"
-            title="Generate Tax Compliance Reports"
-            icon={<FileText className="h-4 w-4" />}
-            year={year}
-            adminBusinessId={adminBusinessId}
-            onStatusChange={handleStatusChange}
-          />
+            <Step14TaxComplianceReport
+              id="14"
+              title="Generate Tax Compliance Reports"
+              icon={<FileText className="h-4 w-4" />}
+              year={year}
+              adminBusinessId={adminBusinessId}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+            />
 
-          <SimpleStep
-            id="15"
-            title="Generate Tax Compliance Report"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Generate 973', href: '/reports/973' },
-              { label: 'Generate 901א', href: '/reports/901a' },
-            ]}
-          />
+            <SimpleStep
+              id="15"
+              title="Generate Tax Compliance Report"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[
+                { label: 'Generate 973', href: '/reports/973' },
+                { label: 'Generate 901א', href: '/reports/901a' },
+              ]}
+            />
 
-          <SimpleStep
-            id="16"
-            title="Generate 6111 Report"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate 6111', href: ROUTES.REPORTS.SHAAM_6111 }]}
-          />
+            <SimpleStep
+              id="16"
+              title="Generate 6111 Report"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[{ label: 'Generate 6111', href: ROUTES.REPORTS.SHAAM_6111 }]}
+            />
 
-          <SimpleStep
-            id="17"
-            title="Generate Dividend Report 1214ב"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate Dividend Report', href: '/reports/dividend-1214b' }]}
-          />
+            <SimpleStep
+              id="17"
+              title="Generate Dividend Report 1214ב"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[{ label: 'Generate Dividend Report', href: '/reports/dividend-1214b' }]}
+            />
 
-          <SimpleStep
-            id="18"
-            title="Generate 1214 Report"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[{ label: 'Generate 1214', href: '/reports/1214' }]}
-          />
+            <SimpleStep
+              id="18"
+              title="Generate 1214 Report"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[{ label: 'Generate 1214', href: '/reports/1214' }]}
+            />
 
-          <SimpleStep
-            id="19"
-            title="Compare Tax Expenses"
-            description="Compare 1214 tax expenses with ledger tax expenses"
-            icon={<Calculator className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[{ label: 'Compare Expenses', href: '/tax/compare-expenses' }]}
-          />
+            <SimpleStep
+              id="19"
+              title="Compare Tax Expenses"
+              description="Compare 1214 tax expenses with ledger tax expenses"
+              icon={<Calculator className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[{ label: 'Compare Expenses', href: '/tax/compare-expenses' }]}
+            />
 
-          <SimpleStep
-            id="20"
-            title="Signing Process"
-            description="Handle signing process and accompanying documents"
-            icon={<FileText className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Prepare Documents', href: '/signing/prepare' },
-              { label: 'Digital Signing', href: '/signing/digital' },
-            ]}
-          />
+            <SimpleStep
+              id="20"
+              title="Signing Process"
+              description="Handle signing process and accompanying documents"
+              icon={<FileText className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[
+                { label: 'Prepare Documents', href: '/signing/prepare' },
+                { label: 'Digital Signing', href: '/signing/digital' },
+              ]}
+            />
 
-          <SimpleStep
-            id="21"
-            title="File Annual Report"
-            description="Submit annual report to companies government office"
-            icon={<Upload className="h-4 w-4" />}
-            onStatusChange={handleStatusChange}
-            actions={[
-              { label: 'Prepare Filing', href: '/filing/prepare' },
-              { label: 'Submit Report', href: '/filing/submit' },
-            ]}
-          />
-        </div>
+            <SimpleStep
+              id="21"
+              title="File Annual Report"
+              description="Submit annual report to companies government office"
+              icon={<Upload className="h-4 w-4" />}
+              onStatusChange={handleStatusChange}
+              manualData={data?.annualAuditStepStatuses}
+              actions={[
+                { label: 'Prepare Filing', href: '/filing/prepare' },
+                { label: 'Submit Report', href: '/filing/submit' },
+              ]}
+            />
+          </div>
+        )}
 
         <div className="mt-8 p-4 bg-muted rounded-lg">
           <h3 className="font-semibold mb-2">Quick Actions</h3>
