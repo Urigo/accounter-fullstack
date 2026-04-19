@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from 'urql';
 import type { AnnualAuditStepStatus } from '@/gql/graphql.js';
+import { Step05PrevYearTemplateDocument } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/index.js';
 import { ROUTES } from '@/router/routes.js';
 // import { CardContent } from '../../../../ui/card.js';
@@ -12,6 +14,18 @@ import {
   type StepStatus,
 } from '../step-base.js';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query Step05PrevYearTemplate($ownerId: UUID!, $year: Int!) {
+    annualAuditStepStatuses(ownerId: $ownerId, year: $year) {
+      id
+      stepId
+      status
+      evidence
+    }
+  }
+`;
+
 interface Step05Props extends BaseStepProps {
   year: number;
   adminBusinessId?: string;
@@ -21,6 +35,23 @@ export function Step05MainProcess(props: Step05Props) {
   const [status, setStatus] = useState<StepStatus>('pending');
   const [isExpanded, setIsExpanded] = useState(false);
   const { adminBusinessId, id, onStatusChange } = props;
+
+  const [{ data: prevYearData }] = useQuery({
+    query: Step05PrevYearTemplateDocument,
+    variables: { ownerId: adminBusinessId!, year: props.year - 1 },
+    pause: !adminBusinessId,
+  });
+
+  const prevYearLockedTemplateName = useMemo<string | null>(() => {
+    const step09 = prevYearData?.annualAuditStepStatuses.find(s => s.stepId === '9');
+    if (!step09?.evidence) return null;
+    try {
+      const parsed = JSON.parse(step09.evidence) as { lockedTemplateName?: string };
+      return parsed.lockedTemplateName ?? null;
+    } catch {
+      return null;
+    }
+  }, [prevYearData]);
 
   const persistedStepRecord = useMemo(() => {
     if (!Array.isArray(props.manualData)) return undefined;
@@ -49,7 +80,10 @@ export function Step05MainProcess(props: Step05Props) {
 
   const actions = useMemo((): StepAction[] => {
     return [
-      { label: 'Manage Conto Tree', href: ROUTES.REPORTS.DYNAMIC_REPORT({}) },
+      {
+        label: 'Manage Conto Tree',
+        href: ROUTES.REPORTS.DYNAMIC_REPORT(null, prevYearLockedTemplateName),
+      },
       // { label: 'Open Checklist', href: '/validations/checklist' },
       // { label: 'Compare VAT', href: '/vat/comparison' },
       // { label: 'Generate Draft', href: '/depreciation/draft' },
@@ -66,7 +100,7 @@ export function Step05MainProcess(props: Step05Props) {
       { label: 'Review Tax Report', href: ROUTES.REPORTS.TAX(props.year) },
       // { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
     ];
-  }, [props.year, adminBusinessId]);
+  }, [props.year, adminBusinessId, prevYearLockedTemplateName]);
 
   return (
     <BaseStepCard
