@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { formatStringifyAmount } from '../../../helpers/index.js';
+import { Badge } from '../../ui/badge.js';
 import type { TransactionsTableRowType } from '../columns.js';
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
 
 export const Amount = ({ transaction }: Props): ReactElement => {
   const amount = 'amount' in transaction ? transaction.amount : undefined;
+  const { isFee } = transaction;
 
   return (
     <div
@@ -17,6 +19,11 @@ export const Amount = ({ transaction }: Props): ReactElement => {
       }}
     >
       {amount?.formatted}
+      {isFee && (
+        <Badge variant="secondary" className="ml-2 text-xs font-semibold">
+          Fee
+        </Badge>
+      )}
       <br />
       {transaction.cryptoExchangeRate && (
         <span
