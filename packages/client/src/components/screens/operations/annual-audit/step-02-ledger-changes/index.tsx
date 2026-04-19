@@ -11,7 +11,7 @@ import type { TimelessDateString } from '../../../../../helpers/index.js';
 import { getLedgerValidationHref } from '../../../../charges-ledger-validation.js';
 import { Badge } from '../../../../ui/badge.js';
 import { CardContent } from '../../../../ui/card.js';
-import { ApprovalControl } from '../approval-control.js';
+import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -42,7 +42,7 @@ export function Step02LedgerChanges(props: Step02Props) {
   const [overriddenStatus, setOverriddenStatus] = useState<StepStatus | undefined>(undefined);
   const { year, adminBusinessId, onStatusChange, id } = props;
 
-  const [{ data, fetching }, fetchStatus] = useQuery({
+  const [{ data, fetching, error }, fetchStatus] = useQuery({
     query: LedgerValidationStatusDocument,
     variables: {
       filters: {
@@ -63,16 +63,7 @@ export function Step02LedgerChanges(props: Step02Props) {
     const persistedStatus = persistedStep02Record?.status;
     if (!persistedStatus) return undefined;
     // Convert GQL status to StepStatus
-    switch (persistedStatus) {
-      case 'COMPLETED':
-        return 'completed';
-      case 'IN_PROGRESS':
-        return 'in-progress';
-      case 'BLOCKED':
-        return 'blocked';
-      default:
-        return 'pending';
-    }
+    return gqlStatusToStepStatus(persistedStatus as AnnualAuditStepStatus);
   }, [persistedStep02Record]);
 
   const persistedManualNotes = persistedStep02Record?.notes ?? null;
@@ -93,10 +84,10 @@ export function Step02LedgerChanges(props: Step02Props) {
   }, [status, overriddenStatus, onStatusChange, id]);
 
   useEffect(() => {
-    if (!data && !fetching && adminBusinessId && !persistedManualStatus) {
+    if (!data && !fetching && !error && adminBusinessId && !persistedManualStatus) {
       fetchStatus();
     }
-  });
+  }, [data, fetching, error, adminBusinessId, persistedManualStatus, fetchStatus]);
 
   useEffect(() => {
     if (fetching) setStatus('loading');

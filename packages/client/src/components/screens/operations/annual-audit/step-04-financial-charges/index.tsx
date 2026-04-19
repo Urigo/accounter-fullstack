@@ -15,7 +15,7 @@ import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { ApprovalControl } from '../approval-control.js';
+import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -128,17 +128,7 @@ export function Step04FinancialCharges(props: Step04Props) {
   const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
     const persistedStatus = persistedStepRecord?.status;
     if (!persistedStatus) return undefined;
-    // Convert GQL status to StepStatus
-    switch (persistedStatus) {
-      case 'COMPLETED':
-        return 'completed';
-      case 'IN_PROGRESS':
-        return 'in-progress';
-      case 'BLOCKED':
-        return 'blocked';
-      default:
-        return 'pending';
-    }
+    return gqlStatusToStepStatus(persistedStatus as AnnualAuditStepStatus);
   }, [persistedStepRecord]);
 
   const persistedManualNotes = persistedStepRecord?.notes ?? null;

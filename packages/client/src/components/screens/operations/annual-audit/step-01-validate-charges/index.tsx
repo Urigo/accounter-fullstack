@@ -13,7 +13,7 @@ import { Badge } from '../../../../ui/badge.js';
 import { Button } from '../../../../ui/button.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { ApprovalControl } from '../approval-control.js';
+import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import {
   BaseStepCard,
   type BaseStepProps,
@@ -65,7 +65,7 @@ export function Step01ValidateCharges(props: Step01Props) {
 
   const { adminBusinessId, id, onStatusChange, year } = props;
 
-  const [{ data, fetching }, fetchStatus] = useQuery({
+  const [{ data, fetching, error }, fetchStatus] = useQuery({
     query: AccountantApprovalStatusDocument,
     variables: {
       fromDate: `${year}-01-01` as TimelessDateString,
@@ -86,21 +86,16 @@ export function Step01ValidateCharges(props: Step01Props) {
   const persistedManualStatus = useMemo<StepStatus | undefined>(() => {
     const persistedStatus = persistedStep01Record?.status;
     if (!persistedStatus) {
-      refreshData();
       return undefined;
     }
-    // Convert GQL status to StepStatus
-    switch (persistedStatus) {
-      case 'COMPLETED':
-        return 'completed';
-      case 'IN_PROGRESS':
-        return 'in-progress';
-      case 'BLOCKED':
-        return 'blocked';
-      default:
-        return 'pending';
+    return gqlStatusToStepStatus(persistedStatus as AnnualAuditStepStatus);
+  }, [persistedStep01Record]);
+
+  useEffect(() => {
+    if (adminBusinessId && !persistedManualStatus && !fetching && !data && !error) {
+      refreshData();
     }
-  }, [persistedStep01Record, refreshData]);
+  }, [adminBusinessId, persistedManualStatus, fetching, data, error, refreshData]);
 
   const persistedManualNotes = persistedStep01Record?.notes ?? null;
 
@@ -129,10 +124,10 @@ export function Step01ValidateCharges(props: Step01Props) {
   useEffect(() => {
     if (!adminBusinessId) {
       setStatus('blocked');
-    } else if (fetching) {
+    } else if (fetching && !persistedManualStatus) {
       setStatus('loading');
     }
-  }, [adminBusinessId, fetching]);
+  }, [adminBusinessId, fetching, persistedManualStatus]);
 
   useEffect(() => {
     if (data?.accountantApprovalStatus) {

@@ -46,6 +46,7 @@ export function MigratingSubsteps({
         },
       ]}
       disabled={false}
+      manualData={[]}
     >
       <BalanceChargeModal
         open={balanceChargeModalOpen}

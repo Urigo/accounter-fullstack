@@ -10,7 +10,7 @@ import {
 import type { TimelessDateString } from '../../../../../helpers/dates.js';
 import { Alert, AlertDescription, AlertTitle } from '../../../../ui/alert.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
-import { ApprovalControl } from '../approval-control.js';
+import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
 import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
 import { MigratingSubsteps } from './migrating-substep.js';
 
@@ -26,19 +26,6 @@ import { MigratingSubsteps } from './migrating-substep.js';
     }
   }
 `;
-
-export function gqlStatusToStepStatus(status: AnnualAuditStepStatus): StepStatus {
-  switch (status) {
-    case AnnualAuditStepStatus.Completed:
-      return 'completed';
-    case AnnualAuditStepStatus.InProgress:
-      return 'in-progress';
-    case AnnualAuditStepStatus.Blocked:
-      return 'blocked';
-    default:
-      return 'pending';
-  }
-}
 
 interface Step03Props extends BaseStepProps {
   year: number;
