@@ -1,9 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AnnualAuditStepStatus } from '@/gql/graphql.js';
+import type { TimelessDateString } from '@/helpers/index.js';
+import { ROUTES } from '@/router/routes.js';
 import { CardContent } from '../../../../ui/card.js';
 import { Collapsible, CollapsibleContent } from '../../../../ui/collapsible.js';
 import { ApprovalControl, gqlStatusToStepStatus } from '../approval-control.js';
-import { BaseStepCard, type BaseStepProps, type StepStatus } from '../step-base.js';
+import {
+  BaseStepCard,
+  type BaseStepProps,
+  type StepAction,
+  type StepStatus,
+} from '../step-base.js';
 
 interface Step05Props extends BaseStepProps {
   year: number;
@@ -40,21 +47,34 @@ export function Step05MainProcess(props: Step05Props) {
   // Report status changes to parent
   useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
 
+  const actions = useMemo((): StepAction[] => {
+    return [
+      { label: 'Manage Conto Tree', href: ROUTES.REPORTS.CONTO({}) },
+      // { label: 'Open Checklist', href: '/validations/checklist' },
+      // { label: 'Compare VAT', href: '/vat/comparison' },
+      // { label: 'Generate Draft', href: '/depreciation/draft' },
+      // { label: 'Manage Audit Checks', href: '/audit/checks' },
+      {
+        label: 'Trial Balance',
+        href: ROUTES.REPORTS.TRIAL_BALANCE({
+          ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
+          fromDate: '1900-01-01' as TimelessDateString,
+          toDate: `${props.year}-12-31` as TimelessDateString,
+          isShowZeroedAccounts: true,
+        }),
+      },
+      { label: 'Review Tax Report', href: ROUTES.REPORTS.TAX(props.year) },
+      // { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
+    ];
+  }, [props.year, adminBusinessId]);
+
   return (
     <BaseStepCard
       {...props}
       status={status}
       isExpanded={isExpanded}
       onToggleExpanded={() => setIsExpanded(prev => !prev)}
-      actions={[
-        { label: 'Manage Conto Tree', href: '/conto/tree' },
-        { label: 'Open Checklist', href: '/validations/checklist' },
-        { label: 'Compare VAT', href: '/vat/comparison' },
-        { label: 'Generate Draft', href: '/depreciation/draft' },
-        { label: 'Manage Audit Checks', href: '/audit/checks' },
-        { label: 'Review Tax Report', href: '/tax/review' },
-        { label: 'Cash Flow Analysis', href: '/cashflow/analysis' },
-      ]}
+      actions={actions}
     >
       {adminBusinessId && (
         <Collapsible open={isExpanded}>
