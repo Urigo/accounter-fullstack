@@ -79,11 +79,40 @@ export function Step05MainProcess(props: Step05Props) {
   useEffect(() => onStatusChange?.(id, status), [status, onStatusChange, id]);
 
   const actions = useMemo((): StepAction[] => {
+    const dynamicReportActions: StepAction[] = prevYearLockedTemplateName
+      ? [
+          {
+            label: 'Balance Sheet',
+            href: ROUTES.REPORTS.DYNAMIC_REPORT(
+              {
+                ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
+                fromDate: '1900-01-01' as TimelessDateString,
+                toDate: `${props.year}-12-31` as TimelessDateString,
+              },
+              prevYearLockedTemplateName,
+            ),
+          },
+          {
+            label: 'Profit and Loss',
+            href: ROUTES.REPORTS.DYNAMIC_REPORT(
+              {
+                ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
+                fromDate: `${props.year}-01-01` as TimelessDateString,
+                toDate: `${props.year}-12-31` as TimelessDateString,
+              },
+              prevYearLockedTemplateName,
+            ),
+          },
+        ]
+      : [
+          {
+            label: 'Create Dynamic Report Template',
+            href: ROUTES.REPORTS.DYNAMIC_REPORT(),
+          },
+        ];
+
     return [
-      {
-        label: 'Manage Conto Tree',
-        href: ROUTES.REPORTS.DYNAMIC_REPORT(null, prevYearLockedTemplateName),
-      },
+      ...dynamicReportActions,
       // { label: 'Open Checklist', href: '/validations/checklist' },
       // { label: 'Compare VAT', href: '/vat/comparison' },
       // { label: 'Generate Draft', href: '/depreciation/draft' },
