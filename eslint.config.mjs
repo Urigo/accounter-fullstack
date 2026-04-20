@@ -64,6 +64,15 @@ export default [
     },
   },
   {
+    // .mjs files are plain JavaScript and cannot be part of a TS project
+    files: ['**/*.mjs'],
+    languageOptions: {
+      parserOptions: {
+        project: false,
+      },
+    },
+  },
+  {
     files: ['**/*.{graphql,gql}'],
 
     plugins: {

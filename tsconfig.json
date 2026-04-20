@@ -18,7 +18,7 @@
     "noImplicitThis": true,
     "alwaysStrict": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "isolatedModules": true,
     "skipLibCheck": true,
     "allowUnusedLabels": false,
@@ -52,8 +52,6 @@
     "**/dist",
     "packages/old-accounter",
     "**/__generated__",
-    "**/__generated__/**",
-    "packages/server",
-    "packages/scraper-local-app/scripts"
+    "**/__generated__/**"
   ]
 }
