@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {
+      "@accounter/modern-poalim-scraper": ["../modern-poalim-scraper/dist/index"]
+    }
   },
   "exclude": ["tsup.config.ts"],
   "include": ["src/**/*.ts"]
