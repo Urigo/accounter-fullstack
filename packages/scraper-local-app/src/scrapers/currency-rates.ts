@@ -1,6 +1,5 @@
 import { format } from 'date-fns';
 import { XMLParser } from 'fast-xml-parser';
-import { MainContext } from 'index.js';
 import { Listr } from 'listr2';
 import type { Pool } from 'pg';
 import { sql } from '@pgtyped/runtime';
@@ -11,6 +10,7 @@ import type {
   IUpdateExchangeRateParams,
   IUpdateExchangeRateQuery,
 } from '../helpers/types.js';
+import { MainContext } from '../index.js';
 import type { Logger } from '../logger.js';
 
 const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'JPY', 'AUD', 'SEK'] as const;

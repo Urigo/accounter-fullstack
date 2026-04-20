@@ -6,8 +6,8 @@
     "strict": true,
     "sourceMap": true,
     "outDir": "dist",
+    "rootDir": "src",
     "skipLibCheck": true,
-    "moduleResolution": "node", // Needed for npm modules that use commonjs
     "allowSyntheticDefaultImports": true, // So we can import default value from node_modules https://stackoverflow.com/a/54302557/1426570
 
     "noImplicitReturns": false,

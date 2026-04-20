@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeUUID } from '../helpers/deterministic-uuid.js';
-import { UUID5_REGEX } from 'shared/constants.js';
+import { UUID5_REGEX } from '../../shared/constants.js';
 
 describe('deterministic-uuid', () => {
   describe('makeUUID', () => {

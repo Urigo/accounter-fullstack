@@ -1,6 +1,5 @@
 import { differenceInMonths } from 'date-fns';
 import { Listr, ListrRendererFactory, type ListrTaskWrapper } from 'listr2';
-import { Logger } from 'logger.js';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 import { sql } from '@pgtyped/runtime';
@@ -23,6 +22,7 @@ import type {
   IInsertPoalimForeignTransactionsQuery,
   Json,
 } from '../../helpers/types.js';
+import { Logger } from '../../logger.js';
 import type { ScrapedAccount } from './accounts.js';
 import type { PoalimScraper, PoalimUserContext } from './index.js';
 

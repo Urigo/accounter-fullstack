@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { setupDbHooks, getTestClient } from './helpers/test-hooks.js';
 import { qualifyTable } from './helpers/test-db-config.js';
-import { EMPTY_UUID } from '../shared/constants.js';
 import { setAdminEntity } from './helpers/seed-helpers.js';
 
 // Register hooks (no admin seed needed for isolation demo)

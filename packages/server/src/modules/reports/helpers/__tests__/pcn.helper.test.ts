@@ -13,7 +13,7 @@ import type { RawVatReportRecord } from '../vat-report.helper.js';
 import { Currency } from '../../../../shared/enums.js';
 import { getVatRecords } from '../../resolvers/get-vat-records.resolver.js';
 import { IGetChargesByIdsResult } from '../../../charges/types.js';
-import { TimelessDateString } from 'shared/types/index.js';
+import { TimelessDateString } from '../../../../shared/types/index.js';
 import type { Injector } from 'graphql-modules';
 
 type GetVatRecordsResponse = {

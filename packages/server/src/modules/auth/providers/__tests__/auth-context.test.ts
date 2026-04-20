@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
 import { AuthContextProvider, handleDevBypassAuth } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
-import type { Environment } from '../../../../shared/types/index.js';
 
 vi.mock('jose', async () => {
     return {

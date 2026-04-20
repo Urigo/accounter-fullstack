@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
     "types": ["vitest/globals", "node"],
 
     "target": "ES2022",
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "lib": ["esnext", "dom"],
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -34,16 +33,27 @@
     "jsx": "preserve",
 
     "paths": {
-      "@accounter/modern-poalim-scraper": ["packages/modern-poalim-scraper/src/index"],
-      "@accounter/gmail-listener": ["packages/gmail-listener/src/"],
-      "@accounter/green-invoice-graphql": ["packages/green-invoice-graphql/src/"],
-      "@accounter/hashavshevet-mesh": ["packages/hashavshevet-mesh/src/"],
-      "@accounter/israeli-vat-scraper": ["packages/israeli-vat-scraper/src/"],
-      "@accounter/payper-mesh": ["packages/payper-mesh/src/"],
-      "@accounter/pcn874-generator": ["packages/pcn874-generator/src/"],
-      "@accounter/shaam6111-generator": ["packages/shaam6111-generator/src/"],
-      "@accounter/shaam-uniform-format-generator": ["packages/shaam-uniform-format-generator/src/"]
+      "@accounter/modern-poalim-scraper": ["./packages/modern-poalim-scraper/src/index"],
+      "@accounter/gmail-listener": ["./packages/gmail-listener/src/"],
+      "@accounter/green-invoice-graphql": ["./packages/green-invoice-graphql/src/"],
+      "@accounter/hashavshevet-mesh": ["./packages/hashavshevet-mesh/src/"],
+      "@accounter/israeli-vat-scraper": ["./packages/israeli-vat-scraper/src/"],
+      "@accounter/payper-mesh": ["./packages/payper-mesh/src/"],
+      "@accounter/pcn874-generator": ["./packages/pcn874-generator/src/"],
+      "@accounter/shaam6111-generator": ["./packages/shaam6111-generator/src/"],
+      "@accounter/shaam-uniform-format-generator": [
+        "./packages/shaam-uniform-format-generator/src/"
+      ],
+      "graphql-modules": ["./node_modules/graphql-modules/index"]
     }
   },
-  "exclude": ["**/node_modules", "**/dist"]
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "packages/old-accounter",
+    "**/__generated__",
+    "**/__generated__/**",
+    "packages/server",
+    "packages/scraper-local-app/scripts"
+  ]
 }
