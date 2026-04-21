@@ -13,8 +13,9 @@
     "sourceMap": true,
     "declaration": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "strict": true
+    "moduleResolution": "bundler",
+    "strict": true,
+    "types": ["node"]
   },
   "include": ["src"]
 }

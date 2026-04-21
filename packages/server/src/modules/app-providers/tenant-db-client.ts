@@ -50,7 +50,6 @@ export class TenantAwareDBClient {
   private transactionDepth = 0;
   private isDisposed = false;
   private initializationPromise: Promise<void> | null = null;
-  private instanceId = Math.random().toString(36).substring(7);
   private authContext: AuthContext | null = null;
   private authContextInitialized = false;
 

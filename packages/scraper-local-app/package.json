@@ -14,7 +14,7 @@
     "scraper:pgtyped:watch": "yarn pgtyped -w",
     "start": "yarn build && node dist/index.js",
     "typecheck": "tsc --noEmit",
-    "validate-env": "node scripts/create-env.mjs"
+    "validate-env": "node --experimental-strip-types scripts/create-env.ts"
   },
   "dependencies": {
     "@accounter/modern-poalim-scraper": "workspace:^",
@@ -31,7 +31,7 @@
     "@types/pg": "8.20.0",
     "rimraf": "6.1.3",
     "tsup": "8.5.1",
-    "typescript": "5.9.3"
+    "typescript": "6.0.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

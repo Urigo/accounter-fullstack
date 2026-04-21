@@ -166,7 +166,7 @@ describe('TenantAwareDBClient', () => {
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
       
       let transactionFinished = false;
-      const transactionPromise = tenantDBClient.transaction(async () => {
+      void tenantDBClient.transaction(async () => {
           await new Promise(resolve => setTimeout(resolve, 50));
           transactionFinished = true;
       });

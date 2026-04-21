@@ -1,5 +1,5 @@
 import { createSchema, createYoga } from 'graphql-yoga';
-import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authPlugin, type RawAuth } from '../auth-plugin.js';
 import { handleDevBypassAuth } from '../../modules/auth/providers/auth-context.provider.js';
 

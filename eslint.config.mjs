@@ -54,7 +54,7 @@ export default [
       sourceType: 'script',
 
       parserOptions: {
-        project: ['tsconfig.json', '*/tsconfig.json'],
+        project: ['tsconfig.json', '*/tsconfig.json', 'packages/*/tsconfig.scripts.json'],
       },
     },
 

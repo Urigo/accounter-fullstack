@@ -3,7 +3,9 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "baseUrl": "./src"
+    "paths": {
+      "@accounter/modern-poalim-scraper": ["../modern-poalim-scraper/dist/index"]
+    }
   },
   "exclude": ["tsup.config.ts"],
   "include": ["src/**/*.ts"]

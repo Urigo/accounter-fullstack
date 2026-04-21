@@ -2,16 +2,17 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": "./src",
+    "rootDir": "..",
     "noUnusedLocals": false,
 
     "paths": {
-      "@accounter/green-invoice-graphql": ["../../green-invoice-graphql/src/index.js"],
-      "@accounter/pcn874-generator": ["../../pcn874-generator/src/index.js"],
-      "@accounter/shaam6111-generator": ["../../shaam6111-generator/src/index.js"],
+      "@accounter/green-invoice-graphql": ["../green-invoice-graphql/src/index.js"],
+      "@accounter/pcn874-generator": ["../pcn874-generator/src/index.js"],
+      "@accounter/shaam6111-generator": ["../shaam6111-generator/src/index.js"],
       "@accounter/shaam-uniform-format-generator": [
-        "../../shaam-uniform-format-generator/src/index.js"
-      ]
+        "../shaam-uniform-format-generator/src/index.js"
+      ],
+      "graphql-modules": ["../../node_modules/graphql-modules/index"]
     }
   },
   "include": [

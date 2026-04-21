@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
-import { IGenerateChargeResult } from 'modules/charges/types.js';
 import type {
   _DOLLAR_defs_addDocumentRequest_Input,
   _DOLLAR_defs_Country,
@@ -32,6 +31,7 @@ import { formatCurrency, hashStringToInt } from '../../../shared/helpers/index.j
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { IGenerateChargeResult } from '../../charges/types.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';
