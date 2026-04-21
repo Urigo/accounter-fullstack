@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable, Scope } from 'graphql-modules';
-import postgres, { type QueryResultBase, type QueryResultRow } from 'pg';
+import { Pool, type QueryResultBase, type QueryResultRow } from 'pg';
 import 'reflect-metadata';
 
 type TypedQueryResult<Entity> = QueryResultBase & { rows: Entity[]; rowCount: number }; // NOTE: rowCount added to workaround pgTyped issue
@@ -47,7 +47,7 @@ export class DBProvider {
    *
    * GraphQL resolvers MUST use TenantAwareDBClient to ensure Row-Level Security.
    */
-  constructor(public pool: postgres.Pool) {
+  constructor(public pool: Pool) {
     if (!pool) {
       throw new Error('DBProvider: Pool instance is required');
     }
