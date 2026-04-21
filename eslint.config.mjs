@@ -54,22 +54,13 @@ export default [
       sourceType: 'script',
 
       parserOptions: {
-        project: ['tsconfig.json', '*/tsconfig.json'],
+        project: ['tsconfig.json', '*/tsconfig.json', 'packages/*/tsconfig.scripts.json'],
       },
     },
 
     rules: {
       'no-console': 1,
       'import/no-default-export': 'off',
-    },
-  },
-  {
-    // .mjs files are plain JavaScript and cannot be part of a TS project
-    files: ['**/*.mjs'],
-    languageOptions: {
-      parserOptions: {
-        project: false,
-      },
     },
   },
   {

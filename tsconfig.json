@@ -52,6 +52,7 @@
     "**/dist",
     "packages/old-accounter",
     "**/__generated__",
-    "**/__generated__/**"
+    "**/__generated__/**",
+    "packages/scraper-local-app/scripts"
   ]
 }
