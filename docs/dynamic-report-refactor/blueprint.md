@@ -25,7 +25,8 @@ render them side-by-side, initially without cross-tree drag.
 ### Phase 5 — Single-presence drop handler
 
 Implement the cross-tree drop logic that enforces "entity exists in exactly one place" including
-whole-branch moves.
+whole-branch moves. Uses Pragmatic DnD `onDrop` callbacks and the `applyInstruction` utility to
+translate tree-item `Instruction` objects into flat-array mutations.
 
 ### Phase 6 — Edit mode + dirty state
 
@@ -67,7 +68,7 @@ Chunk C  buildInitialBankTree pure function + tests
 Chunk D  buildReportTree pure function + tests
 Chunk E  Client-side legacy-migration helper + tests
 Chunk F  Split bank/report state + two-panel layout (no drag yet)
-Chunk G  Cross-tree single-presence drop handler + tests
+Chunk G  Cross-tree single-presence drop handler (Pragmatic DnD) + tests
 Chunk H  Edit mode + dirty state + confirmation dialog
 Chunk I  CustomNode — nodeType-aware rendering + edit-mode prop
 Chunk J  TreeView — cross-tree canDrop rules
@@ -249,41 +250,72 @@ export type CustomData = {
 }
 ```
 
-### 2. Add predicate helpers (same file, exported)
+### 2. Add `FlatNode` type
+
+Replace the dependency on `NodeModel` from `@minoru/react-dnd-treeview` with a local type that
+retains the same flat-array shape used for DB serialisation:
 
 ```typescript
-import type { NodeModel } from '@minoru/react-dnd-treeview'
-
-export function isFinancialEntityNode(node: NodeModel<CustomData>): boolean {
-  return node.data?.nodeType === 'financial-entity'
-}
-
-export function isSortCodeBranchNode(node: NodeModel<CustomData>): boolean {
-  return node.data?.nodeType === 'sort-code-branch'
-}
-
-export function isSyntheticBranchNode(node: NodeModel<CustomData>): boolean {
-  return node.data?.nodeType === 'synthetic-branch'
-}
-
-export function isBranchNode(node: NodeModel<CustomData>): boolean {
-  return node.droppable === true
+/**
+ * Flat node shape — matches the DB template JSON format exactly.
+ * Replaces @minoru/react-dnd-treeview's NodeModel.
+ */
+export type FlatNode<T = CustomData> = {
+  id: string
+  parent: string // parent id, or BANK_TREE_ROOT_ID / REPORT_TREE_ROOT_ID for root nodes
+  text: string
+  droppable: boolean
+  data: T
 }
 ```
 
-### 3. Fix immediately visible type errors
+### 3. Add predicate helpers (same file, exported)
 
-After changing `CustomData`, TypeScript will produce errors in:
+```typescript
+export function isFinancialEntityNode(node: FlatNode<CustomData>): boolean {
+  return node.data.nodeType === 'financial-entity'
+}
 
-- `custom-node.tsx` — references to `data?.sortCode`, `data?.value` etc. These are still valid
-  fields, but `data?.descendantSortCodes` etc. must be removed. Remove any usage of the removed
-  fields; keep `sortCode` and `value` access.
-- `index.tsx` — same removals for the dropped fields.
-- `dynamic-report-save-template.tsx` — the template serialisation references the old fields; remove
-  `descendantSortCodes`, `descendantFinancialEntities`, `mergedSortCodes` from the serialised
-  object.
-- `tree-view.tsx` — references to `data?.sortCode` in the existing `handleDrop` / `canDrop` logic;
-  update as needed to use the new predicates.
+export function isSortCodeBranchNode(node: FlatNode<CustomData>): boolean {
+  return node.data.nodeType === 'sort-code-branch'
+}
+
+export function isSyntheticBranchNode(node: FlatNode<CustomData>): boolean {
+  return node.data.nodeType === 'synthetic-branch'
+}
+
+export function isBranchNode(node: FlatNode<CustomData>): boolean {
+  return node.droppable === true
+}
+
+/** Returns ids of all descendants in a flat node array. */
+export function getDescendantIds(nodes: FlatNode[], rootId: string): string[] {
+  const result: string[] = []
+  const queue = [rootId]
+  while (queue.length) {
+    const id = queue.shift()!
+    for (const n of nodes) {
+      if (n.parent === id) {
+        result.push(n.id)
+        queue.push(n.id)
+      }
+    }
+  }
+  return result
+}
+```
+
+### 4. Fix immediately visible type errors
+
+After changing `CustomData` and removing `NodeModel`, TypeScript will produce errors in:
+
+- `custom-node.tsx` — switch `NodeModel<CustomData>` to `FlatNode<CustomData>`; remove
+  `data?.descendantSortCodes` etc.
+- `index.tsx` — same removals for the dropped fields; replace `NodeModel` with `FlatNode`.
+- `dynamic-report-save-template.tsx` — remove `descendantSortCodes`, `descendantFinancialEntities`,
+  `mergedSortCodes` from the serialised object.
+- `tree-view.tsx` — remove `NodeModel` imports; the `handleDrop` / `canDrop` logic will be replaced
+  in Chunk G with Pragmatic DnD callbacks.
 
 Do NOT restructure any component behaviour yet — only fix TypeScript errors caused by the type
 change.
@@ -314,7 +346,8 @@ The relevant GraphQL query types from `packages/client/src/gql/graphql.ts` are:
 - `BusinessTransactionsSumFromLedgerRecordsSuccessfulResult['businessTransactionsSum']`
   — array of `{ business: { id, name, sortCode: { id, key, name } | null }, total: { raw } }`
 
-`NodeModel<CustomData>` is from `@minoru/react-dnd-treeview`.
+`FlatNode<CustomData>` is the local flat-node type defined in `./types.js` (replaces
+`NodeModel<CustomData>` from the old `@minoru/react-dnd-treeview` dependency).
 
 ## Task
 
@@ -325,9 +358,8 @@ Create `packages/client/src/components/reports/dynamic-report/bank-tree.ts`.
 Export one pure function:
 
 ```typescript
-import type { NodeModel } from '@minoru/react-dnd-treeview';
 import type { AllSortCodesQuery, DynamicReportQuery } from '../../../gql/graphql.js';
-import type { CustomData } from './types.js';
+import type { CustomData, FlatNode } from './types.js';
 
 export const BANK_TREE_ROOT_ID = 'bank';
 
@@ -359,15 +391,15 @@ export function buildInitialBankTree(
   businessSums: BusinessSum[],
   excludedIds: ReadonlySet<string>,
   includeZeroed: boolean,
-): NodeModel<CustomData>[]
+): FlatNode<CustomData>[]
 ````
 
 Implementation notes:
 
 - Sort-code branches:
   `{ id: sortCode.id, parent: BANK_TREE_ROOT_ID, droppable: true, text: \`${sortCode.key} —
-  ${sortCode.name}\`, data: { nodeType: 'sort-code-branch', sortCode: sortCode.key, isOpen: false }
-  }`
+  ${sortCode.name}\`,
+  data: { nodeType: 'sort-code-branch', sortCode: sortCode.key, isOpen: false } }`
 - Only include sort-code-branch nodes for sort codes that have at least one visible entity
   (otherwise bank is cluttered with empty folders).
 - Financial entity leaves:
@@ -425,9 +457,8 @@ by the bank tree builder via `excludedIds`).
 Create `packages/client/src/components/reports/dynamic-report/report-tree.ts`.
 
 ```typescript
-import type { NodeModel } from '@minoru/react-dnd-treeview';
 import type { DynamicReportQuery } from '../../../gql/graphql.js';
-import type { CustomData } from './types.js';
+import type { CustomData, FlatNode } from './types.js';
 
 export const REPORT_TREE_ROOT_ID = 'report';
 
@@ -461,14 +492,14 @@ type BusinessSum = Extract<
  * - The `isOpen` state per node is taken from the template.
  *
  * @returns { reportTree, placedEntityIds }
- *   reportTree      — flat NodeModel array for the report panel
+ *   reportTree      — flat FlatNode array for the report panel
  *   placedEntityIds — Set<string> of entity UUIDs placed in the report tree
  *                     (so the bank builder can exclude them)
  */
 export function buildReportTree(
   templateNodes: TemplateNode[],
   businessSums: BusinessSum[],
-): { reportTree: NodeModel<CustomData>[]; placedEntityIds: Set<string> }
+): { reportTree: FlatNode<CustomData>[]; placedEntityIds: Set<string> }
 ````
 
 Implementation notes:
@@ -530,10 +561,9 @@ Create
 `packages/client/src/components/reports/dynamic-report/legacy-migration.ts`.
 
 ```typescript
-import type { NodeModel } from '@minoru/react-dnd-treeview';
 import type { DynamicReportQuery } from '../../../gql/graphql.js';
 import { REPORT_TREE_ROOT_ID } from './report-tree.js';
-import type { CustomData } from './types.js';
+import type { CustomData, FlatNode } from './types.js';
 
 /**
  * Raw node shape as returned by the GraphQL query for a legacy template.
@@ -585,7 +615,7 @@ export function isLegacyTemplateNodes(nodes: LegacyTemplateNode[]): boolean
 export function migrateLegacyTemplateNodes(
   nodes: LegacyTemplateNode[],
   businessSums: BusinessSum[],
-): NodeModel<CustomData>[]
+): FlatNode<CustomData>[]
 ````
 
 ### 2. Unit tests
@@ -633,14 +663,14 @@ The pure helpers we now have:
 
 Replace:
 ```typescript
-const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
+const [tree, setTree] = useState<FlatNode<CustomData>[]>([]);
 ````
 
 with:
 
 ```typescript
-const [bankTree, setBankTree] = useState<NodeModel<CustomData>[]>([])
-const [reportTree, setReportTree] = useState<NodeModel<CustomData>[]>([])
+const [bankTree, setBankTree] = useState<FlatNode<CustomData>[]>([])
+const [reportTree, setReportTree] = useState<FlatNode<CustomData>[]>([])
 ```
 
 ### 2. Rebuild on data change
@@ -663,44 +693,39 @@ Replace the existing single `<TreeView>` JSX with a two-column layout:
 
 ```tsx
 <div className="grid grid-cols-2 gap-4 h-full">
-  <div className="flex flex-col overflow-auto border rounded p-2">
-    <h2 className="text-sm font-semibold mb-2">Bank</h2>
-    <TreeView
-      tree={bankTree}
-      rootId={BANK_TREE_ROOT_ID}
-      onDrop={handleBankDrop}
-      editMode={editMode}
-      handleTextChange={handleTextChange}
-      handleIsOpenChange={handleIsOpenChange}
-      handleDeleteCategory={handleDeleteCategory}
-      filter={filter}
-    />
-  </div>
-  <div className="flex flex-col overflow-auto border rounded p-2">
-    <h2 className="text-sm font-semibold mb-2">Report</h2>
-    <TreeView
-      tree={reportTree}
-      rootId={REPORT_TREE_ROOT_ID}
-      onDrop={handleReportDrop}
-      editMode={editMode}
-      handleTextChange={handleTextChange}
-      handleIsOpenChange={handleIsOpenChange}
-      handleDeleteCategory={handleDeleteCategory}
-      filter={filter}
-    />
-  </div>
+  <TreePanel
+    id="bank-panel"
+    title="Bank"
+    nodes={bankTree}
+    rootId={BANK_TREE_ROOT_ID}
+    editMode={editMode}
+    onDrop={handleBankDrop}
+    handleTextChange={handleTextChange}
+    handleIsOpenChange={handleIsOpenChange}
+    handleDeleteCategory={handleDeleteCategory}
+    filter={filter}
+  />
+  <TreePanel
+    id="report-panel"
+    title="Report"
+    nodes={reportTree}
+    rootId={REPORT_TREE_ROOT_ID}
+    editMode={editMode}
+    onDrop={handleReportDrop}
+    handleTextChange={handleTextChange}
+    handleIsOpenChange={handleIsOpenChange}
+    handleDeleteCategory={handleDeleteCategory}
+    filter={filter}
+  />
 </div>
 ```
 
-For now use stub handlers that just call `setBankTree` / `setReportTree` with the new tree passed in
-by the library (no cross-tree logic yet):
+`TreePanel` wraps a Pragmatic DnD `dropTargetForElements` drop zone and renders `TreeNodeRow`
+children (each a Pragmatic DnD `draggable`). For now use stub handlers (no cross-tree logic yet):
 
 ```typescript
-const handleBankDrop = useCallback((newTree: NodeModel<CustomData>[]) => setBankTree(newTree), [])
-const handleReportDrop = useCallback(
-  (newTree: NodeModel<CustomData>[]) => setReportTree(newTree),
-  []
-)
+const handleBankDrop = useCallback((nodes: FlatNode<CustomData>[]) => setBankTree(nodes), [])
+const handleReportDrop = useCallback((nodes: FlatNode<CustomData>[]) => setReportTree(nodes), [])
 ```
 
 ### 4. Remove dead code
@@ -754,72 +779,89 @@ Create
 `packages/client/src/components/reports/dynamic-report/cross-tree-drop.ts`.
 
 ```typescript
-import { getDescendants, type NodeModel, type DropOptions } from '@minoru/react-dnd-treeview';
-import type { CustomData } from './types.js';
+import type { Instruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
+import type { CustomData, FlatNode } from './types.js';
+import { getDescendantIds } from './types.js';
+
+export type DragPayload = {
+  nodeId: string;
+  sourceTreeId: 'bank' | 'report';
+};
 
 /**
- * Handles a drop that may cross tree boundaries (bank ↔ report).
+ * Applies a Pragmatic DnD tree-item Instruction to the flat node arrays.
  *
- * @param sourceTree    The tree the drag originated from
- * @param targetTree    The tree the drop target belongs to
- * @param dropOptions   DropOptions from @minoru/react-dnd-treeview
- * @param newTargetTree The new target tree array emitted by the library's onDrop
+ * @param bankTree       Current bank flat nodes
+ * @param reportTree     Current report flat nodes
+ * @param payload        Drag payload attached to the draggable element
+ * @param targetNodeId   Id of the node the item was dropped on (or panel root id)
+ * @param targetTreeId   Which panel received the drop ('bank' | 'report')
+ * @param instruction    Tree-item hitbox instruction (reorder-above, reorder-below,
+ *                       make-child, reparent) — or null for panel-root drops
  *
- * @returns { nextSourceTree, nextTargetTree }
+ * @returns { nextBankTree, nextReportTree }
  */
 export function handleCrossTreeDrop(
-  sourceTree: NodeModel<CustomData>[],
-  targetTree: NodeModel<CustomData>[],
-  dropOptions: DropOptions<CustomData>,
-  newTargetTree: NodeModel<CustomData>[],
-): { nextSourceTree: NodeModel<CustomData>[]; nextTargetTree: NodeModel<CustomData>[] }
-````
+  bankTree: FlatNode<CustomData>[],
+  reportTree: FlatNode<CustomData>[],
+  payload: DragPayload,
+  targetNodeId: string,
+  targetTreeId: 'bank' | 'report',
+  instruction: Instruction | null,
+): { nextBankTree: FlatNode<CustomData>[]; nextReportTree: FlatNode<CustomData>[] }
+```
 
 Algorithm:
 
-1. Collect the moved node IDs =
-   `[dragSourceId, ...getDescendants(sourceTree, dragSourceId).map(n => n.id)]`
-2. Remove those IDs from `sourceTree` → `nextSourceTree`
-3. Use `newTargetTree` as `nextTargetTree` (the library already placed the node correctly)
-4. If the drop was within the SAME tree (source and target are the same array reference), return
-   `{ nextSourceTree: newTargetTree, nextTargetTree: newTargetTree }` (no cross-tree move needed).
+1. Determine `sourceTree` = bank or report based on `payload.sourceTreeId`.
+2. Collect moved node IDs = `[payload.nodeId, ...getDescendantIds(sourceTree, payload.nodeId)]`.
+3. Remove those IDs from the source tree → `nextSourceTree`.
+4. If `instruction` is `null` or the drop is on the panel root: append moved nodes to the end of
+   the target tree root (parent = target root id).
+5. If `instruction.type === 'make-child'`: set `parent = targetNodeId` on the dragged node.
+6. If `instruction.type === 'reorder-above'` / `'reorder-below'`: insert moved nodes before/after
+   `targetNodeId` in the flat array, preserving their original parent (or setting parent to
+   `targetNode.parent` if crossing trees).
+7. If `instruction.type === 'reparent'`: set `parent` of the dragged node according to
+   `instruction.desiredLevel` (walk up ancestors of `targetNodeId` by level).
+8. `canDrop` guard — return unchanged trees if:
+   - Target node is a `financial-entity` leaf and instruction is `make-child`.
+   - Source and target are the same node.
 
 ### 2. Wire into index.tsx
 
-Replace the stub handlers with:
+Replace the stub handlers with a single `onDrop` callback attached to the
+`monitorForElements` global monitor from Pragmatic DnD (set up once in a `useEffect`):
 
 ```typescript
-const handleBankDrop = useCallback(
-  (newTree: NodeModel<CustomData>[], dropOptions: DropOptions<CustomData>) => {
-    const { nextSourceTree, nextTargetTree } = handleCrossTreeDrop(
-      reportTree,
-      bankTree,
-      dropOptions,
-      newTree
-    )
-    setReportTree(nextSourceTree)
-    setBankTree(nextTargetTree)
-  },
-  [bankTree, reportTree]
-)
+useEffect(() => {
+  return monitorForElements({
+    onDrop({ source, location }) {
+      const payload = source.data as DragPayload;
+      const target = location.current.dropTargets[0];
+      if (!target) return;
+      const targetNodeId = target.data.nodeId as string;
+      const targetTreeId = target.data.treeId as 'bank' | 'report';
+      const instruction = extractInstruction(target.data) ?? null;
 
-const handleReportDrop = useCallback(
-  (newTree: NodeModel<CustomData>[], dropOptions: DropOptions<CustomData>) => {
-    const { nextSourceTree, nextTargetTree } = handleCrossTreeDrop(
-      bankTree,
-      reportTree,
-      dropOptions,
-      newTree
-    )
-    setBankTree(nextSourceTree)
-    setReportTree(nextTargetTree)
-  },
-  [bankTree, reportTree]
-)
+      const { nextBankTree, nextReportTree } = handleCrossTreeDrop(
+        bankTree,
+        reportTree,
+        payload,
+        targetNodeId,
+        targetTreeId,
+        instruction,
+      );
+      setBankTree(nextBankTree);
+      setReportTree(nextReportTree);
+      setIsDirty(true);
+    },
+  });
+}, [bankTree, reportTree]);
 ```
 
-Note: `onDrop` in `@minoru/react-dnd-treeview` receives `(newTree, dropOptions)` — pass both. Update
-the `TreeView` prop type for `onDrop` to match.
+`extractInstruction` is from `@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item`.
+`monitorForElements` is from `@atlaskit/pragmatic-drag-and-drop/element/adapter`.
 
 ### 3. Unit tests
 
@@ -827,12 +869,13 @@ Create `packages/client/src/components/reports/dynamic-report/__tests__/cross-tr
 
 Required test cases:
 
-- Entity dragged from source tree to target tree → entity absent from source, present in target at
-  drop position
-- Branch with two children dragged across → branch + both children absent from source, present in
-  target
-- Same-tree reorder (sourceTree === targetTree, i.e. same array reference used for both arguments) →
-  returns `newTargetTree` for both (no cross-tree deletion)
+- Entity dragged from bank to report (instruction: `null` / panel-root) → entity absent from bank,
+  present in report as root node
+- Branch with two children dragged from report to bank → branch + both children absent from report,
+  present in bank
+- `make-child` instruction → dragged node parent set to `targetNodeId`
+- `reorder-above` / `reorder-below` → dragged node inserted at correct position in flat array
+- `canDrop` guard: `make-child` on a `financial-entity` leaf → trees unchanged
 
 Run `yarn workspace @accounter/client test --run`.
 
@@ -842,7 +885,7 @@ Run `yarn workspace @accounter/client test --run`.
 
 ### Prompt 8 — Edit mode, dirty state, and confirmation dialog
 
-```text
+````text
 We are working in:
   packages/client/src/components/reports/dynamic-report/index.tsx
 
@@ -870,14 +913,14 @@ Wrap `setBankTree` and `setReportTree` in helper functions that also set `isDirt
 
 ```typescript
 const updateBankTree = useCallback(
-  (fn: (prev: NodeModel<CustomData>[]) => NodeModel<CustomData>[]) => {
+  (fn: (prev: FlatNode<CustomData>[]) => FlatNode<CustomData>[]) => {
     setBankTree(fn)
     setIsDirty(true)
   },
   []
 )
 const updateReportTree = useCallback(
-  (fn: (prev: NodeModel<CustomData>[]) => NodeModel<CustomData>[]) => {
+  (fn: (prev: FlatNode<CustomData>[]) => FlatNode<CustomData>[]) => {
     setReportTree(fn)
     setIsDirty(true)
   },
@@ -990,14 +1033,14 @@ Remove `const isCategory = droppable && !props.node.data?.sortCode` and replace 
 
 ### 4. Pass `editMode` through `TreeView` → `CustomNode`
 
-In `tree-view.tsx`:
+In `tree-panel.tsx` (Pragmatic DnD version):
 
-- Add `editMode: boolean` to `Props`
-- Pass it to `CustomNode` in the `render` callback
+- Add `editMode: boolean` to `TreePanelProps`
+- Pass it down to each `TreeNodeRow`
 
 In `index.tsx`:
 
-- Pass `editMode` to both `TreeView` instances
+- Pass `editMode` to both `TreePanel` instances
 
 ### 5. Render tests
 
