@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
@@ -37,10 +37,9 @@ type Props = {
 
 export function Counterparty({ data, onChange, enableEdit }: Props): ReactElement {
   const {
-    id,
+    id: transactionId,
     counterparty,
     missingInfoSuggestions,
-    id: transactionId,
     sourceDescription,
   } = getFragmentData(TransactionsTableEntityFieldsFragmentDoc, data);
 
@@ -53,26 +52,21 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
   const [similarTransactionsOpen, setSimilarTransactionsOpen] = useState(false);
 
   const { updateTransaction, fetching } = useUpdateTransaction();
-  const updateBusiness = useCallback(
-    async (counterpartyId: string) => {
-      await updateTransaction({
-        transactionId,
-        fields: {
-          counterpartyId,
-        },
-      });
-      setSimilarTransactionsOpen(true);
-    },
-    [transactionId, updateTransaction],
-  );
+  const updateBusiness = async (counterpartyId: string) => {
+    await updateTransaction({
+      transactionId,
+      fields: {
+        counterpartyId,
+      },
+    });
+    setSimilarTransactionsOpen(true);
+  };
 
-  const onAddBusiness = useCallback(
-    async (businessId: string) => {
-      await updateBusiness(businessId);
-      onChange?.();
-    },
-    [updateBusiness, onChange],
-  );
+  const onAddBusiness = async (businessId: string) => {
+    await updateBusiness(businessId);
+    setSimilarTransactionsOpen(true);
+    onChange?.();
+  };
 
   const { selectableBusinesses: selectOptions, fetching: businessesLoading } = useGetBusinesses();
 
@@ -119,7 +113,7 @@ export function Counterparty({ data, onChange, enableEdit }: Props): ReactElemen
       </div>
 
       <SimilarTransactionsModal
-        transactionId={id}
+        transactionId={transactionId}
         counterpartyId={counterparty?.id ?? selectedBusinessId}
         open={similarTransactionsOpen}
         onOpenChange={setSimilarTransactionsOpen}
