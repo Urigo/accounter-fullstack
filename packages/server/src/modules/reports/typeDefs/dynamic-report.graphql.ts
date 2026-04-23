@@ -52,9 +52,7 @@ export default gql`
 
   " data of a single node of dynamic report template "
   type DynamicReportNodeData {
-    descendantSortCodes: [Int!]
-    descendantFinancialEntities: [UUID!]
-    mergedSortCodes: [Int!]
+    nodeType: String!
     isOpen: Boolean!
     hebrewText: String
   }
