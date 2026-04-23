@@ -37,12 +37,14 @@ export function buildInitialBankTree(
   >();
   const noSortCode: BusinessSum[] = [];
 
+  // Pre-index sort codes for O(1) lookup
+  const sortCodeMap = new Map(sortCodes.map(sc => [sc.id, sc]));
   for (const b of filtered) {
     const sc = b.business.sortCode;
     if (sc) {
       if (!bySortCodeId.has(sc.id)) {
         // Prefer the richer name from the sortCodes param if available
-        const scParam = sortCodes.find(s => s.id === sc.id);
+        const scParam = sortCodeMap.get(sc.id);
         bySortCodeId.set(sc.id, {
           key: sc.key,
           name: scParam?.name ?? sc.name,
