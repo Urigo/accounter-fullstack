@@ -31,15 +31,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.js';
-import { Skeleton } from '@/components/ui/skeleton.js';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table.js';
 import {
   Tooltip,
   TooltipContent,
@@ -47,16 +38,14 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
+import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
 import type { DragPayload } from './cross-tree-drop.js';
 import { DragOverlayContent } from './drag-overlay.js';
-import { generateMockLedgerRecords } from './mock-data.js';
 import {
   formatCurrency,
   isBranchNode,
-  isFinancialEntityNode,
   type CustomData,
   type FlatNode,
-  type LedgerRecord,
   type NodeStats,
 } from './types.js';
 
@@ -91,8 +80,6 @@ export function TreeNodeRow({
   onRename,
   onDelete,
 }: TreeNodeProps): ReactElement {
-  const [ledgerRecords, setLedgerRecords] = useState<LedgerRecord[] | null>(null);
-  const [isLoadingLedger, setIsLoadingLedger] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dropIndicator, setDropIndicator] = useState<'top' | 'bottom' | 'child' | null>(null);
 
@@ -101,7 +88,6 @@ export function TreeNodeRow({
 
   const isExpanded = node.data.isOpen;
   const isBranch = isBranchNode(node);
-  const isLeaf = isFinancialEntityNode(node);
 
   // Attach draggable
   useEffect(() => {
@@ -152,19 +138,6 @@ export function TreeNodeRow({
       onDrop: () => setDropIndicator(null),
     });
   }, [depth, editMode, isExpanded, node.droppable, node.id, treeId]);
-
-  // Load ledger records for expanded entity leaves
-  useEffect(() => {
-    if (isLeaf && isExpanded && !ledgerRecords) {
-      setIsLoadingLedger(true);
-      const timer = setTimeout(() => {
-        setLedgerRecords(generateMockLedgerRecords(node.id));
-        setIsLoadingLedger(false);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [isLeaf, isExpanded, ledgerRecords, node.id]);
 
   const indentPx = depth * 24;
 
@@ -348,51 +321,7 @@ export function TreeNodeRow({
           className="bg-muted/30 border-b border-border/50 py-2"
           style={{ paddingInlineStart: `${indentPx + 32}px`, paddingInlineEnd: '8px' }}
         >
-          {isLoadingLedger ? (
-            <div className="space-y-2 p-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-            </div>
-          ) : ledgerRecords ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-xs">Business</TableHead>
-                  <TableHead className="text-xs">Date</TableHead>
-                  <TableHead className="text-xs text-right">Local Amount</TableHead>
-                  <TableHead className="text-xs text-right">Balance</TableHead>
-                  <TableHead className="text-xs">Reference</TableHead>
-                  <TableHead className="text-xs">Details</TableHead>
-                  <TableHead className="text-xs">Counter Account</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ledgerRecords.map(record => (
-                  <TableRow key={record.id}>
-                    <TableCell className="text-xs py-1">{record.business}</TableCell>
-                    <TableCell className="text-xs py-1">{record.date}</TableCell>
-                    <TableCell
-                      className={cn(
-                        'text-xs py-1 text-right font-mono',
-                        record.localAmount >= 0 ? 'text-emerald-600' : 'text-red-600',
-                      )}
-                    >
-                      {formatCurrency(record.localAmount)}
-                    </TableCell>
-                    <TableCell className="text-xs py-1 text-right font-mono">
-                      {formatCurrency(record.localAmountBalance)}
-                    </TableCell>
-                    <TableCell className="text-xs py-1 font-mono">{record.reference}</TableCell>
-                    <TableCell className="text-xs py-1">{record.details}</TableCell>
-                    <TableCell className="text-xs py-1 font-mono">
-                      {record.counterAccount}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : null}
+          <BusinessExtendedInfo businessID={node.id} />
         </div>
       )}
     </div>
