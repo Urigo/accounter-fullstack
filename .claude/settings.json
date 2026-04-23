@@ -44,7 +44,12 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "command": "yarn prettier --write $FILE_PATH 2>/dev/null || true"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "yarn prettier --write $FILE_PATH 2>/dev/null || true"
+          }
+        ]
       }
     ]
   }
