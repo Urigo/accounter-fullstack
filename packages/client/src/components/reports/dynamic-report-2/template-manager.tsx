@@ -107,12 +107,7 @@ export function TemplateManager({
                 >
                   <Check className="size-3.5" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="size-7 p-0"
-                  onClick={cancelEditing}
-                >
+                <Button variant="ghost" size="sm" className="size-7 p-0" onClick={cancelEditing}>
                   <X className="size-3.5" />
                 </Button>
               </div>
