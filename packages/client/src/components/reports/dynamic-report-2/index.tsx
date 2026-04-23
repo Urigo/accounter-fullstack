@@ -459,6 +459,20 @@ export function DynamicReport() {
     setTemplateRenameValue('');
   }, [currentTemplate, templateRenameValue, updateDynamicReportTemplateName]);
 
+  const handleRenameInManager = useCallback(
+    async (template: Template, newName: string) => {
+      const result = await updateDynamicReportTemplateName({
+        name: template.name,
+        newName,
+      });
+      if (result && template.id === currentTemplate?.id) {
+        setCurrentTemplate(prev => (prev ? { ...prev, id: result.id, name: result.name } : null));
+        setSelectedTemplateName(result.name);
+      }
+    },
+    [currentTemplate, updateDynamicReportTemplateName],
+  );
+
   const handleDuplicateTemplate = useCallback((template: Template) => {
     setSaveAsName(`Copy of ${template.name}`);
     setSaveAsDialogOpen(true);
@@ -586,6 +600,7 @@ export function DynamicReport() {
         onOpenChange={setTemplateManagerOpen}
         templates={templates}
         onLoad={handleLoadTemplate}
+        onRename={handleRenameInManager}
         onDuplicate={handleDuplicateTemplate}
         onDelete={handleDeleteTemplate}
       />
