@@ -1,8 +1,13 @@
-import { GraphQLError } from 'graphql';
 import type { DynamicReportNode } from '../../../__generated__/types.js';
+import { errorSimplifier } from '../../../shared/errors.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
-import { parseTemplate, validateTemplate } from '../helpers/dynamic-report.helper.js';
+import {
+  isLegacyTemplate,
+  migrateLegacyTemplate,
+  parseTemplate,
+  validateTemplate,
+} from '../helpers/dynamic-report.helper.js';
 import { DynamicReportProvider } from '../providers/dynamic-report.provider.js';
 import type { ReportsModule } from '../types.js';
 
@@ -17,9 +22,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
           ownerId,
         });
       } catch (error) {
-        const message = `Failed to get dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to get dynamic report template "${name}"`, error);
       }
     },
     allDynamicReports: async (_, __, { injector }) => {
@@ -28,9 +31,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
 
         return injector.get(DynamicReportProvider).getTemplatesByOwnerIdLoader.load(ownerId);
       } catch (error) {
-        const message = 'Failed to get all dynamic report templates';
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier('Failed to get all dynamic report templates', error);
       }
     },
   },
@@ -55,9 +56,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             return result[0];
           });
       } catch (error) {
-        const message = `Failed to update dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to update dynamic report template "${name}"`, error);
       }
     },
     updateDynamicReportTemplateName: async (_, { name, newName }, { injector }) => {
@@ -78,9 +77,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             return result[0];
           });
       } catch (error) {
-        const message = `Failed to update dynamic report template name "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to update dynamic report template name "${name}"`, error);
       }
     },
     insertDynamicReportTemplate: async (_, { name, template }, { injector }) => {
@@ -100,9 +97,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             return result[0];
           });
       } catch (error) {
-        const message = `Failed to insert dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to insert dynamic report template "${name}"`, error);
       }
     },
     deleteDynamicReportTemplate: async (_, { name }, { injector }) => {
@@ -122,9 +117,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
             return result[0].name;
           });
       } catch (error) {
-        const message = `Failed to delete dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to delete dynamic report template "${name}"`, error);
       }
     },
     lockDynamicReportTemplate: async (_, { name }, { injector }) => {
@@ -133,9 +126,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
 
         return injector.get(DynamicReportProvider).lockTemplate({ name, ownerId });
       } catch (error) {
-        const message = `Failed to lock dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to lock dynamic report template "${name}"`, error);
       }
     },
     unlockDynamicReportTemplate: async (_, { name }, { injector }) => {
@@ -149,9 +140,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
 
         return result;
       } catch (error) {
-        const message = `Failed to unlock dynamic report template "${name}"`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        throw errorSimplifier(`Failed to unlock dynamic report template "${name}"`, error);
       }
     },
   },
@@ -165,9 +154,20 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
       try {
         return parseTemplate(report.template) as DynamicReportNode[];
       } catch (error) {
-        const message = `Failed to parse template for report ${report.name}`;
-        console.log(`${message}: ${error}`);
-        throw new GraphQLError(message);
+        // Legacy template: attempt in-place migration before returning
+        try {
+          const raw: unknown[] = JSON.parse(report.template);
+          if (isLegacyTemplate(raw)) {
+            const migrated = migrateLegacyTemplate(
+              raw as Parameters<typeof migrateLegacyTemplate>[0],
+              new Map(),
+            );
+            return migrated as DynamicReportNode[];
+          }
+        } catch {
+          // fall through to the original error
+        }
+        throw errorSimplifier(`Failed to parse template for report ${report.name}`, error);
       }
     },
   },

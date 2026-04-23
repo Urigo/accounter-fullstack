@@ -41,6 +41,7 @@ interface ToolbarProps {
   onDuplicate: () => void;
   onDelete: () => void;
   onDownloadCSV: () => void;
+  isLocked?: boolean;
 }
 
 export function Toolbar({
@@ -64,6 +65,7 @@ export function Toolbar({
   onDuplicate,
   onDelete,
   onDownloadCSV,
+  isLocked = false,
 }: ToolbarProps) {
   const hasTemplate = currentTemplate !== null;
 
@@ -120,12 +122,14 @@ export function Toolbar({
 
       {/* Right side: Template controls */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Switch id="edit-mode" checked={editMode} onCheckedChange={onEditModeChange} />
-          <Label htmlFor="edit-mode" className="text-sm cursor-pointer font-medium">
-            Edit Mode
-          </Label>
-        </div>
+        {!isLocked && (
+          <div className="flex items-center gap-2">
+            <Switch id="edit-mode" checked={editMode} onCheckedChange={onEditModeChange} />
+            <Label htmlFor="edit-mode" className="text-sm cursor-pointer font-medium">
+              Edit Mode
+            </Label>
+          </div>
+        )}
 
         {isDirty && (
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
@@ -151,11 +155,11 @@ export function Toolbar({
               <Save className="size-4 mr-2" />
               Save as new
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onResave} disabled={!hasTemplate}>
+            <DropdownMenuItem onClick={onResave} disabled={!hasTemplate || isLocked}>
               <Save className="size-4 mr-2" />
               Resave
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onRename} disabled={!hasTemplate}>
+            <DropdownMenuItem onClick={onRename} disabled={!hasTemplate || isLocked}>
               <Edit2 className="size-4 mr-2" />
               Rename
             </DropdownMenuItem>
@@ -166,7 +170,7 @@ export function Toolbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={onDelete}
-              disabled={!hasTemplate}
+              disabled={!hasTemplate || isLocked}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="size-4 mr-2" />
