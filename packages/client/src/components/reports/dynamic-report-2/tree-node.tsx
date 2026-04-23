@@ -51,21 +51,20 @@ import type { DragPayload } from './cross-tree-drop.js';
 import { DragOverlayContent } from './drag-overlay.js';
 import { generateMockLedgerRecords } from './mock-data.js';
 import {
-  calculateBranchSum,
-  countLeaves,
   formatCurrency,
   isBranchNode,
   isFinancialEntityNode,
   type CustomData,
   type FlatNode,
   type LedgerRecord,
+  type NodeStats,
 } from './types.js';
 
 interface TreeNodeProps {
   node: FlatNode<CustomData>;
   depth: number;
   treeId: 'bank' | 'report';
-  allNodes: FlatNode<CustomData>[];
+  nodeStats: NodeStats;
   editMode: boolean;
   onToggleExpand: (nodeId: string) => void;
   onRename?: (nodeId: string, currentName: string) => void;
@@ -86,7 +85,7 @@ export function TreeNodeRow({
   node,
   depth,
   treeId,
-  allNodes,
+  nodeStats,
   editMode,
   onToggleExpand,
   onRename,
@@ -170,8 +169,8 @@ export function TreeNodeRow({
   const indentPx = depth * 24;
 
   if (isBranch) {
-    const sum = calculateBranchSum(allNodes, node.id);
-    const leafCount = countLeaves(allNodes, node.id);
+    const sum = nodeStats.get(node.id)?.sum ?? 0;
+    const leafCount = nodeStats.get(node.id)?.leafCount ?? 0;
 
     return (
       <div

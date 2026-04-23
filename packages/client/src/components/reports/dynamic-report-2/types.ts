@@ -59,53 +59,81 @@ export function isBranchNode(node: FlatNode<CustomData>): boolean {
 
 /** Returns the ids of all descendants of rootId in a flat node array. */
 export function getDescendantIds(nodes: FlatNode[], rootId: string): string[] {
+  const childrenMap = new Map<string, string[]>();
+  for (const node of nodes) {
+    const children = childrenMap.get(node.parent) ?? [];
+    children.push(node.id);
+    childrenMap.set(node.parent, children);
+  }
+
   const result: string[] = [];
   const queue = [rootId];
   while (queue.length) {
     const id = queue.shift()!;
-    for (const n of nodes) {
-      if (n.parent === id) {
-        result.push(n.id);
-        queue.push(n.id);
-      }
+    const children = childrenMap.get(id) ?? [];
+    for (const childId of children) {
+      result.push(childId);
+      queue.push(childId);
     }
   }
   return result;
 }
 
-export function calculateBranchSum(nodes: FlatNode<CustomData>[], branchId: string): number {
-  let sum = 0;
-  for (const n of nodes) {
-    if (n.parent === branchId) {
-      if (isFinancialEntityNode(n)) {
-        sum += n.data.value ?? 0;
-      } else if (isBranchNode(n)) {
-        sum += calculateBranchSum(nodes, n.id);
-      }
-    }
-  }
-  return sum;
-}
+export type NodeStats = Map<string, { sum: number; leafCount: number }>;
 
-export function countLeaves(nodes: FlatNode<CustomData>[], branchId: string): number {
-  let count = 0;
+/**
+ * Pre-computes sum and leaf-count for every branch node in O(N) using a
+ * bottom-up post-order DFS, so callers don't have to recurse per-node.
+ */
+export function buildNodeStats(nodes: FlatNode<CustomData>[]): NodeStats {
+  const nodeById = new Map<string, FlatNode<CustomData>>();
+  const childrenOf = new Map<string, string[]>();
   for (const n of nodes) {
-    if (n.parent === branchId) {
-      if (isFinancialEntityNode(n)) {
-        count += 1;
-      } else if (isBranchNode(n)) {
-        count += countLeaves(nodes, n.id);
-      }
-    }
+    nodeById.set(n.id, n);
+    if (!childrenOf.has(n.parent)) childrenOf.set(n.parent, []);
+    childrenOf.get(n.parent)!.push(n.id);
   }
-  return count;
+
+  const result: NodeStats = new Map();
+
+  function visit(nodeId: string): { sum: number; leafCount: number } {
+    const cached = result.get(nodeId);
+    if (cached) return cached;
+
+    const node = nodeById.get(nodeId);
+    if (!node) return { sum: 0, leafCount: 0 };
+
+    if (isFinancialEntityNode(node)) {
+      const stats = { sum: node.data.value ?? 0, leafCount: 1 };
+      result.set(nodeId, stats);
+      return stats;
+    }
+
+    let sum = 0;
+    let leafCount = 0;
+    for (const childId of childrenOf.get(nodeId) ?? []) {
+      const childStats = visit(childId);
+      sum += childStats.sum;
+      leafCount += childStats.leafCount;
+    }
+    const stats = { sum, leafCount };
+    result.set(nodeId, stats);
+    return stats;
+  }
+
+  for (const n of nodes) {
+    visit(n.id);
+  }
+
+  return result;
 }
+const currencyFormatter = new Intl.NumberFormat('he-IL', {
+  style: 'currency',
+  currency: 'ILS',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('he-IL', {
-    style: 'currency',
-    currency: 'ILS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return currencyFormatter.format(value);
 }

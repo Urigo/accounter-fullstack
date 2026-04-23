@@ -70,9 +70,7 @@ export function handleCrossTreeDrop(
     nextTargetTree = [...baseTarget, ...updatedMoved];
   } else if (instruction.type === 'reorder-above') {
     const targetNode = baseTarget.find(n => n.id === targetNodeId);
-    const newParent = isSameTree
-      ? (targetNode?.parent ?? targetTreeId)
-      : (targetNode?.parent ?? targetTreeId);
+    const newParent = targetNode?.parent ?? targetTreeId;
     const updatedMoved = movedNodes.map(n =>
       n.id === payload.nodeId ? { ...n, parent: newParent } : n,
     );

@@ -1,11 +1,11 @@
-import { Fragment, useEffect, useRef, useState, type ReactElement } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { FolderPlus } from 'lucide-react';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { ScrollArea } from '@/components/ui/scroll-area.js';
 import { cn } from '@/lib/utils.js';
 import { TreeNodeRow } from './tree-node.js';
-import { type CustomData, type FlatNode } from './types.js';
+import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './types.js';
 
 interface TreePanelProps {
   treeId: 'bank' | 'report';
@@ -24,6 +24,7 @@ function renderSubtree(
   parentId: string,
   depth: number,
   treeId: 'bank' | 'report',
+  nodeStats: NodeStats,
   props: Pick<TreePanelProps, 'editMode' | 'onToggleExpand' | 'onRename' | 'onDelete'>,
 ): ReactElement[] {
   return nodes
@@ -34,7 +35,7 @@ function renderSubtree(
           node={node}
           depth={depth}
           treeId={treeId}
-          allNodes={nodes}
+          nodeStats={nodeStats}
           editMode={props.editMode}
           onToggleExpand={props.onToggleExpand}
           onRename={props.onRename}
@@ -42,7 +43,7 @@ function renderSubtree(
         />
         {node.droppable &&
           node.data.isOpen &&
-          renderSubtree(nodes, node.id, depth + 1, treeId, props)}
+          renderSubtree(nodes, node.id, depth + 1, treeId, nodeStats, props)}
       </Fragment>
     ));
 }
@@ -73,6 +74,8 @@ export function TreePanel({
     });
   }, [editMode, treeId]);
 
+  const nodeStats = useMemo(() => buildNodeStats(nodes), [nodes]);
+
   const hasRootNodes = nodes.some(n => n.parent === treeId);
 
   return (
@@ -93,7 +96,7 @@ export function TreePanel({
           className={cn('min-h-[300px] transition-colors', isOver && 'bg-accent/50')}
         >
           {hasRootNodes ? (
-            renderSubtree(nodes, treeId, 0, treeId, {
+            renderSubtree(nodes, treeId, 0, treeId, nodeStats, {
               editMode,
               onToggleExpand,
               onRename,
