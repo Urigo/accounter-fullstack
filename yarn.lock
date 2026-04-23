@@ -67,6 +67,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
+    "@atlaskit/pragmatic-drag-and-drop": "npm:1.8.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:1.1.0"
     "@auth0/auth0-react": "npm:2.16.2"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
@@ -482,6 +484,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.1.0":
+  version: 1.1.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.1.0"
+  dependencies:
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.6.0"
+    "@babel/runtime": "npm:^7.0.0"
+  checksum: 10c0/65155bc980696abe9600bcf25d7dd9ea520e37f2bb68627a8dc7a3eb1c4f30588c95accbb00dd4720b86c0b15e51cd53d7633de427569a7a67e1cf614e425eee
+  languageName: node
+  linkType: hard
+
+"@atlaskit/pragmatic-drag-and-drop@npm:1.8.0, @atlaskit/pragmatic-drag-and-drop@npm:^1.6.0":
+  version: 1.8.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.8.0"
+  dependencies:
+    "@babel/runtime": "npm:^7.0.0"
+    bind-event-listener: "npm:^3.0.0"
+    raf-schd: "npm:^4.0.3"
+  checksum: 10c0/23d0d05c569db3628c93c5afb3b2f54b83ce3cedb9600635c1324fa0c7f2cd250cbed9f9741bd84b9cc8e0078a25d7739cc0f79748ba11f63fdcf34c0eff7c29
+  languageName: node
+  linkType: hard
+
 "@auth0/auth0-auth-js@npm:1.6.0":
   version: 1.6.0
   resolution: "@auth0/auth0-auth-js@npm:1.6.0"
@@ -696,7 +719,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.28.4, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.29.2, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
+"@babel/runtime@npm:^7.0.0, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.13.10, @babel/runtime@npm:^7.18.3, @babel/runtime@npm:^7.28.4, @babel/runtime@npm:^7.28.6, @babel/runtime@npm:^7.29.2, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.8.7, @babel/runtime@npm:^7.9.2":
   version: 7.29.2
   resolution: "@babel/runtime@npm:7.29.2"
   checksum: 10c0/30b80a0140d16467792e1bbeb06f655b0dab70407da38dfac7fedae9c859f9ae9d846ef14ad77bd3814c064295fe9b1bc551f1541ea14646ae9f22b71a8bc17a
@@ -11472,6 +11495,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bind-event-listener@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "bind-event-listener@npm:3.0.0"
+  checksum: 10c0/08eadf1c7d3a58633f25c2bbd8dc066f77ef4e5df1049e81ff2f43a40c00f6581aba37387caa4878782b1f1f7c337b827757f52b637052a465ad74a7e1db8def
+  languageName: node
+  linkType: hard
+
 "bl@npm:^4.0.3":
   version: 4.1.0
   resolution: "bl@npm:4.1.0"
@@ -21002,6 +21032,13 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 10c0/6f227ece95a4804e85627bd20cb8c7f244ac38cead34f941210a9a9d1adc02c793850c6339b39db94ac0d57e30e95e6f7bbba2bfce951e98a91c88376a6e7da7
+  languageName: node
+  linkType: hard
+
+"raf-schd@npm:^4.0.3":
+  version: 4.0.3
+  resolution: "raf-schd@npm:4.0.3"
+  checksum: 10c0/ecabf0957c05fad059779bddcd992f1a9d3a35dfea439a6f0935c382fcf4f7f7fa60489e467b4c2db357a3665167d2a379782586b59712bb36c766e02824709b
   languageName: node
   linkType: hard
 

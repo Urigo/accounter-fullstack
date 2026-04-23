@@ -225,6 +225,42 @@ CSV export button — exports the **report tree only** (same as current behavior
 
 ---
 
+### Drag-and-drop library
+
+The refactored component uses **Pragmatic drag and drop** (`@atlaskit/pragmatic-drag-and-drop`) as
+the DnD engine, replacing the existing `@minoru/react-dnd-treeview` / `react-dnd` stack.
+
+**Rationale**:
+
+- `react-dnd` (used internally by `@minoru/react-dnd-treeview`) is abandoned and has known React 19
+  incompatibilities. The project is on React 19.
+- Pragmatic DnD is actively maintained by Atlassian, powers Trello/Jira/Confluence, is
+  framework-agnostic (no peer dependency on React internals), and ships a dedicated tree-item hitbox
+  package that directly solves the positional drop requirement.
+
+**Packages used**:
+
+| Package                                                           | Purpose                                                                                              |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `@atlaskit/pragmatic-drag-and-drop`                               | Core draggable / drop-target primitives                                                              |
+| `@atlaskit/pragmatic-drag-and-drop-hitbox`                        | Tree-item hitbox: `instruction` objects (`reorder-above`, `reorder-below`, `make-child`, `reparent`) |
+| `@atlaskit/pragmatic-drag-and-drop-react-beautiful-dnd-migration` | _(not used)_                                                                                         |
+
+**Data model**: the flat `{ id, parent, droppable, text, data }` node shape (previously from
+`NodeModel<CustomData>`) is retained as an internal type (`FlatNode<CustomData>`) so the DB
+serialisation format is unchanged. The tree UI builds a nested view from this flat array for
+rendering; mutations update the flat array.
+
+**Drop position**: the `@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item` `Instruction` type
+encodes where a node should land (`reorder-above`, `reorder-below`, `make-child`, `reparent` with
+`desiredLevel`). A shared `applyInstruction` utility translates an `Instruction` into flat-array
+mutations.
+
+**`canDrop` equivalent**: the `canDrop` prop is replaced by a guard inside the `onDrop` callback.
+The same rules apply — no dropping a branch into a financial-entity leaf; single-presence enforced.
+
+---
+
 ## Files affected
 
 | File                                                                                        | Change                                                             |
@@ -237,3 +273,6 @@ CSV export button — exports the **report tree only** (same as current behavior
 | `packages/client/src/components/reports/dynamic-report/types.ts`                            | `CustomData` type — add `nodeType`, remove hint arrays             |
 | `packages/client/src/components/reports/dynamic-report/dynamic-report-manage-templates.tsx` | Template management UI (select, resave, rename, duplicate, delete) |
 | `packages/client/src/components/reports/dynamic-report/dynamic-report-save-template.tsx`    | Save-as flow                                                       |
+| `packages/client/src/components/reports/dynamic-report-2/index.tsx`                         | Prototype main component — Pragmatic DnD wiring                    |
+| `packages/client/src/components/reports/dynamic-report-2/tree-panel.tsx`                    | Prototype panel — Pragmatic DnD drop target                        |
+| `packages/client/src/components/reports/dynamic-report-2/tree-node.tsx`                     | Prototype node row — Pragmatic DnD draggable + tree-item hitbox    |
