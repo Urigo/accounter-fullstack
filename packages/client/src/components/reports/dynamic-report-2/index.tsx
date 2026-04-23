@@ -25,6 +25,7 @@ import { Label } from '@/components/ui/label.js';
 import { handleCrossTreeDrop, type DragPayload } from './cross-tree-drop.js';
 import { LegacyBanner } from './legacy-banner.js';
 import { mockBankTree, mockOwners, mockReportTree, mockTemplates } from './mock-data.js';
+import { moveBranchToBank } from './move-branch-to-bank.js';
 import { TemplateManager } from './template-manager.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
@@ -128,24 +129,9 @@ export function DynamicReport() {
   const handleDeleteConfirm = useCallback(() => {
     if (!deleteNodeId) return;
 
-    const allNodes = [...bankTree, ...reportTree];
-    const node = allNodes.find(n => n.id === deleteNodeId);
-
-    if (node?.droppable) {
-      // Move direct children to bank root; remove the branch itself and its deeper descendants
-      const directChildren = allNodes.filter(n => n.parent === deleteNodeId);
-      const rerootedChildren = directChildren.map(c => ({ ...c, parent: 'bank' }));
-      const removeNode = (nodes: FlatNode<CustomData>[]) =>
-        nodes.filter(n => n.id !== deleteNodeId && n.parent !== deleteNodeId);
-      setBankTree(prev => [
-        ...removeNode(prev),
-        ...rerootedChildren.filter(c => !bankTree.some(n => n.id === c.id)),
-      ]);
-      setReportTree(prev => removeNode(prev));
-    } else {
-      setBankTree(prev => prev.filter(n => n.id !== deleteNodeId));
-      setReportTree(prev => prev.filter(n => n.id !== deleteNodeId));
-    }
+    const { nextBankTree, nextReportTree } = moveBranchToBank(reportTree, bankTree, deleteNodeId);
+    setBankTree(nextBankTree);
+    setReportTree(nextReportTree);
 
     setIsDirty(true);
     setDeleteDialogOpen(false);
@@ -322,8 +308,16 @@ export function DynamicReport() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Branch</AlertDialogTitle>
             <AlertDialogDescription>
-              This will delete the branch and move all its contents to the bank root. This action
-              cannot be undone.
+              {(() => {
+                if (!deleteNodeId) return null;
+                const nodeInBank = bankTree.find(n => n.id === deleteNodeId);
+                const node = nodeInBank || reportTree.find(n => n.id === deleteNodeId);
+                if (!node) return null;
+                if (!node.droppable) return 'This leaf will be removed.';
+                return nodeInBank
+                  ? 'This branch and all its contents will be permanently deleted.'
+                  : 'This branch and all its contents will be moved to the bank.';
+              })()}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
