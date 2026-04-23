@@ -76,9 +76,6 @@ import type { CustomData } from './types.js';
         text
         droppable
         data {
-          descendantSortCodes
-          descendantFinancialEntities
-          mergedSortCodes
           isOpen
           hebrewText
         }
