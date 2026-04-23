@@ -34,6 +34,11 @@ export function handleCrossTreeDrop(
   const sourceTree = payload.sourceTreeId === 'bank' ? bankTree : reportTree;
   const targetTree = targetTreeId === 'bank' ? bankTree : reportTree;
 
+  // Guard: dragging onto self
+  if (targetNodeId === payload.nodeId) {
+    return { nextBankTree: bankTree, nextReportTree: reportTree };
+  }
+
   const draggedNode = sourceTree.find(n => n.id === payload.nodeId);
   if (!draggedNode) return { nextBankTree: bankTree, nextReportTree: reportTree };
 

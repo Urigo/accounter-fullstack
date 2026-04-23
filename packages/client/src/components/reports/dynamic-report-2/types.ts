@@ -2,6 +2,7 @@ export type NodeType = 'sort-code-branch' | 'synthetic-branch' | 'financial-enti
 
 export type CustomData = {
   nodeType: NodeType;
+  hebrewText?: string;
   value?: number | null;
   sortCode?: number | null;
   isOpen: boolean;
