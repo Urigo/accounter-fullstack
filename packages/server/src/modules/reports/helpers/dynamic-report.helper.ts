@@ -96,15 +96,19 @@ export function migrateLegacyTemplate(
 ): DynamicReportNodeType[] {
   const result: DynamicReportNodeType[] = [];
   const explicitLeafIds = new Set<string>();
+  const sortCodesWithExplicitNode = new Set<number>();
 
-  // First pass: collect existing explicit leaf node IDs
+  // Pre-pass: collect existing explicit leaf IDs and sort codes that already
+  // have a dedicated branch node in the legacy template.
   for (const node of nodes) {
     if (!node.droppable) {
       explicitLeafIds.add(String(node.id));
+    } else if ('sortCode' in node.data && node.data.sortCode != null) {
+      sortCodesWithExplicitNode.add(node.data.sortCode);
     }
   }
 
-  // Second pass: migrate branch nodes and add missing leaf nodes
+  // Main pass: migrate branch nodes and inject missing leaf nodes.
   for (const node of nodes) {
     if (node.droppable) {
       const hasSortCode = 'sortCode' in node.data && node.data.sortCode != null;
@@ -124,7 +128,7 @@ export function migrateLegacyTemplate(
         },
       });
 
-      // Insert explicit leaf nodes for descendant entities not already present
+      // Inject explicit leaf nodes from descendantFinancialEntities.
       const entities = node.data.descendantFinancialEntities ?? [];
       for (const uuid of entities) {
         if (!explicitLeafIds.has(uuid)) {
@@ -138,8 +142,27 @@ export function migrateLegacyTemplate(
           });
         }
       }
+
+      // Inject explicit leaf nodes for descendant sort codes that have no
+      // dedicated branch node in the legacy template. Their entities are
+      // resolved via the entityBySortCode map supplied by the caller.
+      for (const sc of node.data.descendantSortCodes ?? []) {
+        if (sortCodesWithExplicitNode.has(sc)) continue;
+        for (const uuid of entityBySortCode.get(sc) ?? []) {
+          if (!explicitLeafIds.has(uuid)) {
+            explicitLeafIds.add(uuid);
+            result.push({
+              id: uuid,
+              parent: node.id,
+              text: uuid,
+              droppable: false,
+              data: { nodeType: 'financial-entity', isOpen: false },
+            });
+          }
+        }
+      }
     } else {
-      // Existing explicit leaf — migrate data shape
+      // Existing explicit leaf — migrate data shape.
       result.push({
         id: node.id,
         parent: node.parent,
@@ -153,11 +176,6 @@ export function migrateLegacyTemplate(
       });
     }
   }
-
-  // entityBySortCode is available for callers that need it; currently the
-  // migration derives leaves solely from descendantFinancialEntities on the
-  // legacy nodes, so we reference the param to satisfy the type signature.
-  void entityBySortCode;
 
   return result;
 }

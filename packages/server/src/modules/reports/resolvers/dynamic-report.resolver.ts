@@ -2,6 +2,7 @@ import type { DynamicReportNode } from '../../../__generated__/types.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnnualAuditProvider } from '../../annual-audit/providers/annual-audit.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import {
   isLegacyTemplate,
   migrateLegacyTemplate,
@@ -150,7 +151,7 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
     created: report => report.created_at,
     updated: report => report.updated_at,
     isLocked: report => report.is_locked ?? false,
-    template: report => {
+    template: async (report, _args, { injector }) => {
       try {
         return parseTemplate(report.template) as DynamicReportNode[];
       } catch (error) {
@@ -158,9 +159,22 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         try {
           const raw: unknown[] = JSON.parse(report.template);
           if (isLegacyTemplate(raw)) {
+            const allEntities = await injector
+              .get(FinancialEntitiesProvider)
+              .getAllFinancialEntities();
+            const entityBySortCode = new Map<number, string[]>();
+            for (const entity of allEntities) {
+              if (entity.sort_code == null) continue;
+              const bucket = entityBySortCode.get(entity.sort_code);
+              if (bucket) {
+                bucket.push(entity.id);
+              } else {
+                entityBySortCode.set(entity.sort_code, [entity.id]);
+              }
+            }
             const migrated = migrateLegacyTemplate(
               raw as Parameters<typeof migrateLegacyTemplate>[0],
-              new Map(),
+              entityBySortCode,
             );
             return migrated as DynamicReportNode[];
           }
