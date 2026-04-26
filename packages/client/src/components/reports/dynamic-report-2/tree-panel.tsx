@@ -2,7 +2,6 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactElement } fro
 import { FolderPlus } from 'lucide-react';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
-import { ScrollArea } from '@/components/ui/scroll-area.js';
 import { cn } from '@/lib/utils.js';
 import { TreeNodeRow } from './tree-node.js';
 import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './types.js';
@@ -79,8 +78,8 @@ export function TreePanel({
   const hasRootNodes = nodes.some(n => n.parent === treeId);
 
   return (
-    <div className="flex flex-col h-full border rounded-lg bg-background overflow-scroll">
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
+    <div className="flex flex-col h-full border rounded-lg bg-background overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 shrink-0">
         <h2 className="font-semibold text-lg">{title}</h2>
         {editMode && (
           <Button variant="outline" size="sm" onClick={onAddBranch}>
@@ -90,10 +89,10 @@ export function TreePanel({
         )}
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-auto">
         <div
           ref={panelRef}
-          className={cn('min-h-[300px] transition-colors', isOver && 'bg-accent/50')}
+          className={cn('min-h-[300px] min-w-max transition-colors', isOver && 'bg-accent/50')}
         >
           {hasRootNodes ? (
             renderSubtree(nodes, treeId, 0, treeId, nodeStats, {
@@ -103,12 +102,12 @@ export function TreePanel({
               onDelete,
             })
           ) : (
-            <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">
+            <div className="flex items-center justify-center h-[300px] w-full text-muted-foreground text-sm">
               {emptyMessage}
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
