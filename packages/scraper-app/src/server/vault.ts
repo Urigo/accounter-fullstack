@@ -1,5 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
-import { ZodError, z } from 'zod';
+import { z, ZodError } from 'zod';
 
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LEN = 32;
