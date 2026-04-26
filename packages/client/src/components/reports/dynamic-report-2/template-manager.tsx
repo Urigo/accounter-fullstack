@@ -164,13 +164,13 @@ export function TemplateManager({
                         onLoad(template);
                         onOpenChange(false);
                       }}
-                      disabled={template.isLocked || isEditing}
+                      disabled={isEditing}
                     >
                       <Upload className="size-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    {template.isLocked ? 'Cannot load locked template' : 'Load template'}
+                    {template.isLocked ? 'Load template (read-only)' : 'Load template'}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
