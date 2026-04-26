@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { FolderPlus } from 'lucide-react';
+import { FolderPlus, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
@@ -12,6 +12,8 @@ interface TreePanelProps {
   nodes: FlatNode<CustomData>[];
   editMode: boolean;
   emptyMessage: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   onAddBranch: () => void;
   onToggleExpand: (nodeId: string) => void;
   onRename?: (nodeId: string, currentName: string) => void;
@@ -53,6 +55,8 @@ export function TreePanel({
   nodes,
   editMode,
   emptyMessage,
+  isCollapsed = false,
+  onToggleCollapse,
   onAddBranch,
   onToggleExpand,
   onRename,
@@ -74,13 +78,51 @@ export function TreePanel({
   }, [editMode, treeId]);
 
   const nodeStats = useMemo(() => buildNodeStats(nodes), [nodes]);
-
   const hasRootNodes = nodes.some(n => n.parent === treeId);
 
+  const CollapseIcon =
+    treeId === 'bank'
+      ? isCollapsed
+        ? PanelLeftOpen
+        : PanelLeftClose
+      : isCollapsed
+        ? PanelRightOpen
+        : PanelRightClose;
+
+  if (isCollapsed) {
+    return (
+      <div className="flex flex-col h-full w-10 shrink-0 border rounded-lg bg-background overflow-hidden">
+        <button
+          className="flex-1 flex flex-col items-center justify-center gap-3 hover:bg-muted/50 transition-colors w-full"
+          onClick={onToggleCollapse}
+          title={`Expand ${title}`}
+        >
+          <CollapseIcon className="size-4 text-muted-foreground" />
+          <span className="[writing-mode:vertical-rl] rotate-180 text-sm font-semibold text-muted-foreground select-none">
+            {title}
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col h-full border rounded-lg bg-background overflow-hidden">
+    <div className="flex flex-col h-full min-w-0 flex-1 border rounded-lg bg-background overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30 shrink-0">
-        <h2 className="font-semibold text-lg">{title}</h2>
+        <div className="flex items-center gap-2">
+          {onToggleCollapse && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-7 p-0 text-muted-foreground"
+              onClick={onToggleCollapse}
+              title={`Collapse ${title}`}
+            >
+              <CollapseIcon className="size-4" />
+            </Button>
+          )}
+          <h2 className="font-semibold text-lg">{title}</h2>
+        </div>
         {editMode && (
           <Button variant="outline" size="sm" onClick={onAddBranch}>
             <FolderPlus className="size-4 mr-2" />

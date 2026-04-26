@@ -204,6 +204,11 @@ export function DynamicReport() {
   const [editMode, setEditMode] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showLegacyBanner, setShowLegacyBanner] = useState(false);
+  const [collapsedPanel, setCollapsedPanel] = useState<'bank' | 'report' | null>(null);
+
+  const handleToggleCollapse = useCallback((panel: 'bank' | 'report') => {
+    setCollapsedPanel(prev => (prev === panel ? null : panel));
+  }, []);
 
   // Template state
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
@@ -523,13 +528,15 @@ export function DynamicReport() {
       )}
 
       <div className="flex-1 p-4 overflow-hidden">
-        <div className="grid grid-cols-2 gap-4 h-full">
+        <div className="flex gap-4 h-full">
           <TreePanel
             treeId="bank"
             title="Bank"
             nodes={bankTree}
             editMode={editMode}
             emptyMessage="No entities remaining"
+            isCollapsed={collapsedPanel === 'bank'}
+            onToggleCollapse={() => handleToggleCollapse('bank')}
             onAddBranch={() => handleAddBranch('bank')}
             onToggleExpand={handleToggleBankExpand}
             onRename={handleRenameBranch}
@@ -542,6 +549,8 @@ export function DynamicReport() {
             nodes={reportTree}
             editMode={editMode}
             emptyMessage="Drop entities here to build your report"
+            isCollapsed={collapsedPanel === 'report'}
+            onToggleCollapse={() => handleToggleCollapse('report')}
             onAddBranch={() => handleAddBranch('report')}
             onToggleExpand={handleToggleReportExpand}
             onRename={handleRenameBranch}
