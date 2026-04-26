@@ -143,6 +143,26 @@ export class FinancialEntitiesProvider {
     return result;
   }
 
+  /** Returns a map of sort_code → entity ids, built once per request from the cached entity list. */
+  private entityBySortCodeMapCache: Promise<Map<number, string[]>> | null = null;
+  public getEntityBySortCodeMap(): Promise<Map<number, string[]>> {
+    if (this.entityBySortCodeMapCache) return this.entityBySortCodeMapCache;
+    this.entityBySortCodeMapCache = this.getAllFinancialEntities().then(entities => {
+      const map = new Map<number, string[]>();
+      for (const entity of entities) {
+        if (entity.sort_code == null) continue;
+        const bucket = map.get(entity.sort_code);
+        if (bucket) {
+          bucket.push(entity.id);
+        } else {
+          map.set(entity.sort_code, [entity.id]);
+        }
+      }
+      return map;
+    });
+    return this.entityBySortCodeMapCache;
+  }
+
   public updateFinancialEntity(params: IUpdateFinancialEntityParams) {
     if (params.financialEntityId) {
       this.invalidateFinancialEntityById(params.financialEntityId);

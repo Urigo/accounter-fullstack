@@ -159,19 +159,9 @@ export const dynamicReportResolver: ReportsModule.Resolvers = {
         try {
           const raw: unknown[] = JSON.parse(report.template);
           if (isLegacyTemplate(raw)) {
-            const allEntities = await injector
+            const entityBySortCode = await injector
               .get(FinancialEntitiesProvider)
-              .getAllFinancialEntities();
-            const entityBySortCode = new Map<number, string[]>();
-            for (const entity of allEntities) {
-              if (entity.sort_code == null) continue;
-              const bucket = entityBySortCode.get(entity.sort_code);
-              if (bucket) {
-                bucket.push(entity.id);
-              } else {
-                entityBySortCode.set(entity.sort_code, [entity.id]);
-              }
-            }
+              .getEntityBySortCodeMap();
             const migrated = migrateLegacyTemplate(
               raw as Parameters<typeof migrateLegacyTemplate>[0],
               entityBySortCode,
