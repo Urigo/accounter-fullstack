@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
@@ -287,10 +287,37 @@ export function DynamicReport() {
     return [];
   }, [businessSumsData]);
 
-  // ── Tree initialisation ───────────────────────────────────────────────────
+  // ── Refs for reading latest values inside effects without adding them as deps ──
+  // Updated via useLayoutEffect (runs before useEffect) so effects always see current values.
+
+  const businessSumsRef = useRef(businessSums);
+  const sortCodesRef = useRef(sortCodes);
+  const showZeroedRef = useRef(showZeroed);
+  const reportTreeRef = useRef(reportTree);
+
+  useLayoutEffect(() => {
+    businessSumsRef.current = businessSums;
+    sortCodesRef.current = sortCodes;
+    showZeroedRef.current = showZeroed;
+    reportTreeRef.current = reportTree;
+  });
+
+  // Coordinates the two tree effects: ensures the value-patch effect skips
+  // when the template-load effect ran in the same commit.
+  const templateVersionRef = useRef(0);
+  const valuesPatchedVersionRef = useRef(0);
+
+  // ── Effect 1: Full tree rebuild on template/sort-code load ────────────────
+  // Only fires when the template or sort-code data changes — NOT on filter
+  // changes — so user structural edits (drags, renames, branches) are preserved.
 
   useEffect(() => {
+    templateVersionRef.current += 1;
+
     const rawNodes = templateNodesData?.dynamicReport?.template ?? [];
+    const bSums = businessSumsRef.current;
+    const sCodes = sortCodesRef.current;
+    const zeroed = showZeroedRef.current;
 
     let nextReportTree: FlatNode<CustomData>[];
     let placedEntityIds: Set<string>;
@@ -299,14 +326,14 @@ export function DynamicReport() {
       if (isLegacyTemplateNodes(rawNodes as Parameters<typeof isLegacyTemplateNodes>[0])) {
         const migrated = migrateLegacyTemplateNodes(
           rawNodes as Parameters<typeof migrateLegacyTemplateNodes>[0],
-          businessSums,
+          bSums,
         );
         nextReportTree = migrated;
         placedEntityIds = new Set(migrated.filter(n => !n.droppable).map(n => n.id));
       } else {
         const result = buildReportTree(
           rawNodes as Parameters<typeof buildReportTree>[0],
-          businessSums,
+          bSums,
         );
         nextReportTree = result.reportTree;
         placedEntityIds = result.placedEntityIds;
@@ -316,11 +343,51 @@ export function DynamicReport() {
       placedEntityIds = new Set();
     }
 
-    const nextBankTree = buildInitialBankTree(sortCodes, businessSums, placedEntityIds, showZeroed);
+    const nextBankTree = buildInitialBankTree(sCodes, bSums, placedEntityIds, zeroed);
 
     setBankTree(nextBankTree);
     setReportTree(nextReportTree);
-  }, [templateNodesData, businessSums, sortCodes, showZeroed]);
+  }, [templateNodesData, sortCodes]);
+
+  // ── Effect 2: Value-only patch on filter change ───────────────────────────
+  // Fires when businessSums or showZeroed changes. Preserves tree structure
+  // by only updating data.value on leaf nodes. Skips if Effect 1 ran in the
+  // same commit (templateVersionRef > valuesPatchedVersionRef).
+
+  useEffect(() => {
+    if (valuesPatchedVersionRef.current < templateVersionRef.current) {
+      // Effect 1 ran more recently — its trees are authoritative; skip patch.
+      valuesPatchedVersionRef.current = templateVersionRef.current;
+      return;
+    }
+
+    const currentReportTree = reportTreeRef.current;
+
+    // O(N) value lookup
+    const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
+
+    // Patch values on report-tree leaf nodes, preserve all structural properties
+    const nextReportTree = currentReportTree.map(node => {
+      if (node.droppable) return node;
+      const value = sumById.get(node.id) ?? 0;
+      if (node.data.value === value) return node;
+      return { ...node, data: { ...node.data, value } };
+    });
+
+    // Placed entity IDs haven't changed (structure is preserved)
+    const placedEntityIds = new Set(currentReportTree.filter(n => !n.droppable).map(n => n.id));
+
+    // Rebuild bank tree so new/removed entities and zeroed filter are respected
+    const nextBankTree = buildInitialBankTree(
+      sortCodesRef.current,
+      businessSums,
+      placedEntityIds,
+      showZeroed,
+    );
+
+    setReportTree(nextReportTree);
+    setBankTree(nextBankTree);
+  }, [businessSums, showZeroed]);
 
   // ── DnD monitor ───────────────────────────────────────────────────────────
 
@@ -457,6 +524,8 @@ export function DynamicReport() {
     const nodeStats = buildNodeStats(reportTree);
     const rows: string[] = ['Name,Value (ILS),Depth'];
 
+    const escapeCsv = (text: string) => `"${text.replaceAll('"', '""')}"`;
+
     const childrenMap = new Map<string, typeof reportTree>();
     for (const node of reportTree) {
       const list = childrenMap.get(node.parent) || [];
@@ -468,11 +537,11 @@ export function DynamicReport() {
       for (const node of children) {
         if (node.droppable) {
           const sum = nodeStats.get(node.id)?.sum ?? 0;
-          rows.push(`"${node.text}",${sum},${depth}`);
+          rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
           traverse(node.id, depth + 1);
         } else {
           const value = node.data.value ?? 0;
-          rows.push(`"${node.text}",${value},${depth}`);
+          rows.push(`${escapeCsv(node.text)},${value},${depth}`);
         }
       }
     }
@@ -489,9 +558,11 @@ export function DynamicReport() {
     URL.revokeObjectURL(url);
   }, [reportTree, fromDate, toDate]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    setFiltersContext(null);
+  }, [setFiltersContext]);
 
-  setFiltersContext(null);
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-screen bg-background">

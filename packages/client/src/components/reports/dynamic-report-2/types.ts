@@ -70,7 +70,7 @@ export function getDescendantIds(nodes: FlatNode[], rootId: string): string[] {
   const result: string[] = [];
   const queue = [rootId];
   while (queue.length) {
-    const id = queue.shift()!;
+    const id = queue.pop()!;
     const children = childrenMap.get(id) ?? [];
     for (const childId of children) {
       result.push(childId);

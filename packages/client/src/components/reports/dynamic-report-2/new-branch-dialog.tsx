@@ -50,7 +50,7 @@ export const NewBranchDialog = forwardRef<NewBranchDialogRef, Props>(function Ne
     if (!newBranchName.trim()) return;
 
     const newBranch: FlatNode<CustomData> = {
-      id: `branch-${Date.now()}`,
+      id: `branch-${crypto.randomUUID()}`,
       parent: newBranchTarget,
       text: newBranchName.trim(),
       droppable: true,

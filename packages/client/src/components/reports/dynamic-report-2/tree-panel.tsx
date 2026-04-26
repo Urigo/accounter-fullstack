@@ -1,5 +1,11 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
-import { FolderPlus, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import {
+  FolderPlus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
+} from 'lucide-react';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';

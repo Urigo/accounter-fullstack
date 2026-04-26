@@ -110,10 +110,13 @@ export function handleCrossTreeDrop(
       ];
     }
   } else if (instruction.type === 'reparent') {
-    // Walk up from targetNodeId by (currentLevel - desiredLevel) steps to find the new parent
+    // Walk up from targetNodeId by (currentLevel - desiredLevel) steps to find the new parent.
+    // Stop early if we reach a root sentinel or the node is not found, to prevent over-walking.
+    const ROOT_SENTINELS = new Set(['bank', 'report']);
     const levelsUp = instruction.currentLevel - instruction.desiredLevel;
     let ancestorId: string = targetNodeId;
     for (let i = 0; i < levelsUp; i++) {
+      if (ROOT_SENTINELS.has(ancestorId)) break;
       const ancestor = baseTarget.find(n => n.id === ancestorId);
       if (!ancestor) break;
       ancestorId = ancestor.parent;
