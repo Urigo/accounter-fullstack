@@ -6,7 +6,7 @@
  * - <Link to={ROUTES.REPORTS.TAX(2024)}>Tax Report</Link>
  */
 
-import type { DynamicReportFiltersType } from '@/components/reports/dynamic-report/dynamic-report-filters.js';
+import type { DynamicReportFiltersType } from '@/components/reports/dynamic-report/index.js';
 import type { TrialBalanceReportFilters } from '@/components/reports/trial-balance-report/trial-balance-report-filters.js';
 import { DEPRECIATION_REPORT_FILTERS_QUERY_PARAM } from '@/components/screens/reports/depreciation-report/depreciation-report-filters-utils.js';
 import type { ChargeFilter, DepreciationReportFilter } from '@/gql/graphql.js';
@@ -32,16 +32,13 @@ export function getAllChargesParams(filter?: ChargeFilter | null, page?: number)
   return queryParams;
 }
 
-function getDynamicReportParams(
-  filter?: DynamicReportFiltersType | null,
-  templateName?: string | null,
-): string {
+function getDynamicReportParams(filter?: DynamicReportFiltersType | null): string {
   const params = new URLSearchParams();
   if (filter?.fromDate) params.set('from', filter.fromDate);
   if (filter?.toDate) params.set('to', filter.toDate);
   if (filter?.ownerIds?.[0]) params.set('owner', filter.ownerIds[0]);
   if (filter?.isShowZeroedAccounts) params.set('zeroed', '1');
-  if (templateName) params.set('template', templateName);
+  if (filter?.templateName) params.set('template', filter?.templateName);
   return params.size > 0 ? `?${params}` : '';
 }
 
@@ -115,8 +112,8 @@ export const ROUTES = {
     ROOT: '/reports',
     TRIAL_BALANCE: (filter?: TrialBalanceReportFilters | null) =>
       `/reports/trial-balance${getTrialBalanceReportHref(filter)}`,
-    DYNAMIC_REPORT: (filter?: DynamicReportFiltersType | null, templateName?: string | null) =>
-      `/reports/dynamic-report${getDynamicReportParams(filter, templateName)}`,
+    DYNAMIC_REPORT: (filter?: DynamicReportFiltersType | null) =>
+      `/reports/dynamic-report${getDynamicReportParams(filter)}`,
     VAT_MONTHLY: '/reports/vat-monthly',
     PROFIT_AND_LOSS: (year?: number) =>
       year ? `/reports/profit-and-loss/${year}` : '/reports/profit-and-loss',

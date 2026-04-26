@@ -128,6 +128,14 @@ import { buildNodeStats, type CustomData, type FlatNode, type Template } from '.
 
 type AllDynamicReportsTemplate = AllDynamicReportsQuery['allDynamicReports'][number];
 
+export type DynamicReportFiltersType = {
+  fromDate?: TimelessDateString | null;
+  toDate?: TimelessDateString | null;
+  ownerIds?: string[] | null;
+  isShowZeroedAccounts?: boolean | null;
+  templateName?: string | null;
+};
+
 function toTemplate(t: AllDynamicReportsTemplate): Template {
   return {
     id: t.id,

@@ -83,25 +83,21 @@ export function Step05MainProcess(props: Step05Props) {
       ? [
           {
             label: 'Balance Sheet',
-            href: ROUTES.REPORTS.DYNAMIC_REPORT(
-              {
-                ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
-                fromDate: '1900-01-01' as TimelessDateString,
-                toDate: `${props.year}-12-31` as TimelessDateString,
-              },
-              prevYearLockedTemplateName,
-            ),
+            href: ROUTES.REPORTS.DYNAMIC_REPORT({
+              ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
+              fromDate: '1900-01-01' as TimelessDateString,
+              toDate: `${props.year}-12-31` as TimelessDateString,
+              templateName: prevYearLockedTemplateName,
+            }),
           },
           {
             label: 'Profit and Loss',
-            href: ROUTES.REPORTS.DYNAMIC_REPORT(
-              {
-                ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
-                fromDate: `${props.year}-01-01` as TimelessDateString,
-                toDate: `${props.year}-12-31` as TimelessDateString,
-              },
-              prevYearLockedTemplateName,
-            ),
+            href: ROUTES.REPORTS.DYNAMIC_REPORT({
+              ownerIds: adminBusinessId ? [adminBusinessId] : undefined,
+              fromDate: `${props.year}-01-01` as TimelessDateString,
+              toDate: `${props.year}-12-31` as TimelessDateString,
+              templateName: prevYearLockedTemplateName,
+            }),
           },
         ]
       : [
