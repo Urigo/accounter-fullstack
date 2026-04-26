@@ -1,37 +1,76 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { FolderPlus, Loader2 } from 'lucide-react';
-import { DndProvider } from 'react-dnd';
-import { useParams } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useQuery } from 'urql';
-import { getBackendOptions, getDescendants, MultiBackend } from '@minoru/react-dnd-treeview';
-import type { DropOptions, NodeModel } from '@minoru/react-dnd-treeview';
-import { Typography } from '@mui/material';
-import { DYNAMIC_REPORT_FILTERS_KEY } from '@/helpers/consts.js';
 import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery } from 'urql';
+import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { FiltersContext } from '@/providers/index.js';
+import {
+  AllDynamicReportsDocument,
   DynamicReportDocument,
-  TemplateForDynamicReportDocument,
-  type AllSortCodesQuery,
-  type DynamicReportQuery,
+  DynamicReportTemplateDocument,
+  type AllDynamicReportsQuery,
+  type DynamicReportTemplateQuery,
 } from '../../../gql/graphql.js';
+import type { TimelessDateString } from '../../../helpers/dates.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
-import { useUrlQuery } from '../../../hooks/use-url-query.js';
-import { FiltersContext } from '../../../providers/filters-context.js';
-import { Tooltip } from '../../common/index.js';
-import { Button } from '../../ui/button.js';
-import { Label } from '../../ui/label.js';
-import { Switch } from '../../ui/switch.js';
-import { DownloadCSV } from './download-csv.js';
-import { DynamicReportFilters, type DynamicReportFiltersType } from './dynamic-report-filters.js';
-import { ManageTemplates } from './dynamic-report-manage-templates.js';
-import { SaveTemplate } from './dynamic-report-save-template.js';
-import { TreeView } from './tree-view.js';
-import type { CustomData } from './types.js';
+import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
+import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
+import { UserContext } from '../../../providers/user-provider.js';
+import {
+  DeleteBranchConfirmation,
+  type DeleteBranchConfirmationRef,
+} from './dialogs/delete-branch-confirmation.js';
+import {
+  DeleteTemplateConfirmation,
+  type DeleteTemplateConfirmationRef,
+} from './dialogs/delete-template-confirmation.js';
+import { DirtyTemplateSwitchConfirmation } from './dialogs/dirty-template-switch-confirmation.js';
+import { NewBranchDialog, type NewBranchDialogRef } from './dialogs/new-branch-dialog.js';
+import { RenameBranchDialog, type RenameBranchDialogRef } from './dialogs/rename-branch-dialog.js';
+import {
+  RenameTemplateDialog,
+  type RenameTemplateDialogRef,
+} from './dialogs/rename-template-dialog.js';
+import {
+  SaveAsNewTemplateDialog,
+  type SaveAsNewTemplateDialogRef,
+} from './dialogs/save-as-new-template-dialog.js';
+import { TemplateManager } from './dialogs/template-manager.js';
+import { LegacyBanner } from './legacy-banner.js';
+import { Toolbar } from './toolbar.js';
+import { TreePanel } from './tree-panel.js';
+import { buildInitialBankTree } from './utils/bank-tree.js';
+import { handleCrossTreeDrop, type DragPayload } from './utils/cross-tree-drop.js';
+import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './utils/legacy-migration.js';
+import { buildReportTree } from './utils/report-tree.js';
+import { serializeReportTree } from './utils/template-serialization.js';
+import { buildNodeStats, type CustomData, type FlatNode, type Template } from './utils/types.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query AllDynamicReports {
+    allDynamicReports {
+      id
+      name
+      isLocked
+      updated
+    }
+  }
+`;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   query DynamicReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
+      __typename
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
         businessTransactionsSum {
           business {
@@ -66,19 +105,19 @@ import type { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query TemplateForDynamicReport($name: String!) {
+  query DynamicReportTemplate($name: String!) {
     dynamicReport(name: $name) {
       id
       name
+      isLocked
+      updated
       template {
         id
         parent
         text
         droppable
         data {
-          descendantSortCodes
-          descendantFinancialEntities
-          mergedSortCodes
+          nodeType
           isOpen
           hebrewText
         }
@@ -87,436 +126,604 @@ import type { CustomData } from './types.js';
   }
 `;
 
-const BANK_TREE_ROOT_ID = 'bank';
-export const REPORT_TREE_ROOT_ID = 'report';
+type AllDynamicReportsTemplate = AllDynamicReportsQuery['allDynamicReports'][number];
 
-function buildSortCodeFinancialEntitiesMaps(tree: NodeModel<CustomData>[]) {
-  const sortCodeMap = new Map<number, string | number>();
-  const financialEntitiesMap = new Map<string, string | number>();
-  tree.map(({ data, id }) => {
-    if (data?.descendantSortCodes?.length) {
-      data.descendantSortCodes.map(sortCode => sortCodeMap.set(sortCode, id));
-    }
-    if (data?.descendantFinancialEntities?.length) {
-      data.descendantFinancialEntities.map(financialEntity =>
-        financialEntitiesMap.set(financialEntity, id),
-      );
-    }
-  });
-  return { sortCodeMap, financialEntitiesMap };
+export type DynamicReportFiltersType = {
+  fromDate?: TimelessDateString | null;
+  toDate?: TimelessDateString | null;
+  ownerIds?: string[] | null;
+  isShowZeroedAccounts?: boolean | null;
+  templateName?: string | null;
+};
+
+function toTemplate(t: AllDynamicReportsTemplate): Template {
+  return {
+    id: t.id,
+    name: t.name,
+    lastUpdated: new Date(t.updated),
+    isLocked: t.isLocked,
+  };
 }
 
-function updateSortCodesTreeNodes(
-  tree: NodeModel<CustomData>[],
-  sortCodes: AllSortCodesQuery['allSortCodes'],
-  sortCodeMap: Map<number, string | number>,
-) {
-  const newTree = [...tree];
-  sortCodes.map(sortCode => {
-    if (newTree.find(node => node.id === sortCode.id)) {
-      return;
-    }
+const currentYear = new Date().getFullYear();
+const DEFAULT_FROM = `${currentYear}-01-01`;
+const DEFAULT_TO = new Date().toISOString().slice(0, 10);
 
-    const parentId = sortCodeMap.get(sortCode.key) ?? undefined;
-    newTree.push({
-      id: sortCode.id,
-      parent: parentId ?? BANK_TREE_ROOT_ID,
-      droppable: true,
-      text: sortCode.name!,
-      data: {
-        sortCode: sortCode.key,
-        isOpen: false,
-      },
-    });
-  });
-
-  return newTree;
-}
-
-function updateFinancialEntitiesTreeNodes(
-  tree: NodeModel<CustomData>[],
-  businessesSum: Extract<
-    NonNullable<DynamicReportQuery['businessTransactionsSumFromLedgerRecords']>,
-    { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }
-  >['businessTransactionsSum'],
-  financialEntitiesMap: Map<string, string | number>,
-  isShowZeroedAccounts?: boolean,
-) {
-  const newTree = [...tree];
-  businessesSum.map(businessSum => {
-    const value = businessSum.total.raw * -1;
-    if (!isShowZeroedAccounts && Math.abs(value) < 0.005) {
-      return;
-    }
-    const node = newTree.find(node => node.id === businessSum.business.id);
-    if (node) {
-      if (node.data?.value !== value) {
-        node.data = {
-          ...node.data,
-          isOpen: false,
-          value,
-        };
-      }
-      return;
-    }
-
-    let parent = financialEntitiesMap.get(businessSum.business.id);
-    if (!parent) {
-      if (newTree.find(node => node.id === businessSum.business.sortCode?.id)) {
-        parent = businessSum.business.sortCode!.id;
-      } else {
-        parent = BANK_TREE_ROOT_ID;
-      }
-    }
-
-    newTree.push({
-      id: businessSum.business.id,
-      parent,
-      droppable: false,
-      text: businessSum.business.name,
-      data: {
-        value,
-        isOpen: false,
-      },
-    });
-  });
-
-  return newTree;
-}
-
-function randomId(length: number) {
-  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'.split('');
-
-  length ||= Math.floor(Math.random() * chars.length);
-
-  let str = '';
-  for (let i = 0; i < length; i++) {
-    str += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return str;
-}
-
-export const DynamicReport: React.FC = () => {
-  const { templateName } = useParams<{ templateName: string }>();
+export function DynamicReport() {
+  const { userContext } = useContext(UserContext);
+  const adminBusinessId = userContext?.context.adminBusinessId ?? '';
   const { setFiltersContext } = useContext(FiltersContext);
-  const [tree, setTree] = useState<NodeModel<CustomData>[]>([]);
-  const [enableDnd, setEnableDnd] = useState(false);
-  const { get } = useUrlQuery();
-  const [filter, setFilter] = useState<DynamicReportFiltersType>(
-    get(DYNAMIC_REPORT_FILTERS_KEY)
-      ? (JSON.parse(
-          decodeURIComponent(get(DYNAMIC_REPORT_FILTERS_KEY) as string),
-        ) as DynamicReportFiltersType)
-      : {},
+
+  // Filters — persisted in URL search params
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const fromDate = searchParams.get('from') ?? DEFAULT_FROM;
+  const toDate = searchParams.get('to') ?? DEFAULT_TO;
+  const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
+  const showZeroed = searchParams.get('zeroed') === '1';
+  const selectedTemplateName = searchParams.get('template');
+
+  const setFromDate = useCallback(
+    (v: string) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('from', v);
+          } else {
+            p.delete('from');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
   );
-  const [
-    {
-      data: businessTransactionsSumData,
-      fetching: businessTransactionsSumFetching,
-      error: businessesSumError,
-    },
-  ] = useQuery({
+  const setToDate = useCallback(
+    (v?: string) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('to', v);
+          } else {
+            p.delete('to');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+  const setSelectedOwner = useCallback(
+    (v: string) =>
+      setSearchParams(
+        p => {
+          p.set('owner', v);
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+  const setShowZeroed = useCallback(
+    (v: boolean) =>
+      setSearchParams(
+        p => {
+          p.set('zeroed', v ? '1' : '0');
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+  const setSelectedTemplateName = useCallback(
+    (v: string | null) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('template', v);
+          } else {
+            p.delete('template');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
+  // UI state
+  const [editMode, setEditMode] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [showLegacyBanner, setShowLegacyBanner] = useState(false);
+  const [collapsedPanel, setCollapsedPanel] = useState<'bank' | 'report' | null>(null);
+
+  const handleToggleCollapse = useCallback((panel: 'bank' | 'report') => {
+    setCollapsedPanel(prev => (prev === panel ? null : panel));
+  }, []);
+
+  // Template state
+  const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
+  const [templateSwitchDialogOpen, setTemplateSwitchDialogOpen] = useState(false);
+
+  // Tree state
+  const [bankTree, setBankTree] = useState<FlatNode<CustomData>[]>([]);
+  const [reportTree, setReportTree] = useState<FlatNode<CustomData>[]>([]);
+
+  // Dialogs
+  const renameBranchDialogRef = useRef<RenameBranchDialogRef>(null);
+  const deleteBranchConfirmationRef = useRef<DeleteBranchConfirmationRef>(null);
+  const newBranchDialogRef = useRef<NewBranchDialogRef>(null);
+
+  const saveAsNewTemplateDialogRef = useRef<SaveAsNewTemplateDialogRef>(null);
+  const renameTemplateDialogRef = useRef<RenameTemplateDialogRef>(null);
+  const deleteTemplateConfirmationRef = useRef<DeleteTemplateConfirmationRef>(null);
+
+  // ── GQL mutations ────────────────────────────────────────────────────────────
+
+  const { updateDynamicReportTemplate } = useUpdateDynamicReportTemplate();
+  const { updateDynamicReportTemplateName } = useUpdateDynamicReportTemplateName();
+
+  // ── GQL queries ──────────────────────────────────────────────────────────────
+
+  const { sortCodes } = useGetSortCodes();
+
+  const [{ data: businessSumsData }] = useQuery({
     query: DynamicReportDocument,
     variables: {
       filters: {
-        fromDate: filter?.fromDate,
-        toDate: filter?.toDate,
-        ownerIds: filter?.ownerIds,
+        fromDate: fromDate as TimelessDateString,
+        toDate: toDate as TimelessDateString,
+        ownerIds: [selectedOwner],
       },
     },
   });
 
-  // Sort codes array handle
-  const { sortCodes, fetching: fetchingSortCodes } = useGetSortCodes();
+  const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
+    query: AllDynamicReportsDocument,
+  });
 
-  // new template structure fetch
-  const [{ data: templateData, fetching: fetchingTemplate, error: templateError }, fetchTemplate] =
-    useQuery({
-      query: TemplateForDynamicReportDocument,
-      variables: {
-        name: templateName ?? '',
-      },
-      pause: true,
-    });
+  // Template nodes query — paused until a template is selected
+  const [{ data: templateNodesData }] = useQuery<DynamicReportTemplateQuery>({
+    query: DynamicReportTemplateDocument,
+    variables: { name: selectedTemplateName ?? '' },
+    pause: !selectedTemplateName,
+  });
 
-  const handleDrop = useCallback(
-    (
-      newTree: NodeModel<CustomData>[],
-      { dragSourceId, dropTargetId, dragSource }: DropOptions<CustomData>,
-    ) => {
-      // this is a workaround to enable sorting in case of multiple trees:
-      const targetTreeNodesSet = new Set(newTree.map(node => node.id));
-      const dragSourceParentId = dragSource?.parent;
-      const isSortCode = dragSource?.data?.sortCode != null;
-      const isFinancialEntity = dragSource?.data?.value != null;
-      setTree(
-        [...newTree, ...tree.filter(node => !targetTreeNodesSet.has(node.id))].map(node => {
-          if (node.id === dragSourceId) {
-            return {
-              ...node,
-              parent: dropTargetId,
-            };
-          }
-
-          if (isSortCode || isFinancialEntity) {
-            if (node.id === dropTargetId) {
-              return {
-                ...node,
-                data: {
-                  isOpen: true,
-                  ...node.data,
-                  descendantFinancialEntities: isFinancialEntity
-                    ? [...(node.data?.descendantFinancialEntities ?? []), dragSourceId as string]
-                    : node.data?.descendantFinancialEntities,
-                  descendantSortCodes: isSortCode
-                    ? [...(node.data?.descendantSortCodes ?? []), dragSourceId as number]
-                    : node.data?.descendantSortCodes,
-                },
-              };
-            }
-            if (node.id === dragSourceParentId) {
-              return {
-                ...node,
-                data: {
-                  isOpen: true,
-                  ...node.data,
-                  descendantFinancialEntities:
-                    isFinancialEntity && node.data?.descendantFinancialEntities?.length
-                      ? node.data.descendantFinancialEntities.filter(id => id !== dragSourceId)
-                      : node.data?.descendantFinancialEntities,
-                  descendantSortCodes:
-                    isFinancialEntity && node.data?.descendantSortCodes?.length
-                      ? node.data.descendantSortCodes.filter(id => id !== dragSourceId)
-                      : node.data?.descendantSortCodes,
-                },
-              };
-            }
-          }
-
-          return node;
-        }),
-      );
-    },
-    [setTree, tree],
+  // Derive template list for TemplateManager
+  const templates = useMemo<Template[]>(
+    () => (allTemplatesData?.allDynamicReports ?? []).map(toTemplate),
+    [allTemplatesData],
   );
 
-  const handleDeleteCategory = useCallback(
-    (id: NodeModel['id']) => {
-      setTree(
-        tree
-          .filter(node => node.id !== id)
-          .map(node => {
-            if (node.parent === id) {
-              return {
-                ...node,
-                parent: BANK_TREE_ROOT_ID,
-              };
-            }
-
-            return node;
-          }),
-      );
-    },
-    [setTree, tree],
-  );
-
-  const handleAddBankNode = useCallback(() => {
-    const node: NodeModel<CustomData> = {
-      id: `synthetic-${randomId(8)}`,
-      parent: BANK_TREE_ROOT_ID,
-      droppable: true,
-      text: 'New Category',
-      data: {
-        isOpen: false,
-      },
-    };
-
-    setTree([...tree, node]);
-  }, [setTree, tree]);
-
-  const handleTextChange = (id: NodeModel['id'], value: string) => {
-    setTree(
-      tree.map(node => {
-        if (node.id === id) {
-          return {
-            ...node,
-            text: value,
-          };
-        }
-
-        return node;
-      }),
-    );
-  };
-
-  const handleIsOpenChange = (id: NodeModel['id'], value: boolean) => {
-    setTree(
-      tree.map(node => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              isOpen: value,
-            },
-          };
-        }
-
-        return node;
-      }),
-    );
-  };
-
+  // Restore currentTemplate from URL param when templates are loaded
   useEffect(() => {
-    if (!!templateName && templateName !== '') {
-      fetchTemplate();
+    if (!selectedTemplateName || !templates.length) return;
+    if (currentTemplate?.name === selectedTemplateName) return;
+    const found = templates.find(t => t.name === selectedTemplateName);
+    if (found) {
+      setCurrentTemplate(found);
+      setShowLegacyBanner(found.isLegacy ?? false);
+      if (found.isLocked) setEditMode(false);
     }
-  }, [templateName, fetchTemplate]);
+  }, [selectedTemplateName, templates, currentTemplate]);
 
-  // footer context
-  useEffect(() => {
-    const handleClickSwitch = () => {
-      setEnableDnd(prevState => !prevState);
-    };
-
-    setFiltersContext(
-      <div className="flex flex-row gap-2">
-        <DownloadCSV tree={tree} filters={filter} />
-        <ManageTemplates template={templateName} />
-        <SaveTemplate tree={tree} />
-        <Tooltip content="Add new category">
-          <Button variant="outline" onClick={handleAddBankNode} className="gap-2 p-2">
-            <FolderPlus size={20} />
-          </Button>
-        </Tooltip>
-        <DynamicReportFilters filter={filter} setFilter={setFilter} />
-        <div className="flex items-center space-x-2">
-          <Switch id="enable-dnd" checked={enableDnd} onCheckedChange={handleClickSwitch} />
-          <Label htmlFor="enable-dnd">Form is {enableDnd ? 'editable' : 'locked'}</Label>
-        </div>
-      </div>,
-    );
-  }, [setFiltersContext, enableDnd, filter, setFilter, handleAddBankNode, tree, templateName]);
-
-  const businessesSum = useMemo(() => {
-    if (
-      businessTransactionsSumData &&
-      businessTransactionsSumData?.businessTransactionsSumFromLedgerRecords.__typename !==
-        'CommonError'
-    ) {
-      return businessTransactionsSumData.businessTransactionsSumFromLedgerRecords
-        .businessTransactionsSum;
+  // Derive business sums array
+  const businessSums = useMemo(() => {
+    const result = businessSumsData?.businessTransactionsSumFromLedgerRecords;
+    if (result?.__typename === 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult') {
+      return result.businessTransactionsSum;
     }
     return [];
-  }, [businessTransactionsSumData]);
+  }, [businessSumsData]);
 
-  const reorderTree = useCallback(() => {
-    setTree(tree => {
-      const { sortCodeMap, financialEntitiesMap } = buildSortCodeFinancialEntitiesMaps(tree);
+  // ── Refs for reading latest values inside effects without adding them as deps ──
+  // Updated via useLayoutEffect (runs before useEffect) so effects always see current values.
 
-      // update / add sort codes nodes
-      const treeWithSortCodes = updateSortCodesTreeNodes(tree, sortCodes, sortCodeMap);
+  const businessSumsRef = useRef(businessSums);
+  const sortCodesRef = useRef(sortCodes);
+  const showZeroedRef = useRef(showZeroed);
+  const reportTreeRef = useRef(reportTree);
 
-      // update / add financial entities nodes
-      const treeWithFinancialEntities = updateFinancialEntitiesTreeNodes(
-        treeWithSortCodes,
-        businessesSum,
-        financialEntitiesMap,
-        filter.isShowZeroedAccounts,
-      );
+  useLayoutEffect(() => {
+    businessSumsRef.current = businessSums;
+    sortCodesRef.current = sortCodes;
+    showZeroedRef.current = showZeroed;
+    reportTreeRef.current = reportTree;
+  });
 
-      return treeWithFinancialEntities;
+  // Coordinates the two tree effects: ensures the value-patch effect skips
+  // when the template-load effect ran in the same commit.
+  const templateVersionRef = useRef(0);
+  const valuesPatchedVersionRef = useRef(0);
+
+  // ── Effect 1: Full tree rebuild on template/sort-code load ────────────────
+  // Only fires when the template or sort-code data changes — NOT on filter
+  // changes — so user structural edits (drags, renames, branches) are preserved.
+
+  useEffect(() => {
+    templateVersionRef.current += 1;
+
+    const rawNodes = templateNodesData?.dynamicReport?.template ?? [];
+    const bSums = businessSumsRef.current;
+    const sCodes = sortCodesRef.current;
+    const zeroed = showZeroedRef.current;
+
+    let nextReportTree: FlatNode<CustomData>[];
+    let placedEntityIds: Set<string>;
+
+    if (rawNodes.length > 0) {
+      if (isLegacyTemplateNodes(rawNodes as Parameters<typeof isLegacyTemplateNodes>[0])) {
+        const migrated = migrateLegacyTemplateNodes(
+          rawNodes as Parameters<typeof migrateLegacyTemplateNodes>[0],
+          bSums,
+        );
+        nextReportTree = migrated;
+        placedEntityIds = new Set(migrated.filter(n => !n.droppable).map(n => n.id));
+      } else {
+        const result = buildReportTree(rawNodes as Parameters<typeof buildReportTree>[0], bSums);
+        nextReportTree = result.reportTree;
+        placedEntityIds = result.placedEntityIds;
+      }
+    } else {
+      nextReportTree = [];
+      placedEntityIds = new Set();
+    }
+
+    const nextBankTree = buildInitialBankTree(sCodes, bSums, placedEntityIds, zeroed);
+
+    setBankTree(nextBankTree);
+    setReportTree(nextReportTree);
+  }, [templateNodesData, sortCodes]);
+
+  // ── Effect 2: Value-only patch on filter change ───────────────────────────
+  // Fires when businessSums or showZeroed changes. Preserves tree structure
+  // by only updating data.value on leaf nodes. Skips if Effect 1 ran in the
+  // same commit (templateVersionRef > valuesPatchedVersionRef).
+
+  useEffect(() => {
+    if (valuesPatchedVersionRef.current < templateVersionRef.current) {
+      // Effect 1 ran more recently — its trees are authoritative; skip patch.
+      valuesPatchedVersionRef.current = templateVersionRef.current;
+      return;
+    }
+
+    const currentReportTree = reportTreeRef.current;
+
+    // O(N) value lookup
+    const sumById = new Map(businessSums.map(b => [b.business.id, b.total.raw * -1]));
+
+    // Patch values on report-tree leaf nodes, preserve all structural properties
+    const nextReportTree = currentReportTree.map(node => {
+      if (node.droppable) return node;
+      const value = sumById.get(node.id) ?? 0;
+      if (node.data.value === value) return node;
+      return { ...node, data: { ...node.data, value } };
     });
-  }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, setTree]);
 
-  // On new template, update main tree
-  useEffect(() => {
-    if (!fetchingTemplate && templateData) {
-      const template = templateData.dynamicReport.template.map(node => ({
-        ...node,
-        data: { ...node.data, hebrewText: node.data.hebrewText ?? undefined },
-      }));
-      setTree(template);
-      reorderTree();
-    }
-  }, [templateData, fetchingTemplate, reorderTree]);
+    // Placed entity IDs haven't changed (structure is preserved)
+    const placedEntityIds = new Set(currentReportTree.filter(n => !n.droppable).map(n => n.id));
 
-  // trigger tree reorder on sort codes / financial entities / relevant filters change
-  useEffect(() => {
-    reorderTree();
-  }, [sortCodes, businessesSum, filter.isShowZeroedAccounts, reorderTree]);
+    // Rebuild bank tree so new/removed entities and zeroed filter are respected
+    const nextBankTree = buildInitialBankTree(
+      sortCodesRef.current,
+      businessSums,
+      placedEntityIds,
+      showZeroed,
+    );
 
-  useEffect(() => {
-    if (businessesSumError) {
-      console.error(businessesSumError);
-      toast.error('Error', {
-        description: 'Unable to fetch businesses summary',
-      });
-    }
-  }, [businessesSumError]);
+    setReportTree(nextReportTree);
+    setBankTree(nextBankTree);
+  }, [businessSums, showZeroed]);
+
+  // ── DnD monitor ───────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (templateError) {
-      console.error(templateError);
-      toast.error('Error', {
-        description: 'Unable to fetch template',
-      });
-    }
-  }, [templateError]);
+    return monitorForElements({
+      onDrop({ source, location }) {
+        const payload = source.data as DragPayload;
+        const target = location.current.dropTargets[0];
+        if (!target) return;
+        const targetNodeId = target.data.nodeId as string;
+        const targetTreeId = target.data.treeId as 'bank' | 'report';
+        const instruction = extractInstruction(target.data);
 
-  const reportTree = getDescendants(tree, REPORT_TREE_ROOT_ID);
-  const bankTree = getDescendants(tree, BANK_TREE_ROOT_ID);
+        const { nextBankTree, nextReportTree } = handleCrossTreeDrop(
+          bankTree,
+          reportTree,
+          payload,
+          targetNodeId,
+          targetTreeId,
+          instruction,
+        );
+        setBankTree(nextBankTree);
+        setReportTree(nextReportTree);
+        setIsDirty(true);
+      },
+    });
+  }, [bankTree, reportTree]);
 
-  const fetching = useMemo(
-    () =>
-      (!sortCodes && fetchingSortCodes) ||
-      (!businessTransactionsSumData && businessTransactionsSumFetching),
-    [sortCodes, fetchingSortCodes, businessTransactionsSumData, businessTransactionsSumFetching],
+  // ── Tree callbacks ────────────────────────────────────────────────────────
+
+  const handleToggleBankExpand = useCallback((nodeId: string) => {
+    setBankTree(prev =>
+      prev.map(n => (n.id === nodeId ? { ...n, data: { ...n.data, isOpen: !n.data.isOpen } } : n)),
+    );
+  }, []);
+
+  const handleToggleReportExpand = useCallback((nodeId: string) => {
+    setReportTree(prev =>
+      prev.map(n => (n.id === nodeId ? { ...n, data: { ...n.data, isOpen: !n.data.isOpen } } : n)),
+    );
+  }, []);
+
+  const handleRenameBranch = useCallback((nodeId: string, currentName: string) => {
+    renameBranchDialogRef.current?.renameBranch(nodeId, currentName);
+  }, []);
+
+  const handleDeleteBranch = useCallback((nodeId: string) => {
+    deleteBranchConfirmationRef.current?.deleteBranch(nodeId);
+  }, []);
+
+  const handleAddBranch = useCallback((target: 'bank' | 'report'): void => {
+    newBranchDialogRef.current?.addBranch(target);
+  }, []);
+
+  const handleSaveAsNew = useCallback(() => {
+    saveAsNewTemplateDialogRef.current?.saveAsNew();
+  }, []);
+
+  const handleDuplicateTemplate = useCallback((template: Template) => {
+    saveAsNewTemplateDialogRef.current?.duplicateTemplate(template);
+  }, []);
+
+  const handleRenameTemplate = useCallback(() => {
+    renameTemplateDialogRef.current?.renameTemplate();
+  }, []);
+
+  const handleDeleteTemplate = useCallback((template: Template) => {
+    deleteTemplateConfirmationRef.current?.deleteTemplate(template);
+  }, []);
+
+  // ── Template handlers ─────────────────────────────────────────────────────
+
+  const applyTemplate = useCallback(
+    (template: Template) => {
+      setCurrentTemplate(template);
+      setSelectedTemplateName(template.name);
+      setShowLegacyBanner(template.isLegacy ?? false);
+      setIsDirty(false);
+      if (template.isLocked) {
+        setEditMode(false);
+      }
+    },
+    [setSelectedTemplateName],
   );
 
+  const handleLoadTemplate = useCallback(
+    (template: Template) => {
+      if (isDirty) {
+        setPendingTemplate(template);
+        setTemplateSwitchDialogOpen(true);
+      } else {
+        applyTemplate(template);
+      }
+    },
+    [isDirty, applyTemplate],
+  );
+
+  const handleResave = useCallback(async () => {
+    if (!currentTemplate) return;
+    const serialized = serializeReportTree(reportTree);
+    const result = await updateDynamicReportTemplate({
+      name: currentTemplate.name,
+      template: serialized,
+    });
+    if (result) {
+      setIsDirty(false);
+      setShowLegacyBanner(false);
+    }
+  }, [currentTemplate, reportTree, updateDynamicReportTemplate]);
+
+  const handleRenameInManager = useCallback(
+    async (template: Template, newName: string) => {
+      const result = await updateDynamicReportTemplateName({
+        name: template.name,
+        newName,
+      });
+      if (result && template.id === currentTemplate?.id) {
+        setCurrentTemplate(prev => (prev ? { ...prev, id: result.id, name: result.name } : null));
+        setSelectedTemplateName(result.name);
+      }
+      if (result) {
+        refetchAllTemplates({ requestPolicy: 'network-only' });
+      }
+    },
+    [
+      currentTemplate,
+      updateDynamicReportTemplateName,
+      setSelectedTemplateName,
+      refetchAllTemplates,
+    ],
+  );
+
+  const handleDownloadCSV = useCallback(() => {
+    const nodeStats = buildNodeStats(reportTree);
+    const rows: string[] = ['Name,Value (ILS),Depth'];
+
+    const escapeCsv = (text: string) => `"${text.replaceAll('"', '""')}"`;
+
+    const childrenMap = new Map<string, typeof reportTree>();
+    for (const node of reportTree) {
+      const list = childrenMap.get(node.parent) || [];
+      list.push(node);
+      childrenMap.set(node.parent, list);
+    }
+    function traverse(parentId: string, depth: number) {
+      const children = childrenMap.get(parentId) ?? [];
+      for (const node of children) {
+        if (node.droppable) {
+          const sum = nodeStats.get(node.id)?.sum ?? 0;
+          rows.push(`${escapeCsv(node.text)},${sum},${depth}`);
+          traverse(node.id, depth + 1);
+        } else {
+          const value = node.data.value ?? 0;
+          rows.push(`${escapeCsv(node.text)},${value},${depth}`);
+        }
+      }
+    }
+
+    traverse('report', 0);
+
+    const csv = rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `dynamic-report-${fromDate}-${toDate}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [reportTree, fromDate, toDate]);
+
+  useEffect(() => {
+    setFiltersContext(null);
+  }, [setFiltersContext]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <DndProvider backend={MultiBackend} options={getBackendOptions()}>
-      <div className="h-full grid grid-cols-[auto_1fr] relative">
-        {fetching && (
-          <div className="absolute bg-white/60 z-10 h-full w-full flex items-center justify-center">
-            <div className="flex items-center">
-              <span className="text-3xl mr-4">
-                <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-              </span>
-            </div>
-          </div>
-        )}
-        <div className="border-r border-solid corder-color-zinc-100 relative">
-          <Typography variant="h5" className="px-4">
-            Bank
-          </Typography>
-          <TreeView
-            rootId={BANK_TREE_ROOT_ID}
-            tree={bankTree}
-            onDrop={handleDrop}
-            handleTextChange={handleTextChange}
-            handleDeleteCategory={handleDeleteCategory}
-            handleIsOpenChange={handleIsOpenChange}
-            enableDnd={enableDnd}
-            filter={filter}
+    <div className="flex flex-col h-screen bg-background">
+      <Toolbar
+        fromDate={fromDate}
+        toDate={toDate}
+        onFromDateChange={setFromDate}
+        onToDateChange={setToDate}
+        owners={
+          adminBusinessId
+            ? [{ id: adminBusinessId, name: userContext?.username ?? adminBusinessId }]
+            : []
+        }
+        selectedOwner={selectedOwner}
+        onOwnerChange={setSelectedOwner}
+        showZeroed={showZeroed}
+        onShowZeroedChange={setShowZeroed}
+        editMode={editMode}
+        onEditModeChange={setEditMode}
+        isDirty={isDirty}
+        currentTemplate={currentTemplate}
+        onSelectTemplate={() => setTemplateManagerOpen(true)}
+        onSaveAsNew={handleSaveAsNew}
+        onResave={handleResave}
+        onRename={handleRenameTemplate}
+        onDuplicate={() => currentTemplate && handleDuplicateTemplate(currentTemplate)}
+        onDelete={() => currentTemplate && handleDeleteTemplate(currentTemplate)}
+        onDownloadCSV={handleDownloadCSV}
+        isLocked={currentTemplate?.isLocked ?? false}
+      />
+
+      {showLegacyBanner && currentTemplate?.isLegacy && (
+        <LegacyBanner onDismiss={() => setShowLegacyBanner(false)} />
+      )}
+
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="flex gap-4 h-full">
+          <TreePanel
+            treeId="bank"
+            title="Bank"
+            nodes={bankTree}
+            editMode={editMode}
+            emptyMessage="No entities remaining"
+            isCollapsed={collapsedPanel === 'bank'}
+            onToggleCollapse={() => handleToggleCollapse('bank')}
+            onAddBranch={() => handleAddBranch('bank')}
+            onToggleExpand={handleToggleBankExpand}
+            onRename={handleRenameBranch}
+            onDelete={handleDeleteBranch}
           />
-        </div>
-        <div>
-          <Typography variant="h5" className="px-4">
-            Report
-          </Typography>
-          <TreeView
-            rootId={REPORT_TREE_ROOT_ID}
-            tree={reportTree}
-            onDrop={handleDrop}
-            handleTextChange={handleTextChange}
-            handleDeleteCategory={handleDeleteCategory}
-            handleIsOpenChange={handleIsOpenChange}
-            enableDnd={enableDnd}
-            filter={filter}
+
+          <TreePanel
+            treeId="report"
+            title="Report"
+            nodes={reportTree}
+            editMode={editMode}
+            emptyMessage="Drop entities here to build your report"
+            isCollapsed={collapsedPanel === 'report'}
+            onToggleCollapse={() => handleToggleCollapse('report')}
+            onAddBranch={() => handleAddBranch('report')}
+            onToggleExpand={handleToggleReportExpand}
+            onRename={handleRenameBranch}
+            onDelete={handleDeleteBranch}
           />
         </div>
       </div>
-    </DndProvider>
+
+      {/* Template Manager Modal */}
+      <TemplateManager
+        open={templateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
+        templates={templates}
+        onLoad={handleLoadTemplate}
+        onRename={handleRenameInManager}
+        onDuplicate={handleDuplicateTemplate}
+        onDelete={handleDeleteTemplate}
+      />
+
+      <RenameBranchDialog
+        ref={renameBranchDialogRef}
+        setIsDirty={setIsDirty}
+        setBankTree={setBankTree}
+        setReportTree={setReportTree}
+      />
+
+      <DeleteBranchConfirmation
+        ref={deleteBranchConfirmationRef}
+        setIsDirty={setIsDirty}
+        bankTree={bankTree}
+        setBankTree={setBankTree}
+        reportTree={reportTree}
+        setReportTree={setReportTree}
+      />
+
+      <NewBranchDialog
+        ref={newBranchDialogRef}
+        setIsDirty={setIsDirty}
+        setBankTree={setBankTree}
+        setReportTree={setReportTree}
+      />
+
+      <DirtyTemplateSwitchConfirmation
+        applyTemplate={applyTemplate}
+        pendingTemplate={pendingTemplate}
+        setPendingTemplate={setPendingTemplate}
+        templateSwitchDialogOpen={templateSwitchDialogOpen}
+        setTemplateSwitchDialogOpen={setTemplateSwitchDialogOpen}
+      />
+
+      <SaveAsNewTemplateDialog
+        ref={saveAsNewTemplateDialogRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        setIsDirty={setIsDirty}
+        setCurrentTemplate={setCurrentTemplate}
+        reportTree={reportTree}
+      />
+
+      <RenameTemplateDialog
+        ref={renameTemplateDialogRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        currentTemplate={currentTemplate}
+        setCurrentTemplate={setCurrentTemplate}
+      />
+
+      <DeleteTemplateConfirmation
+        ref={deleteTemplateConfirmationRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        currentTemplate={currentTemplate}
+        setCurrentTemplate={setCurrentTemplate}
+      />
+    </div>
   );
-};
+}

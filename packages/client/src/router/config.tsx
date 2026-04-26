@@ -96,7 +96,9 @@ const TrialBalanceReport = lazy(() =>
   })),
 );
 const DynamicReport = lazy(() =>
-  import('../components/reports/dynamic-report/index.js').then(m => ({ default: m.DynamicReport })),
+  import('../components/reports/dynamic-report/index.js').then(m => ({
+    default: m.DynamicReport,
+  })),
 );
 const VatMonthlyReport = lazy(() =>
   import('../components/reports/vat-monthly-report/index.js').then(m => ({
