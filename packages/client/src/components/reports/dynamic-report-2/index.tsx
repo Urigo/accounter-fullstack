@@ -1,4 +1,12 @@
-import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
@@ -331,10 +339,7 @@ export function DynamicReport() {
         nextReportTree = migrated;
         placedEntityIds = new Set(migrated.filter(n => !n.droppable).map(n => n.id));
       } else {
-        const result = buildReportTree(
-          rawNodes as Parameters<typeof buildReportTree>[0],
-          bSums,
-        );
+        const result = buildReportTree(rawNodes as Parameters<typeof buildReportTree>[0], bSums);
         nextReportTree = result.reportTree;
         placedEntityIds = result.placedEntityIds;
       }
