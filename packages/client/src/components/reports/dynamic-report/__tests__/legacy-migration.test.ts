@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from '../legacy-migration.js';
-import type { LegacyTemplateNode } from '../legacy-migration.js';
-import { REPORT_ROOT } from '../report-tree.js';
+import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from '../utils/legacy-migration.js';
+import type { LegacyTemplateNode } from '../utils/legacy-migration.js';
+import { REPORT_ROOT } from '../utils/report-tree.js';
 import type { DynamicReportQuery } from '../../../../gql/graphql.js';
 
 // ── fixture helpers ───────────────────────────────────────────────────────────

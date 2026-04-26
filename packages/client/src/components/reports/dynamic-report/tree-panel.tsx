@@ -10,7 +10,7 @@ import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element
 import { Button } from '@/components/ui/button.js';
 import { cn } from '@/lib/utils.js';
 import { TreeNodeRow } from './tree-node.js';
-import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './types.js';
+import { buildNodeStats, type CustomData, type FlatNode, type NodeStats } from './utils/types.js';
 
 interface TreePanelProps {
   treeId: 'bank' | 'report';

@@ -96,7 +96,7 @@ const TrialBalanceReport = lazy(() =>
   })),
 );
 const DynamicReport = lazy(() =>
-  import('../components/reports/dynamic-report-2/index.js').then(m => ({
+  import('../components/reports/dynamic-report/index.js').then(m => ({
     default: m.DynamicReport,
   })),
 );

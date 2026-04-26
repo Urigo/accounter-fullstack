@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
-import { type CustomData, type FlatNode } from './types.js';
+import { type CustomData, type FlatNode } from '../utils/types.js';
 
 export interface RenameBranchDialogRef {
   renameBranch: (nodeId: string, currentName: string) => void;

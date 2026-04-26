@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip.js';
-import { type Template } from './types.js';
+import { type Template } from '../utils/types.js';
 
 interface TemplateManagerProps {
   open: boolean;

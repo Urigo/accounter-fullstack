@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { moveBranchToBank } from '../move-branch-to-bank.js';
-import type { FlatNode, CustomData } from '../types.js';
+import { moveBranchToBank } from '../utils/move-branch-to-bank.js';
+import type { FlatNode, CustomData } from '../utils/types.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

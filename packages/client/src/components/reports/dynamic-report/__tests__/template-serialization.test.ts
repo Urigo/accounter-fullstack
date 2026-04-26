@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { serializeReportTree } from '../template-serialization.js';
-import { REPORT_ROOT } from '../report-tree.js';
-import { BANK_ROOT } from '../bank-tree.js';
-import type { CustomData, FlatNode } from '../types.js';
+import { serializeReportTree } from '../utils/template-serialization.js';
+import { REPORT_ROOT } from '../utils/report-tree.js';
+import { BANK_ROOT } from '../utils/bank-tree.js';
+import type { CustomData, FlatNode } from '../utils/types.js';
 
 function branch(
   id: string,

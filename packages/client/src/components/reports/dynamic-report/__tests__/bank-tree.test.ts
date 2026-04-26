@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildInitialBankTree, BANK_ROOT } from '../bank-tree.js';
+import { buildInitialBankTree, BANK_ROOT } from '../utils/bank-tree.js';
 import type { AllSortCodesQuery, DynamicReportQuery } from '../../../../gql/graphql.js';
 
 // ── fixture helpers ───────────────────────────────────────────────────────────

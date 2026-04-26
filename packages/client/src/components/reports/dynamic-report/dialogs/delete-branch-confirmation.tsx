@@ -9,8 +9,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.js';
-import { moveBranchToBank } from './move-branch-to-bank.js';
-import { type CustomData, type FlatNode } from './types.js';
+import { moveBranchToBank } from '../utils/move-branch-to-bank.js';
+import { type CustomData, type FlatNode } from '../utils/types.js';
 
 export interface DeleteBranchConfirmationRef {
   deleteBranch: (nodeId: string) => void;

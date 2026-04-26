@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { handleCrossTreeDrop } from '../cross-tree-drop.js';
-import type { FlatNode, CustomData } from '../types.js';
+import { handleCrossTreeDrop } from '../utils/cross-tree-drop.js';
+import type { FlatNode, CustomData } from '../utils/types.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

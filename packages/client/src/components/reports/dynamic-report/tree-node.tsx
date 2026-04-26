@@ -39,15 +39,15 @@ import {
 } from '@/components/ui/tooltip.js';
 import { cn } from '@/lib/utils.js';
 import { BusinessExtendedInfo } from '../../business-ledger/business-extended-info.js';
-import type { DragPayload } from './cross-tree-drop.js';
 import { DragOverlayContent } from './drag-overlay.js';
+import type { DragPayload } from './utils/cross-tree-drop.js';
 import {
   formatCurrency,
   isBranchNode,
   type CustomData,
   type FlatNode,
   type NodeStats,
-} from './types.js';
+} from './utils/types.js';
 
 interface TreeNodeProps {
   node: FlatNode<CustomData>;

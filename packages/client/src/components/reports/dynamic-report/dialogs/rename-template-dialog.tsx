@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
-import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
-import { type Template } from './types.js';
+import { useUpdateDynamicReportTemplateName } from '../../../../hooks/use-update-dynamic-report-template-name.js';
+import { type Template } from '../utils/types.js';
 
 export interface RenameTemplateDialogRef {
   renameTemplate: () => void;

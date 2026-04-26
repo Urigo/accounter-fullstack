@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
 import type { TimelessDateString } from '@/helpers/index.js';
-import { type Owner, type Template } from './types.js';
+import { type Owner, type Template } from './utils/types.js';
 
 interface ToolbarProps {
   fromDate: string;

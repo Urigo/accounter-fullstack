@@ -1,4 +1,4 @@
-import type { DynamicReportQuery } from '../../../gql/graphql.js';
+import type { DynamicReportQuery } from '../../../../gql/graphql.js';
 import { REPORT_ROOT } from './report-tree.js';
 import type { CustomData, FlatNode } from './types.js';
 

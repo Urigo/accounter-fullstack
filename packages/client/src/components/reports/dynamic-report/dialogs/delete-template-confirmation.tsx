@@ -9,8 +9,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.js';
-import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
-import { type Template } from './types.js';
+import { useDeleteDynamicReportTemplate } from '../../../../hooks/use-delete-dynamic-report-template.js';
+import { type Template } from '../utils/types.js';
 
 export interface DeleteTemplateConfirmationRef {
   deleteTemplate: (template: Template) => void;

@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog.js';
-import { type Template } from './types.js';
+import { type Template } from '../utils/types.js';
 
 type Props = {
   applyTemplate: (template: Template) => void;

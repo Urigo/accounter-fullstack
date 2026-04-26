@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 import { Building2, Folder, User } from 'lucide-react';
-import { isBranchNode, type CustomData, type FlatNode } from './types.js';
+import { isBranchNode, type CustomData, type FlatNode } from './utils/types.js';
 
 interface DragOverlayContentProps {
   node: FlatNode<CustomData>;

@@ -10,9 +10,9 @@ import {
 } from '@/components/ui/dialog.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
-import { useInsertDynamicReportTemplate } from '../../../hooks/use-insert-dynamic-report-template.js';
-import { serializeReportTree } from './template-serialization.js';
-import { type CustomData, type FlatNode, type Template } from './types.js';
+import { useInsertDynamicReportTemplate } from '../../../../hooks/use-insert-dynamic-report-template.js';
+import { serializeReportTree } from '../utils/template-serialization.js';
+import { type CustomData, type FlatNode, type Template } from '../utils/types.js';
 
 export interface SaveAsNewTemplateDialogRef {
   duplicateTemplate: (template: Template) => void;

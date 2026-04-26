@@ -1,4 +1,4 @@
-import type { AllSortCodesQuery, DynamicReportQuery } from '../../../gql/graphql.js';
+import type { AllSortCodesQuery, DynamicReportQuery } from '../../../../gql/graphql.js';
 import type { CustomData, FlatNode } from './types.js';
 
 export const BANK_ROOT = 'bank';
