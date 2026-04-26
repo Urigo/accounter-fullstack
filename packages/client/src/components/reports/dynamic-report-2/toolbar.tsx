@@ -1,4 +1,5 @@
 import { ChevronDown, Copy, Download, Edit2, FileText, Save, Trash2 } from 'lucide-react';
+import { DatePickerInput } from '@/components/common/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
 import {
@@ -8,7 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.js';
-import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
 import {
   Select,
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.js';
 import { Switch } from '@/components/ui/switch.js';
+import type { TimelessDateString } from '@/helpers/index.js';
 import { type Owner, type Template } from './types.js';
 
 interface ToolbarProps {
@@ -77,11 +78,10 @@ export function Toolbar({
           <Label htmlFor="from-date" className="text-sm text-muted-foreground">
             From
           </Label>
-          <Input
+          <DatePickerInput
             id="from-date"
-            type="date"
-            value={fromDate}
-            onChange={e => onFromDateChange(e.target.value)}
+            value={fromDate as TimelessDateString}
+            onChange={e => onFromDateChange(e ?? '')}
             className="w-36"
           />
         </div>
@@ -90,11 +90,10 @@ export function Toolbar({
           <Label htmlFor="to-date" className="text-sm text-muted-foreground">
             To
           </Label>
-          <Input
+          <DatePickerInput
             id="to-date"
-            type="date"
-            value={toDate}
-            onChange={e => onToDateChange(e.target.value)}
+            value={toDate as TimelessDateString}
+            onChange={e => onToDateChange(e ?? '')}
             className="w-36"
           />
         </div>

@@ -30,42 +30,6 @@ import type { CustomData } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query DynamicReport($filters: BusinessTransactionsFilter) {
-    businessTransactionsSumFromLedgerRecords(filters: $filters) {
-      ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
-        businessTransactionsSum {
-          business {
-            id
-            name
-            sortCode {
-              id
-              key
-              name
-            }
-          }
-          credit {
-            formatted
-            raw
-          }
-          debit {
-            formatted
-            raw
-          }
-          total {
-            formatted
-            raw
-          }
-        }
-      }
-      ... on CommonError {
-        __typename
-      }
-    }
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
   query TemplateForDynamicReport($name: String!) {
     dynamicReport(name: $name) {
       id

@@ -79,7 +79,7 @@ export function TreePanel({
   const hasRootNodes = nodes.some(n => n.parent === treeId);
 
   return (
-    <div className="flex flex-col h-full border rounded-lg bg-background">
+    <div className="flex flex-col h-full border rounded-lg bg-background overflow-scroll">
       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
         <h2 className="font-semibold text-lg">{title}</h2>
         {editMode && (

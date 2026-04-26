@@ -1,29 +1,9 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { extractInstruction } from '@atlaskit/pragmatic-drag-and-drop-hitbox/tree-item';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog.js';
-import { Button } from '@/components/ui/button.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.js';
-import { Input } from '@/components/ui/input.js';
-import { Label } from '@/components/ui/label.js';
+import { FiltersContext } from '@/providers/index.js';
 import {
   AllDynamicReportsDocument,
   DynamicReportDocument,
@@ -32,23 +12,73 @@ import {
   type DynamicReportV2TemplateQuery,
 } from '../../../gql/graphql.js';
 import type { TimelessDateString } from '../../../helpers/dates.js';
-import { useDeleteDynamicReportTemplate } from '../../../hooks/use-delete-dynamic-report-template.js';
 import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
-import { useInsertDynamicReportTemplate } from '../../../hooks/use-insert-dynamic-report-template.js';
 import { useUpdateDynamicReportTemplateName } from '../../../hooks/use-update-dynamic-report-template-name.js';
 import { useUpdateDynamicReportTemplate } from '../../../hooks/use-update-dynamic-report-template.js';
 import { UserContext } from '../../../providers/user-provider.js';
 import { buildInitialBankTree } from './bank-tree.js';
 import { handleCrossTreeDrop, type DragPayload } from './cross-tree-drop.js';
+import {
+  DeleteBranchConfirmation,
+  type DeleteBranchConfirmationRef,
+} from './delete-branch-confirmation.js';
+import {
+  DeleteTemplateConfirmation,
+  type DeleteTemplateConfirmationRef,
+} from './delete-template-confirmation.js';
+import { DirtyTemplateSwitchConfirmation } from './dirty-template-switch-confirmation.js';
 import { LegacyBanner } from './legacy-banner.js';
 import { isLegacyTemplateNodes, migrateLegacyTemplateNodes } from './legacy-migration.js';
-import { moveBranchToBank } from './move-branch-to-bank.js';
+import { NewBranchDialog, type NewBranchDialogRef } from './new-branch-dialog.js';
+import { RenameBranchDialog, type RenameBranchDialogRef } from './rename-branch-dialog.js';
+import { RenameTemplateDialog, type RenameTemplateDialogRef } from './rename-template-dialog.js';
 import { buildReportTree } from './report-tree.js';
+import {
+  SaveAsNewTemplateDialog,
+  type SaveAsNewTemplateDialogRef,
+} from './save-as-new-template-dialog.js';
 import { TemplateManager } from './template-manager.js';
 import { serializeReportTree } from './template-serialization.js';
 import { Toolbar } from './toolbar.js';
 import { TreePanel } from './tree-panel.js';
 import { buildNodeStats, type CustomData, type FlatNode, type Template } from './types.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query DynamicReport($filters: BusinessTransactionsFilter) {
+    businessTransactionsSumFromLedgerRecords(filters: $filters) {
+      __typename
+      ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+        businessTransactionsSum {
+          business {
+            id
+            name
+            sortCode {
+              id
+              key
+              name
+            }
+          }
+          credit {
+            formatted
+            raw
+          }
+          debit {
+            formatted
+            raw
+          }
+          total {
+            formatted
+            raw
+          }
+        }
+      }
+      ... on CommonError {
+        __typename
+      }
+    }
+  }
+`;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -91,6 +121,7 @@ const DEFAULT_TO = new Date().toISOString().slice(0, 10);
 export function DynamicReport() {
   const { userContext } = useContext(UserContext);
   const adminBusinessId = userContext?.context.adminBusinessId ?? '';
+  const { setFiltersContext } = useContext(FiltersContext);
 
   // Filters — persisted in URL search params
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,12 +130,17 @@ export function DynamicReport() {
   const toDate = searchParams.get('to') ?? DEFAULT_TO;
   const selectedOwner = searchParams.get('owner') ?? adminBusinessId;
   const showZeroed = searchParams.get('zeroed') === '1';
+  const selectedTemplateName = searchParams.get('template');
 
   const setFromDate = useCallback(
     (v: string) =>
       setSearchParams(
         p => {
-          p.set('from', v);
+          if (v) {
+            p.set('from', v);
+          } else {
+            p.delete('from');
+          }
           return p;
         },
         { replace: true },
@@ -112,10 +148,14 @@ export function DynamicReport() {
     [setSearchParams],
   );
   const setToDate = useCallback(
-    (v: string) =>
+    (v?: string) =>
       setSearchParams(
         p => {
-          p.set('to', v);
+          if (v) {
+            p.set('to', v);
+          } else {
+            p.delete('to');
+          }
           return p;
         },
         { replace: true },
@@ -144,6 +184,21 @@ export function DynamicReport() {
       ),
     [setSearchParams],
   );
+  const setSelectedTemplateName = useCallback(
+    (v: string | null) =>
+      setSearchParams(
+        p => {
+          if (v) {
+            p.set('template', v);
+          } else {
+            p.delete('template');
+          }
+          return p;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
 
   // UI state
   const [editMode, setEditMode] = useState(false);
@@ -152,7 +207,6 @@ export function DynamicReport() {
 
   // Template state
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
-  const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
   const [templateSwitchDialogOpen, setTemplateSwitchDialogOpen] = useState(false);
@@ -162,31 +216,17 @@ export function DynamicReport() {
   const [reportTree, setReportTree] = useState<FlatNode<CustomData>[]>([]);
 
   // Dialogs
-  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
-  const [renameNodeId, setRenameNodeId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
+  const renameBranchDialogRef = useRef<RenameBranchDialogRef>(null);
+  const deleteBranchConfirmationRef = useRef<DeleteBranchConfirmationRef>(null);
+  const newBranchDialogRef = useRef<NewBranchDialogRef>(null);
 
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteNodeId, setDeleteNodeId] = useState<string | null>(null);
-
-  const [newBranchDialogOpen, setNewBranchDialogOpen] = useState(false);
-  const [newBranchName, setNewBranchName] = useState('');
-  const [newBranchTarget, setNewBranchTarget] = useState<'bank' | 'report'>('bank');
-
-  const [deleteTemplateDialogOpen, setDeleteTemplateDialogOpen] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
-
-  const [saveAsDialogOpen, setSaveAsDialogOpen] = useState(false);
-  const [saveAsName, setSaveAsName] = useState('');
-
-  const [templateRenameDialogOpen, setTemplateRenameDialogOpen] = useState(false);
-  const [templateRenameValue, setTemplateRenameValue] = useState('');
+  const saveAsNewTemplateDialogRef = useRef<SaveAsNewTemplateDialogRef>(null);
+  const renameTemplateDialogRef = useRef<RenameTemplateDialogRef>(null);
+  const deleteTemplateConfirmationRef = useRef<DeleteTemplateConfirmationRef>(null);
 
   // ── GQL mutations ────────────────────────────────────────────────────────────
 
   const { updateDynamicReportTemplate } = useUpdateDynamicReportTemplate();
-  const { insertDynamicReportTemplate } = useInsertDynamicReportTemplate();
-  const { deleteDynamicReportTemplate } = useDeleteDynamicReportTemplate();
   const { updateDynamicReportTemplateName } = useUpdateDynamicReportTemplateName();
 
   // ── GQL queries ──────────────────────────────────────────────────────────────
@@ -204,7 +244,9 @@ export function DynamicReport() {
     },
   });
 
-  const [{ data: allTemplatesData }] = useQuery({ query: AllDynamicReportsDocument });
+  const [{ data: allTemplatesData }, refetchAllTemplates] = useQuery({
+    query: AllDynamicReportsDocument,
+  });
 
   // Template nodes query — paused until a template is selected
   const [{ data: templateNodesData }] = useQuery<DynamicReportV2TemplateQuery>({
@@ -218,6 +260,18 @@ export function DynamicReport() {
     () => (allTemplatesData?.allDynamicReports ?? []).map(toTemplate),
     [allTemplatesData],
   );
+
+  // Restore currentTemplate from URL param when templates are loaded
+  useEffect(() => {
+    if (!selectedTemplateName || !templates.length) return;
+    if (currentTemplate?.name === selectedTemplateName) return;
+    const found = templates.find(t => t.name === selectedTemplateName);
+    if (found) {
+      setCurrentTemplate(found);
+      setShowLegacyBanner(found.isLegacy ?? false);
+      if (found.isLocked) setEditMode(false);
+    }
+  }, [selectedTemplateName, templates, currentTemplate]);
 
   // Derive business sums array
   const businessSums = useMemo(() => {
@@ -304,81 +358,48 @@ export function DynamicReport() {
     );
   }, []);
 
-  const handleRename = useCallback((nodeId: string, currentName: string) => {
-    setRenameNodeId(nodeId);
-    setRenameValue(currentName);
-    setRenameDialogOpen(true);
+  const handleRenameBranch = useCallback((nodeId: string, currentName: string) => {
+    renameBranchDialogRef.current?.renameBranch(nodeId, currentName);
   }, []);
 
-  const handleRenameSubmit = useCallback(() => {
-    if (!renameNodeId || !renameValue.trim()) return;
-    const newText = renameValue.trim();
-    const updateName = (nodes: FlatNode<CustomData>[]) =>
-      nodes.map(n => (n.id === renameNodeId ? { ...n, text: newText } : n));
-    setBankTree(updateName);
-    setReportTree(updateName);
-    setIsDirty(true);
-    setRenameDialogOpen(false);
-    setRenameNodeId(null);
-    setRenameValue('');
-  }, [renameNodeId, renameValue]);
-
-  const handleDelete = useCallback((nodeId: string) => {
-    setDeleteNodeId(nodeId);
-    setDeleteDialogOpen(true);
+  const handleDeleteBranch = useCallback((nodeId: string) => {
+    deleteBranchConfirmationRef.current?.deleteBranch(nodeId);
   }, []);
 
-  const handleDeleteConfirm = useCallback(() => {
-    if (!deleteNodeId) return;
-
-    const { nextBankTree, nextReportTree } = moveBranchToBank(reportTree, bankTree, deleteNodeId);
-    setBankTree(nextBankTree);
-    setReportTree(nextReportTree);
-
-    setIsDirty(true);
-    setDeleteDialogOpen(false);
-    setDeleteNodeId(null);
-  }, [deleteNodeId, bankTree, reportTree]);
-
-  const handleAddBranch = useCallback((target: 'bank' | 'report') => {
-    setNewBranchTarget(target);
-    setNewBranchName('');
-    setNewBranchDialogOpen(true);
+  const handleAddBranch = useCallback((target: 'bank' | 'report'): void => {
+    newBranchDialogRef.current?.addBranch(target);
   }, []);
 
-  const handleAddBranchSubmit = useCallback(() => {
-    if (!newBranchName.trim()) return;
+  const handleSaveAsNew = useCallback(() => {
+    saveAsNewTemplateDialogRef.current?.saveAsNew();
+  }, []);
 
-    const newBranch: FlatNode<CustomData> = {
-      id: `branch-${Date.now()}`,
-      parent: newBranchTarget,
-      text: newBranchName.trim(),
-      droppable: true,
-      data: { nodeType: 'synthetic-branch', isOpen: true },
-    };
+  const handleDuplicateTemplate = useCallback((template: Template) => {
+    saveAsNewTemplateDialogRef.current?.duplicateTemplate(template);
+  }, []);
 
-    if (newBranchTarget === 'bank') {
-      setBankTree(prev => [...prev, newBranch]);
-    } else {
-      setReportTree(prev => [...prev, newBranch]);
-    }
+  const handleRenameTemplate = useCallback(() => {
+    renameTemplateDialogRef.current?.renameTemplate();
+  }, []);
 
-    setIsDirty(true);
-    setNewBranchDialogOpen(false);
-    setNewBranchName('');
-  }, [newBranchName, newBranchTarget]);
+  const handleDeleteTemplate = useCallback((template: Template) => {
+    deleteTemplateConfirmationRef.current?.deleteTemplate(template);
+  }, []);
 
   // ── Template handlers ─────────────────────────────────────────────────────
 
-  const applyTemplate = useCallback((template: Template) => {
-    setCurrentTemplate(template);
-    setSelectedTemplateName(template.name);
-    setShowLegacyBanner(template.isLegacy ?? false);
-    setIsDirty(false);
-    if (template.isLocked) {
-      setEditMode(false);
-    }
-  }, []);
+  const applyTemplate = useCallback(
+    (template: Template) => {
+      setCurrentTemplate(template);
+      setSelectedTemplateName(template.name);
+      setShowLegacyBanner(template.isLegacy ?? false);
+      setIsDirty(false);
+      if (template.isLocked) {
+        setEditMode(false);
+      }
+    },
+    [setSelectedTemplateName],
+  );
 
   const handleLoadTemplate = useCallback(
     (template: Template) => {
@@ -391,40 +412,6 @@ export function DynamicReport() {
     },
     [isDirty, applyTemplate],
   );
-
-  const handleTemplateSwitchConfirm = useCallback(() => {
-    if (pendingTemplate) {
-      applyTemplate(pendingTemplate);
-    }
-    setTemplateSwitchDialogOpen(false);
-    setPendingTemplate(null);
-  }, [pendingTemplate, applyTemplate]);
-
-  const handleSaveAsNew = useCallback(() => {
-    setSaveAsName('');
-    setSaveAsDialogOpen(true);
-  }, []);
-
-  const handleSaveAsSubmit = useCallback(async () => {
-    if (!saveAsName.trim()) return;
-    const serialized = serializeReportTree(reportTree);
-    const result = await insertDynamicReportTemplate({
-      name: saveAsName.trim(),
-      template: serialized,
-    });
-    if (result) {
-      setCurrentTemplate({
-        id: result.id,
-        name: result.name,
-        lastUpdated: new Date(),
-        isLocked: false,
-      });
-      setSelectedTemplateName(result.name);
-      setIsDirty(false);
-    }
-    setSaveAsDialogOpen(false);
-    setSaveAsName('');
-  }, [saveAsName, reportTree, insertDynamicReportTemplate]);
 
   const handleResave = useCallback(async () => {
     if (!currentTemplate) return;
@@ -439,26 +426,6 @@ export function DynamicReport() {
     }
   }, [currentTemplate, reportTree, updateDynamicReportTemplate]);
 
-  const handleRenameTemplate = useCallback(() => {
-    if (!currentTemplate) return;
-    setTemplateRenameValue(currentTemplate.name);
-    setTemplateRenameDialogOpen(true);
-  }, [currentTemplate]);
-
-  const handleRenameTemplateSubmit = useCallback(async () => {
-    if (!currentTemplate || !templateRenameValue.trim()) return;
-    const result = await updateDynamicReportTemplateName({
-      name: currentTemplate.name,
-      newName: templateRenameValue.trim(),
-    });
-    if (result) {
-      setCurrentTemplate(prev => (prev ? { ...prev, id: result.id, name: result.name } : null));
-      setSelectedTemplateName(result.name);
-    }
-    setTemplateRenameDialogOpen(false);
-    setTemplateRenameValue('');
-  }, [currentTemplate, templateRenameValue, updateDynamicReportTemplateName]);
-
   const handleRenameInManager = useCallback(
     async (template: Template, newName: string) => {
       const result = await updateDynamicReportTemplateName({
@@ -469,30 +436,17 @@ export function DynamicReport() {
         setCurrentTemplate(prev => (prev ? { ...prev, id: result.id, name: result.name } : null));
         setSelectedTemplateName(result.name);
       }
+      if (result) {
+        refetchAllTemplates({ requestPolicy: 'network-only' });
+      }
     },
-    [currentTemplate, updateDynamicReportTemplateName],
+    [
+      currentTemplate,
+      updateDynamicReportTemplateName,
+      setSelectedTemplateName,
+      refetchAllTemplates,
+    ],
   );
-
-  const handleDuplicateTemplate = useCallback((template: Template) => {
-    setSaveAsName(`Copy of ${template.name}`);
-    setSaveAsDialogOpen(true);
-  }, []);
-
-  const handleDeleteTemplate = useCallback((template: Template) => {
-    setTemplateToDelete(template);
-    setDeleteTemplateDialogOpen(true);
-  }, []);
-
-  const handleDeleteTemplateConfirm = useCallback(async () => {
-    if (!templateToDelete) return;
-    const result = await deleteDynamicReportTemplate({ name: templateToDelete.name });
-    if (result && templateToDelete.id === currentTemplate?.id) {
-      setCurrentTemplate(null);
-      setSelectedTemplateName(null);
-    }
-    setDeleteTemplateDialogOpen(false);
-    setTemplateToDelete(null);
-  }, [templateToDelete, currentTemplate, deleteDynamicReportTemplate]);
 
   const handleDownloadCSV = useCallback(() => {
     const nodeStats = buildNodeStats(reportTree);
@@ -531,6 +485,8 @@ export function DynamicReport() {
   }, [reportTree, fromDate, toDate]);
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  setFiltersContext(null);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -576,8 +532,8 @@ export function DynamicReport() {
             emptyMessage="No entities remaining"
             onAddBranch={() => handleAddBranch('bank')}
             onToggleExpand={handleToggleBankExpand}
-            onRename={handleRename}
-            onDelete={handleDelete}
+            onRename={handleRenameBranch}
+            onDelete={handleDeleteBranch}
           />
 
           <TreePanel
@@ -588,8 +544,8 @@ export function DynamicReport() {
             emptyMessage="Drop entities here to build your report"
             onAddBranch={() => handleAddBranch('report')}
             onToggleExpand={handleToggleReportExpand}
-            onRename={handleRename}
-            onDelete={handleDelete}
+            onRename={handleRenameBranch}
+            onDelete={handleDeleteBranch}
           />
         </div>
       </div>
@@ -605,180 +561,61 @@ export function DynamicReport() {
         onDelete={handleDeleteTemplate}
       />
 
-      {/* Rename Dialog */}
-      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Branch</DialogTitle>
-            <DialogDescription>Enter a new name for this branch.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="rename-input">Name</Label>
-            <Input
-              id="rename-input"
-              value={renameValue}
-              onChange={e => setRenameValue(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameSubmit}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameBranchDialog
+        ref={renameBranchDialogRef}
+        setIsDirty={setIsDirty}
+        setBankTree={setBankTree}
+        setReportTree={setReportTree}
+      />
 
-      {/* Delete Branch Confirmation */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Branch</AlertDialogTitle>
-            <AlertDialogDescription>
-              {(() => {
-                if (!deleteNodeId) return null;
-                const nodeInBank = bankTree.find(n => n.id === deleteNodeId);
-                const node = nodeInBank || reportTree.find(n => n.id === deleteNodeId);
-                if (!node) return null;
-                if (!node.droppable) return 'This leaf will be removed.';
-                return nodeInBank
-                  ? 'This branch and all its contents will be permanently deleted.'
-                  : 'This branch and all its contents will be moved to the bank.';
-              })()}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteBranchConfirmation
+        ref={deleteBranchConfirmationRef}
+        setIsDirty={setIsDirty}
+        bankTree={bankTree}
+        setBankTree={setBankTree}
+        reportTree={reportTree}
+        setReportTree={setReportTree}
+      />
 
-      {/* New Branch Dialog */}
-      <Dialog open={newBranchDialogOpen} onOpenChange={setNewBranchDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Branch</DialogTitle>
-            <DialogDescription>
-              Create a new branch in the {newBranchTarget === 'bank' ? 'Bank' : 'Report'} panel.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="new-branch-name">Branch Name</Label>
-            <Input
-              id="new-branch-name"
-              value={newBranchName}
-              onChange={e => setNewBranchName(e.target.value)}
-              className="mt-2"
-              placeholder="Enter branch name..."
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewBranchDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddBranchSubmit} disabled={!newBranchName.trim()}>
-              Create
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NewBranchDialog
+        ref={newBranchDialogRef}
+        setIsDirty={setIsDirty}
+        setBankTree={setBankTree}
+        setReportTree={setReportTree}
+      />
 
-      {/* Template Switch Confirmation (when isDirty) */}
-      <AlertDialog open={templateSwitchDialogOpen} onOpenChange={setTemplateSwitchDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              Loading a template will discard your unsaved changes. Continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setTemplateSwitchDialogOpen(false);
-                setPendingTemplate(null);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleTemplateSwitchConfirm}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DirtyTemplateSwitchConfirmation
+        applyTemplate={applyTemplate}
+        pendingTemplate={pendingTemplate}
+        setPendingTemplate={setPendingTemplate}
+        templateSwitchDialogOpen={templateSwitchDialogOpen}
+        setTemplateSwitchDialogOpen={setTemplateSwitchDialogOpen}
+      />
 
-      {/* Save As New Template Dialog */}
-      <Dialog open={saveAsDialogOpen} onOpenChange={setSaveAsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Save as New Template</DialogTitle>
-            <DialogDescription>Enter a name for the new template.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="save-as-name">Template Name</Label>
-            <Input
-              id="save-as-name"
-              value={saveAsName}
-              onChange={e => setSaveAsName(e.target.value)}
-              className="mt-2"
-              placeholder="Enter template name..."
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSaveAsDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveAsSubmit} disabled={!saveAsName.trim()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveAsNewTemplateDialog
+        ref={saveAsNewTemplateDialogRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        setIsDirty={setIsDirty}
+        setCurrentTemplate={setCurrentTemplate}
+        reportTree={reportTree}
+      />
 
-      {/* Rename Template Dialog */}
-      <Dialog open={templateRenameDialogOpen} onOpenChange={setTemplateRenameDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Template</DialogTitle>
-            <DialogDescription>Enter a new name for this template.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="template-rename-input">Name</Label>
-            <Input
-              id="template-rename-input"
-              value={templateRenameValue}
-              onChange={e => setTemplateRenameValue(e.target.value)}
-              className="mt-2"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTemplateRenameDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleRenameTemplateSubmit} disabled={!templateRenameValue.trim()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RenameTemplateDialog
+        ref={renameTemplateDialogRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        currentTemplate={currentTemplate}
+        setCurrentTemplate={setCurrentTemplate}
+      />
 
-      {/* Delete Template Confirmation */}
-      <AlertDialog open={deleteTemplateDialogOpen} onOpenChange={setDeleteTemplateDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Template</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{templateToDelete?.name}&quot;? This action
-              cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTemplateConfirm}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteTemplateConfirmation
+        ref={deleteTemplateConfirmationRef}
+        setSelectedTemplateName={setSelectedTemplateName}
+        refetchAllTemplates={refetchAllTemplates}
+        currentTemplate={currentTemplate}
+        setCurrentTemplate={setCurrentTemplate}
+      />
     </div>
   );
 }
