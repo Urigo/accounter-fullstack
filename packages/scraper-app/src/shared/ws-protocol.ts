@@ -1,0 +1,69 @@
+import { z } from 'zod';
+import { SOURCE_TYPES } from './source-types.js';
+
+// ── Client → Server ──────────────────────────────────────────────────────────
+
+export const StartScrapeSchema = z.object({
+  type: z.literal('start-scrape'),
+  sourceIds: z.array(z.string()).optional(),
+});
+
+export const CancelScrapeSchema = z.object({
+  type: z.literal('cancel-scrape'),
+});
+
+export const PingSchema = z.object({
+  type: z.literal('ping'),
+});
+
+export const ClientMessageSchema = z.discriminatedUnion('type', [
+  StartScrapeSchema,
+  CancelScrapeSchema,
+  PingSchema,
+]);
+
+export type ClientMessage = z.infer<typeof ClientMessageSchema>;
+
+// ── Server → Client ──────────────────────────────────────────────────────────
+
+export const ConnectedSchema = z.object({
+  type: z.literal('connected'),
+});
+
+export const ScrapeStartedSchema = z.object({
+  type: z.literal('scrape-started'),
+  sourceIds: z.array(z.string()),
+});
+
+export const ScrapeProgressSchema = z.object({
+  type: z.literal('scrape-progress'),
+  sourceId: z.string(),
+  sourceType: z.enum(SOURCE_TYPES),
+  status: z.enum(['running', 'done', 'error']),
+  error: z.string().optional(),
+});
+
+export const ScrapeCompleteSchema = z.object({
+  type: z.literal('scrape-complete'),
+  totalTransactions: z.number(),
+});
+
+export const PongSchema = z.object({
+  type: z.literal('pong'),
+});
+
+export const WsErrorSchema = z.object({
+  type: z.literal('error'),
+  message: z.string(),
+});
+
+export const ServerMessageSchema = z.discriminatedUnion('type', [
+  ConnectedSchema,
+  ScrapeStartedSchema,
+  ScrapeProgressSchema,
+  ScrapeCompleteSchema,
+  PongSchema,
+  WsErrorSchema,
+]);
+
+export type ServerMessage = z.infer<typeof ServerMessageSchema>;
