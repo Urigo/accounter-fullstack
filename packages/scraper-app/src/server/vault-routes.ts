@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { registerAccountsRoutes } from './accounts-routes.js';
+import { registerSettingsRoutes } from './settings-routes.js';
 import { registerSourcesRoutes } from './sources-routes.js';
 import { hasVaultFile, isLocked, lockVault, unlockVault } from './vault-store.js';
 import { defaultVault, saveVaultFile } from './vault.js';
@@ -64,4 +66,6 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
   );
 
   await registerSourcesRoutes(app);
+  await registerSettingsRoutes(app);
+  await registerAccountsRoutes(app);
 }
