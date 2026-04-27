@@ -30,15 +30,18 @@ export function relevantDataPicker<T>(
     return undefined;
   }
 
-  // if dirty is plain true, return the entire value
-  if (dirtyFields === true && typeof values !== 'object') {
-    return values;
-  }
-
   // if dirtyFields is an object, but none of the fields are dirty, return undefined
   // e.g., { field1: false, field2: false } or { field1: { subField1: false } }
   if (!isTheTruthOutThere(dirtyFields)) {
     return undefined;
+  }
+
+  // if dirty is plain true, return the entire value
+  if (dirtyFields === true) {
+    if (values == null) {
+      return undefined;
+    }
+    return values;
   }
 
   if (Array.isArray(values)) {
@@ -55,7 +58,7 @@ export function relevantDataPicker<T>(
       .map(key => {
         const value = relevantDataPicker(
           values[key as keyof typeof values],
-          dirtyFields[key as keyof typeof dirtyFields] as MakeBoolean<T[keyof T]>,
+          dirtyFields[key] as MakeBoolean<T[keyof T]>,
         );
         /* additions to keep entire object instead of subset */
         if (
