@@ -16,10 +16,18 @@ export const PingSchema = z.object({
   type: z.literal('ping'),
 });
 
+export const RunStartSchema = z.object({
+  type: z.literal('run-start'),
+  sourceIds: z.array(z.string()).optional(),
+});
+
+export type RunStartMessage = z.infer<typeof RunStartSchema>;
+
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   StartScrapeSchema,
   CancelScrapeSchema,
   PingSchema,
+  RunStartSchema,
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -57,6 +65,35 @@ export const WsErrorSchema = z.object({
   message: z.string(),
 });
 
+export const TaskPendingSchema = z.object({
+  type: z.literal('task-pending'),
+  sourceId: z.string(),
+});
+
+export const TaskRunningSchema = z.object({
+  type: z.literal('task-running'),
+  sourceId: z.string(),
+});
+
+export const TaskDoneSchema = z.object({
+  type: z.literal('task-done'),
+  sourceId: z.string(),
+  inserted: z.number(),
+  skipped: z.number(),
+  insertedIds: z.array(z.string()),
+});
+
+export const RunCompleteSchema = z.object({
+  type: z.literal('run-complete'),
+  totalInserted: z.number(),
+  totalSkipped: z.number(),
+});
+
+export const RunErrorSchema = z.object({
+  type: z.literal('run-error'),
+  message: z.string(),
+});
+
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
   ScrapeStartedSchema,
@@ -64,6 +101,11 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   ScrapeCompleteSchema,
   PongSchema,
   WsErrorSchema,
+  TaskPendingSchema,
+  TaskRunningSchema,
+  TaskDoneSchema,
+  RunCompleteSchema,
+  RunErrorSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;
