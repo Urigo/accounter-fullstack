@@ -18,7 +18,8 @@ const SCRYPT_MAXMEM = 128 * SCRYPT_N * SCRYPT_R * 2;
 // Blob header: N as uint32BE (4 bytes) + r as uint8 (1 byte) + p as uint8 (1 byte)
 const HEADER_LEN = 6;
 
-const PoalimAccountSchema = z.object({
+export const PoalimAccountSchema = z.object({
+  id: z.string(),
   nickname: z.string().optional(),
   userCode: z.string(),
   password: z.string(),
@@ -31,14 +32,16 @@ const PoalimAccountSchema = z.object({
     .optional(),
 });
 
-const DiscountAccountSchema = z.object({
+export const DiscountAccountSchema = z.object({
+  id: z.string(),
   ID: z.string(),
   password: z.string(),
   code: z.string().optional(),
   nickname: z.string().optional(),
 });
 
-const IsracardAmexAccountSchema = z.object({
+export const IsracardAmexAccountSchema = z.object({
+  id: z.string(),
   nickname: z.string().optional(),
   ownerId: z.string(),
   password: z.string(),
@@ -51,7 +54,8 @@ const IsracardAmexAccountSchema = z.object({
     .optional(),
 });
 
-const CalAccountSchema = z.object({
+export const CalAccountSchema = z.object({
+  id: z.string(),
   nickname: z.string().optional(),
   username: z.string(),
   password: z.string(),
@@ -63,7 +67,8 @@ const CalAccountSchema = z.object({
     .optional(),
 });
 
-const MaxAccountSchema = z.object({
+export const MaxAccountSchema = z.object({
+  id: z.string(),
   nickname: z.string().optional(),
   username: z.string(),
   password: z.string(),
