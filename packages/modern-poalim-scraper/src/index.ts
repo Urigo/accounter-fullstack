@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { max, MaxOptions, type MaxCredentials } from './scrapers/max.js';
 import {
   amex,
@@ -18,6 +19,8 @@ import {
   IsracardOptions,
 } from './scrapers/scrapers-index.js';
 import { newPage } from './utils/browser-util.js';
+
+puppeteer.use(StealthPlugin());
 
 export async function init({
   headless = true,
