@@ -4,7 +4,7 @@ import { decryptVault, defaultVault, encryptVault, VaultSchema } from '../vault.
 describe('vault', () => {
   it('encrypt→decrypt round-trip returns original vault', async () => {
     const vault = defaultVault();
-    vault.poalimAccounts.push({ userCode: 'user1', password: 'pass1' });
+    vault.poalimAccounts.push({ id: 'test-id-1', userCode: 'user1', password: 'pass1' });
     const blob = await encryptVault(vault, 'my-password');
     expect(await decryptVault(blob, 'my-password')).toEqual(vault);
   });
