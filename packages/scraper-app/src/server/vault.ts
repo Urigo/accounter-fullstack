@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
 import { z, ZodError } from 'zod';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -85,6 +86,8 @@ export const VaultSchema = z.object({
       showBrowser: z.boolean().default(false),
       fetchBankOfIsraelRates: z.boolean().default(true),
       concurrentScraping: z.boolean().default(true),
+      serverUrl: z.string().optional(),
+      apiKey: z.string().optional(),
     })
     .default({ showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: true }),
 });
@@ -158,4 +161,18 @@ export async function decryptVault(blob: string, password: string): Promise<Vaul
 
 export function defaultVault(): Vault {
   return VaultSchema.parse({ settings: {} });
+}
+
+export async function loadVaultFile(filePath: string, password: string): Promise<Vault | null> {
+  const blob = await readFile(filePath, 'utf8');
+  return decryptVault(blob.trim(), password);
+}
+
+export async function saveVaultFile(
+  filePath: string,
+  vault: Vault,
+  password: string,
+): Promise<void> {
+  const data = await encryptVault(vault, password);
+  await writeFile(filePath, data, 'utf8');
 }
