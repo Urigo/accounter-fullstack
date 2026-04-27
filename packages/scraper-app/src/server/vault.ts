@@ -79,6 +79,27 @@ export const MaxAccountSchema = z.object({
     .optional(),
 });
 
+export const SettingsSchema = z.object({
+  showBrowser: z.boolean().default(false),
+  fetchBankOfIsraelRates: z.boolean().default(true),
+  concurrentScraping: z.boolean().default(true),
+  serverUrl: z.string().optional(),
+  apiKey: z.string().optional(),
+});
+
+export type Settings = z.infer<typeof SettingsSchema>;
+
+export const BankAccountSchema = z.object({
+  id: z.string(),
+  sourceId: z.string(),
+  sourceType: z.enum(['poalim', 'discount', 'isracard', 'amex', 'cal', 'max']),
+  accountNumber: z.string(),
+  branchNumber: z.string().optional(),
+  status: z.enum(['accepted', 'ignored', 'pending']).default('pending'),
+});
+
+export type BankAccount = z.infer<typeof BankAccountSchema>;
+
 export const VaultSchema = z.object({
   poalimAccounts: z.array(PoalimAccountSchema).default([]),
   discountAccounts: z.array(DiscountAccountSchema).default([]),
@@ -86,15 +107,12 @@ export const VaultSchema = z.object({
   amexAccounts: z.array(IsracardAmexAccountSchema).default([]),
   calAccounts: z.array(CalAccountSchema).default([]),
   maxAccounts: z.array(MaxAccountSchema).default([]),
-  settings: z
-    .object({
-      showBrowser: z.boolean().default(false),
-      fetchBankOfIsraelRates: z.boolean().default(true),
-      concurrentScraping: z.boolean().default(true),
-      serverUrl: z.string().optional(),
-      apiKey: z.string().optional(),
-    })
-    .default({ showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: true }),
+  bankAccounts: z.array(BankAccountSchema).default([]),
+  settings: SettingsSchema.default({
+    showBrowser: false,
+    fetchBankOfIsraelRates: true,
+    concurrentScraping: true,
+  }),
 });
 
 export type Vault = z.infer<typeof VaultSchema>;
