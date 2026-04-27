@@ -24,7 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "1.8.0",
+    "@atlaskit/pragmatic-drag-and-drop": "1.8.1",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "1.1.0",
     "@auth0/auth0-react": "2.16.2",
     "@emotion/react": "11.14.0",
@@ -68,7 +68,7 @@
     "react-error-boundary": "6.1.1",
     "react-hook-form": "7.74.0",
     "react-number-format": "5.4.5",
-    "react-router-dom": "7.14.1",
+    "react-router-dom": "7.14.2",
     "react-to-pdf": "3.2.2",
     "recharts": "3.8.1",
     "sonner": "2.0.7",
@@ -79,7 +79,7 @@
     "zustand": "5.0.12"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "4.2.3",
+    "@tailwindcss/vite": "4.2.4",
     "@types/chart.js": "4.0.1",
     "@types/deep-equal": "1.0.4",
     "@types/react": "19.2.14",
@@ -87,10 +87,10 @@
     "@vitejs/plugin-react": "6.0.1",
     "autoprefixer": "10.5.0",
     "happy-dom": "20.9.0",
-    "tailwindcss": "4.2.3",
+    "tailwindcss": "4.2.4",
     "tailwindcss-animate": "1.0.7",
     "typescript": "6.0.3",
-    "vite": "8.0.9",
+    "vite": "8.0.10",
     "vite-plugin-node-polyfills": "0.26.0"
   },
   "overrides": {
