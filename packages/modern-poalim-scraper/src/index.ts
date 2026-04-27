@@ -47,6 +47,9 @@ export async function init({
     amex: async (credentials: AmexCredentials, options?: AmexOptions) => {
       //return isracard.init
       const page = await newPage(browser);
+      if (userAgent) {
+        await page.setUserAgent({ userAgent });
+      }
       return amex(page, credentials, options);
     },
     cal: async (credentials: CalCredentials, options?: CalOptions) => {

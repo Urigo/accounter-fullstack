@@ -572,7 +572,7 @@ async function login(page: Page, credentials: MaxCredentials): Promise<boolean> 
 
   if (loginOptions.userAgent) {
     console.debug('set custom user agent provided in options');
-    await page.setUserAgent(loginOptions.userAgent);
+    await page.setUserAgent({ userAgent: loginOptions.userAgent });
   }
 
   console.debug('navigate to login url');
