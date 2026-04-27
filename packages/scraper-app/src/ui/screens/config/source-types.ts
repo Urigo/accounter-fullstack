@@ -1,3 +1,5 @@
+import type { SourceType } from '../../../shared/source-types.js';
+
 export type PoalimSource = {
   id: string;
   type: 'poalim';
@@ -73,7 +75,7 @@ export type SourceConfig =
   | CalSource
   | MaxSource;
 
-export type SourceType = SourceConfig['type'];
+export type { SourceType } from '../../../shared/source-types.js';
 
 export const SOURCE_LABELS: Record<SourceType, string> = {
   poalim: 'Bank Hapoalim',
