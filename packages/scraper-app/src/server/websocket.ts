@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import websocketPlugin from '@fastify/websocket';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
+import { startRun } from './scrape-runner.js';
 import { isLocked } from './vault-store.js';
 
 function send(socket: WebSocket, msg: ServerMessage): void {
@@ -45,8 +46,20 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
           case 'ping':
             send(socket, { type: 'pong' });
             break;
+          case 'run-start':
+            void startRun(socket, msg).catch((err: unknown) => {
+              app.log.error(err, '[ws] startRun error');
+              send(socket, { type: 'error', message: String(err) });
+            });
+            break;
           case 'start-scrape':
-            // TODO: trigger scrape pipeline
+            // legacy alias — forwards to run-start
+            void startRun(socket, { type: 'run-start', sourceIds: msg.sourceIds }).catch(
+              (err: unknown) => {
+                app.log.error(err, '[ws] startRun error');
+                send(socket, { type: 'error', message: String(err) });
+              },
+            );
             break;
           case 'cancel-scrape':
             // TODO: cancel in-progress scrape
