@@ -2,6 +2,7 @@ import type { WebSocket } from 'ws';
 import type { SourceType } from '../shared/source-types.js';
 import type { RunStartMessage, ServerMessage } from '../shared/ws-protocol.js';
 import { waitForOtp } from './otp-manager.js';
+import { scrapeIsracard } from './scrapers/isracard.js';
 import { scrapePoalim } from './scrapers/poalim.js';
 import { checkAccounts } from './check-accounts.js';
 import type { ValidatedPayload } from './check-accounts.js';
@@ -166,6 +167,11 @@ export async function startRun(ws: WebSocket, request: RunStartMessage): Promise
           const creds = vault.poalimAccounts.find(a => a.id === source.id);
           if (!creds) throw new Error(`Poalim account ${source.id} not found in vault`);
           payload = await scrapePoalim(creds, dateFrom, now, otpManager, emitter);
+        } else if (source.type === 'isracard' || source.type === 'amex') {
+          const pool = source.type === 'isracard' ? vault.isracardAccounts : vault.amexAccounts;
+          const creds = pool.find(a => a.id === source.id);
+          if (!creds) throw new Error(`${source.type} account ${source.id} not found in vault`);
+          payload = await scrapeIsracard(creds, source.type, dateFrom, now, otpManager, emitter);
         } else {
           payload = await runSourceStub(source);
         }

@@ -11,14 +11,27 @@ import { defaultVault, saveVaultFile } from '../vault.js';
 import { lockVault, unlockVault, updateVault } from '../vault-store.js';
 import { registerWebSocketRoute } from '../websocket.js';
 
-// Mock the Poalim scraper so runner tests don't launch a real browser.
-// The mock's hapoalim calls otpCallback (if provided) to simulate OTP, then
-// returns minimal valid ILS data that satisfies the poalim-ils schema.
-vi.mock('@accounter/modern-poalim-scraper', () => ({
-  init: vi.fn().mockResolvedValue({
-    hapoalim: vi.fn().mockImplementation(async () => {
-      // Do not call otpCallback here — tests that need OTP flow live in scrapers/poalim.test.ts.
-      return {
+// Mock all scrapers so runner tests don't launch a real browser.
+// OTP flows are tested only in scrapers/poalim.test.ts — no otpCallback calls here.
+vi.mock('@accounter/modern-poalim-scraper', () => {
+  const isracardScraperObj = () => ({
+    getMonthTransactions: vi.fn().mockResolvedValue({
+      data: {
+        Header: { Status: '1', Message: null },
+        CardsTransactionsListBean: {
+          Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
+        },
+      },
+      isValid: null,
+    }),
+    getMonthDashboard: vi.fn(),
+    getDashboards: vi.fn(),
+    getTransactions: vi.fn(),
+  });
+
+  return {
+    init: vi.fn().mockResolvedValue({
+      hapoalim: vi.fn().mockImplementation(async () => ({
         getAccountsData: vi.fn().mockResolvedValue({
           data: [{ bankNumber: 12, branchNumber: 600, accountNumber: 100_000 }],
           isValid: true,
@@ -41,11 +54,13 @@ vi.mock('@accounter/modern-poalim-scraper', () => ({
           },
           isValid: true,
         }),
-      };
+      })),
+      isracard: vi.fn().mockResolvedValue(isracardScraperObj()),
+      amex: vi.fn().mockResolvedValue(isracardScraperObj()),
+      close: vi.fn().mockResolvedValue(undefined),
     }),
-    close: vi.fn().mockResolvedValue(undefined),
-  }),
-}));
+  };
+});
 
 const PASSWORD = 'test-password-123';
 const SRC_1 = 'src-poalim-1';
