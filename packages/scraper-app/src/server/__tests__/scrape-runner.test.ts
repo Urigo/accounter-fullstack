@@ -5,11 +5,47 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { _resetRunState, _setStubDataOverride } from '../scrape-runner.js';
 import { defaultVault, saveVaultFile } from '../vault.js';
 import { lockVault, unlockVault, updateVault } from '../vault-store.js';
 import { registerWebSocketRoute } from '../websocket.js';
+
+// Mock the Poalim scraper so runner tests don't launch a real browser.
+// The mock's hapoalim calls otpCallback (if provided) to simulate OTP, then
+// returns minimal valid ILS data that satisfies the poalim-ils schema.
+vi.mock('@accounter/modern-poalim-scraper', () => ({
+  init: vi.fn().mockResolvedValue({
+    hapoalim: vi.fn().mockImplementation(async () => {
+      // Do not call otpCallback here — tests that need OTP flow live in scrapers/poalim.test.ts.
+      return {
+        getAccountsData: vi.fn().mockResolvedValue({
+          data: [{ bankNumber: 12, branchNumber: 600, accountNumber: 100_000 }],
+          isValid: true,
+        }),
+        getILSTransactions: vi.fn().mockResolvedValue({
+          data: {
+            transactions: [
+              {
+                activityDescription: 'Credit',
+                activityTypeCode: 1,
+                eventAmount: 1000,
+                eventDate: 20_240_101,
+                serialNumber: 1,
+                transactionType: 'REGULAR',
+                currentBalance: 5000,
+                referenceNumber: 12_345,
+              },
+            ],
+            retrievalTransactionData: { accountNumber: 100_000, branchNumber: 600, bankNumber: 12 },
+          },
+          isValid: true,
+        }),
+      };
+    }),
+    close: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 const PASSWORD = 'test-password-123';
 const SRC_1 = 'src-poalim-1';
@@ -253,22 +289,24 @@ describe('task-blocked path', () => {
 
 describe('payload validation error path', () => {
   it('emits scrape-progress error when stub data fails schema validation', async () => {
+    // SRC_1 (poalim) now uses the real scraper (mocked at module level above).
+    // Use SRC_2 (max) which still goes through the stub and can be overridden.
     _setStubDataOverride(() => ({ completely: 'wrong', shape: true }));
 
     const client = makeClient();
     const ws = await openSocket(client);
     await client.next(); // connected
 
-    ws.send(JSON.stringify({ type: 'run-start', sourceIds: [SRC_1] }));
+    ws.send(JSON.stringify({ type: 'run-start', sourceIds: [SRC_2] }));
     const msgs = await client.collectRun();
 
     expect(msgs).toHaveLength(4);
-    expect(msgs[0]).toEqual({ type: 'task-pending', sourceId: SRC_1 });
-    expect(msgs[1]).toMatchObject({ type: 'task-running', sourceId: SRC_1 });
+    expect(msgs[0]).toEqual({ type: 'task-pending', sourceId: SRC_2 });
+    expect(msgs[1]).toMatchObject({ type: 'task-running', sourceId: SRC_2 });
     expect(msgs[2]).toMatchObject({
       type: 'scrape-progress',
-      sourceId: SRC_1,
-      sourceType: 'poalim',
+      sourceId: SRC_2,
+      sourceType: 'max',
       status: 'error',
     });
     expect(msgs[3]).toMatchObject({ type: 'run-complete' });

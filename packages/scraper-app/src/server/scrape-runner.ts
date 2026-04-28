@@ -1,6 +1,8 @@
 import type { WebSocket } from 'ws';
 import type { SourceType } from '../shared/source-types.js';
 import type { RunStartMessage, ServerMessage } from '../shared/ws-protocol.js';
+import { waitForOtp } from './otp-manager.js';
+import { scrapePoalim } from './scrapers/poalim.js';
 import { checkAccounts } from './check-accounts.js';
 import type { ValidatedPayload } from './check-accounts.js';
 import { PayloadValidationError, validatePayload } from './validate-payload.js';
@@ -149,10 +151,24 @@ export async function startRun(ws: WebSocket, request: RunStartMessage): Promise
       send(ws, { type: 'task-pending', sourceId: src.id });
     }
 
+    const emitter = (msg: ServerMessage) => send(ws, msg);
+    const otpManager = {
+      waitForOtp: (sourceId: string, timeoutMs: number) => waitForOtp(ws, sourceId, timeoutMs),
+    };
+    const now = new Date();
+    const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+
     const runTask = async (source: SourceRef): Promise<ScrapeResult> => {
       send(ws, { type: 'task-running', sourceId: source.id });
       try {
-        const payload = await runSourceStub(source);
+        let payload: ValidatedPayload;
+        if (source.type === 'poalim') {
+          const creds = vault.poalimAccounts.find(a => a.id === source.id);
+          if (!creds) throw new Error(`Poalim account ${source.id} not found in vault`);
+          payload = await scrapePoalim(creds, dateFrom, now, otpManager, emitter);
+        } else {
+          payload = await runSourceStub(source);
+        }
         const check = checkAccounts(source.type, payload, vault.bankAccounts);
         if (check.unknown.length > 0) {
           send(ws, {
