@@ -2,19 +2,24 @@
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import React from 'react';
+import React, { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { VaultContext } from '../contexts/vault-context.js';
+import { VaultContext, type VaultStatus } from '../contexts/vault-context.js';
 import { VaultUnlock } from '../screens/vault-unlock.js';
 
 function makeCtx(
-  unlock: () => Promise<'ok' | 'wrong-password' | 'not-found'> = vi.fn().mockResolvedValue('ok'),
+  overrides: Partial<{
+    status: VaultStatus;
+    error: string | null;
+    unlock: (pw: string) => Promise<void>;
+  }> = {},
 ) {
   return {
-    locked: true,
-    hasFile: true,
-    unlock,
+    status: 'locked' as VaultStatus,
+    error: null as string | null,
+    unlock: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(),
+    ...overrides,
   };
 }
 
@@ -34,8 +39,8 @@ describe('VaultUnlock', () => {
   });
 
   it('calls unlock with the entered password on submit', async () => {
-    const unlock = vi.fn().mockResolvedValue('ok');
-    renderUnlock(makeCtx(unlock));
+    const unlock = vi.fn().mockResolvedValue(undefined);
+    renderUnlock(makeCtx({ unlock }));
 
     await userEvent.type(screen.getByLabelText(/master password/i), 'secret123');
     await userEvent.click(screen.getByRole('button', { name: /unlock/i }));
@@ -43,9 +48,20 @@ describe('VaultUnlock', () => {
     expect(unlock).toHaveBeenCalledWith('secret123');
   });
 
-  it('shows an error message when password is wrong', async () => {
-    const unlock = vi.fn().mockResolvedValue('wrong-password');
-    renderUnlock(makeCtx(unlock));
+  it('shows an error message when unlock sets vault.error', async () => {
+    // Stateful wrapper simulates the real context updating error after a failed unlock.
+    function UnlockWrapper() {
+      const [error, setError] = useState<string | null>(null);
+      const unlock = vi.fn().mockImplementation(async () => {
+        setError('Wrong password. Please try again.');
+      });
+      return (
+        <VaultContext.Provider value={{ status: 'locked', error, unlock, create: vi.fn() }}>
+          <VaultUnlock />
+        </VaultContext.Provider>
+      );
+    }
+    render(<UnlockWrapper />);
 
     await userEvent.type(screen.getByLabelText(/master password/i), 'badpass');
     await userEvent.click(screen.getByRole('button', { name: /unlock/i }));
