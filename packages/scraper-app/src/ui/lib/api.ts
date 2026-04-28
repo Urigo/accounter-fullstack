@@ -1,3 +1,5 @@
+import type { BankAccount, Settings } from '../../server/vault.js';
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -38,5 +40,55 @@ export function vaultCreate(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password, serverUrl, apiKey }),
+  });
+}
+
+// ── Sources ───────────────────────────────────────────────────────────────────
+
+export function getSources<T>(): Promise<T[]> {
+  return apiFetch('/api/vault/sources');
+}
+
+export function createSource<T>(data: unknown): Promise<T[]> {
+  return apiFetch('/api/vault/sources', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateSource<T>(id: string, data: unknown): Promise<T[]> {
+  return apiFetch(`/api/vault/sources/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteSource<T>(id: string): Promise<T[]> {
+  return apiFetch(`/api/vault/sources/${id}`, { method: 'DELETE' });
+}
+
+export function loadSettings(): Promise<Settings> {
+  return apiFetch('/api/vault/settings');
+}
+
+export function saveSettings(patch: Partial<Settings>): Promise<Settings> {
+  return apiFetch('/api/vault/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+}
+
+export function fetchAccounts(): Promise<BankAccount[]> {
+  return apiFetch('/api/vault/accounts');
+}
+
+export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promise<BankAccount[]> {
+  return apiFetch(`/api/vault/accounts/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
   });
 }

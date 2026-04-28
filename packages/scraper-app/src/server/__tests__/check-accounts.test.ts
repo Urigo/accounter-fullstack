@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { checkAccounts } from '../check-accounts.js';
 import type { AccountRecord } from '../check-accounts.js';
+import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
+import type { ServerMessage } from '../../shared/ws-protocol.js';
 
 const poalimPayload = {
   transactions: [],
@@ -268,5 +270,69 @@ describe('checkAccounts — max', () => {
   it('returns empty arrays when result is null', () => {
     const result = checkAccounts('max', { result: null, returnCode: 1 }, []);
     expect(result).toEqual({ accepted: [], ignored: [], unknown: [] });
+  });
+});
+
+describe('runner integration — task-blocked on unknown accounts', () => {
+  afterEach(() => {
+    _resetRunState();
+  });
+
+  it('emits task-blocked (not a crash) when checkAccounts finds unknown accounts', async () => {
+    const events: ServerMessage[] = [];
+    const emit = (msg: ServerMessage) => events.push(msg);
+
+    const task: ScrapeTask = {
+      sourceId: 'poalim-src',
+      nickname: 'poalim-src',
+      type: 'poalim',
+      run: async () => {
+        const check = checkAccounts('poalim', poalimPayload, []);
+        if (check.unknown.length > 0) {
+          emit({ type: 'task-blocked', sourceId: 'poalim-src', sourceType: 'poalim', unknownAccounts: check.unknown });
+          return { inserted: 0, skipped: 0, insertedIds: [] };
+        }
+        return { inserted: 1, skipped: 0, insertedIds: ['x'] };
+      },
+    };
+
+    await startRun([task], false, emit);
+
+    const blocked = events.find(e => e.type === 'task-blocked');
+    expect(blocked).toBeTruthy();
+    expect((blocked as { unknownAccounts: string[] }).unknownAccounts).toContain('100000');
+    expect(events.at(-1)).toMatchObject({ type: 'run-complete', totalInserted: 0, totalSkipped: 0 });
+  });
+
+  it('continues remaining tasks after a blocked task', async () => {
+    const events: ServerMessage[] = [];
+    const emit = (msg: ServerMessage) => events.push(msg);
+
+    const blockedTask: ScrapeTask = {
+      sourceId: 'src-1',
+      nickname: 'src-1',
+      type: 'poalim',
+      run: async () => {
+        const check = checkAccounts('poalim', poalimPayload, []);
+        if (check.unknown.length > 0) {
+          emit({ type: 'task-blocked', sourceId: 'src-1', sourceType: 'poalim', unknownAccounts: check.unknown });
+          return { inserted: 0, skipped: 0, insertedIds: [] };
+        }
+        return { inserted: 1, skipped: 0, insertedIds: ['x'] };
+      },
+    };
+
+    const normalTask: ScrapeTask = {
+      sourceId: 'src-2',
+      nickname: 'src-2',
+      type: 'poalim',
+      run: async () => ({ inserted: 2, skipped: 1, insertedIds: ['a', 'b'] }),
+    };
+
+    await startRun([blockedTask, normalTask], false, emit);
+
+    expect(events.some(e => e.type === 'task-blocked')).toBe(true);
+    expect(events.some(e => e.type === 'task-done' && 'sourceId' in e && e.sourceId === 'src-2')).toBe(true);
+    expect(events.at(-1)).toMatchObject({ type: 'run-complete', totalInserted: 2, totalSkipped: 1 });
   });
 });
