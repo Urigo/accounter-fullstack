@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { scrapeIsracard } from '../../scrapers/isracard.js';
-import type { IsracardSourceConfig } from '../../scrapers/isracard.js';
+import { scrapeIsracard } from '../../scrapers/isracard-amex.js';
+import type { IsracardSourceConfig } from '../../scrapers/isracard-amex.js';
 import { PayloadValidationError } from '../../validate-payload.js';
 
 // ── Mock modern-poalim-scraper ────────────────────────────────────────────────
