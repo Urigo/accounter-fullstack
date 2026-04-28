@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { _resetRunState } from '../scrape-runner.js';
+import { _resetRunState, _setStubDataOverride } from '../scrape-runner.js';
 import { defaultVault, saveVaultFile } from '../vault.js';
 import { lockVault, unlockVault, updateVault } from '../vault-store.js';
 import { registerWebSocketRoute } from '../websocket.js';
@@ -73,6 +73,14 @@ beforeEach(async () => {
   const vault = defaultVault();
   vault.poalimAccounts.push({ id: SRC_1, userCode: 'u1', password: 'p1' });
   vault.maxAccounts.push({ id: SRC_2, username: 'mxu', password: 'p2' });
+  // Poalim stub returns accountNumber 100000; register it so sources aren't blocked by default.
+  vault.bankAccounts.push({
+    id: 'ba-p1',
+    sourceId: SRC_1,
+    sourceType: 'poalim',
+    accountNumber: '100000',
+    status: 'accepted',
+  });
   await saveVaultFile(vaultPath, vault, PASSWORD);
 
   await unlockVault(PASSWORD);
@@ -84,6 +92,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   _resetRunState();
+  _setStubDataOverride(null);
   lockVault();
   await app.close();
   await rm(vaultPath, { force: true });
@@ -205,6 +214,64 @@ describe('sequential mode (concurrentScraping: false)', () => {
     expect(msgs[5]).toMatchObject({ type: 'task-done', sourceId: SRC_2 });
 
     expect(msgs[6]).toEqual({ type: 'run-complete', totalInserted: 4, totalSkipped: 2 });
+
+    ws.close();
+  });
+});
+
+// ── Blocked path ──────────────────────────────────────────────────────────────
+
+describe('task-blocked path', () => {
+  it('emits task-blocked + scrape-progress blocked when account is unknown', async () => {
+    // Remove bankAccounts so poalim account 100000 is unrecognised
+    await updateVault(v => ({ ...v, bankAccounts: [] }));
+
+    const client = makeClient();
+    const ws = await openSocket(client);
+    await client.next(); // connected
+
+    ws.send(JSON.stringify({ type: 'run-start', sourceIds: [SRC_1] }));
+    const msgs = await client.collectRun();
+
+    expect(msgs).toHaveLength(5);
+    expect(msgs[0]).toEqual({ type: 'task-pending', sourceId: SRC_1 });
+    expect(msgs[1]).toMatchObject({ type: 'task-running', sourceId: SRC_1 });
+    expect(msgs[2]).toMatchObject({
+      type: 'task-blocked',
+      sourceId: SRC_1,
+      sourceType: 'poalim',
+      unknownAccounts: ['100000'],
+    });
+    expect(msgs[3]).toMatchObject({ type: 'scrape-progress', sourceId: SRC_1, status: 'blocked' });
+    expect(msgs[4]).toEqual({ type: 'run-complete', totalInserted: 0, totalSkipped: 0 });
+
+    ws.close();
+  });
+});
+
+// ── Payload validation error path ─────────────────────────────────────────────
+
+describe('payload validation error path', () => {
+  it('emits scrape-progress error when stub data fails schema validation', async () => {
+    _setStubDataOverride(() => ({ completely: 'wrong', shape: true }));
+
+    const client = makeClient();
+    const ws = await openSocket(client);
+    await client.next(); // connected
+
+    ws.send(JSON.stringify({ type: 'run-start', sourceIds: [SRC_1] }));
+    const msgs = await client.collectRun();
+
+    expect(msgs).toHaveLength(4);
+    expect(msgs[0]).toEqual({ type: 'task-pending', sourceId: SRC_1 });
+    expect(msgs[1]).toMatchObject({ type: 'task-running', sourceId: SRC_1 });
+    expect(msgs[2]).toMatchObject({
+      type: 'scrape-progress',
+      sourceId: SRC_1,
+      sourceType: 'poalim',
+      status: 'error',
+    });
+    expect(msgs[3]).toMatchObject({ type: 'run-complete' });
 
     ws.close();
   });
