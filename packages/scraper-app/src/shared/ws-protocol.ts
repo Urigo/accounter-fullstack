@@ -47,8 +47,15 @@ export const ScrapeProgressSchema = z.object({
   type: z.literal('scrape-progress'),
   sourceId: z.string(),
   sourceType: z.enum(SOURCE_TYPES),
-  status: z.enum(['running', 'done', 'error']),
+  status: z.enum(['running', 'done', 'error', 'blocked']),
   error: z.string().optional(),
+});
+
+export const TaskBlockedSchema = z.object({
+  type: z.literal('task-blocked'),
+  sourceId: z.string(),
+  sourceType: z.enum(SOURCE_TYPES),
+  unknownAccounts: z.array(z.string()),
 });
 
 export const ScrapeCompleteSchema = z.object({
@@ -98,6 +105,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
   ScrapeStartedSchema,
   ScrapeProgressSchema,
+  TaskBlockedSchema,
   ScrapeCompleteSchema,
   PongSchema,
   WsErrorSchema,
