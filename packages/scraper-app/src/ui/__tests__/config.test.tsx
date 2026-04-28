@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Config } from '../screens/Config/config.js';
+import { Config } from '../screens/config/config.js';
 
 function mockFetchEmpty() {
   vi.stubGlobal(
@@ -31,13 +31,22 @@ beforeEach(() => {
 });
 
 describe('Config tab navigation', () => {
-  it('renders Sources tab by default', async () => {
+  it('renders Credentials tab by default', async () => {
     render(<Config />);
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Sources' })).toBeTruthy();
+      expect(screen.getByRole('tab', { name: 'Credentials' })).toBeTruthy();
     });
-    expect(screen.getByRole('tab', { name: 'Sources' }).getAttribute('aria-selected')).toBe('true');
+    expect(
+      screen.getByRole('tab', { name: 'Credentials' }).getAttribute('aria-selected'),
+    ).toBe('true');
     expect(screen.getByText(/no sources configured/i)).toBeTruthy();
+  });
+
+  it('shows server connection fields in Credentials tab', async () => {
+    render(<Config />);
+    await waitFor(() => screen.getByLabelText(/server url/i));
+    expect(screen.getByLabelText(/api key/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /test connection/i })).toBeTruthy();
   });
 
   it('switches to Settings tab on click', async () => {
@@ -50,7 +59,9 @@ describe('Config tab navigation', () => {
       expect(screen.getByLabelText(/show browser/i)).toBeTruthy();
     });
     expect(screen.getByRole('tab', { name: 'Settings' }).getAttribute('aria-selected')).toBe('true');
-    expect(screen.getByRole('tab', { name: 'Sources' }).getAttribute('aria-selected')).toBe('false');
+    expect(
+      screen.getByRole('tab', { name: 'Credentials' }).getAttribute('aria-selected'),
+    ).toBe('false');
   });
 
   it('switches to Accounts tab on click', async () => {
@@ -73,14 +84,14 @@ describe('Config tab navigation', () => {
     expect(screen.queryByText(/no bank accounts/i)).toBeNull();
   });
 
-  it('can navigate back to Sources after switching away', async () => {
+  it('can navigate back to Credentials after switching away', async () => {
     render(<Config />);
     await waitFor(() => screen.getByText(/no sources/i));
 
     await userEvent.click(screen.getByRole('tab', { name: 'Settings' }));
     await waitFor(() => screen.getByLabelText(/show browser/i));
 
-    await userEvent.click(screen.getByRole('tab', { name: 'Sources' }));
+    await userEvent.click(screen.getByRole('tab', { name: 'Credentials' }));
     await waitFor(() => {
       expect(screen.getByText(/no sources configured/i)).toBeTruthy();
     });

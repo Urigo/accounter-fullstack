@@ -23,11 +23,20 @@ export const RunStartSchema = z.object({
 
 export type RunStartMessage = z.infer<typeof RunStartSchema>;
 
+export const OtpSubmitSchema = z.object({
+  type: z.literal('otp-submit'),
+  sourceId: z.string(),
+  otp: z.string(),
+});
+
+export type OtpSubmitMessage = z.infer<typeof OtpSubmitSchema>;
+
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   StartScrapeSchema,
   CancelScrapeSchema,
   PingSchema,
   RunStartSchema,
+  OtpSubmitSchema,
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -77,10 +86,14 @@ export const TaskPendingSchema = z.object({
   sourceId: z.string(),
 });
 
+export type TaskPendingMessage = z.infer<typeof TaskPendingSchema>;
+
 export const TaskRunningSchema = z.object({
   type: z.literal('task-running'),
   sourceId: z.string(),
 });
+
+export type TaskRunningMessage = z.infer<typeof TaskRunningSchema>;
 
 export const TaskDoneSchema = z.object({
   type: z.literal('task-done'),
@@ -90,11 +103,41 @@ export const TaskDoneSchema = z.object({
   insertedIds: z.array(z.string()),
 });
 
+export type TaskDoneMessage = z.infer<typeof TaskDoneSchema>;
+
+export const TaskErrorSchema = z.object({
+  type: z.literal('task-error'),
+  sourceId: z.string(),
+  message: z.string(),
+});
+
+export type TaskErrorMessage = z.infer<typeof TaskErrorSchema>;
+
+export const TaskBlockedSchema = z.object({
+  type: z.literal('task-blocked'),
+  sourceId: z.string(),
+  reason: z.string(),
+});
+
+export type TaskBlockedMessage = z.infer<typeof TaskBlockedSchema>;
+
+export const OtpRequiredSchema = z.object({
+  type: z.literal('otp-required'),
+  sourceId: z.string(),
+  prompt: z.string().optional(),
+});
+
+export type OtpRequiredMessage = z.infer<typeof OtpRequiredSchema>;
+
 export const RunCompleteSchema = z.object({
   type: z.literal('run-complete'),
   totalInserted: z.number(),
   totalSkipped: z.number(),
 });
+
+export type RunCompleteMessage = z.infer<typeof RunCompleteSchema>;
+
+export type ConnectedMessage = z.infer<typeof ScrapeStartedSchema>;
 
 export const RunErrorSchema = z.object({
   type: z.literal('run-error'),
@@ -112,6 +155,9 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   TaskPendingSchema,
   TaskRunningSchema,
   TaskDoneSchema,
+  TaskErrorSchema,
+  TaskBlockedSchema,
+  OtpRequiredSchema,
   RunCompleteSchema,
   RunErrorSchema,
 ]);

@@ -37,7 +37,8 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
 
         const result = ClientMessageSchema.safeParse(parsed);
         if (!result.success) {
-          app.log.warn({ received: parsed }, '[ws] unknown message type — ignored');
+          app.log.warn({ received: parsed }, '[ws] unknown message type');
+          send(socket, { type: 'error', message: 'Unknown message type' });
           return;
         }
 
@@ -64,7 +65,14 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
           case 'cancel-scrape':
             // TODO: cancel in-progress scrape
             break;
+          case 'otp-submit':
+            app.log.info({ sourceId: msg.sourceId }, '[ws] otp-submit received (stub)');
+            break;
         }
+      });
+
+      socket.on('close', () => {
+        app.log.info('[ws] client disconnected');
       });
     },
   );

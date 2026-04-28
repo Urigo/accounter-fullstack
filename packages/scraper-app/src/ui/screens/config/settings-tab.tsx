@@ -1,35 +1,10 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
-
-type Settings = {
-  showBrowser: boolean;
-  fetchBankOfIsraelRates: boolean;
-  concurrentScraping: boolean;
-  serverUrl?: string;
-  apiKey?: string;
-};
-
-async function loadSettings(): Promise<Settings> {
-  const res = await fetch('/api/vault/settings');
-  if (!res.ok) throw new Error('Failed to load settings');
-  return res.json() as Promise<Settings>;
-}
-
-async function saveSettings(patch: Partial<Settings>): Promise<Settings> {
-  const res = await fetch('/api/vault/settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
-  if (!res.ok) throw new Error('Failed to save settings');
-  return res.json() as Promise<Settings>;
-}
+import type { Settings } from '../../../server/vault.js';
+import { loadSettings, saveSettings } from '../../lib/api.js';
 
 export function SettingsTab(): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showApiKey, setShowApiKey] = useState(false);
 
   useEffect(() => {
     loadSettings()
@@ -37,32 +12,36 @@ export function SettingsTab(): ReactElement {
       .catch(() => setError('Failed to load settings'));
   }, []);
 
-  function setField<K extends keyof Settings>(key: K, value: Settings[K]) {
-    setSettings(s => (s ? { ...s, [key]: value } : s));
-    setDirty(true);
+  async function autoSave(patch: Partial<Settings>) {
+    try {
+      const updated = await saveSettings(patch);
+      setSettings(updated);
+    } catch {
+      setError('Failed to save settings');
+    }
   }
 
   function handleToggle(key: 'showBrowser' | 'fetchBankOfIsraelRates' | 'concurrentScraping') {
-    return (e: ChangeEvent<HTMLInputElement>) => setField(key, e.target.checked);
+    return (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.checked;
+      setSettings(s => (s ? { ...s, [key]: value } : s));
+      void autoSave({ [key]: value });
+    };
   }
 
-  function handleText(key: 'serverUrl' | 'apiKey') {
-    return (e: ChangeEvent<HTMLInputElement>) => setField(key, e.target.value || undefined);
+  function handleNumberBlur(e: ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    if (value !== undefined && Number.isNaN(value)) return;
+    setSettings(s => (s ? { ...s, defaultDateRangeMonths: value } : s));
+    void autoSave({ defaultDateRangeMonths: value });
   }
 
-  async function handleSave() {
-    if (!settings) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const updated = await saveSettings(settings);
-      setSettings(updated);
-      setDirty(false);
-    } catch {
-      setError('Failed to save settings');
-    } finally {
-      setSaving(false);
-    }
+  function handleTextBlur(key: 'historyFilePath') {
+    return (e: ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value || undefined;
+      setSettings(s => (s ? { ...s, [key]: value } : s));
+      void autoSave({ [key]: value });
+    };
   }
 
   if (!settings) return <p>{error ?? 'Loading…'}</p>;
@@ -109,54 +88,36 @@ export function SettingsTab(): ReactElement {
           />
           Scrape sources concurrently
         </label>
-      </fieldset>
-
-      <fieldset style={{ border: 'none', padding: 0, margin: '16px 0 0' }}>
-        <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Server connection</legend>
 
         <div style={{ marginBottom: 10 }}>
-          <label htmlFor="serverUrl" style={{ display: 'block', marginBottom: 4 }}>
-            Server URL
+          <label htmlFor="defaultDateRangeMonths" style={{ display: 'block', marginBottom: 4 }}>
+            Default date range (months)
           </label>
           <input
-            id="serverUrl"
-            type="text"
-            value={settings.serverUrl ?? ''}
-            onChange={handleText('serverUrl')}
-            style={{ width: '100%', maxWidth: 400, padding: '4px 8px' }}
-            placeholder="https://your-accounter-server"
+            id="defaultDateRangeMonths"
+            type="number"
+            min={1}
+            defaultValue={settings.defaultDateRangeMonths ?? ''}
+            onBlur={handleNumberBlur}
+            style={{ padding: '4px 8px', width: 80 }}
+            placeholder="e.g. 6"
           />
         </div>
 
         <div style={{ marginBottom: 10 }}>
-          <label htmlFor="apiKey" style={{ display: 'block', marginBottom: 4 }}>
-            API Key
+          <label htmlFor="historyFilePath" style={{ display: 'block', marginBottom: 4 }}>
+            History file path
           </label>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <input
-              id="apiKey"
-              type={showApiKey ? 'text' : 'password'}
-              value={settings.apiKey ?? ''}
-              onChange={handleText('apiKey')}
-              style={{ flex: 1, maxWidth: 400, padding: '4px 8px' }}
-              placeholder="your-api-key"
-            />
-            <button
-              type="button"
-              onClick={() => setShowApiKey(s => !s)}
-              aria-label={showApiKey ? 'Hide API key' : 'Show API key'}
-            >
-              {showApiKey ? 'Hide' : 'Show'}
-            </button>
-          </div>
+          <input
+            id="historyFilePath"
+            type="text"
+            defaultValue={settings.historyFilePath ?? ''}
+            onBlur={handleTextBlur('historyFilePath')}
+            style={{ padding: '4px 8px', width: '100%', maxWidth: 400 }}
+            placeholder="/path/to/history.json"
+          />
         </div>
       </fieldset>
-
-      <div style={{ marginTop: 20 }}>
-        <button onClick={() => void handleSave()} disabled={!dirty || saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </div>
     </div>
   );
 }
