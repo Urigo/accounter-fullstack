@@ -96,6 +96,9 @@ export async function startRun(ws: WebSocket, request: RunStartMessage): Promise
     const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0);
 
     send(ws, { type: 'run-complete', totalInserted, totalSkipped });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    send(ws, { type: 'error', message });
   } finally {
     _running = false;
   }
