@@ -26,4 +26,8 @@ describe('vault', () => {
       VaultSchema.parse({ poalimAccounts: [{ password: 'no-user-code' }] }),
     ).toThrow();
   });
+
+  it('defaultVault() passes VaultSchema.parse', () => {
+    expect(() => VaultSchema.parse(defaultVault())).not.toThrow();
+  });
 });
