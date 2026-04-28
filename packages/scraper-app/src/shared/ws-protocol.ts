@@ -47,6 +47,8 @@ export const ConnectedSchema = z.object({
   type: z.literal('connected'),
 });
 
+export type ConnectedMessage = z.infer<typeof ConnectedSchema>;
+
 export const ScrapeStartedSchema = z.object({
   type: z.literal('scrape-started'),
   sourceIds: z.array(z.string()),
@@ -58,13 +60,6 @@ export const ScrapeProgressSchema = z.object({
   sourceType: z.enum(SOURCE_TYPES),
   status: z.enum(['running', 'done', 'error', 'blocked']),
   error: z.string().optional(),
-});
-
-export const TaskBlockedSchema = z.object({
-  type: z.literal('task-blocked'),
-  sourceId: z.string(),
-  sourceType: z.enum(SOURCE_TYPES),
-  unknownAccounts: z.array(z.string()),
 });
 
 export const ScrapeCompleteSchema = z.object({
@@ -116,7 +111,8 @@ export type TaskErrorMessage = z.infer<typeof TaskErrorSchema>;
 export const TaskBlockedSchema = z.object({
   type: z.literal('task-blocked'),
   sourceId: z.string(),
-  reason: z.string(),
+  sourceType: z.enum(SOURCE_TYPES),
+  unknownAccounts: z.array(z.string()),
 });
 
 export type TaskBlockedMessage = z.infer<typeof TaskBlockedSchema>;
@@ -137,8 +133,6 @@ export const RunCompleteSchema = z.object({
 
 export type RunCompleteMessage = z.infer<typeof RunCompleteSchema>;
 
-export type ConnectedMessage = z.infer<typeof ScrapeStartedSchema>;
-
 export const RunErrorSchema = z.object({
   type: z.literal('run-error'),
   message: z.string(),
@@ -148,7 +142,6 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
   ScrapeStartedSchema,
   ScrapeProgressSchema,
-  TaskBlockedSchema,
   ScrapeCompleteSchema,
   PongSchema,
   WsErrorSchema,
