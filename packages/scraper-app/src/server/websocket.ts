@@ -6,6 +6,7 @@ import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.j
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
 import { OtpManager } from './otp-manager.js';
 import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
+import { scrapePoalim } from './scrapers/poalim.js';
 import { validatePayload, type PayloadType } from './validate-payload.js';
 import { getVault, isLocked } from './vault-store.js';
 import type { Vault } from './vault.js';
@@ -89,13 +90,23 @@ function buildTask(
   src: SourceRef,
   vault: Vault,
   emit: (msg: ServerMessage) => void,
-  _otpManager: OtpManager,
+  otpManager: OtpManager,
 ): ScrapeTask {
   return {
     sourceId: src.id,
     nickname: src.id,
     type: src.type,
     run: async () => {
+      if (src.type === 'poalim') {
+        const creds = vault.poalimAccounts.find(a => a.id === src.id);
+        if (!creds) throw new Error(`Poalim account ${src.id} not found in vault`);
+        const now = new Date();
+        const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+        const headless = vault.settings.showBrowser ? false : true;
+        await scrapePoalim(creds, dateFrom, now, headless, otpManager, emit);
+        return { inserted: 0, skipped: 0, insertedIds: [] };
+      }
+
       await new Promise<void>(r => setTimeout(r, 10));
       const raw = makeStubData(src.type);
       const payload = validatePayload(SOURCE_PAYLOAD_TYPE[src.type], raw) as ValidatedPayload;
