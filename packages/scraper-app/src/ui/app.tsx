@@ -6,9 +6,10 @@ import { VaultUnlock } from './screens/vault-unlock.js';
 export { VaultContext };
 
 function AppContent(): ReactElement {
-  const { locked, hasFile } = useVault();
-  if (!hasFile) return <VaultSetup />;
-  if (locked) return <VaultUnlock />;
+  const { status } = useVault();
+  if (status === 'loading') return <div>Loading…</div>;
+  if (status === 'no-file') return <VaultSetup />;
+  if (status === 'locked') return <VaultUnlock />;
   return <main>Scraper App — ready</main>;
 }
 

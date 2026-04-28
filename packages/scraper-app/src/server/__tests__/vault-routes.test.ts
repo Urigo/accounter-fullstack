@@ -10,27 +10,115 @@ import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
 
-let vaultPath: string;
-let app: FastifyInstance;
+function makeTmpPath() {
+  return join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
+}
 
-beforeEach(async () => {
-  vaultPath = join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
+async function buildApp(vaultPath: string): Promise<FastifyInstance> {
   process.env['VAULT_FILE'] = vaultPath;
-  await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
-
-  app = Fastify();
+  const app = Fastify();
   await registerVaultRoutes(app);
   await app.ready();
-});
+  return app;
+}
 
-afterEach(async () => {
-  lockVault();
-  await app.close();
-  await rm(vaultPath, { force: true });
-  delete process.env['VAULT_FILE'];
-});
+// ── Tests where the vault file does NOT yet exist ─────────────────────────────
 
 describe('GET /api/vault/status', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    app = await buildApp(vaultPath);
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_FILE'];
+  });
+
+  it('returns locked=true and hasFile=false when no vault file exists', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ locked: true, hasFile: false });
+  });
+});
+
+// ── Tests for POST /api/vault/create ─────────────────────────────────────────
+
+describe('POST /api/vault/create', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    app = await buildApp(vaultPath);
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_FILE'];
+  });
+
+  it('creates a vault and returns 201', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/vault/create',
+      payload: { password: PASSWORD, serverUrl: 'http://localhost:4000/graphql', apiKey: 'key1' },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toEqual({ ok: true });
+  });
+
+  it('GET /api/vault/status after create returns locked=false and hasFile=true', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/vault/create',
+      payload: { password: PASSWORD, serverUrl: 'http://localhost:4000/graphql', apiKey: 'key1' },
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
+    expect(res.json()).toEqual({ locked: false, hasFile: true });
+  });
+
+  it('returns 409 when vault file already exists', async () => {
+    await app.inject({
+      method: 'POST',
+      url: '/api/vault/create',
+      payload: { password: PASSWORD, serverUrl: 'http://localhost:4000/graphql', apiKey: 'key1' },
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/vault/create',
+      payload: { password: PASSWORD, serverUrl: 'http://localhost:4000/graphql', apiKey: 'key1' },
+    });
+    expect(res.statusCode).toBe(409);
+  });
+});
+
+// ── Tests where the vault file ALREADY exists ─────────────────────────────────
+
+describe('GET /api/vault/status', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+    app = await buildApp(vaultPath);
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_FILE'];
+  });
+
   it('returns locked=true and hasFile=true before unlock', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
     expect(res.statusCode).toBe(200);
@@ -49,6 +137,22 @@ describe('GET /api/vault/status', () => {
 });
 
 describe('POST /api/vault/unlock', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+    app = await buildApp(vaultPath);
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_FILE'];
+  });
+
   it('returns ok with correct password', async () => {
     const res = await app.inject({
       method: 'POST',

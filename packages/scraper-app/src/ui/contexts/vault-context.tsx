@@ -7,58 +7,64 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import {
+  vaultCreate as apiCreate,
+  ApiError,
+  vaultStatus as apiStatus,
+  vaultUnlock as apiUnlock,
+} from '../lib/api.js';
+
+export type VaultStatus = 'loading' | 'locked' | 'no-file' | 'unlocked';
 
 type VaultContextValue = {
-  locked: boolean;
-  hasFile: boolean;
-  unlock(password: string): Promise<'ok' | 'wrong-password' | 'not-found'>;
+  status: VaultStatus;
+  error: string | null;
+  unlock(password: string): Promise<void>;
   create(password: string, serverUrl: string, apiKey: string): Promise<void>;
 };
 
 export const VaultContext = createContext<VaultContextValue | null>(null);
 
 export function VaultProvider({ children }: { children: ReactNode }): ReactElement {
-  const [locked, setLocked] = useState(true);
-  const [hasFile, setHasFile] = useState(false);
+  const [status, setStatus] = useState<VaultStatus>('loading');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/vault/status')
-      .then(r => r.json() as Promise<{ locked: boolean; hasFile: boolean }>)
+    apiStatus()
       .then(s => {
-        setLocked(s.locked);
-        setHasFile(s.hasFile);
+        if (!s.hasFile) setStatus('no-file');
+        else if (s.locked) setStatus('locked');
+        else setStatus('unlocked');
       })
-      .catch(() => {});
+      .catch(() => setStatus('locked'));
   }, []);
 
   const unlock = useCallback(async (password: string) => {
-    const res = await fetch('/api/vault/unlock', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    if (res.ok) {
-      setLocked(false);
-      return 'ok' as const;
+    setError(null);
+    try {
+      await apiUnlock(password);
+      setStatus('unlocked');
+    } catch (e) {
+      setError(
+        e instanceof ApiError && e.status === 404
+          ? 'Vault not found.'
+          : 'Wrong password. Please try again.',
+      );
     }
-    return res.status === 404 ? ('not-found' as const) : ('wrong-password' as const);
   }, []);
 
   const create = useCallback(async (password: string, serverUrl: string, apiKey: string) => {
-    const res = await fetch('/api/vault/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, serverUrl, apiKey }),
-    });
-    if (!res.ok) {
-      throw new Error('Failed to create vault');
+    setError(null);
+    try {
+      await apiCreate(password, serverUrl, apiKey);
+      setStatus('unlocked');
+    } catch {
+      setError('Failed to create vault. Please try again.');
     }
-    setLocked(false);
-    setHasFile(true);
   }, []);
 
   return (
-    <VaultContext.Provider value={{ locked, hasFile, unlock, create }}>
+    <VaultContext.Provider value={{ status, error, unlock, create }}>
       {children}
     </VaultContext.Provider>
   );
