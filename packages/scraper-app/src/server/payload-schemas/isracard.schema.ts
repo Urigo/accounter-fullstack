@@ -45,14 +45,16 @@ const HeaderSchema = z
   })
   .loose();
 
+// CardsTransactionsListBean contains Index0, Index1, Index2, … for each card.
+// We require Index0 (always present) and capture additional Index* keys via catchall.
+const CardsTransactionsListBeanSchema = z
+  .object({ Index0: IndexSchema })
+  .catchall(z.union([IndexSchema, z.unknown()]));
+
 export const IsracardPayloadSchema = z
   .object({
     Header: HeaderSchema,
-    CardsTransactionsListBean: z
-      .object({
-        Index0: IndexSchema,
-      })
-      .loose(),
+    CardsTransactionsListBean: CardsTransactionsListBeanSchema,
   })
   .loose();
 
