@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
-import {
-  createSource,
-  deleteSource,
-  getSources,
-  updateSource,
-} from '../../lib/api.js';
+import { createSource, deleteSource, getSources, updateSource } from '../../lib/api.js';
 import { SourceForm } from './source-forms.js';
 import { SOURCE_LABELS, type SourceConfig, type SourceType } from './source-types.js';
 

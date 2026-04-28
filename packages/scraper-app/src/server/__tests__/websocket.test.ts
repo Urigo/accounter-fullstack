@@ -4,7 +4,18 @@ import type { WebSocket } from 'ws';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerWebSocketRoute } from '../websocket.js';
 
-vi.mock('../vault-store.js', () => ({ isLocked: () => false }));
+const STUB_VAULT = {
+  poalimAccounts: [{ id: 'src-1', userCode: 'u', password: 'p' }],
+  discountAccounts: [],
+  isracardAccounts: [],
+  amexAccounts: [],
+  calAccounts: [],
+  maxAccounts: [],
+  bankAccounts: [],
+  settings: { showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: false },
+};
+
+vi.mock('../vault-store.js', () => ({ isLocked: () => false, getVault: () => STUB_VAULT }));
 vi.mock('../scrape-runner.js', () => ({ startRun: vi.fn().mockResolvedValue(undefined) }));
 
 let app: FastifyInstance;

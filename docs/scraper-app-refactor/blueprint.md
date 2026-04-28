@@ -403,7 +403,7 @@ prompts assume the monorepo conventions in `CLAUDE.md` are followed.
 
 ### Prompt 0 — Package scaffold
 
-``
+```
 
 You are working in the`accounter-fullstack`Yarn Berry v4 monorepo. Conventions: ESM only,`.js`import
 extensions in TypeScript source,`yarn workspace` for deps, strict TypeScript, no CommonJS.
@@ -457,13 +457,13 @@ Task: create the `packages/scraper-app` package from scratch.
 Verify: `yarn workspace @accounter-helper/scraper-app typecheck` passes,
 `yarn workspace @accounter-helper/scraper-app test` passes.
 
-``
+```
 
 ---
 
 ### Prompt 1 — Vault crypto
 
-``
+````
 
 Package`@accounter-helper/scraper-app` now exists with a passing healthz test.
 
@@ -535,13 +535,13 @@ Create `packages/scraper-app/src/server/__tests__/vault.test.ts`:
 
 Verify: all vault tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 2 — Vault file I/O and HTTP API
 
-``
+```
 
 `vault.ts` with `encryptVault` / `decryptVault` / `VaultSchema` exists and is tested.
 
@@ -589,13 +589,13 @@ Use `tmp` directory per test (pass vault path via env or a test helper that over
 
 Verify: all tests pass.
 
-``
+```
 
 ---
 
 ### Prompt 3 — Vault unlock UI
 
-``
+```
 
 Vault HTTP API (`/api/vault/status`, `/api/vault/unlock`, `/api/vault/create`) is implemented and
 tested.
@@ -640,13 +640,13 @@ Create `src/ui/__tests__/vault-unlock.test.tsx` and `vault-setup.test.tsx` using
 
 Verify: all UI tests pass (`yarn workspace @accounter-helper/scraper-app test`).
 
-``
+```
 
 ---
 
 ### Prompt 4 — Config: sources CRUD
 
-``
+```
 
 The vault gate UI works. Main app shell renders after unlock.
 
@@ -694,13 +694,13 @@ Create `src/ui/__tests__/sources-tab.test.tsx`:
 
 Verify: all new server and UI tests pass.
 
-``
+```
 
 ---
 
 ### Prompt 5 — Config: settings and accounts tabs
 
-``
+```
 
 Sources CRUD works. Task: implement the Settings and Accounts tabs, then assemble the full Config
 screen.
@@ -741,13 +741,13 @@ via dropdown.
 
 Verify: all tests pass.
 
-``
+```
 
 ---
 
 ### Prompt 6 — WebSocket server + protocol types
 
-``
+```
 
 Config screen is complete. Task: establish the WebSocket channel.
 
@@ -782,13 +782,13 @@ Config screen is complete. Task: establish the WebSocket channel.
 
 Verify: all tests pass.
 
-``
+```
 
 ---
 
 ### Prompt 7 — Scrape runner skeleton
 
-``
+````
 
 WebSocket server is live with the full protocol type system.
 
@@ -836,13 +836,13 @@ Task: implement the scrape runner with stubbed scrapers.
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 8 — Payload validation schemas
 
-``
+````
 
 Scrape runner skeleton works with stubs. Task: build the payload validation layer so invalid bank
 responses are caught before anything reaches the server.
@@ -894,13 +894,13 @@ Calls the correct schema; throws `PayloadValidationError` on failure.
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 9 — Unknown account detection
 
-``
+````
 
 Payload validation layer is in place. Task: detect unknown accounts before uploading.
 
@@ -941,13 +941,13 @@ Payload validation layer is in place. Task: detect unknown accounts before uploa
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 10 — OTP wait/timeout
 
-``
+````
 
 Unknown account detection is integrated. Task: implement the OTP flow for Poalim login.
 
@@ -990,13 +990,13 @@ Unknown account detection is integrated. Task: implement the OTP flow for Poalim
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 11 — Poalim scraper wrapper
 
-``
+````
 
 OTP manager is implemented and tested. Task: wire up the real Poalim scraper.
 
@@ -1040,13 +1040,13 @@ OTP manager is implemented and tested. Task: wire up the real Poalim scraper.
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 12 — Remaining scraper wrappers
 
-``
+```
 
 Poalim scraper wrapper is in place. Task: add wrappers for all remaining source types.
 
@@ -1070,13 +1070,13 @@ Replace the remaining stubs in the runner with calls to these wrappers.
 
 Verify: all tests pass. `yarn workspace @accounter-helper/scraper-app typecheck` passes.
 
-``
+```
 
 ---
 
 ### Prompt 13 — GraphQL upload client + mock server
 
-``
+````
 
 All scraper wrappers are implemented. Task: build the typed GraphQL client that sends scraped data
 to the Accounter server.
@@ -1128,13 +1128,15 @@ server schema in Prompt 19.
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 14 — Run history
 
-`` GraphQL upload client is wired into the runner. Task: persist run history.
+````
+
+GraphQL upload client is wired into the runner. Task: persist run history.
 
 1. Create `src/server/history.ts`:
 
@@ -1165,13 +1167,13 @@ file with the run record shapes from the spec).
 
 Verify: all tests pass.
 
-``
+````
 
 ---
 
 ### Prompt 15 — Run screen UI
 
-``
+```
 
 Run orchestration is fully wired server-side. Task: build the Run screen UI.
 
@@ -1216,13 +1218,13 @@ Run orchestration is fully wired server-side. Task: build the Run screen UI.
 
 Verify: all UI tests pass.
 
-``
+```
 
 ---
 
 ### Prompt 16 — History screen UI
 
-``
+```
 
 Run screen is complete. Task: build the History screen.
 
@@ -1247,13 +1249,13 @@ Run screen is complete. Task: build the History screen.
 
 Verify: all tests pass. Full UI now navigable: Config / Run / History.
 
-``
+```
 
 ---
 
 ### Prompt 17 — Server: UploadResult type + Poalim ILS upload mutation
 
-``
+````
 
 You are working in the `accounter-fullstack` monorepo, in the `packages/server` package.
 Conventions: GraphQL Modules, `@Injectable()` providers, resolvers access DB only through providers,
@@ -1311,13 +1313,13 @@ Task: add the first scraper upload mutation to the Accounter server.
 
 Verify: all tests pass, `yarn generate` produces no errors.
 
-``
+````
 
 ---
 
 ### Prompt 18 — Server: remaining upload mutations
 
-``
+```
 
 `uploadPoalimIlsTransactions` is implemented and tested. Task: add upload mutations for all
 remaining source types, following exactly the same pattern.
@@ -1346,13 +1348,13 @@ After all mutations are added:
 - Verify all integration tests pass.
 - Verify `yarn typecheck` passes in the server package.
 
-``
+```
 
 ---
 
 ### Prompt 19 — End-to-end integration
 
-``
+```
 
 All scraper-app source wrappers (Prompts 11–12) and all server upload mutations (Prompts 17–18) are
 in place. Task: wire the real server into the scraper app and validate end-to-end.
@@ -1385,13 +1387,13 @@ Fix any type mismatches or integration seams surfaced during this step.
 
 Verify: all unit + integration tests pass. Smoke checklist completed manually.
 
-``
+```
 
 ---
 
 ### Prompt 20 — Hardening and polish
 
-``
+```
 
 End-to-end integration is verified. Task: harden the app for real use.
 
@@ -1427,4 +1429,4 @@ End-to-end integration is verified. Task: harden the app for real use.
 
 Verify: `yarn lint` passes across the repo. All tests pass. README covers first-run setup.
 
-``
+```

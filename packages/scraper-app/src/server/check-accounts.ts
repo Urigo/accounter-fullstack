@@ -22,9 +22,9 @@ export type ValidatedPayload =
 
 export type AccountRecord = BankAccount;
 
-type CheckResult = { accepted: string[]; ignored: string[]; unknown: string[] };
+export type AccountCheckResult = { accepted: string[]; ignored: string[]; unknown: string[] };
 
-function extractIdentifiers(type: SourceType, payload: ValidatedPayload): string[] {
+export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPayload): string[] {
   switch (type) {
     case 'poalim': {
       if (!('retrievalTransactionData' in payload)) return [];
@@ -63,8 +63,8 @@ export function checkAccounts(
   type: SourceType,
   payload: ValidatedPayload,
   known: AccountRecord[],
-): CheckResult {
-  const identifiers = extractIdentifiers(type, payload);
+): AccountCheckResult {
+  const identifiers = extractAccountIdentifiers(type, payload);
   const accepted: string[] = [];
   const ignored: string[] = [];
   const unknown: string[] = [];
