@@ -11,7 +11,7 @@ export class ApiError extends Error {
 }
 
 async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const res = await fetch(`http://127.0.0.1:4001${url}`, init);
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
