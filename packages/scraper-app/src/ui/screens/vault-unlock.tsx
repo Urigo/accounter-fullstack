@@ -2,27 +2,15 @@ import { useState, type ReactElement } from 'react';
 import { useVault } from '../contexts/vault-context.js';
 
 export function VaultUnlock(): ReactElement {
-  const { unlock } = useVault();
+  const vault = useVault();
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    try {
-      const result = await unlock(password);
-      if (result !== 'ok') {
-        setError(
-          result === 'wrong-password' ? 'Wrong password. Please try again.' : 'Vault not found.',
-        );
-      }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    await vault.unlock(password);
+    setLoading(false);
   }
 
   return (
@@ -40,7 +28,7 @@ export function VaultUnlock(): ReactElement {
             autoFocus
           />
         </div>
-        {error && <p role="alert">{error}</p>}
+        {vault.error && <p role="alert">{vault.error}</p>}
         <button type="submit" disabled={loading}>
           {loading ? 'Unlocking…' : 'Unlock'}
         </button>
