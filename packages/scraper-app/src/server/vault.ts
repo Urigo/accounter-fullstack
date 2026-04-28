@@ -83,6 +83,8 @@ export const SettingsSchema = z.object({
   showBrowser: z.boolean().default(false),
   fetchBankOfIsraelRates: z.boolean().default(true),
   concurrentScraping: z.boolean().default(true),
+  defaultDateRangeMonths: z.number().int().positive().optional(),
+  historyFilePath: z.string().optional(),
   serverUrl: z.string().optional(),
   apiKey: z.string().optional(),
 });
