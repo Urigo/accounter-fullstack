@@ -4,13 +4,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { VaultContext } from '../contexts/vault-context.jsx';
-import { VaultSetup } from '../screens/vault-setup.jsx';
+import { VaultContext, type VaultStatus } from '../contexts/vault-context.js';
+import { VaultSetup } from '../screens/vault-setup.js';
 
 function makeCtx(create: () => Promise<void> = vi.fn().mockResolvedValue(undefined)) {
   return {
-    locked: true,
-    hasFile: false,
+    status: 'no-file' as VaultStatus,
+    error: null as string | null,
     unlock: vi.fn(),
     create,
   };

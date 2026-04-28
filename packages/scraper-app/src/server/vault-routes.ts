@@ -53,6 +53,7 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (req, reply) => {
+      if (await hasVaultFile()) return reply.status(409).send({ error: 'vault-already-exists' });
       const { password, serverUrl, apiKey } = req.body;
       lockVault();
       const vault = defaultVault();
@@ -61,7 +62,7 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       await saveVaultFile(getVaultPath(), vault, password);
       const result = await unlockVault(password);
       if (result !== 'ok') return reply.status(500).send({ error: result });
-      return { ok: true };
+      return reply.status(201).send({ ok: true });
     },
   );
 
