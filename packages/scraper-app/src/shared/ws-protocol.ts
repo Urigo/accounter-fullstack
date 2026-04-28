@@ -23,11 +23,20 @@ export const RunStartSchema = z.object({
 
 export type RunStartMessage = z.infer<typeof RunStartSchema>;
 
+export const OtpSubmitSchema = z.object({
+  type: z.literal('otp-submit'),
+  sourceId: z.string(),
+  otp: z.string(),
+});
+
+export type OtpSubmitMessage = z.infer<typeof OtpSubmitSchema>;
+
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   StartScrapeSchema,
   CancelScrapeSchema,
   PingSchema,
   RunStartSchema,
+  OtpSubmitSchema,
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -101,6 +110,11 @@ export const RunErrorSchema = z.object({
   message: z.string(),
 });
 
+export const OtpRequiredSchema = z.object({
+  type: z.literal('otp-required'),
+  sourceId: z.string(),
+});
+
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
   ScrapeStartedSchema,
@@ -114,6 +128,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   TaskDoneSchema,
   RunCompleteSchema,
   RunErrorSchema,
+  OtpRequiredSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;

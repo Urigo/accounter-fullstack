@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import websocketPlugin from '@fastify/websocket';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
+import { submitOtp } from './otp-manager.js';
 import { startRun } from './scrape-runner.js';
 import { isLocked } from './vault-store.js';
 
@@ -60,6 +61,9 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                 send(socket, { type: 'error', message: String(err) });
               },
             );
+            break;
+          case 'otp-submit':
+            submitOtp(msg.sourceId, msg.otp);
             break;
           case 'cancel-scrape':
             // TODO: cancel in-progress scrape
