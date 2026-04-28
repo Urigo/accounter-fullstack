@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { createSource, deleteSource, getSources, updateSource } from '../../lib/api.js';
 import { SourceForm } from './source-forms.js';
 import { SOURCE_LABELS, type SourceConfig, type SourceType } from './source-types.js';
 
@@ -8,12 +9,6 @@ type DialogState =
   | { mode: 'confirm-delete'; source: SourceConfig }
   | null;
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`${options?.method ?? 'GET'} ${url} → ${res.status}`);
-  return res.json() as Promise<T>;
-}
-
 export function SourcesTab(): ReactElement {
   const [sources, setSources] = useState<SourceConfig[]>([]);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -22,7 +17,7 @@ export function SourcesTab(): ReactElement {
 
   const load = useCallback(async () => {
     try {
-      const list = await apiFetch<SourceConfig[]>('/api/vault/sources');
+      const list = await getSources<SourceConfig>();
       setSources(list);
     } catch {
       setError('Failed to load sources');
@@ -35,13 +30,9 @@ export function SourcesTab(): ReactElement {
 
   async function handleAdd(data: Omit<SourceConfig, 'id' | 'type'>) {
     try {
-      const list = await apiFetch<SourceConfig[]>('/api/vault/sources', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          type: (dialog as { mode: 'add'; sourceType: SourceType }).sourceType,
-        }),
+      const list = await createSource<SourceConfig>({
+        ...data,
+        type: (dialog as { mode: 'add'; sourceType: SourceType }).sourceType,
       });
       setSources(list);
       setDialog(null);
@@ -53,11 +44,7 @@ export function SourcesTab(): ReactElement {
   async function handleEdit(data: Omit<SourceConfig, 'id' | 'type'>) {
     const source = (dialog as { mode: 'edit'; source: SourceConfig }).source;
     try {
-      const list = await apiFetch<SourceConfig[]>(`/api/vault/sources/${source.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const list = await updateSource<SourceConfig>(source.id, data);
       setSources(list);
       setDialog(null);
     } catch {
@@ -67,7 +54,7 @@ export function SourcesTab(): ReactElement {
 
   async function handleDelete(id: string) {
     try {
-      const list = await apiFetch<SourceConfig[]>(`/api/vault/sources/${id}`, { method: 'DELETE' });
+      const list = await deleteSource<SourceConfig>(id);
       setSources(list);
       setDialog(null);
     } catch {
@@ -82,7 +69,7 @@ export function SourcesTab(): ReactElement {
     if (s.type === 'isracard' || s.type === 'amex')
       return `${SOURCE_LABELS[s.type]} (${s.ownerId})`;
     if (s.type === 'cal' || s.type === 'max') return `${SOURCE_LABELS[s.type]} (${s.username})`;
-    return s.type;
+    return '';
   }
 
   return (

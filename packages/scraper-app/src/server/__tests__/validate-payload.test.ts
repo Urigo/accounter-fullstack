@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, afterEach } from 'vitest';
 import { PayloadValidationError, validatePayload } from '../validate-payload.js';
+import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
+import type { ServerMessage } from '../../shared/ws-protocol.js';
 
 describe('validatePayload — valid fixtures', () => {
   it('accepts a minimal poalim-ils payload', () => {
@@ -163,5 +165,33 @@ describe('validatePayload — invalid fixtures', () => {
     expect(() =>
       validatePayload('currency-rates', [{ date: '2024-01-01', currency: 'XYZ', rate: 1.0 }]),
     ).toThrow(PayloadValidationError);
+  });
+});
+
+describe('runner integration — task-error on PayloadValidationError', () => {
+  afterEach(() => {
+    _resetRunState();
+  });
+
+  it('emits task-error (not a crash) when validatePayload throws inside run()', async () => {
+    const events: ServerMessage[] = [];
+
+    const task: ScrapeTask = {
+      sourceId: 'bad-src',
+      nickname: 'bad-src',
+      type: 'poalim',
+      run: async () => {
+        // Deliberately pass invalid data to trigger PayloadValidationError
+        validatePayload('poalim-ils', { transactions: 'not-an-array' });
+        return { inserted: 0, skipped: 0, insertedIds: [] };
+      },
+    };
+
+    await startRun([task], false, msg => events.push(msg));
+
+    const taskError = events.find(e => e.type === 'task-error');
+    expect(taskError).toBeTruthy();
+    expect((taskError as { sourceId: string }).sourceId).toBe('bad-src');
+    expect(events.at(-1)).toMatchObject({ type: 'run-complete', totalInserted: 0, totalSkipped: 0 });
   });
 });

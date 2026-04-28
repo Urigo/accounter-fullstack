@@ -116,9 +116,11 @@ describe('SourcesTab', () => {
     mockFetch(sources);
 
     render(<SourcesTab />);
-    await waitFor(() => screen.getByRole('button', { name: /delete/i }));
+    await waitFor(() => screen.getByRole('button', { name: /^delete$/i }));
 
-    await userEvent.click(screen.getByRole('button', { name: /delete/i }));
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    await waitFor(() => screen.getByRole('button', { name: /confirm delete/i }));
+    await userEvent.click(screen.getByRole('button', { name: /confirm delete/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/no sources/i)).toBeTruthy();
