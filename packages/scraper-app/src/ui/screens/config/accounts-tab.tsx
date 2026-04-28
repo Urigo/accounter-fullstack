@@ -1,39 +1,16 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import type { BankAccount } from '../../../server/vault.js';
+import { fetchAccounts, updateStatus } from '../../lib/api.js';
 import { SOURCE_LABELS } from './source-types.js';
 
 type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
 type AccountStatus = 'accepted' | 'ignored' | 'pending';
-
-type BankAccount = {
-  id: string;
-  sourceId: string;
-  sourceType: SourceType;
-  accountNumber: string;
-  branchNumber?: string;
-  status: AccountStatus;
-};
 
 const STATUS_COLORS: Record<AccountStatus, string> = {
   accepted: '#2a7a2a',
   ignored: '#999',
   pending: '#b85c00',
 };
-
-async function fetchAccounts(): Promise<BankAccount[]> {
-  const res = await fetch('/api/vault/accounts');
-  if (!res.ok) throw new Error('Failed to load accounts');
-  return res.json() as Promise<BankAccount[]>;
-}
-
-async function updateStatus(id: string, status: 'accepted' | 'ignored'): Promise<BankAccount[]> {
-  const res = await fetch(`/api/vault/accounts/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  if (!res.ok) throw new Error('Failed to update account');
-  return res.json() as Promise<BankAccount[]>;
-}
 
 function StatusBadge({ status }: { status: AccountStatus }): ReactElement {
   return (
@@ -64,20 +41,30 @@ function AccountRow({ account, onStatusChange }: AccountRowProps): ReactElement 
   return (
     <li
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '6px 0',
+        padding: '8px 0',
         borderBottom: '1px solid #eee',
       }}
     >
-      <span style={{ flex: 1 }}>{label}</span>
-      <StatusBadge status={account.status} />
-      {account.status !== 'accepted' && (
-        <button onClick={() => onStatusChange(account.id, 'accepted')}>Accept</button>
-      )}
-      {account.status !== 'ignored' && (
-        <button onClick={() => onStatusChange(account.id, 'ignored')}>Ignore</button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ flex: 1 }}>{label}</span>
+        <StatusBadge status={account.status} />
+        <select
+          aria-label={`Status for ${label}`}
+          value={account.status}
+          onChange={e => {
+            const v = e.target.value as 'accepted' | 'ignored';
+            if (v === 'accepted' || v === 'ignored') onStatusChange(account.id, v);
+          }}
+        >
+          <option value="pending">pending</option>
+          <option value="accepted">accepted</option>
+          <option value="ignored">ignored</option>
+        </select>
+      </div>
+      {account.status === 'pending' && (
+        <p style={{ margin: '4px 0 0', fontSize: '0.85em', color: '#b85c00' }}>
+          Visit the Accounter client to set up this account.
+        </p>
       )}
     </li>
   );

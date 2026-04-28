@@ -1,8 +1,22 @@
 import '@fastify/websocket'; // type augmentation for app.injectWS
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerWebSocketRoute } from '../websocket.js';
+
+const STUB_VAULT = {
+  poalimAccounts: [{ id: 'src-1', userCode: 'u', password: 'p' }],
+  discountAccounts: [],
+  isracardAccounts: [],
+  amexAccounts: [],
+  calAccounts: [],
+  maxAccounts: [],
+  bankAccounts: [],
+  settings: { showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: false },
+};
+
+vi.mock('../vault-store.js', () => ({ isLocked: () => false, getVault: () => STUB_VAULT }));
+vi.mock('../scrape-runner.js', () => ({ startRun: vi.fn().mockResolvedValue(undefined) }));
 
 let app: FastifyInstance;
 
@@ -73,15 +87,39 @@ describe('WebSocket /ws', () => {
     ws.close();
   });
 
-  it('does not crash on unknown message type — server stays alive', async () => {
+  it('sends error reply for unknown message type', async () => {
     const client = makeClient();
     const ws = await openSocket(client);
     await client.next(); // consume connected
 
     ws.send(JSON.stringify({ type: 'totally-unknown', payload: 42 }));
+
+    expect(await client.next()).toEqual({ type: 'error', message: 'Unknown message type' });
+    ws.close();
+  });
+
+  it('server stays alive after unknown message type', async () => {
+    const client = makeClient();
+    const ws = await openSocket(client);
+    await client.next(); // consume connected
+
+    ws.send(JSON.stringify({ type: 'totally-unknown', payload: 42 }));
+    await client.next(); // consume error reply
+
+    ws.send(JSON.stringify({ type: 'ping' }));
+    expect(await client.next()).toEqual({ type: 'pong' });
+    ws.close();
+  });
+
+  it('accepts run-start message without crashing (stub handler)', async () => {
+    const client = makeClient();
+    const ws = await openSocket(client);
+    await client.next(); // consume connected
+
+    ws.send(JSON.stringify({ type: 'run-start', sourceIds: ['src-1'] }));
     ws.send(JSON.stringify({ type: 'ping' }));
 
-    // pong proves the server is still processing messages
+    // pong proves the server processed run-start without crashing
     expect(await client.next()).toEqual({ type: 'pong' });
     ws.close();
   });
