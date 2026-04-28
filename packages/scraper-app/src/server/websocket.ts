@@ -4,6 +4,7 @@ import websocketPlugin from '@fastify/websocket';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
+import { OtpManager } from './otp-manager.js';
 import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { validatePayload, type PayloadType } from './validate-payload.js';
 import { getVault, isLocked } from './vault-store.js';
@@ -84,7 +85,12 @@ function makeStubData(type: SourceType): unknown {
   }
 }
 
-function buildTask(src: SourceRef, vault: Vault, emit: (msg: ServerMessage) => void): ScrapeTask {
+function buildTask(
+  src: SourceRef,
+  vault: Vault,
+  emit: (msg: ServerMessage) => void,
+  _otpManager: OtpManager,
+): ScrapeTask {
   return {
     sourceId: src.id,
     nickname: src.id,
@@ -132,6 +138,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
       send(socket, { type: 'connected' });
 
       const emit = (msg: ServerMessage) => send(socket, msg);
+      let activeOtpManager: OtpManager | null = null;
 
       socket.on('message', (raw: RawData) => {
         let parsed: unknown;
@@ -173,24 +180,37 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
               break;
             }
 
-            const tasks: ScrapeTask[] = sources.map(src => buildTask(src, vault, emit));
+            if (activeOtpManager) {
+              send(socket, { type: 'run-error', message: ERR_RUN_IN_PROGRESS });
+              break;
+            }
 
-            void startRun(tasks, vault.settings.concurrentScraping, emit).catch((err: unknown) => {
-              const message = err instanceof Error ? err.message : String(err);
-              if (message === ERR_RUN_IN_PROGRESS) {
-                send(socket, { type: 'run-error', message });
-              } else {
-                app.log.error(err, '[ws] startRun error');
-                send(socket, { type: 'error', message });
-              }
-            });
+            activeOtpManager = new OtpManager();
+            const tasks: ScrapeTask[] = sources.map(src =>
+              buildTask(src, vault, emit, activeOtpManager!),
+            );
+
+            void startRun(tasks, vault.settings.concurrentScraping, emit)
+              .catch((err: unknown) => {
+                const message = err instanceof Error ? err.message : String(err);
+                if (message === ERR_RUN_IN_PROGRESS) {
+                  send(socket, { type: 'run-error', message });
+                } else {
+                  app.log.error(err, '[ws] startRun error');
+                  send(socket, { type: 'error', message });
+                }
+              })
+              .finally(() => {
+                activeOtpManager = null;
+              });
             break;
           }
           case 'cancel-scrape':
             // TODO: cancel in-progress scrape
             break;
           case 'otp-submit':
-            app.log.info({ sourceId: msg.sourceId }, '[ws] otp-submit received (stub)');
+            activeOtpManager?.submitOtp(msg.sourceId, msg.otp);
+            app.log.info({ sourceId: msg.sourceId }, '[ws] otp-submit received');
             break;
         }
       });
