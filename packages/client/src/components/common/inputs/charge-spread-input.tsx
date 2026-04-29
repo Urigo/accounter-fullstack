@@ -111,6 +111,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
           </div>
         ))}
         <Button
+          type="button"
           variant="ghost"
           size="icon"
           className="size-7.5"

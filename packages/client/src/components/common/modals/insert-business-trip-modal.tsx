@@ -1,6 +1,12 @@
 import { useState, type ReactElement } from 'react';
 import { MapPlus } from 'lucide-react';
-import { Modal } from '@mantine/core';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog.js';
 import { Button } from '../../ui/button.js';
 import { InsertBusinessTrip, Tooltip } from '../index.js';
 
@@ -17,15 +23,20 @@ export const InsertBusinessTripModal = ({ onDone }: Props): ReactElement => {
     onDone?.();
   }
   return (
-    <>
-      <Tooltip content="Add New Business Trip">
-        <Button variant="ghost" size="icon" className="size-7.5" onClick={() => setOpened(true)}>
-          <MapPlus className="size-5" />
-        </Button>
-      </Tooltip>
-      <Modal centered opened={opened} onClose={close} title="Add Business Trip">
+    <Dialog open={opened} onOpenChange={setOpened}>
+      <DialogTrigger asChild>
+        <Tooltip asChild content="Add New Business Trip">
+          <Button variant="ghost" size="icon" className="size-7.5" onClick={() => setOpened(true)}>
+            <MapPlus className="size-5" />
+          </Button>
+        </Tooltip>
+      </DialogTrigger>
+      <DialogContent onClick={e => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Add Business Trip</DialogTitle>
+        </DialogHeader>
         <InsertBusinessTrip onDone={onInsertDone} />
-      </Modal>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 };
