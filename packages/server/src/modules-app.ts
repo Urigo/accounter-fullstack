@@ -38,6 +38,7 @@ import { ledgerModule } from './modules/ledger/index.js';
 import { miscExpensesModule } from './modules/misc-expenses/index.js';
 import { reportsModule } from './modules/reports/index.js';
 import { salariesModule } from './modules/salaries/index.js';
+import { scraperIngestionModule } from './modules/scraper-ingestion/index.js';
 import { sortCodesModule } from './modules/sort-codes/index.js';
 import { tagsModule } from './modules/tags/index.js';
 import { transactionsModule } from './modules/transactions/index.js';
@@ -92,6 +93,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       adminContextModule,
       annualAuditModule,
       gmailListenerModule,
+      scraperIngestionModule,
     ],
     providers: [
       {
