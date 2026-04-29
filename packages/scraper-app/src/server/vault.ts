@@ -28,6 +28,8 @@ export const PoalimAccountSchema = z.object({
       isBusinessAccount: z.boolean().optional(),
       acceptedAccountNumbers: z.array(z.string()).optional(),
       acceptedBranchNumbers: z.array(z.string()).optional(),
+      ignoredAccountNumbers: z.array(z.string()).optional(),
+      ignoredBranchNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -49,6 +51,7 @@ export const IsracardAmexAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
       cardNumberMapping: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
@@ -63,6 +66,7 @@ export const CalAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -75,6 +79,7 @@ export const MaxAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });

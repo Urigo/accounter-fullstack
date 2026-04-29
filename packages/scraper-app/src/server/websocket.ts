@@ -4,6 +4,7 @@ import websocketPlugin from '@fastify/websocket';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
+import { filterPayload, type FilterableCreds } from './filter-payload.js';
 import { createUploadClient, type UploadClient } from './graphql/client.js';
 import { OtpManager } from './otp-manager.js';
 import type { AmexPayload } from './payload-schemas/amex.schema.js';
@@ -134,9 +135,40 @@ function buildTask(
       // Use the first non-empty payload to check for unknown accounts (card identifiers
       // are stable across months for isracard/amex, so any month suffices)
       const representativePayload = payloads[0];
-      if (!representativePayload) return { inserted: 0, skipped: 0, insertedIds: [] };
+      if (!representativePayload)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
 
-      const check = checkAccounts(src.type, representativePayload, vault.bankAccounts);
+      // Apply per-source accepted/ignored filter after validation, before account check
+      let creds: FilterableCreds | undefined;
+      switch (src.type) {
+        case 'isracard':
+          creds = vault.isracardAccounts.find(a => a.id === src.id);
+          break;
+        case 'amex':
+          creds = vault.amexAccounts.find(a => a.id === src.id);
+          break;
+        case 'cal':
+          creds = vault.calAccounts.find(a => a.id === src.id);
+          break;
+        case 'max':
+          creds = vault.maxAccounts.find(a => a.id === src.id);
+          break;
+        case 'discount':
+          creds = vault.discountAccounts.find(a => a.id === src.id);
+          break;
+      }
+
+      if (creds) {
+        payloads = payloads.map(p => filterPayload(src.type, p, creds!) as ValidatedPayload);
+      }
+
+      const check = checkAccounts(src.type, payloads[0]!, vault.bankAccounts);
       if (check.unknown.length > 0) {
         emit({
           type: 'task-blocked',
