@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Matches CalTransaction from @accounter/modern-poalim-scraper
 const CalTransactionSchema = z
   .object({
     trnIntId: z.string(),
@@ -14,31 +15,13 @@ const CalTransactionSchema = z
   })
   .loose();
 
-const DebitDateSchema = z
-  .object({
-    date: z.string(),
-    transactions: z.array(CalTransactionSchema),
-  })
-  .loose();
+// One entry per (card, month) pair scraped
+const CalMonthResultSchema = z.object({
+  card: z.string(),
+  month: z.string(),
+  transactions: z.array(CalTransactionSchema),
+});
 
-const BankAccountSchema = z
-  .object({
-    bankName: z.string(),
-    bankAccountNum: z.string(),
-    debitDates: z.array(DebitDateSchema),
-  })
-  .loose();
-
-export const CalPayloadSchema = z
-  .object({
-    result: z
-      .object({
-        bankAccounts: z.array(BankAccountSchema),
-      })
-      .loose(),
-    statusCode: z.number(),
-    statusDescription: z.string(),
-  })
-  .loose();
+export const CalPayloadSchema = z.array(CalMonthResultSchema);
 
 export type CalPayload = z.infer<typeof CalPayloadSchema>;

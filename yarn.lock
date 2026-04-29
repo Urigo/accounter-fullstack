@@ -55,6 +55,7 @@ __metadata:
     "@testing-library/user-event": "npm:14.6.1"
     "@vitejs/plugin-react": "npm:6.0.1"
     date-fns: "npm:4.1.0"
+    fast-xml-parser: "npm:5.7.2"
     fastify: "npm:5.8.5"
     graphql-request: "npm:7.4.0"
     react: "npm:19.2.5"

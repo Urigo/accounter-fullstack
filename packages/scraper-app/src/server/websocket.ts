@@ -6,8 +6,12 @@ import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.j
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
 import { OtpManager } from './otp-manager.js';
 import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
+import { scrapeAmex } from './scrapers/amex.js';
+import { scrapeCal } from './scrapers/cal.js';
+import { scrapeDiscount } from './scrapers/discount.js';
+import { scrapeIsracard } from './scrapers/isracard.js';
+import { scrapeMax } from './scrapers/max.js';
 import { scrapePoalim } from './scrapers/poalim.js';
-import { validatePayload, type PayloadType } from './validate-payload.js';
 import { getVault, isLocked } from './vault-store.js';
 import type { Vault } from './vault.js';
 
@@ -16,15 +20,6 @@ function send(socket: WebSocket, msg: ServerMessage): void {
 }
 
 type SourceRef = { id: string; type: SourceType };
-
-const SOURCE_PAYLOAD_TYPE: Record<SourceType, PayloadType> = {
-  poalim: 'poalim-ils',
-  discount: 'discount',
-  isracard: 'isracard',
-  amex: 'amex',
-  cal: 'cal',
-  max: 'max',
-};
 
 function collectSourceRefs(vault: Vault): SourceRef[] {
   return [
@@ -35,55 +30,6 @@ function collectSourceRefs(vault: Vault): SourceRef[] {
     ...vault.calAccounts.map(a => ({ id: a.id, type: 'cal' as const })),
     ...vault.maxAccounts.map(a => ({ id: a.id, type: 'max' as const })),
   ];
-}
-
-function makeStubData(type: SourceType): unknown {
-  switch (type) {
-    case 'poalim':
-      return {
-        transactions: [
-          {
-            activityDescription: 'Credit',
-            activityTypeCode: 1,
-            eventAmount: 1000,
-            eventDate: 20_240_101,
-            serialNumber: 1,
-            transactionType: 'REGULAR',
-            currentBalance: 5000,
-            referenceNumber: 12_345,
-          },
-        ],
-        retrievalTransactionData: { accountNumber: 100_000, branchNumber: 600, bankNumber: 12 },
-      };
-    case 'discount':
-      return {
-        CurrentAccountLastTransactions: {
-          CurrentAccountInfo: { AccountBalance: 5000, AccountCurrencyCode: 'ILS' },
-          OperationEntry: [
-            {
-              OperationDate: '2024-01-01',
-              ValueDate: '2024-01-01',
-              OperationDescription: 'Credit',
-              OperationAmount: 1000,
-              BalanceAfterOperation: 5000,
-              OperationNumber: 1,
-            },
-          ],
-        },
-      };
-    case 'isracard':
-    case 'amex':
-      return {
-        Header: { Status: '1', Message: null },
-        CardsTransactionsListBean: {
-          Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
-        },
-      };
-    case 'cal':
-      return { result: { bankAccounts: [] }, statusCode: 1, statusDescription: 'OK' };
-    case 'max':
-      return { result: { transactions: [] }, returnCode: 0 };
-  }
 }
 
 function buildTask(
@@ -107,10 +53,52 @@ function buildTask(
         return { inserted: 0, skipped: 0, insertedIds: [] };
       }
 
-      await new Promise<void>(r => setTimeout(r, 10));
-      const raw = makeStubData(src.type);
-      const payload = validatePayload(SOURCE_PAYLOAD_TYPE[src.type], raw) as ValidatedPayload;
-      const check = checkAccounts(src.type, payload, vault.bankAccounts);
+      const now = new Date();
+      const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+
+      // isracard/amex return one payload per month; other scrapers return a single payload
+      let payloads: ValidatedPayload[];
+      switch (src.type) {
+        case 'isracard': {
+          const creds = vault.isracardAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Isracard account ${src.id} not found in vault`);
+          payloads = await scrapeIsracard(creds, dateFrom, now, emit);
+          break;
+        }
+        case 'amex': {
+          const creds = vault.amexAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Amex account ${src.id} not found in vault`);
+          payloads = await scrapeAmex(creds, dateFrom, now, emit);
+          break;
+        }
+        case 'cal': {
+          const creds = vault.calAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Cal account ${src.id} not found in vault`);
+          payloads = [await scrapeCal(creds, dateFrom, now, emit)];
+          break;
+        }
+        case 'discount': {
+          const creds = vault.discountAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Discount account ${src.id} not found in vault`);
+          payloads = [await scrapeDiscount(creds, dateFrom, now, emit)];
+          break;
+        }
+        case 'max': {
+          const creds = vault.maxAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Max account ${src.id} not found in vault`);
+          payloads = [await scrapeMax(creds, dateFrom, now, emit)];
+          break;
+        }
+        default:
+          throw new Error(`Unhandled source type: ${src.type}`);
+      }
+
+      // Use the first non-empty payload to check for unknown accounts (card identifiers
+      // are stable across months for isracard/amex, so any month suffices)
+      const representativePayload = payloads[0];
+      if (!representativePayload) return { inserted: 0, skipped: 0, insertedIds: [] };
+
+      const check = checkAccounts(src.type, representativePayload, vault.bankAccounts);
       if (check.unknown.length > 0) {
         emit({
           type: 'task-blocked',
@@ -126,7 +114,7 @@ function buildTask(
         });
         return { inserted: 0, skipped: 0, insertedIds: [] };
       }
-      return { inserted: 2, skipped: 1, insertedIds: ['a', 'b'] };
+      return { inserted: 0, skipped: 0, insertedIds: [] };
     },
   };
 }
