@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+// Matches MaxTransaction from @accounter/modern-poalim-scraper
 const MaxTransactionSchema = z
   .object({
     cardIndex: z.number(),
@@ -14,16 +15,13 @@ const MaxTransactionSchema = z
   })
   .loose();
 
-export const MaxPayloadSchema = z
-  .object({
-    result: z
-      .object({
-        transactions: z.array(MaxTransactionSchema),
-      })
-      .loose()
-      .nullable(),
-    returnCode: z.number(),
-  })
-  .loose();
+// Matches TransactionsAccount (MaxScrapingResult element)
+const MaxAccountSchema = z.object({
+  accountNumber: z.string(),
+  txns: z.array(MaxTransactionSchema),
+});
+
+// MaxScrapingResult = TransactionsAccount[]
+export const MaxPayloadSchema = z.array(MaxAccountSchema);
 
 export type MaxPayload = z.infer<typeof MaxPayloadSchema>;

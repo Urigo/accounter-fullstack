@@ -31,8 +31,10 @@ export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPa
       const p = payload as PoalimIlsPayload;
       return [String(p.retrievalTransactionData.accountNumber)];
     }
-    case 'discount':
-      return [];
+    case 'discount': {
+      const p = payload as DiscountPayload;
+      return [...new Set(p.map(entry => entry.accountNumber))];
+    }
     case 'isracard':
     case 'amex': {
       const p = payload as IsracardPayload;
@@ -49,12 +51,11 @@ export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPa
     }
     case 'cal': {
       const p = payload as CalPayload;
-      return p.result.bankAccounts.map(a => a.bankAccountNum);
+      return [...new Set(p.map(entry => entry.card))];
     }
     case 'max': {
       const p = payload as MaxPayload;
-      const txns = p.result?.transactions ?? [];
-      return [...new Set(txns.map(t => String(t.cardIndex)))];
+      return [...new Set(p.map(account => account.accountNumber))];
     }
   }
 }
