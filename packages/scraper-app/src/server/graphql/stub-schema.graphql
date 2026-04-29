@@ -1,0 +1,477 @@
+type UploadResult {
+  inserted: Int!
+  skipped: Int!
+  insertedIds: [String!]!
+}
+
+# ── Poalim ILS ────────────────────────────────────────────────────────────────
+# Source: IInsertPoalimIlsTransactionsParams (49 fields)
+
+input PoalimIlsTransactionInput {
+  eventDate: String
+  formattedEventDate: String
+  serialNumber: Int
+  activityTypeCode: Int
+  activityDescription: String
+  textCode: Int
+  referenceNumber: String
+  referenceCatenatedNumber: Int
+  valueDate: String
+  formattedValueDate: String
+  eventAmount: String
+  eventActivityTypeCode: Int
+  currentBalance: String
+  internalLinkCode: Int
+  originalEventCreateDate: Int
+  formattedOriginalEventCreateDate: String
+  transactionType: String
+  dataGroupCode: Int
+  beneficiaryDetailsData: String
+  expandedEventDate: String
+  executingBranchNumber: Int
+  eventId: String
+  details: String
+  pfmDetails: String
+  differentDateIndication: String
+  rejectedDataEventPertainingIndication: String
+  tableNumber: Int
+  recordNumber: Int
+  contraBankNumber: Int
+  contraBranchNumber: Int
+  contraAccountNumber: Int
+  contraAccountTypeCode: Int
+  marketingOfferContext: Boolean
+  commentExistenceSwitch: Boolean
+  englishActionDesc: String
+  fieldDescDisplaySwitch: Boolean
+  urlAddressNiar: String
+  offerActivityContext: String
+  comment: String
+  beneficiaryDetailsDataPartyName: String
+  beneficiaryDetailsDataMessageHeadline: String
+  beneficiaryDetailsDataPartyHeadline: String
+  beneficiaryDetailsDataMessageDetail: String
+  beneficiaryDetailsDataTableNumber: Int
+  beneficiaryDetailsDataRecordNumber: Int
+  activityDescriptionIncludeValueDate: String
+  bankNumber: Int
+  branchNumber: Int
+  accountNumber: Int
+}
+
+# ── Poalim Foreign ────────────────────────────────────────────────────────────
+# Source: IInsertPoalimForeignTransactionsParams (47 fields)
+
+input PoalimForeignTransactionInput {
+  metadataAttributesOriginalEventKey: String
+  metadataAttributesContraBranchNumber: String
+  metadataAttributesContraAccountNumber: String
+  metadataAttributesContraBankNumber: String
+  metadataAttributesContraAccountFieldNameLable: String
+  metadataAttributesDataGroupCode: String
+  metadataAttributesCurrencyRate: String
+  metadataAttributesContraCurrencyCode: String
+  metadataAttributesRateFixingCode: String
+  executingDate: String
+  formattedExecutingDate: String
+  valueDate: String
+  formattedValueDate: String
+  originalSystemId: Int
+  activityDescription: String
+  eventAmount: String
+  currency: String
+  currentBalance: String
+  referenceCatenatedNumber: Int
+  referenceNumber: Int
+  currencyRate: String
+  eventDetails: String
+  rateFixingCode: Int
+  contraCurrencyCode: Int
+  eventActivityTypeCode: Int
+  transactionType: String
+  rateFixingShortDescription: String
+  currencyLongDescription: String
+  activityTypeCode: Int
+  eventNumber: Int
+  validityDate: String
+  comments: String
+  commentExistenceSwitch: Boolean
+  accountName: String
+  contraBankNumber: Int
+  contraBranchNumber: Int
+  contraAccountNumber: Int
+  originalEventKey: Boolean
+  contraAccountFieldNameLable: String
+  dataGroupCode: Boolean
+  rateFixingDescription: String
+  urlAddressNiar: String
+  currencySwiftCode: String
+  urlAddress: String
+  bankNumber: Int
+  branchNumber: Int
+  accountNumber: Int
+}
+
+# ── Poalim Swift ──────────────────────────────────────────────────────────────
+# Source: IInsertSwiftTransactionParams (39 fields)
+
+input PoalimSwiftTransactionInput {
+  accountNumber: Int
+  branchNumber: Int
+  bankNumber: Int
+  startDate: String
+  formattedStartDate: String
+  swiftStatusCode: String
+  swiftStatusDesc: String
+  amount: String
+  currencyCodeCatenatedKey: String
+  currencyLongDescription: String
+  chargePartyName: String
+  referenceNumber: String
+  transferCatenatedId: String
+  dataOriginCode: String
+  swiftIsnSerialNumber: String
+  swiftBankCode: String
+  orderCustomerName: String
+  beneficiaryEnglishStreetName: String
+  beneficiaryEnglishCityName: String
+  beneficiaryEnglishCountryName: String
+  swiftSendersReference20: String
+  swiftBankOperationCode23B: String
+  swiftInstructionCode23E: String
+  swiftValueDateCurrencyAmount32A: String
+  swiftCurrencyInstructedAmount33B: String
+  swiftExchangeRate36: String
+  swiftOrderingCustomer50K: String
+  swiftOrderingInstitution52A: String
+  swiftOrderingInstitution52D: String
+  swiftSendersCorrespondent53A: String
+  swiftReceiversCorrespondent54A: String
+  swiftAccountWithInstitution57: String
+  swiftBeneficiaryCustomer59: String
+  swiftRemittanceInformation70: String
+  swiftDetailsOfCharges71A: String
+  swiftSendersCharges71F: String
+  swiftSendersToReceiverInformation72: String
+  swiftRegulatoryReporting77B: String
+}
+
+# ── Isracard ──────────────────────────────────────────────────────────────────
+# Source: IInsertIsracardTransactionsParams (48 fields)
+
+input IsracardTransactionInput {
+  specificDate: String
+  cardIndex: Int
+  dealsInbound: String
+  supplierId: Int
+  supplierName: String
+  dealSumType: String
+  paymentSumSign: String
+  purchaseDate: String
+  fullPurchaseDate: String
+  moreInfo: String
+  horaatKeva: String
+  voucherNumber: Int
+  voucherNumberRatz: Int
+  solek: String
+  purchaseDateOutbound: String
+  fullPurchaseDateOutbound: String
+  currencyId: String
+  currentPaymentCurrency: String
+  city: String
+  supplierNameOutbound: String
+  fullSupplierNameOutbound: String
+  paymentDate: String
+  fullPaymentDate: String
+  isShowDealsOutbound: String
+  adendum: String
+  voucherNumberRatzOutbound: Int
+  isShowLinkForSupplierDetails: String
+  dealSum: String
+  paymentSum: String
+  fullSupplierNameHeb: String
+  dealSumOutbound: String
+  paymentSumOutbound: String
+  isHoraatKeva: String
+  stage: String
+  returnCode: String
+  message: String
+  returnMessage: String
+  displayProperties: String
+  tablePageNum: Boolean
+  isError: String
+  isCaptcha: String
+  isButton: String
+  siteName: String
+  clientIpAddress: String
+  card: Int
+  chargingDate: String
+  kodMatbeaMekori: String
+  esbServicesCall: String
+}
+
+# ── Amex ──────────────────────────────────────────────────────────────────────
+# Source: IInsertAmexTransactionsParams — identical shape to Isracard
+
+input AmexTransactionInput {
+  specificDate: String
+  cardIndex: Int
+  dealsInbound: String
+  supplierId: Int
+  supplierName: String
+  dealSumType: String
+  paymentSumSign: String
+  purchaseDate: String
+  fullPurchaseDate: String
+  moreInfo: String
+  horaatKeva: String
+  voucherNumber: Int
+  voucherNumberRatz: Int
+  solek: String
+  purchaseDateOutbound: String
+  fullPurchaseDateOutbound: String
+  currencyId: String
+  currentPaymentCurrency: String
+  city: String
+  supplierNameOutbound: String
+  fullSupplierNameOutbound: String
+  paymentDate: String
+  fullPaymentDate: String
+  isShowDealsOutbound: String
+  adendum: String
+  voucherNumberRatzOutbound: Int
+  isShowLinkForSupplierDetails: String
+  dealSum: String
+  paymentSum: String
+  fullSupplierNameHeb: String
+  dealSumOutbound: String
+  paymentSumOutbound: String
+  isHoraatKeva: String
+  stage: String
+  returnCode: String
+  message: String
+  returnMessage: String
+  displayProperties: String
+  tablePageNum: Boolean
+  isError: String
+  isCaptcha: String
+  isButton: String
+  siteName: String
+  clientIpAddress: String
+  card: Int
+  chargingDate: String
+  kodMatbeaMekori: String
+  esbServicesCall: String
+}
+
+# ── Cal ───────────────────────────────────────────────────────────────────────
+# Source: IInsertCalTransactionsParams (37 fields, singular transaction object)
+
+input CalTransactionInput {
+  card: Int
+  trnIntId: String
+  trnNumaretor: Int
+  merchantName: String
+  trnPurchaseDate: String
+  trnAmt: String
+  trnCurrencySymbol: String
+  trnType: String
+  trnTypeCode: String
+  debCrdDate: String
+  amtBeforeConvAndIndex: String
+  debCrdCurrencySymbol: String
+  merchantAddress: String
+  merchantPhoneNo: String
+  branchCodeDesc: String
+  transCardPresentInd: Boolean
+  curPaymentNum: Int
+  numOfPayments: Int
+  tokenInd: Int
+  walletProviderCode: Int
+  walletProviderDesc: String
+  tokenNumberPart4: String
+  cashAccountTrnAmt: String
+  chargeExternalToCardComment: String
+  refundInd: Boolean
+  isImmediateCommentInd: Boolean
+  isImmediateHhkInd: Boolean
+  isMargarita: Boolean
+  isSpreadPaymenstAbroad: Boolean
+  trnExacWay: Int
+  debitSpreadInd: Boolean
+  onGoingTransactionsComment: String
+  earlyPaymentInd: Boolean
+  merchantId: String
+  crdExtIdNumTypeCode: String
+  transSource: String
+  isAbroadTransaction: Boolean
+}
+
+# ── Discount ──────────────────────────────────────────────────────────────────
+# Source: IInsertDiscountTransactionsParams (30 fields)
+
+input DiscountTransactionInput {
+  operationDate: String
+  valueDate: String
+  operationCode: String
+  operationDescription: String
+  operationDescription2: String
+  operationDescription3: String
+  operationBranch: Int
+  operationBank: Int
+  accountNumber: String
+  channel: String
+  channelName: String
+  checkNumber: Int
+  instituteCode: String
+  operationAmount: String
+  balanceAfterOperation: String
+  operationNumber: Int
+  branchTreasuryNumber: String
+  urn: String
+  operationDetailsServiceName: String
+  commissionChannelCode: String
+  commissionChannelName: String
+  commissionTypeName: String
+  businessDayDate: String
+  eventName: String
+  categoryCode: Int
+  categoryDescCode: Int
+  categoryDescription: String
+  operationDescriptionToDisplay: String
+  operationOrder: Int
+  isLastSeen: Boolean
+}
+
+# ── Max ───────────────────────────────────────────────────────────────────────
+# Source: IInsertMaxCreditcardTransactionsParams (87 fields)
+
+input MaxTransactionInput {
+  actualPaymentAmount: String
+  arn: String
+  cardIndex: Int
+  categoryId: Int
+  comments: String
+  dealDataAcq: String
+  dealDataAdjustmentAmount: String
+  dealDataAdjustmentType: String
+  dealDataAmount: String
+  dealDataAmountIls: String
+  dealDataAmountLeft: String
+  dealDataArn: String
+  dealDataAuthorizationNumber: String
+  dealDataCardName: String
+  dealDataCardToken: String
+  dealDataCommissionVat: String
+  dealDataDirectExchange: String
+  dealDataExchangeCommissionAmount: String
+  dealDataExchangeCommissionMaam: String
+  dealDataExchangeCommissionType: String
+  dealDataExchangeDirect: String
+  dealDataExchangeRate: String
+  dealDataIndexRateBase: String
+  dealDataIndexRatePmt: String
+  dealDataInterestAmount: String
+  dealDataIsAllowedSpreadWithBenefit: Boolean
+  dealDataIssuerCurrency: String
+  dealDataIssuerExchangeRate: String
+  dealDataOriginalTerm: String
+  dealDataPercentMaam: String
+  dealDataPlan: String
+  dealDataPosEntryEmv: String
+  dealDataProcessingDate: String
+  dealDataPurchaseAmount: String
+  dealDataPurchaseTime: String
+  dealDataRefNbr: String
+  dealDataShowCancelDebit: Boolean
+  dealDataShowSpread: Boolean
+  dealDataShowSpreadBenefitButton: Boolean
+  dealDataShowSpreadButton: Boolean
+  dealDataShowSpreadForLeumi: Boolean
+  dealDataTdmCardToken: String
+  dealDataTdmTransactionType: Int
+  dealDataTransactionType: Int
+  dealDataTxnCode: Int
+  dealDataUserName: String
+  dealDataWithdrawalCommissionAmount: String
+  discountKeyAmount: String
+  discountKeyRecType: String
+  ethocaInd: Boolean
+  fundsTransferComment: String
+  fundsTransferReceiverOrTransfer: String
+  isRegisterCh: Boolean
+  isSpreadingAutorizationAllowed: Boolean
+  issuerId: Int
+  merchantAddress: String
+  merchantCoordinates: String
+  merchantMaxPhone: Boolean
+  merchant: String
+  merchantCommercialName: String
+  merchantNumber: String
+  merchantPhone: String
+  merchantTaxId: String
+  merchantName: String
+  originalAmount: String
+  originalCurrency: String
+  paymentCurrency: Int
+  paymentDate: String
+  planName: String
+  planTypeId: Int
+  promotionAmount: String
+  promotionClub: String
+  promotionType: String
+  purchaseDate: String
+  receiptPDF: String
+  refIndex: Int
+  runtimeReferenceInternalId: String
+  runtimeReferenceType: Int
+  runtimeReferenceId: String
+  shortCardNumber: String
+  spreadTransactionByCampainInd: Boolean
+  spreadTransactionByCampainNumber: Int
+  tableType: Int
+  tag: String
+  uid: String
+  upSaleForTransactionResult: String
+  userIndex: Int
+}
+
+# ── Currency Rates ─────────────────────────────────────────────────────────────
+# Source: IInsertExchangeRatesParams — one row per date, one column per currency
+
+input CurrencyRateInput {
+  exchangeDate: String!
+  usd: Float
+  eur: Float
+  gbp: Float
+  cad: Float
+  jpy: Float
+  aud: Float
+  sek: Float
+}
+
+# ── Mutations ──────────────────────────────────────────────────────────────────
+
+type Mutation {
+  uploadPoalimIlsTransactions(transactions: [PoalimIlsTransactionInput!]!): UploadResult!
+
+  uploadPoalimForeignTransactions(transactions: [PoalimForeignTransactionInput!]!): UploadResult!
+
+  uploadPoalimSwiftTransactions(swifts: [PoalimSwiftTransactionInput!]!): UploadResult!
+
+  uploadIsracardTransactions(transactions: [IsracardTransactionInput!]!): UploadResult!
+
+  uploadAmexTransactions(transactions: [AmexTransactionInput!]!): UploadResult!
+
+  uploadCalTransactions(transactions: [CalTransactionInput!]!): UploadResult!
+
+  uploadDiscountTransactions(transactions: [DiscountTransactionInput!]!): UploadResult!
+
+  uploadMaxTransactions(transactions: [MaxTransactionInput!]!): UploadResult!
+
+  uploadCurrencyRates(rates: [CurrencyRateInput!]!): UploadResult!
+}
+
+type Query {
+  _stub: Boolean
+}

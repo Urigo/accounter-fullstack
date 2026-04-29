@@ -162,6 +162,7 @@ export default [
               'ReportCommentary',
               'ReportCommentaryRecord',
               'ReportCommentarySubRecord',
+              'ScraperUploadResult',
               'Shaam6111Header',
               'Shaam6111ReportEntry',
               'SicknessDays',
