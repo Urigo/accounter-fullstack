@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { OtpManager, OtpTimeoutError } from '../otp-manager.js';
+import { OtpCancelledError, OtpManager, OtpTimeoutError } from '../otp-manager.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 
 function makeEmit() {
@@ -71,12 +71,12 @@ describe('submitOtp', () => {
 });
 
 describe('cancelOtp', () => {
-  it('rejects the waiting promise with OtpTimeoutError', async () => {
+  it('rejects the waiting promise with OtpCancelledError', async () => {
     const manager = new OtpManager();
     const { emit } = makeEmit();
     const promise = manager.waitForOtp('src-1', emit);
     manager.cancelOtp('src-1');
-    await expect(promise).rejects.toBeInstanceOf(OtpTimeoutError);
+    await expect(promise).rejects.toBeInstanceOf(OtpCancelledError);
   });
 
   it('is a no-op for an unknown sourceId', () => {
