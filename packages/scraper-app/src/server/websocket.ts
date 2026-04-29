@@ -4,7 +4,13 @@ import websocketPlugin from '@fastify/websocket';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
+import { createUploadClient, type UploadClient } from './graphql/client.js';
 import { OtpManager } from './otp-manager.js';
+import type { AmexPayload } from './payload-schemas/amex.schema.js';
+import type { CalPayload } from './payload-schemas/cal.schema.js';
+import type { DiscountPayload } from './payload-schemas/discount.schema.js';
+import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
+import type { MaxPayload } from './payload-schemas/max.schema.js';
 import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { scrapeAmex } from './scrapers/amex.js';
 import { scrapeCal } from './scrapers/cal.js';
@@ -37,6 +43,7 @@ function buildTask(
   vault: Vault,
   emit: (msg: ServerMessage) => void,
   otpManager: OtpManager,
+  uploadClient: UploadClient | null,
 ): ScrapeTask {
   return {
     sourceId: src.id,
@@ -49,8 +56,39 @@ function buildTask(
         const now = new Date();
         const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
         const headless = vault.settings.showBrowser ? false : true;
-        await scrapePoalim(creds, dateFrom, now, headless, otpManager, emit);
-        return { inserted: 0, skipped: 0, insertedIds: [] };
+        const { ils, foreign, swift } = await scrapePoalim(
+          creds,
+          dateFrom,
+          now,
+          headless,
+          otpManager,
+          emit,
+        );
+        if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+
+        let totalInserted = 0;
+        let totalSkipped = 0;
+        const allIds: string[] = [];
+
+        for (const p of ils) {
+          const r = await uploadClient.uploadPoalimIls(p);
+          totalInserted += r.inserted;
+          totalSkipped += r.skipped;
+          allIds.push(...r.insertedIds);
+        }
+        for (const p of foreign) {
+          const r = await uploadClient.uploadPoalimForeign(p);
+          totalInserted += r.inserted;
+          totalSkipped += r.skipped;
+          allIds.push(...r.insertedIds);
+        }
+        for (const p of swift) {
+          const r = await uploadClient.uploadPoalimSwift(p);
+          totalInserted += r.inserted;
+          totalSkipped += r.skipped;
+          allIds.push(...r.insertedIds);
+        }
+        return { inserted: totalInserted, skipped: totalSkipped, insertedIds: allIds };
       }
 
       const now = new Date();
@@ -114,7 +152,50 @@ function buildTask(
         });
         return { inserted: 0, skipped: 0, insertedIds: [] };
       }
-      return { inserted: 0, skipped: 0, insertedIds: [] };
+
+      if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+
+      // Upload all accepted payloads
+      let totalInserted = 0;
+      let totalSkipped = 0;
+      const allIds: string[] = [];
+
+      if (src.type === 'isracard' || src.type === 'amex') {
+        let result;
+        switch (src.type) {
+          case 'isracard':
+            result = await uploadClient.uploadIsracard(payloads as IsracardPayload[]);
+            break;
+          case 'amex':
+            result = await uploadClient.uploadAmex(payloads as AmexPayload[]);
+            break;
+        }
+        totalInserted += result.inserted;
+        totalSkipped += result.skipped;
+        allIds.push(...result.insertedIds);
+      } else {
+        for (const payload of payloads) {
+          let result;
+          switch (src.type) {
+            case 'cal':
+              result = await uploadClient.uploadCal(payload as CalPayload);
+              break;
+            case 'discount':
+              result = await uploadClient.uploadDiscount(payload as DiscountPayload);
+              break;
+            case 'max':
+              result = await uploadClient.uploadMax(payload as MaxPayload);
+              break;
+            default:
+              result = { inserted: 0, skipped: 0, insertedIds: [] };
+          }
+          totalInserted += result.inserted;
+          totalSkipped += result.skipped;
+          allIds.push(...result.insertedIds);
+        }
+      }
+
+      return { inserted: totalInserted, skipped: totalSkipped, insertedIds: allIds };
     },
   };
 }
@@ -185,8 +266,12 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
             }
 
             activeOtpManager = new OtpManager();
+            const uploadClient =
+              vault.settings.serverUrl && vault.settings.apiKey
+                ? createUploadClient(vault.settings.serverUrl, vault.settings.apiKey)
+                : null;
             const tasks: ScrapeTask[] = sources.map(src =>
-              buildTask(src, vault, emit, activeOtpManager!),
+              buildTask(src, vault, emit, activeOtpManager!, uploadClient),
             );
 
             void startRun(tasks, vault.settings.concurrentScraping, emit)
