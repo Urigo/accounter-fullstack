@@ -22,53 +22,20 @@ const isracardPayload = {
   },
 };
 
-const calPayload = {
-  result: {
-    bankAccounts: [
-      { bankName: 'Cal', bankAccountNum: 'ACC-1', debitDates: [] },
-      { bankName: 'Cal', bankAccountNum: 'ACC-2', debitDates: [] },
-    ],
-  },
-  statusCode: 1,
-  statusDescription: 'OK',
-};
+const calPayload = [
+  { card: 'ACC-1', month: '2024-01', transactions: [] },
+  { card: 'ACC-2', month: '2024-01', transactions: [] },
+];
 
-const maxPayload = {
-  result: {
-    transactions: [
-      {
-        cardIndex: 7,
-        categoryId: 1,
-        merchantName: 'Shop',
-        originalAmount: 100,
-        originalCurrency: 'ILS',
-        purchaseDate: '2024-01-01',
-        uid: 'u1',
-        planName: 'regular',
-        planTypeId: 1,
-      },
-      {
-        cardIndex: 8,
-        categoryId: 1,
-        merchantName: 'Market',
-        originalAmount: 50,
-        originalCurrency: 'ILS',
-        purchaseDate: '2024-01-02',
-        uid: 'u2',
-        planName: 'regular',
-        planTypeId: 1,
-      },
-    ],
-  },
-  returnCode: 0,
-};
+const maxPayload = [
+  { accountNumber: '7', txns: [] },
+  { accountNumber: '8', txns: [] },
+];
 
-const discountPayload = {
-  CurrentAccountLastTransactions: {
-    CurrentAccountInfo: { AccountBalance: 5000, AccountCurrencyCode: 'ILS' },
-    OperationEntry: [],
-  },
-};
+const discountPayload = [
+  { accountNumber: 'ACC-001', month: '2024-01', balance: 5000, transactions: [] },
+  { accountNumber: 'ACC-002', month: '2024-01', balance: 3000, transactions: [] },
+];
 
 function makeRecord(
   sourceType: AccountRecord['sourceType'],
@@ -122,9 +89,30 @@ describe('checkAccounts — poalim', () => {
 });
 
 describe('checkAccounts — discount', () => {
-  it('returns empty arrays (no identifier in payload)', () => {
+  it('classifies accountNumber identifiers from payload', () => {
+    const known = [
+      makeRecord('discount', 'ACC-001', 'accepted'),
+      makeRecord('discount', 'ACC-002', 'ignored'),
+    ];
+    const result = checkAccounts('discount', discountPayload, known);
+    expect(result.accepted).toEqual(['ACC-001']);
+    expect(result.ignored).toEqual(['ACC-002']);
+    expect(result.unknown).toEqual([]);
+  });
+
+  it('returns unknown for unrecognised accountNumber', () => {
     const result = checkAccounts('discount', discountPayload, []);
-    expect(result).toEqual({ accepted: [], ignored: [], unknown: [] });
+    expect(result.unknown).toEqual(['ACC-001', 'ACC-002']);
+    expect(result.accepted).toEqual([]);
+  });
+
+  it('deduplicates accountNumber across multiple months for the same account', () => {
+    const sameAccountTwoMonths = [
+      { accountNumber: 'ACC-001', month: '2024-01', balance: 5000, transactions: [] },
+      { accountNumber: 'ACC-001', month: '2024-02', balance: 4800, transactions: [] },
+    ];
+    const result = checkAccounts('discount', sameAccountTwoMonths, []);
+    expect(result.unknown).toEqual(['ACC-001']);
   });
 });
 
@@ -204,7 +192,7 @@ describe('checkAccounts — isracard / amex', () => {
 });
 
 describe('checkAccounts — cal', () => {
-  it('classifies bankAccountNum identifiers', () => {
+  it('classifies card identifiers', () => {
     const known = [
       makeRecord('cal', 'ACC-1', 'accepted'),
       makeRecord('cal', 'ACC-2', 'ignored'),
@@ -215,7 +203,7 @@ describe('checkAccounts — cal', () => {
     expect(result.unknown).toEqual([]);
   });
 
-  it('returns unknown for unrecognised bankAccountNum', () => {
+  it('returns unknown for unrecognised card', () => {
     const result = checkAccounts('cal', calPayload, []);
     expect(result.unknown).toEqual(['ACC-1', 'ACC-2']);
   });
@@ -233,42 +221,17 @@ describe('checkAccounts — max', () => {
     expect(result.unknown).toEqual([]);
   });
 
-  it('deduplicates cardIndex across multiple transactions', () => {
-    const twoTxSameCard = {
-      result: {
-        transactions: [
-          {
-            cardIndex: 7,
-            categoryId: 1,
-            merchantName: 'A',
-            originalAmount: 10,
-            originalCurrency: 'ILS',
-            purchaseDate: '2024-01-01',
-            uid: 'u1',
-            planName: 'r',
-            planTypeId: 1,
-          },
-          {
-            cardIndex: 7,
-            categoryId: 1,
-            merchantName: 'B',
-            originalAmount: 20,
-            originalCurrency: 'ILS',
-            purchaseDate: '2024-01-02',
-            uid: 'u2',
-            planName: 'r',
-            planTypeId: 1,
-          },
-        ],
-      },
-      returnCode: 0,
-    };
-    const result = checkAccounts('max', twoTxSameCard, []);
+  it('deduplicates accountNumber across multiple entries for the same card', () => {
+    const twoEntriesSameCard = [
+      { accountNumber: '7', txns: [] },
+      { accountNumber: '7', txns: [] },
+    ];
+    const result = checkAccounts('max', twoEntriesSameCard, []);
     expect(result.unknown).toEqual(['7']);
   });
 
-  it('returns empty arrays when result is null', () => {
-    const result = checkAccounts('max', { result: null, returnCode: 1 }, []);
+  it('returns empty arrays when there are no accounts', () => {
+    const result = checkAccounts('max', [], []);
     expect(result).toEqual({ accepted: [], ignored: [], unknown: [] });
   });
 });

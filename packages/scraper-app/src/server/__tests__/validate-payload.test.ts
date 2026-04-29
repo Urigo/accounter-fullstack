@@ -71,34 +71,31 @@ describe('validatePayload — valid fixtures', () => {
   });
 
   it('accepts a minimal cal payload', () => {
-    const result = validatePayload('cal', {
-      result: { bankAccounts: [] },
-      statusCode: 1,
-      statusDescription: 'OK',
-    });
-    expect(result.statusCode).toBe(1);
+    const result = validatePayload('cal', [
+      { card: '1234', month: '2024-01', transactions: [] },
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.card).toBe('1234');
   });
 
   it('accepts a minimal discount payload', () => {
-    const result = validatePayload('discount', {
-      CurrentAccountLastTransactions: {
-        CurrentAccountInfo: { AccountBalance: 5000, AccountCurrencyCode: 'ILS' },
-        OperationEntry: [],
-      },
-    });
-    expect(
-      result.CurrentAccountLastTransactions.CurrentAccountInfo.AccountBalance,
-    ).toBe(5000);
+    const result = validatePayload('discount', [
+      { accountNumber: 'ACC-001', month: '2024-01', balance: 5000, transactions: [] },
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.accountNumber).toBe('ACC-001');
+    expect(result[0]!.balance).toBe(5000);
   });
 
   it('accepts a minimal max payload', () => {
-    const result = validatePayload('max', { result: { transactions: [] }, returnCode: 0 });
-    expect(result.returnCode).toBe(0);
+    const result = validatePayload('max', [{ accountNumber: '1234', txns: [] }]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.accountNumber).toBe('1234');
   });
 
-  it('accepts max with null result', () => {
-    const result = validatePayload('max', { result: null, returnCode: 1 });
-    expect(result.result).toBeNull();
+  it('accepts an empty max payload', () => {
+    const result = validatePayload('max', []);
+    expect(result).toEqual([]);
   });
 
   it('accepts a currency-rates payload', () => {
@@ -132,12 +129,9 @@ describe('validatePayload — invalid fixtures', () => {
 
   it('throws for missing required field in discount payload', () => {
     expect(() =>
-      validatePayload('discount', {
-        CurrentAccountLastTransactions: {
-          CurrentAccountInfo: { AccountCurrencyCode: 'ILS' }, // missing AccountBalance
-          OperationEntry: [],
-        },
-      }),
+      validatePayload('discount', [
+        { accountNumber: 'ACC-001', month: '2024-01' }, // missing balance and transactions
+      ]),
     ).toThrow(PayloadValidationError);
   });
 
