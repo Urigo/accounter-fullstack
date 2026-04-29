@@ -110,7 +110,7 @@ __metadata:
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.11.0"
     next-themes: "npm:0.4.6"
-    pdfjs-dist: "npm:5.6.205"
+    pdfjs-dist: "npm:5.7.284"
     radix-ui: "npm:1.4.3"
     react: "npm:19.2.5"
     react-day-picker: "npm:9.14.0"
@@ -5086,7 +5086,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/canvas@npm:^0.1.96":
+"@napi-rs/canvas@npm:^0.1.100":
   version: 0.1.100
   resolution: "@napi-rs/canvas@npm:0.1.100"
   dependencies:
@@ -19334,13 +19334,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-readable-to-web-readable-stream@npm:^0.4.2":
-  version: 0.4.2
-  resolution: "node-readable-to-web-readable-stream@npm:0.4.2"
-  checksum: 10c0/8c3d09cac51c5f886e1636fa2a5404d664245c8bdc9a65e102552894963ed1b27207d5b94de59e37045d81cb9e8970cf79e561006df7ee8821cb761e728b3a80
-  languageName: node
-  linkType: hard
-
 "node-releases@npm:^2.0.36":
   version: 2.0.38
   resolution: "node-releases@npm:2.0.38"
@@ -20250,18 +20243,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfjs-dist@npm:5.6.205":
-  version: 5.6.205
-  resolution: "pdfjs-dist@npm:5.6.205"
+"pdfjs-dist@npm:5.7.284":
+  version: 5.7.284
+  resolution: "pdfjs-dist@npm:5.7.284"
   dependencies:
-    "@napi-rs/canvas": "npm:^0.1.96"
-    node-readable-to-web-readable-stream: "npm:^0.4.2"
+    "@napi-rs/canvas": "npm:^0.1.100"
   dependenciesMeta:
     "@napi-rs/canvas":
       optional: true
-    node-readable-to-web-readable-stream:
-      optional: true
-  checksum: 10c0/e912d5d993494898b432530ca8351f35e71ef56a6ff194fb09aba81084b8da835a23c7827b7b4383d1e17b6c9cdc2ac587a51319fe971c0b9f8ab957d9737d55
+  checksum: 10c0/5ff7678e9b197acb90b22329753c11e45dbb862d8e1d721e311fc13d5cfab4f6b87114d75307b5db8b057e25c732226ef0a9feff89dbb1f2bbc3ef362ca649af
   languageName: node
   linkType: hard
 
