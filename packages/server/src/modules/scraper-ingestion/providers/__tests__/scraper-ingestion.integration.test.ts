@@ -13,7 +13,9 @@ import type {
   PoalimSwiftTransactionInput,
 } from '../../../../__generated__/types.js';
 import { Currency } from '../../../../shared/enums.js';
+import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
 import { ScraperIngestionProvider } from '../scraper-ingestion.provider.js';
 
 let pool: Pool;
@@ -30,10 +32,31 @@ const TRIGGER_TABLES = [
   'max_creditcard_transactions',
 ];
 
+function createMockAuthContextProvider(): AuthContextProvider {
+  return {
+    getAuthContext: () =>
+      Promise.resolve({
+        authType: 'apiKey' as const,
+        token: 'test-token',
+        tenant: { businessId: '00000000-0000-0000-0000-000000000000' },
+        user: {
+          userId: 'api-key:test',
+          auth0UserId: null,
+          email: '',
+          roleId: 'admin',
+          permissions: [],
+          emailVerified: true,
+          permissionsVersion: 0,
+        },
+      }),
+  } as unknown as AuthContextProvider;
+}
+
 beforeAll(async () => {
   pool = await connectTestDb();
   await runMigrationsIfNeeded(pool);
-  provider = new ScraperIngestionProvider(new DBProvider(pool));
+  const dbClient = new TenantAwareDBClient(new DBProvider(pool), createMockAuthContextProvider());
+  provider = new ScraperIngestionProvider(dbClient);
 
   // Disable triggers so inserts don't cascade into charges/transactions,
   // which require financial_accounts and owner_id to be set up.
