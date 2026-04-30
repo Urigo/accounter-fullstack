@@ -1,4 +1,5 @@
 import type { BankAccount, Settings } from '../../server/vault.js';
+import type { RunRecord } from '../../shared/types.js';
 
 export class ApiError extends Error {
   constructor(
@@ -91,4 +92,10 @@ export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promis
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
   });
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+
+export function getHistory(): Promise<RunRecord[]> {
+  return apiFetch('/api/history');
 }
