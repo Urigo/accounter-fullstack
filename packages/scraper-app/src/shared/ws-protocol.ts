@@ -6,6 +6,8 @@ import { SOURCE_TYPES } from './source-types.js';
 export const StartScrapeSchema = z.object({
   type: z.literal('start-scrape'),
   sourceIds: z.array(z.string()).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
 });
 
 export const CancelScrapeSchema = z.object({
@@ -19,6 +21,8 @@ export const PingSchema = z.object({
 export const RunStartSchema = z.object({
   type: z.literal('run-start'),
   sourceIds: z.array(z.string()).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
 });
 
 export type RunStartMessage = z.infer<typeof RunStartSchema>;
@@ -90,12 +94,33 @@ export const TaskRunningSchema = z.object({
 
 export type TaskRunningMessage = z.infer<typeof TaskRunningSchema>;
 
+const InsertedTransactionSummarySchema = z.object({
+  id: z.string(),
+  date: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  amount: z.string().nullable().optional(),
+  account: z.string().nullable().optional(),
+});
+
+const ChangedFieldSchema = z.object({
+  field: z.string(),
+  oldValue: z.string().nullable().optional(),
+  newValue: z.string().nullable().optional(),
+});
+
+const ChangedTransactionSchema = z.object({
+  id: z.string(),
+  changedFields: z.array(ChangedFieldSchema),
+});
+
 export const TaskDoneSchema = z.object({
   type: z.literal('task-done'),
   sourceId: z.string(),
   inserted: z.number(),
   skipped: z.number(),
   insertedIds: z.array(z.string()),
+  insertedTransactions: z.array(InsertedTransactionSummarySchema).optional(),
+  changedTransactions: z.array(ChangedTransactionSchema).optional(),
 });
 
 export type TaskDoneMessage = z.infer<typeof TaskDoneSchema>;
@@ -129,6 +154,7 @@ export const RunCompleteSchema = z.object({
   type: z.literal('run-complete'),
   totalInserted: z.number(),
   totalSkipped: z.number(),
+  errors: z.number(),
 });
 
 export type RunCompleteMessage = z.infer<typeof RunCompleteSchema>;

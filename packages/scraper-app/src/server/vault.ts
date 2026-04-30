@@ -28,6 +28,8 @@ export const PoalimAccountSchema = z.object({
       isBusinessAccount: z.boolean().optional(),
       acceptedAccountNumbers: z.array(z.string()).optional(),
       acceptedBranchNumbers: z.array(z.string()).optional(),
+      ignoredAccountNumbers: z.array(z.string()).optional(),
+      ignoredBranchNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -49,6 +51,7 @@ export const IsracardAmexAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
       cardNumberMapping: z.record(z.string(), z.string()).optional(),
     })
     .optional(),
@@ -63,6 +66,7 @@ export const CalAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -75,6 +79,7 @@ export const MaxAccountSchema = z.object({
   options: z
     .object({
       acceptedCardNumbers: z.array(z.string()).optional(),
+      ignoredCardNumbers: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -83,8 +88,9 @@ export const SettingsSchema = z.object({
   showBrowser: z.boolean().default(false),
   fetchBankOfIsraelRates: z.boolean().default(true),
   concurrentScraping: z.boolean().default(true),
-  defaultDateRangeMonths: z.number().int().positive().optional(),
-  historyFilePath: z.string().optional(),
+  defaultDateRangeMonths: z.number().int().positive().default(3),
+  historyFilePath: z.string().default('./history.json'),
+  saveHistory: z.boolean().default(true),
   serverUrl: z.string().optional(),
   apiKey: z.string().optional(),
 });
@@ -114,6 +120,9 @@ export const VaultSchema = z.object({
     showBrowser: false,
     fetchBankOfIsraelRates: true,
     concurrentScraping: true,
+    defaultDateRangeMonths: 3,
+    historyFilePath: './history.json',
+    saveHistory: true,
   }),
 });
 
