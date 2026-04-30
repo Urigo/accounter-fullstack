@@ -12,9 +12,11 @@ import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
+import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { scrapeAmex } from './scrapers/amex.js';
 import { scrapeCal } from './scrapers/cal.js';
+import { scrapeCurrencyRates } from './scrapers/currency-rates.js';
 import { scrapeDiscount } from './scrapers/discount.js';
 import { scrapeIsracard } from './scrapers/isracard.js';
 import { scrapeMax } from './scrapers/max.js';
@@ -45,6 +47,8 @@ function buildTask(
   emit: (msg: ServerMessage) => void,
   otpManager: OtpManager,
   uploadClient: UploadClient | null,
+  dateFrom: Date,
+  dateTo: Date,
 ): ScrapeTask {
   return {
     sourceId: src.id,
@@ -54,46 +58,77 @@ function buildTask(
       if (src.type === 'poalim') {
         const creds = vault.poalimAccounts.find(a => a.id === src.id);
         if (!creds) throw new Error(`Poalim account ${src.id} not found in vault`);
-        const now = new Date();
-        const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-        const headless = vault.settings.showBrowser ? false : true;
+        const headless = !vault.settings.showBrowser;
         const { ils, foreign, swift } = await scrapePoalim(
           creds,
           dateFrom,
-          now,
+          dateTo,
           headless,
           otpManager,
           emit,
         );
+
+        // ILS, Foreign, and Swift arrays are positionally aligned per account (same index = same account).
+        // ILS payloads carry account/branch identifiers; Foreign and Swift do not.
+        // Filter ILS first — filterPayload zeros its transactions array when the account is excluded.
+        // Use that result to gate Foreign/Swift at the same index.
+        const filteredIls = ils.map(p => filterPayload('poalim', p, creds) as PoalimIlsPayload);
+
+        // Check for unknown accounts across all ILS payloads (ILS carries account identifiers)
+        const allUnknown: string[] = [];
+        for (const p of filteredIls) {
+          const check = checkAccounts('poalim', p, vault.bankAccounts);
+          allUnknown.push(...check.unknown);
+        }
+        if (allUnknown.length > 0) {
+          emit({
+            type: 'task-blocked',
+            sourceId: src.id,
+            sourceType: src.type,
+            unknownAccounts: [...new Set(allUnknown)],
+          });
+          emit({
+            type: 'scrape-progress',
+            sourceId: src.id,
+            sourceType: src.type,
+            status: 'blocked',
+          });
+          return { inserted: 0, skipped: 0, insertedIds: [] };
+        }
+
         if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
 
         let totalInserted = 0;
         let totalSkipped = 0;
         const allIds: string[] = [];
 
-        for (const p of ils) {
-          const r = await uploadClient.uploadPoalimIls(p);
+        for (let i = 0; i < filteredIls.length; i++) {
+          const ilsPayload = filteredIls[i]!;
+          // An empty transactions array means filterPayload excluded this account — skip all sub-types.
+          const accountExcluded = ilsPayload.transactions?.length === 0;
+
+          const r = await uploadClient.uploadPoalimIls(ilsPayload);
           totalInserted += r.inserted;
           totalSkipped += r.skipped;
           allIds.push(...r.insertedIds);
-        }
-        for (const p of foreign) {
-          const r = await uploadClient.uploadPoalimForeign(p);
-          totalInserted += r.inserted;
-          totalSkipped += r.skipped;
-          allIds.push(...r.insertedIds);
-        }
-        for (const p of swift) {
-          const r = await uploadClient.uploadPoalimSwift(p);
-          totalInserted += r.inserted;
-          totalSkipped += r.skipped;
-          allIds.push(...r.insertedIds);
+
+          if (!accountExcluded) {
+            if (foreign[i]) {
+              const rf = await uploadClient.uploadPoalimForeign(foreign[i]!);
+              totalInserted += rf.inserted;
+              totalSkipped += rf.skipped;
+              allIds.push(...rf.insertedIds);
+            }
+            if (swift[i]) {
+              const rs = await uploadClient.uploadPoalimSwift(swift[i]!);
+              totalInserted += rs.inserted;
+              totalSkipped += rs.skipped;
+              allIds.push(...rs.insertedIds);
+            }
+          }
         }
         return { inserted: totalInserted, skipped: totalSkipped, insertedIds: allIds };
       }
-
-      const now = new Date();
-      const dateFrom = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
 
       // isracard/amex return one payload per month; other scrapers return a single payload
       let payloads: ValidatedPayload[];
@@ -101,31 +136,31 @@ function buildTask(
         case 'isracard': {
           const creds = vault.isracardAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Isracard account ${src.id} not found in vault`);
-          payloads = await scrapeIsracard(creds, dateFrom, now, emit);
+          payloads = await scrapeIsracard(creds, dateFrom, dateTo, emit);
           break;
         }
         case 'amex': {
           const creds = vault.amexAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Amex account ${src.id} not found in vault`);
-          payloads = await scrapeAmex(creds, dateFrom, now, emit);
+          payloads = await scrapeAmex(creds, dateFrom, dateTo, emit);
           break;
         }
         case 'cal': {
           const creds = vault.calAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Cal account ${src.id} not found in vault`);
-          payloads = [await scrapeCal(creds, dateFrom, now, emit)];
+          payloads = [await scrapeCal(creds, dateFrom, dateTo, emit)];
           break;
         }
         case 'discount': {
           const creds = vault.discountAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Discount account ${src.id} not found in vault`);
-          payloads = [await scrapeDiscount(creds, dateFrom, now, emit)];
+          payloads = [await scrapeDiscount(creds, dateFrom, dateTo, emit)];
           break;
         }
         case 'max': {
           const creds = vault.maxAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Max account ${src.id} not found in vault`);
-          payloads = [await scrapeMax(creds, dateFrom, now, emit)];
+          payloads = [await scrapeMax(creds, dateFrom, dateTo, emit)];
           break;
         }
         default:
@@ -135,14 +170,7 @@ function buildTask(
       // Use the first non-empty payload to check for unknown accounts (card identifiers
       // are stable across months for isracard/amex, so any month suffices)
       const representativePayload = payloads[0];
-      if (!representativePayload)
-        return {
-          inserted: 0,
-          skipped: 0,
-          insertedIds: [],
-          insertedTransactions: [],
-          changedTransactions: [],
-        };
+      if (!representativePayload) return { inserted: 0, skipped: 0, insertedIds: [] };
 
       // Apply per-source accepted/ignored filter after validation, before account check
       let creds: FilterableCreds | undefined;
@@ -287,7 +315,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
             const sourceIds = msg.sourceIds;
             const sources = sourceIds ? allRefs.filter(s => sourceIds.includes(s.id)) : allRefs;
 
-            if (sources.length === 0) {
+            if (sources.length === 0 && !vault.settings.fetchBankOfIsraelRates) {
               send(socket, { type: 'run-error', message: 'No matching sources found' });
               break;
             }
@@ -297,14 +325,39 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
               break;
             }
 
+            // Resolve date range: message overrides settings default
+            const runDateTo = msg.dateTo ? new Date(msg.dateTo) : new Date();
+            const months = vault.settings.defaultDateRangeMonths ?? 3;
+            const runDateFrom = msg.dateFrom
+              ? new Date(msg.dateFrom)
+              : new Date(
+                  runDateTo.getFullYear(),
+                  runDateTo.getMonth() - months,
+                  runDateTo.getDate(),
+                );
+
             activeOtpManager = new OtpManager();
             const uploadClient =
               vault.settings.serverUrl && vault.settings.apiKey
                 ? createUploadClient(vault.settings.serverUrl, vault.settings.apiKey)
                 : null;
             const tasks: ScrapeTask[] = sources.map(src =>
-              buildTask(src, vault, emit, activeOtpManager!, uploadClient),
+              buildTask(src, vault, emit, activeOtpManager!, uploadClient, runDateFrom, runDateTo),
             );
+
+            // Append currency-rates task if enabled
+            if (vault.settings.fetchBankOfIsraelRates) {
+              tasks.push({
+                sourceId: 'currency-rates',
+                nickname: 'Currency Rates (Bank of Israel)',
+                type: 'currency-rates',
+                run: async () => {
+                  const payload = await scrapeCurrencyRates(emit);
+                  if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+                  return uploadClient.uploadCurrencyRates(payload);
+                },
+              });
+            }
 
             void startRun(tasks, vault.settings.concurrentScraping, emit)
               .catch((err: unknown) => {

@@ -34,7 +34,7 @@ describe('sequential mode', () => {
     expect(events[3]).toMatchObject({ type: 'task-done', sourceId: 'src-1', inserted: 2, skipped: 1 });
     expect(events[4]).toMatchObject({ type: 'task-running', sourceId: 'src-2' });
     expect(events[5]).toMatchObject({ type: 'task-done', sourceId: 'src-2', inserted: 2, skipped: 1 });
-    expect(events[6]).toEqual({ type: 'run-complete', totalInserted: 4, totalSkipped: 2 });
+    expect(events[6]).toEqual({ type: 'run-complete', totalInserted: 4, totalSkipped: 2, errors: 0 });
     expect(events).toHaveLength(7);
   });
 
@@ -46,6 +46,7 @@ describe('sequential mode', () => {
     expect(record.id).toMatch(/^[\da-f-]{36}$/);
     expect(record.totalInserted).toBe(2);
     expect(record.totalSkipped).toBe(1);
+    expect(record.errorCount).toBe(0);
     expect(record.startedAt >= before).toBe(true);
     expect(record.finishedAt <= after).toBe(true);
   });
@@ -102,7 +103,7 @@ describe('task error handling', () => {
     expect((taskError as { message: string }).message).toContain('Scraper exploded');
 
     expect(events.some(e => e.type === 'task-done' && 'sourceId' in e && e.sourceId === 'src-2')).toBe(true);
-    expect(events.at(-1)).toMatchObject({ type: 'run-complete' });
+    expect(events.at(-1)).toMatchObject({ type: 'run-complete', errors: 1 });
   });
 
   it('run-complete totals reflect only the successful task', async () => {

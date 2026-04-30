@@ -139,27 +139,14 @@ export function filterPayload(
         return p;
       }
       if ('balancesAndLimitsDataList' in payload) {
-        const p = payload as PoalimForeignPayload;
-        // Foreign payload doesn't carry account/branch at item level — check at payload level via creds
-        // If accepted lists are set and this account isn't in them, zero out all transactions
-        const accountStr = String(
-          (creds as z.infer<typeof PoalimAccountSchema>).options?.acceptedAccountNumbers?.[0] ?? '',
-        );
-        if (opts?.acceptedAccountNumbers?.length && accountStr === '') {
-          return {
-            ...p,
-            balancesAndLimitsDataList: p.balancesAndLimitsDataList.map(e => ({
-              ...e,
-              transactions: [],
-            })),
-          };
-        }
-        return p;
+        // Foreign payloads carry no account/branch identifiers — account-level filtering
+        // is handled by the caller, which correlates each Foreign payload with its
+        // positionally-matched ILS payload (which does carry the identifiers).
+        return payload as PoalimForeignPayload;
       }
       if ('swiftsList' in payload) {
-        const p = payload as PoalimSwiftPayload;
-        // Swift payload also doesn't embed account/branch — pass through unchanged (filtering at account level is done by buildTask selecting the right creds)
-        return p;
+        // Swift payloads carry no account/branch identifiers — same as Foreign above.
+        return payload as PoalimSwiftPayload;
       }
       return payload;
     }

@@ -1,7 +1,28 @@
+type InsertedTransactionSummary {
+  id: String!
+  date: String
+  description: String
+  amount: String
+  account: String
+}
+
+type FieldChange {
+  field: String!
+  oldValue: String
+  newValue: String
+}
+
+type ChangedTransaction {
+  id: String!
+  changedFields: [FieldChange!]!
+}
+
 type UploadResult {
   inserted: Int!
   skipped: Int!
   insertedIds: [String!]!
+  insertedTransactions: [InsertedTransactionSummary!]!
+  changedTransactions: [ChangedTransaction!]!
 }
 
 # ── Poalim ILS ────────────────────────────────────────────────────────────────

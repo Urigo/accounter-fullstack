@@ -30,17 +30,19 @@ export function SettingsTab(): ReactElement {
   }
 
   function handleNumberBlur(e: ChangeEvent<HTMLInputElement>) {
-    const value = e.target.value ? parseInt(e.target.value, 10) : undefined;
-    if (value !== undefined && Number.isNaN(value)) return;
+    const parsed = e.target.value ? parseInt(e.target.value, 10) : undefined;
+    if (parsed !== undefined && Number.isNaN(parsed)) return;
+    // Fall back to current value when field is cleared; server default takes over on next load
+    const value = parsed ?? settings?.defaultDateRangeMonths ?? 3;
     setSettings(s => (s ? { ...s, defaultDateRangeMonths: value } : s));
-    void autoSave({ defaultDateRangeMonths: value });
+    void autoSave({ defaultDateRangeMonths: parsed });
   }
 
   function handleTextBlur(key: 'historyFilePath') {
     return (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value || undefined;
+      const value = e.target.value || settings?.[key] || './history.json';
       setSettings(s => (s ? { ...s, [key]: value } : s));
-      void autoSave({ [key]: value });
+      void autoSave({ [key]: e.target.value || undefined });
     };
   }
 
