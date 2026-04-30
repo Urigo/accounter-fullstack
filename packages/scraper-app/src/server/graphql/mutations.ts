@@ -8,7 +8,32 @@ import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.sch
 import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
 import type { PoalimSwiftPayload } from '../payload-schemas/poalim-swift.schema.js';
 
-export type UploadResult = { inserted: number; skipped: number; insertedIds: string[] };
+export type InsertedTransactionSummary = {
+  id: string;
+  date?: string | null;
+  description?: string | null;
+  amount?: string | null;
+  account?: string | null;
+};
+
+export type ChangedField = {
+  field: string;
+  oldValue?: string | null;
+  newValue?: string | null;
+};
+
+export type ChangedTransaction = {
+  id: string;
+  changedFields: ChangedField[];
+};
+
+export type UploadResult = {
+  inserted: number;
+  skipped: number;
+  insertedIds: string[];
+  insertedTransactions?: InsertedTransactionSummary[];
+  changedTransactions?: ChangedTransaction[];
+};
 
 // ── Mutation document strings ──────────────────────────────────────────────────
 
@@ -18,6 +43,21 @@ export const UPLOAD_POALIM_ILS = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -28,6 +68,21 @@ export const UPLOAD_POALIM_FOREIGN = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -38,6 +93,21 @@ export const UPLOAD_POALIM_SWIFT = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -48,6 +118,21 @@ export const UPLOAD_ISRACARD = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -58,6 +143,21 @@ export const UPLOAD_AMEX = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -68,6 +168,21 @@ export const UPLOAD_CAL = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -78,6 +193,21 @@ export const UPLOAD_DISCOUNT = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -88,6 +218,21 @@ export const UPLOAD_MAX = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;
@@ -98,6 +243,21 @@ export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
       inserted
       skipped
       insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
     }
   }
 `;

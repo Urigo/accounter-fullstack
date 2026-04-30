@@ -5,7 +5,13 @@ import { createUploadClient } from '../graphql/client.js';
 
 const MOCK_URL = 'http://localhost:4000/graphql';
 const MOCK_API_KEY = 'test-api-key-123';
-const MOCK_RESULT = { inserted: 2, skipped: 1, insertedIds: ['id-1', 'id-2'] };
+const MOCK_RESULT = {
+  inserted: 2,
+  skipped: 1,
+  insertedIds: ['id-1', 'id-2'],
+  insertedTransactions: [],
+  changedTransactions: [],
+};
 
 // ── MSW server ────────────────────────────────────────────────────────────────
 
