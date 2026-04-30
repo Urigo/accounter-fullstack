@@ -278,6 +278,7 @@ async function isTransactionNew(
     'chargingDate',
     'requestNumber',
     'accountErrorCode',
+    'monthlyRefundCardIndex',
     'id',
   ];
   newAttributesChecker(transaction, [...columnNames], logger, nickname, optionalTransactionKeys);
