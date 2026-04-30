@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
@@ -39,13 +40,10 @@ export type ScrapeTask = {
   run: () => Promise<TaskResult>;
 };
 
-export type RunRecord = {
-  id: string;
+export type { SourceRunRecord };
+export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'finishedAt'> & {
   startedAt: Date;
   finishedAt: Date;
-  totalInserted: number;
-  totalSkipped: number;
-  errorCount: number;
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -79,7 +77,9 @@ export async function startRun(
       emit({ type: 'task-pending', sourceId: task.sourceId });
     }
 
-    const runTask = async (task: ScrapeTask): Promise<TaskResult> => {
+    type TaskOutcome = { task: ScrapeTask; result: TaskResult; error?: string };
+
+    const runTask = async (task: ScrapeTask): Promise<TaskOutcome> => {
       emit({ type: 'task-running', sourceId: task.sourceId });
       try {
         const result = await task.run();
@@ -96,32 +96,47 @@ export async function startRun(
             changedTransactions: result.changedTransactions,
           }),
         });
-        return result;
+        return { task, result };
       } catch (e) {
         errorCount++;
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;
         emit({ type: 'task-error', sourceId: task.sourceId, message, ...(stack && { stack }) });
-        return { inserted: 0, skipped: 0, insertedIds: [] };
+        return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: message };
       }
     };
 
-    let results: TaskResult[];
+    let outcomes: TaskOutcome[];
     if (concurrent) {
-      results = await Promise.all(tasks.map(runTask));
+      outcomes = await Promise.all(tasks.map(runTask));
     } else {
-      results = [];
+      outcomes = [];
       for (const task of tasks) {
-        results.push(await runTask(task));
+        outcomes.push(await runTask(task));
       }
     }
 
-    const totalInserted = results.reduce((sum, r) => sum + r.inserted, 0);
-    const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0);
+    const totalInserted = outcomes.reduce((sum, o) => sum + o.result.inserted, 0);
+    const totalSkipped = outcomes.reduce((sum, o) => sum + o.result.skipped, 0);
+    const sources: SourceRunRecord[] = outcomes.map(o => ({
+      sourceId: o.task.sourceId,
+      sourceType: o.task.type,
+      inserted: o.result.inserted,
+      skipped: o.result.skipped,
+      ...(o.error != null && { error: o.error }),
+    }));
 
     emit({ type: 'run-complete', totalInserted, totalSkipped, errors: errorCount });
 
-    return { id, startedAt, finishedAt: new Date(), totalInserted, totalSkipped, errorCount };
+    return {
+      id,
+      startedAt,
+      finishedAt: new Date(),
+      totalInserted,
+      totalSkipped,
+      errorCount,
+      sources,
+    };
   } finally {
     _running = false;
   }
