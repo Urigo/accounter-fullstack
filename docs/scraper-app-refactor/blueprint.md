@@ -281,6 +281,45 @@ account transactions from payload before upload.
 unrecognised account identifier returns in `unknown`; runner emits `task-blocked` and continues
 other tasks.
 
+### Step 9b — Post-validation payload filtering
+
+9b-1. Add `ignoredCardNumbers` to `IsracardAmexAccountSchema`, `CalAccountSchema`, and
+`MaxAccountSchema` options in `src/server/vault.ts`. Add `ignoredAccountNumbers` and
+`ignoredBranchNumbers` to `PoalimAccountSchema` options.
+
+9b-2. Create `src/server/filter-payload.ts`:
+
+```ts
+export function filterPayload(
+  type: SourceType,
+  payload: ValidatedPayload,
+  creds: PoalimAccount | IsracardAmexAccount | CalAccount | MaxAccount | DiscountAccount
+): ValidatedPayload
+```
+
+Effective set rule:
+`effectiveCards = (acceptedCardNumbers?.length ? acceptedCardNumbers : allCards) \ ignoredCardNumbers`.
+
+- **Isracard / Amex** (`IsracardPayload`): for each `Index*` in `CardsTransactionsListBean`, keep
+  only `CurrentCardTransactions` entries whose `@cardTransactions` is in effective set; remove
+  `txnIsrael`/`txnAbroad` for excluded cards.
+- **Cal** (`CalPayload`): filter array entries where `entry.card` is in effective set.
+- **Max** (`MaxPayload`): filter array entries where `entry.accountNumber` is in effective set.
+- **Poalim ILS/Foreign/Swift**: if `accountNumber` or `branchNumber` fails the effective filter,
+  zero out the transactions array.
+- **Discount**: no options — return payload unchanged.
+
+9b-3. In `websocket.ts` `buildTask()`, call `filterPayload(type, validatedPayload, creds)` AFTER
+`validatePayload()` and BEFORE `checkAccounts()`.
+
+9b-4. **Tests** (`src/server/__tests__/filter-payload.test.ts`):
+
+- `acceptedCardNumbers = ['1234']` → only card 1234 txns survive
+- `ignoredCardNumbers = ['1234']`, no accepted list → card 1234 excluded, others kept
+- `accepted = ['1234', '5678'], ignored = ['5678']` → only 1234 survives
+- empty accepted + empty ignored → all cards kept
+- Poalim: account not in accepted → transactions array is empty
+
 ### Step 10 — OTP wait/timeout
 
 10a. Create `src/server/otp-manager.ts`: -
@@ -318,12 +357,14 @@ mutations (typed against the server's generated schema once Chunk 17 is done; ty
 stub schema until then).  
 13b. Create `src/server/graphql/client.ts`: `createUploadClient(serverUrl: string, apiKey: string)`
 → object with one method per source type, each calling the correct mutation and returning
-`UploadResult`.  
+`UploadResult` (including `insertedTransactions` and `changedTransactions`).  
 13c. Create `src/server/__tests__/graphql-client.test.ts` — use MSW (Mock Service Worker in Node
 mode) to intercept GraphQL requests. Test: correct mutation sent, correct `Authorization` header,
 `UploadResult` returned.  
 13d. Integrate upload client into the runner: after `checkAccounts`, call the appropriate upload
-method, emit `task-done` with real counts.
+method, emit `task-done` with full `UploadResult` (inserted/skipped counts + transaction details).
+In `src/shared/ws-protocol.ts`, extend `TaskDoneSchema` with optional `insertedTransactions` and
+`changedTransactions` arrays.
 
 ### Step 14 — Run history
 
@@ -341,7 +382,11 @@ file with 150 records; `saveHistory: false` does not write file.
 15a. Create `src/ui/contexts/run-context.tsx` — holds WS connection, current run state
 (idle/running/complete), task states map keyed by sourceId.  
 15b. Create `src/ui/components/task-row.tsx` — displays source nickname, status badge, inserted/
-skipped counts or error message; collapsible for stack trace.  
+skipped/changed counts or error message; collapsible for stack trace. On `done`: shows "↑ N new / M
+skipped / K changed". Clicking "↑ N new" expands a list of `insertedTransactions` (date ·
+description · amount · account). "K changed" expands a diff table (field / was / now) using
+amber/warning colour. `TaskState` holds `insertedTransactions` and `changedTransactions` from the
+`task-done` message.  
 15c. Create `src/ui/components/otp-modal.tsx` — modal rendered when any task has status
 `otp-required`; input + submit sends `otp-submit` WS message.  
 15d. Create `src/ui/screens/run.tsx` — source checklist, date picker, Run button, task rows, summary
@@ -358,19 +403,34 @@ row shows per-source detail.
 
 ### Step 17 — Server: UploadResult + first upload mutation (Poalim ILS)
 
-17a. In `packages/server/src/modules/reports/` (or a new `scrapers` module), add: - `UploadResult`
-GraphQL type. - `uploadPoalimIlsTransactions(accountNumber, branchNumber, transactions)` mutation. -
-Input type `PoalimIlsTransactionInput` mirroring the raw Poalim ILS transaction shape. - Provider
-method: Zod-validate inputs, bulk `INSERT ... ON CONFLICT DO NOTHING`, return `UploadResult`. - Auth
-directive: `@auth(role: SCRAPER)` (uses existing API key auth).  
+17a. In `packages/server/src/modules/scraper-ingestion/`, add: - `UploadResult`,
+`ChangedTransaction`, `FieldChange`, `InsertedTransactionSummary` GraphQL types. -
+`uploadPoalimIlsTransactions(transactions)` mutation. - Input type `PoalimIlsTransactionInput`
+mirroring the raw Poalim ILS transaction shape. - Provider method: two-phase select+insert: SELECT
+rows by conflict key, partition into `toInsert`/`changed`/`duplicate`, INSERT only `toInsert`,
+RETURNING id + display fields. Auth directive: `@requiresRole(role: "scraper")`.  
 17b. Run `yarn generate`.  
-17c. **Integration tests**: insert new rows → `inserted > 0, skipped = 0`; re-insert same rows →
-`inserted = 0, skipped = N`; unauthorized request (no API key) → error.
+17c. **Integration tests**: insert new rows →
+`inserted > 0, skipped = 0, insertedTransactions populated`; re-insert same rows →
+`inserted = 0, skipped = N`; re-insert with changed non-key field → `changedTransactions populated`;
+unauthorized request (no API key) → error.
 
 ### Step 18 — Server: remaining upload mutations
 
 18a–18h. One commit per source: Poalim Foreign, Poalim SWIFT, Isracard, Amex, CAL, Discount, Max,
-currency rates. Each follows the same pattern as Step 17. All integration-tested.
+currency rates. Each follows the same two-phase pattern as Step 17. All integration-tested. Display
+column mapping per source:
+
+| Source         | date col           | amount col       | description col        | account col    |
+| -------------- | ------------------ | ---------------- | ---------------------- | -------------- |
+| poalim_ils     | event_date         | event_amount     | activity_description   | account_number |
+| poalim_foreign | executing_date     | event_amount     | activity_description   | account_number |
+| poalim_swift   | start_date         | amount           | charge_party_name      | account_number |
+| isracard/amex  | full_purchase_date | payment_sum      | full_supplier_name_heb | card           |
+| cal            | trn_purchase_date  | trn_amt          | merchant_name          | card           |
+| discount       | operation_date     | operation_amount | operation_description  | account_number |
+| max            | purchase_date      | original_amount  | merchant_name          | card_index     |
+| exchange_rates | exchange_date      | usd              | —                      | —              |
 
 ### Step 19 — End-to-end integration
 

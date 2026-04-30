@@ -145,14 +145,17 @@ type Vault = {
 
 Supported source types (matching the existing scraper implementations):
 
-| Type       | Credentials fields                                                                                         |
-| ---------- | ---------------------------------------------------------------------------------------------------------- |
-| `poalim`   | `nickname`, `userCode`, `password`, `isBusinessAccount`, `acceptedAccountNumbers`, `acceptedBranchNumbers` |
-| `isracard` | `nickname`, `ownerId`, `password`, `last6Digits`, `acceptedCardNumbers`                                    |
-| `amex`     | `nickname`, `ownerId`, `password`, `last6Digits`                                                           |
-| `cal`      | `nickname`, credentials per existing `CalCredentials` type                                                 |
-| `discount` | `nickname`, credentials per existing `DiscountCredentials` type                                            |
-| `max`      | `nickname`, `username`, `password`                                                                         |
+| Type       | Credentials fields                                                                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `poalim`   | `nickname`, `userCode`, `password`, `isBusinessAccount`, `acceptedAccountNumbers`, `acceptedBranchNumbers`, `ignoredAccountNumbers`, `ignoredBranchNumbers` |
+| `isracard` | `nickname`, `ownerId`, `password`, `last6Digits`, `acceptedCardNumbers`, `ignoredCardNumbers`                                                               |
+| `amex`     | `nickname`, `ownerId`, `password`, `last6Digits`, `acceptedCardNumbers`, `ignoredCardNumbers`                                                               |
+| `cal`      | `nickname`, credentials per existing `CalCredentials` type, `acceptedCardNumbers`, `ignoredCardNumbers`                                                     |
+| `discount` | `nickname`, credentials per existing `DiscountCredentials` type                                                                                             |
+| `max`      | `nickname`, `username`, `password`, `acceptedCardNumbers`, `ignoredCardNumbers`                                                                             |
+
+Effective set rule: `effectiveAccepted = (accepted?.length ? accepted : all) \ ignored`. If both
+lists are empty, all accounts are included.
 
 Currency rates (Bank of Israel) are not a "source" in the credentials sense — they are controlled by
 the `fetchCurrencyRates` settings toggle.
@@ -171,11 +174,16 @@ the `fetchCurrencyRates` settings toggle.
       → pass code to Puppeteer → continue
    c. Validate the scraped response against the expected schema for that source type
       - If validation fails: emit `task-error` WS event with details; do NOT forward to server
-   d. Check all account numbers in the response against the known/accepted accounts list
+   d. Filter the validated payload using the source's `accepted` / `ignored` lists in vault credentials:
+      - creditcard sources (isracard, amex, cal, max): keep only cards in
+        `(acceptedCardNumbers?.length ? acceptedCardNumbers : all) \ ignoredCardNumbers`
+      - bank sources (poalim): apply same logic for accountNumbers and branchNumbers separately
+      - discount: no filter options — payload unchanged
+   e. Check remaining account/card identifiers against `vault.bankAccounts`:
       - If unknown account found: emit `task-blocked` WS event; mark task failed; continue other tasks
-   e. POST raw payload to Accounter server via GraphQL mutation (tagged with source type + account)
-   f. Server responds with { inserted: string[], skipped: string[] }
-   g. Emit `task-done` WS event with inserted/skipped counts
+   f. POST raw payload to Accounter server via GraphQL mutation (tagged with source type + account)
+   g. Server responds with extended UploadResult (inserted, skipped, insertedTransactions, changedTransactions)
+   h. Emit `task-done` WS event with full UploadResult
 5. When all tasks complete: emit `run-complete` WS event with aggregate summary
 6. If saveHistory is true: append run record to history JSON file
 ```
@@ -186,17 +194,17 @@ the `fetchCurrencyRates` settings toggle.
 
 All messages are JSON. Direction noted as `S→C` (server to client) or `C→S` (client to server).
 
-| Event          | Direction | Payload                                                           |
-| -------------- | --------- | ----------------------------------------------------------------- |
-| `run-start`    | C→S       | `{ sourceIds: string[], dateFrom?: string, dateTo?: string }`     |
-| `task-pending` | S→C       | `{ sourceId: string }`                                            |
-| `task-running` | S→C       | `{ sourceId: string }`                                            |
-| `task-done`    | S→C       | `{ sourceId: string, inserted: number, skipped: number }`         |
-| `task-error`   | S→C       | `{ sourceId: string, message: string, stack?: string }`           |
-| `task-blocked` | S→C       | `{ sourceId: string, unknownAccounts: string[] }`                 |
-| `otp-required` | S→C       | `{ sourceId: string }`                                            |
-| `otp-submit`   | C→S       | `{ sourceId: string, otp: string }`                               |
-| `run-complete` | S→C       | `{ totalInserted: number, totalSkipped: number, errors: number }` |
+| Event          | Direction | Payload                                                                                                                                                                                     |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `run-start`    | C→S       | `{ sourceIds: string[], dateFrom?: string, dateTo?: string }`                                                                                                                               |
+| `task-pending` | S→C       | `{ sourceId: string }`                                                                                                                                                                      |
+| `task-running` | S→C       | `{ sourceId: string }`                                                                                                                                                                      |
+| `task-done`    | S→C       | `{ sourceId, inserted, skipped, insertedIds, insertedTransactions: [{id, date, description, amount, account}], changedTransactions: [{id, changedFields: [{field, oldValue, newValue}]}] }` |
+| `task-error`   | S→C       | `{ sourceId: string, message: string, stack?: string }`                                                                                                                                     |
+| `task-blocked` | S→C       | `{ sourceId: string, unknownAccounts: string[] }`                                                                                                                                           |
+| `otp-required` | S→C       | `{ sourceId: string }`                                                                                                                                                                      |
+| `otp-submit`   | C→S       | `{ sourceId: string, otp: string }`                                                                                                                                                         |
+| `run-complete` | S→C       | `{ totalInserted: number, totalSkipped: number, errors: number }`                                                                                                                           |
 
 ---
 
@@ -224,6 +232,27 @@ type UploadResult {
   inserted: Int!
   skipped: Int!
   insertedIds: [String!]!
+  changedTransactions: [ChangedTransaction!]!
+  insertedTransactions: [InsertedTransactionSummary!]!
+}
+
+type ChangedTransaction {
+  id: String!
+  changedFields: [FieldChange!]!
+}
+
+type FieldChange {
+  field: String!
+  oldValue: String
+  newValue: String
+}
+
+type InsertedTransactionSummary {
+  id: String!
+  date: String
+  description: String
+  amount: String
+  account: String
 }
 ```
 
@@ -231,10 +260,15 @@ type UploadResult {
 
 1. Validate the input shape (Zod or existing schema validation).
 2. Normalize raw fields into the existing source-specific table format.
-3. `INSERT ... ON CONFLICT DO NOTHING` using the source's existing unique constraint (native source
-   transaction ID where available; hash of key fields otherwise).
-4. Return `inserted` count, `skipped` count, and `insertedIds` for traceability.
-5. Any downstream normalization (ledger record generation) follows the same path as the existing
+3. Before INSERT: SELECT existing rows by conflict key. Partition input into:
+   - `toInsert` — no existing row with that key
+   - `changed` — existing row found, at least one non-key field differs (returned in
+     `changedTransactions`, never written)
+   - `duplicate` — existing row found, all fields identical (counted in `skipped`)
+4. `INSERT toInsert rows ... ON CONFLICT DO NOTHING RETURNING id + display fields`.
+5. Return extended `UploadResult` with inserted/skipped counts, inserted row summaries, and changed
+   diffs.
+6. Any downstream normalization (ledger record generation) follows the same path as the existing
    direct-insert triggers — no change to that logic.
 
 ### GraphQL input types
