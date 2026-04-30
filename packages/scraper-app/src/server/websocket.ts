@@ -78,7 +78,7 @@ function buildTask(
         // Check for unknown accounts across all ILS payloads (ILS carries account identifiers)
         const allUnknown: string[] = [];
         for (const p of filteredIls) {
-          const check = checkAccounts('poalim', p, vault.bankAccounts);
+          const check = checkAccounts('poalim', p, vault.accountRecords);
           allUnknown.push(...check.unknown);
         }
         if (allUnknown.length > 0) {
@@ -197,7 +197,7 @@ function buildTask(
         payloads = payloads.map(p => filterPayload(src.type, p, creds!) as ValidatedPayload);
       }
 
-      const check = checkAccounts(src.type, payloads[0]!, vault.bankAccounts);
+      const check = checkAccounts(src.type, payloads[0]!, vault.accountRecords);
       if (check.unknown.length > 0) {
         emit({
           type: 'task-blocked',

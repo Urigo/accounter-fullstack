@@ -36,7 +36,21 @@ import type {
   IUploadPoalimSwiftTransactionsQuery,
 } from '../types.js';
 
-export type UploadResult = { inserted: number; skipped: number; insertedIds: string[] };
+export type InsertedTransactionSummary = {
+  id: string;
+  date: string | null;
+  description: string | null;
+  amount: string | null;
+  account: string | null;
+};
+
+export type UploadResult = {
+  inserted: number;
+  skipped: number;
+  insertedIds: string[];
+  insertedTransactions: InsertedTransactionSummary[];
+  changedTransactions: [];
+};
 
 const uploadPoalimIlsTransactions = sql<IUploadPoalimIlsTransactionsQuery>`
   INSERT INTO accounter_schema.poalim_ils_account_transactions (
@@ -142,7 +156,7 @@ const uploadPoalimIlsTransactions = sql<IUploadPoalimIlsTransactionsQuery>`
     accountNumber
   )
   ON CONFLICT (event_date, serial_number, reference_number, account_number, branch_number) DO NOTHING
-  RETURNING id;
+  RETURNING id, event_date, activity_description, event_amount, account_number;
 `;
 
 const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuery>`
@@ -245,7 +259,7 @@ const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuer
     accountNumber
   )
   ON CONFLICT (executing_date, reference_number, account_number, branch_number) DO NOTHING
-  RETURNING id;
+  RETURNING id, executing_date, activity_description, event_amount, account_number;
 `;
 
 const uploadPoalimSwiftTransactions = sql<IUploadPoalimSwiftTransactionsQuery>`
@@ -330,7 +344,7 @@ const uploadPoalimSwiftTransactions = sql<IUploadPoalimSwiftTransactionsQuery>`
     swiftRegulatoryReporting77B
   )
   ON CONFLICT (transfer_catenated_id) WHERE transfer_catenated_id IS NOT NULL DO NOTHING
-  RETURNING id;
+  RETURNING id, start_date, charge_party_name, amount, account_number;
 `;
 
 const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
@@ -437,7 +451,7 @@ const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
   ON CONFLICT (card, full_purchase_date, payment_sum, voucher_number)
     WHERE full_purchase_date IS NOT NULL AND payment_sum IS NOT NULL AND voucher_number IS NOT NULL
   DO NOTHING
-  RETURNING id;
+  RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
 `;
 
 const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
@@ -544,7 +558,7 @@ const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
   ON CONFLICT (card, full_purchase_date, payment_sum, voucher_number)
     WHERE full_purchase_date IS NOT NULL AND payment_sum IS NOT NULL AND voucher_number IS NOT NULL
   DO NOTHING
-  RETURNING id;
+  RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
 `;
 
 const uploadCalTransactions = sql<IUploadCalTransactionsQuery>`
@@ -627,7 +641,7 @@ const uploadCalTransactions = sql<IUploadCalTransactionsQuery>`
     isAbroadTransaction
   )
   ON CONFLICT (trn_int_id) DO NOTHING
-  RETURNING id;
+  RETURNING id, trn_purchase_date, merchant_name, trn_amt, card;
 `;
 
 const uploadDiscountTransactions = sql<IUploadDiscountTransactionsQuery>`
@@ -696,7 +710,7 @@ const uploadDiscountTransactions = sql<IUploadDiscountTransactionsQuery>`
     isLastSeen
   )
   ON CONFLICT (urn, account_number) WHERE urn IS NOT NULL AND account_number IS NOT NULL DO NOTHING
-  RETURNING id;
+  RETURNING id, operation_date, operation_description, operation_amount, account_number;
 `;
 
 const uploadMaxTransactions = sql<IUploadMaxTransactionsQuery>`
@@ -879,7 +893,7 @@ const uploadMaxTransactions = sql<IUploadMaxTransactionsQuery>`
     userIndex
   )
   ON CONFLICT (uid) DO NOTHING
-  RETURNING id;
+  RETURNING id, purchase_date, merchant_name, actual_payment_amount, card_index;
 `;
 
 const uploadCurrencyRates = sql<IUploadCurrencyRatesQuery>`
@@ -917,135 +931,270 @@ export class ScraperIngestionProvider {
   async uploadPoalimIlsTransactions(
     transactions: PoalimIlsTransactionInput[],
   ): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadPoalimIlsTransactions.run(
       { transactions: validatePoalimIlsTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.event_date ? String(r.event_date) : null,
+      description: r.activity_description ?? null,
+      amount: r.event_amount ?? null,
+      account: r.account_number == null ? null : String(r.account_number),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadPoalimForeignTransactions(
     transactions: PoalimForeignTransactionInput[],
   ): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadPoalimForeignTransactions.run(
       { transactions: validatePoalimForeignTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.executing_date ? String(r.executing_date) : null,
+      description: r.activity_description ?? null,
+      amount: r.event_amount ?? null,
+      account: r.account_number == null ? null : String(r.account_number),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadPoalimSwiftTransactions(
     swifts: PoalimSwiftTransactionInput[],
   ): Promise<UploadResult> {
-    if (swifts.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (swifts.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadPoalimSwiftTransactions.run(
       { transactions: validatePoalimSwiftTransactions(swifts) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.start_date ?? null,
+      description: r.charge_party_name ?? null,
+      amount: r.amount ?? null,
+      account: r.account_number == null ? null : String(r.account_number),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: swifts.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadIsracardTransactions(
     transactions: IsracardTransactionInput[],
   ): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadIsracardTransactions.run(
       { transactions: validateIsracardAmexTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.full_purchase_date ?? null,
+      description: r.supplier_name ?? null,
+      amount: r.payment_sum ?? null,
+      account: String(r.card),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadAmexTransactions(transactions: AmexTransactionInput[]): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadAmexTransactions.run(
       { transactions: validateIsracardAmexTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.full_purchase_date ?? null,
+      description: r.supplier_name ?? null,
+      amount: r.payment_sum ?? null,
+      account: String(r.card),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadCalTransactions(transactions: CalTransactionInput[]): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadCalTransactions.run(
       { transactions: validateCalTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.trn_purchase_date ?? null,
+      description: r.merchant_name ?? null,
+      amount: r.trn_amt ?? null,
+      account: String(r.card),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadDiscountTransactions(
     transactions: DiscountTransactionInput[],
   ): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadDiscountTransactions.run(
       { transactions: validateDiscountTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.operation_date ?? null,
+      description: r.operation_description ?? null,
+      amount: r.operation_amount ?? null,
+      account: r.account_number ?? null,
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadMaxTransactions(transactions: MaxTransactionInput[]): Promise<UploadResult> {
-    if (transactions.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (transactions.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadMaxTransactions.run(
       { transactions: validateMaxTransactions(transactions) },
       this.db,
     );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+      id: r.id,
+      date: r.purchase_date ? String(r.purchase_date) : null,
+      description: r.merchant_name ?? null,
+      amount: r.actual_payment_amount ?? null,
+      account: String(r.card_index),
+    }));
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
+      insertedTransactions,
+      changedTransactions: [],
     };
   }
 
   async uploadCurrencyRates(rates: CurrencyRateInput[]): Promise<UploadResult> {
-    if (rates.length === 0) return { inserted: 0, skipped: 0, insertedIds: [] };
+    if (rates.length === 0)
+      return {
+        inserted: 0,
+        skipped: 0,
+        insertedIds: [],
+        insertedTransactions: [],
+        changedTransactions: [],
+      };
 
     const result = await uploadCurrencyRates.run({ rates: validateRates(rates) }, this.db);
     const insertedIds = result
@@ -1055,6 +1204,8 @@ export class ScraperIngestionProvider {
       inserted: insertedIds.length,
       skipped: rates.length - insertedIds.length,
       insertedIds,
+      insertedTransactions: [],
+      changedTransactions: [],
     };
   }
 }

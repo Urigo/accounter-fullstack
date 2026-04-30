@@ -9,6 +9,7 @@ const config: CodegenConfig = {
     './packages/client/src/providers/**/*.tsx',
     './packages/client/**/*.graphql.ts',
     './packages/gmail-listener/src/server-requests.ts',
+    './packages/scraper-app/src/server/graphql/mutations.ts',
   ],
   emitLegacyCommonJSImports: false,
   generates: {
@@ -195,6 +196,22 @@ const config: CodegenConfig = {
         documentMode: 'string',
         enumsAsConst: true,
         useTypeImports: true,
+        scalars: {
+          FileScalar: {
+            input: 'File',
+            output: 'string',
+          },
+          UUID: {
+            input: 'string',
+            output: 'string',
+          },
+        },
+      },
+    },
+    'packages/scraper-app/src/server/gql/index.ts': {
+      plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
+      config: {
+        rawRequest: true,
         scalars: {
           FileScalar: {
             input: 'File',

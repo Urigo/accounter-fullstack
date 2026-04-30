@@ -60,7 +60,6 @@ function RunRow({ record }: { record: RunRecord }): ReactElement {
           }
         }}
         tabIndex={0}
-        role="button"
         style={{ cursor: 'pointer', background: expanded ? '#f9fafb' : undefined }}
         aria-expanded={expanded}
       >
