@@ -53,6 +53,14 @@ function RunRow({ record }: { record: RunRecord }): ReactElement {
     <>
       <tr
         onClick={() => setExpanded(e => !e)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(prev => !prev);
+          }
+        }}
+        tabIndex={0}
+        role="button"
         style={{ cursor: 'pointer', background: expanded ? '#f9fafb' : undefined }}
         aria-expanded={expanded}
       >
@@ -118,11 +126,14 @@ function RunRow({ record }: { record: RunRecord }): ReactElement {
 export function History(): ReactElement {
   const [records, setRecords] = useState<RunRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
+    setError(null);
     getHistory()
       .then(setRecords)
+      .catch(err => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -134,13 +145,24 @@ export function History(): ReactElement {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Scrape History</h2>
-        <button type="button" onClick={load} style={{ padding: '4px 14px', cursor: 'pointer' }}>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          style={{
+            padding: '4px 14px',
+            cursor: loading ? 'default' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
           Refresh
         </button>
       </div>
 
       {loading ? (
         <p style={{ color: '#888' }}>Loading…</p>
+      ) : error ? (
+        <p style={{ color: '#b91c1c' }}>{error}</p>
       ) : records.length === 0 ? (
         <p style={{ color: '#888' }}>No scrape runs recorded yet.</p>
       ) : (

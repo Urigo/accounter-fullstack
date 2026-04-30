@@ -1,8 +1,7 @@
 // @vitest-environment happy-dom
 
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import React from 'react';
+import { userEvent } from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { History, formatDuration } from '../screens/history.js';
 import type { RunRecord } from '../../shared/types.js';
@@ -66,7 +65,7 @@ describe('History screen', () => {
     await waitFor(() => screen.getByRole('table', { name: /scrape history/i }));
     const dataRow = screen.getAllByRole('row').find(r => r.getAttribute('aria-expanded') !== null);
     expect(dataRow).toBeTruthy();
-    await userEvent.click(dataRow!);
+    await userEvent.setup().click(dataRow!);
 
     await waitFor(() => {
       expect(screen.getByText('src-poalim')).toBeTruthy();
@@ -88,7 +87,7 @@ describe('History screen', () => {
     await waitFor(() => screen.getByText(/no scrape runs recorded yet/i));
 
     const callsBefore = fetchMock.mock.calls.length;
-    await userEvent.click(screen.getByRole('button', { name: /refresh/i }));
+    await userEvent.setup().click(screen.getByRole('button', { name: /refresh/i }));
     await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBefore));
   });
 });
