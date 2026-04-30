@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { registerHistoryRoutes } from './history-routes.js';
 import { registerVaultRoutes } from './vault-routes.js';
 import { registerWebSocketRoute } from './websocket.js';
 
@@ -9,6 +10,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   app.get('/healthz', async () => ({ ok: true }));
 
   await registerVaultRoutes(app);
+  await registerHistoryRoutes(app);
   await registerWebSocketRoute(app);
 
   return app;
