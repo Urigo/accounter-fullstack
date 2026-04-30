@@ -6,6 +6,7 @@ import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.j
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
 import { filterPayload, type FilterableCreds } from './filter-payload.js';
 import { createUploadClient, type UploadClient } from './graphql/client.js';
+import { appendRun } from './history.js';
 import { OtpManager } from './otp-manager.js';
 import type { AmexPayload } from './payload-schemas/amex.schema.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
@@ -359,7 +360,24 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
               });
             }
 
+            const { saveHistory, historyFilePath } = vault.settings;
             void startRun(tasks, vault.settings.concurrentScraping, emit)
+              .then(async runRecord => {
+                if (saveHistory) {
+                  try {
+                    await appendRun(
+                      {
+                        ...runRecord,
+                        startedAt: runRecord.startedAt.toISOString(),
+                        finishedAt: runRecord.finishedAt.toISOString(),
+                      },
+                      historyFilePath,
+                    );
+                  } catch (err) {
+                    app.log.error(err, '[ws] failed to append run history');
+                  }
+                }
+              })
               .catch((err: unknown) => {
                 const message = err instanceof Error ? err.message : String(err);
                 if (message === ERR_RUN_IN_PROGRESS) {
