@@ -17,7 +17,7 @@ export async function buildServer(): Promise<FastifyInstance> {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const port = process.env['PORT'] ? Number(process.env['PORT']) : 3001;
+  const port = process.env['PORT'] ? Number(process.env['PORT']) : 4001;
   const app = await buildServer();
   try {
     await app.listen({ port, host: '0.0.0.0' });
