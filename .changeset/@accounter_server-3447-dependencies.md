@@ -1,5 +1,0 @@
----
-"@accounter/server": patch
----
-dependencies updates:
-  - Updated dependency [`jose@6.2.3` ↗︎](https://www.npmjs.com/package/jose/v/6.2.3) (from `6.2.2`, in `dependencies`)
