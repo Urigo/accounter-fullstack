@@ -50,8 +50,9 @@ describe('History screen', () => {
     ]);
     render(<History />);
     await waitFor(() => {
-      // 1 header row + 3 data rows
-      expect(screen.getAllByRole('row').length).toBe(4);
+      expect(
+        screen.getAllByRole('button').filter(el => el.hasAttribute('aria-expanded')).length,
+      ).toBe(3);
     });
   });
 
@@ -63,7 +64,7 @@ describe('History screen', () => {
     render(<History />);
 
     await waitFor(() => screen.getByRole('table', { name: /scrape history/i }));
-    const dataRow = screen.getAllByRole('row').find(r => r.getAttribute('aria-expanded') !== null);
+    const dataRow = screen.getAllByRole('button').find(el => el.hasAttribute('aria-expanded'));
     expect(dataRow).toBeTruthy();
     await userEvent.setup().click(dataRow!);
 

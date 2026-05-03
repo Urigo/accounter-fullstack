@@ -1,4 +1,5 @@
 import { GraphQLClient } from 'graphql-request';
+import { getSdk } from '../gql/index.js';
 import type { AmexPayload } from '../payload-schemas/amex.schema.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
@@ -45,6 +46,8 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
     headers: { Authorization: `Bearer ${apiKey}` },
   });
 
+  const sdk = getSdk(gql);
+
   async function request<K extends string>(
     doc: string,
     vars: Record<string, unknown>,
@@ -55,6 +58,7 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
   }
 
   return {
+    sdk,
     async uploadPoalimIls(payload: PoalimIlsPayload): Promise<UploadResult> {
       return request(UPLOAD_POALIM_ILS, poalimIlsVars(payload), 'uploadPoalimIlsTransactions');
     },

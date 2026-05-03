@@ -144,7 +144,7 @@ describe('uploadPoalimIlsTransactions', () => {
 
   it('returns empty result for empty input', async () => {
     const result = await provider.uploadPoalimIlsTransactions([]);
-    expect(result).toEqual({ inserted: 0, skipped: 0, insertedIds: [] });
+    expect(result).toEqual({ inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] });
   });
 });
 
@@ -479,6 +479,6 @@ describe('uploadCurrencyRates', () => {
 
   it('returns empty result for empty input', async () => {
     const result = await provider.uploadCurrencyRates([]);
-    expect(result).toEqual({ inserted: 0, skipped: 0, insertedIds: [] });
+    expect(result).toEqual({ inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] });
   });
 });
