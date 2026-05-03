@@ -1,16 +1,28 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
 import type { Settings } from '../../../server/vault.js';
-import { loadSettings, saveSettings } from '../../lib/api.js';
+import { getVaultPath, loadSettings, saveSettings } from '../../lib/api.js';
 
 export function SettingsTab(): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [vaultPath, setVaultPath] = useState<string>('');
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings()
       .then(s => setSettings(s))
       .catch(() => setError('Failed to load settings'));
+    getVaultPath()
+      .then(r => setVaultPath(r.path))
+      .catch(() => setVaultPath(''));
   }, []);
+
+  function handleCopyPath() {
+    void navigator.clipboard.writeText(vaultPath).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   async function autoSave(patch: Partial<Settings>) {
     try {
@@ -120,6 +132,36 @@ export function SettingsTab(): ReactElement {
           />
         </div>
       </fieldset>
+
+      {vaultPath && (
+        <fieldset style={{ border: 'none', padding: 0, margin: '20px 0 0' }}>
+          <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Vault file</legend>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <input
+              readOnly
+              value={vaultPath}
+              style={{
+                padding: '4px 8px',
+                width: '100%',
+                maxWidth: 360,
+                color: '#555',
+                background: '#f9fafb',
+              }}
+              aria-label="Vault file path"
+            />
+            <button
+              type="button"
+              onClick={handleCopyPath}
+              style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
+            >
+              {copied ? '✓ Copied' : 'Copy path'}
+            </button>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.85em', color: '#6b7280' }}>
+            Back up this file to preserve your credentials.
+          </p>
+        </fieldset>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import type { RunRecord, SourceRunRecord } from '../../shared/types.js';
+import { SkeletonTable } from '../components/skeleton.js';
 import { getHistory } from '../lib/api.js';
 
 function formatDateTime(iso: string): string {
@@ -160,7 +161,7 @@ export function History(): ReactElement {
       </div>
 
       {loading ? (
-        <p style={{ color: '#888' }}>Loading…</p>
+        <SkeletonTable rows={4} cols={7} />
       ) : error ? (
         <p style={{ color: '#b91c1c' }}>{error}</p>
       ) : records.length === 0 ? (
