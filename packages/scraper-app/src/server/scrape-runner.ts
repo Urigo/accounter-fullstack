@@ -4,6 +4,17 @@ import type { ServerMessage } from '../shared/ws-protocol.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
 
+/**
+ * Thrown by buildTask when a source is blocked (unknown accounts).
+ * Signals runTask to skip task-done and task-error — task-blocked was already emitted.
+ */
+export class BlockedError extends Error {
+  constructor() {
+    super('blocked');
+    this.name = 'BlockedError';
+  }
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type InsertedTransactionSummary = {
@@ -98,6 +109,11 @@ export async function startRun(
         });
         return { task, result };
       } catch (e) {
+        // task-blocked was already emitted by buildTask — skip task-done and task-error
+        if (e instanceof BlockedError) {
+          errorCount++;
+          return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: 'blocked' };
+        }
         errorCount++;
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;

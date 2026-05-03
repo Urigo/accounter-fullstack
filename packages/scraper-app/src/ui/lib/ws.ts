@@ -67,7 +67,7 @@ export function useRunSocket(): UseRunSocketResult {
             });
             break;
           case 'task-error':
-            next.set(msg.sourceId, { status: 'error', error: msg.message });
+            next.set(msg.sourceId, { status: 'error', error: msg.message, stack: msg.stack });
             break;
           case 'task-blocked':
             next.set(msg.sourceId, {

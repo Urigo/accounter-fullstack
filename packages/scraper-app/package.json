@@ -9,7 +9,7 @@
     "build": "yarn build:server && yarn build:ui",
     "build:server": "tsup",
     "build:ui": "vite build",
-    "dev:server": "tsup --watch --onSuccess 'node dist/index.js'",
+    "dev:server": "tsup --watch --onSuccess 'node dist/server/index.js'",
     "dev:ui": "vite",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

@@ -13,7 +13,7 @@ export async function scrapeMax(
   creds: MaxCreds,
   dateFrom: Date,
   _dateTo: Date,
-  _emit: Emitter,
+  emit: Emitter,
 ): Promise<MaxPayload> {
   const { max: maxFn, close } = await init({ headless: true });
 
@@ -23,6 +23,7 @@ export async function scrapeMax(
       { startDate: dateFrom },
     );
 
+    emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'max', status: 'running' });
     const accounts = await scraper.getTransactions();
     return validatePayload('max', accounts);
   } finally {

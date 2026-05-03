@@ -121,6 +121,7 @@ export const TaskErrorSchema = z.object({
   type: z.literal('task-error'),
   sourceId: z.string(),
   message: z.string(),
+  stack: z.string().optional(),
 });
 
 export type TaskErrorMessage = z.infer<typeof TaskErrorSchema>;
