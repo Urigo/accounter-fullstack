@@ -94,6 +94,18 @@ export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promis
   });
 }
 
+// ── Vault path ────────────────────────────────────────────────────────────────
+
+export function getVaultPath(): Promise<{ path: string }> {
+  return apiFetch('/api/vault/path');
+}
+
+// ── Connection test ───────────────────────────────────────────────────────────
+
+export function testConnection(): Promise<{ ok: boolean; latencyMs?: number; error?: string }> {
+  return apiFetch('/api/vault/test-connection');
+}
+
 // ── History ───────────────────────────────────────────────────────────────────
 
 export function getHistory(): Promise<RunRecord[]> {

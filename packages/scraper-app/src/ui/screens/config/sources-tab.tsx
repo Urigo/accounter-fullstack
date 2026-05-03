@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { SkeletonRow } from '../../components/skeleton.js';
 import { createSource, deleteSource, getSources, updateSource } from '../../lib/api.js';
 import { SourceForm } from './source-forms.js';
 import { SOURCE_LABELS, type SourceConfig, type SourceType } from './source-types.js';
@@ -11,16 +12,20 @@ type DialogState =
 
 export function SourcesTab(): ReactElement {
   const [sources, setSources] = useState<SourceConfig[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
   const [addType, setAddType] = useState<SourceType>('poalim');
 
   const load = useCallback(async () => {
+    setLoading(true);
     try {
       const list = await getSources<SourceConfig>();
       setSources(list);
     } catch {
       setError('Failed to load sources');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -82,7 +87,15 @@ export function SourcesTab(): ReactElement {
         </p>
       )}
 
-      {sources.length === 0 && !dialog && <p>No sources configured yet.</p>}
+      {loading ? (
+        <div aria-busy="true">
+          <SkeletonRow width="60%" />
+          <SkeletonRow width="75%" />
+          <SkeletonRow width="50%" />
+        </div>
+      ) : sources.length === 0 && !dialog ? (
+        <p>No sources configured yet.</p>
+      ) : null}
 
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {sources.map(s => (

@@ -3,13 +3,6 @@ import { SOURCE_TYPES } from './source-types.js';
 
 // ── Client → Server ──────────────────────────────────────────────────────────
 
-export const StartScrapeSchema = z.object({
-  type: z.literal('start-scrape'),
-  sourceIds: z.array(z.string()).optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
-});
-
 export const CancelScrapeSchema = z.object({
   type: z.literal('cancel-scrape'),
 });
@@ -36,7 +29,6 @@ export const OtpSubmitSchema = z.object({
 export type OtpSubmitMessage = z.infer<typeof OtpSubmitSchema>;
 
 export const ClientMessageSchema = z.discriminatedUnion('type', [
-  StartScrapeSchema,
   CancelScrapeSchema,
   PingSchema,
   RunStartSchema,

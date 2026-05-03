@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useState, type ReactElement } from 'react';
 import { Settings } from '../../server/vault.js';
 import { OtpModal } from '../components/otp-modal.js';
+import { SkeletonRow } from '../components/skeleton.js';
 import { TaskRow } from '../components/task-row.js';
 import { getSources, loadSettings, saveSettings } from '../lib/api.js';
 import type { UseRunSocketResult } from '../lib/ws.js';
@@ -23,6 +24,7 @@ export function Run({
   isVisible = true,
 }: RunProps): ReactElement {
   const [sources, setSources] = useState<SourceConfig[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [months, setMonths] = useState(3);
   const [useCustomRange, setUseCustomRange] = useState(false);
@@ -39,10 +41,13 @@ export function Run({
 
   useEffect(() => {
     if (!isVisible || selected.size > 0) return;
-    getSources<SourceConfig>().then(srcs => {
-      setSources(srcs);
-      setSelected(new Set(srcs.map(s => s.id)));
-    });
+    setSourcesLoading(true);
+    getSources<SourceConfig>()
+      .then(srcs => {
+        setSources(srcs);
+        setSelected(new Set(srcs.map(s => s.id)));
+      })
+      .finally(() => setSourcesLoading(false));
   }, [isVisible]);
 
   function toggleSource(id: string) {
@@ -100,7 +105,13 @@ export function Run({
       {/* Source checklist */}
       <section style={{ marginBottom: 20 }}>
         <h3 style={{ margin: '0 0 10px', fontSize: '1em' }}>Sources</h3>
-        {sources.length === 0 ? (
+        {sourcesLoading ? (
+          <div aria-busy="true">
+            <SkeletonRow width="55%" />
+            <SkeletonRow width="70%" />
+            <SkeletonRow width="45%" />
+          </div>
+        ) : sources.length === 0 ? (
           <p style={{ color: '#888' }}>No sources configured.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -302,8 +302,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
           case 'ping':
             send(socket, { type: 'pong' });
             break;
-          case 'run-start':
-          case 'start-scrape': {
+          case 'run-start': {
             let vault: Vault;
             try {
               vault = getVault();

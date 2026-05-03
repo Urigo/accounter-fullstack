@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
-import { loadSettings, saveSettings } from '../../lib/api.js';
+import { loadSettings, saveSettings, testConnection } from '../../lib/api.js';
 import { AccountsTab } from './accounts-tab.js';
 import { SettingsTab } from './settings-tab.js';
 import { SourcesTab } from './sources-tab.js';
@@ -12,10 +12,13 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'settings', label: 'Settings' },
 ];
 
+type TestResult = { ok: true; latencyMs: number } | { ok: false; error: string };
+
 function ConnectionBar(): ReactElement {
   const [serverUrl, setServerUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
-  const [toast, setToast] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
     loadSettings().then(s => {
@@ -25,16 +28,30 @@ function ConnectionBar(): ReactElement {
   }, []);
 
   function handleUrlBlur(e: ChangeEvent<HTMLInputElement>) {
+    setTestResult(null);
     void saveSettings({ serverUrl: e.target.value || undefined });
   }
 
   function handleKeyBlur(e: ChangeEvent<HTMLInputElement>) {
+    setTestResult(null);
     void saveSettings({ apiKey: e.target.value || undefined });
   }
 
-  function handleTestConnection() {
-    setToast('TODO: connection test not yet implemented');
-    setTimeout(() => setToast(null), 3000);
+  async function handleTestConnection() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await testConnection();
+      setTestResult(
+        result.ok
+          ? { ok: true, latencyMs: result.latencyMs ?? 0 }
+          : { ok: false, error: result.error ?? 'Unknown error' },
+      );
+    } catch (err) {
+      setTestResult({ ok: false, error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setTesting(false);
+    }
   }
 
   return (
@@ -81,13 +98,20 @@ function ConnectionBar(): ReactElement {
             style={{ padding: '4px 8px', width: 200 }}
           />
         </div>
-        <button type="button" onClick={handleTestConnection}>
-          Test connection
+        <button type="button" onClick={() => void handleTestConnection()} disabled={testing}>
+          {testing ? 'Testing…' : 'Test connection'}
         </button>
       </div>
-      {toast && (
-        <p role="status" style={{ margin: '8px 0 0', fontSize: '0.85em', color: '#666' }}>
-          {toast}
+      {testResult && (
+        <p
+          role="status"
+          style={{
+            margin: '8px 0 0',
+            fontSize: '0.85em',
+            color: testResult.ok ? '#15803d' : '#b91c1c',
+          }}
+        >
+          {testResult.ok ? `✓ Connected (${testResult.latencyMs} ms)` : `✕ ${testResult.error}`}
         </p>
       )}
     </div>
