@@ -34,7 +34,7 @@
     "puppeteer-extra": "3.3.6",
     "puppeteer-extra-plugin-stealth": "2.11.2",
     "uuid": "14.0.0",
-    "zod": "4.3.6"
+    "zod": "4.4.2"
   },
   "devDependencies": {
     "@types/inquirer": "9.0.9",
