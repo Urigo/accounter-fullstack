@@ -6,7 +6,7 @@ import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import type { PoalimSwiftPayload } from './payload-schemas/poalim-swift.schema.js';
-import type { BankAccount } from './vault.js';
+import type { AccountRecord } from './vault.js';
 
 export type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
 
@@ -20,7 +20,7 @@ export type ValidatedPayload =
   | CalPayload
   | MaxPayload;
 
-export type AccountRecord = BankAccount;
+export type { AccountRecord } from './vault.js';
 
 export type AccountCheckResult = { accepted: string[]; ignored: string[]; unknown: string[] };
 

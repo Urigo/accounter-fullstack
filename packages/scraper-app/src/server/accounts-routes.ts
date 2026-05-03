@@ -12,7 +12,7 @@ export async function registerAccountsRoutes(app: FastifyInstance): Promise<void
   app.get('/api/vault/accounts', async (_req, reply) => {
     const blocked = guardLocked(reply);
     if (blocked) return blocked;
-    return getVault().bankAccounts;
+    return getVault().accountRecords;
   });
 
   app.put<{ Params: { id: string }; Body: StatusBody }>(
@@ -29,19 +29,19 @@ export async function registerAccountsRoutes(app: FastifyInstance): Promise<void
       }
 
       const vault = getVault();
-      if (!vault.bankAccounts.some(a => a.id === id)) {
+      if (!vault.accountRecords.some(a => a.id === id)) {
         return reply.status(404).send({ error: 'not-found' });
       }
 
       await updateVault(v => {
-        const idx = v.bankAccounts.findIndex(a => a.id === id);
+        const idx = v.accountRecords.findIndex(a => a.id === id);
         if (idx === -1) return v;
-        const accounts = [...v.bankAccounts];
+        const accounts = [...v.accountRecords];
         accounts[idx] = { ...accounts[idx], status };
-        return { ...v, bankAccounts: accounts };
+        return { ...v, accountRecords: accounts };
       });
 
-      return getVault().bankAccounts;
+      return getVault().accountRecords;
     },
   );
 }

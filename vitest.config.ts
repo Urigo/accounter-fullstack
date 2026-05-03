@@ -66,6 +66,7 @@ export default defineConfig({
             'packages/server/src/__tests__/**/*.test.ts',
             'packages/server/src/__tests__/**/*.spec.ts',
             'packages/server/src/modules/**/*.integration.test.ts',
+            'packages/scraper-app/src/**/*.integration.test.ts',
           ],
           exclude: [
             ...defaultExclude,

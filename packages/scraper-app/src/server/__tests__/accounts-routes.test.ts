@@ -18,7 +18,7 @@ beforeEach(async () => {
   process.env['VAULT_FILE'] = vaultPath;
 
   const vault = defaultVault();
-  vault.bankAccounts.push({
+  vault.accountRecords.push({
     id: 'acc-1',
     sourceId: 'src-a',
     sourceType: 'poalim',
