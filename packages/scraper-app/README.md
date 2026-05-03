@@ -19,9 +19,9 @@ Run the Fastify server (serves the UI and handles scraping):
 yarn workspace @accounter-helper/scraper-app dev:server
 ```
 
-Then open [http://localhost:3007](http://localhost:3007) in your browser.
+Then open [http://localhost:4001](http://localhost:4001) in your browser.
 
-> The default port is `3007`. Override it with the `PORT` environment variable (see below).
+> The default port is `4001`. Override it with the `PORT` environment variable (see below).
 
 ### Build for production
 
@@ -73,7 +73,7 @@ On subsequent visits, you will be prompted to unlock the vault with your master 
 
 | Variable     | Default  | Description                             |
 | ------------ | -------- | --------------------------------------- |
-| `PORT`       | `3007`   | HTTP port the Fastify server listens on |
+| `PORT`       | `4001`   | HTTP port the Fastify server listens on |
 | `VAULT_PATH` | `.vault` | Path to the encrypted vault file        |
 
 Example:

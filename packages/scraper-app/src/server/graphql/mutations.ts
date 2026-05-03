@@ -237,7 +237,7 @@ export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
 
 // ── Variable builders ─────────────────────────────────────────────────────────
 // Each function maps a typed payload to the mutation variables object.
-// Field names match the GraphQL input types in stub-schema.graphql, which mirror
+// Field names match the GraphQL input types in graphql schema, which mirror
 // the pgtyped INSERT param shapes from the legacy scraper.
 
 export function poalimIlsVars(payload: PoalimIlsPayload) {

@@ -25,7 +25,7 @@ export async function scrapeDiscount(
   creds: DiscountCreds,
   dateFrom: Date,
   dateTo: Date,
-  _emit: Emitter,
+  emit: Emitter,
 ): Promise<DiscountPayload> {
   const { discount: discountFn, close } = await init({ headless: true });
 
@@ -40,6 +40,12 @@ export async function scrapeDiscount(
     const results: DiscountPayload = [];
 
     for (const month of months) {
+      emit({
+        type: 'scrape-progress',
+        sourceId: creds.id,
+        sourceType: 'discount',
+        status: 'running',
+      });
       const { accountNumber, balance, transactions } = await scraper.getMonthTransactions(month);
       results.push({
         accountNumber,

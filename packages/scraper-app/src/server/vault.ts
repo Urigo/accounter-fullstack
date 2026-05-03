@@ -2,6 +2,10 @@ import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:cryp
 import { readFile, writeFile } from 'node:fs/promises';
 import { z, ZodError } from 'zod';
 
+export function getVaultPath(): string {
+  return process.env['VAULT_FILE'] ?? '.vault';
+}
+
 const ALGORITHM = 'aes-256-gcm';
 const KEY_LEN = 32;
 const SALT_LEN = 32;

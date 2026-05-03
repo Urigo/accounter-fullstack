@@ -5,17 +5,9 @@ import { userEvent } from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AccountsTab } from '../screens/config/accounts-tab.js';
+import { AccountRecord } from '../../server/check-accounts.js';
 
-type BankAccount = {
-  id: string;
-  sourceId: string;
-  sourceType: string;
-  accountNumber: string;
-  branchNumber?: string;
-  status: 'accepted' | 'ignored' | 'pending';
-};
-
-function mockFetch(initial: BankAccount[]) {
+function mockFetch(initial: AccountRecord[]) {
   let accounts = [...initial];
   const fetchMock = vi.fn(async (url: string, options?: RequestInit) => {
     if (url === '/api/vault/accounts') {
@@ -24,7 +16,7 @@ function mockFetch(initial: BankAccount[]) {
     const putMatch = (url as string).match(/\/api\/vault\/accounts\/(.+)/);
     if (putMatch && options?.method === 'PUT') {
       const id = putMatch[1];
-      const { status } = JSON.parse(options.body as string) as { status: BankAccount['status'] };
+      const { status } = JSON.parse(options.body as string) as { status: AccountRecord['status'] };
       accounts = accounts.map(a => (a.id === id ? { ...a, status } : a));
       return { ok: true, json: async () => accounts } as Response;
     }
@@ -34,7 +26,7 @@ function mockFetch(initial: BankAccount[]) {
   return fetchMock;
 }
 
-const SAMPLE_ACCOUNTS: BankAccount[] = [
+const SAMPLE_ACCOUNTS: AccountRecord[] = [
   {
     id: 'acc-1',
     sourceId: 'src-a',

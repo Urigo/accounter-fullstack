@@ -25,7 +25,7 @@ export async function scrapeIsracard(
   creds: IsracardCreds,
   dateFrom: Date,
   dateTo: Date,
-  _emit: Emitter,
+  emit: Emitter,
 ): Promise<IsracardPayload[]> {
   const { isracard: isracardFn, close } = await init({ headless: true });
 
@@ -39,6 +39,12 @@ export async function scrapeIsracard(
     const results: IsracardPayload[] = [];
 
     for (const month of months) {
+      emit({
+        type: 'scrape-progress',
+        sourceId: creds.id,
+        sourceType: 'isracard',
+        status: 'running',
+      });
       const { data, isValid } = await scraper.getMonthTransactions(month);
 
       if (!data) continue;

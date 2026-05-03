@@ -162,7 +162,7 @@ dependencies: `fastify`, `@fastify/websocket`, `@fastify/static`, `ws`, `zod`, `
 0b. Create `tsconfig.json` (extends root, `"module": "NodeNext"`).  
 0c. Create `tsup.config.ts` (entry: `src/server/index.ts`, format: `esm`, target: `node22`).  
 0d. Create `vite.config.ts` (React plugin, output to `dist/ui`).  
-0e. Create `src/server/index.ts` — Fastify instance listening on port 3001, one `GET /healthz` route
+0e. Create `src/server/index.ts` — Fastify instance listening on port 4001, one `GET /healthz` route
 returning `{ ok: true }`.  
 0f. Create `src/ui/main.tsx` and `index.html` — minimal React "Scraper App" heading.  
 0g. Add package to root `package.json` workspaces.  
@@ -500,7 +500,7 @@ Task: create the `packages/scraper-app` package from scratch.
    - React plugin, root: `src/ui`, build.outDir: `../../dist/scraper-app/ui`
 
 5. Create `packages/scraper-app/src/server/index.ts`:
-   - Fastify server on port 3001 (or `PORT` env var)
+   - Fastify server on port 4001 (or `PORT` env var)
    - One route: `GET /healthz` returning `{ ok: true }`
    - `export async function buildServer()` that returns the Fastify instance (for testing)
    - `if (import.meta.url === pathToFileURL(process.argv[1]).href)` guard for direct execution

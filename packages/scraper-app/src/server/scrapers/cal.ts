@@ -25,7 +25,7 @@ export async function scrapeCal(
   creds: CalCreds,
   dateFrom: Date,
   dateTo: Date,
-  _emit: Emitter,
+  emit: Emitter,
 ): Promise<CalPayload> {
   const { cal: calFn, close } = await init({ headless: true });
 
@@ -40,6 +40,7 @@ export async function scrapeCal(
     const results: CalPayload = [];
 
     for (const month of months) {
+      emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'cal', status: 'running' });
       const transactions = await scraper.getMonthTransactions(creds.last4Digits, month);
       results.push({
         card: creds.last4Digits,

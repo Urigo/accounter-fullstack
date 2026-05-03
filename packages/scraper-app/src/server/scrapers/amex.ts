@@ -25,7 +25,7 @@ export async function scrapeAmex(
   creds: AmexCreds,
   dateFrom: Date,
   dateTo: Date,
-  _emit: Emitter,
+  emit: Emitter,
 ): Promise<AmexPayload[]> {
   const { amex: amexFn, close } = await init({ headless: true });
 
@@ -39,6 +39,7 @@ export async function scrapeAmex(
     const results: AmexPayload[] = [];
 
     for (const month of months) {
+      emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'amex', status: 'running' });
       const { data, isValid } = await scraper.getMonthTransactions(month);
 
       if (!data) continue;
