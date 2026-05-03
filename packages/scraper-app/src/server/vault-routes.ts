@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
 import { registerSourcesRoutes } from './sources-routes.js';
-import { hasVaultFile, isLocked, lockVault, unlockVault } from './vault-store.js';
+import { getVault, hasVaultFile, isLocked, lockVault, unlockVault } from './vault-store.js';
 import { defaultVault, saveVaultFile } from './vault.js';
 
 function getVaultPath(): string {
@@ -65,6 +65,37 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(201).send({ ok: true });
     },
   );
+
+  app.get('/api/vault/path', async (_req, reply) => {
+    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+    return { path: getVaultPath() };
+  });
+
+  app.get('/api/vault/test-connection', async (_req, reply) => {
+    if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
+    const { serverUrl, apiKey } = getVault().settings;
+    if (!serverUrl || !apiKey) {
+      return reply.status(400).send({ error: 'Server URL and API key are not configured' });
+    }
+    const t0 = Date.now();
+    try {
+      const res = await fetch(serverUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ query: '{ __typename }' }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const latencyMs = Date.now() - t0;
+      if (!res.ok) {
+        const text = await res.text().catch(() => res.statusText);
+        return { ok: false, error: `HTTP ${res.status}: ${text}`, latencyMs };
+      }
+      return { ok: true, latencyMs };
+    } catch (err) {
+      const latencyMs = Date.now() - t0;
+      return { ok: false, error: err instanceof Error ? err.message : String(err), latencyMs };
+    }
+  });
 
   await registerSourcesRoutes(app);
   await registerSettingsRoutes(app);

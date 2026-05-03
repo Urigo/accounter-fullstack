@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { ErrorBoundary } from './components/error-boundary.js';
 import { useVault, VaultContext, VaultProvider } from './contexts/vault-context.js';
 import { useRunSocket } from './lib/ws.js';
 import { Config } from './screens/config/config.js';
@@ -25,10 +26,24 @@ function AppContent(): ReactElement {
   const { status } = useVault();
 
   if (status === 'loading') return <div>Loading…</div>;
-  if (status === 'no-file') return <VaultSetup />;
-  if (status === 'locked') return <VaultUnlock />;
+  if (status === 'no-file')
+    return (
+      <ErrorBoundary label="VaultSetup">
+        <VaultSetup />
+      </ErrorBoundary>
+    );
+  if (status === 'locked')
+    return (
+      <ErrorBoundary label="VaultUnlock">
+        <VaultUnlock />
+      </ErrorBoundary>
+    );
 
-  return <AppUnlocked />;
+  return (
+    <ErrorBoundary label="App">
+      <AppUnlocked />
+    </ErrorBoundary>
+  );
 }
 
 function AppUnlocked(): ReactElement {
@@ -67,10 +82,20 @@ function AppUnlocked(): ReactElement {
 
       {/* Always mounted — visibility toggled via CSS so WS state survives tab switches */}
       <div style={hidden(tab === 'run')}>
-        <Run {...socket} onNavigateAccounts={() => setTab('config')} isVisible={tab === 'run'} />
+        <ErrorBoundary label="Run">
+          <Run {...socket} onNavigateAccounts={() => setTab('config')} isVisible={tab === 'run'} />
+        </ErrorBoundary>
       </div>
-      <div style={hidden(tab === 'history')}>{tab === 'history' && <History />}</div>
-      <div style={hidden(tab === 'config')}>{tab === 'config' && <Config />}</div>
+      {tab === 'history' && (
+        <ErrorBoundary label="History">
+          <History />
+        </ErrorBoundary>
+      )}
+      {tab === 'config' && (
+        <ErrorBoundary label="Config">
+          <Config />
+        </ErrorBoundary>
+      )}
     </main>
   );
 }
