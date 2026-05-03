@@ -79,7 +79,7 @@ export function SourcesTab(): ReactElement {
 
   return (
     <div>
-      <h2>Bank Sources</h2>
+      <h2>Sources</h2>
 
       {error && (
         <p role="alert" style={{ color: 'red' }}>

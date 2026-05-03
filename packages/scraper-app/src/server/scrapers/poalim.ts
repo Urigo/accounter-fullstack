@@ -18,12 +18,13 @@ const OTP_TIMEOUT_MS = 5 * 60 * 1000;
 // exposes otpCallback in its public HapoalimOptions type.
 type ScraperCallOptions = {
   isBusiness?: boolean;
+  duration?: number;
   otpCallback?: () => Promise<string>;
 };
 
 export async function scrapePoalim(
   creds: PoalimCreds,
-  _dateFrom: Date,
+  dateFrom: Date,
   _dateTo: Date,
   headless: boolean,
   otpManager: OtpManager,
@@ -44,10 +45,18 @@ export async function scrapePoalim(
 
   const scrape = hapoalimFn as unknown as HapoalimFn;
 
+  // calculate duration based ondateFrom and today. return number of months between the two dates, with a minimum of 1 month
+  const months = Math.max(
+    1,
+    (_dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
+      (_dateTo.getMonth() - dateFrom.getMonth()) +
+      1,
+  );
+
   try {
     const scraper = await scrape(
       { userCode: creds.userCode, password: creds.password },
-      { isBusiness: creds.options?.isBusinessAccount ?? true, otpCallback },
+      { isBusiness: creds.options?.isBusinessAccount ?? true, otpCallback, duration: months },
     );
 
     if (scraper === 'Unknown Error') {

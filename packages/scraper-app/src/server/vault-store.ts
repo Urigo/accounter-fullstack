@@ -1,9 +1,5 @@
 import { access } from 'node:fs/promises';
-import { loadVaultFile, saveVaultFile, type Vault } from './vault.js';
-
-function getVaultPath(): string {
-  return process.env['VAULT_FILE'] ?? '.vault';
-}
+import { getVaultPath, loadVaultFile, saveVaultFile, type Vault } from './vault.js';
 
 let _vault: Vault | null = null;
 let _password: string | null = null;

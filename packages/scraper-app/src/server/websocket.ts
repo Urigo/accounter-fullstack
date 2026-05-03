@@ -14,7 +14,7 @@ import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
-import { ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
+import { BlockedError, ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { scrapeAmex } from './scrapers/amex.js';
 import { scrapeCal } from './scrapers/cal.js';
 import { scrapeCurrencyRates } from './scrapers/currency-rates.js';
@@ -88,13 +88,7 @@ function buildTask(
             sourceType: src.type,
             unknownAccounts: [...new Set(allUnknown)],
           });
-          emit({
-            type: 'scrape-progress',
-            sourceId: src.id,
-            sourceType: src.type,
-            status: 'blocked',
-          });
-          return { inserted: 0, skipped: 0, insertedIds: [] };
+          throw new BlockedError();
         }
 
         if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
@@ -205,13 +199,7 @@ function buildTask(
           sourceType: src.type,
           unknownAccounts: check.unknown,
         });
-        emit({
-          type: 'scrape-progress',
-          sourceId: src.id,
-          sourceType: src.type,
-          status: 'blocked',
-        });
-        return { inserted: 0, skipped: 0, insertedIds: [] };
+        throw new BlockedError();
       }
 
       if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };

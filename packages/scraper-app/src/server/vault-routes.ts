@@ -3,11 +3,7 @@ import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
 import { registerSourcesRoutes } from './sources-routes.js';
 import { getVault, hasVaultFile, isLocked, lockVault, unlockVault } from './vault-store.js';
-import { defaultVault, saveVaultFile } from './vault.js';
-
-function getVaultPath(): string {
-  return process.env['VAULT_FILE'] ?? '.vault';
-}
+import { defaultVault, getVaultPath, saveVaultFile } from './vault.js';
 
 type UnlockBody = { password: string };
 type CreateBody = { password: string; serverUrl: string; apiKey: string };
