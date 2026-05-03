@@ -1,11 +1,35 @@
 import { gql } from 'graphql-modules';
 
 export default gql`
+  " Summary of a single inserted transaction row "
+  type InsertedTransactionSummary {
+    id: ID!
+    date: String
+    description: String
+    amount: String
+    account: String
+  }
+
+  " A field that changed on an existing row (reserved for future upsert logic) "
+  type ChangedField {
+    field: String!
+    oldValue: String
+    newValue: String
+  }
+
+  " A transaction row that was updated rather than inserted (reserved for future upsert logic) "
+  type ChangedTransaction {
+    id: ID!
+    changedFields: [ChangedField!]!
+  }
+
   " Result of a scraper upload mutation "
   type ScraperUploadResult {
     inserted: Int!
     skipped: Int!
     insertedIds: [String!]!
+    insertedTransactions: [InsertedTransactionSummary!]!
+    changedTransactions: [ChangedTransaction!]!
   }
 
   # ── Poalim ILS ──────────────────────────────────────────────────────────────

@@ -23,12 +23,17 @@ function hidden(visible: boolean): React.CSSProperties {
 
 function AppContent(): ReactElement {
   const { status } = useVault();
-  const [tab, setTab] = useState<AppTab>('run');
-  const socket = useRunSocket();
 
   if (status === 'loading') return <div>Loading…</div>;
   if (status === 'no-file') return <VaultSetup />;
   if (status === 'locked') return <VaultUnlock />;
+
+  return <AppUnlocked />;
+}
+
+function AppUnlocked(): ReactElement {
+  const [tab, setTab] = useState<AppTab>('run');
+  const socket = useRunSocket();
 
   return (
     <main style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
@@ -62,7 +67,7 @@ function AppContent(): ReactElement {
 
       {/* Always mounted — visibility toggled via CSS so WS state survives tab switches */}
       <div style={hidden(tab === 'run')}>
-        <Run {...socket} onNavigateAccounts={() => setTab('config')} />
+        <Run {...socket} onNavigateAccounts={() => setTab('config')} isVisible={tab === 'run'} />
       </div>
       <div style={hidden(tab === 'history')}>{tab === 'history' && <History />}</div>
       <div style={hidden(tab === 'config')}>{tab === 'config' && <Config />}</div>

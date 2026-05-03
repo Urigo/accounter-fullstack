@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { ChangeEvent, useEffect, useState, type ReactElement } from 'react';
+import { Settings } from '../../server/vault.js';
 import { OtpModal } from '../components/otp-modal.js';
 import { TaskRow } from '../components/task-row.js';
-import { getSources } from '../lib/api.js';
+import { getSources, loadSettings, saveSettings } from '../lib/api.js';
 import type { UseRunSocketResult } from '../lib/ws.js';
 import type { SourceConfig } from './config/source-types.js';
 import { SOURCE_LABELS } from './config/source-types.js';
@@ -11,7 +12,7 @@ function nickname(src: SourceConfig): string {
   return `${SOURCE_LABELS[src.type]} (${src.id.slice(0, 6)})`;
 }
 
-type RunProps = UseRunSocketResult & { onNavigateAccounts?: () => void };
+type RunProps = UseRunSocketResult & { onNavigateAccounts?: () => void; isVisible?: boolean };
 
 export function Run({
   send,
@@ -19,6 +20,7 @@ export function Run({
   runStatus,
   summary,
   onNavigateAccounts,
+  isVisible = true,
 }: RunProps): ReactElement {
   const [sources, setSources] = useState<SourceConfig[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -26,13 +28,22 @@ export function Run({
   const [useCustomRange, setUseCustomRange] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [shouldFetchRates, setShouldFetchRates] = useState(false);
 
   useEffect(() => {
+    loadSettings()
+      .then(s => setShouldFetchRates(s.fetchBankOfIsraelRates))
+      .catch(() => setError('Failed to load settings'));
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible || selected.size > 0) return;
     getSources<SourceConfig>().then(srcs => {
       setSources(srcs);
       setSelected(new Set(srcs.map(s => s.id)));
     });
-  }, []);
+  }, [isVisible]);
 
   function toggleSource(id: string) {
     setSelected(prev => {
@@ -42,6 +53,21 @@ export function Run({
       return next;
     });
   }
+
+  async function autoSave(patch: Partial<Settings>) {
+    try {
+      const updated = await saveSettings(patch);
+      setShouldFetchRates(updated.fetchBankOfIsraelRates);
+    } catch {
+      setError('Failed to toggle currency rates setting');
+    }
+  }
+
+  const handleToggleRates = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.checked;
+    setShouldFetchRates(value);
+    void autoSave({ fetchBankOfIsraelRates: value });
+  };
 
   function handleRun() {
     const sourceIds = [...selected];
@@ -65,6 +91,12 @@ export function Run({
     <div>
       <h2 style={{ margin: '0 0 16px' }}>Run Scrapers</h2>
 
+      {error && (
+        <p role="alert" style={{ color: 'red' }}>
+          {error}
+        </p>
+      )}
+
       {/* Source checklist */}
       <section style={{ marginBottom: 20 }}>
         <h3 style={{ margin: '0 0 10px', fontSize: '1em' }}>Sources</h3>
@@ -85,6 +117,11 @@ export function Run({
                 {nickname(src)}
               </label>
             ))}
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={shouldFetchRates} onChange={handleToggleRates} />
+              Currency Rates (Bank of Israel)
+            </label>
           </div>
         )}
       </section>
