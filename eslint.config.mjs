@@ -119,6 +119,7 @@ export default [
               'BusinessEmailConfig',
               'BusinessTripSummary',
               'BusinessTripSummaryRow',
+              'ChangedField',
               'ChargeMatch',
               'ChargeMatchesResult',
               'ChargeMetadata',

@@ -97,8 +97,12 @@ export function useRunSocket(): UseRunSocketResult {
     };
 
     return () => {
-      ws.close();
       wsRef.current = null;
+      if (ws.readyState === WebSocket.CONNECTING) {
+        ws.onopen = () => ws.close();
+      } else {
+        ws.close();
+      }
     };
   }, []);
 

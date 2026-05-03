@@ -8,33 +8,6 @@ import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.sch
 import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
 import type { PoalimSwiftPayload } from '../payload-schemas/poalim-swift.schema.js';
 
-export type InsertedTransactionSummary = {
-  id: string;
-  date?: string | null;
-  description?: string | null;
-  amount?: string | null;
-  account?: string | null;
-};
-
-export type ChangedField = {
-  field: string;
-  oldValue?: string | null;
-  newValue?: string | null;
-};
-
-export type ChangedTransaction = {
-  id: string;
-  changedFields: ChangedField[];
-};
-
-export type UploadResult = {
-  inserted: number;
-  skipped: number;
-  insertedIds: string[];
-  insertedTransactions?: InsertedTransactionSummary[];
-  changedTransactions?: ChangedTransaction[];
-};
-
 // ── Mutation document strings ──────────────────────────────────────────────────
 
 export const UPLOAD_POALIM_ILS = /* GraphQL */ `
