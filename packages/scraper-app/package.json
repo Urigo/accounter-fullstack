@@ -1,10 +1,22 @@
 {
-  "name": "@accounter-helper/scraper-app",
-  "version": "0.0.0",
+  "name": "@accounter/scraper-app",
+  "version": "0.0.1",
   "type": "module",
   "description": "Scraper app with Fastify server and React UI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/scraper-app"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/scraper-app#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
-  "private": true,
+  "engines": {
+    "node": "^20.0.0 || >= 22"
+  },
   "scripts": {
     "build": "yarn build:server && yarn build:ui",
     "build:server": "tsup",
@@ -37,5 +49,9 @@
     "typescript": "6.0.3",
     "vite": "8.0.9",
     "vitest": "4.1.5"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   }
 }
