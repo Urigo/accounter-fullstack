@@ -123,7 +123,7 @@ export const VaultSchema = z.object({
   settings: SettingsSchema.default({
     showBrowser: false,
     fetchBankOfIsraelRates: true,
-    concurrentScraping: true,
+    concurrentScraping: false,
     defaultDateRangeMonths: 3,
     historyFilePath: './history.json',
     saveHistory: true,
