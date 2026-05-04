@@ -34,7 +34,7 @@
     "fast-xml-parser": "5.7.2",
     "fastify": "5.8.5",
     "graphql-request": "7.4.0",
-    "msw": "2.13.6",
+    "msw": "2.14.2",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "ws": "8.20.0",
