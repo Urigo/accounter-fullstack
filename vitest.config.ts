@@ -11,6 +11,10 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'packages/client/src'),
       '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+      '@accounter/modern-poalim-scraper': resolve(
+        __dirname,
+        'packages/modern-poalim-scraper/src/index.ts',
+      ),
     },
   },
   test: {
@@ -18,6 +22,10 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'packages/client/src'),
       '@accounter/pcn874-generator': resolve(__dirname, 'packages/pcn874-generator/src/index.ts'),
+      '@accounter/modern-poalim-scraper': resolve(
+        __dirname,
+        'packages/modern-poalim-scraper/src/index.ts',
+      ),
     },
     exclude: [...defaultExclude, '**/dist/**', '**/build/**'],
     setupFiles: ['./scripts/vitest-setup.ts'],
@@ -42,6 +50,10 @@ export default defineConfig({
               __dirname,
               'packages/pcn874-generator/src/index.ts',
             ),
+            '@accounter/modern-poalim-scraper': resolve(
+              __dirname,
+              'packages/modern-poalim-scraper/src/index.ts',
+            ),
           },
           setupFiles: ['./scripts/vitest-setup.ts'],
           globalSetup: ['./scripts/vitest-global-setup.ts'],
@@ -54,6 +66,7 @@ export default defineConfig({
             'packages/server/src/__tests__/**/*.test.ts',
             'packages/server/src/__tests__/**/*.spec.ts',
             'packages/server/src/modules/**/*.integration.test.ts',
+            'packages/scraper-app/src/**/*.integration.test.ts',
           ],
           exclude: [
             ...defaultExclude,

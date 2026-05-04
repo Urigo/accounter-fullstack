@@ -1,0 +1,56 @@
+import { addMonths, format, startOfMonth } from 'date-fns';
+import type { z } from 'zod';
+import { init } from '@accounter/modern-poalim-scraper';
+import type { ServerMessage } from '../../shared/ws-protocol.js';
+import type { CalPayload } from '../payload-schemas/cal.schema.js';
+import { validatePayload } from '../validate-payload.js';
+import type { CalAccountSchema } from '../vault.js';
+
+export type CalCreds = z.infer<typeof CalAccountSchema>;
+
+export type Emitter = (msg: ServerMessage) => void;
+
+function buildMonthList(dateFrom: Date, dateTo: Date): Date[] {
+  const months: Date[] = [];
+  let current = startOfMonth(dateFrom);
+  const end = startOfMonth(dateTo);
+  while (current <= end) {
+    months.push(current);
+    current = addMonths(current, 1);
+  }
+  return months;
+}
+
+export async function scrapeCal(
+  creds: CalCreds,
+  dateFrom: Date,
+  dateTo: Date,
+  emit: Emitter,
+): Promise<CalPayload> {
+  const { cal: calFn, close } = await init({ headless: true });
+
+  try {
+    const scraper = await calFn({
+      username: creds.username,
+      password: creds.password,
+      last4Digits: creds.last4Digits,
+    });
+
+    const months = buildMonthList(dateFrom, dateTo);
+    const results: CalPayload = [];
+
+    for (const month of months) {
+      emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'cal', status: 'running' });
+      const transactions = await scraper.getMonthTransactions(creds.last4Digits, month);
+      results.push({
+        card: creds.last4Digits,
+        month: format(month, 'yyyy-MM'),
+        transactions,
+      });
+    }
+
+    return validatePayload('cal', results);
+  } finally {
+    await close();
+  }
+}

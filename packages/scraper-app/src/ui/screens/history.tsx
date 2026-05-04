@@ -1,0 +1,234 @@
+import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import type { RunRecord, SourceRunRecord } from '../../shared/types.js';
+import { SkeletonTable } from '../components/skeleton.js';
+import { getHistory } from '../lib/api.js';
+
+function formatDateTime(iso: string): string {
+  return new Date(iso).toLocaleString();
+}
+
+export function formatDuration(startedAt: string, completedAt: string): string {
+  const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds}s`;
+}
+
+const SOURCE_STATUS_STYLE: Record<string, { background: string; color: string }> = {
+  done: { background: '#dcfce7', color: '#15803d' },
+  error: { background: '#fee2e2', color: '#b91c1c' },
+  blocked: { background: '#fef9c3', color: '#854d0e' },
+};
+
+const SOURCE_STATUS_LABEL: Record<string, string> = {
+  done: 'done',
+  error: 'error',
+  blocked: 'blocked',
+};
+
+function SourceRow({ src }: { src: SourceRunRecord }): ReactElement {
+  const style = SOURCE_STATUS_STYLE[src.status] ?? SOURCE_STATUS_STYLE['done']!;
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <tr>
+        <td key={src.sourceId} style={{ padding: '4px 8px', color: '#555' }}>
+          {src.nickname || src.sourceId}
+        </td>
+        <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceType}</td>
+        <td style={{ padding: '4px 8px' }}>
+          <span
+            style={{
+              ...style,
+              padding: '1px 7px',
+              borderRadius: 10,
+              fontSize: '0.78em',
+              fontWeight: 600,
+            }}
+          >
+            {SOURCE_STATUS_LABEL[src.status] ?? src.status}
+          </span>
+        </td>
+        <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.inserted}</td>
+        <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.skipped}</td>
+        <td style={{ padding: '4px 8px', color: '#b91c1c' }}>
+          {src.status === 'blocked' ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(e => !e)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#854d0e',
+                fontSize: '0.85em',
+                padding: 0,
+              }}
+            >
+              {expanded ? '▲' : '▼'} {src.blockedAccounts?.length ?? 0} unknown
+            </button>
+          ) : (
+            (src.error ?? '—')
+          )}
+        </td>
+      </tr>
+      {expanded && src.blockedAccounts && src.blockedAccounts.length > 0 && (
+        <tr>
+          <td
+            colSpan={6}
+            style={{ padding: '2px 8px 8px 24px', color: '#854d0e', fontSize: '0.82em' }}
+          >
+            {src.blockedAccounts.join(', ')}
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+function RunRow({ record }: { record: RunRecord }): ReactElement {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <>
+      <tr
+        onClick={() => setExpanded(e => !e)}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setExpanded(prev => !prev);
+          }
+        }}
+        tabIndex={0}
+        role="button"
+        style={{ cursor: 'pointer', background: expanded ? '#f9fafb' : undefined }}
+        aria-expanded={expanded}
+      >
+        <td style={{ padding: '8px 10px' }}>{formatDateTime(record.startedAt)}</td>
+        <td style={{ padding: '8px 10px' }}>
+          {formatDuration(record.startedAt, record.completedAt)}
+        </td>
+        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{record.sources.length}</td>
+        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{record.totalInserted}</td>
+        <td style={{ padding: '8px 10px', textAlign: 'right' }}>{record.totalSkipped}</td>
+        <td
+          style={{
+            padding: '8px 10px',
+            textAlign: 'right',
+            color: record.errorCount > 0 ? '#b91c1c' : undefined,
+            fontWeight: record.errorCount > 0 ? 600 : undefined,
+          }}
+        >
+          {record.errorCount}
+        </td>
+        <td style={{ padding: '8px 10px', color: '#888', fontSize: '0.85em' }}>
+          {expanded ? '▲' : '▼'}
+        </td>
+      </tr>
+
+      {expanded && record.sources.length > 0 && (
+        <tr>
+          <td colSpan={7} style={{ padding: '0 16px 12px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88em' }}>
+              <thead>
+                <tr style={{ color: '#888', textAlign: 'left' }}>
+                  <th style={{ padding: '4px 8px', fontWeight: 500 }}>Source</th>
+                  <th style={{ padding: '4px 8px', fontWeight: 500 }}>Type</th>
+                  <th style={{ padding: '4px 8px', fontWeight: 500 }}>Status</th>
+                  <th style={{ padding: '4px 8px', fontWeight: 500, textAlign: 'right' }}>New</th>
+                  <th style={{ padding: '4px 8px', fontWeight: 500, textAlign: 'right' }}>
+                    Skipped
+                  </th>
+                  <th style={{ padding: '4px 8px', fontWeight: 500 }}>Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {record.sources.map(src => (
+                  <SourceRow key={src.sourceId} src={src} />
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      )}
+
+      {expanded && record.sources.length === 0 && (
+        <tr>
+          <td colSpan={7} style={{ padding: '4px 16px 12px', color: '#aaa', fontSize: '0.88em' }}>
+            No per-source breakdown available.
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
+export function History(): ReactElement {
+  const [records, setRecords] = useState<RunRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    getHistory()
+      .then(setRecords)
+      .catch(err => setError(err instanceof Error ? err.message : String(err)))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Scrape History</h2>
+        <button
+          type="button"
+          onClick={load}
+          disabled={loading}
+          style={{
+            padding: '4px 14px',
+            cursor: loading ? 'default' : 'pointer',
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          Refresh
+        </button>
+      </div>
+
+      {loading ? (
+        <SkeletonTable rows={4} cols={7} />
+      ) : error ? (
+        <p style={{ color: '#b91c1c' }}>{error}</p>
+      ) : records.length === 0 ? (
+        <p style={{ color: '#888' }}>No scrape runs recorded yet.</p>
+      ) : (
+        <table
+          style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.93em' }}
+          aria-label="Scrape history"
+        >
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e5e7eb', color: '#374151', textAlign: 'left' }}>
+              <th style={{ padding: '8px 10px', fontWeight: 600 }}>Date / Time</th>
+              <th style={{ padding: '8px 10px', fontWeight: 600 }}>Duration</th>
+              <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Sources</th>
+              <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>New</th>
+              <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Skipped</th>
+              <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Errors</th>
+              <th style={{ padding: '8px 10px' }} />
+            </tr>
+          </thead>
+          <tbody>
+            {records.map(r => (
+              <RunRow key={r.id} record={r} />
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}

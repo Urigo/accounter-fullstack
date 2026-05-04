@@ -1,0 +1,57 @@
+{
+  "name": "@accounter/scraper-app",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Scraper app with Fastify server and React UI",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/scraper-app"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/scraper-app#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": "^20.0.0 || >= 22"
+  },
+  "scripts": {
+    "build": "yarn build:server && yarn build:ui",
+    "build:server": "tsup",
+    "build:ui": "vite build",
+    "dev:server": "tsup --watch --onSuccess 'node dist/server/index.js'",
+    "dev:ui": "vite",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@accounter/modern-poalim-scraper": "workspace:^",
+    "@fastify/static": "9.1.3",
+    "@fastify/websocket": "11.2.0",
+    "date-fns": "4.1.0",
+    "fast-xml-parser": "5.7.2",
+    "fastify": "5.8.5",
+    "graphql-request": "7.4.0",
+    "msw": "2.13.6",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "ws": "8.20.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@vitejs/plugin-react": "6.0.1",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "vite": "8.0.9",
+    "vitest": "4.1.5"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
+}
