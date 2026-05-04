@@ -40,13 +40,25 @@ export async function scrapeCal(
     const results: CalPayload = [];
 
     for (const month of months) {
-      emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'cal', status: 'running' });
-      const transactions = await scraper.getMonthTransactions(creds.last4Digits, month);
-      results.push({
-        card: creds.last4Digits,
-        month: format(month, 'yyyy-MM'),
-        transactions,
-      });
+      const monthStr = format(month, 'yyyy-MM');
+      emit({ type: 'task-month-fetching', sourceId: creds.id, month: monthStr });
+      try {
+        const transactions = await scraper.getMonthTransactions(creds.last4Digits, month);
+        emit({
+          type: 'task-month-fetched',
+          sourceId: creds.id,
+          month: monthStr,
+          transactionCount: transactions.length,
+        });
+        results.push({ card: creds.last4Digits, month: monthStr, transactions });
+      } catch (err) {
+        emit({
+          type: 'task-month-error',
+          sourceId: creds.id,
+          month: monthStr,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
 
     return validatePayload('cal', results);

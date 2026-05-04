@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import websocketPlugin from '@fastify/websocket';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
 import { registerDiscoveredAccounts } from './account-discovery.js';
@@ -16,11 +15,15 @@ import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import { BlockedError, ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
-import { scrapeAmex } from './scrapers/amex.js';
+import { scrapeAmex, type MonthlyIsracardPayload as MonthlyAmexPayload } from './scrapers/amex.js';
 import { scrapeCal } from './scrapers/cal.js';
 import { scrapeCurrencyRates } from './scrapers/currency-rates.js';
 import { scrapeDiscount } from './scrapers/discount.js';
-import { scrapeIsracard } from './scrapers/isracard.js';
+import {
+  countIsracardTransactions,
+  scrapeIsracard,
+  type MonthlyIsracardPayload,
+} from './scrapers/isracard.js';
 import { scrapeMax } from './scrapers/max.js';
 import { scrapePoalim } from './scrapers/poalim.js';
 import { getVault, isLocked } from './vault-store.js';
@@ -113,21 +116,80 @@ function buildTask(
           const ilsPayload = filteredIls[i]!;
           // An empty transactions array means filterPayload excluded this account — skip all sub-types.
           const accountExcluded = ilsPayload.transactions?.length === 0;
+          const accountId = String(ilsPayload.accountNumber ?? i);
 
+          // Emit vault-checked status based on whether account was excluded
+          emit({
+            type: 'task-account-vault-checked',
+            sourceId: src.id,
+            accountId,
+            status: accountExcluded ? 'ignored' : 'accepted',
+          });
+
+          const ilsCount = ilsPayload.transactions?.length ?? 0;
+          emit({
+            type: 'task-account-txns-uploading',
+            sourceId: src.id,
+            accountId,
+            txnType: 'ils',
+            count: ilsCount,
+          });
           const r = await uploadClient.uploadPoalimIls(ilsPayload);
+          emit({
+            type: 'task-account-txns-done',
+            sourceId: src.id,
+            accountId,
+            txnType: 'ils',
+            inserted: r.inserted,
+            skipped: r.skipped,
+          });
           totalInserted += r.inserted;
           totalSkipped += r.skipped;
           allIds.push(...r.insertedIds);
 
           if (!accountExcluded) {
             if (foreign[i]) {
-              const rf = await uploadClient.uploadPoalimForeign(foreign[i]!);
+              const foreignPayload = foreign[i]!;
+              const foreignCount = (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'foreign',
+                count: foreignCount,
+              });
+              const rf = await uploadClient.uploadPoalimForeign(foreignPayload);
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'foreign',
+                inserted: rf.inserted,
+                skipped: rf.skipped,
+              });
               totalInserted += rf.inserted;
               totalSkipped += rf.skipped;
               allIds.push(...rf.insertedIds);
             }
             if (swift[i]) {
-              const rs = await uploadClient.uploadPoalimSwift(swift[i]!);
+              const swiftPayload = swift[i]!;
+              const swiftCount = (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'swift',
+                count: swiftCount,
+              });
+              const rs = await uploadClient.uploadPoalimSwift(swiftPayload);
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'swift',
+                inserted: rs.inserted,
+                skipped: rs.skipped,
+              });
               totalInserted += rs.inserted;
               totalSkipped += rs.skipped;
               allIds.push(...rs.insertedIds);
@@ -144,18 +206,22 @@ function buildTask(
       }
 
       // isracard/amex return one payload per month; other scrapers return a single payload
+      let isracardPayloads: (MonthlyIsracardPayload | MonthlyAmexPayload)[] | null = null;
       let payloads: ValidatedPayload[];
+
       switch (src.type) {
         case 'isracard': {
           const creds = vault.isracardAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Isracard account ${src.id} not found in vault`);
-          payloads = await scrapeIsracard(creds, dateFrom, dateTo, emit);
+          isracardPayloads = await scrapeIsracard(creds, dateFrom, dateTo, emit);
+          payloads = isracardPayloads.map(p => p.data);
           break;
         }
         case 'amex': {
           const creds = vault.amexAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Amex account ${src.id} not found in vault`);
-          payloads = await scrapeAmex(creds, dateFrom, dateTo, emit);
+          isracardPayloads = await scrapeAmex(creds, dateFrom, dateTo, emit);
+          payloads = isracardPayloads.map(p => p.data);
           break;
         }
         case 'cal': {
@@ -214,6 +280,12 @@ function buildTask(
 
       if (creds) {
         payloads = payloads.map(p => filterPayload(src.type, p, creds!) as ValidatedPayload);
+        if (isracardPayloads) {
+          isracardPayloads = isracardPayloads.map((p, i) => ({
+            ...p,
+            data: payloads[i] as (typeof p)['data'],
+          }));
+        }
       }
 
       // Register any newly discovered accounts as pending, then re-read to avoid stale closure
@@ -245,31 +317,78 @@ function buildTask(
       const changedTransactions: ChangedTransaction[] = [];
       const insertedTransactions: InsertedTransactionSummary[] = [];
 
-      if (src.type === 'isracard' || src.type === 'amex') {
-        let result: ScraperUploadResult;
-        switch (src.type) {
-          case 'isracard':
-            result = await uploadClient.uploadIsracard(payloads as IsracardCardsTransactionsList[]);
-            break;
-          case 'amex':
-            result = await uploadClient.uploadAmex(payloads as IsracardCardsTransactionsList[]);
-            break;
+      if ((src.type === 'isracard' || src.type === 'amex') && isracardPayloads) {
+        for (const { month, data: monthData } of isracardPayloads) {
+          const txnCount = countIsracardTransactions(monthData);
+          emit({
+            type: 'task-month-uploading',
+            sourceId: src.id,
+            month,
+            transactionCount: txnCount,
+          });
+          let result: ScraperUploadResult;
+          if (src.type === 'isracard') {
+            result = await uploadClient.uploadIsracard([monthData]);
+          } else {
+            result = await uploadClient.uploadAmex([monthData]);
+          }
+          emit({
+            type: 'task-month-uploaded',
+            sourceId: src.id,
+            month,
+            inserted: result.inserted,
+            skipped: result.skipped,
+          });
+          totalInserted += result.inserted;
+          totalSkipped += result.skipped;
+          allIds.push(...result.insertedIds);
+          changedTransactions.push(...(result.changedTransactions ?? []));
+          insertedTransactions.push(...(result.insertedTransactions ?? []));
         }
-        totalInserted += result.inserted;
-        totalSkipped += result.skipped;
-        allIds.push(...result.insertedIds);
-        changedTransactions.push(...(result.changedTransactions ?? []));
-        insertedTransactions.push(...(result.insertedTransactions ?? []));
       } else {
         for (const payload of payloads) {
           let result: ScraperUploadResult;
           switch (src.type) {
-            case 'cal':
-              result = await uploadClient.uploadCal(payload as CalPayload);
+            case 'cal': {
+              const calPayload = payload as CalPayload;
+              const month = calPayload[0]?.month ?? '';
+              const txnCount = calPayload.reduce((s, e) => s + e.transactions.length, 0);
+              emit({
+                type: 'task-month-uploading',
+                sourceId: src.id,
+                month,
+                transactionCount: txnCount,
+              });
+              result = await uploadClient.uploadCal(calPayload);
+              emit({
+                type: 'task-month-uploaded',
+                sourceId: src.id,
+                month,
+                inserted: result.inserted,
+                skipped: result.skipped,
+              });
               break;
-            case 'discount':
-              result = await uploadClient.uploadDiscount(payload as DiscountPayload);
+            }
+            case 'discount': {
+              const discountPayload = payload as DiscountPayload;
+              const month = discountPayload[0]?.month ?? '';
+              const txnCount = discountPayload.reduce((s, e) => s + e.transactions.length, 0);
+              emit({
+                type: 'task-month-uploading',
+                sourceId: src.id,
+                month,
+                transactionCount: txnCount,
+              });
+              result = await uploadClient.uploadDiscount(discountPayload);
+              emit({
+                type: 'task-month-uploaded',
+                sourceId: src.id,
+                month,
+                inserted: result.inserted,
+                skipped: result.skipped,
+              });
               break;
+            }
             case 'max':
               result = await uploadClient.uploadMax(payload as MaxPayload);
               break;

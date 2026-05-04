@@ -40,19 +40,25 @@ export async function scrapeDiscount(
     const results: DiscountPayload = [];
 
     for (const month of months) {
-      emit({
-        type: 'scrape-progress',
-        sourceId: creds.id,
-        sourceType: 'discount',
-        status: 'running',
-      });
-      const { accountNumber, balance, transactions } = await scraper.getMonthTransactions(month);
-      results.push({
-        accountNumber,
-        month: format(month, 'yyyy-MM'),
-        balance,
-        transactions,
-      });
+      const monthStr = format(month, 'yyyy-MM');
+      emit({ type: 'task-month-fetching', sourceId: creds.id, month: monthStr });
+      try {
+        const { accountNumber, balance, transactions } = await scraper.getMonthTransactions(month);
+        emit({
+          type: 'task-month-fetched',
+          sourceId: creds.id,
+          month: monthStr,
+          transactionCount: transactions.length,
+        });
+        results.push({ accountNumber, month: monthStr, balance, transactions });
+      } catch (err) {
+        emit({
+          type: 'task-month-error',
+          sourceId: creds.id,
+          month: monthStr,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
 
     return validatePayload('discount', results);

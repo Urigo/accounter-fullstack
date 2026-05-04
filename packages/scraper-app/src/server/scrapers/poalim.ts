@@ -68,28 +68,42 @@ export async function scrapePoalim(
       return { ils: [], foreign: [], swift: [] };
     }
 
+    emit({
+      type: 'task-accounts-found',
+      sourceId: creds.id,
+      accounts: accounts.map(a => ({
+        accountNumber: String(a.accountNumber),
+        branchNumber: a.branchNumber,
+        bankNumber: a.bankNumber,
+      })),
+    });
+
     const ils: PoalimIlsPayload[] = [];
     const foreign: PoalimForeignPayload[] = [];
     const swift: PoalimSwiftPayload[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
 
     for (const account of accounts) {
+      const accountId = String(account.accountNumber);
       const accountRef = {
         bankNumber: account.bankNumber,
         branchNumber: account.branchNumber,
         accountNumber: account.accountNumber,
       };
 
+      emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'ils' });
       const { data: ilsData } = await scraper.getILSTransactions(accountRef);
       if (ilsData) {
         ils.push(validatePayload('poalim-ils', ilsData));
       }
 
+      emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'foreign' });
       const { data: foreignData } = await scraper.getForeignTransactions(accountRef, isBusiness);
       if (foreignData) {
         foreign.push(validatePayload('poalim-foreign', foreignData));
       }
 
+      emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'swift' });
       const { data: swiftData } = await scraper.getForeignSwiftTransactions(accountRef);
       if (swiftData) {
         swift.push(validatePayload('poalim-swift', swiftData));
