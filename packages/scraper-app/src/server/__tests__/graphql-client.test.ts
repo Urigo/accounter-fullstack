@@ -21,63 +21,63 @@ let lastVariables: Record<string, unknown> = {};
 
 const server = setupServer(
   graphql.link(MOCK_URL).mutation('UploadPoalimIlsTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadPoalimIlsTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadPoalimIlsTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadPoalimForeignTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadPoalimForeignTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadPoalimForeignTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadPoalimSwiftTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadPoalimSwiftTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadPoalimSwiftTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadIsracardTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadIsracardTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadIsracardTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadAmexTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadAmexTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadAmexTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadCalTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadCalTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadCalTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadDiscountTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadDiscountTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadDiscountTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadMaxTransactions', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadMaxTransactions';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadMaxTransactions: MOCK_RESULT } });
   }),
 
   graphql.link(MOCK_URL).mutation('UploadCurrencyRates', ({ request, variables }) => {
-    lastAuthHeader = request.headers.get('Authorization');
+    lastAuthHeader = request.headers.get('X-API-Key');
     lastMutationName = 'UploadCurrencyRates';
     lastVariables = variables as Record<string, unknown>;
     return HttpResponse.json({ data: { uploadCurrencyRates: MOCK_RESULT } });
@@ -150,14 +150,14 @@ const ISRACARD_PAYLOAD = [
   {
     Header: { Status: '1', Message: null },
     CardsTransactionsListBean: {
+      cardNumberList: ['card 7567'],
       Index0: {
         '@AllCards': 'AllCards',
         CurrentCardTransactions: [
           {
-            '@cardTransactions': 'CARD-A',
             txnIsrael: [
               {
-                cardIndex: 'CARD-A',
+                cardIndex: '0',
                 supplierName: 'Shop',
                 dealSum: '100',
                 fullPurchaseDate: '01/01/2024',
@@ -265,18 +265,18 @@ function client() {
   return createUploadClient(MOCK_URL, MOCK_API_KEY);
 }
 
-// ── Authorization header ──────────────────────────────────────────────────────
+// ── X-API-Key header ──────────────────────────────────────────────────────
 
-describe('Authorization header', () => {
-  it('sends Bearer token on every request', async () => {
+describe('X-API-Key header', () => {
+  it('sends API key on every request', async () => {
     await client().uploadPoalimIls(ILS_PAYLOAD);
-    expect(lastAuthHeader).toBe(`Bearer ${MOCK_API_KEY}`);
+    expect(lastAuthHeader).toBe(MOCK_API_KEY);
   });
 
   it('uses the apiKey passed to createUploadClient', async () => {
     const c = createUploadClient(MOCK_URL, 'different-key');
     await c.uploadPoalimIls(ILS_PAYLOAD);
-    expect(lastAuthHeader).toBe('Bearer different-key');
+    expect(lastAuthHeader).toBe('different-key');
   });
 });
 
@@ -356,7 +356,7 @@ describe('uploadIsracard', () => {
     const txns = lastVariables['transactions'] as unknown[];
     expect(Array.isArray(txns)).toBe(true);
     expect(txns).toHaveLength(1);
-    expect((txns[0] as Record<string, unknown>)['card']).toBe('CARD-A');
+    expect((txns[0] as Record<string, unknown>)['card']).toBe('7567');
   });
 
   it('returns UploadResult', async () => {
@@ -374,7 +374,7 @@ describe('uploadAmex', () => {
   it('flattens with card attached', async () => {
     await client().uploadAmex(ISRACARD_PAYLOAD);
     const txns = lastVariables['transactions'] as unknown[];
-    expect((txns[0] as Record<string, unknown>)['card']).toBe('CARD-A');
+    expect((txns[0] as Record<string, unknown>)['card']).toBe('7567');
   });
 
   it('returns UploadResult', async () => {

@@ -1,16 +1,19 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import {
+import type {
   AmexTransactionInput,
   CalTransactionInput,
+  ChangedField,
   ChangedTransaction,
   CurrencyRateInput,
   DiscountTransactionInput,
+  InsertedTransactionSummary,
   IsracardTransactionInput,
   MaxTransactionInput,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
   PoalimSwiftTransactionInput,
+  ScraperUploadResult,
 } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
@@ -26,32 +29,22 @@ import {
   validateRates,
 } from '../helpers/validators.helper.js';
 import type {
+  IFetchAmexByCardsQuery,
+  IFetchAmexByCardsResult,
+  IFetchIsracardByCardsQuery,
+  IFetchIsracardByCardsResult,
+  IUploadAmexTransactionsParams,
   IUploadAmexTransactionsQuery,
   IUploadCalTransactionsQuery,
   IUploadCurrencyRatesQuery,
   IUploadDiscountTransactionsQuery,
+  IUploadIsracardTransactionsParams,
   IUploadIsracardTransactionsQuery,
   IUploadMaxTransactionsQuery,
   IUploadPoalimForeignTransactionsQuery,
   IUploadPoalimIlsTransactionsQuery,
   IUploadPoalimSwiftTransactionsQuery,
 } from '../types.js';
-
-export type InsertedTransactionSummary = {
-  id: string;
-  date: string | null;
-  description: string | null;
-  amount: string | null;
-  account: string | null;
-};
-
-export type UploadResult = {
-  inserted: number;
-  skipped: number;
-  insertedIds: string[];
-  insertedTransactions: InsertedTransactionSummary[];
-  changedTransactions: ChangedTransaction[];
-};
 
 const uploadPoalimIlsTransactions = sql<IUploadPoalimIlsTransactionsQuery>`
   INSERT INTO accounter_schema.poalim_ils_account_transactions (
@@ -348,6 +341,59 @@ const uploadPoalimSwiftTransactions = sql<IUploadPoalimSwiftTransactionsQuery>`
   RETURNING id, start_date, charge_party_name, amount, account_number;
 `;
 
+const fetchIsracardByCards = sql<IFetchIsracardByCardsQuery>`
+  SELECT
+    id,
+    card,
+    specific_date,
+    card_index,
+    deals_inbound,
+    supplier_id,
+    supplier_name,
+    deal_sum_type,
+    payment_sum_sign,
+    purchase_date,
+    full_purchase_date,
+    more_info,
+    horaat_keva,
+    voucher_number,
+    voucher_number_ratz,
+    solek,
+    purchase_date_outbound,
+    full_purchase_date_outbound,
+    currency_id,
+    current_payment_currency,
+    city,
+    supplier_name_outbound,
+    full_supplier_name_outbound,
+    payment_date,
+    full_payment_date,
+    is_show_deals_outbound,
+    adendum,
+    voucher_number_ratz_outbound,
+    is_show_link_for_supplier_details,
+    deal_sum,
+    payment_sum,
+    full_supplier_name_heb,
+    deal_sum_outbound,
+    payment_sum_outbound,
+    is_horaat_keva,
+    stage,
+    return_code,
+    message,
+    return_message,
+    display_properties,
+    table_page_num,
+    is_error,
+    is_captcha,
+    is_button,
+    site_name,
+    kod_matbea_mekori,
+    esb_services_call
+  FROM accounter_schema.isracard_creditcard_transactions
+  WHERE card = ANY($cards!)
+`;
+
 const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
   INSERT INTO accounter_schema.isracard_creditcard_transactions (
     specific_date,
@@ -449,10 +495,72 @@ const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
     kodMatbeaMekori,
     esbServicesCall
   )
-  ON CONFLICT (card, full_purchase_date, payment_sum, voucher_number)
-    WHERE full_purchase_date IS NOT NULL AND payment_sum IS NOT NULL AND voucher_number IS NOT NULL
+  ON CONFLICT (
+    card,
+    COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
+    COALESCE(full_payment_date, ''),
+    COALESCE(payment_sum, payment_sum_outbound, 0),
+    COALESCE(voucher_number, 0),
+    COALESCE(supplier_id, 0),
+    COALESCE(current_payment_currency, ''),
+    COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
+    COALESCE(more_info, '')
+  )
   DO NOTHING
   RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
+`;
+
+const fetchAmexByCards = sql<IFetchAmexByCardsQuery>`
+  SELECT
+    id,
+    card,
+    specific_date,
+    card_index,
+    deals_inbound,
+    supplier_id,
+    supplier_name,
+    deal_sum_type,
+    payment_sum_sign,
+    purchase_date,
+    full_purchase_date,
+    more_info,
+    horaat_keva,
+    voucher_number,
+    voucher_number_ratz,
+    solek,
+    purchase_date_outbound,
+    full_purchase_date_outbound,
+    currency_id,
+    current_payment_currency,
+    city,
+    supplier_name_outbound,
+    full_supplier_name_outbound,
+    payment_date,
+    full_payment_date,
+    is_show_deals_outbound,
+    adendum,
+    voucher_number_ratz_outbound,
+    is_show_link_for_supplier_details,
+    deal_sum,
+    payment_sum,
+    full_supplier_name_heb,
+    deal_sum_outbound,
+    payment_sum_outbound,
+    is_horaat_keva,
+    stage,
+    return_code,
+    message,
+    return_message,
+    display_properties,
+    table_page_num,
+    is_error,
+    is_captcha,
+    is_button,
+    site_name,
+    kod_matbea_mekori,
+    esb_services_call
+  FROM accounter_schema.amex_creditcard_transactions
+  WHERE card = ANY($cards!)
 `;
 
 const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
@@ -556,8 +664,17 @@ const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
     kodMatbeaMekori,
     esbServicesCall
   )
-  ON CONFLICT (card, full_purchase_date, payment_sum, voucher_number)
-    WHERE full_purchase_date IS NOT NULL AND payment_sum IS NOT NULL AND voucher_number IS NOT NULL
+  ON CONFLICT (
+    card,
+    COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
+    COALESCE(full_payment_date, ''),
+    COALESCE(payment_sum, payment_sum_outbound, 0),
+    COALESCE(voucher_number, 0),
+    COALESCE(supplier_id, 0),
+    COALESCE(current_payment_currency, ''),
+    COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
+    COALESCE(more_info, '')
+  )
   DO NOTHING
   RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
 `;
@@ -893,7 +1010,7 @@ const uploadMaxTransactions = sql<IUploadMaxTransactionsQuery>`
     upSaleForTransactionResult,
     userIndex
   )
-  ON CONFLICT (uid) DO NOTHING
+  ON CONFLICT (uid, arn, purchase_date, payment_date, original_amount) DO NOTHING
   RETURNING id, purchase_date, merchant_name, actual_payment_amount, card_index;
 `;
 
@@ -922,6 +1039,109 @@ const uploadCurrencyRates = sql<IUploadCurrencyRatesQuery>`
   RETURNING exchange_date;
 `;
 
+type IsracardAmexKeyShape = {
+  card: number;
+  full_purchase_date?: string | null;
+  full_purchase_date_outbound?: string | null;
+  full_payment_date?: string | null;
+  payment_sum?: string | number | null;
+  payment_sum_outbound?: string | number | null;
+  voucher_number?: number | null;
+  supplier_id?: number | null;
+  current_payment_currency?: string | null;
+  full_supplier_name_heb?: string | null;
+  full_supplier_name_outbound?: string | null;
+  more_info?: string | null;
+};
+
+function isracardAmexConflictKey(row: IsracardAmexKeyShape): string {
+  return JSON.stringify([
+    row.card,
+    row.full_purchase_date ?? row.full_purchase_date_outbound ?? '',
+    row.full_payment_date ?? '',
+    row.payment_sum ?? row.payment_sum_outbound ?? 0,
+    row.voucher_number ?? 0,
+    row.supplier_id ?? 0,
+    row.current_payment_currency ?? '',
+    row.full_supplier_name_heb ?? row.full_supplier_name_outbound ?? '',
+    row.more_info ?? '',
+  ]);
+}
+
+const ISRACARD_DIFF_FIELDS: Array<{
+  key: keyof IFetchIsracardByCardsResult;
+  incoming: (
+    t:
+      | IUploadIsracardTransactionsParams['transactions'][0]
+      | IUploadAmexTransactionsParams['transactions'][0],
+  ) => string | number | boolean | null;
+}> = [
+  { key: 'adendum', incoming: t => t.adendum ?? null },
+  { key: 'card_index', incoming: t => t.cardIndex ?? null },
+  { key: 'city', incoming: t => t.city ?? null },
+  { key: 'currency_id', incoming: t => t.currencyId ?? null },
+  { key: 'deal_sum', incoming: t => t.dealSum ?? null },
+  {
+    key: 'deal_sum_outbound',
+    incoming: t =>
+      t.dealSumOutbound !== null && t.dealSumOutbound !== undefined
+        ? String(t.dealSumOutbound)
+        : null,
+  },
+  { key: 'deal_sum_type', incoming: t => t.dealSumType ?? null },
+  { key: 'deals_inbound', incoming: t => t.dealsInbound ?? null },
+  { key: 'display_properties', incoming: t => t.displayProperties ?? null },
+  { key: 'esb_services_call', incoming: t => t.esbServicesCall ?? null },
+  { key: 'horaat_keva', incoming: t => t.horaatKeva ?? null },
+  { key: 'is_button', incoming: t => t.isButton ?? null },
+  { key: 'is_captcha', incoming: t => t.isCaptcha ?? null },
+  { key: 'is_error', incoming: t => t.isError ?? null },
+  { key: 'is_horaat_keva', incoming: t => t.isHoraatKeva ?? null },
+  { key: 'is_show_deals_outbound', incoming: t => t.isShowDealsOutbound ?? null },
+  {
+    key: 'is_show_link_for_supplier_details',
+    incoming: t => t.isShowLinkForSupplierDetails ?? null,
+  },
+  { key: 'kod_matbea_mekori', incoming: t => t.kodMatbeaMekori ?? null },
+  { key: 'message', incoming: t => t.message ?? null },
+  { key: 'payment_date', incoming: t => t.paymentDate ?? null },
+  { key: 'payment_sum_sign', incoming: t => t.paymentSumSign ?? null },
+  { key: 'purchase_date', incoming: t => t.purchaseDate ?? null },
+  { key: 'purchase_date_outbound', incoming: t => t.purchaseDateOutbound ?? null },
+  { key: 'return_code', incoming: t => t.returnCode ?? null },
+  { key: 'return_message', incoming: t => t.returnMessage ?? null },
+  { key: 'site_name', incoming: t => t.siteName ?? null },
+  { key: 'solek', incoming: t => t.solek ?? null },
+  { key: 'specific_date', incoming: t => t.specificDate ?? null },
+  { key: 'stage', incoming: t => t.stage ?? null },
+  { key: 'supplier_name', incoming: t => t.supplierName ?? null },
+  { key: 'supplier_name_outbound', incoming: t => t.supplierNameOutbound ?? null },
+  { key: 'table_page_num', incoming: t => t.tablePageNum ?? null },
+  { key: 'voucher_number_ratz', incoming: t => t.voucherNumberRatz ?? null },
+  { key: 'voucher_number_ratz_outbound', incoming: t => t.voucherNumberRatzOutbound ?? null },
+];
+
+function diffIsracardAmexRow<T extends IFetchIsracardByCardsResult | IFetchAmexByCardsResult>(
+  existing: T,
+  incoming: ReturnType<
+    typeof validateIsracardAmexTransactions<
+      T extends IFetchIsracardByCardsResult ? IsracardTransactionInput : AmexTransactionInput
+    >
+  >[number],
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of ISRACARD_DIFF_FIELDS) {
+    const oldValue = String(existing[key] ?? null);
+    const newValue = String(getIncoming(incoming));
+    const oldStr = oldValue;
+    const newStr = newValue;
+    if (oldStr !== newStr) {
+      changed.push({ field: key, oldValue: oldStr, newValue: newStr });
+    }
+  }
+  return changed;
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -931,7 +1151,7 @@ export class ScraperIngestionProvider {
 
   async uploadPoalimIlsTransactions(
     transactions: PoalimIlsTransactionInput[],
-  ): Promise<UploadResult> {
+  ): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -964,7 +1184,7 @@ export class ScraperIngestionProvider {
 
   async uploadPoalimForeignTransactions(
     transactions: PoalimForeignTransactionInput[],
-  ): Promise<UploadResult> {
+  ): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -997,7 +1217,7 @@ export class ScraperIngestionProvider {
 
   async uploadPoalimSwiftTransactions(
     swifts: PoalimSwiftTransactionInput[],
-  ): Promise<UploadResult> {
+  ): Promise<ScraperUploadResult> {
     if (swifts.length === 0)
       return {
         inserted: 0,
@@ -1030,7 +1250,7 @@ export class ScraperIngestionProvider {
 
   async uploadIsracardTransactions(
     transactions: IsracardTransactionInput[],
-  ): Promise<UploadResult> {
+  ): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -1040,11 +1260,20 @@ export class ScraperIngestionProvider {
         changedTransactions: [],
       };
 
-    const result = await uploadIsracardTransactions.run(
-      { transactions: validateIsracardAmexTransactions(transactions) },
-      this.db,
-    );
+    const validated = validateIsracardAmexTransactions(transactions);
+
+    const cards = [
+      ...new Set(
+        validated.map(t => t.card).filter((c): c is number => c !== null && c !== undefined),
+      ),
+    ];
+    const existing = await fetchIsracardByCards.run({ cards: [...cards] }, this.db);
+    const existingByKey = new Map(existing.map(row => [isracardAmexConflictKey(row), row]));
+
+    const result = await uploadIsracardTransactions.run({ transactions: validated }, this.db);
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
+
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
       date: r.full_purchase_date ?? null,
@@ -1052,16 +1281,47 @@ export class ScraperIngestionProvider {
       amount: r.payment_sum ?? null,
       account: String(r.card),
     }));
+
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      if (t.card === null || t.card === undefined) continue;
+      const key = isracardAmexConflictKey({
+        card: t.card,
+        full_purchase_date: t.fullPurchaseDate ?? null,
+        full_purchase_date_outbound: t.fullPurchaseDateOutbound ?? null,
+        full_payment_date: t.fullPaymentDate ?? null,
+        payment_sum:
+          t.paymentSum !== null && t.paymentSum !== undefined ? String(t.paymentSum) : null,
+        payment_sum_outbound:
+          t.paymentSumOutbound !== null && t.paymentSumOutbound !== undefined
+            ? String(t.paymentSumOutbound)
+            : null,
+        voucher_number: t.voucherNumber ?? null,
+        supplier_id: t.supplierId ?? null,
+        current_payment_currency: t.currentPaymentCurrency ?? null,
+        full_supplier_name_heb: t.fullSupplierNameHeb ?? null,
+        full_supplier_name_outbound: t.fullSupplierNameOutbound ?? null,
+        more_info: t.moreInfo ?? null,
+      });
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffIsracardAmexRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
+        }
+      }
+    }
+
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
       insertedTransactions,
-      changedTransactions: [],
+      changedTransactions,
     };
   }
 
-  async uploadAmexTransactions(transactions: AmexTransactionInput[]): Promise<UploadResult> {
+  async uploadAmexTransactions(transactions: AmexTransactionInput[]): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -1071,11 +1331,20 @@ export class ScraperIngestionProvider {
         changedTransactions: [],
       };
 
-    const result = await uploadAmexTransactions.run(
-      { transactions: validateIsracardAmexTransactions(transactions) },
-      this.db,
-    );
+    const validated = validateIsracardAmexTransactions(transactions);
+
+    const cards = [
+      ...new Set(
+        validated.map(t => t.card).filter((c): c is number => c !== null && c !== undefined),
+      ),
+    ];
+    const existing = await fetchAmexByCards.run({ cards: [...cards] }, this.db);
+    const existingByKey = new Map(existing.map(row => [isracardAmexConflictKey(row), row]));
+
+    const result = await uploadAmexTransactions.run({ transactions: validated }, this.db);
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
+    const insertedIdSet = new Set(insertedIds);
+
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
       date: r.full_purchase_date ?? null,
@@ -1083,16 +1352,47 @@ export class ScraperIngestionProvider {
       amount: r.payment_sum ?? null,
       account: String(r.card),
     }));
+
+    const changedTransactions: ChangedTransaction[] = [];
+    for (const t of validated) {
+      if (t.card === null || t.card === undefined) continue;
+      const key = isracardAmexConflictKey({
+        card: t.card,
+        full_purchase_date: t.fullPurchaseDate ?? null,
+        full_purchase_date_outbound: t.fullPurchaseDateOutbound ?? null,
+        full_payment_date: t.fullPaymentDate ?? null,
+        payment_sum:
+          t.paymentSum !== null && t.paymentSum !== undefined ? String(t.paymentSum) : null,
+        payment_sum_outbound:
+          t.paymentSumOutbound !== null && t.paymentSumOutbound !== undefined
+            ? String(t.paymentSumOutbound)
+            : null,
+        voucher_number: t.voucherNumber ?? null,
+        supplier_id: t.supplierId ?? null,
+        current_payment_currency: t.currentPaymentCurrency ?? null,
+        full_supplier_name_heb: t.fullSupplierNameHeb ?? null,
+        full_supplier_name_outbound: t.fullSupplierNameOutbound ?? null,
+        more_info: t.moreInfo ?? null,
+      });
+      const existingRow = existingByKey.get(key);
+      if (existingRow && !insertedIdSet.has(existingRow.id)) {
+        const changedFields = diffIsracardAmexRow(existingRow, t);
+        if (changedFields.length > 0) {
+          changedTransactions.push({ id: existingRow.id, changedFields });
+        }
+      }
+    }
+
     return {
       inserted: insertedIds.length,
       skipped: transactions.length - insertedIds.length,
       insertedIds,
       insertedTransactions,
-      changedTransactions: [],
+      changedTransactions,
     };
   }
 
-  async uploadCalTransactions(transactions: CalTransactionInput[]): Promise<UploadResult> {
+  async uploadCalTransactions(transactions: CalTransactionInput[]): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -1125,7 +1425,7 @@ export class ScraperIngestionProvider {
 
   async uploadDiscountTransactions(
     transactions: DiscountTransactionInput[],
-  ): Promise<UploadResult> {
+  ): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -1156,7 +1456,7 @@ export class ScraperIngestionProvider {
     };
   }
 
-  async uploadMaxTransactions(transactions: MaxTransactionInput[]): Promise<UploadResult> {
+  async uploadMaxTransactions(transactions: MaxTransactionInput[]): Promise<ScraperUploadResult> {
     if (transactions.length === 0)
       return {
         inserted: 0,
@@ -1187,7 +1487,7 @@ export class ScraperIngestionProvider {
     };
   }
 
-  async uploadCurrencyRates(rates: CurrencyRateInput[]): Promise<UploadResult> {
+  async uploadCurrencyRates(rates: CurrencyRateInput[]): Promise<ScraperUploadResult> {
     if (rates.length === 0)
       return {
         inserted: 0,

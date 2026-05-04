@@ -4,6 +4,23 @@ import { ServerMessageSchema } from '../../shared/ws-protocol.js';
 
 export type TaskStatus = 'pending' | 'running' | 'done' | 'error' | 'blocked' | 'otp-required';
 
+export type InsertedTransactionSummary = {
+  id: string;
+  date?: string | null | undefined;
+  description?: string | null | undefined;
+  amount?: string | null | undefined;
+  account?: string | null | undefined;
+};
+
+export type ChangedTransaction = {
+  id: string;
+  changedFields: {
+    field: string;
+    oldValue?: string | null | undefined;
+    newValue?: string | null | undefined;
+  }[];
+};
+
 export type TaskState = {
   status: TaskStatus;
   inserted?: number;
@@ -12,6 +29,8 @@ export type TaskState = {
   stack?: string;
   blockedAccounts?: string[];
   otpSourceId?: string;
+  insertedTransactions?: InsertedTransactionSummary[];
+  changedTransactions?: ChangedTransaction[];
 };
 
 export type RunStatus = 'idle' | 'running' | 'complete';
@@ -64,6 +83,8 @@ export function useRunSocket(): UseRunSocketResult {
               status: 'done',
               inserted: msg.inserted,
               skipped: msg.skipped,
+              insertedTransactions: msg.insertedTransactions,
+              changedTransactions: msg.changedTransactions,
             });
             break;
           case 'task-error':

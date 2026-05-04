@@ -9,7 +9,7 @@ function makeRecord(i: number): RunRecord {
   return {
     id: `run-${i}`,
     startedAt: new Date(Date.now() + i * 1000).toISOString(),
-    finishedAt: new Date(Date.now() + i * 1000 + 500).toISOString(),
+    completedAt: new Date(Date.now() + i * 1000 + 500).toISOString(),
     totalInserted: i,
     totalSkipped: 0,
     errorCount: 0,
@@ -91,7 +91,7 @@ describe('saveHistory gate in websocket', () => {
       sourceId: 'test',
       nickname: 'test',
       type: 'discount',
-      run: async () => ({ inserted: 1, skipped: 0, insertedIds: [] }),
+      run: async () => ({ inserted: 1, skipped: 0, insertedIds: [], insertedTransactions: [], changedTransactions: [] }),
     };
 
     const runRecord = await startRun([task], false, noopEmit);
@@ -100,7 +100,7 @@ describe('saveHistory gate in websocket', () => {
     const saveHistory = false;
     if (saveHistory) {
       await appendRun(
-        { ...runRecord, startedAt: runRecord.startedAt.toISOString(), finishedAt: runRecord.finishedAt.toISOString(), sources: [] },
+        { ...runRecord, startedAt: runRecord.startedAt.toISOString(), completedAt: runRecord.completedAt.toISOString(), sources: [] },
         filePath,
       );
     }

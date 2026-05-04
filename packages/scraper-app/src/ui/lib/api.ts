@@ -94,6 +94,10 @@ export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promis
   });
 }
 
+export function deleteAccount(id: string): Promise<BankAccount[]> {
+  return apiFetch(`/api/vault/accounts/${id}`, { method: 'DELETE' });
+}
+
 // ── Vault path ────────────────────────────────────────────────────────────────
 
 export function getVaultPath(): Promise<{ path: string }> {

@@ -1,8 +1,12 @@
-import type { AmexPayload } from '../payload-schemas/amex.schema.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import {
+  IsracardTransactionInput,
+  MutationUploadAmexTransactionsArgs,
+  MutationUploadIsracardTransactionsArgs,
+} from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
-import type { IsracardPayload } from '../payload-schemas/isracard.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
 import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.schema.js';
 import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
@@ -287,36 +291,130 @@ export function poalimSwiftVars(payload: PoalimSwiftPayload) {
   return { swifts };
 }
 
-// Isracard / Amex: CardsTransactionsListBean → flatten to per-transaction rows.
-// Each row gets `card` (the 4-digit card identifier from @cardTransactions),
-// matching the `card` column the legacy scraper writes.
-function flattenIsracardAmexPayloads(payloads: IsracardPayload[]): Record<string, unknown>[] {
-  return payloads.flatMap(p =>
-    Object.keys(p.CardsTransactionsListBean)
-      .filter(k => /^Index\d+$/.test(k))
-      .flatMap(k => {
-        const idx = p.CardsTransactionsListBean[k] as {
-          CurrentCardTransactions: Array<{
-            '@cardTransactions': string;
-            txnIsrael?: Array<Record<string, unknown>> | null;
-            txnAbroad?: Array<Record<string, unknown>> | null;
-          }>;
-        };
-        return idx.CurrentCardTransactions.flatMap(cardGroup => {
-          const card = cardGroup['@cardTransactions'];
-          const israelTxns = (cardGroup.txnIsrael ?? []).map(t => ({ ...t, card }));
-          const abroadTxns = (cardGroup.txnAbroad ?? []).map(t => ({ ...t, card }));
-          return [...israelTxns, ...abroadTxns];
-        });
-      }),
-  );
+function transformIsracardAmexTransaction(
+  t:
+    | Exclude<
+        IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][0]['txnIsrael'],
+        null | undefined
+      >[0]
+    | Exclude<
+        IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0']['CurrentCardTransactions'][0]['txnAbroad'],
+        null | undefined
+      >[0],
+  card: string,
+): IsracardTransactionInput {
+  const inputTransaction: IsracardTransactionInput = {
+    card,
+    specificDate: t.specificDate,
+    cardIndex: Number.parseInt(t.cardIndex, 10),
+    dealsInbound: t.dealsInbound,
+    supplierId: t.supplierId ? Number(t.supplierId) : null,
+    supplierName: t.supplierName,
+    dealSumType: t.dealSumType,
+    paymentSumSign: t.paymentSumSign,
+    purchaseDate: t.purchaseDate,
+    fullPurchaseDate: t.fullPurchaseDate,
+    moreInfo: t.moreInfo,
+    horaatKeva: t.horaatKeva,
+    voucherNumber: t.voucherNumber ? Number(t.voucherNumber) : null,
+    voucherNumberRatz: t.voucherNumberRatz ? Number(t.voucherNumberRatz) : null,
+    solek: t.solek,
+    purchaseDateOutbound: t.purchaseDateOutbound,
+    fullPurchaseDateOutbound: t.fullPurchaseDateOutbound,
+    currencyId: t.currencyId,
+    currentPaymentCurrency: t.currentPaymentCurrency,
+    city: t.city,
+    supplierNameOutbound: t.supplierNameOutbound,
+    fullSupplierNameOutbound: t.fullSupplierNameOutbound,
+    paymentDate: t.paymentDate,
+    fullPaymentDate: t.fullPaymentDate,
+    isShowDealsOutbound: t.isShowDealsOutbound,
+    adendum: t.adendum,
+    voucherNumberRatzOutbound: t.voucherNumberRatzOutbound
+      ? Number(t.voucherNumberRatzOutbound)
+      : null,
+    isShowLinkForSupplierDetails: t.isShowLinkForSupplierDetails,
+    dealSum: t.dealSum,
+    paymentSum: t.paymentSum,
+    fullSupplierNameHeb: t.fullSupplierNameHeb,
+    dealSumOutbound: t.dealSumOutbound,
+    paymentSumOutbound: t.paymentSumOutbound,
+    isHoraatKeva: t.isHoraatKeva,
+    stage: t.stage,
+    returnCode: t.returnCode,
+    message: t.message,
+    returnMessage: t.returnMessage,
+    displayProperties: t.displayProperties,
+    tablePageNum: t.tablePageNum === '0' ? false : true,
+    isError: t.isError,
+    isCaptcha: t.isCaptcha,
+    isButton: t.isButton,
+    siteName: t.siteName,
+    kodMatbeaMekori: t.kodMatbeaMekori ?? null,
+    esbServicesCall: t.EsbServicesCall ?? null,
+  };
+
+  // remove known unstable keys from input transaction
+  const optionalTransactionKeys = [
+    'clientIpAddress',
+    'bcKey',
+    'chargingDate',
+    'requestNumber',
+    'accountErrorCode',
+    'monthlyRefundCardIndex',
+    'id',
+    'EsbServicesCall', // renamed to esbServicesCall above, to coerce to camelCase
+  ];
+
+  for (const key of optionalTransactionKeys) {
+    if (inputTransaction[key as keyof IsracardTransactionInput] !== undefined) {
+      delete inputTransaction[key as keyof IsracardTransactionInput];
+    }
+  }
+
+  return inputTransaction;
 }
 
-export function isracardVars(payloads: IsracardPayload[]) {
+// Isracard / Amex: CardsTransactionsListBean → flatten to per-transaction rows.
+// Each row gets `card` (the 4-digit card identifier from cardNumberList),
+// matching the `card` column the legacy scraper writes.
+function flattenIsracardAmexPayloads(
+  payloads: IsracardCardsTransactionsList[],
+): IsracardTransactionInput[] {
+  return payloads.flatMap(p => {
+    const cardNumbers = p.CardsTransactionsListBean.cardNumberList.map(c => c.match(/\d{4}/)?.[0]);
+    return Object.keys(p.CardsTransactionsListBean)
+      .filter(k => /^Index\d+$/.test(k))
+      .flatMap(k => {
+        const card = cardNumbers[Number(k.slice(5))]; // 'Index0' → 0 → cardNumbers[0]
+        if (!card) {
+          throw new Error(`Missing card number for ${k} in Isracard payload`);
+        }
+        const idx = p.CardsTransactionsListBean[
+          k
+        ] as IsracardCardsTransactionsList['CardsTransactionsListBean']['Index0'];
+        return idx.CurrentCardTransactions.flatMap(cardGroup => {
+          const israelTxns = (cardGroup.txnIsrael ?? []).map(t =>
+            transformIsracardAmexTransaction(t, card),
+          );
+          const abroadTxns = (cardGroup.txnAbroad ?? []).map(t =>
+            transformIsracardAmexTransaction(t, card),
+          );
+          return [...israelTxns, ...abroadTxns];
+        });
+      });
+  });
+}
+
+export function isracardVars(
+  payloads: IsracardCardsTransactionsList[],
+): MutationUploadIsracardTransactionsArgs {
   return { transactions: flattenIsracardAmexPayloads(payloads) };
 }
 
-export function amexVars(payloads: AmexPayload[]) {
+export function amexVars(
+  payloads: IsracardCardsTransactionsList[],
+): MutationUploadAmexTransactionsArgs {
   return { transactions: flattenIsracardAmexPayloads(payloads) };
 }
 

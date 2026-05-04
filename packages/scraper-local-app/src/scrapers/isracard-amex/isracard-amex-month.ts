@@ -368,7 +368,7 @@ async function insertTransactions(
 
     const transactionToInsert: InsertionTransactionParams = {
       specificDate: transaction.specificDate,
-      cardIndex: Number(transaction.cardIndex),
+      cardIndex: Number.parseInt(transaction.cardIndex, 10),
       dealsInbound: transaction.dealsInbound,
       supplierId: transaction.supplierId ? Number(transaction.supplierId) : null,
       supplierName: transaction.supplierName,

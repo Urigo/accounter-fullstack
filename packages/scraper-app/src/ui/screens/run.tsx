@@ -9,7 +9,7 @@ import type { SourceConfig } from './config/source-types.js';
 import { SOURCE_LABELS } from './config/source-types.js';
 
 function nickname(src: SourceConfig): string {
-  if (src.nickname) return src.nickname;
+  if (src.nickname) return `${SOURCE_LABELS[src.type]}: ${src.nickname}`;
   return `${SOURCE_LABELS[src.type]} (${src.id.slice(0, 6)})`;
 }
 
@@ -44,7 +44,13 @@ export function Run({
     setSourcesLoading(true);
     getSources<SourceConfig>()
       .then(srcs => {
-        setSources(srcs);
+        setSources(
+          srcs.sort(
+            (a, b) =>
+              SOURCE_LABELS[a.type].localeCompare(SOURCE_LABELS[b.type]) ||
+              (a.nickname || a.id).localeCompare(b.nickname || b.id),
+          ),
+        );
         setSelected(new Set(srcs.map(s => s.id)));
       })
       .finally(() => setSourcesLoading(false));

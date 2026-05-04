@@ -71,7 +71,7 @@ describe('Config tab navigation', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Accounts' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no bank accounts discovered/i)).toBeTruthy();
+      expect(screen.getByText(/no account records discovered/i)).toBeTruthy();
     });
     expect(screen.getByRole('tab', { name: 'Accounts' }).getAttribute('aria-selected')).toBe('true');
   });
@@ -81,7 +81,7 @@ describe('Config tab navigation', () => {
     await waitFor(() => screen.getByText(/no sources/i));
 
     expect(screen.queryByLabelText(/show browser/i)).toBeNull();
-    expect(screen.queryByText(/no bank accounts/i)).toBeNull();
+    expect(screen.queryByText(/no account records/i)).toBeNull();
   });
 
   it('can navigate back to Credentials after switching away', async () => {
