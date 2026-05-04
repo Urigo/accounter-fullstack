@@ -20,43 +20,23 @@ export default {
 
     -- Isracard deduplication key
     CREATE UNIQUE INDEX IF NOT EXISTS isracard_creditcard_transactions_dedup_uindex
-      ON accounter_schema.isracard_creditcard_transactions (
-        card,
-        COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-        COALESCE(full_payment_date, ''),
-        COALESCE(payment_sum, payment_sum_outbound, 0),
-        COALESCE(voucher_number, 0),
-        COALESCE(supplier_id, 0),
-        COALESCE(current_payment_currency, ''),
-        COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-        COALESCE(more_info, '')
-      )
-      WHERE COALESCE(full_purchase_date, full_purchase_date_outbound) IS NOT NULL
-        AND COALESCE(payment_sum, payment_sum_outbound) IS NOT NULL
-        AND voucher_number IS NOT NULL
-        AND COALESCE(voucher_number_ratz, voucher_number_ratz_outbound) IS NOT NULL;
+      ON accounter_schema.isracard_creditcard_transactions
+      (card, full_purchase_date, payment_sum, voucher_number)
+      WHERE full_purchase_date IS NOT NULL
+        AND payment_sum IS NOT NULL
+        AND voucher_number IS NOT NULL;
 
     -- Amex deduplication key (identical shape to Isracard)
     CREATE UNIQUE INDEX IF NOT EXISTS amex_creditcard_transactions_dedup_uindex
-      ON accounter_schema.amex_creditcard_transactions (
-        card,
-        COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-        COALESCE(full_payment_date, ''),
-        COALESCE(payment_sum, payment_sum_outbound, 0),
-        COALESCE(voucher_number, 0),
-        COALESCE(supplier_id, 0),
-        COALESCE(current_payment_currency, ''),
-        COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-        COALESCE(more_info, '')
-      )
-      WHERE COALESCE(full_purchase_date, full_purchase_date_outbound) IS NOT NULL
-        AND COALESCE(payment_sum, payment_sum_outbound) IS NOT NULL
-        AND voucher_number IS NOT NULL
-        AND COALESCE(voucher_number_ratz, voucher_number_ratz_outbound) IS NOT NULL;
+      ON accounter_schema.amex_creditcard_transactions
+      (card, full_purchase_date, payment_sum, voucher_number)
+      WHERE full_purchase_date IS NOT NULL
+        AND payment_sum IS NOT NULL
+        AND voucher_number IS NOT NULL;
 
     -- Max deduplication key
     CREATE UNIQUE INDEX IF NOT EXISTS max_creditcard_transactions_uid_uindex
-      ON accounter_schema.max_creditcard_transactions (uid, arn, purchase_date, payment_date, original_amount);
+      ON accounter_schema.max_creditcard_transactions (uid);
 
     -- Discount: widen existing urn-only constraint to (urn, account_number)
     ALTER TABLE accounter_schema.bank_discount_transactions

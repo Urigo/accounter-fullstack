@@ -28,9 +28,9 @@ export type ScrapeTask = {
 };
 
 export type { SourceRunRecord };
-export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'finishedAt'> & {
+export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'completedAt'> & {
   startedAt: Date;
-  finishedAt: Date;
+  completedAt: Date;
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -153,7 +153,7 @@ export async function startRun(
     return {
       id,
       startedAt,
-      finishedAt: new Date(),
+      completedAt: new Date(),
       totalInserted,
       totalSkipped,
       errorCount,

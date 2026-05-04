@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 
-type TaskResult = { inserted: number; skipped: number; insertedIds: string[] };
+type TaskResult = { inserted: number; skipped: number; insertedIds: string[]; insertedTransactions: []; changedTransactions: [] };
 
 function makeTask(
   sourceId: string,
@@ -10,6 +10,8 @@ function makeTask(
     inserted: 2,
     skipped: 1,
     insertedIds: ['id-1', 'id-2'],
+    insertedTransactions: [],
+    changedTransactions: [],
   }),
 ): ScrapeTask {
   return { sourceId, nickname: sourceId, type: 'poalim', run };
@@ -48,7 +50,7 @@ describe('sequential mode', () => {
     expect(record.totalSkipped).toBe(1);
     expect(record.errorCount).toBe(0);
     expect(record.startedAt >= before).toBe(true);
-    expect(record.finishedAt <= after).toBe(true);
+    expect(record.completedAt <= after).toBe(true);
   });
 });
 
@@ -60,7 +62,7 @@ describe('concurrent mode', () => {
     const emit = (msg: ServerMessage) => events.push(msg);
 
     const delayed = (): Promise<TaskResult> =>
-      new Promise(res => setTimeout(() => res({ inserted: 1, skipped: 0, insertedIds: ['x'] }), 20));
+      new Promise(res => setTimeout(() => res({ inserted: 1, skipped: 0, insertedIds: ['x'], insertedTransactions: [], changedTransactions: [] }), 20));
 
     await startRun([makeTask('src-1', delayed), makeTask('src-2', delayed)], true, emit);
 

@@ -91,7 +91,7 @@ export const MaxAccountSchema = z.object({
 export const SettingsSchema = z.object({
   showBrowser: z.boolean().default(false),
   fetchBankOfIsraelRates: z.boolean().default(true),
-  concurrentScraping: z.boolean().default(true),
+  concurrentScraping: z.boolean().default(false),
   defaultDateRangeMonths: z.number().int().positive().default(3),
   historyFilePath: z.string().default('./history.json'),
   saveHistory: z.boolean().default(true),

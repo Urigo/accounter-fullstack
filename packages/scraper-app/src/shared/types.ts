@@ -12,7 +12,7 @@ export type SourceRunRecord = {
 export type RunRecord = {
   id: string;
   startedAt: string; // ISO string for JSON serialization
-  finishedAt: string;
+  completedAt: string;
   totalInserted: number;
   totalSkipped: number;
   errorCount: number;

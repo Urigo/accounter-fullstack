@@ -43,7 +43,7 @@ describe('GET /api/vault/settings', () => {
     expect(res.json()).toMatchObject({
       showBrowser: false,
       fetchBankOfIsraelRates: true,
-      concurrentScraping: true,
+      concurrentScraping: false,
     });
   });
 

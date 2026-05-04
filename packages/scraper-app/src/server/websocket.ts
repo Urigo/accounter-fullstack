@@ -413,7 +413,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                       {
                         ...runRecord,
                         startedAt: runRecord.startedAt.toISOString(),
-                        finishedAt: runRecord.finishedAt.toISOString(),
+                        completedAt: runRecord.completedAt.toISOString(),
                       },
                       historyFilePath,
                     );

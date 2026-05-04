@@ -7,8 +7,8 @@ function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString();
 }
 
-export function formatDuration(startedAt: string, finishedAt: string): string {
-  const ms = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
+export function formatDuration(startedAt: string, completedAt: string): string {
+  const ms = new Date(completedAt).getTime() - new Date(startedAt).getTime();
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -33,9 +33,7 @@ function SourceRow({ src }: { src: SourceRunRecord }): ReactElement {
   return (
     <>
       <tr>
-        <td style={{ padding: '4px 8px', color: '#555' }}>
-          {src.nickname || src.sourceId}
-        </td>
+        <td style={{ padding: '4px 8px', color: '#555' }}>{src.nickname || src.sourceId}</td>
         <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceType}</td>
         <td style={{ padding: '4px 8px' }}>
           <span
@@ -57,18 +55,28 @@ function SourceRow({ src }: { src: SourceRunRecord }): ReactElement {
             <button
               type="button"
               onClick={() => setExpanded(e => !e)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#854d0e', fontSize: '0.85em', padding: 0 }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: '#854d0e',
+                fontSize: '0.85em',
+                padding: 0,
+              }}
             >
               {expanded ? '▲' : '▼'} {src.blockedAccounts?.length ?? 0} unknown
             </button>
           ) : (
-            src.error ?? '—'
+            (src.error ?? '—')
           )}
         </td>
       </tr>
       {expanded && src.blockedAccounts && src.blockedAccounts.length > 0 && (
         <tr>
-          <td colSpan={6} style={{ padding: '2px 8px 8px 24px', color: '#854d0e', fontSize: '0.82em' }}>
+          <td
+            colSpan={6}
+            style={{ padding: '2px 8px 8px 24px', color: '#854d0e', fontSize: '0.82em' }}
+          >
             {src.blockedAccounts.join(', ')}
           </td>
         </tr>
@@ -97,7 +105,7 @@ function RunRow({ record }: { record: RunRecord }): ReactElement {
       >
         <td style={{ padding: '8px 10px' }}>{formatDateTime(record.startedAt)}</td>
         <td style={{ padding: '8px 10px' }}>
-          {formatDuration(record.startedAt, record.finishedAt)}
+          {formatDuration(record.startedAt, record.completedAt)}
         </td>
         <td style={{ padding: '8px 10px', textAlign: 'right' }}>{record.sources.length}</td>
         <td style={{ padding: '8px 10px', textAlign: 'right' }}>{record.totalInserted}</td>

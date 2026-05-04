@@ -70,6 +70,7 @@ export function checkAccounts(
     } else if (record.status === 'accepted') {
       accepted.push(id);
     } else {
+      // 'pending' and any future unrecognized status blocks the run
       unknown.push(id);
     }
   }

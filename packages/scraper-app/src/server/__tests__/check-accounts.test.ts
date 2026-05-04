@@ -60,11 +60,11 @@ describe('checkAccounts — poalim', () => {
     expect(result.unknown).toEqual([]);
   });
 
-  it('accepted when account has pending status', () => {
+  it('unknown when account has pending status', () => {
     const known = [makeRecord('poalim', '100000', 'pending')];
     const result = checkAccounts('poalim', poalimPayload, known);
-    expect(result.accepted).toEqual(['100000']);
-    expect(result.unknown).toEqual([]);
+    expect(result.accepted).toEqual([]);
+    expect(result.unknown).toEqual(['100000']);
   });
 
   it('unknown when account is not in known list', () => {

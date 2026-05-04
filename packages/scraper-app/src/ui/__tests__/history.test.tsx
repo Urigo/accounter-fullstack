@@ -20,7 +20,7 @@ function makeRecord(overrides: Partial<RunRecord> = {}): RunRecord {
   return {
     id: 'run-1',
     startedAt: BASE_TIME,
-    finishedAt: LATER_TIME,
+    completedAt: LATER_TIME,
     totalInserted: 10,
     totalSkipped: 2,
     errorCount: 0,
@@ -58,7 +58,7 @@ describe('History screen', () => {
 
   it('expanding a row shows per-source detail', async () => {
     const record = makeRecord({
-      sources: [{ sourceId: 'src-poalim', sourceType: 'poalim', inserted: 7, skipped: 1 }],
+      sources: [{ sourceId: 'src-poalim', nickname: 'Poalim', sourceType: 'poalim', status: 'done', inserted: 7, skipped: 1 }],
     });
     mockFetch([record]);
     render(<History />);
