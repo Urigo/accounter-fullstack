@@ -10,6 +10,8 @@ export type PoalimSource = {
     isBusinessAccount?: boolean;
     acceptedAccountNumbers?: string[];
     acceptedBranchNumbers?: string[];
+    ignoredAccountNumbers?: string[];
+    ignoredBranchNumbers?: string[];
   };
 };
 
@@ -31,6 +33,7 @@ export type IsracardSource = {
   last6Digits: string;
   options?: {
     acceptedCardNumbers?: string[];
+    ignoredCardNumbers?: string[];
     cardNumberMapping?: Record<string, string>;
   };
 };
@@ -44,6 +47,7 @@ export type AmexSource = {
   last6Digits: string;
   options?: {
     acceptedCardNumbers?: string[];
+    ignoredCardNumbers?: string[];
     cardNumberMapping?: Record<string, string>;
   };
 };
@@ -55,7 +59,7 @@ export type CalSource = {
   username: string;
   password: string;
   last4Digits: string;
-  options?: { acceptedCardNumbers?: string[] };
+  options?: { acceptedCardNumbers?: string[]; ignoredCardNumbers?: string[] };
 };
 
 export type MaxSource = {
@@ -64,7 +68,7 @@ export type MaxSource = {
   nickname?: string;
   username: string;
   password: string;
-  options?: { acceptedCardNumbers?: string[] };
+  options?: { acceptedCardNumbers?: string[]; ignoredCardNumbers?: string[] };
 };
 
 export type SourceConfig =
