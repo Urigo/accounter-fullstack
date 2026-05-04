@@ -1,8 +1,7 @@
 import { addMonths, startOfMonth } from 'date-fns';
 import type { z } from 'zod';
-import { init } from '@accounter/modern-poalim-scraper';
+import { init, type IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
-import type { IsracardPayload } from '../payload-schemas/isracard.schema.js';
 import { validatePayload } from '../validate-payload.js';
 import type { IsracardAmexAccountSchema } from '../vault.js';
 
@@ -26,7 +25,7 @@ export async function scrapeIsracard(
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
-): Promise<IsracardPayload[]> {
+): Promise<IsracardCardsTransactionsList[]> {
   const { isracard: isracardFn, close } = await init({ headless: true });
 
   try {
@@ -36,7 +35,7 @@ export async function scrapeIsracard(
     );
 
     const months = buildMonthList(dateFrom, dateTo);
-    const results: IsracardPayload[] = [];
+    const results: IsracardCardsTransactionsList[] = [];
 
     for (const month of months) {
       emit({

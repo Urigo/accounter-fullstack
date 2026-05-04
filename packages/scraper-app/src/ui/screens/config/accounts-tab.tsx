@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
-import type { BankAccount } from '../../../server/vault.js';
-import { fetchAccounts, updateStatus } from '../../lib/api.js';
+import { AccountRecord } from '../../../server/vault.js';
+import { deleteAccount, fetchAccounts, updateStatus } from '../../lib/api.js';
 import { SOURCE_LABELS } from './source-types.js';
 
 type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
@@ -29,11 +29,12 @@ function StatusBadge({ status }: { status: AccountStatus }): ReactElement {
 }
 
 type AccountRowProps = {
-  account: BankAccount;
+  account: AccountRecord;
   onStatusChange(id: string, status: 'accepted' | 'ignored'): void;
+  onDelete(id: string): void;
 };
 
-function AccountRow({ account, onStatusChange }: AccountRowProps): ReactElement {
+function AccountRow({ account, onStatusChange, onDelete }: AccountRowProps): ReactElement {
   const label = account.branchNumber
     ? `${account.accountNumber} / branch ${account.branchNumber}`
     : account.accountNumber;
@@ -60,6 +61,19 @@ function AccountRow({ account, onStatusChange }: AccountRowProps): ReactElement 
           <option value="accepted">accepted</option>
           <option value="ignored">ignored</option>
         </select>
+        <button
+          aria-label={`Delete ${label}`}
+          onClick={() => onDelete(account.id)}
+          style={{
+            color: '#c00',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0 4px',
+          }}
+        >
+          ✕
+        </button>
       </div>
       {account.status === 'pending' && (
         <p style={{ margin: '4px 0 0', fontSize: '0.85em', color: '#b85c00' }}>
@@ -71,7 +85,7 @@ function AccountRow({ account, onStatusChange }: AccountRowProps): ReactElement 
 }
 
 export function AccountsTab(): ReactElement {
-  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [accounts, setAccounts] = useState<(AccountRecord & { nickname?: string })[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingOnly, setPendingOnly] = useState(false);
 
@@ -95,10 +109,18 @@ export function AccountsTab(): ReactElement {
     }
   }
 
+  async function handleDelete(id: string) {
+    try {
+      setAccounts(await deleteAccount(id));
+    } catch {
+      setError('Failed to delete account');
+    }
+  }
+
   const grouped = useMemo(
     () =>
-      accounts.reduce<Record<string, BankAccount[]>>((acc, a) => {
-        const key = `${a.sourceType}:${a.sourceId}`;
+      accounts.reduce<Record<string, (AccountRecord & { nickname?: string })[]>>((acc, a) => {
+        const key = `${a.sourceType}:${a.nickname ?? a.sourceId}`;
         acc[key] ||= [];
         acc[key].push(a);
         return acc;
@@ -125,7 +147,7 @@ export function AccountsTab(): ReactElement {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <h2 style={{ margin: 0 }}>Bank Accounts</h2>
+        <h2 style={{ margin: 0 }}>Account Records</h2>
         {pending.length > 0 && (
           <button onClick={() => setPendingOnly(p => !p)} style={{ fontSize: '0.85em' }}>
             {pendingOnly ? 'Show all' : `Classify ${pending.length} pending`}
@@ -140,7 +162,7 @@ export function AccountsTab(): ReactElement {
       )}
 
       {accounts.length === 0 && (
-        <p>No bank accounts discovered yet. Run a scrape to populate this list.</p>
+        <p>No account records discovered yet. Run a scrape to populate this list.</p>
       )}
 
       {sections.map(section => (
@@ -152,6 +174,7 @@ export function AccountsTab(): ReactElement {
                 key={a.id}
                 account={a}
                 onStatusChange={(id, status) => void handleStatusChange(id, status)}
+                onDelete={id => void handleDelete(id)}
               />
             ))}
           </ul>

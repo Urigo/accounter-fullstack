@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { filterPayload } from '../filter-payload.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
-import type { IsracardPayload } from '../payload-schemas/isracard.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
 import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function makeIsracardPayload(cards: string[]): IsracardPayload {
+function makeIsracardPayload(cards: string[]): IsracardCardsTransactionsList {
   const bean: Record<string, unknown> = {};
   cards.forEach((card, i) => {
     bean[`Index${i}`] = {
@@ -23,11 +23,11 @@ function makeIsracardPayload(cards: string[]): IsracardPayload {
   });
   return {
     Header: { Status: 'OK', Message: null },
-    CardsTransactionsListBean: bean as IsracardPayload['CardsTransactionsListBean'],
+    CardsTransactionsListBean: bean as IsracardCardsTransactionsList['CardsTransactionsListBean'],
   };
 }
 
-function getCardsInPayload(payload: IsracardPayload): string[] {
+function getCardsInPayload(payload: IsracardCardsTransactionsList): string[] {
   const bean = payload.CardsTransactionsListBean;
   return Object.keys(bean)
     .filter(k => /^Index\d+$/.test(k))
@@ -85,25 +85,25 @@ describe('filterPayload — isracard', () => {
   it('keeps only accepted card', () => {
     const payload = makeIsracardPayload(['1234', '5678']);
     const result = filterPayload('isracard', payload, isracardCreds(['1234']));
-    expect(getCardsInPayload(result as IsracardPayload)).toEqual(['1234']);
+    expect(getCardsInPayload(result as IsracardCardsTransactionsList)).toEqual(['1234']);
   });
 
   it('excludes ignored card when no accepted list', () => {
     const payload = makeIsracardPayload(['1234', '5678']);
     const result = filterPayload('isracard', payload, isracardCreds(undefined, ['1234']));
-    expect(getCardsInPayload(result as IsracardPayload)).toEqual(['5678']);
+    expect(getCardsInPayload(result as IsracardCardsTransactionsList)).toEqual(['5678']);
   });
 
   it('accepted minus ignored — only 1234 survives', () => {
     const payload = makeIsracardPayload(['1234', '5678']);
     const result = filterPayload('isracard', payload, isracardCreds(['1234', '5678'], ['5678']));
-    expect(getCardsInPayload(result as IsracardPayload)).toEqual(['1234']);
+    expect(getCardsInPayload(result as IsracardCardsTransactionsList)).toEqual(['1234']);
   });
 
   it('empty accepted + empty ignored → all cards kept', () => {
     const payload = makeIsracardPayload(['1234', '5678']);
     const result = filterPayload('isracard', payload, isracardCreds());
-    expect(getCardsInPayload(result as IsracardPayload)).toHaveLength(2);
+    expect(getCardsInPayload(result as IsracardCardsTransactionsList)).toHaveLength(2);
   });
 });
 

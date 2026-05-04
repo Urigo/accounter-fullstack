@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
+import type { ScraperUploadResult } from './gql/index.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
 
@@ -17,38 +18,11 @@ export class BlockedError extends Error {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type InsertedTransactionSummary = {
-  id: string;
-  date?: string | null;
-  description?: string | null;
-  amount?: string | null;
-  account?: string | null;
-};
-
-export type ChangedTransactionField = {
-  field: string;
-  oldValue?: string | null;
-  newValue?: string | null;
-};
-
-export type ChangedTransaction = {
-  id: string;
-  changedFields: ChangedTransactionField[];
-};
-
-export type TaskResult = {
-  inserted: number;
-  skipped: number;
-  insertedIds: string[];
-  insertedTransactions?: InsertedTransactionSummary[];
-  changedTransactions?: ChangedTransaction[];
-};
-
 export type ScrapeTask = {
   sourceId: string;
   nickname: string;
   type: string;
-  run: () => Promise<TaskResult>;
+  run: () => Promise<ScraperUploadResult>;
 };
 
 export type { SourceRunRecord };
@@ -88,7 +62,7 @@ export async function startRun(
       emit({ type: 'task-pending', sourceId: task.sourceId });
     }
 
-    type TaskOutcome = { task: ScrapeTask; result: TaskResult; error?: string };
+    type TaskOutcome = { task: ScrapeTask; result: ScraperUploadResult; error?: string };
 
     const runTask = async (task: ScrapeTask): Promise<TaskOutcome> => {
       emit({ type: 'task-running', sourceId: task.sourceId });
@@ -112,13 +86,33 @@ export async function startRun(
         // task-blocked was already emitted by buildTask — skip task-done and task-error
         if (e instanceof BlockedError) {
           errorCount++;
-          return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: 'blocked' };
+          return {
+            task,
+            result: {
+              inserted: 0,
+              skipped: 0,
+              insertedIds: [],
+              insertedTransactions: [],
+              changedTransactions: [],
+            },
+            error: 'blocked',
+          };
         }
         errorCount++;
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;
         emit({ type: 'task-error', sourceId: task.sourceId, message, ...(stack && { stack }) });
-        return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: message };
+        return {
+          task,
+          result: {
+            inserted: 0,
+            skipped: 0,
+            insertedIds: [],
+            insertedTransactions: [],
+            changedTransactions: [],
+          },
+          error: message,
+        };
       }
     };
 

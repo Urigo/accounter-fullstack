@@ -1,9 +1,8 @@
 import type { z } from 'zod';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { SourceType, ValidatedPayload } from './check-accounts.js';
-import type { AmexPayload } from './payload-schemas/amex.schema.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
-import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
@@ -34,44 +33,30 @@ function effectiveSet(
 }
 
 function filterIsracardAmex(
-  payload: IsracardPayload,
+  payload: IsracardCardsTransactionsList,
   accepted: string[] | undefined,
   ignored: string[] | undefined,
-): IsracardPayload {
+): IsracardCardsTransactionsList {
   const bean = payload.CardsTransactionsListBean;
-  const allCards = Object.keys(bean)
-    .filter(k => /^Index\d+$/.test(k))
-    .flatMap(k => {
-      const idx = bean[k] as { CurrentCardTransactions?: Array<{ '@cardTransactions'?: string }> };
-      return (idx.CurrentCardTransactions ?? []).map(c => c['@cardTransactions'] ?? '');
-    })
-    .filter(Boolean);
+  const allCards = bean.cardNumberList.map(c => c.match(/\d{4}/)?.[0]);
 
-  const allowed = effectiveSet(accepted, ignored, allCards);
+  const allowed = effectiveSet(accepted, ignored, allCards.filter(Boolean) as string[]);
 
   const filteredBean: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(bean)) {
-    if (!/^Index\d+$/.test(key)) {
-      filteredBean[key] = val;
-      continue;
+    if (/^Index\d+$/.test(key)) {
+      const card = allCards[Number(key.slice(5))]; // 'Index0' → 0 → cardNumbers[0]
+      if (!card || !allowed.has(card)) {
+        continue;
+      }
     }
-    const idx = val as {
-      '@AllCards': string;
-      CurrentCardTransactions: Array<{
-        '@cardTransactions': string;
-        txnIsrael?: Array<Record<string, unknown>> | null;
-        txnAbroad?: Array<Record<string, unknown>> | null;
-      }>;
-    };
-    const filteredCards = idx.CurrentCardTransactions.filter(c =>
-      allowed.has(c['@cardTransactions']),
-    );
-    filteredBean[key] = { ...idx, CurrentCardTransactions: filteredCards };
+    filteredBean[key] = val;
   }
 
   return {
     ...payload,
-    CardsTransactionsListBean: filteredBean as IsracardPayload['CardsTransactionsListBean'],
+    CardsTransactionsListBean:
+      filteredBean as IsracardCardsTransactionsList['CardsTransactionsListBean'],
   };
 }
 
@@ -83,13 +68,13 @@ export function filterPayload(
   switch (type) {
     case 'isracard':
     case 'amex': {
-      const p = payload as IsracardPayload;
+      const p = payload as IsracardCardsTransactionsList;
       const opts = (creds as z.infer<typeof IsracardAmexAccountSchema>).options;
       return filterIsracardAmex(
         p,
         opts?.acceptedCardNumbers,
         opts?.ignoredCardNumbers,
-      ) as AmexPayload;
+      ) as IsracardCardsTransactionsList;
     }
 
     case 'cal': {

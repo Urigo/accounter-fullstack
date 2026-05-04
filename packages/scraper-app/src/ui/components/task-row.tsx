@@ -65,9 +65,30 @@ export function TaskRow({
         <span style={{ fontWeight: 500 }}>{nickname}</span>
 
         {state.status === 'done' && (
-          <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: '#555' }}>
-            ↑ {state.inserted ?? 0} new / {state.skipped ?? 0} skipped
-          </span>
+          <>
+            <span style={{ marginLeft: 'auto', fontSize: '0.9em', color: '#555' }}>
+              ↑ {state.inserted ?? 0} new / {state.skipped ?? 0} skipped
+              {(state.changedTransactions?.length ?? 0) > 0 && (
+                <> / {state.changedTransactions!.length} changed</>
+              )}
+            </span>
+            {((state.insertedTransactions?.length ?? 0) > 0 ||
+              (state.changedTransactions?.length ?? 0) > 0) && (
+              <button
+                type="button"
+                onClick={() => setExpanded(e => !e)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: '#374151',
+                  fontSize: '0.85em',
+                }}
+              >
+                {expanded ? '▲ Hide' : '▼ Details'}
+              </button>
+            )}
+          </>
         )}
 
         {state.status === 'error' && (
@@ -102,6 +123,90 @@ export function TaskRow({
           <div style={{ fontWeight: 600, marginBottom: 4 }}>{state.error}</div>
           {state.stack && (
             <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: '#7f1d1d' }}>{state.stack}</pre>
+          )}
+        </div>
+      )}
+
+      {state.status === 'done' && expanded && (
+        <div style={{ fontSize: '0.85em', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {(state.insertedTransactions?.length ?? 0) > 0 && (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                New transactions ({state.insertedTransactions!.length})
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ color: '#6b7280', textAlign: 'left' }}>
+                    <th style={{ padding: '2px 8px 2px 0' }}>Date</th>
+                    <th style={{ padding: '2px 8px 2px 0' }}>Description</th>
+                    <th style={{ padding: '2px 8px 2px 0' }}>Amount</th>
+                    <th style={{ padding: '2px 0' }}>Account</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.insertedTransactions!.map(t => (
+                    <tr key={t.id} style={{ borderTop: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>
+                        {t.date ?? '—'}
+                      </td>
+                      <td style={{ padding: '2px 8px 2px 0' }}>{t.description ?? '—'}</td>
+                      <td style={{ padding: '2px 8px 2px 0', fontVariantNumeric: 'tabular-nums' }}>
+                        {t.amount ?? '—'}
+                      </td>
+                      <td style={{ padding: '2px 0', color: '#6b7280' }}>{t.account ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {(state.changedTransactions?.length ?? 0) > 0 && (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4, color: '#b45309' }}>
+                Changed transactions ({state.changedTransactions!.length})
+              </div>
+              {state.changedTransactions!.map(ct => (
+                <div
+                  key={ct.id}
+                  style={{
+                    marginBottom: 6,
+                    padding: '6px 8px',
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: 4,
+                  }}
+                >
+                  <div style={{ color: '#6b7280', marginBottom: 4, fontFamily: 'monospace' }}>
+                    {ct.id}
+                  </div>
+                  <table style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ color: '#6b7280', textAlign: 'left' }}>
+                        <th style={{ padding: '1px 12px 1px 0' }}>Field</th>
+                        <th style={{ padding: '1px 12px 1px 0' }}>Old</th>
+                        <th style={{ padding: '1px 0' }}>New</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ct.changedFields.map(f => (
+                        <tr key={f.field} style={{ borderTop: '1px solid #fde68a' }}>
+                          <td style={{ padding: '1px 12px 1px 0', fontFamily: 'monospace' }}>
+                            {f.field}
+                          </td>
+                          <td style={{ padding: '1px 12px 1px 0', color: '#b91c1c' }}>
+                            {f.oldValue ?? '—'}
+                          </td>
+                          <td style={{ padding: '1px 0', color: '#15803d' }}>
+                            {f.newValue ?? '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

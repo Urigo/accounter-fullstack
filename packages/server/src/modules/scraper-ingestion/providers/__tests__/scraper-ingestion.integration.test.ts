@@ -237,7 +237,7 @@ describe('uploadIsracardTransactions', () => {
   beforeEach(() => truncate('isracard_creditcard_transactions'));
 
   const baseTx: IsracardTransactionInput = {
-    card: 1234,
+    card: "1234",
     cardIndex: 0,
     fullPurchaseDate: '15/01/2024',
     paymentSum: '250.00',
@@ -270,7 +270,7 @@ describe('uploadAmexTransactions', () => {
   beforeEach(() => truncate('amex_creditcard_transactions'));
 
   const baseTx: AmexTransactionInput = {
-    card: 5678,
+    card: "5678",
     cardIndex: 0,
     fullPurchaseDate: '20/01/2024',
     paymentSum: '180.00',

@@ -1,6 +1,6 @@
 import { z, ZodError } from 'zod';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import { AmexPayloadSchema } from './payload-schemas/amex.schema.js';
-import type { AmexPayload } from './payload-schemas/amex.schema.js';
 import { CalPayloadSchema } from './payload-schemas/cal.schema.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import { CurrencyRatesPayloadSchema } from './payload-schemas/currency-rates.schema.js';
@@ -8,7 +8,6 @@ import type { CurrencyRatesPayload } from './payload-schemas/currency-rates.sche
 import { DiscountPayloadSchema } from './payload-schemas/discount.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import { IsracardPayloadSchema } from './payload-schemas/isracard.schema.js';
-import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import { MaxPayloadSchema } from './payload-schemas/max.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import { PoalimForeignPayloadSchema } from './payload-schemas/poalim-foreign.schema.js';
@@ -33,8 +32,8 @@ type PayloadMap = {
   'poalim-ils': PoalimIlsPayload;
   'poalim-foreign': PoalimForeignPayload;
   'poalim-swift': PoalimSwiftPayload;
-  isracard: IsracardPayload;
-  amex: AmexPayload;
+  isracard: IsracardCardsTransactionsList;
+  amex: IsracardCardsTransactionsList;
   cal: CalPayload;
   discount: DiscountPayload;
   max: MaxPayload;
