@@ -204,7 +204,10 @@ export class GmailService {
         const urlString = match[1];
         try {
           const fullUrl = new URL(urlString);
-          if (fullUrl.hostname === partial.hostname) {
+          if (
+            fullUrl.hostname === partial.hostname &&
+            fullUrl.pathname.startsWith(partial.pathname)
+          ) {
             return urlString;
           }
         } catch {
