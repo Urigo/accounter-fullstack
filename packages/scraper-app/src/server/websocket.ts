@@ -93,7 +93,7 @@ function buildTask(
             sourceType: src.type,
             unknownAccounts: [...new Set(allUnknown)],
           });
-          throw new BlockedError();
+          throw new BlockedError([...new Set(allUnknown)]);
         }
 
         if (!uploadClient)
@@ -226,7 +226,7 @@ function buildTask(
           sourceType: src.type,
           unknownAccounts: check.unknown,
         });
-        throw new BlockedError();
+        throw new BlockedError(check.unknown);
       }
 
       if (!uploadClient)

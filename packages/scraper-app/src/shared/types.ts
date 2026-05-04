@@ -1,9 +1,12 @@
 export type SourceRunRecord = {
   sourceId: string;
+  nickname: string;
   sourceType: string;
+  status: 'done' | 'error' | 'blocked';
   inserted: number;
   skipped: number;
   error?: string;
+  blockedAccounts?: string[];
 };
 
 export type RunRecord = {

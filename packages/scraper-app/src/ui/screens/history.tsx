@@ -16,34 +16,64 @@ export function formatDuration(startedAt: string, finishedAt: string): string {
 }
 
 const SOURCE_STATUS_STYLE: Record<string, { background: string; color: string }> = {
-  ok: { background: '#dcfce7', color: '#15803d' },
+  done: { background: '#dcfce7', color: '#15803d' },
   error: { background: '#fee2e2', color: '#b91c1c' },
+  blocked: { background: '#fef9c3', color: '#854d0e' },
+};
+
+const SOURCE_STATUS_LABEL: Record<string, string> = {
+  done: 'done',
+  error: 'error',
+  blocked: 'blocked',
 };
 
 function SourceRow({ src }: { src: SourceRunRecord }): ReactElement {
-  const hasError = !!src.error;
-  const style = SOURCE_STATUS_STYLE[hasError ? 'error' : 'ok']!;
+  const style = SOURCE_STATUS_STYLE[src.status] ?? SOURCE_STATUS_STYLE['done']!;
+  const [expanded, setExpanded] = useState(false);
   return (
-    <tr>
-      <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceId}</td>
-      <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceType}</td>
-      <td style={{ padding: '4px 8px' }}>
-        <span
-          style={{
-            ...style,
-            padding: '1px 7px',
-            borderRadius: 10,
-            fontSize: '0.78em',
-            fontWeight: 600,
-          }}
-        >
-          {hasError ? 'error' : 'ok'}
-        </span>
-      </td>
-      <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.inserted}</td>
-      <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.skipped}</td>
-      <td style={{ padding: '4px 8px', color: '#b91c1c' }}>{src.error ?? '—'}</td>
-    </tr>
+    <>
+      <tr>
+        <td style={{ padding: '4px 8px', color: '#555' }}>
+          {src.nickname || src.sourceId}
+        </td>
+        <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceType}</td>
+        <td style={{ padding: '4px 8px' }}>
+          <span
+            style={{
+              ...style,
+              padding: '1px 7px',
+              borderRadius: 10,
+              fontSize: '0.78em',
+              fontWeight: 600,
+            }}
+          >
+            {SOURCE_STATUS_LABEL[src.status] ?? src.status}
+          </span>
+        </td>
+        <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.inserted}</td>
+        <td style={{ padding: '4px 8px', textAlign: 'right' }}>{src.skipped}</td>
+        <td style={{ padding: '4px 8px', color: '#b91c1c' }}>
+          {src.status === 'blocked' ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(e => !e)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#854d0e', fontSize: '0.85em', padding: 0 }}
+            >
+              {expanded ? '▲' : '▼'} {src.blockedAccounts?.length ?? 0} unknown
+            </button>
+          ) : (
+            src.error ?? '—'
+          )}
+        </td>
+      </tr>
+      {expanded && src.blockedAccounts && src.blockedAccounts.length > 0 && (
+        <tr>
+          <td colSpan={6} style={{ padding: '2px 8px 8px 24px', color: '#854d0e', fontSize: '0.82em' }}>
+            {src.blockedAccounts.join(', ')}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
