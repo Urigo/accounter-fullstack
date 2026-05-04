@@ -1,7 +1,6 @@
-import type { AmexPayload } from './payload-schemas/amex.schema.js';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
-import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
@@ -15,8 +14,7 @@ export type ValidatedPayload =
   | PoalimForeignPayload
   | PoalimSwiftPayload
   | DiscountPayload
-  | IsracardPayload
-  | AmexPayload
+  | IsracardCardsTransactionsList
   | CalPayload
   | MaxPayload;
 
@@ -37,17 +35,10 @@ export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPa
     }
     case 'isracard':
     case 'amex': {
-      const p = payload as IsracardPayload;
-      const bean = p.CardsTransactionsListBean;
-      return Object.keys(bean)
-        .filter(k => /^Index\d+$/.test(k))
-        .flatMap(k => {
-          const idx = bean[k] as {
-            CurrentCardTransactions?: Array<{ '@cardTransactions'?: string }>;
-          };
-          return (idx.CurrentCardTransactions ?? []).map(c => c['@cardTransactions'] ?? '');
-        })
-        .filter(Boolean);
+      const p = payload as IsracardCardsTransactionsList;
+      return p.CardsTransactionsListBean.cardNumberList
+        .map(c => c.match(/\d{4}/)?.[0])
+        .filter((c): c is string => c !== undefined);
     }
     case 'cal': {
       const p = payload as CalPayload;
@@ -76,8 +67,11 @@ export function checkAccounts(
       unknown.push(id);
     } else if (record.status === 'ignored') {
       ignored.push(id);
-    } else {
+    } else if (record.status === 'accepted') {
       accepted.push(id);
+    } else {
+      // 'pending' and any future unrecognized status blocks the run
+      unknown.push(id);
     }
   }
 

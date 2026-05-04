@@ -1,17 +1,18 @@
 import type { FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import websocketPlugin from '@fastify/websocket';
+import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
+import { registerDiscoveredAccounts } from './account-discovery.js';
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
 import { filterPayload, type FilterableCreds } from './filter-payload.js';
-import { createUploadClient, type UploadClient } from './graphql/client.js';
+import { ChangedTransaction, InsertedTransactionSummary } from './gql/index.js';
+import { createUploadClient, ScraperUploadResult, type UploadClient } from './graphql/client.js';
 import { appendRun } from './history.js';
 import { OtpManager } from './otp-manager.js';
-import type { AmexPayload } from './payload-schemas/amex.schema.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
-import type { IsracardPayload } from './payload-schemas/isracard.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import { BlockedError, ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
@@ -75,10 +76,14 @@ function buildTask(
         // Use that result to gate Foreign/Swift at the same index.
         const filteredIls = ils.map(p => filterPayload('poalim', p, creds) as PoalimIlsPayload);
 
+        // Register any newly discovered accounts as pending, then re-read to avoid stale closure
+        await registerDiscoveredAccounts('poalim', src.id, filteredIls);
+        const currentAccountRecords = getVault().accountRecords;
+
         // Check for unknown accounts across all ILS payloads (ILS carries account identifiers)
         const allUnknown: string[] = [];
         for (const p of filteredIls) {
-          const check = checkAccounts('poalim', p, vault.accountRecords);
+          const check = checkAccounts('poalim', p, currentAccountRecords);
           allUnknown.push(...check.unknown);
         }
         if (allUnknown.length > 0) {
@@ -88,10 +93,17 @@ function buildTask(
             sourceType: src.type,
             unknownAccounts: [...new Set(allUnknown)],
           });
-          throw new BlockedError();
+          throw new BlockedError([...new Set(allUnknown)]);
         }
 
-        if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+        if (!uploadClient)
+          return {
+            inserted: 0,
+            skipped: 0,
+            insertedIds: [],
+            insertedTransactions: [],
+            changedTransactions: [],
+          };
 
         let totalInserted = 0;
         let totalSkipped = 0;
@@ -122,7 +134,13 @@ function buildTask(
             }
           }
         }
-        return { inserted: totalInserted, skipped: totalSkipped, insertedIds: allIds };
+        return {
+          inserted: totalInserted,
+          skipped: totalSkipped,
+          insertedIds: allIds,
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
       }
 
       // isracard/amex return one payload per month; other scrapers return a single payload
@@ -165,7 +183,14 @@ function buildTask(
       // Use the first non-empty payload to check for unknown accounts (card identifiers
       // are stable across months for isracard/amex, so any month suffices)
       const representativePayload = payloads[0];
-      if (!representativePayload) return { inserted: 0, skipped: 0, insertedIds: [] };
+      if (!representativePayload)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
 
       // Apply per-source accepted/ignored filter after validation, before account check
       let creds: FilterableCreds | undefined;
@@ -191,7 +216,9 @@ function buildTask(
         payloads = payloads.map(p => filterPayload(src.type, p, creds!) as ValidatedPayload);
       }
 
-      const check = checkAccounts(src.type, payloads[0]!, vault.accountRecords);
+      // Register any newly discovered accounts as pending, then re-read to avoid stale closure
+      await registerDiscoveredAccounts(src.type, src.id, payloads);
+      const check = checkAccounts(src.type, payloads[0]!, getVault().accountRecords);
       if (check.unknown.length > 0) {
         emit({
           type: 'task-blocked',
@@ -199,32 +226,43 @@ function buildTask(
           sourceType: src.type,
           unknownAccounts: check.unknown,
         });
-        throw new BlockedError();
+        throw new BlockedError(check.unknown);
       }
 
-      if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+      if (!uploadClient)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
 
       // Upload all accepted payloads
       let totalInserted = 0;
       let totalSkipped = 0;
       const allIds: string[] = [];
+      const changedTransactions: ChangedTransaction[] = [];
+      const insertedTransactions: InsertedTransactionSummary[] = [];
 
       if (src.type === 'isracard' || src.type === 'amex') {
-        let result;
+        let result: ScraperUploadResult;
         switch (src.type) {
           case 'isracard':
-            result = await uploadClient.uploadIsracard(payloads as IsracardPayload[]);
+            result = await uploadClient.uploadIsracard(payloads as IsracardCardsTransactionsList[]);
             break;
           case 'amex':
-            result = await uploadClient.uploadAmex(payloads as AmexPayload[]);
+            result = await uploadClient.uploadAmex(payloads as IsracardCardsTransactionsList[]);
             break;
         }
         totalInserted += result.inserted;
         totalSkipped += result.skipped;
         allIds.push(...result.insertedIds);
+        changedTransactions.push(...(result.changedTransactions ?? []));
+        insertedTransactions.push(...(result.insertedTransactions ?? []));
       } else {
         for (const payload of payloads) {
-          let result;
+          let result: ScraperUploadResult;
           switch (src.type) {
             case 'cal':
               result = await uploadClient.uploadCal(payload as CalPayload);
@@ -236,7 +274,13 @@ function buildTask(
               result = await uploadClient.uploadMax(payload as MaxPayload);
               break;
             default:
-              result = { inserted: 0, skipped: 0, insertedIds: [] };
+              result = {
+                inserted: 0,
+                skipped: 0,
+                insertedIds: [],
+                changedTransactions: [],
+                insertedTransactions: [],
+              };
           }
           totalInserted += result.inserted;
           totalSkipped += result.skipped;
@@ -244,7 +288,13 @@ function buildTask(
         }
       }
 
-      return { inserted: totalInserted, skipped: totalSkipped, insertedIds: allIds };
+      return {
+        inserted: totalInserted,
+        skipped: totalSkipped,
+        insertedIds: allIds,
+        changedTransactions,
+        insertedTransactions,
+      };
     },
   };
 }
@@ -341,7 +391,14 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                 type: 'currency-rates',
                 run: async () => {
                   const payload = await scrapeCurrencyRates(emit);
-                  if (!uploadClient) return { inserted: 0, skipped: 0, insertedIds: [] };
+                  if (!uploadClient)
+                    return {
+                      inserted: 0,
+                      skipped: 0,
+                      insertedIds: [],
+                      changedTransactions: [],
+                      insertedTransactions: [],
+                    };
                   return uploadClient.uploadCurrencyRates(payload);
                 },
               });
@@ -356,7 +413,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                       {
                         ...runRecord,
                         startedAt: runRecord.startedAt.toISOString(),
-                        finishedAt: runRecord.finishedAt.toISOString(),
+                        completedAt: runRecord.completedAt.toISOString(),
                       },
                       historyFilePath,
                     );

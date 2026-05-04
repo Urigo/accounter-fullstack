@@ -63,7 +63,7 @@ describe('AccountsTab', () => {
   it('renders empty state when no accounts', async () => {
     render(<AccountsTab />);
     await waitFor(() => {
-      expect(screen.getByText(/no bank accounts discovered/i)).toBeTruthy();
+      expect(screen.getByText(/no account records discovered/i)).toBeTruthy();
     });
   });
 

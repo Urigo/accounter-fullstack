@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { z, ZodError } from 'zod';
 
 export function getVaultPath(): string {
-  return process.env['VAULT_FILE'] ?? '.vault';
+  return process.env['VAULT_PATH'] ?? '.vault';
 }
 
 const ALGORITHM = 'aes-256-gcm';
@@ -91,7 +91,7 @@ export const MaxAccountSchema = z.object({
 export const SettingsSchema = z.object({
   showBrowser: z.boolean().default(false),
   fetchBankOfIsraelRates: z.boolean().default(true),
-  concurrentScraping: z.boolean().default(true),
+  concurrentScraping: z.boolean().default(false),
   defaultDateRangeMonths: z.number().int().positive().default(3),
   historyFilePath: z.string().default('./history.json'),
   saveHistory: z.boolean().default(true),

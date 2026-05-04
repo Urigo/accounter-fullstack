@@ -12,11 +12,12 @@ const poalimPayload = {
 const isracardPayload = {
   Header: { Status: '1', Message: null },
   CardsTransactionsListBean: {
+    cardNumberList: ['CARD 9876', 'CARD 4545'],
     Index0: {
       '@AllCards': 'AllCards',
       CurrentCardTransactions: [
-        { '@cardTransactions': 'CARD-A', txnIsrael: null, txnAbroad: null },
-        { '@cardTransactions': 'CARD-B', txnIsrael: null, txnAbroad: null },
+        { txnIsrael: null, txnAbroad: null },
+        { txnIsrael: null, txnAbroad: null },
       ],
     },
   },
@@ -60,11 +61,11 @@ describe('checkAccounts — poalim', () => {
     expect(result.unknown).toEqual([]);
   });
 
-  it('accepted when account has pending status', () => {
+  it('unknown when account has pending status', () => {
     const known = [makeRecord('poalim', '100000', 'pending')];
     const result = checkAccounts('poalim', poalimPayload, known);
-    expect(result.accepted).toEqual(['100000']);
-    expect(result.unknown).toEqual([]);
+    expect(result.accepted).toEqual([]);
+    expect(result.unknown).toEqual(['100000']);
   });
 
   it('unknown when account is not in known list', () => {
@@ -119,32 +120,33 @@ describe('checkAccounts — discount', () => {
 describe('checkAccounts — isracard / amex', () => {
   it('classifies each card from CurrentCardTransactions', () => {
     const known = [
-      makeRecord('isracard', 'CARD-A', 'accepted'),
-      makeRecord('isracard', 'CARD-B', 'ignored'),
+      makeRecord('isracard', '4545', 'accepted'),
+      makeRecord('isracard', '9876', 'ignored'),
     ];
     const result = checkAccounts('isracard', isracardPayload, known);
-    expect(result.accepted).toEqual(['CARD-A']);
-    expect(result.ignored).toEqual(['CARD-B']);
+    expect(result.accepted).toEqual(['4545']);
+    expect(result.ignored).toEqual(['9876']);
     expect(result.unknown).toEqual([]);
   });
 
   it('returns unknown cards not in known list', () => {
-    const known = [makeRecord('isracard', 'CARD-A', 'accepted')];
+    const known = [makeRecord('isracard', '9876', 'accepted')];
     const result = checkAccounts('isracard', isracardPayload, known);
-    expect(result.unknown).toEqual(['CARD-B']);
+    expect(result.unknown).toEqual(['4545']);
   });
 
   it('works the same for amex payload type', () => {
-    const known = [makeRecord('amex', 'CARD-A', 'ignored')];
+    const known = [makeRecord('amex', '4545', 'ignored')];
     const result = checkAccounts('amex', isracardPayload, known);
-    expect(result.ignored).toEqual(['CARD-A']);
-    expect(result.unknown).toEqual(['CARD-B']);
+    expect(result.ignored).toEqual(['4545']);
+    expect(result.unknown).toEqual(['9876']);
   });
 
   it('returns empty when there are no cards in payload', () => {
     const emptyPayload = {
       Header: { Status: '1', Message: null },
       CardsTransactionsListBean: {
+        cardNumberList: [],
         Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
       },
     };
@@ -152,10 +154,11 @@ describe('checkAccounts — isracard / amex', () => {
     expect(result).toEqual({ accepted: [], ignored: [], unknown: [] });
   });
 
-  it('collects identifiers from all Index* keys (Index0, Index1, Index2, …)', () => {
+  it('collects identifiers from cardNumberList', () => {
     const multiIndexPayload = {
       Header: { Status: '1', Message: null },
       CardsTransactionsListBean: {
+        cardNumberList: ['CARD 1111', 'CARD 2222', 'CARD 3333'],
         Index0: {
           '@AllCards': 'AllCards',
           CurrentCardTransactions: [{ '@cardTransactions': 'CARD-A' }],
@@ -171,23 +174,24 @@ describe('checkAccounts — isracard / amex', () => {
       },
     };
     const result = checkAccounts('isracard', multiIndexPayload, []);
-    expect(result.unknown.sort()).toEqual(['CARD-A', 'CARD-B', 'CARD-C']);
+    expect(result.unknown.sort()).toEqual(['1111', '2222', '3333']);
   });
 
   it('ignores non-Index* keys in CardsTransactionsListBean', () => {
     const payloadWithExtraKeys = {
       Header: { Status: '1', Message: null },
       CardsTransactionsListBean: {
+        cardNumberList: ['CARD 0101'],
         Index0: {
           '@AllCards': 'AllCards',
-          CurrentCardTransactions: [{ '@cardTransactions': 'CARD-A' }],
+          CurrentCardTransactions: [],
         },
         cardIdx: '0',
         card0: { some: 'data' },
       },
     };
     const result = checkAccounts('isracard', payloadWithExtraKeys, []);
-    expect(result.unknown).toEqual(['CARD-A']);
+    expect(result.unknown).toEqual(['0101']);
   });
 });
 

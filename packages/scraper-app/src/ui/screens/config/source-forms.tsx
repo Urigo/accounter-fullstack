@@ -51,6 +51,46 @@ function Field({ label, name, value, required, password, onChange }: FieldProps)
   );
 }
 
+type ListFieldProps = {
+  label: string;
+  name: string;
+  value: string; // comma-separated display value
+  hint?: string;
+  onChange(e: ChangeEvent<HTMLInputElement>): void;
+};
+
+function ListField({ label, name, value, hint, onChange }: ListFieldProps): ReactElement {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <label htmlFor={name} style={{ display: 'block', marginBottom: 2 }}>
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder="comma-separated, e.g. 123456,898989"
+        style={{ width: '100%', padding: '4px 8px', boxSizing: 'border-box' }}
+      />
+      {hint && <span style={{ fontSize: '0.8em', color: '#6b7280' }}>{hint}</span>}
+    </div>
+  );
+}
+
+function toList(csv: string): string[] | undefined {
+  const parts = csv
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : undefined;
+}
+
+function fromList(arr?: string[]): string {
+  return arr ? arr.join(', ') : '';
+}
+
 type PoalimFormProps = {
   initial?: Partial<PoalimSource>;
   onSave(data: Omit<PoalimSource, 'id' | 'type'>): void;
@@ -62,6 +102,11 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
     nickname: initial.nickname ?? '',
     userCode: initial.userCode ?? '',
     password: initial.password ?? '',
+    isBusinessAccount: initial.options?.isBusinessAccount ?? false,
+    acceptedAccountNumbers: fromList(initial.options?.acceptedAccountNumbers),
+    acceptedBranchNumbers: fromList(initial.options?.acceptedBranchNumbers),
+    ignoredAccountNumbers: fromList(initial.options?.ignoredAccountNumbers),
+    ignoredBranchNumbers: fromList(initial.options?.ignoredBranchNumbers),
   });
 
   function set(e: ChangeEvent<HTMLInputElement>) {
@@ -72,10 +117,19 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
     <form
       onSubmit={e => {
         e.preventDefault();
+        const opts = {
+          isBusinessAccount: fields.isBusinessAccount || undefined,
+          acceptedAccountNumbers: toList(fields.acceptedAccountNumbers),
+          acceptedBranchNumbers: toList(fields.acceptedBranchNumbers),
+          ignoredAccountNumbers: toList(fields.ignoredAccountNumbers),
+          ignoredBranchNumbers: toList(fields.ignoredBranchNumbers),
+        };
+        const hasOpts = Object.values(opts).some(v => v !== undefined);
         onSave({
           nickname: fields.nickname || undefined,
           userCode: fields.userCode,
           password: fields.password,
+          options: hasOpts ? opts : undefined,
         });
       }}
     >
@@ -87,6 +141,40 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
         value={fields.password}
         required
         password
+        onChange={set}
+      />
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={fields.isBusinessAccount}
+            onChange={e => setFields(f => ({ ...f, isBusinessAccount: e.target.checked }))}
+          />
+          Business account
+        </label>
+      </div>
+      <ListField
+        label="Accepted account numbers"
+        name="acceptedAccountNumbers"
+        value={fields.acceptedAccountNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Accepted branch numbers"
+        name="acceptedBranchNumbers"
+        value={fields.acceptedBranchNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Ignored account numbers"
+        name="ignoredAccountNumbers"
+        value={fields.ignoredAccountNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Ignored branch numbers"
+        name="ignoredBranchNumbers"
+        value={fields.ignoredBranchNumbers}
         onChange={set}
       />
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -167,6 +255,8 @@ export function IsracardAmexForm({
     ownerId: initial.ownerId ?? '',
     password: initial.password ?? '',
     last6Digits: initial.last6Digits ?? '',
+    acceptedCardNumbers: fromList(initial.options?.acceptedCardNumbers),
+    ignoredCardNumbers: fromList(initial.options?.ignoredCardNumbers),
   });
 
   function set(e: ChangeEvent<HTMLInputElement>) {
@@ -177,11 +267,17 @@ export function IsracardAmexForm({
     <form
       onSubmit={e => {
         e.preventDefault();
+        const opts = {
+          acceptedCardNumbers: toList(fields.acceptedCardNumbers),
+          ignoredCardNumbers: toList(fields.ignoredCardNumbers),
+        };
+        const hasOpts = Object.values(opts).some(v => v !== undefined);
         onSave({
           nickname: fields.nickname || undefined,
           ownerId: fields.ownerId,
           password: fields.password,
           last6Digits: fields.last6Digits,
+          options: hasOpts ? opts : undefined,
         });
       }}
     >
@@ -200,6 +296,18 @@ export function IsracardAmexForm({
         name="last6Digits"
         value={fields.last6Digits}
         required
+        onChange={set}
+      />
+      <ListField
+        label="Accepted card numbers"
+        name="acceptedCardNumbers"
+        value={fields.acceptedCardNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Ignored card numbers"
+        name="ignoredCardNumbers"
+        value={fields.ignoredCardNumbers}
         onChange={set}
       />
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -224,6 +332,8 @@ export function CalForm({ initial = {}, onSave, onCancel }: CalFormProps): React
     username: initial.username ?? '',
     password: initial.password ?? '',
     last4Digits: initial.last4Digits ?? '',
+    acceptedCardNumbers: fromList(initial.options?.acceptedCardNumbers),
+    ignoredCardNumbers: fromList(initial.options?.ignoredCardNumbers),
   });
 
   function set(e: ChangeEvent<HTMLInputElement>) {
@@ -234,11 +344,17 @@ export function CalForm({ initial = {}, onSave, onCancel }: CalFormProps): React
     <form
       onSubmit={e => {
         e.preventDefault();
+        const opts = {
+          acceptedCardNumbers: toList(fields.acceptedCardNumbers),
+          ignoredCardNumbers: toList(fields.ignoredCardNumbers),
+        };
+        const hasOpts = Object.values(opts).some(v => v !== undefined);
         onSave({
           nickname: fields.nickname || undefined,
           username: fields.username,
           password: fields.password,
           last4Digits: fields.last4Digits,
+          options: hasOpts ? opts : undefined,
         });
       }}
     >
@@ -257,6 +373,18 @@ export function CalForm({ initial = {}, onSave, onCancel }: CalFormProps): React
         name="last4Digits"
         value={fields.last4Digits}
         required
+        onChange={set}
+      />
+      <ListField
+        label="Accepted card numbers"
+        name="acceptedCardNumbers"
+        value={fields.acceptedCardNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Ignored card numbers"
+        name="ignoredCardNumbers"
+        value={fields.ignoredCardNumbers}
         onChange={set}
       />
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -280,6 +408,8 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
     nickname: initial.nickname ?? '',
     username: initial.username ?? '',
     password: initial.password ?? '',
+    acceptedCardNumbers: fromList(initial.options?.acceptedCardNumbers),
+    ignoredCardNumbers: fromList(initial.options?.ignoredCardNumbers),
   });
 
   function set(e: ChangeEvent<HTMLInputElement>) {
@@ -290,10 +420,16 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
     <form
       onSubmit={e => {
         e.preventDefault();
+        const opts = {
+          acceptedCardNumbers: toList(fields.acceptedCardNumbers),
+          ignoredCardNumbers: toList(fields.ignoredCardNumbers),
+        };
+        const hasOpts = Object.values(opts).some(v => v !== undefined);
         onSave({
           nickname: fields.nickname || undefined,
           username: fields.username,
           password: fields.password,
+          options: hasOpts ? opts : undefined,
         });
       }}
     >
@@ -305,6 +441,18 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
         value={fields.password}
         required
         password
+        onChange={set}
+      />
+      <ListField
+        label="Accepted card numbers"
+        name="acceptedCardNumbers"
+        value={fields.acceptedCardNumbers}
+        onChange={set}
+      />
+      <ListField
+        label="Ignored card numbers"
+        name="ignoredCardNumbers"
+        value={fields.ignoredCardNumbers}
         onChange={set}
       />
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

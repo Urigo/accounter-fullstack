@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
+import type { ScraperUploadResult } from './gql/index.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
 
@@ -9,52 +10,27 @@ export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
  * Signals runTask to skip task-done and task-error — task-blocked was already emitted.
  */
 export class BlockedError extends Error {
-  constructor() {
+  readonly blockedAccounts: string[];
+  constructor(blockedAccounts: string[]) {
     super('blocked');
     this.name = 'BlockedError';
+    this.blockedAccounts = blockedAccounts;
   }
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type InsertedTransactionSummary = {
-  id: string;
-  date?: string | null;
-  description?: string | null;
-  amount?: string | null;
-  account?: string | null;
-};
-
-export type ChangedTransactionField = {
-  field: string;
-  oldValue?: string | null;
-  newValue?: string | null;
-};
-
-export type ChangedTransaction = {
-  id: string;
-  changedFields: ChangedTransactionField[];
-};
-
-export type TaskResult = {
-  inserted: number;
-  skipped: number;
-  insertedIds: string[];
-  insertedTransactions?: InsertedTransactionSummary[];
-  changedTransactions?: ChangedTransaction[];
-};
-
 export type ScrapeTask = {
   sourceId: string;
   nickname: string;
   type: string;
-  run: () => Promise<TaskResult>;
+  run: () => Promise<ScraperUploadResult>;
 };
 
 export type { SourceRunRecord };
-export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'finishedAt'> & {
+export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'completedAt'> & {
   startedAt: Date;
-  finishedAt: Date;
+  completedAt: Date;
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -88,7 +64,13 @@ export async function startRun(
       emit({ type: 'task-pending', sourceId: task.sourceId });
     }
 
-    type TaskOutcome = { task: ScrapeTask; result: TaskResult; error?: string };
+    type TaskOutcome = {
+      task: ScrapeTask;
+      result: ScraperUploadResult;
+      status: 'done' | 'error' | 'blocked';
+      error?: string;
+      blockedAccounts?: string[];
+    };
 
     const runTask = async (task: ScrapeTask): Promise<TaskOutcome> => {
       emit({ type: 'task-running', sourceId: task.sourceId });
@@ -107,18 +89,39 @@ export async function startRun(
             changedTransactions: result.changedTransactions,
           }),
         });
-        return { task, result };
+        return { task, result, status: 'done' };
       } catch (e) {
         // task-blocked was already emitted by buildTask — skip task-done and task-error
         if (e instanceof BlockedError) {
-          errorCount++;
-          return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: 'blocked' };
+          return {
+            task,
+            result: {
+              inserted: 0,
+              skipped: 0,
+              insertedIds: [],
+              insertedTransactions: [],
+              changedTransactions: [],
+            },
+            status: 'blocked',
+            blockedAccounts: e.blockedAccounts,
+          };
         }
         errorCount++;
         const message = e instanceof Error ? e.message : String(e);
         const stack = e instanceof Error ? e.stack : undefined;
         emit({ type: 'task-error', sourceId: task.sourceId, message, ...(stack && { stack }) });
-        return { task, result: { inserted: 0, skipped: 0, insertedIds: [] }, error: message };
+        return {
+          task,
+          result: {
+            inserted: 0,
+            skipped: 0,
+            insertedIds: [],
+            insertedTransactions: [],
+            changedTransactions: [],
+          },
+          status: 'error',
+          error: message,
+        };
       }
     };
 
@@ -136,10 +139,13 @@ export async function startRun(
     const totalSkipped = outcomes.reduce((sum, o) => sum + o.result.skipped, 0);
     const sources: SourceRunRecord[] = outcomes.map(o => ({
       sourceId: o.task.sourceId,
+      nickname: o.task.nickname,
       sourceType: o.task.type,
+      status: o.status,
       inserted: o.result.inserted,
       skipped: o.result.skipped,
       ...(o.error != null && { error: o.error }),
+      ...(o.blockedAccounts != null && { blockedAccounts: o.blockedAccounts }),
     }));
 
     emit({ type: 'run-complete', totalInserted, totalSkipped, errors: errorCount });
@@ -147,7 +153,7 @@ export async function startRun(
     return {
       id,
       startedAt,
-      finishedAt: new Date(),
+      completedAt: new Date(),
       totalInserted,
       totalSkipped,
       errorCount,
