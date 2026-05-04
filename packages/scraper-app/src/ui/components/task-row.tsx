@@ -1,5 +1,5 @@
-import { useState, type ReactElement } from 'react';
-import type { TaskState } from '../lib/ws.js';
+import { useEffect, useState, type ReactElement } from 'react';
+import type { AccountStep, MonthStep, TaskState } from '../lib/ws.js';
 
 type Props = {
   sourceId: string;
@@ -25,6 +25,173 @@ const STATUS_LABELS: Record<string, string> = {
   blocked: 'Blocked',
   'otp-required': 'OTP Required',
 };
+
+const MONTH_PHASE_BADGE: Record<string, { background: string; color: string; label: string }> = {
+  fetching:  { background: '#dbeafe', color: '#1d4ed8', label: '⟳ Fetching' },
+  fetched:   { background: '#e5e7eb', color: '#374151', label: 'Fetched' },
+  error:     { background: '#fee2e2', color: '#b91c1c', label: 'Error' },
+  uploading: { background: '#fef9c3', color: '#854d0e', label: '⟳ Uploading' },
+  uploaded:  { background: '#dcfce7', color: '#15803d', label: 'Uploaded' },
+};
+
+const TXN_PHASE_BADGE: Record<string, { background: string; color: string; label: string }> = {
+  fetching:  { background: '#dbeafe', color: '#1d4ed8', label: '⟳' },
+  uploading: { background: '#fef9c3', color: '#854d0e', label: '⟳' },
+  done:      { background: '#dcfce7', color: '#15803d', label: '✓' },
+};
+
+const VAULT_STATUS_BADGE: Record<string, { background: string; color: string }> = {
+  accepted: { background: '#dcfce7', color: '#15803d' },
+  ignored:  { background: '#e5e7eb', color: '#6b7280' },
+  blocked:  { background: '#fee2e2', color: '#b91c1c' },
+  unknown:  { background: '#fef9c3', color: '#854d0e' },
+};
+
+function Badge({ style, children }: { style: { background: string; color: string }; children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        ...style,
+        padding: '1px 6px',
+        borderRadius: 10,
+        fontSize: '0.75em',
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function MonthStepsTable({ steps }: { steps: MonthStep[] }) {
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82em' }}>
+      <thead>
+        <tr style={{ color: '#6b7280', textAlign: 'left' }}>
+          <th style={{ padding: '2px 8px 2px 0' }}>Month</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Status</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Transactions</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Inserted</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Skipped</th>
+          <th style={{ padding: '2px 0' }}>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {steps.map(step => {
+          const badge = MONTH_PHASE_BADGE[step.phase] ?? MONTH_PHASE_BADGE['fetching']!;
+          return (
+            <tr key={step.month} style={{ borderTop: '1px solid #f3f4f6' }}>
+              <td style={{ padding: '2px 8px 2px 0', fontVariantNumeric: 'tabular-nums' }}>{step.month}</td>
+              <td style={{ padding: '2px 8px 2px 0' }}><Badge style={badge}>{badge.label}</Badge></td>
+              <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>{step.transactionCount ?? '—'}</td>
+              <td style={{ padding: '2px 8px 2px 0', color: '#15803d' }}>{step.inserted ?? '—'}</td>
+              <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>{step.skipped ?? '—'}</td>
+              <td style={{ padding: '2px 0', color: '#b91c1c', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {step.error ?? ''}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function TxnTypeCell({ state }: { state: { phase: string; count?: number; inserted?: number; skipped?: number } | undefined }) {
+  if (!state) return <td style={{ padding: '2px 8px 2px 0', color: '#d1d5db' }}>—</td>;
+  const badge = TXN_PHASE_BADGE[state.phase] ?? TXN_PHASE_BADGE['fetching']!;
+  return (
+    <td style={{ padding: '2px 8px 2px 0' }}>
+      <Badge style={badge}>{badge.label}</Badge>
+      {state.phase === 'done' && (
+        <span style={{ marginLeft: 4, color: '#6b7280', fontSize: '0.9em' }}>
+          {state.inserted ?? 0}↑ {state.skipped ?? 0}–
+        </span>
+      )}
+      {state.phase === 'uploading' && state.count != null && (
+        <span style={{ marginLeft: 4, color: '#6b7280', fontSize: '0.9em' }}>{state.count}</span>
+      )}
+    </td>
+  );
+}
+
+function AccountStepsTable({ steps }: { steps: AccountStep[] }) {
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82em' }}>
+      <thead>
+        <tr style={{ color: '#6b7280', textAlign: 'left' }}>
+          <th style={{ padding: '2px 8px 2px 0' }}>Account</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Vault</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>ILS</th>
+          <th style={{ padding: '2px 8px 2px 0' }}>Foreign</th>
+          <th style={{ padding: '2px 0' }}>Swift</th>
+        </tr>
+      </thead>
+      <tbody>
+        {steps.map(step => {
+          const vaultBadge = step.vaultStatus ? VAULT_STATUS_BADGE[step.vaultStatus] : undefined;
+          return (
+            <tr key={step.accountId} style={{ borderTop: '1px solid #f3f4f6' }}>
+              <td style={{ padding: '2px 8px 2px 0', fontFamily: 'monospace' }}>{step.accountId}</td>
+              <td style={{ padding: '2px 8px 2px 0' }}>
+                {vaultBadge ? <Badge style={vaultBadge}>{step.vaultStatus}</Badge> : '—'}
+              </td>
+              <TxnTypeCell state={step.ils} />
+              <TxnTypeCell state={step.foreign} />
+              <TxnTypeCell state={step.swift} />
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
+function TaskSteps({ steps, status }: { steps: MonthStep[] | AccountStep[]; status: string }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (status === 'done' || status === 'error' || status === 'blocked') {
+      setCollapsed(true);
+    }
+  }, [status]);
+
+  if (steps.length === 0) return null;
+
+  const isAccountSteps = 'accountId' in steps[0]!;
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#6b7280',
+          fontSize: '0.8em',
+          padding: '0 0 4px 0',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+        }}
+      >
+        {collapsed ? '▸' : '▾'} {isAccountSteps ? 'Accounts' : 'Months'} ({steps.length})
+      </button>
+      {!collapsed && (
+        <div style={{ paddingLeft: 4 }}>
+          {isAccountSteps ? (
+            <AccountStepsTable steps={steps as AccountStep[]} />
+          ) : (
+            <MonthStepsTable steps={steps as MonthStep[]} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function TaskRow({
   sourceId: _sourceId,
@@ -108,6 +275,10 @@ export function TaskRow({
           </button>
         )}
       </div>
+
+      {state.steps && state.steps.length > 0 && (
+        <TaskSteps steps={state.steps} status={state.status} />
+      )}
 
       {state.status === 'error' && expanded && (
         <div
