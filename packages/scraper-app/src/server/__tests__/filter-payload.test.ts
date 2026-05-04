@@ -9,13 +9,14 @@ import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scr
 
 function makeIsracardPayload(cards: string[]): IsracardCardsTransactionsList {
   const bean: Record<string, unknown> = {};
+  bean.cardNumberList = cards.map(c => `card ${c}`);
   cards.forEach((card, i) => {
     bean[`Index${i}`] = {
       '@AllCards': card,
       CurrentCardTransactions: [
         {
           '@cardTransactions': card,
-          txnIsrael: [{ cardIndex: '1', supplierName: 'Shop', dealSum: '100', fullPurchaseDate: '2024-01-01', purchaseDate: '2024-01-01', voucherNumber: '1', voucherNumberRatz: '1' }],
+          txnIsrael: [{ cardIndex: `${i}`, supplierName: 'Shop', dealSum: '100', fullPurchaseDate: '2024-01-01', purchaseDate: '2024-01-01', voucherNumber: '1', voucherNumberRatz: '1' }],
           txnAbroad: [],
         },
       ],

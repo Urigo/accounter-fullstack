@@ -54,6 +54,7 @@ describe('validatePayload — valid fixtures', () => {
     const result = validatePayload('isracard', {
       Header: { Status: '1', Message: null },
       CardsTransactionsListBean: {
+        cardNumberList: ['012345'],
         Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
       },
     });
@@ -64,6 +65,7 @@ describe('validatePayload — valid fixtures', () => {
     const result = validatePayload('amex', {
       Header: { Status: '1', Message: null },
       CardsTransactionsListBean: {
+        cardNumberList: ['343434'],
         Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
       },
     });

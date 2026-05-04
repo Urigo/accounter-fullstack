@@ -33,7 +33,9 @@ function SourceRow({ src }: { src: SourceRunRecord }): ReactElement {
   return (
     <>
       <tr>
-        <td style={{ padding: '4px 8px', color: '#555' }}>{src.nickname || src.sourceId}</td>
+        <td key={src.sourceId} style={{ padding: '4px 8px', color: '#555' }}>
+          {src.nickname || src.sourceId}
+        </td>
         <td style={{ padding: '4px 8px', color: '#555' }}>{src.sourceType}</td>
         <td style={{ padding: '4px 8px' }}>
           <span

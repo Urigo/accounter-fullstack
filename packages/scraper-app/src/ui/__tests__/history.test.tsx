@@ -69,7 +69,7 @@ describe('History screen', () => {
     await userEvent.setup().click(dataRow!);
 
     await waitFor(() => {
-      expect(screen.getByText('src-poalim')).toBeTruthy();
+      expect(screen.getByText('Poalim')).toBeTruthy();
       expect(screen.getByText('poalim')).toBeTruthy();
     });
   });

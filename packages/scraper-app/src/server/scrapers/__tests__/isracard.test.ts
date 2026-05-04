@@ -7,6 +7,7 @@ const CREDS = { id: 'src-1', ownerId: '123456789', password: 'pass', last6Digits
 const VALID_PAYLOAD = {
   Header: { Status: '1', Message: null },
   CardsTransactionsListBean: {
+    cardNumberList: ['123456'],
     Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
   },
 };
