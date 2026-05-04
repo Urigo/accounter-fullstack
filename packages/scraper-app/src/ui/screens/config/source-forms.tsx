@@ -84,7 +84,8 @@ function toList(csv: string): string[] | undefined {
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
-  return parts.length > 0 ? parts : undefined;
+  const unique = [...new Set(parts)];
+  return unique.length > 0 ? unique : undefined;
 }
 
 function fromList(arr?: string[]): string {
