@@ -207,7 +207,9 @@ export class GmailService {
           if (
             fullUrl.hostname === partial.hostname &&
             (fullUrl.pathname === partial.pathname ||
-              fullUrl.pathname.startsWith(partial.pathname.endsWith('/') ? partial.pathname : partial.pathname + '/'))
+              fullUrl.pathname.startsWith(
+                partial.pathname.endsWith('/') ? partial.pathname : partial.pathname + '/',
+              ))
           ) {
             return urlString;
           }
