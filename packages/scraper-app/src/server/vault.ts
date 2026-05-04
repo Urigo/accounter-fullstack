@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { z, ZodError } from 'zod';
 
 export function getVaultPath(): string {
-  return process.env['VAULT_FILE'] ?? '.vault';
+  return process.env['VAULT_PATH'] ?? '.vault';
 }
 
 const ALGORITHM = 'aes-256-gcm';

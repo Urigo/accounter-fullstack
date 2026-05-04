@@ -15,7 +15,7 @@ function makeTmpPath() {
 }
 
 async function buildApp(vaultPath: string): Promise<FastifyInstance> {
-  process.env['VAULT_FILE'] = vaultPath;
+  process.env['VAULT_PATH'] = vaultPath;
   const app = Fastify();
   await registerVaultRoutes(app);
   await app.ready();
@@ -37,7 +37,7 @@ describe('GET /api/vault/status', () => {
     lockVault();
     await app.close();
     await rm(vaultPath, { force: true });
-    delete process.env['VAULT_FILE'];
+    delete process.env['VAULT_PATH'];
   });
 
   it('returns locked=true and hasFile=false when no vault file exists', async () => {
@@ -62,7 +62,7 @@ describe('POST /api/vault/create', () => {
     lockVault();
     await app.close();
     await rm(vaultPath, { force: true });
-    delete process.env['VAULT_FILE'];
+    delete process.env['VAULT_PATH'];
   });
 
   it('creates a vault and returns 201', async () => {
@@ -116,7 +116,7 @@ describe('GET /api/vault/status', () => {
     lockVault();
     await app.close();
     await rm(vaultPath, { force: true });
-    delete process.env['VAULT_FILE'];
+    delete process.env['VAULT_PATH'];
   });
 
   it('returns locked=true and hasFile=true before unlock', async () => {
@@ -150,7 +150,7 @@ describe('POST /api/vault/unlock', () => {
     lockVault();
     await app.close();
     await rm(vaultPath, { force: true });
-    delete process.env['VAULT_FILE'];
+    delete process.env['VAULT_PATH'];
   });
 
   it('returns ok with correct password', async () => {

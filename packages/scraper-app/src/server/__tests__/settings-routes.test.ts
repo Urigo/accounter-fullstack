@@ -15,7 +15,7 @@ let app: FastifyInstance;
 
 beforeEach(async () => {
   vaultPath = join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
-  process.env['VAULT_FILE'] = vaultPath;
+  process.env['VAULT_PATH'] = vaultPath;
   await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
 
   app = Fastify();
@@ -33,7 +33,7 @@ afterEach(async () => {
   lockVault();
   await app.close();
   await rm(vaultPath, { force: true });
-  delete process.env['VAULT_FILE'];
+  delete process.env['VAULT_PATH'];
 });
 
 describe('GET /api/vault/settings', () => {
