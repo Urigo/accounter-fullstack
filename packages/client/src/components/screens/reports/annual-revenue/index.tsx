@@ -1,6 +1,6 @@
 'use client';
 
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Download } from 'lucide-react';
 import { useQuery } from 'urql';
 import { YearPickerInput } from '@mantine/dates';
@@ -83,23 +83,25 @@ export const AnnualRevenueReport = (): ReactElement => {
       totalRevenueIls: 0,
       totalRevenueUsd: 0,
     };
-    data?.annualRevenueReport.countries.map(country => {
+    data?.annualRevenueReport?.countries?.map(country => {
       total.totalClients += country.clients.length;
       total.totalRevenueIls += country.revenueLocal.raw;
       total.totalRevenueUsd += country.revenueDefaultForeign.raw;
     });
     return total;
-  }, [data?.annualRevenueReport.countries]);
+  }, [data?.annualRevenueReport?.countries]);
 
-  const downloadCSV = () => {
+  const downloadCSV = useCallback(() => {
     const rows: string[] = [];
 
     // Header
     rows.push('Country,Client,charge ID,Date,Description,Revenue ILS,Revenue USD');
     rows.push(`Annual,,,,TOTAL,${totalRevenueIls.toFixed(2)},${totalRevenueUsd.toFixed(2)}`);
 
+    const countries = [...(data?.annualRevenueReport?.countries ?? [])];
+
     // Data rows
-    data?.annualRevenueReport.countries
+    countries
       .sort((a, b) => b.revenueDefaultForeign.raw - a.revenueDefaultForeign.raw)
       .map(country => {
         rows.push(
@@ -135,7 +137,8 @@ export const AnnualRevenueReport = (): ReactElement => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
+    URL.revokeObjectURL(url);
+  }, [year, data, totalRevenueIls, totalRevenueUsd]);
 
   useEffect(() => {
     setFiltersContext(
