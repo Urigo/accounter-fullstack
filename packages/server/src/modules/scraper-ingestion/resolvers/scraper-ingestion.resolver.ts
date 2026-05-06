@@ -1,22 +1,24 @@
+import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
+import { PoalimScraperIngestionProvider } from '../providers/poalim-scraper-ingestion.provider.js';
 import { ScraperIngestionProvider } from '../providers/scraper-ingestion.provider.js';
 import type { ScraperIngestionModule } from '../types.js';
 
 export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
   Mutation: {
     uploadPoalimIlsTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadPoalimIlsTransactions(transactions),
+      injector.get(PoalimScraperIngestionProvider).uploadPoalimIlsTransactions(transactions),
 
     uploadPoalimForeignTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadPoalimForeignTransactions(transactions),
+      injector.get(PoalimScraperIngestionProvider).uploadPoalimForeignTransactions(transactions),
 
     uploadPoalimSwiftTransactions: (_, { swifts }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadPoalimSwiftTransactions(swifts),
+      injector.get(PoalimScraperIngestionProvider).uploadPoalimSwiftTransactions(swifts),
 
     uploadIsracardTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadIsracardTransactions(transactions),
+      injector.get(IsracardAmexScraperIngestionProvider).uploadIsracardTransactions(transactions),
 
     uploadAmexTransactions: (_, { transactions }, { injector }) =>
-      injector.get(ScraperIngestionProvider).uploadAmexTransactions(transactions),
+      injector.get(IsracardAmexScraperIngestionProvider).uploadAmexTransactions(transactions),
 
     uploadCalTransactions: (_, { transactions }, { injector }) =>
       injector.get(ScraperIngestionProvider).uploadCalTransactions(transactions),
