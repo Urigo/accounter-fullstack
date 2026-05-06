@@ -31,10 +31,11 @@ export type AccountCheckResult = { accepted: string[]; ignored: string[]; unknow
 export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPayload): string[] {
   switch (type) {
     case 'poalim': {
-      if (!('extendedBankNumber' in payload)) {
+      const p = payload as HapoalimAccountData[number];
+      if (!('accountNumber' in p) || !('branchNumber' in p)) {
         return [];
       }
-      return [`${payload.branchNumber}-${payload.accountNumber}`];
+      return [`${p.branchNumber}-${p.accountNumber}`];
     }
     case 'discount': {
       const p = payload as DiscountPayload;

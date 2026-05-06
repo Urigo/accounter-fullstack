@@ -46,6 +46,18 @@ vi.mock('@accounter/modern-poalim-scraper', () => ({
   init: vi.fn(),
 }));
 
+vi.mock('../../account-discovery.js', () => ({
+  registerDiscoveredAccounts: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../vault-store.js', () => ({
+  getVault: vi.fn().mockReturnValue({
+    accountRecords: [
+      { id: 'rec-1', sourceId: 'src-1', sourceType: 'poalim', accountNumber: '600-100000', status: 'accepted' },
+    ],
+  }),
+}));
+
 async function getInitMock() {
   const mod = await import('@accounter/modern-poalim-scraper');
   return mod.init as ReturnType<typeof vi.fn>;

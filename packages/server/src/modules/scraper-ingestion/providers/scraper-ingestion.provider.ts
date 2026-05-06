@@ -369,7 +369,7 @@ const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuer
     accountNumber
   )
   ON CONFLICT (executing_date, account_number, branch_number, event_number) DO NOTHING
-  RETURNING id, executing_date, account_number, branch_number, event_number;
+  RETURNING id, executing_date, account_number, branch_number, event_number, activity_description, event_amount;
 `;
 
 const uploadPoalimSwiftTransactions = sql<IUploadPoalimSwiftTransactionsQuery>`
@@ -1511,10 +1511,10 @@ export class ScraperIngestionProvider {
 
     const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
       id: r.id,
-      date: r.event_date ? dateToTimelessDateString(r.event_date) : null,
-      description: r.activity_description ?? null,
-      amount: r.event_amount == null ? null : String(r.event_amount),
-      account: r.account_number == null ? null : String(r.account_number),
+      date: dateToTimelessDateString(r.event_date),
+      description: r.activity_description,
+      amount: r.event_amount,
+      account: String(r.account_number),
     }));
 
     const changedTransactions: ChangedTransaction[] = [];

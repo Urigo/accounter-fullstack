@@ -86,12 +86,22 @@ function buildTask(
         const allIds: string[] = [];
         const insertedTransactions: InsertedTransactionSummary[] = [];
         const changedTransactions: ChangedTransaction[] = [];
+        const bankAccount = {
+          bankNumber: 0,
+          branchNumber: 0,
+          accountNumber: 0,
+        };
 
         for (let i = 0; i < ils.length; i++) {
           const ilsPayload = ils[i]!;
           const accountId = ilsPayload.retrievalTransactionData
             ? `${ilsPayload.retrievalTransactionData.branchNumber}-${ilsPayload.retrievalTransactionData.accountNumber}`
             : `unknown:${i}`;
+          if (ilsPayload.retrievalTransactionData) {
+            bankAccount.accountNumber = ilsPayload.retrievalTransactionData.accountNumber;
+            bankAccount.branchNumber = ilsPayload.retrievalTransactionData.branchNumber;
+            bankAccount.bankNumber = ilsPayload.retrievalTransactionData.bankNumber;
+          }
 
           // Emit vault-checked status based on whether account was excluded
           emit({
@@ -135,7 +145,7 @@ function buildTask(
               txnType: 'foreign',
               count: foreignCount,
             });
-            const rf = await uploadClient.uploadPoalimForeign(foreignPayload);
+            const rf = await uploadClient.uploadPoalimForeign(foreignPayload, bankAccount);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,
@@ -161,7 +171,7 @@ function buildTask(
               txnType: 'swift',
               count: swiftCount,
             });
-            const rs = await uploadClient.uploadPoalimSwift(swiftPayload);
+            const rs = await uploadClient.uploadPoalimSwift(swiftPayload, bankAccount);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,

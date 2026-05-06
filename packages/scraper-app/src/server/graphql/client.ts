@@ -4,13 +4,13 @@ import type {
   HapoalimForeignTransactionsPersonal,
   HapoalimILSTransactions,
   IsracardCardsTransactionsList,
-  SwiftTransactions,
 } from '@accounter/modern-poalim-scraper';
 import type { ScraperUploadResult } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type { DecoratedSwiftTransactions } from '../scrapers/poalim.js';
 import {
   amexVars,
   calVars,
@@ -63,18 +63,22 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
 
     async uploadPoalimForeign(
       payload: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness,
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
     ): Promise<ScraperUploadResult> {
       return request(
         UPLOAD_POALIM_FOREIGN,
-        poalimForeignVars(payload),
+        poalimForeignVars(payload, bankAccount),
         'uploadPoalimForeignTransactions',
       );
     },
 
-    async uploadPoalimSwift(payload: SwiftTransactions): Promise<ScraperUploadResult> {
+    async uploadPoalimSwift(
+      payload: DecoratedSwiftTransactions,
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
+    ): Promise<ScraperUploadResult> {
       return request(
         UPLOAD_POALIM_SWIFT,
-        poalimSwiftVars(payload),
+        poalimSwiftVars(payload, bankAccount),
         'uploadPoalimSwiftTransactions',
       );
     },
