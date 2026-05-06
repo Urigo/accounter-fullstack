@@ -16,6 +16,7 @@ import { Currency } from '../../../../shared/enums.js';
 import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
+import { FiatExchangeProvider } from '../../../exchange-rates/providers/fiat-exchange.provider.js';
 import { ScraperIngestionProvider } from '../scraper-ingestion.provider.js';
 
 let pool: Pool;
@@ -55,8 +56,14 @@ function createMockAuthContextProvider(): AuthContextProvider {
 beforeAll(async () => {
   pool = await connectTestDb();
   await runMigrationsIfNeeded(pool);
-  const dbClient = new TenantAwareDBClient(new DBProvider(pool), createMockAuthContextProvider());
-  provider = new ScraperIngestionProvider(dbClient);
+  const dbProvider = new DBProvider(pool);
+  const dbClient = new TenantAwareDBClient(dbProvider, createMockAuthContextProvider());
+  const fiatExchangeProvider = new FiatExchangeProvider(dbProvider);
+  // Stub the DataLoader so it returns null for any date (no pre-existing rates in test DB)
+  fiatExchangeProvider.getExchangeRatesByDatesLoader = {
+    loadMany: async (dates: readonly Date[]) => dates.map(() => null),
+  } as unknown as typeof fiatExchangeProvider.getExchangeRatesByDatesLoader;
+  provider = new ScraperIngestionProvider(dbClient, fiatExchangeProvider);
 
   // Disable triggers so inserts don't cascade into charges/transactions,
   // which require financial_accounts and owner_id to be set up.
@@ -237,7 +244,7 @@ describe('uploadIsracardTransactions', () => {
   beforeEach(() => truncate('isracard_creditcard_transactions'));
 
   const baseTx: IsracardTransactionInput = {
-    card: 1234,
+    card: "1234",
     cardIndex: 0,
     fullPurchaseDate: '15/01/2024',
     paymentSum: '250.00',
@@ -270,7 +277,7 @@ describe('uploadAmexTransactions', () => {
   beforeEach(() => truncate('amex_creditcard_transactions'));
 
   const baseTx: AmexTransactionInput = {
-    card: 5678,
+    card: "5678",
     cardIndex: 0,
     fullPurchaseDate: '20/01/2024',
     paymentSum: '180.00',

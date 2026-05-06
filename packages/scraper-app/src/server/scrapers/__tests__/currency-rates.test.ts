@@ -50,7 +50,7 @@ describe('scrapeCurrencyRates — happy path', () => {
   it('resolves with a validated CurrencyRatesPayload', async () => {
     mockFetch(VALID_BOI_XML);
 
-    const result = await scrapeCurrencyRates(noop);
+    const result = await scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-02'));
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);
@@ -62,7 +62,7 @@ describe('scrapeCurrencyRates — fetch error', () => {
   it('throws when the BOI fetch returns a non-OK status', async () => {
     mockFetch('', false);
 
-    await expect(scrapeCurrencyRates(noop)).rejects.toThrow('BOI fetch failed');
+    await expect(scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-02'))).rejects.toThrow('BOI fetch failed');
   });
 });
 
@@ -71,7 +71,7 @@ describe('scrapeCurrencyRates — empty response', () => {
     mockFetch(EMPTY_BOI_XML);
 
     // No series → no entries → empty validated array
-    const result = await scrapeCurrencyRates(noop);
+    const result = await scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-02'));
     expect(result).toEqual([]);
   });
 });
@@ -80,7 +80,7 @@ describe('scrapeCurrencyRates — unsupported currency', () => {
   it('skips entries with unsupported currencies without throwing', async () => {
     mockFetch(BAD_CURRENCY_XML);
 
-    const result = await scrapeCurrencyRates(noop);
+    const result = await scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-02'));
     expect(result).toEqual([]);
   });
 });
@@ -99,7 +99,7 @@ describe('scrapeCurrencyRates — NaN rate', () => {
     mockFetch(badRateXml);
 
     // NaN is filtered out by the isNaN guard, resulting in an empty array
-    const result = await scrapeCurrencyRates(noop);
+    const result = await scrapeCurrencyRates(noop, new Date('2024-01-01'), new Date('2024-01-02'));
     expect(result).toEqual([]);
   });
 });

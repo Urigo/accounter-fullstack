@@ -189,7 +189,7 @@ export default gql`
   " Input for an Isracard credit card transaction "
   input IsracardTransactionInput {
     adendum: String
-    card: Int!
+    card: String!
     cardIndex: Int!
     chargingDate: String
     city: String
@@ -243,7 +243,7 @@ export default gql`
   " Input for an American Express credit card transaction "
   input AmexTransactionInput {
     adendum: String
-    card: Int!
+    card: String!
     cardIndex: Int!
     chargingDate: String
     city: String

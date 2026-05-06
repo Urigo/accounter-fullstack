@@ -390,7 +390,7 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                 nickname: 'Currency Rates (Bank of Israel)',
                 type: 'currency-rates',
                 run: async () => {
-                  const payload = await scrapeCurrencyRates(emit);
+                  const payload = await scrapeCurrencyRates(emit, runDateFrom, runDateTo);
                   if (!uploadClient)
                     return {
                       inserted: 0,

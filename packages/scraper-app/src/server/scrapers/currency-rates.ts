@@ -12,7 +12,11 @@ type SupportedCurrency = (typeof CURRENCIES)[number];
 
 export type Emitter = (msg: ServerMessage) => void;
 
-export async function scrapeCurrencyRates(_emit: Emitter): Promise<CurrencyRatesPayload> {
+export async function scrapeCurrencyRates(
+  _emit: Emitter,
+  dateFrom: Date,
+  dateTo: Date,
+): Promise<CurrencyRatesPayload> {
   const res = await fetch(BOI_URL);
   if (!res.ok) throw new Error(`BOI fetch failed: ${res.status} ${res.statusText}`);
 
@@ -44,7 +48,15 @@ export async function scrapeCurrencyRates(_emit: Emitter): Promise<CurrencyRates
       const e = entry as Record<string, string>;
       const date = e['@_TIME_PERIOD'];
       const value = Number(e['@_OBS_VALUE']);
-      if (!date || Number.isNaN(value) || date === today) continue;
+      if (
+        !date ||
+        Number.isNaN(value) ||
+        date >= today ||
+        date < format(dateFrom, 'yyyy-MM-dd') ||
+        date > format(dateTo, 'yyyy-MM-dd')
+      ) {
+        continue;
+      }
 
       const rate = currency === 'JPY' ? value * 0.01 : value;
 
