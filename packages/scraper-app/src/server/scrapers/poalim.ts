@@ -25,7 +25,7 @@ type ScraperCallOptions = {
 export async function scrapePoalim(
   creds: PoalimCreds,
   dateFrom: Date,
-  _dateTo: Date,
+  dateTo: Date,
   headless: boolean,
   otpManager: OtpManager,
   emit: (msg: ServerMessage) => void,
@@ -48,15 +48,15 @@ export async function scrapePoalim(
   // calculate duration based ondateFrom and today. return number of months between the two dates, with a minimum of 1 month
   const months = Math.max(
     1,
-    (_dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
-      (_dateTo.getMonth() - dateFrom.getMonth()) +
+    (dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
+      (dateTo.getMonth() - dateFrom.getMonth()) +
       1,
   );
 
   try {
     const scraper = await scrape(
       { userCode: creds.userCode, password: creds.password },
-      { isBusiness: creds.options?.isBusinessAccount ?? true, otpCallback, duration: months },
+      { isBusiness: creds.options?.isBusinessAccount ?? false, otpCallback, duration: months },
     );
 
     if (scraper === 'Unknown Error') {
@@ -71,7 +71,7 @@ export async function scrapePoalim(
     const ils: PoalimIlsPayload[] = [];
     const foreign: PoalimForeignPayload[] = [];
     const swift: PoalimSwiftPayload[] = [];
-    const isBusiness = creds.options?.isBusinessAccount ?? true;
+    const isBusiness = creds.options?.isBusinessAccount ?? false;
 
     for (const account of accounts) {
       const accountRef = {

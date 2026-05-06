@@ -119,7 +119,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
       onSubmit={e => {
         e.preventDefault();
         const opts = {
-          isBusinessAccount: fields.isBusinessAccount || undefined,
+          isBusinessAccount: fields.isBusinessAccount ?? false,
           acceptedAccountNumbers: toList(fields.acceptedAccountNumbers),
           acceptedBranchNumbers: toList(fields.acceptedBranchNumbers),
           ignoredAccountNumbers: toList(fields.ignoredAccountNumbers),
