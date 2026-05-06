@@ -23,9 +23,19 @@ export async function scrapeMax(
       { startDate: dateFrom },
     );
 
-    emit({ type: 'scrape-progress', sourceId: creds.id, sourceType: 'max', status: 'running' });
     const accounts = await scraper.getTransactions();
-    return validatePayload('max', accounts);
+    const validated = validatePayload('max', accounts);
+
+    for (const account of validated) {
+      emit({
+        type: 'task-month-fetched',
+        sourceId: creds.id,
+        month: account.accountNumber,
+        transactionCount: account.txns.length,
+      });
+    }
+
+    return validated;
   } finally {
     await close();
   }

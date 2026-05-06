@@ -368,6 +368,8 @@ function buildTask(
                 totalInserted += result.inserted;
                 totalSkipped += result.skipped;
                 allIds.push(...result.insertedIds);
+                changedTransactions.push(...(result.changedTransactions ?? []));
+                insertedTransactions.push(...(result.insertedTransactions ?? []));
               }
               result = {
                 inserted: 0,
@@ -397,6 +399,8 @@ function buildTask(
                 totalInserted += result.inserted;
                 totalSkipped += result.skipped;
                 allIds.push(...result.insertedIds);
+                changedTransactions.push(...(result.changedTransactions ?? []));
+                insertedTransactions.push(...(result.insertedTransactions ?? []));
               }
               result = {
                 inserted: 0,
@@ -407,9 +411,37 @@ function buildTask(
               };
               break;
             }
-            case 'max':
-              result = await uploadClient.uploadMax(payload as MaxPayload);
+            case 'max': {
+              for (const account of payload as MaxPayload) {
+                emit({
+                  type: 'task-month-uploading',
+                  sourceId: src.id,
+                  month: account.accountNumber,
+                  transactionCount: account.txns.length,
+                });
+                result = await uploadClient.uploadMax([account]);
+                emit({
+                  type: 'task-month-uploaded',
+                  sourceId: src.id,
+                  month: account.accountNumber,
+                  inserted: result.inserted,
+                  skipped: result.skipped,
+                });
+                totalInserted += result.inserted;
+                totalSkipped += result.skipped;
+                allIds.push(...result.insertedIds);
+                changedTransactions.push(...(result.changedTransactions ?? []));
+                insertedTransactions.push(...(result.insertedTransactions ?? []));
+              }
+              result = {
+                inserted: 0,
+                skipped: 0,
+                insertedIds: [],
+                changedTransactions: [],
+                insertedTransactions: [],
+              };
               break;
+            }
             default:
               result = {
                 inserted: 0,
@@ -536,7 +568,21 @@ export async function registerWebSocketRoute(app: FastifyInstance): Promise<void
                       changedTransactions: [],
                       insertedTransactions: [],
                     };
-                  return uploadClient.uploadCurrencyRates(payload);
+                  emit({
+                    type: 'task-month-uploading',
+                    sourceId: 'currency-rates',
+                    month: 'rates',
+                    transactionCount: payload.length,
+                  });
+                  const result = await uploadClient.uploadCurrencyRates(payload);
+                  emit({
+                    type: 'task-month-uploaded',
+                    sourceId: 'currency-rates',
+                    month: 'rates',
+                    inserted: result.inserted,
+                    skipped: result.skipped,
+                  });
+                  return result;
                 },
               });
             }
