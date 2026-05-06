@@ -171,7 +171,7 @@ describe('uploadPoalimForeignTransactions', () => {
     currency: Currency.Usd,
     currentBalance: 5000.00,
     referenceCatenatedNumber: 0,
-    referenceNumber: 7001,
+    referenceNumber: '7001',
     currencyRate: 3.71,
     rateFixingCode: 0,
     contraCurrencyCode: 0,
@@ -220,7 +220,7 @@ describe('uploadPoalimSwiftTransactions', () => {
     branchNumber: 600,
     bankNumber: 12,
     startDate: '20240115',
-    amount: '5000',
+    amount: 5000.00,
     currencyCodeCatenatedKey: 'USD',
   };
 
