@@ -60,8 +60,9 @@ export async function scrapeIsracard(
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
+  headless = true,
 ): Promise<MonthlyIsracardPayload[]> {
-  const { isracard: isracardFn, close } = await init({ headless: true });
+  const { isracard: isracardFn, close } = await init({ headless });
 
   try {
     const scraper = await isracardFn(

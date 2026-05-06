@@ -26,8 +26,9 @@ export async function scrapeCal(
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
+  headless = true,
 ): Promise<CalPayload> {
-  const { cal: calFn, close } = await init({ headless: true });
+  const { cal: calFn, close } = await init({ headless });
 
   try {
     const scraper = await calFn({

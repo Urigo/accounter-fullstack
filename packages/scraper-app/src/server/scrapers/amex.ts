@@ -31,8 +31,9 @@ export async function scrapeAmex(
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
+  headless = true,
 ): Promise<MonthlyIsracardPayload[]> {
-  const { amex: amexFn, close } = await init({ headless: true });
+  const { amex: amexFn, close } = await init({ headless });
 
   try {
     const scraper = await amexFn(

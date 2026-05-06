@@ -60,10 +60,10 @@ function buildTask(
     nickname: src.id,
     type: src.type,
     run: async () => {
+      const headless = !vault.settings.showBrowser;
       if (src.type === 'poalim') {
         const creds = vault.poalimAccounts.find(a => a.id === src.id);
         if (!creds) throw new Error(`Poalim account ${src.id} not found in vault`);
-        const headless = !vault.settings.showBrowser;
         const { ils, foreign, swift } = await scrapePoalim(
           creds,
           dateFrom,
@@ -215,33 +215,33 @@ function buildTask(
         case 'isracard': {
           const creds = vault.isracardAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Isracard account ${src.id} not found in vault`);
-          isracardPayloads = await scrapeIsracard(creds, dateFrom, dateTo, emit);
+          isracardPayloads = await scrapeIsracard(creds, dateFrom, dateTo, emit, headless);
           payloads = isracardPayloads.map(p => p.data);
           break;
         }
         case 'amex': {
           const creds = vault.amexAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Amex account ${src.id} not found in vault`);
-          isracardPayloads = await scrapeAmex(creds, dateFrom, dateTo, emit);
+          isracardPayloads = await scrapeAmex(creds, dateFrom, dateTo, emit, headless);
           payloads = isracardPayloads.map(p => p.data);
           break;
         }
         case 'cal': {
           const creds = vault.calAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Cal account ${src.id} not found in vault`);
-          payloads = [await scrapeCal(creds, dateFrom, dateTo, emit)];
+          payloads = [await scrapeCal(creds, dateFrom, dateTo, emit, headless)];
           break;
         }
         case 'discount': {
           const creds = vault.discountAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Discount account ${src.id} not found in vault`);
-          payloads = [await scrapeDiscount(creds, dateFrom, dateTo, emit)];
+          payloads = [await scrapeDiscount(creds, dateFrom, dateTo, emit, headless)];
           break;
         }
         case 'max': {
           const creds = vault.maxAccounts.find(a => a.id === src.id);
           if (!creds) throw new Error(`Max account ${src.id} not found in vault`);
-          payloads = [await scrapeMax(creds, dateFrom, dateTo, emit)];
+          payloads = [await scrapeMax(creds, dateFrom, dateTo, emit, headless)];
           break;
         }
         default:
