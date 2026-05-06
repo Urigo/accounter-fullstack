@@ -350,43 +350,49 @@ function buildTask(
           let result: ScraperUploadResult;
           switch (src.type) {
             case 'cal': {
-              const calPayload = payload as CalPayload;
-              const month = calPayload[0]?.month ?? '';
-              const txnCount = calPayload.reduce((s, e) => s + e.transactions.length, 0);
-              emit({
-                type: 'task-month-uploading',
-                sourceId: src.id,
-                month,
-                transactionCount: txnCount,
-              });
-              result = await uploadClient.uploadCal(calPayload);
-              emit({
-                type: 'task-month-uploaded',
-                sourceId: src.id,
-                month,
-                inserted: result.inserted,
-                skipped: result.skipped,
-              });
+              for (const entry of payload as CalPayload) {
+                emit({
+                  type: 'task-month-uploading',
+                  sourceId: src.id,
+                  month: entry.month,
+                  transactionCount: entry.transactions.length,
+                });
+                result = await uploadClient.uploadCal([entry]);
+                emit({
+                  type: 'task-month-uploaded',
+                  sourceId: src.id,
+                  month: entry.month,
+                  inserted: result.inserted,
+                  skipped: result.skipped,
+                });
+                totalInserted += result.inserted;
+                totalSkipped += result.skipped;
+                allIds.push(...result.insertedIds);
+              }
+              result = { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
               break;
             }
             case 'discount': {
-              const discountPayload = payload as DiscountPayload;
-              const month = discountPayload[0]?.month ?? '';
-              const txnCount = discountPayload.reduce((s, e) => s + e.transactions.length, 0);
-              emit({
-                type: 'task-month-uploading',
-                sourceId: src.id,
-                month,
-                transactionCount: txnCount,
-              });
-              result = await uploadClient.uploadDiscount(discountPayload);
-              emit({
-                type: 'task-month-uploaded',
-                sourceId: src.id,
-                month,
-                inserted: result.inserted,
-                skipped: result.skipped,
-              });
+              for (const entry of payload as DiscountPayload) {
+                emit({
+                  type: 'task-month-uploading',
+                  sourceId: src.id,
+                  month: entry.month,
+                  transactionCount: entry.transactions.length,
+                });
+                result = await uploadClient.uploadDiscount([entry]);
+                emit({
+                  type: 'task-month-uploaded',
+                  sourceId: src.id,
+                  month: entry.month,
+                  inserted: result.inserted,
+                  skipped: result.skipped,
+                });
+                totalInserted += result.inserted;
+                totalSkipped += result.skipped;
+                allIds.push(...result.insertedIds);
+              }
+              result = { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
               break;
             }
             case 'max':

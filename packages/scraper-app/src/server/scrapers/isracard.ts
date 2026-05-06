@@ -37,7 +37,9 @@ function countIsracardTransactions(data: IsracardCardsTransactionsList): number 
       'CurrentCardTransactions' in entry
     ) {
       let txnCount = 0;
-      for (const subEntry of entry.CurrentCardTransactions) {
+      for (const subEntry of Array.isArray(entry.CurrentCardTransactions)
+        ? entry.CurrentCardTransactions
+        : []) {
         if (!subEntry || typeof subEntry !== 'object' || Array.isArray(subEntry)) {
           continue;
         }
