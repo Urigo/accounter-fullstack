@@ -196,14 +196,17 @@ export function Run({
       <button
         type="button"
         onClick={handleRun}
-        disabled={runStatus === 'running' || selected.size === 0}
+        disabled={runStatus === 'running' || (selected.size === 0 && !shouldFetchRates)}
         style={{
           padding: '8px 24px',
           background: runStatus === 'running' ? '#9ca3af' : '#2563eb',
           color: '#fff',
           border: 'none',
           borderRadius: 6,
-          cursor: runStatus === 'running' || selected.size === 0 ? 'default' : 'pointer',
+          cursor:
+            runStatus === 'running' || (selected.size === 0 && !shouldFetchRates)
+              ? 'default'
+              : 'pointer',
           fontSize: '1em',
           marginBottom: 24,
         }}
