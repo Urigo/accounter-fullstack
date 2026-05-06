@@ -1,18 +1,24 @@
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import type {
+  HapoalimAccountData,
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  IsracardCardsTransactionsList,
+  SwiftTransactions,
+} from '@accounter/modern-poalim-scraper';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
-import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
-import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
-import type { PoalimSwiftPayload } from './payload-schemas/poalim-swift.schema.js';
 import type { AccountRecord } from './vault.js';
 
 export type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
 
 export type ValidatedPayload =
-  | PoalimIlsPayload
-  | PoalimForeignPayload
-  | PoalimSwiftPayload
+  | HapoalimAccountData[number]
+  | HapoalimILSTransactions
+  | HapoalimForeignTransactionsPersonal
+  | HapoalimForeignTransactionsBusiness
+  | SwiftTransactions
   | DiscountPayload
   | IsracardCardsTransactionsList
   | CalPayload
@@ -25,9 +31,10 @@ export type AccountCheckResult = { accepted: string[]; ignored: string[]; unknow
 export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPayload): string[] {
   switch (type) {
     case 'poalim': {
-      if (!('retrievalTransactionData' in payload)) return [];
-      const p = payload as PoalimIlsPayload;
-      return [String(p.retrievalTransactionData.accountNumber)];
+      if (!('extendedBankNumber' in payload)) {
+        return [];
+      }
+      return [`${payload.branchNumber}-${payload.accountNumber}`];
     }
     case 'discount': {
       const p = payload as DiscountPayload;

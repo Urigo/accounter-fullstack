@@ -26,5 +26,3 @@ export const PoalimForeignPayloadSchema = z
     balancesAndLimitsDataList: z.array(BalancesAndLimitsItemSchema),
   })
   .loose();
-
-export type PoalimForeignPayload = z.infer<typeof PoalimForeignPayloadSchema>;

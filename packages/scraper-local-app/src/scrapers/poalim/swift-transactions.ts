@@ -292,16 +292,15 @@ async function normalizeTransaction(
       transferCatenatedId: transaction.transferCatenatedId,
       dataOriginCode: transaction.dataOriginCode.toString(),
 
-      swiftIsnSerialNumber:
-        foreignSwiftTransactionDetails.data.swiftBankDetails.swiftIsnSerialNumber,
-      swiftBankCode: foreignSwiftTransactionDetails.data.swiftBankDetails.swiftBankCode,
-      orderCustomerName: foreignSwiftTransactionDetails.data.swiftBankDetails.orderCustomerName,
+      swiftIsnSerialNumber: foreignSwiftTransaction.swiftBankDetails.swiftIsnSerialNumber,
+      swiftBankCode: foreignSwiftTransaction.swiftBankDetails.swiftBankCode,
+      orderCustomerName: foreignSwiftTransaction.swiftBankDetails.orderCustomerName,
       beneficiaryEnglishStreetName:
-        foreignSwiftTransactionDetails.data.swiftBankDetails.beneficiaryEnglishStreetName1,
+        foreignSwiftTransaction.swiftBankDetails.beneficiaryEnglishStreetName1,
       beneficiaryEnglishCityName:
-        foreignSwiftTransactionDetails.data.swiftBankDetails.beneficiaryEnglishCityName1,
+        foreignSwiftTransaction.swiftBankDetails.beneficiaryEnglishCityName1,
       beneficiaryEnglishCountryName:
-        foreignSwiftTransactionDetails.data.swiftBankDetails.beneficiaryEnglishCountryName,
+        foreignSwiftTransaction.swiftBankDetails.beneficiaryEnglishCountryName,
 
       swiftSendersReference20: findElement(foreignSwiftTransaction, ':20:'),
       swiftBankOperationCode23B: findElement(foreignSwiftTransaction, ':23B:'),

@@ -1,14 +1,29 @@
 import type { z } from 'zod';
-import { init, type HapoalimOptions } from '@accounter/modern-poalim-scraper';
+import {
+  HapoalimAccountData,
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  init,
+  SwiftTransaction,
+  SwiftTransactions,
+  type HapoalimOptions,
+} from '@accounter/modern-poalim-scraper';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
+import { registerDiscoveredAccounts } from '../account-discovery.js';
+import { checkAccounts } from '../check-accounts.js';
+import { effectiveSet } from '../filter-payload.js';
 import type { OtpManager } from '../otp-manager.js';
-import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.schema.js';
-import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
-import type { PoalimSwiftPayload } from '../payload-schemas/poalim-swift.schema.js';
+import { BlockedError } from '../scrape-runner.js';
 import { validatePayload } from '../validate-payload.js';
+import { getVault } from '../vault-store.js';
 import type { PoalimAccountSchema } from '../vault.js';
 
 export type PoalimCreds = z.infer<typeof PoalimAccountSchema>;
+
+export type DecoratedSwiftTransactions = Omit<SwiftTransactions, 'swiftsList'> & {
+  swiftsList: (SwiftTransactions['swiftsList'][number] & { details: SwiftTransaction })[];
+};
 
 const OTP_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -20,9 +35,9 @@ export async function scrapePoalim(
   otpManager: OtpManager,
   emit: (msg: ServerMessage) => void,
 ): Promise<{
-  ils: PoalimIlsPayload[];
-  foreign: PoalimForeignPayload[];
-  swift: PoalimSwiftPayload[];
+  ils: HapoalimILSTransactions[];
+  foreign: (HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness)[];
+  swift: DecoratedSwiftTransactions[];
 }> {
   const otpCallback = () => otpManager.waitForOtp(creds.id, emit, OTP_TIMEOUT_MS);
 
@@ -40,6 +55,7 @@ export async function scrapePoalim(
     isBusiness: creds.options?.isBusinessAccount ?? false,
     otpCallback,
     duration: months,
+    validateSchema: true,
   };
 
   try {
@@ -67,13 +83,59 @@ export async function scrapePoalim(
       })),
     });
 
-    const ils: PoalimIlsPayload[] = [];
-    const foreign: PoalimForeignPayload[] = [];
-    const swift: PoalimSwiftPayload[] = [];
+    const opts = creds.options;
+    const filteredAccounts: HapoalimAccountData = [];
+    for (const account of accounts) {
+      const { accountNumber, branchNumber } = account;
+      const allAccounts = [String(accountNumber)];
+      const allBranches = [String(branchNumber)];
+      const allowedAccounts = effectiveSet(
+        opts?.acceptedAccountNumbers,
+        opts?.ignoredAccountNumbers,
+        allAccounts,
+      );
+      const allowedBranches = effectiveSet(
+        opts?.acceptedBranchNumbers,
+        opts?.ignoredBranchNumbers,
+        allBranches,
+      );
+      if (
+        !allowedAccounts.has(String(accountNumber)) ||
+        !allowedBranches.has(String(branchNumber))
+      ) {
+        continue;
+      }
+      filteredAccounts.push(account);
+    }
+
+    // Register any newly discovered accounts as pending, then re-read to avoid stale closure
+    await registerDiscoveredAccounts('poalim', creds.id, filteredAccounts);
+    const currentAccountRecords = getVault().accountRecords;
+
+    // Check for unknown accounts across all ILS payloads (ILS carries account identifiers)
+    const allUnknown: string[] = [];
+    for (const account of filteredAccounts) {
+      const check = checkAccounts('poalim', account, currentAccountRecords);
+      allUnknown.push(...check.unknown);
+    }
+    if (allUnknown.length > 0) {
+      emit({
+        type: 'task-blocked',
+        sourceId: creds.id,
+        sourceType: 'poalim',
+        unknownAccounts: [...new Set(allUnknown)],
+      });
+      throw new BlockedError([...new Set(allUnknown)]);
+    }
+
+    const ils: HapoalimILSTransactions[] = [];
+    const foreign: (HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness)[] =
+      [];
+    const swift: DecoratedSwiftTransactions[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
 
-    for (const account of accounts) {
-      const accountId = String(account.accountNumber);
+    for (const account of filteredAccounts) {
+      const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
         branchNumber: account.branchNumber,
@@ -100,7 +162,22 @@ export async function scrapePoalim(
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'swift' });
       const { data: swiftData } = await scraper.getForeignSwiftTransactions(accountRef);
       if (swiftData) {
-        swift.push(validatePayload('poalim-swift', swiftData));
+        const validated = validatePayload('poalim-swift', swiftData);
+        const decoratedSwiftsList: DecoratedSwiftTransactions['swiftsList'] = [];
+        for (const transaction of validated.swiftsList) {
+          const extendedTransaction = await scraper.getForeignSwiftTransaction(
+            accountRef,
+            transaction.transferCatenatedId,
+            transaction.dataOriginCode,
+          );
+          if (!extendedTransaction.isValid || !extendedTransaction.data) {
+            throw new Error(
+              `Failed to fetch details for SWIFT transaction ${transaction.transferCatenatedId}`,
+            );
+          }
+          decoratedSwiftsList.push({ ...transaction, details: extendedTransaction.data });
+        }
+        swift.push({ ...validated, swiftsList: decoratedSwiftsList });
       }
     }
 

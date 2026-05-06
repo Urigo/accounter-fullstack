@@ -13,7 +13,6 @@ import { OtpManager } from './otp-manager.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
-import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import { BlockedError, ERR_RUN_IN_PROGRESS, startRun, type ScrapeTask } from './scrape-runner.js';
 import { scrapeAmex, type MonthlyIsracardPayload as MonthlyAmexPayload } from './scrapers/amex.js';
 import { scrapeCal } from './scrapers/cal.js';
@@ -73,32 +72,6 @@ function buildTask(
           emit,
         );
 
-        // ILS, Foreign, and Swift arrays are positionally aligned per account (same index = same account).
-        // ILS payloads carry account/branch identifiers; Foreign and Swift do not.
-        // Filter ILS first — filterPayload zeros its transactions array when the account is excluded.
-        // Use that result to gate Foreign/Swift at the same index.
-        const filteredIls = ils.map(p => filterPayload('poalim', p, creds) as PoalimIlsPayload);
-
-        // Register any newly discovered accounts as pending, then re-read to avoid stale closure
-        await registerDiscoveredAccounts('poalim', src.id, filteredIls);
-        const currentAccountRecords = getVault().accountRecords;
-
-        // Check for unknown accounts across all ILS payloads (ILS carries account identifiers)
-        const allUnknown: string[] = [];
-        for (const p of filteredIls) {
-          const check = checkAccounts('poalim', p, currentAccountRecords);
-          allUnknown.push(...check.unknown);
-        }
-        if (allUnknown.length > 0) {
-          emit({
-            type: 'task-blocked',
-            sourceId: src.id,
-            sourceType: src.type,
-            unknownAccounts: [...new Set(allUnknown)],
-          });
-          throw new BlockedError([...new Set(allUnknown)]);
-        }
-
         if (!uploadClient)
           return {
             inserted: 0,
@@ -111,19 +84,21 @@ function buildTask(
         let totalInserted = 0;
         let totalSkipped = 0;
         const allIds: string[] = [];
+        const insertedTransactions: InsertedTransactionSummary[] = [];
+        const changedTransactions: ChangedTransaction[] = [];
 
-        for (let i = 0; i < filteredIls.length; i++) {
-          const ilsPayload = filteredIls[i]!;
-          // An empty transactions array means filterPayload excluded this account — skip all sub-types.
-          const accountExcluded = ilsPayload.transactions?.length === 0;
-          const accountId = String(ilsPayload.accountNumber ?? i);
+        for (let i = 0; i < ils.length; i++) {
+          const ilsPayload = ils[i]!;
+          const accountId = ilsPayload.retrievalTransactionData
+            ? `${ilsPayload.retrievalTransactionData.branchNumber}-${ilsPayload.retrievalTransactionData.accountNumber}`
+            : `unknown:${i}`;
 
           // Emit vault-checked status based on whether account was excluded
           emit({
             type: 'task-account-vault-checked',
             sourceId: src.id,
             accountId,
-            status: accountExcluded ? 'ignored' : 'accepted',
+            status: 'accepted',
           });
 
           const ilsCount = ilsPayload.transactions?.length ?? 0;
@@ -146,64 +121,68 @@ function buildTask(
           totalInserted += r.inserted;
           totalSkipped += r.skipped;
           allIds.push(...r.insertedIds);
+          insertedTransactions.push(...(r.insertedTransactions ?? []));
+          changedTransactions.push(...(r.changedTransactions ?? []));
 
-          if (!accountExcluded) {
-            if (foreign[i]) {
-              const foreignPayload = foreign[i]!;
-              const foreignCount =
-                (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
-              emit({
-                type: 'task-account-txns-uploading',
-                sourceId: src.id,
-                accountId,
-                txnType: 'foreign',
-                count: foreignCount,
-              });
-              const rf = await uploadClient.uploadPoalimForeign(foreignPayload);
-              emit({
-                type: 'task-account-txns-done',
-                sourceId: src.id,
-                accountId,
-                txnType: 'foreign',
-                inserted: rf.inserted,
-                skipped: rf.skipped,
-              });
-              totalInserted += rf.inserted;
-              totalSkipped += rf.skipped;
-              allIds.push(...rf.insertedIds);
-            }
-            if (swift[i]) {
-              const swiftPayload = swift[i]!;
-              const swiftCount =
-                (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
-              emit({
-                type: 'task-account-txns-uploading',
-                sourceId: src.id,
-                accountId,
-                txnType: 'swift',
-                count: swiftCount,
-              });
-              const rs = await uploadClient.uploadPoalimSwift(swiftPayload);
-              emit({
-                type: 'task-account-txns-done',
-                sourceId: src.id,
-                accountId,
-                txnType: 'swift',
-                inserted: rs.inserted,
-                skipped: rs.skipped,
-              });
-              totalInserted += rs.inserted;
-              totalSkipped += rs.skipped;
-              allIds.push(...rs.insertedIds);
-            }
+          if (foreign[i]) {
+            const foreignPayload = foreign[i]!;
+            const foreignCount =
+              (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId,
+              txnType: 'foreign',
+              count: foreignCount,
+            });
+            const rf = await uploadClient.uploadPoalimForeign(foreignPayload);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId,
+              txnType: 'foreign',
+              inserted: rf.inserted,
+              skipped: rf.skipped,
+            });
+            totalInserted += rf.inserted;
+            totalSkipped += rf.skipped;
+            allIds.push(...rf.insertedIds);
+            insertedTransactions.push(...(rf.insertedTransactions ?? []));
+            changedTransactions.push(...(rf.changedTransactions ?? []));
+          }
+
+          if (swift[i]) {
+            const swiftPayload = swift[i]!;
+            const swiftCount = (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId,
+              txnType: 'swift',
+              count: swiftCount,
+            });
+            const rs = await uploadClient.uploadPoalimSwift(swiftPayload);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId,
+              txnType: 'swift',
+              inserted: rs.inserted,
+              skipped: rs.skipped,
+            });
+            totalInserted += rs.inserted;
+            totalSkipped += rs.skipped;
+            allIds.push(...rs.insertedIds);
+            insertedTransactions.push(...(rs.insertedTransactions ?? []));
+            changedTransactions.push(...(rs.changedTransactions ?? []));
           }
         }
         return {
           inserted: totalInserted,
           skipped: totalSkipped,
           insertedIds: allIds,
-          insertedTransactions: [],
-          changedTransactions: [],
+          insertedTransactions,
+          changedTransactions,
         };
       }
 

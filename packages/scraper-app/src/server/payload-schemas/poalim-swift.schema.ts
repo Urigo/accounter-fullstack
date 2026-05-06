@@ -17,5 +17,3 @@ export const PoalimSwiftPayloadSchema = z
     swiftsList: z.array(SwiftItemSchema),
   })
   .loose();
-
-export type PoalimSwiftPayload = z.infer<typeof PoalimSwiftPayloadSchema>;

@@ -1,13 +1,16 @@
 import { GraphQLClient } from 'graphql-request';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import type {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  IsracardCardsTransactionsList,
+  SwiftTransactions,
+} from '@accounter/modern-poalim-scraper';
 import type { ScraperUploadResult } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
-import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.schema.js';
-import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
-import type { PoalimSwiftPayload } from '../payload-schemas/poalim-swift.schema.js';
 import {
   amexVars,
   calVars,
@@ -54,11 +57,13 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
   }
 
   return {
-    async uploadPoalimIls(payload: PoalimIlsPayload): Promise<ScraperUploadResult> {
+    async uploadPoalimIls(payload: HapoalimILSTransactions): Promise<ScraperUploadResult> {
       return request(UPLOAD_POALIM_ILS, poalimIlsVars(payload), 'uploadPoalimIlsTransactions');
     },
 
-    async uploadPoalimForeign(payload: PoalimForeignPayload): Promise<ScraperUploadResult> {
+    async uploadPoalimForeign(
+      payload: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness,
+    ): Promise<ScraperUploadResult> {
       return request(
         UPLOAD_POALIM_FOREIGN,
         poalimForeignVars(payload),
@@ -66,7 +71,7 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
       );
     },
 
-    async uploadPoalimSwift(payload: PoalimSwiftPayload): Promise<ScraperUploadResult> {
+    async uploadPoalimSwift(payload: SwiftTransactions): Promise<ScraperUploadResult> {
       return request(
         UPLOAD_POALIM_SWIFT,
         poalimSwiftVars(payload),

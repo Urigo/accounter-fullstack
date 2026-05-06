@@ -165,6 +165,7 @@ import migration_2026_04_13T13_00_00_dynamic_report_templates_lock from './actio
 import migration_2026_04_14T10_00_00_bank_deposits_table from './actions/2026-04-14T10-00-00.bank-deposits-table.js';
 import migration_2026_04_29T12_00_00_add_scraper_ingestion_unique_constraints from './actions/2026-04-29T12-00-00.add-scraper-ingestion-unique-constraints.js';
 import migration_2026_05_04T12_00_00_update_scraper_ingestion_unique_constraints from './actions/2026-05-04T12-00-00.update-scraper-ingestion-unique-constraints.js';
+import migration_2026_05_06T14_00_00_update_scraper_ingestion_poalim_unique_constraints from './actions/2026-05-06T14-00-00.update-scraper-ingestion-poalim-unique-constraints.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -334,6 +335,7 @@ export const MIGRATIONS = [
   migration_2026_04_14T10_00_00_bank_deposits_table,
   migration_2026_04_29T12_00_00_add_scraper_ingestion_unique_constraints,
   migration_2026_05_04T12_00_00_update_scraper_ingestion_unique_constraints,
+  migration_2026_05_06T14_00_00_update_scraper_ingestion_poalim_unique_constraints,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
