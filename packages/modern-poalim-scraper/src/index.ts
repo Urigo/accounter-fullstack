@@ -73,3 +73,4 @@ export async function init({
 }
 
 export * from './zod-schemas/types.js';
+export { HapoalimOptions } from './scrapers/hapoalim.js';

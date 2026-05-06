@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { init } from '@accounter/modern-poalim-scraper';
+import { init, type HapoalimOptions } from '@accounter/modern-poalim-scraper';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 import type { OtpManager } from '../otp-manager.js';
 import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.schema.js';
@@ -11,16 +11,6 @@ import type { PoalimAccountSchema } from '../vault.js';
 export type PoalimCreds = z.infer<typeof PoalimAccountSchema>;
 
 const OTP_TIMEOUT_MS = 5 * 60 * 1000;
-
-// Local options type that extends the scraper's options with an OTP callback.
-// The hapoalim scraper uses inquirer for OTP today; otpCallback is the hook
-// for WS-based OTP flow. The cast below is required until the scraper package
-// exposes otpCallback in its public HapoalimOptions type.
-type ScraperCallOptions = {
-  isBusiness?: boolean;
-  duration?: number;
-  otpCallback?: () => Promise<string>;
-};
 
 export async function scrapePoalim(
   creds: PoalimCreds,
@@ -38,14 +28,7 @@ export async function scrapePoalim(
 
   const { hapoalim: hapoalimFn, close } = await init({ headless });
 
-  type HapoalimFn = (
-    c: { userCode: string; password: string },
-    o?: ScraperCallOptions,
-  ) => ReturnType<typeof hapoalimFn>;
-
-  const scrape = hapoalimFn as unknown as HapoalimFn;
-
-  // calculate duration based ondateFrom and today. return number of months between the two dates, with a minimum of 1 month
+  // calculate duration based on dateFrom and today. return number of months between the two dates, with a minimum of 1 month
   const months = Math.max(
     1,
     (dateTo.getFullYear() - dateFrom.getFullYear()) * 12 +
@@ -53,10 +36,16 @@ export async function scrapePoalim(
       1,
   );
 
+  const options: HapoalimOptions = {
+    isBusiness: creds.options?.isBusinessAccount ?? false,
+    otpCallback,
+    duration: months,
+  };
+
   try {
-    const scraper = await scrape(
+    const scraper = await hapoalimFn(
       { userCode: creds.userCode, password: creds.password },
-      { isBusiness: creds.options?.isBusinessAccount ?? false, otpCallback, duration: months },
+      options,
     );
 
     if (scraper === 'Unknown Error') {
