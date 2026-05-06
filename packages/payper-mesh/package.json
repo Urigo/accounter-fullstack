@@ -56,7 +56,7 @@
     "@graphql-mesh/config": "0.108.44",
     "@graphql-mesh/cross-helpers": "0.4.14",
     "@graphql-mesh/http": "0.106.42",
-    "@graphql-mesh/json-schema": "0.109.41",
+    "@graphql-mesh/json-schema": "0.109.42",
     "@graphql-mesh/runtime": "0.106.38",
     "@graphql-mesh/store": "0.104.38",
     "@graphql-mesh/transform-rename": "0.105.37",
@@ -66,7 +66,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.100.51"
+    "@graphql-mesh/cli": "0.100.52"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",

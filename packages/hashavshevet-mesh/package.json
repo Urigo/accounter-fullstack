@@ -57,7 +57,7 @@
     "@graphql-mesh/config": "0.108.44",
     "@graphql-mesh/cross-helpers": "0.4.14",
     "@graphql-mesh/http": "0.106.42",
-    "@graphql-mesh/json-schema": "0.109.41",
+    "@graphql-mesh/json-schema": "0.109.42",
     "@graphql-mesh/runtime": "0.106.38",
     "@graphql-mesh/store": "0.104.38",
     "@graphql-mesh/transform-resolvers-composition": "0.104.36",
@@ -66,7 +66,7 @@
     "graphql": "16.13.2"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.100.51",
+    "@graphql-mesh/cli": "0.100.52",
     "tsup": "8.5.1"
   },
   "publishConfig": {

@@ -1,0 +1,5 @@
+---
+"@accounter/gmail-listener": patch
+---
+dependencies updates:
+  - Updated dependency [`zod@4.4.3` ↗︎](https://www.npmjs.com/package/zod/v/4.4.3) (from `4.4.2`, in `dependencies`)
