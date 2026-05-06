@@ -369,7 +369,13 @@ function buildTask(
                 totalSkipped += result.skipped;
                 allIds.push(...result.insertedIds);
               }
-              result = { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
+              result = {
+                inserted: 0,
+                skipped: 0,
+                insertedIds: [],
+                changedTransactions: [],
+                insertedTransactions: [],
+              };
               break;
             }
             case 'discount': {
@@ -392,7 +398,13 @@ function buildTask(
                 totalSkipped += result.skipped;
                 allIds.push(...result.insertedIds);
               }
-              result = { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
+              result = {
+                inserted: 0,
+                skipped: 0,
+                insertedIds: [],
+                changedTransactions: [],
+                insertedTransactions: [],
+              };
               break;
             }
             case 'max':
