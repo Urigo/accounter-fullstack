@@ -29,8 +29,25 @@ function countIsracardTransactions(data: IsracardCardsTransactionsList): number 
   const bean = data.CardsTransactionsListBean;
   if (!bean) return 0;
   return Object.values(bean).reduce((sum, entry) => {
-    if (entry && typeof entry === 'object' && !Array.isArray(entry) && '@AllCards' in entry && 'CurrentCardTransactions' in entry) {
-      return sum + (((entry as { CurrentCardTransactions?: unknown[] }).CurrentCardTransactions?.length ?? 0));
+    if (
+      entry &&
+      typeof entry === 'object' &&
+      !Array.isArray(entry) &&
+      '@AllCards' in entry &&
+      'CurrentCardTransactions' in entry
+    ) {
+      let txnCount = 0;
+      for (const subEntry of entry.CurrentCardTransactions) {
+        if (!subEntry || typeof subEntry !== 'object' || Array.isArray(subEntry)) {
+          continue;
+        }
+        if ('txnIsrael' in subEntry) {
+          txnCount += subEntry.txnIsrael?.length ?? 0;
+        } else if ('txnAbroad' in subEntry) {
+          txnCount += subEntry.txnAbroad?.length ?? 0;
+        }
+      }
+      return sum + txnCount;
     }
     return sum;
   }, 0);

@@ -150,7 +150,8 @@ function buildTask(
           if (!accountExcluded) {
             if (foreign[i]) {
               const foreignPayload = foreign[i]!;
-              const foreignCount = (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
+              const foreignCount =
+                (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
               emit({
                 type: 'task-account-txns-uploading',
                 sourceId: src.id,
@@ -173,7 +174,8 @@ function buildTask(
             }
             if (swift[i]) {
               const swiftPayload = swift[i]!;
-              const swiftCount = (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
+              const swiftCount =
+                (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
               emit({
                 type: 'task-account-txns-uploading',
                 sourceId: src.id,
@@ -280,12 +282,10 @@ function buildTask(
 
       if (creds) {
         payloads = payloads.map(p => filterPayload(src.type, p, creds!) as ValidatedPayload);
-        if (isracardPayloads) {
-          isracardPayloads = isracardPayloads.map((p, i) => ({
-            ...p,
-            data: payloads[i] as (typeof p)['data'],
-          }));
-        }
+        isracardPayloads &&= isracardPayloads.map((p, i) => ({
+          ...p,
+          data: payloads[i] as (typeof p)['data'],
+        }));
       }
 
       // Register any newly discovered accounts as pending, then re-read to avoid stale closure

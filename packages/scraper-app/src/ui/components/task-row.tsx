@@ -27,27 +27,33 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const MONTH_PHASE_BADGE: Record<string, { background: string; color: string; label: string }> = {
-  fetching:  { background: '#dbeafe', color: '#1d4ed8', label: '⟳ Fetching' },
-  fetched:   { background: '#e5e7eb', color: '#374151', label: 'Fetched' },
-  error:     { background: '#fee2e2', color: '#b91c1c', label: 'Error' },
+  fetching: { background: '#dbeafe', color: '#1d4ed8', label: '⟳ Fetching' },
+  fetched: { background: '#e5e7eb', color: '#374151', label: 'Fetched' },
+  error: { background: '#fee2e2', color: '#b91c1c', label: 'Error' },
   uploading: { background: '#fef9c3', color: '#854d0e', label: '⟳ Uploading' },
-  uploaded:  { background: '#dcfce7', color: '#15803d', label: 'Uploaded' },
+  uploaded: { background: '#dcfce7', color: '#15803d', label: 'Uploaded' },
 };
 
 const TXN_PHASE_BADGE: Record<string, { background: string; color: string; label: string }> = {
-  fetching:  { background: '#dbeafe', color: '#1d4ed8', label: '⟳' },
+  fetching: { background: '#dbeafe', color: '#1d4ed8', label: '⟳' },
   uploading: { background: '#fef9c3', color: '#854d0e', label: '⟳' },
-  done:      { background: '#dcfce7', color: '#15803d', label: '✓' },
+  done: { background: '#dcfce7', color: '#15803d', label: '✓' },
 };
 
 const VAULT_STATUS_BADGE: Record<string, { background: string; color: string }> = {
   accepted: { background: '#dcfce7', color: '#15803d' },
-  ignored:  { background: '#e5e7eb', color: '#6b7280' },
-  blocked:  { background: '#fee2e2', color: '#b91c1c' },
-  unknown:  { background: '#fef9c3', color: '#854d0e' },
+  ignored: { background: '#e5e7eb', color: '#6b7280' },
+  blocked: { background: '#fee2e2', color: '#b91c1c' },
+  unknown: { background: '#fef9c3', color: '#854d0e' },
 };
 
-function Badge({ style, children }: { style: { background: string; color: string }; children: React.ReactNode }) {
+function Badge({
+  style,
+  children,
+}: {
+  style: { background: string; color: string };
+  children: React.ReactNode;
+}) {
   return (
     <span
       style={{
@@ -82,12 +88,27 @@ function MonthStepsTable({ steps }: { steps: MonthStep[] }) {
           const badge = MONTH_PHASE_BADGE[step.phase] ?? MONTH_PHASE_BADGE['fetching']!;
           return (
             <tr key={step.month} style={{ borderTop: '1px solid #f3f4f6' }}>
-              <td style={{ padding: '2px 8px 2px 0', fontVariantNumeric: 'tabular-nums' }}>{step.month}</td>
-              <td style={{ padding: '2px 8px 2px 0' }}><Badge style={badge}>{badge.label}</Badge></td>
-              <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>{step.transactionCount ?? '—'}</td>
+              <td style={{ padding: '2px 8px 2px 0', fontVariantNumeric: 'tabular-nums' }}>
+                {step.month}
+              </td>
+              <td style={{ padding: '2px 8px 2px 0' }}>
+                <Badge style={badge}>{badge.label}</Badge>
+              </td>
+              <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>
+                {step.transactionCount ?? '—'}
+              </td>
               <td style={{ padding: '2px 8px 2px 0', color: '#15803d' }}>{step.inserted ?? '—'}</td>
               <td style={{ padding: '2px 8px 2px 0', color: '#6b7280' }}>{step.skipped ?? '—'}</td>
-              <td style={{ padding: '2px 0', color: '#b91c1c', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <td
+                style={{
+                  padding: '2px 0',
+                  color: '#b91c1c',
+                  maxWidth: 200,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
                 {step.error ?? ''}
               </td>
             </tr>
@@ -98,7 +119,11 @@ function MonthStepsTable({ steps }: { steps: MonthStep[] }) {
   );
 }
 
-function TxnTypeCell({ state }: { state: { phase: string; count?: number; inserted?: number; skipped?: number } | undefined }) {
+function TxnTypeCell({
+  state,
+}: {
+  state: { phase: string; count?: number; inserted?: number; skipped?: number } | undefined;
+}) {
   if (!state) return <td style={{ padding: '2px 8px 2px 0', color: '#d1d5db' }}>—</td>;
   const badge = TXN_PHASE_BADGE[state.phase] ?? TXN_PHASE_BADGE['fetching']!;
   return (
@@ -133,7 +158,9 @@ function AccountStepsTable({ steps }: { steps: AccountStep[] }) {
           const vaultBadge = step.vaultStatus ? VAULT_STATUS_BADGE[step.vaultStatus] : undefined;
           return (
             <tr key={step.accountId} style={{ borderTop: '1px solid #f3f4f6' }}>
-              <td style={{ padding: '2px 8px 2px 0', fontFamily: 'monospace' }}>{step.accountId}</td>
+              <td style={{ padding: '2px 8px 2px 0', fontFamily: 'monospace' }}>
+                {step.accountId}
+              </td>
               <td style={{ padding: '2px 8px 2px 0' }}>
                 {vaultBadge ? <Badge style={vaultBadge}>{step.vaultStatus}</Badge> : '—'}
               </td>

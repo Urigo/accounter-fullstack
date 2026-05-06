@@ -81,18 +81,29 @@ function findOrCreateMonthStep(steps: MonthStep[], month: string): [MonthStep[],
   return [[...steps, newStep], newStep];
 }
 
-function updateMonthStep(steps: MonthStep[], month: string, patch: Partial<MonthStep>): MonthStep[] {
+function updateMonthStep(
+  steps: MonthStep[],
+  month: string,
+  patch: Partial<MonthStep>,
+): MonthStep[] {
   return steps.map(s => (s.month === month ? { ...s, ...patch } : s));
 }
 
-function findOrCreateAccountStep(steps: AccountStep[], accountId: string): [AccountStep[], AccountStep] {
+function findOrCreateAccountStep(
+  steps: AccountStep[],
+  accountId: string,
+): [AccountStep[], AccountStep] {
   const existing = steps.find(s => s.accountId === accountId);
   if (existing) return [steps, existing];
   const newStep: AccountStep = { accountId };
   return [[...steps, newStep], newStep];
 }
 
-function updateAccountStep(steps: AccountStep[], accountId: string, patch: Partial<AccountStep>): AccountStep[] {
+function updateAccountStep(
+  steps: AccountStep[],
+  accountId: string,
+  patch: Partial<AccountStep>,
+): AccountStep[] {
   return steps.map(s => (s.accountId === accountId ? { ...s, ...patch } : s));
 }
 
@@ -171,7 +182,10 @@ export function useRunSocket(): UseRunSocketResult {
             const state = get(msg.sourceId);
             const monthSteps = asMonthSteps(state.steps);
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
-            next.set(msg.sourceId, { ...state, steps: updateMonthStep(updated, msg.month, { phase: 'fetching' }) });
+            next.set(msg.sourceId, {
+              ...state,
+              steps: updateMonthStep(updated, msg.month, { phase: 'fetching' }),
+            });
             break;
           }
           case 'task-month-fetched': {
@@ -180,7 +194,10 @@ export function useRunSocket(): UseRunSocketResult {
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, { phase: 'fetched', transactionCount: msg.transactionCount }),
+              steps: updateMonthStep(updated, msg.month, {
+                phase: 'fetched',
+                transactionCount: msg.transactionCount,
+              }),
             });
             break;
           }
@@ -200,7 +217,10 @@ export function useRunSocket(): UseRunSocketResult {
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, { phase: 'uploading', transactionCount: msg.transactionCount }),
+              steps: updateMonthStep(updated, msg.month, {
+                phase: 'uploading',
+                transactionCount: msg.transactionCount,
+              }),
             });
             break;
           }
@@ -210,7 +230,11 @@ export function useRunSocket(): UseRunSocketResult {
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, { phase: 'uploaded', inserted: msg.inserted, skipped: msg.skipped }),
+              steps: updateMonthStep(updated, msg.month, {
+                phase: 'uploaded',
+                inserted: msg.inserted,
+                skipped: msg.skipped,
+              }),
             });
             break;
           }
@@ -236,7 +260,9 @@ export function useRunSocket(): UseRunSocketResult {
             const state = get(msg.sourceId);
             const accountSteps = asAccountSteps(state.steps);
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
-            const txnPatch: Partial<AccountStep> = { [msg.txnType]: { phase: 'fetching' as const } };
+            const txnPatch: Partial<AccountStep> = {
+              [msg.txnType]: { phase: 'fetching' as const },
+            };
             next.set(msg.sourceId, {
               ...state,
               steps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
@@ -247,7 +273,9 @@ export function useRunSocket(): UseRunSocketResult {
             const state = get(msg.sourceId);
             const accountSteps = asAccountSteps(state.steps);
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
-            const txnPatch: Partial<AccountStep> = { [msg.txnType]: { phase: 'uploading' as const, count: msg.count } };
+            const txnPatch: Partial<AccountStep> = {
+              [msg.txnType]: { phase: 'uploading' as const, count: msg.count },
+            };
             next.set(msg.sourceId, {
               ...state,
               steps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
@@ -259,7 +287,11 @@ export function useRunSocket(): UseRunSocketResult {
             const accountSteps = asAccountSteps(state.steps);
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
-              [msg.txnType]: { phase: 'done' as const, inserted: msg.inserted, skipped: msg.skipped },
+              [msg.txnType]: {
+                phase: 'done' as const,
+                inserted: msg.inserted,
+                skipped: msg.skipped,
+              },
             };
             next.set(msg.sourceId, {
               ...state,

@@ -97,7 +97,12 @@ export async function scrapePoalim(
         ils.push(validatePayload('poalim-ils', ilsData));
       }
 
-      emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'foreign' });
+      emit({
+        type: 'task-account-txns-fetching',
+        sourceId: creds.id,
+        accountId,
+        txnType: 'foreign',
+      });
       const { data: foreignData } = await scraper.getForeignTransactions(accountRef, isBusiness);
       if (foreignData) {
         foreign.push(validatePayload('poalim-foreign', foreignData));
