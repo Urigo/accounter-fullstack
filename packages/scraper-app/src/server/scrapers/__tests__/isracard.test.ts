@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PayloadValidationError } from '../../validate-payload.js';
 import { scrapeIsracard } from '../isracard.js';
 
 const CREDS = { id: 'src-1', ownerId: '123456789', password: 'pass', last6Digits: '123456' };
@@ -26,7 +25,7 @@ async function getInitMock() {
 }
 
 describe('scrapeIsracard — happy path', () => {
-  it('resolves with an array of validated IsracardPayloads', async () => {
+  it('resolves with an array of MonthlyIsracardPayloads', async () => {
     const initMock = await getInitMock();
     initMock.mockResolvedValue({
       isracard: vi.fn().mockResolvedValue({
@@ -38,7 +37,8 @@ describe('scrapeIsracard — happy path', () => {
     const result = await scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop);
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(1);
-    expect(result[0]!.Header.Status).toBe('1');
+    expect(result[0]!.month).toBe('2024-01');
+    expect(result[0]!.data.Header.Status).toBe('1');
   });
 
   it('fetches one month per month in the date range', async () => {
@@ -58,7 +58,7 @@ describe('scrapeIsracard — happy path', () => {
     expect(getMonthTransactions).toHaveBeenCalledTimes(3);
   });
 
-  it('skips months where data is null', async () => {
+  it('skips months where data is null and throws if all months fail', async () => {
     const initMock = await getInitMock();
     initMock.mockResolvedValue({
       isracard: vi.fn().mockResolvedValue({
@@ -67,8 +67,9 @@ describe('scrapeIsracard — happy path', () => {
       close: vi.fn().mockResolvedValue(undefined),
     });
 
-    const result = await scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop);
-    expect(result).toEqual([]);
+    await expect(scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop)).rejects.toThrow(
+      'All months failed to scrape',
+    );
   });
 
   it('calls close() even on success', async () => {
@@ -87,7 +88,7 @@ describe('scrapeIsracard — happy path', () => {
 });
 
 describe('scrapeIsracard — Header.Status check', () => {
-  it('throws when Header.Status is not "1"', async () => {
+  it('emits task-month-error and throws "All months failed" when Header.Status is not "1"', async () => {
     const initMock = await getInitMock();
     initMock.mockResolvedValue({
       isracard: vi.fn().mockResolvedValue({
@@ -99,14 +100,16 @@ describe('scrapeIsracard — Header.Status check', () => {
       close: vi.fn().mockResolvedValue(undefined),
     });
 
-    await expect(scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop)).rejects.toThrow(
-      'login/password issue',
-    );
+    const emitted: string[] = [];
+    await expect(
+      scrapeIsracard(CREDS, DATE_FROM, DATE_TO, msg => emitted.push(msg.type)),
+    ).rejects.toThrow('All months failed to scrape');
+    expect(emitted).toContain('task-month-error');
   });
 });
 
 describe('scrapeIsracard — invalid payload', () => {
-  it('throws PayloadValidationError when data fails schema validation', async () => {
+  it('emits task-month-error and throws when data fails schema validation', async () => {
     const initMock = await getInitMock();
     initMock.mockResolvedValue({
       isracard: vi.fn().mockResolvedValue({
@@ -118,9 +121,11 @@ describe('scrapeIsracard — invalid payload', () => {
       close: vi.fn().mockResolvedValue(undefined),
     });
 
-    await expect(scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop)).rejects.toBeInstanceOf(
-      PayloadValidationError,
-    );
+    const emitted: string[] = [];
+    await expect(
+      scrapeIsracard(CREDS, DATE_FROM, DATE_TO, msg => emitted.push(msg.type)),
+    ).rejects.toThrow();
+    expect(emitted).toContain('task-month-error');
   });
 
   it('calls close() even on validation error', async () => {

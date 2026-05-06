@@ -1,4 +1,4 @@
-import { addMonths, startOfMonth } from 'date-fns';
+import { addMonths, format, startOfMonth } from 'date-fns';
 import type { z } from 'zod';
 import { init, type IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
@@ -8,6 +8,11 @@ import type { IsracardAmexAccountSchema } from '../vault.js';
 export type IsracardCreds = z.infer<typeof IsracardAmexAccountSchema>;
 
 export type Emitter = (msg: ServerMessage) => void;
+
+export type MonthlyIsracardPayload = {
+  month: string;
+  data: IsracardCardsTransactionsList;
+};
 
 function buildMonthList(dateFrom: Date, dateTo: Date): Date[] {
   const months: Date[] = [];
@@ -20,12 +25,42 @@ function buildMonthList(dateFrom: Date, dateTo: Date): Date[] {
   return months;
 }
 
+function countIsracardTransactions(data: IsracardCardsTransactionsList): number {
+  const bean = data.CardsTransactionsListBean;
+  if (!bean) return 0;
+  return Object.values(bean).reduce((sum, entry) => {
+    if (
+      entry &&
+      typeof entry === 'object' &&
+      !Array.isArray(entry) &&
+      '@AllCards' in entry &&
+      'CurrentCardTransactions' in entry
+    ) {
+      let txnCount = 0;
+      for (const subEntry of Array.isArray(entry.CurrentCardTransactions)
+        ? entry.CurrentCardTransactions
+        : []) {
+        if (!subEntry || typeof subEntry !== 'object' || Array.isArray(subEntry)) {
+          continue;
+        }
+        if ('txnIsrael' in subEntry) {
+          txnCount += subEntry.txnIsrael?.length ?? 0;
+        } else if ('txnAbroad' in subEntry) {
+          txnCount += subEntry.txnAbroad?.length ?? 0;
+        }
+      }
+      return sum + txnCount;
+    }
+    return sum;
+  }, 0);
+}
+
 export async function scrapeIsracard(
   creds: IsracardCreds,
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
-): Promise<IsracardCardsTransactionsList[]> {
+): Promise<MonthlyIsracardPayload[]> {
   const { isracard: isracardFn, close } = await init({ headless: true });
 
   try {
@@ -35,34 +70,50 @@ export async function scrapeIsracard(
     );
 
     const months = buildMonthList(dateFrom, dateTo);
-    const results: IsracardCardsTransactionsList[] = [];
+    const results: MonthlyIsracardPayload[] = [];
 
     for (const month of months) {
-      emit({
-        type: 'scrape-progress',
-        sourceId: creds.id,
-        sourceType: 'isracard',
-        status: 'running',
-      });
-      const { data, isValid } = await scraper.getMonthTransactions(month);
+      const monthStr = format(month, 'yyyy-MM');
+      emit({ type: 'task-month-fetching', sourceId: creds.id, month: monthStr });
+      try {
+        const { data, isValid } = await scraper.getMonthTransactions(month);
 
-      if (!data) continue;
+        if (!data) continue;
 
-      if (!isValid) {
-        throw new Error(`Invalid Isracard data for ${month.toISOString().slice(0, 7)}`);
+        if (!isValid) {
+          throw new Error(`Invalid Isracard data for ${monthStr}`);
+        }
+
+        if (data.Header?.Status !== '1') {
+          throw new Error(
+            `Isracard login/password issue (Header.Status=${data.Header?.Status}) for ${monthStr}`,
+          );
+        }
+
+        const validated = validatePayload('isracard', data);
+        const txnCount = countIsracardTransactions(validated);
+        emit({
+          type: 'task-month-fetched',
+          sourceId: creds.id,
+          month: monthStr,
+          transactionCount: txnCount,
+        });
+        results.push({ month: monthStr, data: validated });
+      } catch (err) {
+        emit({
+          type: 'task-month-error',
+          sourceId: creds.id,
+          month: monthStr,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
-
-      if (data.Header?.Status !== '1') {
-        throw new Error(
-          `Isracard login/password issue (Header.Status=${data.Header?.Status}) for ${month.toISOString().slice(0, 7)}`,
-        );
-      }
-
-      results.push(validatePayload('isracard', data));
     }
 
+    if (results.length === 0) throw new Error('All months failed to scrape');
     return results;
   } finally {
     await close();
   }
 }
+
+export { countIsracardTransactions };

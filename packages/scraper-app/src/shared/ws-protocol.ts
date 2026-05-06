@@ -45,24 +45,6 @@ export const ConnectedSchema = z.object({
 
 export type ConnectedMessage = z.infer<typeof ConnectedSchema>;
 
-export const ScrapeStartedSchema = z.object({
-  type: z.literal('scrape-started'),
-  sourceIds: z.array(z.string()),
-});
-
-export const ScrapeProgressSchema = z.object({
-  type: z.literal('scrape-progress'),
-  sourceId: z.string(),
-  sourceType: z.enum(SOURCE_TYPES),
-  status: z.enum(['running', 'done', 'error', 'blocked']),
-  error: z.string().optional(),
-});
-
-export const ScrapeCompleteSchema = z.object({
-  type: z.literal('scrape-complete'),
-  totalTransactions: z.number(),
-});
-
 export const PongSchema = z.object({
   type: z.literal('pong'),
 });
@@ -157,11 +139,90 @@ export const RunErrorSchema = z.object({
   message: z.string(),
 });
 
+// ── Per-month progress (Isracard, Amex, Discount, Cal) ───────────────────────
+
+export const TaskMonthFetchingSchema = z.object({
+  type: z.literal('task-month-fetching'),
+  sourceId: z.string(),
+  month: z.string(),
+});
+
+export const TaskMonthFetchedSchema = z.object({
+  type: z.literal('task-month-fetched'),
+  sourceId: z.string(),
+  month: z.string(),
+  transactionCount: z.number(),
+});
+
+export const TaskMonthErrorSchema = z.object({
+  type: z.literal('task-month-error'),
+  sourceId: z.string(),
+  month: z.string(),
+  error: z.string(),
+});
+
+export const TaskMonthUploadingSchema = z.object({
+  type: z.literal('task-month-uploading'),
+  sourceId: z.string(),
+  month: z.string(),
+  transactionCount: z.number(),
+});
+
+export const TaskMonthUploadedSchema = z.object({
+  type: z.literal('task-month-uploaded'),
+  sourceId: z.string(),
+  month: z.string(),
+  inserted: z.number(),
+  skipped: z.number(),
+});
+
+// ── Per-account progress (Poalim) ─────────────────────────────────────────────
+
+export const TaskAccountsFoundSchema = z.object({
+  type: z.literal('task-accounts-found'),
+  sourceId: z.string(),
+  accounts: z.array(
+    z.object({
+      accountNumber: z.string(),
+      branchNumber: z.number(),
+      bankNumber: z.number(),
+    }),
+  ),
+});
+
+export const TaskAccountVaultCheckedSchema = z.object({
+  type: z.literal('task-account-vault-checked'),
+  sourceId: z.string(),
+  accountId: z.string(),
+  status: z.enum(['accepted', 'ignored', 'blocked', 'unknown']),
+});
+
+export const TaskAccountTxnsFetchingSchema = z.object({
+  type: z.literal('task-account-txns-fetching'),
+  sourceId: z.string(),
+  accountId: z.string(),
+  txnType: z.enum(['ils', 'foreign', 'swift']),
+});
+
+export const TaskAccountTxnsUploadingSchema = z.object({
+  type: z.literal('task-account-txns-uploading'),
+  sourceId: z.string(),
+  accountId: z.string(),
+  txnType: z.enum(['ils', 'foreign', 'swift']),
+  count: z.number(),
+});
+
+export const TaskAccountTxnsDoneSchema = z.object({
+  type: z.literal('task-account-txns-done'),
+  sourceId: z.string(),
+  accountId: z.string(),
+  txnType: z.enum(['ils', 'foreign', 'swift']),
+  inserted: z.number(),
+  skipped: z.number(),
+});
+
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
-  ScrapeStartedSchema,
-  ScrapeProgressSchema,
-  ScrapeCompleteSchema,
   PongSchema,
   WsErrorSchema,
   TaskPendingSchema,
@@ -172,6 +233,16 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   OtpRequiredSchema,
   RunCompleteSchema,
   RunErrorSchema,
+  TaskMonthFetchingSchema,
+  TaskMonthFetchedSchema,
+  TaskMonthErrorSchema,
+  TaskMonthUploadingSchema,
+  TaskMonthUploadedSchema,
+  TaskAccountsFoundSchema,
+  TaskAccountVaultCheckedSchema,
+  TaskAccountTxnsFetchingSchema,
+  TaskAccountTxnsUploadingSchema,
+  TaskAccountTxnsDoneSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;
