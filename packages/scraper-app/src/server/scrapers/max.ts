@@ -14,8 +14,9 @@ export async function scrapeMax(
   dateFrom: Date,
   _dateTo: Date,
   emit: Emitter,
+  headless = true,
 ): Promise<MaxPayload> {
-  const { max: maxFn, close } = await init({ headless: true });
+  const { max: maxFn, close } = await init({ headless });
 
   try {
     const scraper = await maxFn(

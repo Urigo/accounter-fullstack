@@ -5,8 +5,9 @@ import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 
 const poalimPayload = {
-  transactions: [],
-  retrievalTransactionData: { accountNumber: 100000, branchNumber: 600, bankNumber: 12 },
+  accountNumber: 100000,
+  branchNumber: 600,
+  bankNumber: 12,
 };
 
 const isracardPayload = {
@@ -54,38 +55,38 @@ function makeRecord(
 
 describe('checkAccounts — poalim', () => {
   it('accepted when account is in known list with accepted status', () => {
-    const known = [makeRecord('poalim', '100000', 'accepted')];
+    const known = [makeRecord('poalim', '600-100000', 'accepted')];
     const result = checkAccounts('poalim', poalimPayload, known);
-    expect(result.accepted).toEqual(['100000']);
+    expect(result.accepted).toEqual(['600-100000']);
     expect(result.ignored).toEqual([]);
     expect(result.unknown).toEqual([]);
   });
 
   it('unknown when account has pending status', () => {
-    const known = [makeRecord('poalim', '100000', 'pending')];
+    const known = [makeRecord('poalim', '600-100000', 'pending')];
     const result = checkAccounts('poalim', poalimPayload, known);
     expect(result.accepted).toEqual([]);
-    expect(result.unknown).toEqual(['100000']);
+    expect(result.unknown).toEqual(['600-100000']);
   });
 
   it('unknown when account is not in known list', () => {
     const result = checkAccounts('poalim', poalimPayload, []);
-    expect(result.unknown).toEqual(['100000']);
+    expect(result.unknown).toEqual(['600-100000']);
     expect(result.accepted).toEqual([]);
   });
 
   it('ignored when account status is ignored', () => {
-    const known = [makeRecord('poalim', '100000', 'ignored')];
+    const known = [makeRecord('poalim', '600-100000', 'ignored')];
     const result = checkAccounts('poalim', poalimPayload, known);
-    expect(result.ignored).toEqual(['100000']);
+    expect(result.ignored).toEqual(['600-100000']);
     expect(result.accepted).toEqual([]);
     expect(result.unknown).toEqual([]);
   });
 
   it('does not match account from a different sourceType', () => {
-    const known = [makeRecord('discount', '100000', 'accepted')];
+    const known = [makeRecord('discount', '600-100000', 'accepted')];
     const result = checkAccounts('poalim', poalimPayload, known);
-    expect(result.unknown).toEqual(['100000']);
+    expect(result.unknown).toEqual(['600-100000']);
   });
 });
 
@@ -257,9 +258,9 @@ describe('runner integration — task-blocked on unknown accounts', () => {
         const check = checkAccounts('poalim', poalimPayload, []);
         if (check.unknown.length > 0) {
           emit({ type: 'task-blocked', sourceId: 'poalim-src', sourceType: 'poalim', unknownAccounts: check.unknown });
-          return { inserted: 0, skipped: 0, insertedIds: [] };
+          return { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
         }
-        return { inserted: 1, skipped: 0, insertedIds: ['x'] };
+        return { inserted: 1, skipped: 0, insertedIds: ['x'], changedTransactions: [], insertedTransactions: [] };
       },
     };
 
@@ -267,7 +268,7 @@ describe('runner integration — task-blocked on unknown accounts', () => {
 
     const blocked = events.find(e => e.type === 'task-blocked');
     expect(blocked).toBeTruthy();
-    expect((blocked as { unknownAccounts: string[] }).unknownAccounts).toContain('100000');
+    expect((blocked as { unknownAccounts: string[] }).unknownAccounts).toContain('600-100000');
     expect(events.at(-1)).toMatchObject({ type: 'run-complete', totalInserted: 0, totalSkipped: 0 });
   });
 
@@ -283,9 +284,9 @@ describe('runner integration — task-blocked on unknown accounts', () => {
         const check = checkAccounts('poalim', poalimPayload, []);
         if (check.unknown.length > 0) {
           emit({ type: 'task-blocked', sourceId: 'src-1', sourceType: 'poalim', unknownAccounts: check.unknown });
-          return { inserted: 0, skipped: 0, insertedIds: [] };
+          return { inserted: 0, skipped: 0, insertedIds: [], changedTransactions: [], insertedTransactions: [] };
         }
-        return { inserted: 1, skipped: 0, insertedIds: ['x'] };
+        return { inserted: 1, skipped: 0, insertedIds: ['x'], changedTransactions: [], insertedTransactions: [] };
       },
     };
 
@@ -293,7 +294,7 @@ describe('runner integration — task-blocked on unknown accounts', () => {
       sourceId: 'src-2',
       nickname: 'src-2',
       type: 'poalim',
-      run: async () => ({ inserted: 2, skipped: 1, insertedIds: ['a', 'b'] }),
+      run: async () => ({ inserted: 2, skipped: 1, insertedIds: ['a', 'b'], changedTransactions: [], insertedTransactions: [] }),
     };
 
     await startRun([blockedTask, normalTask], false, emit);

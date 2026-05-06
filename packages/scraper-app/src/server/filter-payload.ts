@@ -1,12 +1,15 @@
 import type { z } from 'zod';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import type {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  IsracardCardsTransactionsList,
+  SwiftTransactions,
+} from '@accounter/modern-poalim-scraper';
 import type { SourceType, ValidatedPayload } from './check-accounts.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
-import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
-import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
-import type { PoalimSwiftPayload } from './payload-schemas/poalim-swift.schema.js';
 import type {
   CalAccountSchema,
   DiscountAccountSchema,
@@ -22,7 +25,7 @@ export type FilterableCreds =
   | z.infer<typeof MaxAccountSchema>
   | z.infer<typeof DiscountAccountSchema>;
 
-function effectiveSet(
+export function effectiveSet(
   accepted: string[] | undefined,
   ignored: string[] | undefined,
   all: string[],
@@ -101,7 +104,7 @@ export function filterPayload(
       const opts = (creds as z.infer<typeof PoalimAccountSchema>).options;
       // PoalimIls has retrievalTransactionData; Foreign has balancesAndLimitsDataList; Swift has swiftsList
       if ('retrievalTransactionData' in payload) {
-        const p = payload as PoalimIlsPayload;
+        const p = payload as HapoalimILSTransactions;
         const { accountNumber, branchNumber } = p.retrievalTransactionData;
         const allAccounts = [String(accountNumber)];
         const allBranches = [String(branchNumber)];
@@ -127,11 +130,11 @@ export function filterPayload(
         // Foreign payloads carry no account/branch identifiers — account-level filtering
         // is handled by the caller, which correlates each Foreign payload with its
         // positionally-matched ILS payload (which does carry the identifiers).
-        return payload as PoalimForeignPayload;
+        return payload as HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness;
       }
       if ('swiftsList' in payload) {
         // Swift payloads carry no account/branch identifiers — same as Foreign above.
-        return payload as PoalimSwiftPayload;
+        return payload as SwiftTransactions;
       }
       return payload;
     }

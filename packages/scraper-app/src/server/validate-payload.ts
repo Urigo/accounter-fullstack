@@ -1,5 +1,11 @@
 import { z, ZodError } from 'zod';
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import type {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  IsracardCardsTransactionsList,
+  SwiftTransactions,
+} from '@accounter/modern-poalim-scraper';
 import { AmexPayloadSchema } from './payload-schemas/amex.schema.js';
 import { CalPayloadSchema } from './payload-schemas/cal.schema.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';
@@ -11,11 +17,8 @@ import { IsracardPayloadSchema } from './payload-schemas/isracard.schema.js';
 import { MaxPayloadSchema } from './payload-schemas/max.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import { PoalimForeignPayloadSchema } from './payload-schemas/poalim-foreign.schema.js';
-import type { PoalimForeignPayload } from './payload-schemas/poalim-foreign.schema.js';
 import { PoalimIlsPayloadSchema } from './payload-schemas/poalim-ils.schema.js';
-import type { PoalimIlsPayload } from './payload-schemas/poalim-ils.schema.js';
 import { PoalimSwiftPayloadSchema } from './payload-schemas/poalim-swift.schema.js';
-import type { PoalimSwiftPayload } from './payload-schemas/poalim-swift.schema.js';
 
 export type PayloadType =
   | 'poalim-ils'
@@ -29,9 +32,9 @@ export type PayloadType =
   | 'currency-rates';
 
 type PayloadMap = {
-  'poalim-ils': PoalimIlsPayload;
-  'poalim-foreign': PoalimForeignPayload;
-  'poalim-swift': PoalimSwiftPayload;
+  'poalim-ils': HapoalimILSTransactions;
+  'poalim-foreign': HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness;
+  'poalim-swift': SwiftTransactions;
   isracard: IsracardCardsTransactionsList;
   amex: IsracardCardsTransactionsList;
   cal: CalPayload;

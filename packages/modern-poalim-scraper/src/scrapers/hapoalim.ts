@@ -47,7 +47,11 @@ declare namespace window {
   };
 }
 
-async function businessLogin(credentials: HapoalimCredentials, page: Page) {
+async function businessLogin(
+  credentials: HapoalimCredentials,
+  page: Page,
+  otpCallback?: () => Promise<string>,
+) {
   const BASE_URL = 'https://biz2.bankhapoalim.co.il/ng-portals/auth/he/biz-login/authenticate';
   await page.goto(BASE_URL);
 
@@ -58,13 +62,19 @@ async function businessLogin(credentials: HapoalimCredentials, page: Page) {
 
   page.click('.submit-btn');
 
-  const answers = await inquirer.prompt<{ SMSPassword: string }>({
-    type: 'input',
-    name: 'SMSPassword',
-    message: 'Enter the code you got in SMS:',
-  });
+  let otp: string;
+  if (otpCallback) {
+    otp = await otpCallback();
+  } else {
+    const answers = await inquirer.prompt<{ SMSPassword: string }>({
+      type: 'input',
+      name: 'SMSPassword',
+      message: 'Enter the code you got in SMS:',
+    });
+    otp = answers.SMSPassword;
+  }
 
-  await page.type('input[formcontrolname="code"]', answers.SMSPassword);
+  await page.type('input[formcontrolname="code"]', otp);
 
   await Promise.all([
     page.waitForNavigation(),
@@ -91,18 +101,28 @@ async function personalLogin(credentials: HapoalimCredentials, page: Page) {
   return 0;
 }
 
-async function replacePassword(previousCredentials: HapoalimCredentials, page: Page) {
+async function replacePassword(
+  previousCredentials: HapoalimCredentials,
+  page: Page,
+  otpCallback?: () => Promise<string>,
+) {
   await page.waitForSelector('#buttonAction');
 
-  const answers = await inquirer.prompt<{ newPassword: string }>({
-    type: 'input',
-    name: 'newPassword',
-    message: 'Enter your new wanted password:',
-  });
+  let newPassword: string;
+  if (otpCallback) {
+    newPassword = await otpCallback();
+  } else {
+    const answers = await inquirer.prompt<{ newPassword: string }>({
+      type: 'input',
+      name: 'newPassword',
+      message: 'Enter your new wanted password:',
+    });
+    newPassword = answers.newPassword;
+  }
 
   await page.type('[name="oldpassword"]', previousCredentials.password);
-  await page.type('[name="newpassword"]', answers.newPassword);
-  await page.type('[name="newpassword2"]', answers.newPassword);
+  await page.type('[name="newpassword"]', newPassword);
+  await page.type('[name="newpassword2"]', newPassword);
 
   await Promise.all([page.waitForNavigation(), page.keyboard.press('Enter')]);
 
@@ -122,7 +142,7 @@ export async function hapoalim(
   options?: HapoalimOptions,
 ) {
   if (options?.isBusiness) {
-    await businessLogin(credentials, page);
+    await businessLogin(credentials, page, options.otpCallback);
   } else {
     await personalLogin(credentials, page);
   }
@@ -142,7 +162,7 @@ export async function hapoalim(
       return 'Unknown Error';
     }
 
-    await replacePassword(credentials, page);
+    await replacePassword(credentials, page, options?.otpCallback);
   }
   const apiSiteUrl = `https://${
     options?.isBusiness ? 'biz2' : 'login'
@@ -256,7 +276,7 @@ export async function hapoalim(
       const fullAccountNumber = `${account.bankNumber}-${account.branchNumber}-${account.accountNumber}`;
       const foreignTransactionsUrl = `${apiSiteUrl}/foreign-currency/transactions?accountId=${fullAccountNumber}${
         isBusiness ? '&type=business' : ''
-      }&view=details&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&currencyCodeList=19,27,36,51,100,140,248&detailedAccountTypeCodeList=142&lang=he`;
+      }&view=details&retrievalEndDate=${endDateString}&retrievalStartDate=${startDateString}&currencyCodeList=19,27,51,100,140,248&detailedAccountTypeCodeList=142&lang=he`;
       const getForeignTransactionsFunction = fetchGetWithinPage<ForeignTransactionsSchema<T>>(
         page,
         foreignTransactionsUrl,
@@ -435,6 +455,7 @@ export class HapoalimOptions {
   isBusiness?: boolean = true;
   duration?: number = 12;
   getTransactionsDetails?: boolean = false;
+  otpCallback?: () => Promise<string> = undefined;
 }
 
 class HapoalimPersonalCredentials {

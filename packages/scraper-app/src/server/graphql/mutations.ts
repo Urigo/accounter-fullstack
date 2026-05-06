@@ -1,16 +1,27 @@
-import type { IsracardCardsTransactionsList } from '@accounter/modern-poalim-scraper';
+import type {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+  HapoalimILSTransactions,
+  IsracardCardsTransactionsList,
+} from '@accounter/modern-poalim-scraper';
 import {
   IsracardTransactionInput,
   MutationUploadAmexTransactionsArgs,
   MutationUploadIsracardTransactionsArgs,
+  UploadPoalimForeignTransactionsMutationVariables,
+  UploadPoalimIlsTransactionsMutationVariables,
+  UploadPoalimSwiftTransactionsMutationVariables,
 } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
-import type { PoalimForeignPayload } from '../payload-schemas/poalim-foreign.schema.js';
-import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
-import type { PoalimSwiftPayload } from '../payload-schemas/poalim-swift.schema.js';
+import { DecoratedSwiftTransactions } from '../scrapers/poalim.js';
+import {
+  convertNumberDateToString,
+  convertPoalimCurrencyCodeToSymbol,
+  findPoalimSwiftElement,
+} from '../utils.js';
 
 // ── Mutation document strings ──────────────────────────────────────────────────
 
@@ -244,51 +255,273 @@ export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
 // Field names match the GraphQL input types in graphql schema, which mirror
 // the pgtyped INSERT param shapes from the legacy scraper.
 
-export function poalimIlsVars(payload: PoalimIlsPayload) {
+export function poalimIlsVars(
+  payload: HapoalimILSTransactions,
+): UploadPoalimIlsTransactionsMutationVariables {
   // accountNumber / branchNumber / bankNumber are embedded in each transaction row
   // via retrievalTransactionData — spread onto every transaction so the server can
   // partition by account without a separate top-level arg.
   const { accountNumber, branchNumber, bankNumber } = payload.retrievalTransactionData;
-  const transactions = payload.transactions.map(t => ({
-    ...t,
-    accountNumber,
-    branchNumber,
-    bankNumber,
-    // Coerce numeric values to String to match GraphQL scalar (server parses back)
-    referenceNumber: t.referenceNumber == null ? null : String(t.referenceNumber),
-    eventAmount: t.eventAmount == null ? null : String(t.eventAmount),
-    currentBalance: t.currentBalance == null ? null : String(t.currentBalance),
-    eventDate: t.eventDate == null ? null : String(t.eventDate),
-    expandedEventDate: t.expandedEventDate == null ? null : String(t.expandedEventDate),
-    eventId: t.eventId == null ? null : String(t.eventId),
-  }));
+  const transactions: UploadPoalimIlsTransactionsMutationVariables['transactions'] =
+    payload.transactions.map(t => {
+      const beneficiaryDetails: Pick<
+        Exclude<UploadPoalimIlsTransactionsMutationVariables['transactions'], Array<unknown>>,
+        | 'beneficiaryDetailsData'
+        | 'beneficiaryDetailsDataMessageDetail'
+        | 'beneficiaryDetailsDataMessageHeadline'
+        | 'beneficiaryDetailsDataPartyHeadline'
+        | 'beneficiaryDetailsDataPartyName'
+        | 'beneficiaryDetailsDataRecordNumber'
+        | 'beneficiaryDetailsDataTableNumber'
+      > = t.beneficiaryDetailsData
+        ? {
+            beneficiaryDetailsData: null, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+            beneficiaryDetailsDataMessageDetail: t.beneficiaryDetailsData?.messageDetail, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+            beneficiaryDetailsDataMessageHeadline: t.beneficiaryDetailsData?.messageHeadline, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+            beneficiaryDetailsDataPartyHeadline: t.beneficiaryDetailsData?.partyHeadline, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+            beneficiaryDetailsDataPartyName: t.beneficiaryDetailsData?.partyName, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+            beneficiaryDetailsDataRecordNumber: t.beneficiaryDetailsData?.recordNumber, // InputMaybe<Scalars['Int']['input']>; OPTIONAL
+            beneficiaryDetailsDataTableNumber: t.beneficiaryDetailsData?.tableNumber, // InputMaybe<Scalars['Int']['input']>; OPTIONAL
+          }
+        : {};
+      return {
+        accountNumber,
+        activityDescription: t.activityDescription, // Scalars['String']['input'];
+        activityDescriptionIncludeValueDate: t.activityDescriptionIncludeValueDate, // InputMaybe<Scalars['String']['input']>; OPTIONAL
+        activityTypeCode: t.activityTypeCode, // Scalars['Int']['input'];
+        bankNumber,
+        ...beneficiaryDetails,
+        branchNumber,
+        comment: t.comment,
+        commentExistenceSwitch: t.commentExistenceSwitch !== 0,
+        contraAccountNumber: t.contraAccountNumber,
+        contraAccountTypeCode: t.contraAccountTypeCode,
+        contraBankNumber: t.contraBankNumber,
+        contraBranchNumber: t.contraBranchNumber,
+        currentBalance: t.currentBalance,
+        dataGroupCode: t.dataGroupCode,
+        details: t.details,
+        differentDateIndication: t.differentDateIndication,
+        englishActionDesc: t.englishActionDesc,
+        eventActivityTypeCode: t.eventActivityTypeCode,
+        eventAmount: t.eventAmount,
+        eventDate: convertNumberDateToString(t.eventDate),
+        eventId: String(t.eventId),
+        executingBranchNumber: t.executingBranchNumber,
+        expandedEventDate: t.expandedEventDate,
+        fieldDescDisplaySwitch: t.fieldDescDisplaySwitch === 1,
+        formattedEventDate: t.formattedEventDate,
+        formattedOriginalEventCreateDate: t.formattedOriginalEventCreateDate,
+        formattedValueDate: t.formattedValueDate,
+        internalLinkCode: t.internalLinkCode,
+        marketingOfferContext: t.marketingOfferContext !== 0,
+        offerActivityContext: t.offerActivityContext,
+        originalEventCreateDate: t.originalEventCreateDate,
+        pfmDetails: t.pfmDetails,
+        recordNumber: t.recordNumber,
+        referenceCatenatedNumber: t.referenceCatenatedNumber,
+        referenceNumber: String(t.referenceNumber),
+        rejectedDataEventPertainingIndication: t.rejectedDataEventPertainingIndication,
+        serialNumber: t.serialNumber,
+        tableNumber: t.tableNumber,
+        textCode: t.textCode,
+        transactionType: t.transactionType,
+        valueDate: convertNumberDateToString(t.valueDate),
+      };
+    });
   return { transactions };
 }
 
-export function poalimForeignVars(payload: PoalimForeignPayload) {
+export function poalimForeignVars(
+  payload: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness,
+  account: {
+    bankNumber: number;
+    branchNumber: number;
+    accountNumber: number;
+  },
+): UploadPoalimForeignTransactionsMutationVariables {
   // The foreign payload groups transactions by currency under balancesAndLimitsDataList.
   // Flatten to one row per transaction, carrying currencySwiftCode and account coords.
-  const transactions = payload.balancesAndLimitsDataList.flatMap(entry =>
-    entry.transactions.map(t => ({
-      ...t,
-      currencySwiftCode: entry.currencySwiftCode,
-      // Numeric fields coerced to String
-      eventAmount: t.eventAmount == null ? null : String(t.eventAmount),
-      currentBalance: t.currentBalance == null ? null : String(t.currentBalance),
-      currencyRate: t.currencyRate == null ? null : String(t.currencyRate),
-      referenceNumber: t.referenceNumber == null ? null : String(t.referenceNumber),
-    })),
-  );
-  return { transactions };
+  const transactions: UploadPoalimForeignTransactionsMutationVariables['transactions'] =
+    payload.balancesAndLimitsDataList.flatMap(entry => {
+      const currency = convertPoalimCurrencyCodeToSymbol(entry.currencyCode);
+      const bankNumber = 'bankNumber' in entry ? entry.bankNumber : account.bankNumber;
+      const branchNumber = 'branchNumber' in entry ? entry.branchNumber : account.branchNumber;
+      const accountNumber = 'accountNumber' in entry ? entry.accountNumber : account.accountNumber;
+      return entry.transactions.map(t => {
+        const metadataAttributes: Pick<
+          Exclude<UploadPoalimForeignTransactionsMutationVariables['transactions'], Array<unknown>>,
+          | 'metadataAttributesContraAccountFieldNameLable'
+          | 'metadataAttributesContraAccountNumber'
+          | 'metadataAttributesContraBankNumber'
+          | 'metadataAttributesContraBranchNumber'
+          | 'metadataAttributesContraCurrencyCode'
+          | 'metadataAttributesCurrencyRate'
+          | 'metadataAttributesDataGroupCode'
+          | 'metadataAttributesOriginalEventKey'
+          | 'metadataAttributesRateFixingCode'
+        > = {};
+        if (t.metadata) {
+          if (t.metadata.attributes) {
+            metadataAttributes.metadataAttributesOriginalEventKey = JSON.stringify(
+              t.metadata.attributes.originalEventKey,
+            );
+            metadataAttributes.metadataAttributesContraBranchNumber = JSON.stringify(
+              t.metadata.attributes.contraBranchNumber,
+            );
+            metadataAttributes.metadataAttributesContraAccountNumber = JSON.stringify(
+              t.metadata.attributes.contraAccountNumber,
+            );
+            metadataAttributes.metadataAttributesContraBankNumber = JSON.stringify(
+              t.metadata.attributes.contraBankNumber,
+            );
+            metadataAttributes.metadataAttributesContraAccountFieldNameLable = JSON.stringify(
+              t.metadata.attributes.contraAccountFieldNameLable,
+            );
+            metadataAttributes.metadataAttributesDataGroupCode = JSON.stringify(
+              t.metadata.attributes.dataGroupCode,
+            );
+            metadataAttributes.metadataAttributesCurrencyRate = JSON.stringify(
+              t.metadata.attributes.currencyRate,
+            );
+            metadataAttributes.metadataAttributesContraCurrencyCode = JSON.stringify(
+              t.metadata.attributes.contraCurrencyCode,
+            );
+            metadataAttributes.metadataAttributesRateFixingCode = JSON.stringify(
+              t.metadata.attributes.rateFixingCode,
+            );
+          } else {
+            metadataAttributes.metadataAttributesContraAccountFieldNameLable = null;
+            metadataAttributes.metadataAttributesContraAccountNumber = null;
+            metadataAttributes.metadataAttributesContraBankNumber = null;
+            metadataAttributes.metadataAttributesContraBranchNumber = null;
+            metadataAttributes.metadataAttributesContraCurrencyCode = null;
+            metadataAttributes.metadataAttributesCurrencyRate = null;
+            metadataAttributes.metadataAttributesDataGroupCode = null;
+            metadataAttributes.metadataAttributesOriginalEventKey = null;
+            metadataAttributes.metadataAttributesRateFixingCode = null;
+          }
+        }
+
+        return {
+          accountName: 'accountName' in t ? t.accountName : null,
+          accountNumber,
+          activityDescription: t.activityDescription,
+          activityTypeCode: t.activityTypeCode,
+          bankNumber,
+          branchNumber,
+          commentExistenceSwitch:
+            'commentExistenceSwitch' in t ? t.commentExistenceSwitch !== 0 : false,
+          comments: 'comments' in t ? t.comments : null,
+          contraAccountFieldNameLable:
+            'contraAccountFieldNameLable' in t ? t.contraAccountFieldNameLable : null,
+          contraAccountNumber: 'contraAccountNumber' in t ? t.contraAccountNumber : 0,
+          contraBankNumber: 'contraBankNumber' in t ? t.contraBankNumber : 0,
+          contraBranchNumber: 'contraBranchNumber' in t ? t.contraBranchNumber : 0,
+          contraCurrencyCode: t.contraCurrencyCode,
+          currency,
+          currencyLongDescription: t.currencyLongDescription,
+          currencyRate: t.currencyRate,
+          currencySwiftCode: t.currencySwiftCode,
+          currentBalance: t.currentBalance,
+          dataGroupCode: 'dataGroupCode' in t ? t.dataGroupCode !== 0 : false,
+          eventActivityTypeCode: t.eventActivityTypeCode,
+          eventAmount: t.eventAmount,
+          eventDetails: t.eventDetails,
+          eventNumber: t.eventNumber,
+          executingDate: convertNumberDateToString(t.executingDate),
+          formattedExecutingDate: t.formattedExecutingDate,
+          formattedValueDate: t.formattedValueDate,
+          ...metadataAttributes,
+          originalEventKey: 'originalEventKey' in t ? t.originalEventKey !== 0 : false,
+          originalSystemId: t.originalSystemId,
+          rateFixingCode: t.rateFixingCode,
+          rateFixingDescription: t.rateFixingDescription,
+          rateFixingShortDescription: t.rateFixingShortDescription,
+          referenceCatenatedNumber: t.referenceCatenatedNumber,
+          referenceNumber: String(t.referenceNumber),
+          transactionType: t.transactionType,
+          urlAddress: t.urlAddress,
+          validityDate: convertNumberDateToString(t.validityDate),
+          valueDate: convertNumberDateToString(t.valueDate),
+        };
+      });
+    });
+  return { transactions } as UploadPoalimForeignTransactionsMutationVariables;
 }
 
-export function poalimSwiftVars(payload: PoalimSwiftPayload) {
+export function poalimSwiftVars(
+  payload: DecoratedSwiftTransactions,
+  bankAccount: {
+    bankNumber: number;
+    branchNumber: number;
+    accountNumber: number;
+  },
+): UploadPoalimSwiftTransactionsMutationVariables {
   const swifts = payload.swiftsList.map(s => ({
-    ...s,
-    startDate: s.startDate == null ? null : String(s.startDate),
-    amount: s.amount == null ? null : String(s.amount),
+    accountNumber: bankAccount.accountNumber,
+    branchNumber: bankAccount.branchNumber,
+    bankNumber: bankAccount.bankNumber,
+
+    startDate: s.startDate.toString(),
+    formattedStartDate: s.formattedStartDate,
+    swiftStatusCode: s.swiftStatusCode,
+    swiftStatusDesc: s.swiftStatusDesc,
+    amount: s.amount.toString(),
+    currencyCodeCatenatedKey: s.currencyCodeCatenatedKey,
+    currencyLongDescription: s.currencyLongDescription,
+    chargePartyName: s.chargePartyName,
+    referenceNumber: s.referenceNumber,
+    transferCatenatedId: s.transferCatenatedId,
+    dataOriginCode: s.dataOriginCode.toString(),
+
+    swiftIsnSerialNumber: s.details.swiftBankDetails.swiftIsnSerialNumber,
+    swiftBankCode: s.details.swiftBankDetails.swiftBankCode,
+    orderCustomerName: s.details.swiftBankDetails.orderCustomerName,
+    beneficiaryEnglishStreetName: s.details.swiftBankDetails.beneficiaryEnglishStreetName1,
+    beneficiaryEnglishCityName: s.details.swiftBankDetails.beneficiaryEnglishCityName1,
+    beneficiaryEnglishCountryName: s.details.swiftBankDetails.beneficiaryEnglishCountryName,
+
+    swiftSendersReference20: findPoalimSwiftElement(s.details, ':20:'),
+    swiftBankOperationCode23B: findPoalimSwiftElement(s.details, ':23B:'),
+    swiftInstructionCode23E: findPoalimSwiftElement(s.details, ':23E:'),
+    swiftValueDateCurrencyAmount32A: findPoalimSwiftElement(s.details, ':32A:'),
+
+    swiftCurrencyInstructedAmount33B: findPoalimSwiftElement(s.details, ':33B:', true),
+    swiftExchangeRate36: findPoalimSwiftElement(s.details, ':36:', true),
+
+    swiftOrderingCustomer50K:
+      findPoalimSwiftElement(s.details, ':50K:') ??
+      findPoalimSwiftElement(s.details, ':50F:', true),
+
+    swiftOrderingInstitution52A: findPoalimSwiftElement(s.details, ':52A:', true),
+
+    swiftOrderingInstitution52D: findPoalimSwiftElement(s.details, ':52D:', true),
+
+    swiftSendersCorrespondent53A:
+      findPoalimSwiftElement(s.details, ':53B:') ??
+      findPoalimSwiftElement(s.details, ':53A:', true),
+
+    swiftReceiversCorrespondent54A: findPoalimSwiftElement(s.details, ':54A:', true),
+
+    swiftAccountWithInstitution57:
+      findPoalimSwiftElement(s.details, ':57A:') ??
+      findPoalimSwiftElement(s.details, ':57D:', true),
+
+    swiftBeneficiaryCustomer59:
+      findPoalimSwiftElement(s.details, ':59:') ?? findPoalimSwiftElement(s.details, ':59F:', true),
+
+    swiftRemittanceInformation70: findPoalimSwiftElement(s.details, ':70:', true),
+
+    swiftDetailsOfCharges71A: findPoalimSwiftElement(s.details, ':71A:', true),
+
+    swiftSendersCharges71F: findPoalimSwiftElement(s.details, ':71F:', true),
+
+    swiftSendersToReceiverInformation72: findPoalimSwiftElement(s.details, ':72:', true),
+
+    swiftRegulatoryReporting77B: findPoalimSwiftElement(s.details, ':77B:', true),
   }));
-  return { swifts };
+  return { swifts } as UploadPoalimSwiftTransactionsMutationVariables;
 }
 
 function transformIsracardAmexTransaction(

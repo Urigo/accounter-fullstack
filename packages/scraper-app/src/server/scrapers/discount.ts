@@ -26,8 +26,9 @@ export async function scrapeDiscount(
   dateFrom: Date,
   dateTo: Date,
   emit: Emitter,
+  headless = true,
 ): Promise<DiscountPayload> {
-  const { discount: discountFn, close } = await init({ headless: true });
+  const { discount: discountFn, close } = await init({ headless });
 
   try {
     const scraper = await discountFn({

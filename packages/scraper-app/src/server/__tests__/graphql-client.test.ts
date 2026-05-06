@@ -95,15 +95,17 @@ afterAll(() => server.close());
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const ILS_PAYLOAD = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ILS_PAYLOAD: any = {
   transactions: [
     {
       activityDescription: 'Credit',
       activityTypeCode: 1,
       eventAmount: 100,
       eventDate: 20240101,
+      valueDate: 20240101,
       serialNumber: 1,
-      transactionType: 'REGULAR' as const,
+      transactionType: 'REGULAR',
       currentBalance: 5000,
       referenceNumber: 42,
     },
@@ -111,11 +113,12 @@ const ILS_PAYLOAD = {
   retrievalTransactionData: { accountNumber: 100000, branchNumber: 600, bankNumber: 12 },
 };
 
-const FOREIGN_PAYLOAD = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const FOREIGN_PAYLOAD: any = {
   balancesAndLimitsDataList: [
     {
       currencySwiftCode: 'USD',
-      currencyCode: 1,
+      currencyCode: 19, // 19 = USD in Poalim currency codes
       transactions: [
         {
           activityDescription: 'Transfer',
@@ -126,13 +129,19 @@ const FOREIGN_PAYLOAD = {
           currentBalance: 1000,
           referenceNumber: 99,
           transactionType: 'REGULAR',
+          executingDate: 20240101,
+          validityDate: 20240101,
+          valueDate: 20240101,
         },
       ],
     },
   ],
 };
 
-const SWIFT_PAYLOAD = {
+const BANK_ACCOUNT = { bankNumber: 12, branchNumber: 600, accountNumber: 100000 };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SWIFT_PAYLOAD: any = {
   swiftsList: [
     {
       startDate: 20240101,
@@ -142,11 +151,23 @@ const SWIFT_PAYLOAD = {
       chargePartyName: 'Test',
       referenceNumber: 'REF-1',
       transferCatenatedId: 'TID-1',
+      dataOriginCode: 1,
+      details: {
+        swiftBankDetails: {
+          swiftIsnSerialNumber: '001',
+          swiftBankCode: 'BANKUS33',
+          orderCustomerName: 'Test Customer',
+          beneficiaryEnglishStreetName1: '123 Main St',
+          beneficiaryEnglishCityName1: 'New York',
+          beneficiaryEnglishCountryName: 'United States',
+        },
+        swiftTransferDetailsList: [],
+      },
     },
   ],
 };
 
-const ISRACARD_PAYLOAD = [
+const ISRACARD_PAYLOAD: any = [
   {
     Header: { Status: '1', Message: null },
     CardsTransactionsListBean: {
@@ -309,12 +330,12 @@ describe('uploadPoalimIls', () => {
 
 describe('uploadPoalimForeign', () => {
   it('sends correct mutation name', async () => {
-    await client().uploadPoalimForeign(FOREIGN_PAYLOAD);
+    await client().uploadPoalimForeign(FOREIGN_PAYLOAD, BANK_ACCOUNT);
     expect(lastMutationName).toBe('UploadPoalimForeignTransactions');
   });
 
   it('flattens currency entries into a single transactions array', async () => {
-    await client().uploadPoalimForeign(FOREIGN_PAYLOAD);
+    await client().uploadPoalimForeign(FOREIGN_PAYLOAD, BANK_ACCOUNT);
     const txns = lastVariables['transactions'] as unknown[];
     expect(Array.isArray(txns)).toBe(true);
     expect(txns).toHaveLength(1);
@@ -322,25 +343,25 @@ describe('uploadPoalimForeign', () => {
   });
 
   it('returns UploadResult', async () => {
-    const result = await client().uploadPoalimForeign(FOREIGN_PAYLOAD);
+    const result = await client().uploadPoalimForeign(FOREIGN_PAYLOAD, BANK_ACCOUNT);
     expect(result).toEqual(MOCK_RESULT);
   });
 });
 
 describe('uploadPoalimSwift', () => {
   it('sends correct mutation name', async () => {
-    await client().uploadPoalimSwift(SWIFT_PAYLOAD);
+    await client().uploadPoalimSwift(SWIFT_PAYLOAD, BANK_ACCOUNT);
     expect(lastMutationName).toBe('UploadPoalimSwiftTransactions');
   });
 
   it('sends swifts variable', async () => {
-    await client().uploadPoalimSwift(SWIFT_PAYLOAD);
+    await client().uploadPoalimSwift(SWIFT_PAYLOAD, BANK_ACCOUNT);
     expect(Array.isArray(lastVariables['swifts'])).toBe(true);
     expect(lastVariables['swifts'] as unknown[]).toHaveLength(1);
   });
 
   it('returns UploadResult', async () => {
-    const result = await client().uploadPoalimSwift(SWIFT_PAYLOAD);
+    const result = await client().uploadPoalimSwift(SWIFT_PAYLOAD, BANK_ACCOUNT);
     expect(result).toEqual(MOCK_RESULT);
   });
 });

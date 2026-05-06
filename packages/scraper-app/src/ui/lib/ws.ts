@@ -242,7 +242,9 @@ export function useRunSocket(): UseRunSocketResult {
           // ── Per-account progress (Poalim) ──────────────────────────────────
           case 'task-accounts-found': {
             const state = get(msg.sourceId);
-            const steps: AccountStep[] = msg.accounts.map(a => ({ accountId: a.accountNumber }));
+            const steps: AccountStep[] = msg.accounts.map(a => ({
+              accountId: `${a.branchNumber}-${a.accountNumber}`,
+            }));
             next.set(msg.sourceId, { ...state, steps });
             break;
           }

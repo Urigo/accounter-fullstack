@@ -55,13 +55,13 @@ export default gql`
     contraAccountTypeCode: Int!
     contraBankNumber: Int!
     contraBranchNumber: Int!
-    currentBalance: String!
+    currentBalance: Float!
     dataGroupCode: Int!
     details: String
     differentDateIndication: String!
     englishActionDesc: String
     eventActivityTypeCode: Int!
-    eventAmount: String!
+    eventAmount: Float!
     eventDate: String!
     eventId: String!
     executingBranchNumber: Int!
@@ -69,7 +69,7 @@ export default gql`
     fieldDescDisplaySwitch: Boolean!
     formattedEventDate: String!
     formattedOriginalEventCreateDate: String
-    formattedValueDate: String!
+    formattedValueDate: String
     internalLinkCode: Int!
     marketingOfferContext: Boolean!
     offerActivityContext: String
@@ -106,17 +106,17 @@ export default gql`
     contraCurrencyCode: Int!
     currency: Currency!
     currencyLongDescription: String!
-    currencyRate: String!
+    currencyRate: Float!
     currencySwiftCode: String!
-    currentBalance: String!
+    currentBalance: Float!
     dataGroupCode: Boolean!
     eventActivityTypeCode: Int!
-    eventAmount: String!
+    eventAmount: Float!
     eventDetails: String
     eventNumber: Int!
     executingDate: String!
     formattedExecutingDate: String!
-    formattedValueDate: String!
+    formattedValueDate: String
     metadataAttributesContraAccountFieldNameLable: String
     metadataAttributesContraAccountNumber: String
     metadataAttributesContraBankNumber: String
@@ -132,7 +132,7 @@ export default gql`
     rateFixingDescription: String
     rateFixingShortDescription: String!
     referenceCatenatedNumber: Int!
-    referenceNumber: Int!
+    referenceNumber: String!
     transactionType: String!
     urlAddress: String
     urlAddressNiar: String
@@ -145,7 +145,7 @@ export default gql`
   " Input for a Poalim SWIFT international wire transfer "
   input PoalimSwiftTransactionInput {
     accountNumber: Int
-    amount: String
+    amount: Float
     bankNumber: Int
     beneficiaryEnglishCityName: String
     beneficiaryEnglishCountryName: String
