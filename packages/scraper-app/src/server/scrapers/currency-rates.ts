@@ -13,7 +13,7 @@ type SupportedCurrency = (typeof CURRENCIES)[number];
 export type Emitter = (msg: ServerMessage) => void;
 
 export async function scrapeCurrencyRates(
-  _emit: Emitter,
+  emit: Emitter,
   dateFrom: Date,
   dateTo: Date,
 ): Promise<CurrencyRatesPayload> {
@@ -72,5 +72,12 @@ export async function scrapeCurrencyRates(
     }
   }
 
-  return validatePayload('currency-rates', entries);
+  const validated = validatePayload('currency-rates', entries);
+  emit({
+    type: 'task-month-fetched',
+    sourceId: 'currency-rates',
+    month: 'rates',
+    transactionCount: validated.length,
+  });
+  return validated;
 }
