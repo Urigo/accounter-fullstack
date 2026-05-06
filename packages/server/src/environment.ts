@@ -184,11 +184,11 @@ const Auth0Model = zod.union([
   // We use a looser object check here because process.env is always an object
   zod
     .object({
-      AUTH0_DOMAIN: zod.undefined().or(zod.literal('')),
-      AUTH0_AUDIENCE: zod.undefined().or(zod.literal('')),
-      AUTH0_CLIENT_ID: zod.undefined().or(zod.literal('')),
-      AUTH0_CLIENT_SECRET: zod.undefined().or(zod.literal('')),
-      AUTH0_MANAGEMENT_AUDIENCE: zod.undefined().or(zod.literal('')),
+      AUTH0_DOMAIN: zod.literal('').optional(),
+      AUTH0_AUDIENCE: zod.literal('').optional(),
+      AUTH0_CLIENT_ID: zod.literal('').optional(),
+      AUTH0_CLIENT_SECRET: zod.literal('').optional(),
+      AUTH0_MANAGEMENT_AUDIENCE: zod.literal('').optional(),
     })
     .transform(() => undefined),
 ]);
