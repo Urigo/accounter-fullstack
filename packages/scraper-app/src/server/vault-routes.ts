@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
@@ -80,6 +80,32 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       throw err;
     }
   });
+
+  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) =>
+    done(null, body),
+  );
+
+  app.post<{ Querystring: { force?: string }; Body: Buffer }>(
+    '/api/vault/upload',
+    { config: { rawBody: false } },
+    async (req, reply) => {
+      const force = req.query.force === 'true';
+      const vaultPath = getVaultPath();
+      try {
+        const exists = await hasVaultFile();
+        if (exists && !force) {
+          return reply.status(409).send({ error: 'vault-already-exists' });
+        }
+        await writeFile(vaultPath + '.tmp', req.body as Buffer);
+        await rename(vaultPath + '.tmp', vaultPath);
+        lockVault();
+        return reply.status(200).send({ ok: true });
+      } catch (err) {
+        req.log.error(err, 'Vault upload failed');
+        return reply.status(500).send({ error: 'write-failed' });
+      }
+    },
+  );
 
   app.get('/api/vault/path', async (_req, reply) => {
     if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
