@@ -88,10 +88,12 @@ jobs:
           path: |
             packages/server/src/**/*.types.ts
             packages/migrations/src/**/*.types.ts
+            packages/scraper-app/src/server/gql/index.ts
           key:
             pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
             'packages/server/src/**/providers/*.provider.ts',
-            'packages/server/src/plugins/admin-context-plugin.ts') }}
+            'packages/server/src/plugins/admin-context-plugin.ts',
+            'packages/scraper-app/src/server/graphql/mutations.ts') }}
           restore-keys: |
             pgtyped-${{ runner.os }}-
 
