@@ -8,30 +8,34 @@ export default {
     CREATE UNIQUE INDEX IF NOT EXISTS isracard_creditcard_transactions_dedup_uindex
       ON accounter_schema.isracard_creditcard_transactions (
         card,
-        COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-        COALESCE(full_payment_date, ''),
-        COALESCE(payment_sum, payment_sum_outbound, 0),
-        COALESCE(voucher_number, 0),
-        COALESCE(supplier_id, 0),
-        COALESCE(current_payment_currency, ''),
-        COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-        COALESCE(more_info, '')
-      );
+        COALESCE(full_purchase_date, full_purchase_date_outbound),
+        full_payment_date,
+        COALESCE(payment_sum, payment_sum_outbound),
+        voucher_number,
+        COALESCE(voucher_number_ratz, voucher_number_ratz_outbound),
+        supplier_id,
+        current_payment_currency,
+        COALESCE(full_supplier_name_heb, full_supplier_name_outbound),
+        more_info,
+        deal_sum
+      ) NULLS NOT DISTINCT;
 
     -- Amex deduplication key (identical shape to Isracard)
     DROP INDEX IF EXISTS accounter_schema.amex_creditcard_transactions_dedup_uindex;
     CREATE UNIQUE INDEX IF NOT EXISTS amex_creditcard_transactions_dedup_uindex
       ON accounter_schema.amex_creditcard_transactions (
         card,
-        COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-        COALESCE(full_payment_date, ''),
-        COALESCE(payment_sum, payment_sum_outbound, 0),
-        COALESCE(voucher_number, 0),
-        COALESCE(supplier_id, 0),
-        COALESCE(current_payment_currency, ''),
-        COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-        COALESCE(more_info, '')
-      );
+        COALESCE(full_purchase_date, full_purchase_date_outbound),
+        full_payment_date,
+        COALESCE(payment_sum, payment_sum_outbound),
+        voucher_number,
+        COALESCE(voucher_number_ratz, voucher_number_ratz_outbound),
+        supplier_id,
+        current_payment_currency,
+        COALESCE(full_supplier_name_heb, full_supplier_name_outbound),
+        more_info,
+        deal_sum
+      ) NULLS NOT DISTINCT;
 
     -- Max deduplication key
     DROP INDEX IF EXISTS accounter_schema.max_creditcard_transactions_uid_uindex;

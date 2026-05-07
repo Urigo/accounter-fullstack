@@ -178,14 +178,16 @@ const uploadIsracardTransactions = sql<IUploadIsracardTransactionsQuery>`
   )
   ON CONFLICT (
     card,
-    COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-    COALESCE(full_payment_date, ''),
-    COALESCE(payment_sum, payment_sum_outbound, 0),
-    COALESCE(voucher_number, 0),
-    COALESCE(supplier_id, 0),
-    COALESCE(current_payment_currency, ''),
-    COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-    COALESCE(more_info, '')
+    COALESCE(full_purchase_date, full_purchase_date_outbound),
+    full_payment_date,
+    COALESCE(payment_sum, payment_sum_outbound),
+    voucher_number,
+    COALESCE(voucher_number_ratz, voucher_number_ratz_outbound),
+    supplier_id,
+    current_payment_currency,
+    COALESCE(full_supplier_name_heb, full_supplier_name_outbound),
+    more_info,
+    deal_sum
   )
   DO NOTHING
   RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
@@ -347,14 +349,16 @@ const uploadAmexTransactions = sql<IUploadAmexTransactionsQuery>`
   )
   ON CONFLICT (
     card,
-    COALESCE(full_purchase_date, full_purchase_date_outbound, ''),
-    COALESCE(full_payment_date, ''),
-    COALESCE(payment_sum, payment_sum_outbound, 0),
-    COALESCE(voucher_number, 0),
-    COALESCE(supplier_id, 0),
-    COALESCE(current_payment_currency, ''),
-    COALESCE(full_supplier_name_heb, full_supplier_name_outbound, ''),
-    COALESCE(more_info, '')
+    COALESCE(full_purchase_date, full_purchase_date_outbound),
+    full_payment_date,
+    COALESCE(payment_sum, payment_sum_outbound),
+    voucher_number,
+    COALESCE(voucher_number_ratz, voucher_number_ratz_outbound),
+    supplier_id,
+    current_payment_currency,
+    COALESCE(full_supplier_name_heb, full_supplier_name_outbound),
+    more_info,
+    deal_sum
   )
   DO NOTHING
   RETURNING id, full_purchase_date, supplier_name, payment_sum, card;
@@ -373,6 +377,9 @@ type IsracardAmexKeyShape = {
   full_supplier_name_heb?: string | null;
   full_supplier_name_outbound?: string | null;
   more_info?: string | null;
+  voucher_number_ratz?: number | null;
+  voucher_number_ratz_outbound?: number | null;
+  deal_sum?: string | number | null;
 };
 
 function isracardAmexConflictKey(row: IsracardAmexKeyShape): string {
@@ -382,10 +389,12 @@ function isracardAmexConflictKey(row: IsracardAmexKeyShape): string {
     row.full_payment_date ?? '',
     Number(row.payment_sum ?? row.payment_sum_outbound ?? 0),
     row.voucher_number ?? 0,
+    row.voucher_number_ratz ?? row.voucher_number_ratz_outbound ?? 0,
     row.supplier_id ?? 0,
     row.current_payment_currency ?? '',
     row.full_supplier_name_heb ?? row.full_supplier_name_outbound ?? '',
     row.more_info ?? '',
+    Number(row.deal_sum ?? 0),
   ]);
 }
 
