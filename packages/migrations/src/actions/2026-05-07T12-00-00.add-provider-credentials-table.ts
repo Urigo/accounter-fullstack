@@ -29,19 +29,9 @@ export default {
     ALTER TABLE accounter_schema.provider_credentials FORCE ROW LEVEL SECURITY;
 
     -- Automatically update updated_at on every row update
-    CREATE OR REPLACE FUNCTION accounter_schema.update_updated_at_column()
-      RETURNS TRIGGER
-      LANGUAGE plpgsql AS
-    $$
-    BEGIN
-      NEW.updated_at = now();
-      RETURN NEW;
-    END;
-    $$;
-
     CREATE TRIGGER set_updated_at
       BEFORE UPDATE ON accounter_schema.provider_credentials
       FOR EACH ROW
-      EXECUTE FUNCTION accounter_schema.update_updated_at_column();
+      EXECUTE FUNCTION accounter_schema.update_general_updated_at();
   `,
 } satisfies MigrationExecutor;
