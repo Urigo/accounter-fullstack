@@ -30,4 +30,14 @@ describe('vault', () => {
   it('defaultVault() passes VaultSchema.parse', () => {
     expect(() => VaultSchema.parse(defaultVault())).not.toThrow();
   });
+
+  it('accepts vaultPath in settings', () => {
+    const v = VaultSchema.parse({ settings: { vaultPath: '/custom/path/.vault' } });
+    expect(v.settings.vaultPath).toBe('/custom/path/.vault');
+  });
+
+  it('accepts settings without vaultPath', () => {
+    const v = VaultSchema.parse({ settings: {} });
+    expect(v.settings.vaultPath).toBeUndefined();
+  });
 });
