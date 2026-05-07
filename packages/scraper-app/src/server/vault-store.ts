@@ -52,6 +52,11 @@ export async function moveVaultFile(newPath: string): Promise<void> {
   if (_vault === null || _password === null) throw new Error('Vault is locked');
   const oldPath = getCurrentVaultPath();
   if (oldPath === newPath) return;
+  const destExists = await access(newPath)
+    .then(() => true)
+    .catch(() => false);
+  if (destExists) throw new Error('Destination already exists');
   await rename(oldPath, newPath);
   _vaultPath = newPath;
+  process.env['VAULT_PATH'] = newPath;
 }
