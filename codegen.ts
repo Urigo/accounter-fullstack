@@ -212,6 +212,7 @@ const config: CodegenConfig = {
       plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
       config: {
         enumsAsConst: true,
+        useTypeImports: true,
         rawRequest: true,
         scalars: {
           FileScalar: {
