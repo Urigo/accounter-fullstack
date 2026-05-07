@@ -67,6 +67,7 @@ export type UseRunSocketResult = {
   taskStates: Map<string, TaskState>;
   runStatus: RunStatus;
   summary: RunCompleteMessage | null;
+  dismissOtp: (sourceId: string) => void;
 };
 
 function wsUrl(): string {
@@ -332,5 +333,16 @@ export function useRunSocket(): UseRunSocketResult {
     }
   }, []);
 
-  return { send, taskStates, runStatus, summary };
+  const dismissOtp = useCallback((sourceId: string) => {
+    setTaskStates(prev => {
+      const next = new Map(prev);
+      const state = next.get(sourceId);
+      if (state?.status === 'otp-required') {
+        next.set(sourceId, { ...state, status: 'running' });
+      }
+      return next;
+    });
+  }, []);
+
+  return { send, taskStates, runStatus, summary, dismissOtp };
 }

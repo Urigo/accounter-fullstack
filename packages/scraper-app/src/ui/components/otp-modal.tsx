@@ -4,9 +4,10 @@ import type { ClientMessage } from '../../shared/ws-protocol.js';
 type Props = {
   sourceId: string;
   onSubmit: (msg: ClientMessage) => void;
+  onClose: () => void;
 };
 
-export function OtpModal({ sourceId, onSubmit }: Props): ReactElement {
+export function OtpModal({ sourceId, onSubmit, onClose }: Props): ReactElement {
   const [otp, setOtp] = useState('');
 
   function handleSubmit() {
@@ -58,7 +59,21 @@ export function OtpModal({ sourceId, onSubmit }: Props): ReactElement {
           placeholder="Enter OTP…"
           style={{ width: '100%', padding: '6px 10px', fontSize: '1em', boxSizing: 'border-box' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: '6px 16px',
+              background: 'transparent',
+              color: '#555',
+              border: '1px solid #ccc',
+              borderRadius: 5,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
           <button
             type="button"
             onClick={handleSubmit}
