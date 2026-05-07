@@ -1,5 +1,5 @@
 import type { SwiftTransaction } from '@accounter/modern-poalim-scraper';
-import { Currency } from './gql/index.js';
+import type { Currency } from './gql/index.js';
 
 /**
  *
@@ -24,19 +24,19 @@ export function convertNumberDateToString(numberDate: number) {
 export function convertPoalimCurrencyCodeToSymbol(code: number): Currency {
   switch (code) {
     case 19:
-      return Currency.Usd;
+      return 'USD';
     case 27:
-      return Currency.Gbp;
+      return 'GBP';
     case 36:
-      return Currency.Aud;
+      return 'AUD';
     case 51:
-      return Currency.Sek;
+      return 'SEK';
     case 100:
-      return Currency.Eur;
+      return 'EUR';
     case 140:
-      return Currency.Cad;
+      return 'CAD';
     case 248:
-      return Currency.Jpy;
+      return 'JPY';
     default:
       throw new Error(`New Poalim account currency - ${code}`);
   }
