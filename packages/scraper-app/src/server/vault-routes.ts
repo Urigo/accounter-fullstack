@@ -62,6 +62,10 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  app.get('/api/vault/env-path', async () => ({
+    path: getVaultPath(),
+  }));
+
   app.get('/api/vault/path', async (_req, reply) => {
     if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
     return { path: getVaultPath() };
