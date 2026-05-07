@@ -108,18 +108,13 @@ export function getEnvVaultPath(): Promise<{ path: string }> {
   return apiFetch('/api/vault/env-path');
 }
 
-export async function vaultUpload(file: File, force = false): Promise<{ ok: boolean }> {
+export function vaultUpload(file: File, force = false): Promise<{ ok: boolean }> {
   const url = force ? '/api/vault/upload?force=true' : '/api/vault/upload';
-  const res = await fetch(url, {
+  return apiFetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/octet-stream' },
     body: file,
   });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
-  }
-  return res.json() as Promise<{ ok: boolean }>;
 }
 
 export async function vaultDownload(suggestedName = '.vault'): Promise<void> {
