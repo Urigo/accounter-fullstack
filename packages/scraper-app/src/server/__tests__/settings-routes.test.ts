@@ -156,4 +156,17 @@ describe('PUT /api/vault/settings — vaultPath change', () => {
     const exists = await access(vaultPath).then(() => true).catch(() => false);
     expect(exists).toBe(true);
   });
+
+  it('returns 500 when destination file already exists', async () => {
+    await saveVaultFile(newPath, defaultVault(), 'other-password');
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/vault/settings',
+      payload: { vaultPath: newPath },
+    });
+    expect(res.statusCode).toBe(500);
+    expect(res.json()).toMatchObject({ error: 'move-failed' });
+    const originalExists = await access(vaultPath).then(() => true).catch(() => false);
+    expect(originalExists).toBe(true);
+  });
 });
