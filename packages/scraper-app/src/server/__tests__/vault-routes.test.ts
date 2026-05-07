@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { rm } from 'node:fs/promises';
+import { access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { defaultVault, saveVaultFile } from '../vault.js';
-import { lockVault } from '../vault-store.js';
+import { defaultVault, encryptVault, saveVaultFile } from '../vault.js';
+import { isLocked, lockVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
@@ -252,5 +252,72 @@ describe('POST /api/vault/unlock', () => {
       payload: { password: 'wrong-password' },
     });
     expect(res.statusCode).toBe(401);
+  });
+});
+
+// ── Tests for POST /api/vault/upload ─────────────────────────────────────────
+
+async function uploadVault(
+  app: FastifyInstance,
+  opts: { force?: boolean } = {},
+): Promise<ReturnType<FastifyInstance['inject']>> {
+  const blob = await encryptVault(defaultVault(), PASSWORD);
+  return app.inject({
+    method: 'POST',
+    url: '/api/vault/upload' + (opts.force ? '?force=true' : ''),
+    payload: Buffer.from(blob, 'base64'),
+    headers: { 'content-type': 'application/octet-stream' },
+  });
+}
+
+describe('POST /api/vault/upload', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    app = await buildApp(vaultPath);
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    await rm(vaultPath + '.tmp', { force: true });
+    delete process.env['VAULT_PATH'];
+  });
+
+  it('returns 200 and writes the vault file when no file exists', async () => {
+    const res = await uploadVault(app);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ ok: true });
+    const exists = await access(vaultPath).then(() => true).catch(() => false);
+    expect(exists).toBe(true);
+  });
+
+  it('returns 409 when vault already exists and force is not set', async () => {
+    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+    const res = await uploadVault(app);
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error).toBe('vault-already-exists');
+  });
+
+  it('overwrites and returns 200 when force=true and vault exists', async () => {
+    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+    const res = await uploadVault(app, { force: true });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('locks the vault after successful upload even if it was unlocked', async () => {
+    await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+    await app.inject({
+      method: 'POST',
+      url: '/api/vault/unlock',
+      payload: { password: PASSWORD },
+    });
+    expect(isLocked()).toBe(false);
+    await uploadVault(app, { force: true });
+    const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
+    expect(res.json()).toMatchObject({ locked: true });
   });
 });
