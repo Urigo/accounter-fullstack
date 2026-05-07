@@ -97,6 +97,7 @@ export const SettingsSchema = z.object({
   saveHistory: z.boolean().default(true),
   serverUrl: z.string().optional(),
   apiKey: z.string().optional(),
+  vaultPath: z.string().trim().min(1).optional(),
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
