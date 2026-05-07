@@ -63,7 +63,7 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get('/api/vault/env-path', async () => ({
-    path: process.env['VAULT_PATH'] ?? '.vault',
+    path: getVaultPath(),
   }));
 
   app.get('/api/vault/path', async (_req, reply) => {
