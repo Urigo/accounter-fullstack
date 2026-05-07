@@ -167,6 +167,57 @@ describe('GET /api/vault/env-path', () => {
   });
 });
 
+describe('GET /api/vault/download', () => {
+  describe('when vault file exists', () => {
+    let vaultPath: string;
+    let app: FastifyInstance;
+
+    beforeEach(async () => {
+      vaultPath = makeTmpPath();
+      await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
+      app = await buildApp(vaultPath);
+    });
+
+    afterEach(async () => {
+      lockVault();
+      await app.close();
+      await rm(vaultPath, { force: true });
+      delete process.env['VAULT_PATH'];
+    });
+
+    it('returns 200 with octet-stream content-type when vault file exists', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/vault/download' });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toMatch(/application\/octet-stream/);
+      expect(res.headers['content-disposition']).toBe('attachment; filename=".vault"');
+      expect(res.rawPayload.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('when vault file does not exist', () => {
+    let vaultPath: string;
+    let app: FastifyInstance;
+
+    beforeEach(async () => {
+      vaultPath = makeTmpPath();
+      app = await buildApp(vaultPath);
+    });
+
+    afterEach(async () => {
+      lockVault();
+      await app.close();
+      await rm(vaultPath, { force: true });
+      delete process.env['VAULT_PATH'];
+    });
+
+    it('returns 404 when no vault file exists', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/vault/download' });
+      expect(res.statusCode).toBe(404);
+      expect(res.json().error).toBe('no-vault-file');
+    });
+  });
+});
+
 describe('POST /api/vault/unlock', () => {
   let vaultPath: string;
   let app: FastifyInstance;
