@@ -20,6 +20,7 @@ export function Run({
   taskStates,
   runStatus,
   summary,
+  dismissOtp,
   onNavigateAccounts,
   isVisible = true,
 }: RunProps): ReactElement {
@@ -258,10 +259,13 @@ export function Run({
       {/* OTP modal */}
       {otpEntry && (
         <OtpModal
+          key={otpEntry[0]}
           sourceId={otpEntry[0]}
           onSubmit={msg => {
             send(msg);
+            dismissOtp(otpEntry[0]);
           }}
+          onClose={() => dismissOtp(otpEntry[0])}
         />
       )}
     </div>
