@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { rm } from 'node:fs/promises';
+import { access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -10,11 +10,15 @@ import { registerVaultRoutes } from '../vault-routes.js';
 
 const PASSWORD = 'test-password-123';
 
+function makeTmpPath() {
+  return join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
+}
+
 let vaultPath: string;
 let app: FastifyInstance;
 
 beforeEach(async () => {
-  vaultPath = join(tmpdir(), `vault-test-${randomBytes(4).toString('hex')}.vault`);
+  vaultPath = makeTmpPath();
   process.env['VAULT_PATH'] = vaultPath;
   await saveVaultFile(vaultPath, defaultVault(), PASSWORD);
 
@@ -113,5 +117,43 @@ describe('PUT /api/vault/settings', () => {
       payload: { showBrowser: 'not-a-boolean' },
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('PUT /api/vault/settings — vaultPath change', () => {
+  let newPath: string;
+
+  beforeEach(() => {
+    newPath = makeTmpPath();
+  });
+
+  afterEach(async () => {
+    await rm(newPath, { force: true });
+  });
+
+  it('moves the vault file and returns updated settings when vaultPath changes', async () => {
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/vault/settings',
+      payload: { vaultPath: newPath },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().vaultPath).toBe(newPath);
+
+    const oldExists = await access(vaultPath).then(() => true).catch(() => false);
+    expect(oldExists).toBe(false);
+
+    const newExists = await access(newPath).then(() => true).catch(() => false);
+    expect(newExists).toBe(true);
+  });
+
+  it('returns 200 without moving anything when vaultPath is not in the payload', async () => {
+    await app.inject({
+      method: 'PUT',
+      url: '/api/vault/settings',
+      payload: { showBrowser: true },
+    });
+    const exists = await access(vaultPath).then(() => true).catch(() => false);
+    expect(exists).toBe(true);
   });
 });
