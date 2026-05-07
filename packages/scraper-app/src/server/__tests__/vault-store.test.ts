@@ -60,4 +60,31 @@ describe('vault-store', () => {
   it('moveVaultFile throws when vault is locked', async () => {
     await expect(moveVaultFile('/some/path')).rejects.toThrow('Vault is locked');
   });
+
+  it('moveVaultFile throws when destination already exists', async () => {
+    process.env['VAULT_PATH'] = vaultPath;
+    await unlockVault(PASSWORD);
+    const destPath = makeTmpPath();
+    await saveVaultFile(destPath, defaultVault(), PASSWORD);
+    try {
+      await expect(moveVaultFile(destPath)).rejects.toThrow('Destination already exists');
+    } finally {
+      await rm(destPath, { force: true });
+    }
+  });
+
+  it('moveVaultFile updates VAULT_PATH env so re-unlock uses the new path', async () => {
+    process.env['VAULT_PATH'] = vaultPath;
+    await unlockVault(PASSWORD);
+    const newPath = makeTmpPath();
+    try {
+      await moveVaultFile(newPath);
+      lockVault();
+      const result = await unlockVault(PASSWORD);
+      expect(result).toBe('ok');
+      expect(getCurrentVaultPath()).toBe(newPath);
+    } finally {
+      await rm(newPath, { force: true });
+    }
+  });
 });
