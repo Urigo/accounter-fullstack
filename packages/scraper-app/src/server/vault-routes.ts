@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
@@ -65,6 +66,20 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/vault/env-path', async () => ({
     path: getVaultPath(),
   }));
+
+  app.get('/api/vault/download', async (_req, reply) => {
+    try {
+      const fileBuffer = await readFile(getVaultPath());
+      reply.header('Content-Type', 'application/octet-stream');
+      reply.header('Content-Disposition', 'attachment; filename=".vault"');
+      return reply.send(fileBuffer);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        return reply.status(404).send({ error: 'no-vault-file' });
+      }
+      throw err;
+    }
+  });
 
   app.get('/api/vault/path', async (_req, reply) => {
     if (isLocked()) return reply.status(401).send({ error: 'vault-locked' });
