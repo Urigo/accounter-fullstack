@@ -211,6 +211,8 @@ const config: CodegenConfig = {
     'packages/scraper-app/src/server/gql/index.ts': {
       plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
       config: {
+        enumsAsConst: true,
+        useTypeImports: true,
         rawRequest: true,
         scalars: {
           FileScalar: {
