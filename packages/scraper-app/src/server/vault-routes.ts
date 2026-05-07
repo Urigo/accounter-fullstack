@@ -81,10 +81,8 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  app.addContentTypeParser(
-    'application/octet-stream',
-    { parseAs: 'buffer' },
-    (_req, body, done) => done(null, body),
+  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) =>
+    done(null, body),
   );
 
   app.post<{ Querystring: { force?: string }; Body: Buffer }>(
