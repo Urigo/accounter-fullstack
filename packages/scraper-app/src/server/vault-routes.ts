@@ -91,7 +91,7 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     '/api/vault/upload',
     { config: { rawBody: false } },
     async (req, reply) => {
-      const force = Boolean(req.query.force);
+      const force = req.query.force === 'true';
       const vaultPath = getVaultPath();
       try {
         const exists = await hasVaultFile();
@@ -102,7 +102,8 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
         await rename(vaultPath + '.tmp', vaultPath);
         lockVault();
         return reply.status(200).send({ ok: true });
-      } catch {
+      } catch (err) {
+        req.log.error(err, 'Vault upload failed');
         return reply.status(500).send({ error: 'write-failed' });
       }
     },
