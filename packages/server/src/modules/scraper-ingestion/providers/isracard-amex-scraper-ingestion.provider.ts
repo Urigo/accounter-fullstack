@@ -18,8 +18,10 @@ import type {
   IFetchIsracardByCardsResult,
   IUploadAmexTransactionsParams,
   IUploadAmexTransactionsQuery,
+  IUploadAmexTransactionsResult,
   IUploadIsracardTransactionsParams,
   IUploadIsracardTransactionsQuery,
+  IUploadIsracardTransactionsResult,
 } from '../types.js';
 
 const fetchIsracardByCards = sql<IFetchIsracardByCardsQuery>`
@@ -503,7 +505,10 @@ export class IsracardAmexScraperIngestionProvider {
     const existing = await fetchIsracardByCards.run({ cards: [...cards] }, this.db);
     const existingByKey = new Map(existing.map(row => [isracardAmexConflictKey(row), row]));
 
-    const result = await uploadIsracardTransactions.run({ transactions: validated }, this.db);
+    const result: IUploadIsracardTransactionsResult[] = await uploadIsracardTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
@@ -574,7 +579,10 @@ export class IsracardAmexScraperIngestionProvider {
     const existing = await fetchAmexByCards.run({ cards: [...cards] }, this.db);
     const existingByKey = new Map(existing.map(row => [isracardAmexConflictKey(row), row]));
 
-    const result = await uploadAmexTransactions.run({ transactions: validated }, this.db);
+    const result: IUploadAmexTransactionsResult[] = await uploadAmexTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 

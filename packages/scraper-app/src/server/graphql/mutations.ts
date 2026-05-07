@@ -467,7 +467,7 @@ export function poalimSwiftVars(
     formattedStartDate: s.formattedStartDate,
     swiftStatusCode: s.swiftStatusCode,
     swiftStatusDesc: s.swiftStatusDesc,
-    amount: s.amount.toString(),
+    amount: s.amount,
     currencyCodeCatenatedKey: s.currencyCodeCatenatedKey,
     currencyLongDescription: s.currencyLongDescription,
     chargePartyName: s.chargePartyName,

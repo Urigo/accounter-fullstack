@@ -26,10 +26,13 @@ import type {
   IFetchPoalimSwiftByIdsResult,
   IUploadPoalimForeignTransactionsParams,
   IUploadPoalimForeignTransactionsQuery,
+  IUploadPoalimForeignTransactionsResult,
   IUploadPoalimIlsTransactionsParams,
   IUploadPoalimIlsTransactionsQuery,
+  IUploadPoalimIlsTransactionsResult,
   IUploadPoalimSwiftTransactionsParams,
   IUploadPoalimSwiftTransactionsQuery,
+  IUploadPoalimSwiftTransactionsResult,
 } from '../types.js';
 
 const fetchPoalimIlsByKeys = sql<IFetchPoalimIlsByKeysQuery>`
@@ -649,7 +652,10 @@ export class PoalimScraperIngestionProvider {
       existingByKey.set(key, row);
     }
 
-    const result = await uploadPoalimIlsTransactions.run({ transactions: validated }, this.db);
+    const result: IUploadPoalimIlsTransactionsResult[] = await uploadPoalimIlsTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
@@ -718,7 +724,8 @@ export class PoalimScraperIngestionProvider {
       existingByKey.set(key, row);
     }
 
-    const result = await uploadPoalimForeignTransactions.run({ transactions: validated }, this.db);
+    const result: IUploadPoalimForeignTransactionsResult[] =
+      await uploadPoalimForeignTransactions.run({ transactions: validated }, this.db);
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
@@ -772,7 +779,10 @@ export class PoalimScraperIngestionProvider {
     const existing = await fetchPoalimSwiftByIds.run({ transferCatenatedIds }, this.db);
     const existingById = new Map(existing.map(row => [row.transfer_catenated_id, row]));
 
-    const result = await uploadPoalimSwiftTransactions.run({ transactions: validated }, this.db);
+    const result: IUploadPoalimSwiftTransactionsResult[] = await uploadPoalimSwiftTransactions.run(
+      { transactions: validated },
+      this.db,
+    );
     const insertedIds = result.map(r => r.id).filter((id): id is string => typeof id === 'string');
     const insertedIdSet = new Set(insertedIds);
 
