@@ -98,6 +98,13 @@ const DeelModel = zod.union([
   zod.void(),
 ]);
 
+const CredentialsModel = zod.object({
+  CREDENTIALS_ENCRYPTION_KEY: zod
+    .string()
+    .length(64)
+    .regex(/^[0-9a-f]+$/i),
+});
+
 const GeneralModel = zod.object({
   FRONTEND_URL: zod.url().optional(),
 });
@@ -201,6 +208,7 @@ const configs = {
   googleDrive: GoogleDriveModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
   deel: DeelModel.safeParse(process.env),
+  credentials: CredentialsModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
   otel: OtelModel.safeParse(process.env),
 };
@@ -233,6 +241,7 @@ const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
 const auth0 = extractConfig(configs.auth0);
 const deel = extractConfig(configs.deel);
+const credentials = extractConfig(configs.credentials);
 const general = extractConfig(configs.general);
 const otel = extractConfig(configs.otel);
 
@@ -274,6 +283,7 @@ export const env = {
         apiToken: deel.DEEL_TOKEN!,
       }
     : undefined,
+  credentialsEncryptionKey: credentials.CREDENTIALS_ENCRYPTION_KEY,
   auth0: auth0
     ? {
         domain: auth0.AUTH0_DOMAIN,
