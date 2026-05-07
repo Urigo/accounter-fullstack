@@ -1,11 +1,16 @@
-import { access } from 'node:fs/promises';
+import { access, rename } from 'node:fs/promises';
 import { getVaultPath, loadVaultFile, saveVaultFile, type Vault } from './vault.js';
 
 let _vault: Vault | null = null;
 let _password: string | null = null;
+let _vaultPath: string | null = null;
+
+export function getCurrentVaultPath(): string {
+  return _vaultPath ?? getVaultPath();
+}
 
 export async function hasVaultFile(): Promise<boolean> {
-  return access(getVaultPath())
+  return access(getCurrentVaultPath())
     .then(() => true)
     .catch(() => false);
 }
@@ -18,6 +23,7 @@ export async function unlockVault(
   if (vault === null) return 'wrong-password';
   _vault = vault;
   _password = password;
+  _vaultPath = getVaultPath();
   return 'ok';
 }
 
@@ -29,7 +35,7 @@ export function getVault(): Vault {
 export async function updateVault(fn: (v: Vault) => Vault): Promise<void> {
   if (_vault === null || _password === null) throw new Error('Vault is locked');
   _vault = fn(_vault);
-  await saveVaultFile(getVaultPath(), _vault, _password);
+  await saveVaultFile(getCurrentVaultPath(), _vault, _password);
 }
 
 export function isLocked(): boolean {
@@ -39,4 +45,13 @@ export function isLocked(): boolean {
 export function lockVault(): void {
   _vault = null;
   _password = null;
+  _vaultPath = null;
+}
+
+export async function moveVaultFile(newPath: string): Promise<void> {
+  if (_vault === null || _password === null) throw new Error('Vault is locked');
+  const oldPath = getCurrentVaultPath();
+  if (oldPath === newPath) return;
+  await rename(oldPath, newPath);
+  _vaultPath = newPath;
 }
