@@ -136,6 +136,37 @@ describe('GET /api/vault/status', () => {
   });
 });
 
+describe('GET /api/vault/env-path', () => {
+  let vaultPath: string;
+  let app: FastifyInstance;
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    app = await buildApp(vaultPath);
+    process.env['VAULT_PATH'] = '/tmp/custom.vault';
+  });
+
+  afterEach(async () => {
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_PATH'];
+  });
+
+  it('returns the VAULT_PATH env var when set', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/vault/env-path' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ path: '/tmp/custom.vault' });
+  });
+
+  it('returns ".vault" when VAULT_PATH is not set', async () => {
+    delete process.env['VAULT_PATH'];
+    const res = await app.inject({ method: 'GET', url: '/api/vault/env-path' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ path: '.vault' });
+  });
+});
+
 describe('POST /api/vault/unlock', () => {
   let vaultPath: string;
   let app: FastifyInstance;
