@@ -109,8 +109,8 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 3 — Server: `POST /api/vault/upload`
 
-> **Goal:** Accept a vault file upload, write it atomically, and lock the in-memory vault.
-> This is the most complex server step — handle the 409 / `?force` conflict flow here.
+> **Goal:** Accept a vault file upload, write it atomically, and lock the in-memory vault. This is
+> the most complex server step — handle the 409 / `?force` conflict flow here.
 
 ```
 You are working in packages/scraper-app/src/server/.
@@ -176,8 +176,8 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 4 — `vault.ts`: add `vaultPath` to `SettingsSchema`
 
-> **Goal:** Persist the vault's own file path inside the encrypted vault, so moving the file is
-> a user-controlled setting. Small, isolated schema change — no behavior change yet.
+> **Goal:** Persist the vault's own file path inside the encrypted vault, so moving the file is a
+> user-controlled setting. Small, isolated schema change — no behavior change yet.
 
 ```
 You are working in packages/scraper-app/src/server/vault.ts.
@@ -213,9 +213,9 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 5 — `vault-store.ts`: `_vaultPath` cache and `moveVaultFile`
 
-> **Goal:** The store must track the resolved vault path independently of the env var so it can
-> move the file when the user changes `settings.vaultPath`. Introduce the module-level variable
-> and the move helper here — not yet wired into settings-routes.
+> **Goal:** The store must track the resolved vault path independently of the env var so it can move
+> the file when the user changes `settings.vaultPath`. Introduce the module-level variable and the
+> move helper here — not yet wired into settings-routes.
 
 ```
 You are working in packages/scraper-app/src/server/vault-store.ts.
@@ -344,8 +344,8 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 7 — UI `api.ts`: `vaultUpload`, `vaultDownload`, `getEnvVaultPath`
 
-> **Goal:** Add the three new client-side API functions. Pure data-layer; no UI yet.
-> This step also updates the existing `getVaultPath` to be consistent with the new naming.
+> **Goal:** Add the three new client-side API functions. Pure data-layer; no UI yet. This step also
+> updates the existing `getVaultPath` to be consistent with the new naming.
 
 ```
 You are working in packages/scraper-app/src/ui/lib/api.ts.
@@ -455,8 +455,8 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 8 — `vault-context.tsx`: add `upload()`
 
-> **Goal:** Surface the upload function in the vault context so screens can call it without
-> directly importing api.ts. Follows the exact same pattern as `unlock` and `create`.
+> **Goal:** Surface the upload function in the vault context so screens can call it without directly
+> importing api.ts. Follows the exact same pattern as `unlock` and `create`.
 
 ```
 You are working in packages/scraper-app/src/ui/contexts/vault-context.tsx.
@@ -714,8 +714,8 @@ Run: yarn workspace @accounter/scraper-app test --reporter=verbose
 
 ## Prompt 11 — `SettingsTab`: editable vault path + Download button
 
-> **Goal:** The final UI piece. Replace the read-only vault path display with an editable input
-> that moves the file on save, and add a Download button that triggers a browser save dialog.
+> **Goal:** The final UI piece. Replace the read-only vault path display with an editable input that
+> moves the file on save, and add a Download button that triggers a browser save dialog.
 
 ```
 You are working in packages/scraper-app/src/ui/screens/config/settings-tab.tsx.
