@@ -10,7 +10,7 @@ export function getCurrentVaultPath(): string {
 }
 
 export async function hasVaultFile(): Promise<boolean> {
-  return access(getVaultPath())
+  return access(getCurrentVaultPath())
     .then(() => true)
     .catch(() => false);
 }
