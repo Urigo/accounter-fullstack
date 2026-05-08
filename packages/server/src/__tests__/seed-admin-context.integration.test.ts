@@ -12,7 +12,8 @@ describe('seedAdminCore integration', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    // Do NOT close db here — the shared pool is managed by vitest-global-setup teardown.
+    // Closing it here destroys the pool for all other concurrently-running integration test suites.
   });
 
   it('should create admin business context with all required entities', async () => {

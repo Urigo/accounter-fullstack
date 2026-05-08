@@ -255,15 +255,23 @@ export async function insertFixture(
   if (fixture.accountTaxCategories?.mappings && fixture.accountTaxCategories.mappings.length > 0) {
     await executeSavepointSection('account_tax_categories', async () => {
       for (const mapping of fixture.accountTaxCategories!.mappings) {
-        // Look up the account UUID by account_number
-        const accountResult = await client.query(
-          `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
-          [mapping.accountNumber],
-        );
-        if (accountResult.rows.length === 0) {
-          throw new Error(`Financial account with account_number '${mapping.accountNumber}' not found`);
+        // Prefer the UUID cached from step 3 (financial_accounts insert) to avoid
+        // non-deterministic SELECT when duplicate account_number rows exist in DB.
+        const cachedAccountId = idMapping.get(`${mapping.accountNumber}_id`);
+        let accountId: string;
+        if (cachedAccountId) {
+          accountId = cachedAccountId;
+        } else {
+          // Fallback: query DB, using LIMIT 1 for determinism
+          const accountResult = await client.query(
+            `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1 LIMIT 1`,
+            [mapping.accountNumber],
+          );
+          if (accountResult.rows.length === 0) {
+            throw new Error(`Financial account with account_number '${mapping.accountNumber}' not found`);
+          }
+          accountId = accountResult.rows[0].id;
         }
-        const accountId = accountResult.rows[0].id;
 
         await client.query(
           `INSERT INTO ${qualifyTable('financial_accounts_tax_categories')} (
@@ -332,18 +340,25 @@ export async function insertFixture(
           }
         }
         
-        // If account_id looks like an account_number (not a UUID), look up the actual UUID
+        // If account_id looks like an account_number (not a UUID), look up the actual UUID.
+        // Prefer the UUID cached from step 3 (financial_accounts insert) to avoid
+        // non-deterministic SELECT when duplicate account_number rows exist in DB.
         let accountId = transaction.account_id;
         if (accountId && !accountId.match(UUID_REGEX)) {
-          // account_id is actually an account_number, look up the UUID
-          const accountResult = await client.query(
-            `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
-            [accountId],
-          );
-          if (accountResult.rows.length === 0) {
-            throw new Error(`Financial account with account_number '${accountId}' not found`);
+          const cachedAccountId = idMapping.get(`${accountId}_id`);
+          if (cachedAccountId) {
+            accountId = cachedAccountId;
+          } else {
+            // Fallback: query DB, using LIMIT 1 for determinism
+            const accountResult = await client.query(
+              `SELECT id FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1 LIMIT 1`,
+              [accountId],
+            );
+            if (accountResult.rows.length === 0) {
+              throw new Error(`Financial account with account_number '${accountId}' not found`);
+            }
+            accountId = accountResult.rows[0].id;
           }
-          accountId = accountResult.rows[0].id;
         }
 
         // Insert directly into transactions_raw_list with etherscan_id to satisfy check constraint
