@@ -34,7 +34,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch"
     "@types/pg": "npm:8.20.0"
     pg-promise: "npm:12.6.2"
     slonik: "npm:48.14.1"
@@ -347,7 +347,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.40.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
@@ -9209,21 +9209,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/driver@npm:^48.10.3":
-  version: 48.14.0
-  resolution: "@slonik/driver@npm:48.14.0"
-  dependencies:
-    "@slonik/types": "npm:^48.14.0"
-    "@slonik/utilities": "npm:^48.14.0"
-    roarr: "npm:^7.21.4"
-    serialize-error: "npm:^12.0.0"
-    strict-event-emitter-types: "npm:^2.0.0"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/a151552737a2ae92f454fc49637d3e8d4873e9773373b05385dbc3fc8d586396c3e4ecca4a33c0ec5cc2cfe4f7a1de2a68150866c4c3e7a10b043100c3321973
-  languageName: node
-  linkType: hard
-
 "@slonik/driver@npm:^48.14.1":
   version: 48.14.1
   resolution: "@slonik/driver@npm:48.14.1"
@@ -9239,15 +9224,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/errors@npm:^48.10.3, @slonik/errors@npm:^48.14.0":
-  version: 48.14.0
-  resolution: "@slonik/errors@npm:48.14.0"
-  dependencies:
-    "@slonik/types": "npm:^48.14.0"
-  checksum: 10c0/b8bd81840c97c6abda4b2725d5e56d3f1c46a1e6c59e27e406a662cd3717cdbf47538fd05bbff873e5f37c024bdad99d7d8343288cd7391ac891a85071ed74cf
-  languageName: node
-  linkType: hard
-
 "@slonik/errors@npm:^48.14.1":
   version: 48.14.1
   resolution: "@slonik/errors@npm:48.14.1"
@@ -9257,26 +9233,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:48.10.3":
-  version: 48.10.3
-  resolution: "@slonik/pg-driver@npm:48.10.3"
-  dependencies:
-    "@slonik/driver": "npm:^48.10.3"
-    "@slonik/errors": "npm:^48.10.3"
-    "@slonik/sql-tag": "npm:^48.10.3"
-    "@slonik/types": "npm:^48.10.3"
-    "@slonik/utilities": "npm:^48.10.3"
-    pg: "npm:^8.18.0"
-    pg-query-stream: "npm:^4.12.0"
-    pg-types: "npm:^4.1.0"
-    postgres-array: "npm:^3.0.4"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/920ae2c00c0b51666f41378b070b3d5b4ad449d059e9955e5dc59ea43af5a400a5f589b56b25a926b41d9a6e3b8be2aa68139bf412a223b284ff743960bad756
-  languageName: node
-  linkType: hard
-
-"@slonik/pg-driver@npm:^48.14.1":
+"@slonik/pg-driver@npm:48.14.1":
   version: 48.14.1
   resolution: "@slonik/pg-driver@npm:48.14.1"
   dependencies:
@@ -9295,36 +9252,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch":
-  version: 48.10.3
-  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.10.3#~/.yarn/patches/@slonik-pg-driver-npm-48.10.3-121a9aed22.patch::version=48.10.3&hash=7afe8f"
+"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch":
+  version: 48.14.1
+  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch::version=48.14.1&hash=d3bf72"
   dependencies:
-    "@slonik/driver": "npm:^48.10.3"
-    "@slonik/errors": "npm:^48.10.3"
-    "@slonik/sql-tag": "npm:^48.10.3"
-    "@slonik/types": "npm:^48.10.3"
-    "@slonik/utilities": "npm:^48.10.3"
+    "@slonik/driver": "npm:^48.14.1"
+    "@slonik/errors": "npm:^48.14.1"
+    "@slonik/sql-tag": "npm:^48.14.1"
+    "@slonik/types": "npm:^48.14.1"
+    "@slonik/utilities": "npm:^48.14.1"
     pg: "npm:^8.18.0"
     pg-query-stream: "npm:^4.12.0"
     pg-types: "npm:^4.1.0"
     postgres-array: "npm:^3.0.4"
   peerDependencies:
     zod: ^3.25 || ^4
-  checksum: 10c0/e7e5e6da417451c63cb9aa0c31a08d7960606f6a5ce1a71983416235606d4ebf60fff983e676ef5930fd16a3b6f09d43c5b7e3e28eea4d9e5b95f061be905b76
-  languageName: node
-  linkType: hard
-
-"@slonik/sql-tag@npm:^48.10.3":
-  version: 48.14.0
-  resolution: "@slonik/sql-tag@npm:48.14.0"
-  dependencies:
-    "@slonik/errors": "npm:^48.14.0"
-    "@slonik/types": "npm:^48.14.0"
-    roarr: "npm:^7.21.4"
-    safe-stable-stringify: "npm:^2.5.0"
-    serialize-error: "npm:^12.0.0"
-    zod: "npm:^4.3.6"
-  checksum: 10c0/46ade95c6931282858ae469f288782b9ce63eee1217c42ed9523e55031a9f03839352a60ab8f51f24e1047d553ad306f427d0186ab063546dc8865e7dd40dd8f
+  checksum: 10c0/cc5f0d8b0d0ead8bfc21aac491c8e435d889ea78b247bf45461d657b72c3a4d637ca50885b22379ddc7eb1a4a9dc919bcf04cc91f6d40fbbd1c8d19b32101f2f
   languageName: node
   linkType: hard
 
@@ -9342,33 +9285,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/types@npm:^48.10.3, @slonik/types@npm:^48.14.0":
-  version: 48.14.0
-  resolution: "@slonik/types@npm:48.14.0"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/c95040aa0ac650b3998a2abb40a149980749ca8522e70640ba20325c8c555f2d701eae138baca51738becc9a365c985042a1d6b7273be09ebc9f018f4f92c754
-  languageName: node
-  linkType: hard
-
 "@slonik/types@npm:^48.14.1":
   version: 48.14.1
   resolution: "@slonik/types@npm:48.14.1"
   peerDependencies:
     zod: ^3.25 || ^4
   checksum: 10c0/9e9a97bc4d0a00f65db4ca6729bcd25849864880ba6a6383081c942b66d3c9210b4158a5ee389a594ce053e1abb7c7daf34d50f8303c7ec2cc24be517c5027b5
-  languageName: node
-  linkType: hard
-
-"@slonik/utilities@npm:^48.10.3, @slonik/utilities@npm:^48.14.0":
-  version: 48.14.0
-  resolution: "@slonik/utilities@npm:48.14.0"
-  dependencies:
-    "@slonik/errors": "npm:^48.14.0"
-    "@slonik/types": "npm:^48.14.0"
-  peerDependencies:
-    zod: ^3.25 || ^4
-  checksum: 10c0/339706d377a710898fb817cbd38e57f31077f49d76996f4168cd967b6d64b7942fa376a1307a2012c59abfd980bcd09feaa4ede33f0e6e97379ce1f165458adb
   languageName: node
   linkType: hard
 
