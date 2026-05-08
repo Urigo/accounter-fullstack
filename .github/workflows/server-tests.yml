@@ -131,7 +131,7 @@ jobs:
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |
-          yarn test:demo-seed --reporter=default --coverage
+          yarn vitest run --project unit --project integration --project demo-seed --reporter=default --coverage
 
       - name: Upload Coverage
         if: always()
