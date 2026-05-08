@@ -104,6 +104,36 @@ export function getVaultPath(): Promise<{ path: string }> {
   return apiFetch('/api/vault/path');
 }
 
+export function getEnvVaultPath(): Promise<{ path: string }> {
+  return apiFetch('/api/vault/env-path');
+}
+
+export function vaultUpload(file: File, force = false): Promise<{ ok: boolean }> {
+  const url = force ? '/api/vault/upload?force=true' : '/api/vault/upload';
+  return apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body: file,
+  });
+}
+
+export async function vaultDownload(suggestedName = '.vault'): Promise<void> {
+  const res = await fetch('/api/vault/download');
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new ApiError(res.status, body.error ?? `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── Connection test ───────────────────────────────────────────────────────────
 
 export function testConnection(): Promise<{ ok: boolean; latencyMs?: number; error?: string }> {
