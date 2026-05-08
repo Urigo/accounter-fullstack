@@ -31,8 +31,6 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
   let db: TestDatabase;
 
   beforeAll(async () => {
-    // stale for 0.1 sec to avoid test flakiness
-    await new Promise(resolve => setTimeout(resolve, 100));
     db = new TestDatabase();
     await db.connect();
     await db.ensureLatestSchema();
@@ -40,65 +38,64 @@ describe('Ledger Generation - Expense Scenario B (Foreign Currency)', () => {
   });
 
   afterAll(async () => {
-    await db.close();
+    // Do NOT close db here — the shared pool is managed by vitest-global-setup teardown.
+    // Closing it here destroys the pool for all other concurrently-running integration test suites.
   });
 
   // Ensure ledger and related rows do not leak between tests
   afterEach(async () => {
     const client = await db.getPool().connect();
+    const errors: string[] = [];
+    const run = async (label: string, fn: () => Promise<unknown>) => {
+      try { await fn(); } catch (e) { errors.push(`${label}: ${e}`); }
+    };
     try {
       const chargeId = makeUUID('charge', 'charge-consulting-services');
+      const transactionId = makeUUID('transaction', 'transaction-consulting-payment');
+      const rawEtherscanId = makeUUID('raw-transaction', `etherscan-${transactionId}`);
       const adminId = makeUUID('business', 'admin-business-usd');
-      
-      // Set context to allow deletion of protected rows
+
+      // Set context to allow deletion of protected rows (session-level so it persists through cleanup)
       await client.query("SELECT set_config('app.current_business_id', $1, false)", [adminId]);
 
-      await client.query(
-        `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`,
-        [chargeId],
-      );
-      // Also clear the scenario's fixture rows to keep DB tidy
-      await client.query(
-        `DELETE FROM ${qualifyTable('documents')} WHERE charge_id = $1`,
-        [chargeId],
-      );
-      await client.query(
-        `DELETE FROM ${qualifyTable('transactions')} WHERE charge_id = $1`,
-        [chargeId],
-      );
-      await client.query(
-        `DELETE FROM ${qualifyTable('charges')} WHERE id = $1`,
-        [chargeId],
-      );
+      await run('ledger_records', () => client.query(
+        `DELETE FROM ${qualifyTable('ledger_records')} WHERE charge_id = $1`, [chargeId]));
+      await run('documents', () => client.query(
+        `DELETE FROM ${qualifyTable('documents')} WHERE charge_id = $1`, [chargeId]));
+      // Delete transactions first so transactions_raw_list orphan can then be cleaned up
+      await run('transactions', () => client.query(
+        `DELETE FROM ${qualifyTable('transactions')} WHERE charge_id = $1`, [chargeId]));
+      // Clean up transactions_raw_list orphan inserted by fixture-loader
+      await run('transactions_raw_list', () => client.query(
+        `DELETE FROM ${qualifyTable('transactions_raw_list')} WHERE etherscan_id = $1`, [rawEtherscanId]));
+      await run('charges', () => client.query(
+        `DELETE FROM ${qualifyTable('charges')} WHERE id = $1`, [chargeId]));
       // Clean up fixture-specific entities to prevent count inflation
-      await client.query(
-        `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')} 
+      await run('financial_accounts_tax_categories', () => client.query(
+        `DELETE FROM ${qualifyTable('financial_accounts_tax_categories')}
          WHERE tax_category_id IN ($1, $2)`,
-        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')],
-      );
-      await client.query(
-        `DELETE FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`,
-        ['USD-ACCOUNT-001'],
-      );
-      await client.query(
+        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')]));
+      await run('financial_accounts', () => client.query(
+        `DELETE FROM ${qualifyTable('financial_accounts')} WHERE account_number = $1`, ['USD-ACCOUNT-001']));
+      await run('tax_categories', () => client.query(
         `DELETE FROM ${qualifyTable('tax_categories')} WHERE id IN ($1, $2)`,
-        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')],
-      );
-      await client.query(
+        [makeUUID('tax-category', 'expense-consulting'), makeUUID('tax-category', 'usd-account-tax-category')]));
+      await run('businesses', () => client.query(
         `DELETE FROM ${qualifyTable('businesses')} WHERE id IN ($1, $2)`,
-        [makeUUID('business', 'admin-business-usd'), makeUUID('business', 'supplier-us-vendor-llc')],
-      );
-      await client.query(
+        [makeUUID('business', 'admin-business-usd'), makeUUID('business', 'supplier-us-vendor-llc')]));
+      await run('financial_entities', () => client.query(
         `DELETE FROM ${qualifyTable('financial_entities')} WHERE id IN ($1, $2, $3, $4)`,
         [
           makeUUID('business', 'admin-business-usd'),
           makeUUID('business', 'supplier-us-vendor-llc'),
           makeUUID('tax-category', 'expense-consulting'),
           makeUUID('tax-category', 'usd-account-tax-category'),
-        ],
-      );
+        ]));
     } finally {
       client.release();
+    }
+    if (errors.length > 0) {
+      throw new Error(`afterEach cleanup failures:\n${errors.join('\n')}`);
     }
   });
 
