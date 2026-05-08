@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import gitignore from 'eslint-config-flat-gitignore';
+import eslintPluginN from 'eslint-plugin-n';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import { fixupConfigRules } from '@eslint/compat';
@@ -27,6 +28,20 @@ function replaceUnicornRules(set) {
     : set;
 }
 
+// eslint-plugin-n@17.24.0 removed `no-restricted-import` (renamed to `no-restricted-imports`).
+// @theguild/eslint-config/base still references the old name, so we patch the plugin to alias it.
+const patchedNPlugin = {
+  ...eslintPluginN,
+  rules: {
+    ...eslintPluginN.rules,
+    'no-restricted-import': eslintPluginN.rules['no-restricted-imports'],
+  },
+};
+
+function replaceNPlugin(set) {
+  return set?.plugins?.n ? { ...set, plugins: { ...set.plugins, n: patchedNPlugin } } : set;
+}
+
 export default [
   gitignore(),
   {
@@ -47,7 +62,9 @@ export default [
   },
   // @theguild entrypoint currently patches ESLint via @rushstack/eslint-patch,
   // which fails on ESLint 10. Load equivalent base configs directly.
-  ...fixupConfigRules(compat.config(guildBaseConfig)).map(replaceUnicornRules),
+  ...fixupConfigRules(compat.config(guildBaseConfig))
+    .map(replaceUnicornRules)
+    .map(replaceNPlugin),
   {
     languageOptions: {
       ecmaVersion: 5,
@@ -214,7 +231,7 @@ export default [
   },
   ...fixupConfigRules(compat.config(guildReactBaseConfig)).map(config => {
     return {
-      ...replaceUnicornRules(config),
+      ...replaceNPlugin(replaceUnicornRules(config)),
       files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
     };
   }),
