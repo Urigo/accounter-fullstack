@@ -12,6 +12,7 @@ import {
   ApiError,
   vaultStatus as apiStatus,
   vaultUnlock as apiUnlock,
+  vaultUpload,
 } from '../lib/api.js';
 
 export type VaultStatus = 'loading' | 'locked' | 'no-file' | 'unlocked';
@@ -21,6 +22,7 @@ type VaultContextValue = {
   error: string | null;
   unlock(password: string): Promise<void>;
   create(password: string, serverUrl: string, apiKey: string): Promise<void>;
+  upload(file: File, force?: boolean): Promise<void>;
 };
 
 export const VaultContext = createContext<VaultContextValue | null>(null);
@@ -63,8 +65,22 @@ export function VaultProvider({ children }: { children: ReactNode }): ReactEleme
     }
   }, []);
 
+  const upload = useCallback(async (file: File, force = false) => {
+    setError(null);
+    try {
+      await vaultUpload(file, force);
+      setStatus('locked');
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        // Re-throw so the caller can handle the conflict (show confirm dialog)
+        throw e;
+      }
+      setError('Failed to upload vault. Please try again.');
+    }
+  }, []);
+
   return (
-    <VaultContext.Provider value={{ status, error, unlock, create }}>
+    <VaultContext.Provider value={{ status, error, unlock, create, upload }}>
       {children}
     </VaultContext.Provider>
   );
