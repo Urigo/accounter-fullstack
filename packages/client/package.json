@@ -36,7 +36,7 @@
     "@mantine/dropzone": "6.0.22",
     "@mantine/hooks": "6.0.22",
     "@minoru/react-dnd-treeview": "3.5.3",
-    "@mui/material": "9.0.0",
+    "@mui/material": "9.0.1",
     "@mui/x-charts": "8.28.2",
     "@tanstack/react-query": "5.100.9",
     "@tanstack/react-table": "8.21.3",
