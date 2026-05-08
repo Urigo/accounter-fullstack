@@ -10989,7 +10989,7 @@ __metadata:
     globals: "npm:17.6.0"
     graphql: "npm:16.13.2"
     husky: "npm:9.1.7"
-    lint-staged: "npm:16.4.0"
+    lint-staged: "npm:17.0.2"
     pg: "npm:8.20.0"
     prettier: "npm:3.8.3"
     prettier-plugin-sql: "npm:0.20.0"
@@ -12778,13 +12778,6 @@ __metadata:
   dependencies:
     delayed-stream: "npm:~1.0.0"
   checksum: 10c0/0dbb829577e1b1e839fa82b40c07ffaf7de8a09b935cadd355a73652ae70a88b4320db322f6634a4ad93424292fa80973ac6480986247f1734a1137debf271d5
-  languageName: node
-  linkType: hard
-
-"commander@npm:^14.0.3":
-  version: 14.0.3
-  resolution: "commander@npm:14.0.3"
-  checksum: 10c0/755652564bbf56ff2ff083313912b326450d3f8d8c85f4b71416539c9a05c3c67dbd206821ca72635bf6b160e2afdefcb458e86b317827d5cb333b69ce7f1a24
   languageName: node
   linkType: hard
 
@@ -18412,19 +18405,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:16.4.0":
-  version: 16.4.0
-  resolution: "lint-staged@npm:16.4.0"
+"lint-staged@npm:17.0.2":
+  version: 17.0.2
+  resolution: "lint-staged@npm:17.0.2"
   dependencies:
-    commander: "npm:^14.0.3"
-    listr2: "npm:^9.0.5"
-    picomatch: "npm:^4.0.3"
+    listr2: "npm:^10.2.1"
+    picomatch: "npm:^4.0.4"
     string-argv: "npm:^0.3.2"
-    tinyexec: "npm:^1.0.4"
-    yaml: "npm:^2.8.2"
+    tinyexec: "npm:^1.1.2"
+    yaml: "npm:^2.8.4"
+  dependenciesMeta:
+    yaml:
+      optional: true
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/67625a49a2a01368c7df2da7e553567a79c4b261d9faf3436e00fc3a2f9c4bbe7295909012c47b3d9029e269fd7d7469901a5120573527a032f15797aa497c26
+  checksum: 10c0/c1ecf8478988bb586de7023d424d01f8a2a1b0114c1782b7d1da2e0706ebfdf7c9f48cc67407c5e7f7e93b7efe97b8dbb75e264b8ae72f63711a31607b82b1a4
   languageName: node
   linkType: hard
 
@@ -18438,7 +18433,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"listr2@npm:10.2.1":
+"listr2@npm:10.2.1, listr2@npm:^10.2.1":
   version: 10.2.1
   resolution: "listr2@npm:10.2.1"
   dependencies:
@@ -18451,7 +18446,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"listr2@npm:^9.0.0, listr2@npm:^9.0.5":
+"listr2@npm:^9.0.0":
   version: 9.0.5
   resolution: "listr2@npm:9.0.5"
   dependencies:
@@ -24469,7 +24464,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinyexec@npm:^1.0.2, tinyexec@npm:^1.0.4":
+"tinyexec@npm:^1.0.2, tinyexec@npm:^1.1.2":
   version: 1.1.2
   resolution: "tinyexec@npm:1.1.2"
   checksum: 10c0/9e0ef6c001ce54688cf16833a02f70a339276219ca947b88930b124267de2cffc764ff44e87e7369384b1d75ab63491465412cbbdf06f2437956b9ab66ab4491
@@ -26102,7 +26097,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml@npm:^2.0.0, yaml@npm:^2.3.1, yaml@npm:^2.8.2":
+"yaml@npm:^2.0.0, yaml@npm:^2.3.1, yaml@npm:^2.8.4":
   version: 2.8.4
   resolution: "yaml@npm:2.8.4"
   bin:
