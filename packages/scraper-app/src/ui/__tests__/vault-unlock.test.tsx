@@ -57,7 +57,7 @@ describe('VaultUnlock', () => {
         setError('Wrong password. Please try again.');
       });
       return (
-        <VaultContext.Provider value={{ status: 'locked', error, unlock, create: vi.fn(), upload: vi.fn() }}>
+        <VaultContext.Provider value={makeCtx({ error, unlock })}>
           <VaultUnlock />
         </VaultContext.Provider>
       );
