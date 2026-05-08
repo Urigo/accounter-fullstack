@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import gitignore from 'eslint-config-flat-gitignore';
+import eslintPluginN from 'eslint-plugin-n';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 import { fixupConfigRules } from '@eslint/compat';
@@ -27,6 +28,13 @@ function replaceUnicornRules(set) {
     : set;
 }
 
+// eslint-plugin-n v18 is ESM-only. Node.js 24 can require() ESM but returns the namespace object
+// ({ default: plugin }) instead of the plugin itself, so FlatCompat registers a malformed plugin
+// that lacks a `rules` property. Replace it in-place with the correctly ESM-imported instance.
+function replaceNPlugin(set) {
+  return set?.plugins?.n ? { ...set, plugins: { ...set.plugins, n: eslintPluginN } } : set;
+}
+
 export default [
   gitignore(),
   {
@@ -47,7 +55,7 @@ export default [
   },
   // @theguild entrypoint currently patches ESLint via @rushstack/eslint-patch,
   // which fails on ESLint 10. Load equivalent base configs directly.
-  ...fixupConfigRules(compat.config(guildBaseConfig)).map(replaceUnicornRules),
+  ...fixupConfigRules(compat.config(guildBaseConfig)).map(replaceUnicornRules).map(replaceNPlugin),
   {
     languageOptions: {
       ecmaVersion: 5,
@@ -214,7 +222,7 @@ export default [
   },
   ...fixupConfigRules(compat.config(guildReactBaseConfig)).map(config => {
     return {
-      ...replaceUnicornRules(config),
+      ...replaceNPlugin(replaceUnicornRules(config)),
       files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
     };
   }),
