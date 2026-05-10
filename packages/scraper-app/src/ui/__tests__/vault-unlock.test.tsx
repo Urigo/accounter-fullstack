@@ -100,13 +100,13 @@ describe('VaultContext upload shape', () => {
 describe('VaultUnlock — file upload', () => {
   it('renders the upload file input', () => {
     renderUnlock();
-    expect(screen.getByLabelText(/upload vault file/i)).toBeTruthy();
+    expect(screen.getByLabelText(/or upload a different vault/i)).toBeTruthy();
   });
 
   it('calls vault.upload when a file is selected', async () => {
     const upload = vi.fn().mockResolvedValue(undefined);
     renderUnlock(makeCtx({ upload }));
-    const input = screen.getByLabelText(/upload vault file/i);
+    const input = screen.getByLabelText(/or upload a different vault/i);
     const file = new File(['blob'], 'test.vault');
     await userEvent.upload(input, file);
     expect(upload).toHaveBeenCalledWith(file);
@@ -120,7 +120,7 @@ describe('VaultUnlock — file upload', () => {
       .mockResolvedValueOnce(undefined);
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     renderUnlock(makeCtx({ upload }));
-    await userEvent.upload(screen.getByLabelText(/upload vault file/i), new File(['b'], 'v'));
+    await userEvent.upload(screen.getByLabelText(/or upload a different vault/i), new File(['b'], 'v'));
     await waitFor(() => expect(upload).toHaveBeenCalledTimes(2));
     expect(upload).toHaveBeenLastCalledWith(expect.any(File), true);
     vi.unstubAllGlobals();
@@ -132,7 +132,7 @@ describe('VaultUnlock — file upload', () => {
       .mockRejectedValue(new (await import('../lib/api.js')).ApiError(409, 'x'));
     vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
     renderUnlock(makeCtx({ upload }));
-    await userEvent.upload(screen.getByLabelText(/upload vault file/i), new File(['b'], 'v'));
+    await userEvent.upload(screen.getByLabelText(/or upload a different vault/i), new File(['b'], 'v'));
     await waitFor(() =>
       expect(screen.getByRole('alert').textContent).toContain('Failed to replace'),
     );

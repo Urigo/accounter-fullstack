@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactElement } from 'react';
 import { useVault } from '../contexts/vault-context.js';
+import { ApiError } from '../lib/api.js';
 
 export function VaultUnlock(): ReactElement {
   const vault = useVault();
@@ -21,14 +22,18 @@ export function VaultUnlock(): ReactElement {
     setUploadError(null);
     try {
       await vault.upload(file);
-    } catch {
-      // 409: vault exists, ask to overwrite
-      const confirmed = window.confirm('A vault already exists. Replace it with the uploaded file?');
-      if (confirmed) {
-        try {
-          await vault.upload(file, true);
-        } catch {
-          setUploadError('Failed to replace vault. Please try again.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // 409: vault exists, ask to overwrite
+        const confirmed = window.confirm(
+          'A vault already exists. Replace it with the uploaded file?',
+        );
+        if (confirmed) {
+          try {
+            await vault.upload(file, true);
+          } catch {
+            setUploadError('Failed to replace vault. Please try again.');
+          }
         }
       }
     }
@@ -58,14 +63,8 @@ export function VaultUnlock(): ReactElement {
       </form>
       <hr />
       <div>
-        <p>or upload a different vault</p>
-        <input
-          ref={fileInputRef}
-          id="vault-upload"
-          type="file"
-          aria-label="Upload vault file"
-          onChange={handleFileChange}
-        />
+        <label htmlFor="vault-upload">or upload a different vault</label>
+        <input ref={fileInputRef} id="vault-upload" type="file" onChange={handleFileChange} />
         {uploadError && <p role="alert">{uploadError}</p>}
       </div>
     </div>
