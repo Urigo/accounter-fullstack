@@ -73,7 +73,7 @@ function Calendar({
             : 'rounded-md pl-2 pr-1 flex items-center gap-1 text-sm h-8 [&>svg]:text-gray-500 [&>svg]:size-3.5 dark:[&>svg]:text-gray-400',
           defaultClassNames.caption_label,
         ),
-        table: 'w-full border-collapse',
+        month_grid: 'w-full border-collapse',
         weekdays: cn('flex', defaultClassNames.weekdays),
         weekday: cn(
           'text-gray-500 rounded-md flex-1 font-normal text-[0.8rem] select-none dark:text-gray-400',
@@ -120,11 +120,11 @@ function Calendar({
           return <ChevronDownIcon className={cn('size-4', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
-        WeekNumber: ({ children, ...props }) => {
+        WeekNumber: ({ week, ...props }) => {
           return (
             <td {...props}>
               <div className="flex size-(--cell-size) items-center justify-center text-center">
-                {children}
+                {week.weekNumber}
               </div>
             </td>
           );
