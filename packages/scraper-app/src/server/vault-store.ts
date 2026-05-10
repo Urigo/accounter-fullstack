@@ -1,5 +1,5 @@
-import { access, copyFile, mkdir, rename, unlink } from 'node:fs/promises';
 import { constants } from 'node:fs';
+import { access, copyFile, mkdir, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { getVaultPath, loadVaultFile, saveVaultFile, type Vault } from './vault.js';
 
