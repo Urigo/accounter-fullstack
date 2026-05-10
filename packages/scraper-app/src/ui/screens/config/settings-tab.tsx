@@ -9,6 +9,7 @@ function getBasename(p: string) {
 export function SettingsTab(): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vaultPath, setVaultPath] = useState<string>('');
+  const [vaultPathLoaded, setVaultPathLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,8 +23,9 @@ export function SettingsTab(): ReactElement {
       .then(r => {
         setVaultPath(r.path);
         savedVaultPathRef.current = r.path;
+        setVaultPathLoaded(true);
       })
-      .catch(() => setVaultPath(''));
+      .catch(() => setVaultPathLoaded(true));
   }, []);
 
   function handleCopyPath() {
@@ -142,7 +144,7 @@ export function SettingsTab(): ReactElement {
         </div>
       </fieldset>
 
-      {vaultPath && (
+      {vaultPathLoaded && (
         <fieldset style={{ border: 'none', padding: 0, margin: '20px 0 0' }}>
           <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Vault file</legend>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -153,10 +155,22 @@ export function SettingsTab(): ReactElement {
               onChange={e => setVaultPath(e.target.value)}
               onBlur={async e => {
                 const val = e.target.value.trim();
-                if (!val || val === savedVaultPathRef.current) return;
-                await autoSave({ vaultPath: val });
-                savedVaultPathRef.current = val;
-                setVaultPath(val);
+                if (!val) {
+                  setVaultPath(savedVaultPathRef.current);
+                  return;
+                }
+                if (val === savedVaultPathRef.current) {
+                  setVaultPath(val);
+                  return;
+                }
+                try {
+                  const updated = await saveSettings({ vaultPath: val });
+                  setSettings(updated);
+                  savedVaultPathRef.current = val;
+                  setVaultPath(val);
+                } catch {
+                  setError('Failed to save settings');
+                }
               }}
               aria-label="Vault file path"
               style={{ padding: '4px 8px', width: '100%', maxWidth: 360 }}

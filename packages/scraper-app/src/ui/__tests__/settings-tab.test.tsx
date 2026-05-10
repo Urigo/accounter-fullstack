@@ -4,7 +4,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { vaultDownload } from '../lib/api.js';
 import { SettingsTab } from '../screens/config/settings-tab.js';
+
+vi.mock('../lib/api.js', async importOriginal => {
+  const mod = await importOriginal<typeof import('../lib/api.js')>();
+  return { ...mod, vaultDownload: vi.fn() };
+});
 
 const DEFAULT_SETTINGS = {
   showBrowser: false,
@@ -108,14 +114,10 @@ describe('SettingsTab', () => {
   });
 
   it('calls vaultDownload when Download is clicked', async () => {
-    vi.mock('../../lib/api.js', async importOriginal => {
-      const mod = await importOriginal<typeof import('../../lib/api.js')>();
-      return { ...mod, vaultDownload: vi.fn().mockResolvedValue(undefined) };
-    });
+    vi.mocked(vaultDownload).mockResolvedValue(undefined);
     render(<SettingsTab />);
     await waitFor(() => screen.getByRole('button', { name: /download/i }));
     await userEvent.click(screen.getByRole('button', { name: /download/i }));
-    const { vaultDownload } = await import('../../lib/api.js');
     expect(vaultDownload).toHaveBeenCalled();
   });
 });
