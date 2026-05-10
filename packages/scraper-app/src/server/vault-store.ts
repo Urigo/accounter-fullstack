@@ -1,4 +1,5 @@
-import { access, rename } from 'node:fs/promises';
+import { access, copyFile, mkdir, rename, unlink } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import path from 'node:path';
 import { getVaultPath, loadVaultFile, saveVaultFile, type Vault } from './vault.js';
 
@@ -54,11 +55,19 @@ export async function moveVaultFile(newPath: string): Promise<void> {
   const oldPath = path.resolve(getCurrentVaultPath());
   const normalizedNewPath = path.resolve(newPath);
   if (oldPath === normalizedNewPath) return;
+  await mkdir(path.dirname(normalizedNewPath), { recursive: true });
   const destExists = await access(normalizedNewPath)
     .then(() => true)
     .catch(() => false);
   if (destExists) throw new Error('Destination already exists');
-  await rename(oldPath, normalizedNewPath);
+  try {
+    await rename(oldPath, normalizedNewPath);
+  } catch (err) {
+    // Fall back to copy+delete for cross-device (EXDEV) moves
+    if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err;
+    await copyFile(oldPath, normalizedNewPath, constants.COPYFILE_EXCL);
+    await unlink(oldPath);
+  }
   _vaultPath = normalizedNewPath;
   process.env['VAULT_PATH'] = normalizedNewPath;
 }
