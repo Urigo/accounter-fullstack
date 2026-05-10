@@ -118,6 +118,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
+          CREDENTIALS_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
           DEBUG: ''
         run: |
           yarn test:integration --reporter=default --coverage
@@ -130,6 +131,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
+          CREDENTIALS_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |
