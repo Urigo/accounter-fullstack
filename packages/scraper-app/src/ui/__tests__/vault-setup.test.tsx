@@ -7,13 +7,16 @@ import { describe, expect, it, vi } from 'vitest';
 import { VaultContext, type VaultStatus } from '../contexts/vault-context.js';
 import { VaultSetup } from '../screens/vault-setup.js';
 
-function makeCtx(create: () => Promise<void> = vi.fn().mockResolvedValue(undefined)) {
+function makeCtx(
+  create: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
+  upload: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
+) {
   return {
     status: 'no-file' as VaultStatus,
     error: null as string | null,
     unlock: vi.fn(),
     create,
-    upload: vi.fn(),
+    upload,
   };
 }
 
@@ -102,5 +105,33 @@ describe('VaultSetup', () => {
     await waitFor(() => {
       expect(screen.getByText(/step 1/i)).toBeTruthy();
     });
+  });
+});
+
+describe('VaultSetup — file upload', () => {
+  it('renders the upload file input alongside the wizard', () => {
+    renderSetup();
+    expect(screen.getByLabelText(/upload existing vault file/i)).toBeTruthy();
+    expect(screen.getByText(/step 1/i)).toBeTruthy();
+  });
+
+  it('calls vault.upload when a file is selected', async () => {
+    const upload = vi.fn().mockResolvedValue(undefined);
+    renderSetup(makeCtx(vi.fn(), upload));
+    const file = new File(['blob'], 'test.vault');
+    await userEvent.upload(screen.getByLabelText(/upload existing vault file/i), file);
+    expect(upload).toHaveBeenCalledWith(file);
+  });
+
+  it('shows uploadError when upload fails', async () => {
+    const upload = vi.fn().mockRejectedValue(new Error('fail'));
+    renderSetup(makeCtx(vi.fn(), upload));
+    await userEvent.upload(
+      screen.getByLabelText(/upload existing vault file/i),
+      new File(['b'], 'v'),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toContain('Failed to upload'),
+    );
   });
 });

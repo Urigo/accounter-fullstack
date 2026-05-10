@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+import { useRef, useState, type ReactElement } from 'react';
 import { useVault } from '../contexts/vault-context.js';
 
 type Step = 1 | 2 | 3;
@@ -12,6 +12,8 @@ export function VaultSetup(): ReactElement {
   const [apiKey, setApiKey] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleStep1(e: React.FormEvent) {
     e.preventDefault();
@@ -40,9 +42,34 @@ export function VaultSetup(): ReactElement {
     setLoading(false);
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    try {
+      await vault.upload(file);
+    } catch {
+      setUploadError('Failed to upload vault. Please try again.');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
   return (
     <div>
       <h1>Setup Vault</h1>
+
+      <div>
+        <p>Upload an existing vault</p>
+        <input
+          ref={fileInputRef}
+          id="vault-upload-setup"
+          type="file"
+          aria-label="Upload existing vault file"
+          onChange={handleFileChange}
+        />
+        {uploadError && <p role="alert">{uploadError}</p>}
+      </div>
+      <hr />
 
       {step === 1 && (
         <form onSubmit={handleStep1}>
