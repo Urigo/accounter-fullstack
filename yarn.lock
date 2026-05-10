@@ -103,7 +103,7 @@ __metadata:
     dotenv: "npm:17.4.2"
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     happy-dom: "npm:20.9.0"
     html2canvas-pro: "npm:2.0.2"
     iconv-lite: "npm:0.7.2"
@@ -171,7 +171,7 @@ __metadata:
     "@whatwg-node/node-fetch": "npm:0.8.5"
     dotenv: "npm:17.4.2"
     googleapis: "npm:171.4.0"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.59.1"
     tsup: "npm:8.5.1"
@@ -195,7 +195,7 @@ __metadata:
     "@graphql-mesh/utils": "npm:0.104.36"
     "@types/mime-types": "npm:3.0.1"
     bob-the-bundler: "npm:7.0.1"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     mime-types: "npm:3.0.2"
     path: "npm:0.12.7"
     rimraf: "npm:6.1.3"
@@ -216,7 +216,7 @@ __metadata:
     "@graphql-mesh/transform-resolvers-composition": "npm:0.104.36"
     "@graphql-mesh/types": "npm:0.104.28"
     "@graphql-mesh/utils": "npm:0.104.36"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     tsup: "npm:8.5.1"
   languageName: unknown
   linkType: soft
@@ -281,7 +281,7 @@ __metadata:
     "@graphql-mesh/transform-rename": "npm:0.105.37"
     "@graphql-mesh/types": "npm:0.104.28"
     "@graphql-mesh/utils": "npm:0.104.36"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     path: "npm:0.12.7"
   languageName: unknown
   linkType: soft
@@ -365,7 +365,7 @@ __metadata:
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:171.4.0"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     graphql-modules: "npm:3.1.1"
     graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.21.0"
@@ -10987,7 +10987,7 @@ __metadata:
     eslint-plugin-unicorn: "npm:64.0.0"
     glob: "npm:13.0.6"
     globals: "npm:17.6.0"
-    graphql: "npm:16.13.2"
+    graphql: "npm:16.14.0"
     husky: "npm:9.1.7"
     lint-staged: "npm:17.0.2"
     pg: "npm:8.20.0"
@@ -16463,10 +16463,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql@npm:16.13.2":
-  version: 16.13.2
-  resolution: "graphql@npm:16.13.2"
-  checksum: 10c0/64e822a0a0e4398781e4bc9765b88d370c08261498b517add4b878038ef7be2005b6b394a79a5102b9379d57052f60bc7f23fec8f39808d101984a74772ebd9d
+"graphql@npm:16.14.0":
+  version: 16.14.0
+  resolution: "graphql@npm:16.14.0"
+  checksum: 10c0/baaa368fcfeb7bf2cdf94b9f31bf916e97eaa9e7e82148a7046f31cbd49b760b38190f22393b024cbdd9ca0f4f46287515de0136b6a0cc164074b36ad7b50618
   languageName: node
   linkType: hard
 
