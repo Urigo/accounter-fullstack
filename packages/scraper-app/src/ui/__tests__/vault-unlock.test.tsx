@@ -19,6 +19,7 @@ function makeCtx(
     error: null as string | null,
     unlock: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(),
+    upload: vi.fn(),
     ...overrides,
   };
 }
@@ -56,7 +57,7 @@ describe('VaultUnlock', () => {
         setError('Wrong password. Please try again.');
       });
       return (
-        <VaultContext.Provider value={{ status: 'locked', error, unlock, create: vi.fn() }}>
+        <VaultContext.Provider value={makeCtx({ error, unlock })}>
           <VaultUnlock />
         </VaultContext.Provider>
       );
@@ -74,5 +75,23 @@ describe('VaultUnlock', () => {
   it('does not show an error on initial render', () => {
     renderUnlock();
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
+
+describe('VaultContext upload shape', () => {
+  it('renders without error when upload is provided in context', () => {
+    function UploadWrapper() {
+      const [status, setStatus] = useState<VaultStatus>('locked');
+      const upload = vi.fn().mockImplementation(async () => setStatus('locked'));
+      return (
+        <VaultContext.Provider
+          value={{ status, error: null, unlock: vi.fn(), create: vi.fn(), upload }}
+        >
+          <VaultUnlock />
+        </VaultContext.Provider>
+      );
+    }
+    render(<UploadWrapper />);
+    expect(screen.getByLabelText(/master password/i)).toBeTruthy();
   });
 });

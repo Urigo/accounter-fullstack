@@ -13,6 +13,7 @@ function makeCtx(create: () => Promise<void> = vi.fn().mockResolvedValue(undefin
     error: null as string | null,
     unlock: vi.fn(),
     create,
+    upload: vi.fn(),
   };
 }
 
