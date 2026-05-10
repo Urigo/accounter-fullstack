@@ -49,7 +49,7 @@ export default async function globalSetup() {
   // Return a global teardown to ensure the shared test DB pool is closed once.
   return async () => {
     try {
-      const mod = await import('../packages/server/src/__tests__/helpers/db-setup.js');
+      const mod = await import('../packages/server/src/__tests__/helpers/db-connection.js');
       if (typeof mod.closeTestDb === 'function') {
         await mod.closeTestDb();
       }

@@ -61,13 +61,18 @@ afterAll(async () => {
   for (const table of TRIGGER_TABLES) {
     await pool.query(`ALTER TABLE accounter_schema.${table} ENABLE TRIGGER ALL`);
   }
-  await closeTestDb();
+  // Do NOT close db here — the shared pool is managed by vitest-global-setup teardown.
+  // Closing it here destroys the pool for all other concurrently-running integration test suites.
 });
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 async function truncate(table: string) {
-  await pool.query(`TRUNCATE TABLE accounter_schema.${table} CASCADE`);
+  // Use DELETE instead of TRUNCATE CASCADE to avoid acquiring ACCESS EXCLUSIVE locks on
+  // tables with FK references (e.g. transactions_raw_list), which deadlocks with
+  // concurrently-running integration tests. Triggers are disabled in beforeAll so
+  // no dependent rows exist in other tables.
+  await pool.query(`DELETE FROM accounter_schema.${table}`);
 }
 
 // ── Poalim ILS ────────────────────────────────────────────────────────────────
