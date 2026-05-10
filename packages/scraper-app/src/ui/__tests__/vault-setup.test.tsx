@@ -10,10 +10,11 @@ import { VaultSetup } from '../screens/vault-setup.js';
 function makeCtx(
   create: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
   upload: () => Promise<void> = vi.fn().mockResolvedValue(undefined),
+  error: string | null = null,
 ) {
   return {
     status: 'no-file' as VaultStatus,
-    error: null as string | null,
+    error,
     unlock: vi.fn(),
     create,
     upload,
@@ -111,7 +112,7 @@ describe('VaultSetup', () => {
 describe('VaultSetup — file upload', () => {
   it('renders the upload file input alongside the wizard', () => {
     renderSetup();
-    expect(screen.getByLabelText(/upload existing vault file/i)).toBeTruthy();
+    expect(screen.getByLabelText(/upload an existing vault/i)).toBeTruthy();
     expect(screen.getByText(/step 1/i)).toBeTruthy();
   });
 
@@ -119,7 +120,7 @@ describe('VaultSetup — file upload', () => {
     const upload = vi.fn().mockResolvedValue(undefined);
     renderSetup(makeCtx(vi.fn(), upload));
     const file = new File(['blob'], 'test.vault');
-    await userEvent.upload(screen.getByLabelText(/upload existing vault file/i), file);
+    await userEvent.upload(screen.getByLabelText(/upload an existing vault/i), file);
     expect(upload).toHaveBeenCalledWith(file);
   });
 
@@ -127,7 +128,7 @@ describe('VaultSetup — file upload', () => {
     const upload = vi.fn().mockRejectedValue(new Error('fail'));
     renderSetup(makeCtx(vi.fn(), upload));
     await userEvent.upload(
-      screen.getByLabelText(/upload existing vault file/i),
+      screen.getByLabelText(/upload an existing vault/i),
       new File(['b'], 'v'),
     );
     await waitFor(() =>

@@ -59,14 +59,8 @@ export function VaultSetup(): ReactElement {
       <h1>Setup Vault</h1>
 
       <div>
-        <p>Upload an existing vault</p>
-        <input
-          ref={fileInputRef}
-          id="vault-upload-setup"
-          type="file"
-          aria-label="Upload existing vault file"
-          onChange={handleFileChange}
-        />
+        <label htmlFor="vault-upload-setup">Upload an existing vault</label>
+        <input ref={fileInputRef} id="vault-upload-setup" type="file" onChange={handleFileChange} />
         {uploadError && <p role="alert">{uploadError}</p>}
       </div>
       <hr />
