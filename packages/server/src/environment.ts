@@ -101,8 +101,8 @@ const DeelModel = zod.union([
 const CredentialsModel = zod.object({
   CREDENTIALS_ENCRYPTION_KEY: zod
     .string()
-    .length(64)
-    .regex(/^[0-9a-f]+$/i),
+    .trim()
+    .regex(/^[a-f0-9]{64}$/i),
 });
 
 const GeneralModel = zod.object({
