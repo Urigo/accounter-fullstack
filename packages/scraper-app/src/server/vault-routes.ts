@@ -1,3 +1,4 @@
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { registerAccountsRoutes } from './accounts-routes.js';
 import { registerSettingsRoutes } from './settings-routes.js';
@@ -59,6 +60,50 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
       const result = await unlockVault(password);
       if (result !== 'ok') return reply.status(500).send({ error: result });
       return reply.status(201).send({ ok: true });
+    },
+  );
+
+  app.get('/api/vault/env-path', async () => ({
+    path: getVaultPath(),
+  }));
+
+  app.get('/api/vault/download', async (_req, reply) => {
+    try {
+      const fileBuffer = await readFile(getVaultPath());
+      reply.header('Content-Type', 'application/octet-stream');
+      reply.header('Content-Disposition', 'attachment; filename=".vault"');
+      return reply.send(fileBuffer);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        return reply.status(404).send({ error: 'no-vault-file' });
+      }
+      throw err;
+    }
+  });
+
+  app.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, (_req, body, done) =>
+    done(null, body),
+  );
+
+  app.post<{ Querystring: { force?: string }; Body: Buffer }>(
+    '/api/vault/upload',
+    { config: { rawBody: false } },
+    async (req, reply) => {
+      const force = req.query.force === 'true';
+      const vaultPath = getVaultPath();
+      try {
+        const exists = await hasVaultFile();
+        if (exists && !force) {
+          return reply.status(409).send({ error: 'vault-already-exists' });
+        }
+        await writeFile(vaultPath + '.tmp', req.body as Buffer);
+        await rename(vaultPath + '.tmp', vaultPath);
+        lockVault();
+        return reply.status(200).send({ ok: true });
+      } catch (err) {
+        req.log.error(err, 'Vault upload failed');
+        return reply.status(500).send({ error: 'write-failed' });
+      }
     },
   );
 

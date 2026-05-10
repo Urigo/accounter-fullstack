@@ -1,5 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import { getVault, isLocked, updateVault } from './vault-store.js';
+import {
+  getCurrentVaultPath,
+  getVault,
+  isLocked,
+  moveVaultFile,
+  updateVault,
+} from './vault-store.js';
 import { SettingsSchema, type Settings } from './vault.js';
 
 function guardLocked(reply: { status(code: number): { send(body: unknown): unknown } }) {
@@ -20,6 +26,15 @@ export async function registerSettingsRoutes(app: FastifyInstance): Promise<void
 
     const parsed = SettingsSchema.partial().safeParse(req.body);
     if (!parsed.success) return reply.status(400).send({ error: parsed.error.issues });
+
+    const newPath = parsed.data.vaultPath;
+    if (newPath !== undefined && newPath !== getCurrentVaultPath()) {
+      try {
+        await moveVaultFile(newPath);
+      } catch {
+        return reply.status(500).send({ error: 'move-failed' });
+      }
+    }
 
     await updateVault(v => ({ ...v, settings: { ...v.settings, ...parsed.data } }));
     return getVault().settings;
