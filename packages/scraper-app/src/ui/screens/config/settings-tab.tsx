@@ -1,20 +1,31 @@
-import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ReactElement } from 'react';
 import type { Settings } from '../../../server/vault.js';
-import { getVaultPath, loadSettings, saveSettings } from '../../lib/api.js';
+import { getVaultPath, loadSettings, saveSettings, vaultDownload } from '../../lib/api.js';
+
+function getBasename(p: string) {
+  return p.split('/').pop()?.split('\\').pop() ?? '.vault';
+}
 
 export function SettingsTab(): ReactElement {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vaultPath, setVaultPath] = useState<string>('');
+  const [vaultPathLoaded, setVaultPathLoaded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const savedVaultPathRef = useRef<string>('');
 
   useEffect(() => {
     loadSettings()
       .then(s => setSettings(s))
       .catch(() => setError('Failed to load settings'));
     getVaultPath()
-      .then(r => setVaultPath(r.path))
-      .catch(() => setVaultPath(''));
+      .then(r => {
+        setVaultPath(r.path);
+        savedVaultPathRef.current = r.path;
+        setVaultPathLoaded(true);
+      })
+      .catch(() => setVaultPathLoaded(true));
   }, []);
 
   function handleCopyPath() {
@@ -133,21 +144,37 @@ export function SettingsTab(): ReactElement {
         </div>
       </fieldset>
 
-      {vaultPath && (
+      {vaultPathLoaded && (
         <fieldset style={{ border: 'none', padding: 0, margin: '20px 0 0' }}>
           <legend style={{ fontWeight: 'bold', marginBottom: 12 }}>Vault file</legend>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <input
-              readOnly
+              id="vaultFilePath"
+              type="text"
               value={vaultPath}
-              style={{
-                padding: '4px 8px',
-                width: '100%',
-                maxWidth: 360,
-                color: '#555',
-                background: '#f9fafb',
+              onChange={e => setVaultPath(e.target.value)}
+              onBlur={async e => {
+                const val = e.target.value.trim();
+                if (!val) {
+                  setVaultPath(savedVaultPathRef.current);
+                  return;
+                }
+                if (val === savedVaultPathRef.current) {
+                  setVaultPath(val);
+                  return;
+                }
+                try {
+                  const updated = await saveSettings({ vaultPath: val });
+                  setSettings(updated);
+                  savedVaultPathRef.current = val;
+                  setVaultPath(val);
+                } catch {
+                  setError('Failed to save settings');
+                }
               }}
               aria-label="Vault file path"
+              style={{ padding: '4px 8px', width: '100%', maxWidth: 360 }}
+              placeholder=".vault"
             />
             <button
               type="button"
@@ -155,6 +182,23 @@ export function SettingsTab(): ReactElement {
               style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
             >
               {copied ? '✓ Copied' : 'Copy path'}
+            </button>
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={async () => {
+                setDownloading(true);
+                try {
+                  await vaultDownload(getBasename(vaultPath || '.vault'));
+                } catch {
+                  setError('Failed to download vault.');
+                } finally {
+                  setDownloading(false);
+                }
+              }}
+              style={{ padding: '4px 12px', whiteSpace: 'nowrap' }}
+            >
+              {downloading ? 'Downloading…' : 'Download'}
             </button>
           </div>
           <p style={{ margin: 0, fontSize: '0.85em', color: '#6b7280' }}>

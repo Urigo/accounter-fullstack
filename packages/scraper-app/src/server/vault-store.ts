@@ -1,4 +1,5 @@
 import { access, rename } from 'node:fs/promises';
+import path from 'node:path';
 import { getVaultPath, loadVaultFile, saveVaultFile, type Vault } from './vault.js';
 
 let _vault: Vault | null = null;
@@ -50,13 +51,14 @@ export function lockVault(): void {
 
 export async function moveVaultFile(newPath: string): Promise<void> {
   if (_vault === null || _password === null) throw new Error('Vault is locked');
-  const oldPath = getCurrentVaultPath();
-  if (oldPath === newPath) return;
-  const destExists = await access(newPath)
+  const oldPath = path.resolve(getCurrentVaultPath());
+  const normalizedNewPath = path.resolve(newPath);
+  if (oldPath === normalizedNewPath) return;
+  const destExists = await access(normalizedNewPath)
     .then(() => true)
     .catch(() => false);
   if (destExists) throw new Error('Destination already exists');
-  await rename(oldPath, newPath);
-  _vaultPath = newPath;
-  process.env['VAULT_PATH'] = newPath;
+  await rename(oldPath, normalizedNewPath);
+  _vaultPath = normalizedNewPath;
+  process.env['VAULT_PATH'] = normalizedNewPath;
 }
