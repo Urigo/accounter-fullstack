@@ -17,7 +17,7 @@ export type MonthlyIsracardPayload = {
 function buildMonthList(dateFrom: Date, dateTo: Date): Date[] {
   const months: Date[] = [];
   let current = startOfMonth(dateFrom);
-  const end = startOfMonth(dateTo);
+  const end = startOfMonth(addMonths(dateTo, 1));
   while (current <= end) {
     months.push(current);
     current = addMonths(current, 1);
