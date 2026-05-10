@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
+import { sql } from '@pgtyped/runtime';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
@@ -10,6 +11,12 @@ import {
   type DeelPayload,
   type GreenInvoicePayload,
 } from '../helpers/payload-schemas.js';
+import {
+  IDeleteProviderCredentialsQuery,
+  IGetProviderCredentialPayloadQuery,
+  IGetProviderStatusesQuery,
+  IUpsertProviderCredentialsQuery,
+} from '../types.js';
 
 const PROVIDER_SCHEMAS = {
   green_invoice: GreenInvoicePayloadSchema,
@@ -17,6 +24,27 @@ const PROVIDER_SCHEMAS = {
 } as const;
 
 type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
+
+const upsertProviderCredentials = sql<IUpsertProviderCredentialsQuery>`
+  INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload)
+  VALUES (accounter_schema.get_current_business_id(), $provider, $encrypted)
+  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload;`;
+
+const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
+  DELETE FROM accounter_schema.provider_credentials
+  WHERE owner_id = accounter_schema.get_current_business_id()
+    AND provider = $provider;`;
+
+const getProviderStatuses = sql<IGetProviderStatusesQuery>`
+  SELECT provider, updated_at
+  FROM accounter_schema.provider_credentials
+  WHERE owner_id = accounter_schema.get_current_business_id();`;
+
+const getProviderCredentialPayload = sql<IGetProviderCredentialPayloadQuery>`
+  SELECT payload
+  FROM accounter_schema.provider_credentials
+  WHERE owner_id = accounter_schema.get_current_business_id()
+    AND provider = $provider;`;
 
 @Injectable({ scope: Scope.Operation, global: true })
 export class ProviderCredentialsProvider {
@@ -46,32 +74,18 @@ export class ProviderCredentialsProvider {
 
     const encrypted = encryptCredential(JSON.stringify(result.data), this.encryptionKey);
 
-    await this.db.query(
-      `INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload)
-       VALUES (accounter_schema.get_current_business_id(), $1, $2)
-       ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload`,
-      [provider, encrypted],
-    );
+    await upsertProviderCredentials.run({ provider, encrypted }, this.db);
   }
 
   async deleteCredentials(provider: ProviderKey): Promise<void> {
-    await this.db.query(
-      `DELETE FROM accounter_schema.provider_credentials
-       WHERE owner_id = accounter_schema.get_current_business_id()
-         AND provider = $1`,
-      [provider],
-    );
+    await deleteProviderCredentials.run({ provider }, this.db);
   }
 
   async getProviderStatuses(): Promise<Array<{ provider: string; configuredAt: string }>> {
-    const { rows } = await this.db.query<{ provider: string; updated_at: Date }>(
-      `SELECT provider, updated_at
-       FROM accounter_schema.provider_credentials
-       WHERE owner_id = accounter_schema.get_current_business_id()`,
-    );
+    const rows = await getProviderStatuses.run(undefined, this.db);
     return rows.map(row => ({
-      provider: row.provider,
-      configuredAt: row.updated_at.toISOString(),
+      provider: row.provider!,
+      configuredAt: row.updated_at!.toISOString(),
     }));
   }
 
@@ -87,16 +101,10 @@ export class ProviderCredentialsProvider {
     provider: ProviderKey,
     schema: { parse: (v: unknown) => T },
   ): Promise<T | null> {
-    const { rows } = await this.db.query<{ payload: string }>(
-      `SELECT payload
-       FROM accounter_schema.provider_credentials
-       WHERE owner_id = accounter_schema.get_current_business_id()
-         AND provider = $1`,
-      [provider],
-    );
+    const rows = await getProviderCredentialPayload.run({ provider }, this.db);
     if (rows.length === 0) return null;
     try {
-      const plaintext = decryptCredential(rows[0].payload, this.encryptionKey);
+      const plaintext = decryptCredential(rows[0].payload!, this.encryptionKey);
       return schema.parse(JSON.parse(plaintext));
     } catch (err) {
       console.error(
