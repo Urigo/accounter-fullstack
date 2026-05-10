@@ -36,7 +36,7 @@ describe('scrapeIsracard — happy path', () => {
 
     const result = await scrapeIsracard(CREDS, DATE_FROM, DATE_TO, noop);
     expect(Array.isArray(result)).toBe(true);
-    expect(result).toHaveLength(1);
+    expect(result).toHaveLength(2);
     expect(result[0]!.month).toBe('2024-01');
     expect(result[0]!.data.Header.Status).toBe('1');
   });
@@ -55,7 +55,7 @@ describe('scrapeIsracard — happy path', () => {
     const threeMonthsTo = new Date('2024-03-31');
     await scrapeIsracard(CREDS, threeMonthsFrom, threeMonthsTo, noop);
 
-    expect(getMonthTransactions).toHaveBeenCalledTimes(3);
+    expect(getMonthTransactions).toHaveBeenCalledTimes(4);
   });
 
   it('skips months where data is null and throws if all months fail', async () => {
