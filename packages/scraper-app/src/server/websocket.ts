@@ -1,6 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { RawData, WebSocket } from 'ws';
 import websocketPlugin from '@fastify/websocket';
+import {
+  HapoalimForeignTransactionsBusiness,
+  HapoalimForeignTransactionsPersonal,
+} from '@accounter/modern-poalim-scraper';
 import type { SourceType } from '../shared/source-types.js';
 import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.js';
 import { registerDiscoveredAccounts } from './account-discovery.js';
@@ -34,6 +38,10 @@ function send(socket: WebSocket, msg: ServerMessage): void {
 
 type SourceRef = { id: string; type: SourceType };
 
+type HapoalimForeignTransactions =
+  | HapoalimForeignTransactionsPersonal
+  | HapoalimForeignTransactionsBusiness;
+
 function collectSourceRefs(vault: Vault): SourceRef[] {
   return [
     ...vault.poalimAccounts.map(a => ({ id: a.id, type: 'poalim' as const })),
@@ -61,139 +69,172 @@ function buildTask(
     run: async () => {
       const headless = !vault.settings.showBrowser;
       if (src.type === 'poalim') {
-        const creds = vault.poalimAccounts.find(a => a.id === src.id);
-        if (!creds) throw new Error(`Poalim account ${src.id} not found in vault`);
-        const { ils, foreign, swift } = await scrapePoalim(
-          creds,
-          dateFrom,
-          dateTo,
-          headless,
-          otpManager,
-          emit,
-        );
+        try {
+          const creds = vault.poalimAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Poalim account ${src.id} not found in vault`);
+          const accountsData = await scrapePoalim(
+            creds,
+            dateFrom,
+            dateTo,
+            headless,
+            otpManager,
+            emit,
+          );
 
-        if (!uploadClient)
+          if (!uploadClient)
+            return {
+              inserted: 0,
+              skipped: 0,
+              insertedIds: [],
+              insertedTransactions: [],
+              changedTransactions: [],
+            };
+
+          let totalInserted = 0;
+          let totalSkipped = 0;
+          const allIds: string[] = [];
+          const insertedTransactions: InsertedTransactionSummary[] = [];
+          const changedTransactions: ChangedTransaction[] = [];
+
+          for (const accountData of accountsData) {
+            const accountId = `${accountData.bankAccount.branchNumber}-${accountData.bankAccount.accountNumber}`;
+
+            const ilsPayload = accountData.ils;
+            if (ilsPayload) {
+              const pendingIlsTxns =
+                ilsPayload.transactions?.filter(
+                  t => t.transactionType === 'TODAY' || t.transactionType === 'FUTURE',
+                ) ?? [];
+              for (const t of pendingIlsTxns) {
+                console.info(
+                  `[poalim] Skipping ${t.transactionType} ILS transaction: ${t.activityDescription}, ILS ${t.eventAmount}, account ${ilsPayload.retrievalTransactionData.accountNumber}`,
+                );
+              }
+              const filteredIlsPayload = {
+                ...ilsPayload,
+                transactions:
+                  ilsPayload.transactions?.filter(
+                    t => t.transactionType !== 'TODAY' && t.transactionType !== 'FUTURE',
+                  ) ?? [],
+              };
+              const ilsCount = filteredIlsPayload.transactions.length;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'ils',
+                count: ilsCount,
+              });
+              const r = await uploadClient.uploadPoalimIls(filteredIlsPayload);
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'ils',
+                inserted: r.inserted,
+                skipped: r.skipped + pendingIlsTxns.length,
+              });
+              totalInserted += r.inserted;
+              totalSkipped += r.skipped + pendingIlsTxns.length;
+              allIds.push(...r.insertedIds);
+              insertedTransactions.push(...(r.insertedTransactions ?? []));
+              changedTransactions.push(...(r.changedTransactions ?? []));
+            }
+
+            const foreignPayload = accountData.foreign;
+            if (foreignPayload) {
+              let foreignPendingCount = 0;
+              const filteredForeignPayload = {
+                ...foreignPayload,
+                balancesAndLimitsDataList: foreignPayload.balancesAndLimitsDataList.map(entry => {
+                  const pending = entry.transactions.filter(
+                    t => t.transactionType === 'TODAY' || t.transactionType === 'FUTURE',
+                  );
+                  for (const t of pending) {
+                    console.info(
+                      `[poalim] Skipping ${t.transactionType} foreign transaction: ${t.activityDescription}, account ${accountData.bankAccount.accountNumber}`,
+                    );
+                  }
+                  foreignPendingCount += pending.length;
+                  return {
+                    ...entry,
+                    transactions: entry.transactions.filter(
+                      t => t.transactionType !== 'TODAY' && t.transactionType !== 'FUTURE',
+                    ),
+                  };
+                }),
+              } as HapoalimForeignTransactions;
+              const foreignCount = filteredForeignPayload.balancesAndLimitsDataList.reduce(
+                (sum, e) => sum + e.transactions.length,
+                0,
+              );
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'foreign',
+                count: foreignCount,
+              });
+              const rf = await uploadClient.uploadPoalimForeign(
+                filteredForeignPayload,
+                accountData.bankAccount,
+              );
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'foreign',
+                inserted: rf.inserted,
+                skipped: rf.skipped + foreignPendingCount,
+              });
+              totalInserted += rf.inserted;
+              totalSkipped += rf.skipped + foreignPendingCount;
+              allIds.push(...rf.insertedIds);
+              insertedTransactions.push(...(rf.insertedTransactions ?? []));
+              changedTransactions.push(...(rf.changedTransactions ?? []));
+            }
+
+            const swiftPayload = accountData.swift;
+            if (swiftPayload) {
+              const swiftCount =
+                (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'swift',
+                count: swiftCount,
+              });
+              const rs = await uploadClient.uploadPoalimSwift(
+                swiftPayload,
+                accountData.bankAccount,
+              );
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'swift',
+                inserted: rs.inserted,
+                skipped: rs.skipped,
+              });
+              totalInserted += rs.inserted;
+              totalSkipped += rs.skipped;
+              allIds.push(...rs.insertedIds);
+              insertedTransactions.push(...(rs.insertedTransactions ?? []));
+              changedTransactions.push(...(rs.changedTransactions ?? []));
+            }
+          }
           return {
-            inserted: 0,
-            skipped: 0,
-            insertedIds: [],
-            insertedTransactions: [],
-            changedTransactions: [],
+            inserted: totalInserted,
+            skipped: totalSkipped,
+            insertedIds: allIds,
+            insertedTransactions,
+            changedTransactions,
           };
-
-        let totalInserted = 0;
-        let totalSkipped = 0;
-        const allIds: string[] = [];
-        const insertedTransactions: InsertedTransactionSummary[] = [];
-        const changedTransactions: ChangedTransaction[] = [];
-        const bankAccount = {
-          bankNumber: 0,
-          branchNumber: 0,
-          accountNumber: 0,
-        };
-
-        for (let i = 0; i < ils.length; i++) {
-          const ilsPayload = ils[i]!;
-          const accountId = ilsPayload.retrievalTransactionData
-            ? `${ilsPayload.retrievalTransactionData.branchNumber}-${ilsPayload.retrievalTransactionData.accountNumber}`
-            : `unknown:${i}`;
-          if (ilsPayload.retrievalTransactionData) {
-            bankAccount.accountNumber = ilsPayload.retrievalTransactionData.accountNumber;
-            bankAccount.branchNumber = ilsPayload.retrievalTransactionData.branchNumber;
-            bankAccount.bankNumber = ilsPayload.retrievalTransactionData.bankNumber;
-          }
-
-          // Emit vault-checked status based on whether account was excluded
-          emit({
-            type: 'task-account-vault-checked',
-            sourceId: src.id,
-            accountId,
-            status: 'accepted',
-          });
-
-          const ilsCount = ilsPayload.transactions?.length ?? 0;
-          emit({
-            type: 'task-account-txns-uploading',
-            sourceId: src.id,
-            accountId,
-            txnType: 'ils',
-            count: ilsCount,
-          });
-          const r = await uploadClient.uploadPoalimIls(ilsPayload);
-          emit({
-            type: 'task-account-txns-done',
-            sourceId: src.id,
-            accountId,
-            txnType: 'ils',
-            inserted: r.inserted,
-            skipped: r.skipped,
-          });
-          totalInserted += r.inserted;
-          totalSkipped += r.skipped;
-          allIds.push(...r.insertedIds);
-          insertedTransactions.push(...(r.insertedTransactions ?? []));
-          changedTransactions.push(...(r.changedTransactions ?? []));
-
-          if (foreign[i]) {
-            const foreignPayload = foreign[i]!;
-            const foreignCount =
-              (foreignPayload as { transactions?: unknown[] }).transactions?.length ?? 0;
-            emit({
-              type: 'task-account-txns-uploading',
-              sourceId: src.id,
-              accountId,
-              txnType: 'foreign',
-              count: foreignCount,
-            });
-            const rf = await uploadClient.uploadPoalimForeign(foreignPayload, bankAccount);
-            emit({
-              type: 'task-account-txns-done',
-              sourceId: src.id,
-              accountId,
-              txnType: 'foreign',
-              inserted: rf.inserted,
-              skipped: rf.skipped,
-            });
-            totalInserted += rf.inserted;
-            totalSkipped += rf.skipped;
-            allIds.push(...rf.insertedIds);
-            insertedTransactions.push(...(rf.insertedTransactions ?? []));
-            changedTransactions.push(...(rf.changedTransactions ?? []));
-          }
-
-          if (swift[i]) {
-            const swiftPayload = swift[i]!;
-            const swiftCount = (swiftPayload as { swiftsList?: unknown[] }).swiftsList?.length ?? 0;
-            emit({
-              type: 'task-account-txns-uploading',
-              sourceId: src.id,
-              accountId,
-              txnType: 'swift',
-              count: swiftCount,
-            });
-            const rs = await uploadClient.uploadPoalimSwift(swiftPayload, bankAccount);
-            emit({
-              type: 'task-account-txns-done',
-              sourceId: src.id,
-              accountId,
-              txnType: 'swift',
-              inserted: rs.inserted,
-              skipped: rs.skipped,
-            });
-            totalInserted += rs.inserted;
-            totalSkipped += rs.skipped;
-            allIds.push(...rs.insertedIds);
-            insertedTransactions.push(...(rs.insertedTransactions ?? []));
-            changedTransactions.push(...(rs.changedTransactions ?? []));
-          }
+        } catch (err) {
+          console.error({ err }, '[task] Poalim scrape error');
+          throw err;
         }
-        return {
-          inserted: totalInserted,
-          skipped: totalSkipped,
-          insertedIds: allIds,
-          insertedTransactions,
-          changedTransactions,
-        };
       }
 
       // isracard/amex return one payload per month; other scrapers return a single payload

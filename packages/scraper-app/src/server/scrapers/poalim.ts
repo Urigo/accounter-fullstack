@@ -34,11 +34,14 @@ export async function scrapePoalim(
   headless: boolean,
   otpManager: OtpManager,
   emit: (msg: ServerMessage) => void,
-): Promise<{
-  ils: HapoalimILSTransactions[];
-  foreign: (HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness)[];
-  swift: DecoratedSwiftTransactions[];
-}> {
+): Promise<
+  {
+    ils: HapoalimILSTransactions | null;
+    foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
+    swift: DecoratedSwiftTransactions | null;
+    bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
+  }[]
+> {
   const otpCallback = () => otpManager.waitForOtp(creds.id, emit, OTP_TIMEOUT_MS);
 
   const { hapoalim: hapoalimFn, close } = await init({ headless });
@@ -70,7 +73,7 @@ export async function scrapePoalim(
 
     const { data: accounts } = await scraper.getAccountsData();
     if (!accounts || accounts.length === 0) {
-      return { ils: [], foreign: [], swift: [] };
+      return [];
     }
 
     emit({
@@ -117,6 +120,14 @@ export async function scrapePoalim(
     for (const account of filteredAccounts) {
       const check = checkAccounts('poalim', account, currentAccountRecords);
       allUnknown.push(...check.unknown);
+
+      // Emit vault-checked status based on whether account was excluded
+      emit({
+        type: 'task-account-vault-checked',
+        sourceId: creds.id,
+        accountId: `${account.branchNumber}-${account.accountNumber}`,
+        status: 'accepted',
+      });
     }
     if (allUnknown.length > 0) {
       emit({
@@ -128,13 +139,21 @@ export async function scrapePoalim(
       throw new BlockedError([...new Set(allUnknown)]);
     }
 
-    const ils: HapoalimILSTransactions[] = [];
-    const foreign: (HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness)[] =
-      [];
-    const swift: DecoratedSwiftTransactions[] = [];
+    const accountsData: {
+      ils: HapoalimILSTransactions | null;
+      foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
+      swift: DecoratedSwiftTransactions | null;
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
+    }[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
 
     for (const account of filteredAccounts) {
+      let ils: HapoalimILSTransactions | null = null;
+      let foreign:
+        | HapoalimForeignTransactionsPersonal
+        | HapoalimForeignTransactionsBusiness
+        | null = null;
+      let swift: DecoratedSwiftTransactions | null = null;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
@@ -145,7 +164,7 @@ export async function scrapePoalim(
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'ils' });
       const { data: ilsData } = await scraper.getILSTransactions(accountRef);
       if (ilsData) {
-        ils.push(validatePayload('poalim-ils', ilsData));
+        ils = validatePayload('poalim-ils', ilsData);
       }
 
       emit({
@@ -156,7 +175,7 @@ export async function scrapePoalim(
       });
       const { data: foreignData } = await scraper.getForeignTransactions(accountRef, isBusiness);
       if (foreignData) {
-        foreign.push(validatePayload('poalim-foreign', foreignData));
+        foreign = validatePayload('poalim-foreign', foreignData);
       }
 
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'swift' });
@@ -177,11 +196,15 @@ export async function scrapePoalim(
           }
           decoratedSwiftsList.push({ ...transaction, details: extendedTransaction.data });
         }
-        swift.push({ ...validated, swiftsList: decoratedSwiftsList });
+        swift = { ...validated, swiftsList: decoratedSwiftsList };
       }
+      accountsData.push({ ils, foreign, swift, bankAccount: accountRef });
     }
 
-    return { ils, foreign, swift };
+    return accountsData;
+  } catch (error) {
+    console.error('Error in scrapePoalim:', error instanceof Error ? error.stack : error);
+    throw error;
   } finally {
     await close();
   }
