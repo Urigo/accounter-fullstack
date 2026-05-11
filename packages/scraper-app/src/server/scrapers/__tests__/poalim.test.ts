@@ -74,10 +74,10 @@ describe('scrapePoalim — happy path', () => {
 
     const result = await scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop);
 
-    expect(result.ils).toHaveLength(1);
-    expect(result.ils[0]!.retrievalTransactionData.accountNumber).toBe(100_000);
-    expect(result.foreign).toHaveLength(1);
-    expect(result.swift).toHaveLength(1);
+    expect(result).toHaveLength(1);
+    expect(result[0].ils!.retrievalTransactionData.accountNumber).toBe(100_000);
+    expect(result[0].foreign).toBeDefined();
+    expect(result[0].swift).toBeDefined();
   });
 
   it('calls close() even on success', async () => {
@@ -115,7 +115,7 @@ describe('scrapePoalim — OTP path', () => {
     const result = await scrapePoalim(CREDS, new Date(), new Date(), true, otpManager, emit);
 
     expect(emit).toHaveBeenCalledWith(expect.objectContaining({ type: 'otp-required', sourceId: 'src-1' }));
-    expect(result.ils).toHaveLength(1);
+    expect(result).toHaveLength(1);
   });
 });
 
