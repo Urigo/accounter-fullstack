@@ -1,4 +1,5 @@
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import {
   _DOLLAR_defs_addClientRequest_Input,
@@ -12,6 +13,7 @@ import { dateToTimelessDateString } from '../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../shared/tokens.js';
 import type { Environment } from '../../shared/types/index.js';
 import { AdminContextProvider } from '../admin-context/providers/admin-context.provider.js';
+import { ProviderCredentialsProvider } from '../provider-credentials/providers/provider-credentials.provider.js';
 
 export type ExpenseDraft = NonNullable<
   Extract<
@@ -27,19 +29,22 @@ export class GreenInvoiceClientProvider {
   constructor(
     private adminContextProvider: AdminContextProvider,
     @Inject(ENVIRONMENT) private env: Environment,
+    private credentialsProvider: ProviderCredentialsProvider,
   ) {}
 
   public authToken: string | null = null;
 
   private async init() {
-    const id = this.env.greenInvoice?.id;
-    const secret = this.env.greenInvoice?.secret;
+    const fromDb = await this.credentialsProvider.getGreenInvoiceCredentials();
+    const creds = fromDb ?? this.env.greenInvoice ?? null;
 
-    if (!id || !secret) {
-      throw new Error('Environment variables not found');
+    if (!creds) {
+      throw new GraphQLError('Green Invoice credentials not configured for this tenant', {
+        extensions: { code: 'PROVIDER_NOT_CONFIGURED' },
+      });
     }
 
-    const greenInvoice = await init(id, secret);
+    const greenInvoice = await init(creds.id, creds.secret);
 
     return greenInvoice;
   }

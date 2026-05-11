@@ -1,9 +1,11 @@
 import { addHours, subYears } from 'date-fns';
+import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment, TimelessDateString } from '../../../shared/types/index.js';
+import { ProviderCredentialsProvider } from '../../provider-credentials/providers/provider-credentials.provider.js';
 import {
   ContractSchema,
   downloadInvoicePdfSchema,
@@ -18,17 +20,30 @@ import {
   global: true,
 })
 export class DeelClientProvider {
-  private apiToken: string | null;
   private host = 'https://api.letsdeel.com/rest/v2';
 
-  constructor(@Inject(ENVIRONMENT) private env: Environment) {
-    this.apiToken = this.env.deel?.apiToken ?? null;
-  }
+  constructor(
+    @Inject(ENVIRONMENT) private env: Environment,
+    private credentialsProvider: ProviderCredentialsProvider,
+  ) {}
 
   // This is a workaround for the Deel API returning PST dates as UTC dates.
   private timeZoneFix(dateString: string) {
     const date = new Date(dateString);
     return addHours(date, 7).toUTCString();
+  }
+
+  private async getApiToken(): Promise<string> {
+    const fromDb = await this.credentialsProvider.getDeelCredentials();
+    const token = fromDb?.apiToken ?? this.env.deel?.apiToken ?? null;
+
+    if (!token) {
+      throw new GraphQLError('Deel credentials not configured for this tenant', {
+        extensions: { code: 'PROVIDER_NOT_CONFIGURED' },
+      });
+    }
+
+    return token;
   }
 
   public async getPaymentReceipts() {
@@ -49,7 +64,7 @@ export class DeelClientProvider {
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
-          authorization: `Bearer ${this.apiToken}`,
+          authorization: `Bearer ${await this.getApiToken()}`,
         },
       });
 
@@ -80,7 +95,7 @@ export class DeelClientProvider {
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
-          authorization: `Bearer ${this.apiToken}`,
+          authorization: `Bearer ${await this.getApiToken()}`,
         },
       });
 
@@ -108,6 +123,7 @@ export class DeelClientProvider {
   public async getSalaryInvoices() {
     const invoices: Invoice[] = [];
     try {
+      const apiToken = await this.getApiToken();
       const queryVars: {
         issued_from_date?: TimelessDateString;
         issued_to_date?: TimelessDateString;
@@ -127,7 +143,7 @@ export class DeelClientProvider {
         const res = await fetch(url, {
           headers: {
             accept: 'application/json',
-            authorization: `Bearer ${this.apiToken}`,
+            authorization: `Bearer ${apiToken}`,
           },
         });
 
@@ -172,7 +188,7 @@ export class DeelClientProvider {
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
-          authorization: `Bearer ${this.apiToken}`,
+          authorization: `Bearer ${await this.getApiToken()}`,
         },
       });
 
@@ -211,7 +227,7 @@ export class DeelClientProvider {
       const res = await fetch(url, {
         headers: {
           accept: 'application/json',
-          authorization: `Bearer ${this.apiToken}`,
+          authorization: `Bearer ${await this.getApiToken()}`,
         },
       });
 
