@@ -26,6 +26,8 @@ export type ExpenseDraft = NonNullable<
   global: true,
 })
 export class GreenInvoiceClientProvider {
+  private initPromise: ReturnType<typeof init> | null = null;
+
   constructor(
     private adminContextProvider: AdminContextProvider,
     @Inject(ENVIRONMENT) private env: Environment,
@@ -34,7 +36,12 @@ export class GreenInvoiceClientProvider {
 
   public authToken: string | null = null;
 
-  private async init() {
+  private init(): ReturnType<typeof init> {
+    this.initPromise ??= this._doInit();
+    return this.initPromise;
+  }
+
+  private async _doInit(): ReturnType<typeof init> {
     const fromDb = await this.credentialsProvider.getGreenInvoiceCredentials();
     const creds = fromDb ?? this.env.greenInvoice ?? null;
 
@@ -44,9 +51,7 @@ export class GreenInvoiceClientProvider {
       });
     }
 
-    const greenInvoice = await init(creds.id, creds.secret);
-
-    return greenInvoice;
+    return init(creds.id, creds.secret);
   }
 
   public async getSDK(): Promise<Sdk> {

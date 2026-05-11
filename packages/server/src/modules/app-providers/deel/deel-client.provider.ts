@@ -21,6 +21,7 @@ import {
 })
 export class DeelClientProvider {
   private host = 'https://api.letsdeel.com/rest/v2';
+  private tokenPromise: Promise<string> | null = null;
 
   constructor(
     @Inject(ENVIRONMENT) private env: Environment,
@@ -33,7 +34,12 @@ export class DeelClientProvider {
     return addHours(date, 7).toUTCString();
   }
 
-  private async getApiToken(): Promise<string> {
+  private getApiToken(): Promise<string> {
+    this.tokenPromise ??= this._fetchToken();
+    return this.tokenPromise;
+  }
+
+  private async _fetchToken(): Promise<string> {
     const fromDb = await this.credentialsProvider.getDeelCredentials();
     const token = fromDb?.apiToken ?? this.env.deel?.apiToken ?? null;
 
