@@ -23,12 +23,13 @@ const PROVIDER_SCHEMAS = {
   deel: DeelPayloadSchema,
 } as const;
 
-type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
+export type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
 
 const upsertProviderCredentials = sql<IUpsertProviderCredentialsQuery>`
   INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload)
   VALUES (accounter_schema.get_current_business_id(), $provider, $encrypted)
-  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload;`;
+  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload
+  RETURNING updated_at;`;
 
 const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
   DELETE FROM accounter_schema.provider_credentials
@@ -63,7 +64,7 @@ export class ProviderCredentialsProvider {
     return key;
   }
 
-  async setCredentials(provider: ProviderKey, payload: unknown): Promise<void> {
+  async setCredentials(provider: ProviderKey, payload: unknown): Promise<Date | undefined> {
     const schema = PROVIDER_SCHEMAS[provider];
     const result = schema.safeParse(payload);
     if (!result.success) {
@@ -74,7 +75,8 @@ export class ProviderCredentialsProvider {
 
     const encrypted = encryptCredential(JSON.stringify(result.data), this.encryptionKey);
 
-    await upsertProviderCredentials.run({ provider, encrypted }, this.db);
+    const credentials = await upsertProviderCredentials.run({ provider, encrypted }, this.db);
+    return credentials[0]?.updated_at;
   }
 
   async deleteCredentials(provider: ProviderKey): Promise<void> {

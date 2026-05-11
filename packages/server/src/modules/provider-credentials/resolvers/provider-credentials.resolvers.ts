@@ -1,14 +1,15 @@
-import { ProviderCredentialsProvider } from '../providers/provider-credentials.provider.js';
+import {
+  ProviderCredentialsProvider,
+  type ProviderKey as DbProviderKey,
+} from '../providers/provider-credentials.provider.js';
 import type { ProviderCredentialsModule } from '../types.js';
-
-type DbProviderKey = 'green_invoice' | 'deel';
 
 const DB_TO_GQL: Record<DbProviderKey, ProviderCredentialsModule.ProviderKey> = {
   green_invoice: 'GREEN_INVOICE' as ProviderCredentialsModule.ProviderKey,
   deel: 'DEEL' as ProviderCredentialsModule.ProviderKey,
 };
 
-const GQL_TO_DB: Record<string, DbProviderKey> = {
+const GQL_TO_DB: Record<ProviderCredentialsModule.ProviderKey, DbProviderKey> = {
   GREEN_INVOICE: 'green_invoice',
   DEEL: 'deel',
 };
@@ -17,28 +18,32 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
   Query: {
     providerCredentials: async (_parent, _args, { injector }) => {
       const statuses = await injector.get(ProviderCredentialsProvider).getProviderStatuses();
-      return statuses.map(s => ({
-        id: DB_TO_GQL[s.provider as DbProviderKey],
-        provider: DB_TO_GQL[s.provider as DbProviderKey],
-        configuredAt: new Date(s.configuredAt),
-      }));
+      return statuses
+        .filter((s): s is typeof s & { provider: DbProviderKey } => s.provider in DB_TO_GQL)
+        .map(s => ({
+          id: DB_TO_GQL[s.provider],
+          provider: DB_TO_GQL[s.provider],
+          configuredAt: new Date(s.configuredAt),
+        }));
     },
   },
 
   Mutation: {
     setGreenInvoiceCredentials: async (_parent, { id, secret }, { injector }) => {
       try {
-        await injector
+        const updatedAt = await injector
           .get(ProviderCredentialsProvider)
           .setCredentials('green_invoice', { id, secret });
 
-        const statuses = await injector.get(ProviderCredentialsProvider).getProviderStatuses();
-        const status = statuses.find(s => s.provider === 'green_invoice');
+        if (!updatedAt) {
+          throw new Error('Failed to save Green Invoice credentials');
+        }
+
         return {
           __typename: 'ProviderCredentialResult' as const,
           id: DB_TO_GQL['green_invoice'],
           provider: DB_TO_GQL['green_invoice'],
-          configuredAt: new Date(status!.configuredAt),
+          configuredAt: new Date(updatedAt),
         };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to save Green Invoice credentials';
@@ -49,15 +54,19 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
 
     setDeelCredentials: async (_parent, { apiToken }, { injector }) => {
       try {
-        await injector.get(ProviderCredentialsProvider).setCredentials('deel', { apiToken });
+        const updatedAt = await injector
+          .get(ProviderCredentialsProvider)
+          .setCredentials('deel', { apiToken });
 
-        const statuses = await injector.get(ProviderCredentialsProvider).getProviderStatuses();
-        const status = statuses.find(s => s.provider === 'deel');
+        if (!updatedAt) {
+          throw new Error('Failed to save Deel credentials');
+        }
+
         return {
           __typename: 'ProviderCredentialResult' as const,
           id: DB_TO_GQL['deel'],
           provider: DB_TO_GQL['deel'],
-          configuredAt: new Date(status!.configuredAt),
+          configuredAt: new Date(updatedAt),
         };
       } catch (e) {
         const message = (e as Error)?.message ?? 'Failed to save Deel credentials';
