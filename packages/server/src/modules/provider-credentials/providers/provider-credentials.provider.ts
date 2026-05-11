@@ -16,7 +16,7 @@ const PROVIDER_SCHEMAS = {
   deel: DeelPayloadSchema,
 } as const;
 
-type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
+export type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
 
 @Injectable({ scope: Scope.Operation, global: true })
 export class ProviderCredentialsProvider {
