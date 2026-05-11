@@ -36,6 +36,7 @@ import { gmailListenerModule } from './modules/gmail-listener/index.js';
 import { greenInvoiceModule } from './modules/green-invoice/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
 import { miscExpensesModule } from './modules/misc-expenses/index.js';
+import { providerCredentialsModule } from './modules/provider-credentials/index.js';
 import { reportsModule } from './modules/reports/index.js';
 import { salariesModule } from './modules/salaries/index.js';
 import { scraperIngestionModule } from './modules/scraper-ingestion/index.js';
@@ -88,6 +89,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       vatModule,
       deelModule,
       greenInvoiceModule,
+      providerCredentialsModule,
       contractsModule,
       bankDepositsModule,
       adminContextModule,
