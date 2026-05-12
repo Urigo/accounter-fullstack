@@ -5,6 +5,7 @@ import { runPGMigrations } from '../run-pg-migrations.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 const TEST_DB_NAME = `accounter_migration_test_rls_${Date.now()}`;
+const TEST_ROLE_NAME = `rls_test_user_${Date.now()}`;
 
 describe('RLS All Tables Migration', () => {
   let rootPool: DatabasePool;
@@ -61,17 +62,16 @@ describe('RLS All Tables Migration', () => {
   it('should apply all migrations successfully', async () => {
     await runPGMigrations({ slonik: testPool });
     
-    // Check if migration was recorded
+    // Check that the specific RLS migration was recorded
     const migrationResult = await testPool.query(sql.unsafe`
-      SELECT * FROM accounter_schema.migration
-      ORDER BY name DESC
+      SELECT 1
+      FROM accounter_schema.migration
+      WHERE name LIKE '%enable-rls-all-tables%'
       LIMIT 1
     `);
     
-    // Check if we hit the latest migration or later
-    // The previous migration was 2026-02-19T14-00-00.add-owner-id-indexes.sql
-    // This one is 2026-02-23T09-00-00.enable-rls-all-tables.sql
-    expect(migrationResult.rows[0].name).toContain('enable-rls-all-tables');
+    // Ensure that at least one matching migration entry exists
+    expect(migrationResult.rowCount).toBe(1);
   });
 
   it('should enforce RLS on key tables (isolation test)', async () => {
@@ -154,24 +154,35 @@ describe('RLS All Tables Migration', () => {
     // Create a non-superuser role to test RLS enforcement.
     // Superusers (like the test runner) bypass RLS by default.
     await testPool.query(sql.unsafe`
-        DO $$ 
-        BEGIN 
-          IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'rls_test_user') THEN 
-            DROP OWNED BY rls_test_user; 
-            DROP ROLE rls_test_user; 
-          END IF; 
+        DO $$
+        BEGIN
+          IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME}) THEN
+            EXECUTE 'DROP OWNED BY ' || quote_ident(${TEST_ROLE_NAME});
+            EXECUTE 'DROP ROLE ' || quote_ident(${TEST_ROLE_NAME});
+          END IF;
         END $$;
-        CREATE ROLE rls_test_user WITH LOGIN NOINHERIT;
-        GRANT USAGE ON SCHEMA accounter_schema TO rls_test_user;
-        GRANT ALL ON ALL TABLES IN SCHEMA accounter_schema TO rls_test_user;
-        GRANT ALL ON ALL SEQUENCES IN SCHEMA accounter_schema TO rls_test_user;
     `);
+    await testPool.query(
+      sql.unsafe`CREATE ROLE ${sql.identifier([TEST_ROLE_NAME])} WITH LOGIN NOINHERIT`,
+    );
+    await testPool.query(
+      sql.unsafe`GRANT USAGE ON SCHEMA accounter_schema TO ${sql.identifier([TEST_ROLE_NAME])}`,
+    );
+    await testPool.query(
+      sql.unsafe`GRANT ALL ON ALL TABLES IN SCHEMA accounter_schema TO ${sql.identifier([TEST_ROLE_NAME])}`,
+    );
+    await testPool.query(
+      sql.unsafe`GRANT ALL ON ALL SEQUENCES IN SCHEMA accounter_schema TO ${sql.identifier([TEST_ROLE_NAME])}`,
+    );
 
     try {
         // Use a single connection/transaction to test as User A
         await testPool.connect(async (connection) => {
+          try {
             // Switch to restricted user
-            await connection.query(sql.unsafe`SET ROLE rls_test_user`);
+            await connection.query(
+              sql.unsafe`SET ROLE ${sql.identifier([TEST_ROLE_NAME])}`,
+            );
 
             // 2. As Business A, insert a charge
             await connection.query(sql.unsafe`
@@ -193,16 +204,20 @@ describe('RLS All Tables Migration', () => {
             
             expect(resultA.rows).toHaveLength(1);
             expect(resultA.rows[0].id).toBe(chargeIdA);
-            
+          } finally {
             // Revert role for connection pooling safety (though transaction end resets likely)
             await connection.query(sql.unsafe`RESET ROLE`);
+          }
         });
 
         // Test as User B
         await testPool.connect(async (connection) => {
+          try {
             // Switch to restricted user
-            await connection.query(sql.unsafe`SET ROLE rls_test_user`);
-            
+            await connection.query(
+              sql.unsafe`SET ROLE ${sql.identifier([TEST_ROLE_NAME])}`,
+            );
+
             // 4. Verify Invisibility for B
             await connection.query(sql.unsafe`
               SELECT set_config('app.current_business_id', ${businessIdB}, false);
@@ -232,17 +247,18 @@ describe('RLS All Tables Migration', () => {
                     throw new Error('RLS failed to block cross-tenant insert');
                 }
             }
-             
+          } finally {
             await connection.query(sql.unsafe`RESET ROLE`);
+          } 
         });
     } finally {
         await testPool.query(sql.unsafe`
-            DO $$ 
-            BEGIN 
-                IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'rls_test_user') THEN 
-                    DROP OWNED BY rls_test_user; 
-                    DROP ROLE rls_test_user; 
-                END IF; 
+            DO $$
+            BEGIN
+              IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME}) THEN
+                EXECUTE 'DROP OWNED BY ' || quote_ident(${TEST_ROLE_NAME});
+                EXECUTE 'DROP ROLE ' || quote_ident(${TEST_ROLE_NAME});
+              END IF;
             END $$;
         `);
     }

@@ -51,6 +51,7 @@ export default {
       'tax_categories',
       'transactions',
       'user_context',
+      'annual_audit_step_status',
     ];
 
     for (const table of tables) {
