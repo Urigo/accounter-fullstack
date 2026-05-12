@@ -49,7 +49,8 @@ export const useSetDeelCredentials = (): UseSetDeelCredentials => {
           toast.success('Deel connected', { id: NOTIFICATION_ID });
           return data.setDeelCredentials;
         }
-      } catch {
+      } catch (e) {
+        console.error(`${message}: ${e}`);
         toast.error('Error', {
           id: NOTIFICATION_ID,
           description: message,

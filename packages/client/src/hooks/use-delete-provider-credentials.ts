@@ -45,17 +45,13 @@ export const useDeleteProviderCredentials = (): UseDeleteProviderCredentials => 
       toast.loading('Disconnecting provider', { id: NOTIFICATION_ID });
       try {
         const res = await mutate(variables);
-        const data = handleCommonErrors(
-          res,
-          message,
-          NOTIFICATION_ID,
-          'deleteProviderCredentials',
-        );
+        const data = handleCommonErrors(res, message, NOTIFICATION_ID, 'deleteProviderCredentials');
         if (data) {
           toast.success('Provider disconnected', { id: NOTIFICATION_ID });
           return data.deleteProviderCredentials;
         }
-      } catch {
+      } catch (e) {
+        console.error(`${message}: ${e}`);
         toast.error('Error', {
           id: NOTIFICATION_ID,
           description: message,

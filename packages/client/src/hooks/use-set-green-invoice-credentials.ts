@@ -55,7 +55,8 @@ export const useSetGreenInvoiceCredentials = (): UseSetGreenInvoiceCredentials =
           toast.success('Green Invoice connected', { id: NOTIFICATION_ID });
           return data.setGreenInvoiceCredentials;
         }
-      } catch {
+      } catch (e) {
+        console.error(`${message}: ${e}`);
         toast.error('Error', {
           id: NOTIFICATION_ID,
           description: message,
