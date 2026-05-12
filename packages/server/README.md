@@ -1,5 +1,31 @@
 # @accounter-helper/server
 
+## Super-Admin & Client Onboarding
+
+Super-admins are platform operators identified by their Auth0 user ID in the `super_admins` DB
+table. They are the only users who can call the `bootstrapNewClient` mutation to provision a new
+tenant from scratch.
+
+### Registering a Super-Admin
+
+```bash
+AUTH0_USER_ID=auth0 | workspace < id > yarn @accounter/server seed:super-admin
+```
+
+The app DB user has no INSERT privilege on `super_admins` (RLS-enforced); this script uses the
+DBA-level credentials from `.env`.
+
+### Bootstrapping a New Client
+
+Call the `bootstrapNewClient` GraphQL mutation as a super-admin. It creates the full tenant setup in
+one transaction: admin business entity, authority businesses, all required tax categories,
+`user_context`, and an Auth0 invitation for the new owner.
+
+See the full operational runbook at
+[docs/super-user/super-admin-runbook.md](../../docs/super-user/super-admin-runbook.md).
+
+---
+
 ## Observability
 
 The server supports OpenTelemetry tracing export over OTLP/HTTP. Configuration is read from the

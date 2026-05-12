@@ -507,6 +507,11 @@ export class AdminContextProvider {
     return null;
   }
 
+  public async getAdminContextByOwnerId(ownerId: string): Promise<AdminContext | null> {
+    const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
+    return contexts[0] ? this.normalizeContext(contexts[0]) : null;
+  }
+
   public clearCache() {
     this.cachedContext = null;
   }
