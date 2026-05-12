@@ -75,7 +75,7 @@
     "node-cache": "5.1.2",
     "node-xlsx": "0.24.0",
     "pg": "8.20.0",
-    "playwright": "1.59.1",
+    "playwright": "1.60.0",
     "reflect-metadata": "0.2.2",
     "strip-indent": "4.1.1",
     "zod": "4.4.3"
