@@ -153,15 +153,18 @@ describe('RLS All Tables Migration', () => {
     
     // Create a non-superuser role to test RLS enforcement.
     // Superusers (like the test runner) bypass RLS by default.
-    await testPool.query(sql.unsafe`
-        DO $$
-        BEGIN
-          IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME}) THEN
-            EXECUTE 'DROP OWNED BY ' || quote_ident(${TEST_ROLE_NAME});
-            EXECUTE 'DROP ROLE ' || quote_ident(${TEST_ROLE_NAME});
-          END IF;
-        END $$;
-    `);
+    // DROP OWNED BY has no IF EXISTS, so we check existence first
+    const roleExists = await testPool.oneFirst(
+      sql.unsafe`SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME})`,
+    );
+    if (roleExists) {
+      await testPool.query(
+        sql.unsafe`DROP OWNED BY ${sql.identifier([TEST_ROLE_NAME])}`,
+      );
+      await testPool.query(
+        sql.unsafe`DROP ROLE ${sql.identifier([TEST_ROLE_NAME])}`,
+      );
+    }
     await testPool.query(
       sql.unsafe`CREATE ROLE ${sql.identifier([TEST_ROLE_NAME])} WITH LOGIN NOINHERIT`,
     );
@@ -252,15 +255,13 @@ describe('RLS All Tables Migration', () => {
           } 
         });
     } finally {
-        await testPool.query(sql.unsafe`
-            DO $$
-            BEGIN
-              IF EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME}) THEN
-                EXECUTE 'DROP OWNED BY ' || quote_ident(${TEST_ROLE_NAME});
-                EXECUTE 'DROP ROLE ' || quote_ident(${TEST_ROLE_NAME});
-              END IF;
-            END $$;
-        `);
+        const roleStillExists = await testPool.oneFirst(
+          sql.unsafe`SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = ${TEST_ROLE_NAME})`,
+        );
+        if (roleStillExists) {
+          await testPool.query(sql.unsafe`DROP OWNED BY ${sql.identifier([TEST_ROLE_NAME])}`);
+          await testPool.query(sql.unsafe`DROP ROLE ${sql.identifier([TEST_ROLE_NAME])}`);
+        }
     }
   });
 });
