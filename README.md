@@ -94,6 +94,17 @@ Accounter uses Auth0 for user authentication. See:
 - [Operations Runbook](docs/operations/auth0-runbook.md)
 - [Auth0 Setup Guide](docs/user-authentication-plan/auth0-setup.md)
 
+## Super-Admin & Client Onboarding
+
+Platform operators (super-admins) can provision entirely new client tenants via the
+`bootstrapNewClient` GraphQL mutation. Super-admin status is controlled through the `super_admins`
+DB table — not through the app.
+
+- [Super-Admin Runbook](docs/super-user/super-admin-runbook.md) — registering admins, bootstrapping
+  tenants, security model
+- [Super-Admin Plan](docs/super-user/plan.md) — roadmap for cross-tenant access and global client
+  listing
+
 ## Testing
 
 The test suite is organized into three projects for efficiency:
