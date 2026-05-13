@@ -318,7 +318,7 @@ __metadata:
     typescript: "npm:6.0.3"
     vite: "npm:8.0.12"
     vitest: "npm:4.1.6"
-    ws: "npm:8.20.0"
+    ws: "npm:8.20.1"
     zod: "npm:4.4.3"
   languageName: unknown
   linkType: soft
@@ -331,7 +331,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.76"
+    "@ai-sdk/anthropic": "npm:3.0.77"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
@@ -354,7 +354,7 @@ __metadata:
     "@types/node": "npm:24.12.4"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.177"
+    ai: "npm:6.0.180"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.9.1"
     basic-auth: "npm:2.0.1"
@@ -413,28 +413,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.76":
-  version: 3.0.76
-  resolution: "@ai-sdk/anthropic@npm:3.0.76"
+"@ai-sdk/anthropic@npm:3.0.77":
+  version: 3.0.77
+  resolution: "@ai-sdk/anthropic@npm:3.0.77"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
     "@ai-sdk/provider-utils": "npm:4.0.27"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/e8b6b53f46f374c8b15fd3e879a4f547efe9a6799ce96c904bce512504179206c41b53aaebc553b04377b735dca7816665c612bdd48df75bc4530c5ced64cabd
+  checksum: 10c0/edc7637bbcc2bbb20ae843d463be99957b27434eb0e8b4682f8763483f9daa17e9d02a15f2fa5cf5e9932ee385ec74a9725995dd3adc3f13f219b7d61566b388
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.112":
-  version: 3.0.112
-  resolution: "@ai-sdk/gateway@npm:3.0.112"
+"@ai-sdk/gateway@npm:3.0.114":
+  version: 3.0.114
+  resolution: "@ai-sdk/gateway@npm:3.0.114"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
     "@ai-sdk/provider-utils": "npm:4.0.27"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/52485b8eeea357bbfe6c0957010ba3f518505df57034a422c1c14333695b75587231e329217742ad90b84444336c5ae8806066d960906242346db9612cf25498
+  checksum: 10c0/8a3f426c458c4a5eb8121e0f4a9814765dda29a25dc3efb458aea05abd94ff34fedb3987ab1d97e8f457156222f4149cd116f96cc03382ce2ff215106b6da70d
   languageName: node
   linkType: hard
 
@@ -2188,12 +2188,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/cli@npm:0.59.1":
-  version: 0.59.1
-  resolution: "@graphql-hive/cli@npm:0.59.1"
+"@graphql-hive/cli@npm:0.59.2":
+  version: 0.59.2
+  resolution: "@graphql-hive/cli@npm:0.59.2"
   dependencies:
     "@graphql-hive/core": "npm:0.21.0"
-    "@graphql-inspector/core": "npm:7.1.2"
+    "@graphql-inspector/core": "npm:7.1.3"
     "@graphql-tools/code-file-loader": "npm:~8.1.0"
     "@graphql-tools/graphql-file-loader": "npm:~8.1.0"
     "@graphql-tools/json-file-loader": "npm:~8.0.0"
@@ -2214,7 +2214,7 @@ __metadata:
     zod: "npm:3.25.76"
   bin:
     hive: bin/run
-  checksum: 10c0/8485450735c796a8e7569624c27a9d6e788bb0caf095059b2bcb4cd1d792f1b909f80a3142b48004db9011cb45f0f3393bd6737f3620df8a51718a262b055bbf
+  checksum: 10c0/38973dffdf39e2e8d028e4d289f26e6aeeea9f33920254389cc198e7cc7e7fd77e1b042065da89afb565eda94e8c311298f0b72466a7ed215e0f3b93ac080d99
   languageName: node
   linkType: hard
 
@@ -2383,19 +2383,6 @@ __metadata:
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
   checksum: 10c0/f0368204cac6305c59b05c3ce8f4b3f79200d9caa9f5f16e1572f30be7b2e3b5c9b5d312f54e7c88ed8152d4b557a8b41ddece6cccadd0d1329b808c5af92376
-  languageName: node
-  linkType: hard
-
-"@graphql-inspector/core@npm:7.1.2":
-  version: 7.1.2
-  resolution: "@graphql-inspector/core@npm:7.1.2"
-  dependencies:
-    dependency-graph: "npm:1.0.0"
-    object-inspect: "npm:1.13.2"
-    tslib: "npm:2.6.2"
-  peerDependencies:
-    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/de9e43b6a41734ca5a81d3079ed98027724df746ddf229dd27d235a2eda91388e8cde2886fc723fc9bb88d36e1f97854ef7dbadc0b0a8d0bf18321d8da256afb
   languageName: node
   linkType: hard
 
@@ -5721,13 +5708,6 @@ __metadata:
   dependencies:
     "@opentelemetry/api": "npm:^1.3.0"
   checksum: 10c0/e9fcff0596729a18fb3f639fddb1e52ab705b3a8b39209cf26dd31907665d9a981a956d090fa6cf2aaab4121a656222498c606ab18b4945c99b2755b55e38291
-  languageName: node
-  linkType: hard
-
-"@opentelemetry/api@npm:1.9.0":
-  version: 1.9.0
-  resolution: "@opentelemetry/api@npm:1.9.0"
-  checksum: 10c0/9aae2fe6e8a3a3eeb6c1fdef78e1939cf05a0f37f8a4fae4d6bf2e09eb1e06f966ece85805626e01ba5fab48072b94f19b835449e58b6d26720ee19a58298add
   languageName: node
   linkType: hard
 
@@ -10901,7 +10881,7 @@ __metadata:
     "@graphql-codegen/typescript-graphql-request": "npm:7.0.1"
     "@graphql-codegen/typescript-resolvers": "npm:5.1.8"
     "@graphql-eslint/eslint-plugin": "npm:4.4.0"
-    "@graphql-hive/cli": "npm:0.59.1"
+    "@graphql-hive/cli": "npm:0.59.2"
     "@graphql-inspector/cli": "npm:6.0.8"
     "@parcel/watcher": "npm:2.5.6"
     "@pgtyped/cli": "npm:2.4.3"
@@ -10987,17 +10967,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.177":
-  version: 6.0.177
-  resolution: "ai@npm:6.0.177"
+"ai@npm:6.0.180":
+  version: 6.0.180
+  resolution: "ai@npm:6.0.180"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.112"
+    "@ai-sdk/gateway": "npm:3.0.114"
     "@ai-sdk/provider": "npm:3.0.10"
     "@ai-sdk/provider-utils": "npm:4.0.27"
-    "@opentelemetry/api": "npm:1.9.0"
+    "@opentelemetry/api": "npm:^1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/a3527b15bc1228dffb34f74bfe5b51759eeb6063fa46a0896883083ee3ff2bad56d363f7f95e7d1d1c6544ed8e0acf40617f3bfeffa224e5b721eb49fc1d943a
+  checksum: 10c0/78dbd27926fb350dd393bb8310a7f694452d0b35ad107ea193887095a46bb310e29bd7980468411460fbd8d5d8a2ad39556c6f03857d0d54ac7ba24f1ac78874
   languageName: node
   linkType: hard
 
@@ -25918,7 +25898,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:8.20.0, ws@npm:^8.12.0, ws@npm:^8.15.0, ws@npm:^8.16.0, ws@npm:^8.17.1, ws@npm:^8.18.3, ws@npm:^8.20.0, ws@npm:^8.5.0":
+"ws@npm:8.20.1":
+  version: 8.20.1
+  resolution: "ws@npm:8.20.1"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 10c0/ce162433218399cdedeb76fd33363d4d86a7d910058d4e3c679dce08cea65d6da6b39f11baa4d7808d024cf46ed88f6a05c17611621aaad8fc5e62edacc30c5d
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.12.0, ws@npm:^8.15.0, ws@npm:^8.16.0, ws@npm:^8.17.1, ws@npm:^8.18.3, ws@npm:^8.20.0, ws@npm:^8.5.0":
   version: 8.20.0
   resolution: "ws@npm:8.20.0"
   peerDependencies:
