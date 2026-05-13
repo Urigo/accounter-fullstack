@@ -1,7 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
+import { makeUUID } from '../../../shared/helpers/deterministic-uuid.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
