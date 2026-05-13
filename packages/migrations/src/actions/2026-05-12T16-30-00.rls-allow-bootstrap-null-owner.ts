@@ -10,10 +10,6 @@ export default {
   name: '2026-05-12T16-30-00.rls-allow-bootstrap-null-owner.sql',
   run: ({ sql }) => sql`
     -- Allow INSERT of the root tenant entity: the new entity's ID matches the declared business context
-    CREATE POLICY allow_bootstrap_root ON accounter_schema.financial_entities
-      FOR INSERT
-      WITH CHECK (id = accounter_schema.get_current_business_id());
-
     CREATE POLICY allow_bootstrap_root ON accounter_schema.businesses
       FOR INSERT
       WITH CHECK (id = accounter_schema.get_current_business_id());
