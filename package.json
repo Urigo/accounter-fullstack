@@ -66,11 +66,11 @@
     "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
-    "@types/node": "24.12.3",
+    "@types/node": "24.12.4",
     "@types/pg": "8.20.0",
     "@typescript-eslint/eslint-plugin": "8.59.3",
     "@typescript-eslint/parser": "8.59.3",
-    "@vitest/coverage-v8": "4.1.5",
+    "@vitest/coverage-v8": "4.1.6",
     "bob-the-bundler": "7.0.1",
     "concurrently": "9.2.1",
     "dotenv": "17.4.2",
@@ -98,7 +98,7 @@
     "tsx": "4.21.0",
     "typescript": "6.0.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.5"
+    "vitest": "4.1.6"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^48.14.1": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch",
