@@ -9,7 +9,7 @@ tenant from scratch.
 ### Registering a Super-Admin
 
 ```bash
-AUTH0_USER_ID=auth0 | workspace < id > yarn @accounter/server seed:super-admin
+AUTH0_USER_ID='auth0|<id>' yarn @accounter/server seed:super-admin
 ```
 
 The app DB user has no INSERT privilege on `super_admins` (RLS-enforced); this script uses the
