@@ -54,7 +54,7 @@ __metadata:
     date-fns: "npm:4.1.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
-    fast-xml-parser: "npm:5.7.3"
+    fast-xml-parser: "npm:5.8.0"
     listr2: "npm:10.2.1"
     pg: "npm:8.20.0"
     rimraf: "npm:6.1.3"
@@ -308,7 +308,7 @@ __metadata:
     "@testing-library/user-event": "npm:14.6.1"
     "@vitejs/plugin-react": "npm:6.0.1"
     date-fns: "npm:4.1.0"
-    fast-xml-parser: "npm:5.7.3"
+    fast-xml-parser: "npm:5.8.0"
     fastify: "npm:5.8.5"
     graphql-request: "npm:7.4.0"
     msw: "npm:2.14.6"
@@ -15276,7 +15276,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-builder@npm:^1.1.7":
+"fast-xml-builder@npm:^1.2.0":
   version: 1.2.0
   resolution: "fast-xml-builder@npm:1.2.0"
   dependencies:
@@ -15286,17 +15286,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:5.7.3":
-  version: 5.7.3
-  resolution: "fast-xml-parser@npm:5.7.3"
+"fast-xml-parser@npm:5.8.0":
+  version: 5.8.0
+  resolution: "fast-xml-parser@npm:5.8.0"
   dependencies:
     "@nodable/entities": "npm:^2.1.0"
-    fast-xml-builder: "npm:^1.1.7"
+    fast-xml-builder: "npm:^1.2.0"
     path-expression-matcher: "npm:^1.5.0"
-    strnum: "npm:^2.2.3"
+    strnum: "npm:^2.3.0"
+    xml-naming: "npm:^0.1.0"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10c0/eeb802855e852ce16121396297f04131c6dbc74f863be94f19e26e386656bdb31677af469ddc6627983a48b99d8842888460ac5413063cb648fde547bb579978
+  checksum: 10c0/cd0828b7daf3f683c64d0d6a0c719f1476d4f02f1089cf345a9bc0b886e7d5fa18c11da025d480ea67a41765be63135cbd952051942c9d0b422a5d4dde11814e
   languageName: node
   linkType: hard
 
@@ -23969,7 +23970,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strnum@npm:^2.2.3":
+"strnum@npm:^2.3.0":
   version: 2.3.0
   resolution: "strnum@npm:2.3.0"
   checksum: 10c0/8d29ea0789df22dfa6101153573c76ce12fb065ed0807eb99cc64624cd7f3d67a5aa0db507e75ab985ca23908cc4f02c65f3359ad762cb3659e3d6456e76e143
