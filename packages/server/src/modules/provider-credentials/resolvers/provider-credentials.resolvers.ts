@@ -30,6 +30,7 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
 
   Mutation: {
     setGreenInvoiceCredentials: async (_parent, { id, secret }, { injector }) => {
+      // TODO: Ensure 'id' and 'secret' are added to the logging redaction list if structured logging is introduced
       try {
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)
@@ -53,6 +54,7 @@ export const providerCredentialsResolvers: ProviderCredentialsModule.Resolvers =
     },
 
     setDeelCredentials: async (_parent, { apiToken }, { injector }) => {
+      // TODO: Ensure 'apiToken' is added to the logging redaction list if structured logging is introduced
       try {
         const updatedAt = await injector
           .get(ProviderCredentialsProvider)

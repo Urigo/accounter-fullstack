@@ -110,8 +110,7 @@ export class ProviderCredentialsProvider {
       return schema.parse(JSON.parse(plaintext));
     } catch (err) {
       console.error(
-        `[ProviderCredentialsProvider] Failed to decrypt/parse "${provider}" credentials:`,
-        err,
+        `[ProviderCredentialsProvider] Failed to decrypt/parse "${provider}" credentials: ${err instanceof Error ? err.message : String(err)}`,
       );
       throw new GraphQLError('Failed to retrieve provider credentials', {
         extensions: { code: 'INTERNAL_SERVER_ERROR' },

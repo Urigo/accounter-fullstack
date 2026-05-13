@@ -1,8 +1,8 @@
 import { GraphQLError } from 'graphql';
 import { beforeEach, describe, expect, it, vi, type Mocked } from 'vitest';
 import { QueryResult, QueryResultRow } from 'pg';
-import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import type { Environment } from '../../../shared/types/index.js';
+import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
+import type { Environment } from '../../../../shared/types/index.js';
 import { encryptCredential } from '../../helpers/encryption.js';
 import { ProviderCredentialsProvider } from '../provider-credentials.provider.js';
 
