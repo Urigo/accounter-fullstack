@@ -168,6 +168,7 @@ import migration_2026_05_04T12_00_00_update_scraper_ingestion_unique_constraints
 import migration_2026_05_06T14_00_00_update_scraper_ingestion_poalim_unique_constraints from './actions/2026-05-06T14-00-00.update-scraper-ingestion-poalim-unique-constraints.js';
 import migration_2026_05_12T09_00_00_enable_rls_all_tables from './actions/2026-05-12T09-00-00.enable-rls-all-tables.js';
 import migration_2026_05_12T12_00_00_drop_legacy_business_users from './actions/2026-05-12T12-00-00.drop-legacy-business-users.js';
+import migration_2026_05_13T12_00_00_add_provider_credentials_table from './actions/2026-05-13T12-00-00.add-provider-credentials-table.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -340,6 +341,7 @@ export const MIGRATIONS = [
   migration_2026_05_06T14_00_00_update_scraper_ingestion_poalim_unique_constraints,
   migration_2026_05_12T09_00_00_enable_rls_all_tables,
   migration_2026_05_12T12_00_00_drop_legacy_business_users,
+  migration_2026_05_13T12_00_00_add_provider_credentials_table,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

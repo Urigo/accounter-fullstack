@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { FiltersContext } from '@/providers/filters-context.js';
 import { BusinessPageFragmentDoc } from '../../gql/graphql.js';
+import { ProviderIntegrations } from '../admin-settings/provider-integrations/index.js';
 import { AdminBusinessSection } from './admin/admin-business-section.js';
 import { FinancialAccountsSection } from './admin/financial-account-section.js';
 import { BalanceSection } from './balance-section.js';
@@ -176,6 +177,14 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
                   <Shield className="h-4 w-4" />
                   <span className="hidden sm:inline">Admin</span>
                 </TabsTrigger>
+
+                <TabsTrigger
+                  value="admin-config"
+                  className="flex items-center gap-2 data-[state=active]:bg-background"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin Config</span>
+                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -231,6 +240,9 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               </TabsContent>
               <TabsContent value="admin" className="mt-0">
                 <AdminBusinessSection data={business} />
+              </TabsContent>
+              <TabsContent value="admin-config" className="mt-0">
+                <ProviderIntegrations />
               </TabsContent>
             </>
           )}

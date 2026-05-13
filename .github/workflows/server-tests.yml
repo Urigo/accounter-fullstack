@@ -88,10 +88,12 @@ jobs:
           path: |
             packages/server/src/**/*.types.ts
             packages/migrations/src/**/*.types.ts
+            packages/scraper-app/src/server/gql/index.ts
           key:
             pgtyped-${{ runner.os }}-${{ hashFiles('docker/pgconfig.json', 'yarn.lock',
             'packages/server/src/**/providers/*.provider.ts',
-            'packages/server/src/plugins/admin-context-plugin.ts') }}
+            'packages/server/src/plugins/admin-context-plugin.ts',
+            'packages/scraper-app/src/server/graphql/mutations.ts') }}
           restore-keys: |
             pgtyped-${{ runner.os }}-
 
@@ -116,6 +118,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
+          CREDENTIALS_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
           DEBUG: ''
         run: |
           yarn test:integration --reporter=default --coverage
@@ -128,6 +131,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: accounter_test
           POSTGRES_SSL: '0'
+          CREDENTIALS_ENCRYPTION_KEY: '0000000000000000000000000000000000000000000000000000000000000000'
           ALLOW_DEMO_SEED: '1'
           DEBUG: ''
         run: |
