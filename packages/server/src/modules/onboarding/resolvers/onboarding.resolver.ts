@@ -8,7 +8,7 @@ export const onboardingResolvers: OnboardingModule.Resolvers = {
         .get(AdminOnboardingProvider)
         .bootstrapNewClient(input);
 
-      return { business, invitationToken, adminContext };
+      return { id: business.id, business, invitationToken, adminContext };
     },
   },
 };

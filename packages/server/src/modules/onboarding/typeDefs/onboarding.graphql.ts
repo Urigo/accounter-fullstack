@@ -5,6 +5,7 @@ export default gql`
     bootstrapNewClient(input: BootstrapClientInput!): BootstrapClientResult!
   }
 
+  " input required to bootstrap a new client business and its initial owner "
   input BootstrapClientInput {
     businessName: String!
     countryCode: String!
@@ -15,7 +16,9 @@ export default gql`
     ownerRole: String!
   }
 
+  " Result returned after bootstrapping, including business, invitation token, and admin context. "
   type BootstrapClientResult {
+    id: ID!
     business: Business!
     invitationToken: String!
     adminContext: AdminContextInfo!

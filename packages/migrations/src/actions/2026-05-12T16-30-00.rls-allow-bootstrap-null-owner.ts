@@ -9,9 +9,6 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2026-05-12T16-30-00.rls-allow-bootstrap-null-owner.sql',
   run: ({ sql }) => sql`
-    DROP POLICY IF EXISTS allow_self_owned_bootstrap ON accounter_schema.financial_entities;
-    DROP POLICY IF EXISTS allow_self_owned_bootstrap ON accounter_schema.businesses;
-
     -- Allow INSERT of the root tenant entity: the new entity's ID matches the declared business context
     CREATE POLICY allow_bootstrap_root ON accounter_schema.financial_entities
       FOR INSERT
@@ -20,11 +17,5 @@ export default {
     CREATE POLICY allow_bootstrap_root ON accounter_schema.businesses
       FOR INSERT
       WITH CHECK (id = accounter_schema.get_current_business_id());
-
-    -- Allow the subsequent self-owner UPDATE on financial_entities
-    CREATE POLICY allow_bootstrap_owner_update ON accounter_schema.financial_entities
-      FOR UPDATE
-      USING (id = accounter_schema.get_current_business_id())
-      WITH CHECK (owner_id = id);
   `,
 } satisfies MigrationExecutor;

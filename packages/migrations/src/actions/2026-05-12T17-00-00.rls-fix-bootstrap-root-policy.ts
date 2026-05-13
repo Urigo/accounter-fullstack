@@ -13,8 +13,6 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2026-05-12T17-00-00.rls-fix-bootstrap-root-policy.sql',
   run: ({ sql }) => sql`
-    DROP POLICY IF EXISTS allow_bootstrap_root ON accounter_schema.financial_entities;
-
     CREATE POLICY allow_bootstrap_root ON accounter_schema.financial_entities
       FOR ALL
       USING (id = accounter_schema.get_current_business_id())

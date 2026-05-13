@@ -169,8 +169,6 @@ import migration_2026_05_06T14_00_00_update_scraper_ingestion_poalim_unique_cons
 import migration_2026_05_12T09_00_00_enable_rls_all_tables from './actions/2026-05-12T09-00-00.enable-rls-all-tables.js';
 import migration_2026_05_12T12_00_00_drop_legacy_business_users from './actions/2026-05-12T12-00-00.drop-legacy-business-users.js';
 import migration_2026_05_12T14_00_00_create_super_admins_table from './actions/2026-05-12T14-00-00.create-super-admins-table.js';
-import migration_2026_05_12T15_30_00_create_bootstrap_tenant_function from './actions/2026-05-12T15-30-00.create-bootstrap-tenant-function.js';
-import migration_2026_05_12T16_00_00_rls_allow_self_owned_bootstrap from './actions/2026-05-12T16-00-00.rls-allow-self-owned-bootstrap.js';
 import migration_2026_05_12T16_30_00_rls_allow_bootstrap_null_owner from './actions/2026-05-12T16-30-00.rls-allow-bootstrap-null-owner.js';
 import migration_2026_05_12T17_00_00_rls_fix_bootstrap_root_policy from './actions/2026-05-12T17-00-00.rls-fix-bootstrap-root-policy.js';
 import migration_2026_05_12T17_30_00_rls_super_admins_read_only from './actions/2026-05-12T17-30-00.rls-super-admins-read-only.js';
@@ -350,8 +348,6 @@ export const MIGRATIONS = [
   migration_2026_05_12T12_00_00_drop_legacy_business_users,
   migration_2026_05_13T12_00_00_add_provider_credentials_table,
   migration_2026_05_12T14_00_00_create_super_admins_table,
-  migration_2026_05_12T15_30_00_create_bootstrap_tenant_function,
-  migration_2026_05_12T16_00_00_rls_allow_self_owned_bootstrap,
   migration_2026_05_12T16_30_00_rls_allow_bootstrap_null_owner,
   migration_2026_05_12T17_00_00_rls_fix_bootstrap_root_policy,
   migration_2026_05_12T17_30_00_rls_super_admins_read_only,
