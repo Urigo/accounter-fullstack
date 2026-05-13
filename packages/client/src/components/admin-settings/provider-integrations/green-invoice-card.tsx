@@ -99,7 +99,7 @@ export function GreenInvoiceCard({
           <div className="flex flex-col gap-2">
             <Badge className="w-fit bg-green-600 text-white hover:bg-green-600">Connected</Badge>
             <p className="text-sm text-gray-500">
-              Since {new Date(status.configuredAt).toLocaleDateString()}
+              Since {new Date(status.configuredAt).toLocaleDateString('en-US')}
             </p>
           </div>
         ) : (
@@ -123,12 +123,20 @@ export function GreenInvoiceCard({
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDisconnect}>Disconnect</AlertDialogAction>
+                <AlertDialogAction onClick={handleDisconnect} disabled={deletingCredentials}>
+                  Disconnect
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         ) : (
-          <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
+          <Dialog
+            open={connectOpen}
+            onOpenChange={open => {
+              setConnectOpen(open);
+              if (!open) form.reset();
+            }}
+          >
             <DialogTrigger asChild>
               <Button>Connect</Button>
             </DialogTrigger>
