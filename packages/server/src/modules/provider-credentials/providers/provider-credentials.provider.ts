@@ -28,7 +28,7 @@ export type ProviderKey = keyof typeof PROVIDER_SCHEMAS;
 const upsertProviderCredentials = sql<IUpsertProviderCredentialsQuery>`
   INSERT INTO accounter_schema.provider_credentials (owner_id, provider, payload)
   VALUES (accounter_schema.get_current_business_id(), $provider, $encrypted)
-  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload
+  ON CONFLICT (owner_id, provider) DO UPDATE SET payload = EXCLUDED.payload, updated_at = now()
   RETURNING updated_at;`;
 
 const deleteProviderCredentials = sql<IDeleteProviderCredentialsQuery>`
