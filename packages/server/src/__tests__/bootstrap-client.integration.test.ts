@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { EntityEnsureProvider } from '../modules/financial-entities/providers/entity-ensure.provider.js';
 import { UUID_REGEX } from '../shared/constants.js';
 import { TestDatabase } from './helpers/db-setup.js';
+import { TenantAwareDBClient } from '../modules/app-providers/tenant-db-client.js';
 
 /**
  * Integration tests for the green-field client bootstrap flow.
@@ -16,7 +17,7 @@ describe('bootstrapNewClient integration', () => {
   beforeAll(async () => {
     db = new TestDatabase();
     await db.connect();
-    entityEnsure = new EntityEnsureProvider();
+    entityEnsure = new EntityEnsureProvider(db as unknown as TenantAwareDBClient);
   });
 
   afterAll(async () => {
@@ -58,26 +59,26 @@ describe('bootstrapNewClient integration', () => {
 
       // Authority businesses
       for (const name of ['VAT', 'Tax', 'Social Security']) {
-        const { id } = await entityEnsure.ensureFinancialEntity(client, {
+        const { id } = await entityEnsure.ensureFinancialEntity({
           name,
           type: 'business',
           ownerId: adminId,
-        });
-        await entityEnsure.ensureBusinessForEntity(client, id, {
+        }, client);
+        await entityEnsure.ensureBusinessForEntity(id, {
           isDocumentsOptional: true,
           ownerId: adminId,
-        });
+        }, client);
         expect(id).toMatch(UUID_REGEX);
       }
 
       // Authority tax categories
       for (const name of ['Input Vat', 'Output Vat', 'Property Output Vat', 'Tax Expenses']) {
-        const { id } = await entityEnsure.ensureFinancialEntity(client, {
+        const { id } = await entityEnsure.ensureFinancialEntity({
           name,
           type: 'tax_category',
           ownerId: adminId,
-        });
-        await entityEnsure.ensureTaxCategoryForEntity(client, id, { ownerId: adminId });
+        } ,client, );
+        await entityEnsure.ensureTaxCategoryForEntity(id, { ownerId: adminId }, client);
         expect(id).toMatch(UUID_REGEX);
       }
 
@@ -97,8 +98,8 @@ describe('bootstrapNewClient integration', () => {
 
       const bootstrap = async () => {
         await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [precomputedId]);
-        await entityEnsure.ensureFinancialEntity(client, { id: precomputedId, name: 'Idempotent Corp', type: 'business' });
-        await entityEnsure.ensureBusinessForEntity(client, precomputedId, { ownerId: precomputedId });
+        await entityEnsure.ensureFinancialEntity({ id: precomputedId, name: 'Idempotent Corp', type: 'business' }, client);
+        await entityEnsure.ensureBusinessForEntity(precomputedId, { ownerId: precomputedId }, client);
         await client.query(`UPDATE accounter_schema.financial_entities SET owner_id = $1 WHERE id = $1`, [precomputedId]);
         return precomputedId;
       };

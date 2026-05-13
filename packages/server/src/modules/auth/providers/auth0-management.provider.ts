@@ -69,14 +69,19 @@ export class Auth0ManagementProvider {
 
   async createBlockedUser(email: string, password?: string): Promise<string> {
     const client = this.getClient();
+
+    const existingUserId = await this.getUserByEmail(email);
+    if (existingUserId) {
+      return existingUserId;
+    }
+
     const temporaryPassword = password || this.generateTemporaryPassword();
 
     try {
-      // Create user with blocked status (prevents login until invitation accepted)
       const user = await client.users.create({
         connection: 'Username-Password-Authentication',
         email,
-        password: temporaryPassword, // User will reset via invitation
+        password: temporaryPassword,
         email_verified: false,
         blocked: true,
         app_metadata: {
@@ -88,7 +93,6 @@ export class Auth0ManagementProvider {
         throw new Error('Auth0 did not return a user ID');
       }
 
-      // Returns Auth0 user ID (e.g., "auth0|507f...")
       return user.user_id;
     } catch (error) {
       console.error('Failed to create Auth0 user:', error);

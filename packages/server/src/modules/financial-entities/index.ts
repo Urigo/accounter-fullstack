@@ -3,6 +3,7 @@ import { AdminBusinessesProvider } from './providers/admin-businesses.provider.j
 import { BusinessesOperationProvider } from './providers/businesses-operation.provider.js';
 import { BusinessesProvider } from './providers/businesses.provider.js';
 import { ClientsProvider } from './providers/clients.provider.js';
+import { EntityEnsureProvider } from './providers/entity-ensure.provider.js';
 import { FinancialEntitiesProvider } from './providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from './providers/tax-categories.provider.js';
 import { adminBusinessesResolvers } from './resolvers/admin-businesses.resolver.js';
@@ -46,6 +47,7 @@ export const financialEntitiesModule = createModule({
     FinancialEntitiesProvider,
     AdminBusinessesProvider,
     ClientsProvider,
+    EntityEnsureProvider,
   ],
 });
 

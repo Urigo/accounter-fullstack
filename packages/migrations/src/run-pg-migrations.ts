@@ -174,6 +174,7 @@ import migration_2026_05_12T16_00_00_rls_allow_self_owned_bootstrap from './acti
 import migration_2026_05_12T16_30_00_rls_allow_bootstrap_null_owner from './actions/2026-05-12T16-30-00.rls-allow-bootstrap-null-owner.js';
 import migration_2026_05_12T17_00_00_rls_fix_bootstrap_root_policy from './actions/2026-05-12T17-00-00.rls-fix-bootstrap-root-policy.js';
 import migration_2026_05_12T17_30_00_rls_super_admins_read_only from './actions/2026-05-12T17-30-00.rls-super-admins-read-only.js';
+import migration_2026_05_13T10_00_00_fix_invitations_unique_index from './actions/2026-05-13T10-00-00.fix-invitations-unique-index.js';
 import migration_2026_05_13T12_00_00_add_provider_credentials_table from './actions/2026-05-13T12-00-00.add-provider-credentials-table.js';
 import { runMigrations } from './pg-migrator.js';
 
@@ -354,6 +355,7 @@ export const MIGRATIONS = [
   migration_2026_05_12T16_30_00_rls_allow_bootstrap_null_owner,
   migration_2026_05_12T17_00_00_rls_fix_bootstrap_root_policy,
   migration_2026_05_12T17_30_00_rls_super_admins_read_only,
+  migration_2026_05_13T10_00_00_fix_invitations_unique_index,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

@@ -297,7 +297,7 @@ export class AdminContextProvider {
     private db: TenantAwareDBClient,
   ) {}
 
-  private normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
+  public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
     const dividendPaymentBusinessIds = [
       '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
       '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend

@@ -1,9 +1,10 @@
-import { Injectable } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 // eslint-disable-next-line no-restricted-imports
 import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { makeUUID } from '../../../demo-fixtures/helpers/deterministic-uuid.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
   IEnsureBusinessQuery,
   IEnsureCountryQuery,
@@ -77,11 +78,13 @@ const ensureCountry = sql<IEnsureCountryQuery>`
   ON CONFLICT (code) DO NOTHING;
 `;
 
-@Injectable()
+@Injectable({ scope: Scope.Operation, global: true })
 export class EntityEnsureProvider {
+  constructor(private db: TenantAwareDBClient) {}
+
   async ensureFinancialEntity(
-    client: PoolClient,
     params: EnsureFinancialEntityParams,
+    client?: PoolClient,
   ): Promise<{ id: string }> {
     const { name, type, ownerId, id: originId } = params;
 
@@ -95,15 +98,18 @@ export class EntityEnsureProvider {
     const compositeKey = ownerId ? `${name}:owner=${ownerId}` : name;
     const id = originId ?? makeUUID(type, compositeKey);
 
-    await ensureFinancialEntity.run({ id, name, type, ownerId: ownerId ?? null }, client);
+    await ensureFinancialEntity.run(
+      { id, name, type, ownerId: ownerId ?? null },
+      client ?? this.db,
+    );
 
     return { id };
   }
 
   async ensureBusinessForEntity(
-    client: PoolClient,
     entityId: string,
     options?: EnsureBusinessOptions,
+    client?: PoolClient,
   ): Promise<void> {
     if (!UUID_REGEX.test(entityId)) {
       throw new Error(`ensureBusinessForEntity: invalid entityId "${entityId}"`);
@@ -127,14 +133,14 @@ export class EntityEnsureProvider {
         isDocumentsOptional: options?.isDocumentsOptional ?? false,
         ownerId: options?.ownerId ?? null,
       },
-      client,
+      client ?? this.db,
     );
   }
 
   async ensureTaxCategoryForEntity(
-    client: PoolClient,
     entityId: string,
     options?: EnsureTaxCategoryOptions,
+    client?: PoolClient,
   ): Promise<void> {
     if (!UUID_REGEX.test(entityId)) {
       throw new Error(`ensureTaxCategoryForEntity: invalid entityId "${entityId}"`);
@@ -147,11 +153,11 @@ export class EntityEnsureProvider {
         taxExcluded: options?.taxExcluded ?? false,
         ownerId: options?.ownerId ?? null,
       },
-      client,
+      client ?? this.db,
     );
   }
 
-  async ensureCountry(client: PoolClient, code: string, name: string): Promise<void> {
-    await ensureCountry.run({ code, name }, client);
+  async ensureCountry(code: string, name: string, client?: PoolClient): Promise<void> {
+    await ensureCountry.run({ code, name }, client ?? this.db);
   }
 }
