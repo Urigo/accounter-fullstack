@@ -17,7 +17,7 @@ Super-admin rows must be inserted directly by a DBA (the app DB user has no INSE
 `super_admins` due to RLS). Use the provided seed script:
 
 ```bash
-AUTH0_USER_ID=auth0 | workspace < id > yarn @accounter/server seed:super-admin
+AUTH0_USER_ID='auth0|<id>' yarn workspace @accounter/server seed:super-admin
 ```
 
 The script is idempotent (`ON CONFLICT DO NOTHING`). To find an Auth0 user ID, look it up in the
