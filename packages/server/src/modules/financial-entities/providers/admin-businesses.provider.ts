@@ -1,5 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
+// eslint-disable-next-line no-restricted-imports
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { adminBusinessUpdateSchema } from '../helpers/admin-businesses.helper.js';
@@ -7,6 +9,7 @@ import type {
   IGetAdminBusinessesByIdsQuery,
   IGetAllAdminBusinessesQuery,
   IGetAllAdminBusinessesResult,
+  IInsertAdminBusinessQuery,
   IUpdateAdminBusinessesParams,
   IUpdateAdminBusinessesQuery,
   IUpdateAdminBusinessesResult,
@@ -62,6 +65,9 @@ const updateAdminBusinesses = sql<IUpdateAdminBusinessesQuery>`
       id = $id
     RETURNING *;`;
 
+const insertAdminBusiness = sql<IInsertAdminBusinessQuery>`
+  INSERT INTO accounter_schema.businesses_admin (id, owner_id) VALUES ($id, $id) ON CONFLICT (id) DO NOTHING;`;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -101,6 +107,10 @@ export class AdminBusinessesProvider {
         return adminBusinesses;
       });
     return this.allAdminBusinessesPromise;
+  }
+
+  public async insertAdminBusiness(id: string, client?: PoolClient): Promise<void> {
+    await insertAdminBusiness.run({ id }, client ?? this.db);
   }
 
   public async updateAdminBusiness(

@@ -16,7 +16,9 @@ const getBusinessUsersByAuth0Ids = sql<IGetBusinessUsersByAuth0IdsQuery>`
 
 const insertBusinessUser = sql<IInsertBusinessUserQuery>`
   INSERT INTO accounter_schema.business_users (user_id, auth0_user_id, business_id, role_id)
-    VALUES ($userId, $auth0UserId, $ownerId, $roleId);
+    VALUES ($userId, $auth0UserId, $ownerId, $roleId)
+    ON CONFLICT (user_id, business_id) DO NOTHING
+    RETURNING *;
 `;
 
 @Injectable({

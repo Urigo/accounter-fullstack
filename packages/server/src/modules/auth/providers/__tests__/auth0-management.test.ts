@@ -9,6 +9,7 @@ vi.mock('auth0', () => {
     create: vi.fn(),
     delete: vi.fn(),
     update: vi.fn(),
+    listUsersByEmail: vi.fn(),
   };
   const tickets = {
     changePassword: vi.fn(),
@@ -63,10 +64,23 @@ describe('Auth0ManagementProvider', () => {
     });
   });
 
+  it('should return existing user id if user already exists', async () => {
+    const email = 'existing@example.com';
+    const existingUserId = 'auth0|existing';
+
+    mockClient.users.listUsersByEmail.mockResolvedValue([{ user_id: existingUserId }]);
+
+    const userId = await service.createBlockedUser(email);
+
+    expect(userId).toBe(existingUserId);
+    expect(mockClient.users.create).not.toHaveBeenCalled();
+  });
+
   it('should create a blocked user with temporary password', async () => {
     const email = 'test@example.com';
     const mockUserId = 'auth0|123456';
-    
+
+    mockClient.users.listUsersByEmail.mockResolvedValue([]);
     mockClient.users.create.mockResolvedValue({
       user_id: mockUserId,
     });
@@ -147,6 +161,7 @@ describe('Auth0ManagementProvider', () => {
   });
 
   it('should throw error if creation fails', async () => {
+    mockClient.users.listUsersByEmail.mockResolvedValue([]);
     mockClient.users.create.mockRejectedValue(new Error('Auth0 Error'));
 
     await expect(service.createBlockedUser('fail@test.com')).rejects.toThrow('Failed to create Auth0 user: Auth0 Error');
