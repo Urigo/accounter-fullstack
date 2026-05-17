@@ -23,12 +23,14 @@
     "start": "node dist/index.js",
     "test:hapoalim": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-poalim.js\"",
     "test:isracard": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-isracard.js\"",
-    "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
+    "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\"",
+    "test:otsar-hahayal": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-otsar-hahayal.js\""
   },
   "dependencies": {
     "date-fns": "4.3.0",
     "inquirer": "13.4.3",
     "node-fetch": "3.3.2",
+    "playwright": "1.60.0",
     "puppeteer": "25.0.2",
     "puppeteer-extra": "3.3.6",
     "puppeteer-extra-plugin-stealth": "2.11.2",
