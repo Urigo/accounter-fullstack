@@ -47,6 +47,30 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
         throw errorSimplifier('Error creating deposit', e);
       }
     },
+    updateDeposit: async (_, { id, name, openDate, closeDate }, { injector }) => {
+      try {
+        const provider = injector.get(BankDepositsProvider);
+        const existing = await provider.bankDepositByIdLoader.load(id);
+        if (!existing) {
+          throw new GraphQLError('Deposit not found');
+        }
+        const result = await provider.updateBankDeposit({
+          depositId: id,
+          name: name ?? existing.name,
+          currency: existing.currency,
+          openDate: openDate === undefined ? existing.open_date : openDate ? new Date(openDate) : null,
+          closeDate: closeDate === undefined ? existing.close_date : closeDate ? new Date(closeDate) : null,
+          accountId: existing.account_id,
+        });
+        if (!result) {
+          throw new GraphQLError('Error updating deposit');
+        }
+        return result;
+      } catch (e) {
+        if (e instanceof GraphQLError) throw e;
+        throw errorSimplifier('Error updating deposit', e);
+      }
+    },
   },
   BankDeposit: {
     id: deposit => deposit.id,

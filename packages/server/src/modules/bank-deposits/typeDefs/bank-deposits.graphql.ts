@@ -13,6 +13,12 @@ export default gql`
       openDate: TimelessDate!
       accountId: UUID
     ): BankDeposit! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    updateDeposit(
+      id: UUID!
+      name: String
+      openDate: TimelessDate
+      closeDate: TimelessDate
+    ): BankDeposit! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " Bank Deposit "
