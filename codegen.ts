@@ -166,7 +166,7 @@ const config: CodegenConfig = {
         },
       },
       config: {
-        enumsAsConst: true,
+        enumType: 'const',
         useTypeImports: true,
         scalars: {
           TimelessDate: '../helpers/index.js#TimelessDateString',
@@ -194,7 +194,7 @@ const config: CodegenConfig = {
       preset: 'client',
       config: {
         documentMode: 'string',
-        enumsAsConst: true,
+        enumType: 'const',
         useTypeImports: true,
         scalars: {
           FileScalar: {
@@ -209,9 +209,9 @@ const config: CodegenConfig = {
       },
     },
     'packages/scraper-app/src/server/gql/index.ts': {
-      plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
+      plugins: ['typescript-operations', 'typescript-graphql-request'],
       config: {
-        enumsAsConst: true,
+        enumType: 'const',
         useTypeImports: true,
         rawRequest: true,
         scalars: {
