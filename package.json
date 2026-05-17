@@ -89,7 +89,7 @@
     "globals": "17.6.0",
     "graphql": "16.14.0",
     "husky": "9.1.7",
-    "lint-staged": "17.0.4",
+    "lint-staged": "17.0.5",
     "pg": "8.20.0",
     "prettier": "3.8.3",
     "prettier-plugin-sql": "0.20.0",
