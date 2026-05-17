@@ -14,19 +14,17 @@ import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../c
       name
       namePath
     }
-    ... on Charge @defer {
-      validationData {
-        ... on ValidationData {
-          missingInfo
-        }
+    validationData {
+      ... on ValidationData {
+        missingInfo
       }
-      missingInfoSuggestions {
-        ... on ChargeSuggestions {
-          tags {
-            id
-            name
-            namePath
-          }
+    }
+    missingInfoSuggestions {
+      ... on ChargeSuggestions {
+        tags {
+          id
+          name
+          namePath
         }
       }
     }

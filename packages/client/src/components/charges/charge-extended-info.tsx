@@ -67,9 +67,7 @@ import { SalariesTable } from './extended-info/salaries-info.js';
       ... on BusinessTripCharge {
         businessTrip {
           id
-          ... on BusinessTrip @defer {
-            ...BusinessTripReportFields
-          }
+          ...BusinessTripReportFields
         }
       }
       ...ChargesTableErrorsFields @defer

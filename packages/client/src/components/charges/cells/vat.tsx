@@ -20,10 +20,8 @@ import { getFragmentData, type FragmentType } from '../../../gql/index.js';
       raw
       currency
     }
-    ... on Charge @defer {
-      validationData {
-        missingInfo
-      }
+    validationData {
+      missingInfo
     }
   }
 `;

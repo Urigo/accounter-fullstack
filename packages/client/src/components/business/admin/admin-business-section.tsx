@@ -45,6 +45,7 @@ import { Separator } from '../../ui/separator';
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   fragment BusinessAdminSection on Business {
+    __typename
     id
     ... on LtdFinancialEntity {
       adminInfo {

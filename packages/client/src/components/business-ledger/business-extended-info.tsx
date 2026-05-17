@@ -40,6 +40,7 @@ import { DownloadCSV } from './download-csv.js';
   query BusinessLedgerInfo($filters: BusinessTransactionsFilter) {
     businessTransactionsFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsFromLedgerRecordsSuccessfulResult {
+        __typename
         businessTransactions {
           amount {
             formatted
@@ -144,7 +145,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   const extendedLedgerRecords: Array<ExtendedLedger> = useMemo(() => {
     const records: Array<ExtendedLedger> = [];
     for (let i = 0; i < ledgerRecords.length; i++) {
-      const { __typename, ...coreRecord } = ledgerRecords[i];
+      const coreRecord = ledgerRecords[i];
       const ilsBalance =
         i === 0 ? coreRecord.amount.raw : (records[i - 1].ilsBalance ?? 0) + coreRecord.amount.raw;
       const foreignCurrenciesBalance: Record<string, number> = {};

@@ -12,7 +12,7 @@ import { getFragmentData, type FragmentType } from '../../../gql/index.js';
       raw
       formatted
     }
-    ... on CreditcardBankCharge @defer {
+    ... on CreditcardBankCharge {
       validCreditCardAmount
     }
   }
@@ -28,7 +28,7 @@ export const Amount = ({ data }: Props): ReactElement => {
   const [isValidating, setIsValidating] = useState(true);
 
   const validCreditCardAmount =
-    'validCreditCardAmount' in charge ? charge.validCreditCardAmount : null;
+    charge.__typename === 'CreditcardBankCharge' ? charge.validCreditCardAmount : null;
 
   useEffect(() => {
     if (charge.__typename === 'CreditcardBankCharge') {

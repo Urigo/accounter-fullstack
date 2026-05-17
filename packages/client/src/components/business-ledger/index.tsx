@@ -28,6 +28,7 @@ import { BusinessLedgerRecordsFilters } from './business-ledger-filters.js';
   query BusinessLedgerRecordsSummery($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+        __typename
         businessTransactionsSum {
           business {
             id

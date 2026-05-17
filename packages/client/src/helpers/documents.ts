@@ -1,30 +1,25 @@
-import {
-  DocumentType,
-  type CreditInvoice,
-  type Invoice,
-  type InvoiceReceipt,
-  type Proforma,
-  type Receipt,
-} from '../gql/graphql.js';
+import { DocumentType } from '../gql/graphql.js';
 
-export function isDocumentInvoice(doc: unknown): doc is Partial<Invoice> {
-  return (doc as Invoice)?.__typename === 'Invoice';
+type DocWithTypename<T extends string> = { __typename?: T };
+
+export function isDocumentInvoice(doc: unknown): doc is DocWithTypename<'Invoice'> {
+  return (doc as DocWithTypename<'Invoice'>)?.__typename === 'Invoice';
 }
 
-export function isDocumentReceipt(doc: unknown): doc is Partial<Receipt> {
-  return (doc as Receipt)?.__typename === 'Receipt';
+export function isDocumentReceipt(doc: unknown): doc is DocWithTypename<'Receipt'> {
+  return (doc as DocWithTypename<'Receipt'>)?.__typename === 'Receipt';
 }
 
-export function isDocumentInvoiceReceipt(doc: unknown): doc is Partial<InvoiceReceipt> {
-  return (doc as InvoiceReceipt)?.__typename === 'InvoiceReceipt';
+export function isDocumentInvoiceReceipt(doc: unknown): doc is DocWithTypename<'InvoiceReceipt'> {
+  return (doc as DocWithTypename<'InvoiceReceipt'>)?.__typename === 'InvoiceReceipt';
 }
 
-export function isDocumentCreditInvoice(doc: unknown): doc is Partial<CreditInvoice> {
-  return (doc as CreditInvoice)?.__typename === 'CreditInvoice';
+export function isDocumentCreditInvoice(doc: unknown): doc is DocWithTypename<'CreditInvoice'> {
+  return (doc as DocWithTypename<'CreditInvoice'>)?.__typename === 'CreditInvoice';
 }
 
-export function isDocumentProforma(doc: unknown): doc is Partial<Proforma> {
-  return (doc as Proforma)?.__typename === 'Proforma';
+export function isDocumentProforma(doc: unknown): doc is DocWithTypename<'Proforma'> {
+  return (doc as DocWithTypename<'Proforma'>)?.__typename === 'Proforma';
 }
 
 export function getDocumentNameFromType(documentType: DocumentType): string {

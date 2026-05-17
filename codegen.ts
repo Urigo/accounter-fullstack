@@ -187,6 +187,10 @@ const config: CodegenConfig = {
             input: 'bigint',
             output: 'bigint',
           },
+          CountryCode: {
+            input: 'string',
+            output: 'string',
+          },
         },
       },
     },
