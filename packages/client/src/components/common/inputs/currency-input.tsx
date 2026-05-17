@@ -1,11 +1,26 @@
 import {
   forwardRef,
+  useState,
   type ComponentProps,
   type DetailedHTMLProps,
   type SelectHTMLAttributes,
 } from 'react';
-import { NumberInput, Select } from '@mantine/core';
+import { Check, ChevronDownIcon } from 'lucide-react';
+import { NumberInput } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
+import { cn } from '../../../lib/utils.js';
+import { Button } from '../../ui/button.js';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '../../ui/command.js';
+import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
+
+const CURRENCIES = Object.values(Currency);
 
 type CurrencyCodeProps = DetailedHTMLProps<
   SelectHTMLAttributes<HTMLSelectElement>,
@@ -39,9 +54,85 @@ export const CurrencyCodeInput = forwardRef<HTMLSelectElement, CurrencyCodeProps
   },
 );
 
+type CurrencyCodeFieldProps = {
+  name?: string;
+  value?: string | null;
+  onChange?: (value: string | null) => void;
+  onBlur?: () => void;
+  ref?: React.Ref<unknown>;
+  required?: boolean;
+  label?: string;
+  error?: string;
+  disabled?: boolean;
+};
+
+function CurrencySelect({
+  value,
+  onChange,
+  onBlur,
+  label,
+  error,
+  disabled,
+}: CurrencyCodeFieldProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="w-1/2 min-w-[75px] mt-6">
+      {label && <span className="sr-only">{label}</span>}
+      <Popover modal open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-between font-normal"
+            disabled={disabled}
+            onBlur={onBlur}
+            onClick={e => e.stopPropagation()}
+          >
+            <span>{value ?? 'Currency'}</span>
+            <ChevronDownIcon
+              strokeWidth={2}
+              className="shrink-0 text-gray-500/80 dark:text-gray-400/80 size-4"
+              aria-hidden="true"
+            />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-40 p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search currency..." />
+            <CommandList>
+              <CommandEmpty>No currency found.</CommandEmpty>
+              <CommandGroup>
+                {CURRENCIES.map(currency => (
+                  <CommandItem
+                    key={currency}
+                    value={currency}
+                    onSelect={val => {
+                      const selected =
+                        CURRENCIES.find(c => c.toLowerCase() === val.toLowerCase()) ?? null;
+                      onChange?.(selected);
+                      setOpen(false);
+                    }}
+                  >
+                    {currency}
+                    <Check
+                      className={cn('ml-auto', value === currency ? 'opacity-100' : 'opacity-0')}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
 type Props = ComponentProps<typeof NumberInput> & {
   error?: string;
-  currencyCodeProps: Omit<ComponentProps<typeof Select>, 'data'>;
+  currencyCodeProps: CurrencyCodeFieldProps;
   precision?: number;
 };
 
@@ -73,11 +164,7 @@ export const CurrencyInput = forwardRef<HTMLInputElement, Props>(function Curren
         precision={precision ?? 2}
         error={error || currencyError}
       />
-      <Select
-        className="w-1/2 min-w-[75px]"
-        {...currencyCodeProps}
-        data={Object.keys(Currency).map(key => Currency[key as keyof typeof Currency])}
-      />
+      <CurrencySelect {...currencyCodeProps} error={currencyError} />
     </div>
   );
 });
