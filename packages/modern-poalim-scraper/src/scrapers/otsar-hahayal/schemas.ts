@@ -482,6 +482,10 @@ export const drillDownDataSchema = z
   ])
   .optional();
 
+export type DrillDown523Data = z.infer<typeof drillDownData523Schema>['T10C1523'];
+export type DrillDown526Data = z.infer<typeof drillDownData526Schema>['T10C1526'];
+export type DrillDownData = z.infer<typeof drillDownDataSchema>;
+
 export const ilsTransactionSchema = z
   .object({
     ActionCode: z.literal(0),
@@ -510,12 +514,13 @@ export const ilsTransactionSchema = z
     DepositorId: z.literal(0),
     description: z.string().min(1),
     drillDownUrl: z.string(),
-    drillDownData: drillDownDataSchema.optional(),
+    drillDownData: drillDownDataSchema.optional(), // synthetic field for storing parsed drillDownData from the drillDownUrl
     firstTransactionOfDay: z.boolean(),
     lastTransactionOfDay: z.boolean(),
     Name: whitespaceStringSchema,
     openingBalance: z.number(),
     OprationSource: whitespaceStringSchema,
+    originReference: z.string().optional(), // synthetic field to ensure unique transaction ID
     reference: z.number().int().nonnegative(),
     SalaryInd: z.literal(0),
     transactionSource: whitespaceStringSchema,
@@ -525,17 +530,17 @@ export const ilsTransactionSchema = z
 
 export const ilsTransactionsResponseSchema = z
   .object({
-    // accountNumber: z.null(),
+    accountNumber: z.null(),
     accountType: z.literal(409),
-    // bank: z.null(),
-    // branch: z.null(),
-    // currentDate: z.null(),
+    bank: z.null(),
+    branch: z.null(),
+    currentDate: z.null(),
     errorMessage: z.null(),
-    // messages: z.null(),
-    // pagingContext: z.string(),
+    messages: z.null(),
+    pagingContext: z.string(),
     returncode: z.null(),
-    // subtitle: z.null(),
-    // title: z.null(),
+    subtitle: z.null(),
+    title: z.null(),
     transactions: z.array(ilsTransactionSchema),
   })
   .strict();

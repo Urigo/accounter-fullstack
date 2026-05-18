@@ -2,7 +2,8 @@ import { Page } from 'playwright';
 import { $ZodIssue } from 'zod/v4/core';
 import { sleep } from '../../utils/sleep.js';
 import { OtsarHahayalOptions } from './index.js';
-import { Account, userDataSchema } from './schemas.js';
+import { userDataSchema } from './schemas.js';
+import type { Account } from './types.js';
 
 export async function getAccounts(
   page: Page,

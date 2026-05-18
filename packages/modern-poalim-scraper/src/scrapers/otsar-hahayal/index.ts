@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { getAccounts } from './accounts.js';
+import { getForeignTransactions } from './foreign-transactions.js';
 import { getIlsTransactions } from './ils-transactions.js';
 import { loginAndGetUserData } from './login-fetch-user-data.js';
 
@@ -25,7 +26,6 @@ const DEFAULT_OPTIONS: OtsarHahayalOptions = {
   fetchCreditCards: true,
   fetchInvestments: true,
   validateSchema: false,
-  headless: true,
 };
 
 export async function otsarHahayal(
@@ -40,8 +40,9 @@ export async function otsarHahayal(
   ).toISOString();
   const options = { ...DEFAULT_OPTIONS, fromDate, toDate: now.toISOString(), ...userOptions };
 
-  const browser = await chromium.launch({ headless: options.headless === true ? false : true });
-  const page = await browser.newPage();
+  const browser = await chromium.launch({ headless: options.headless === true ? true : false });
+  const context = await browser.newContext({ acceptDownloads: true });
+  const page = await context.newPage();
 
   // after 5 min close the browser to prevent hanging in case of unforeseen issues
   setTimeout(
@@ -66,6 +67,11 @@ export async function otsarHahayal(
     }) => getIlsTransactions(page, headers, options, account),
 
     // foreign transactions
+    foreignTransactions: async (account: {
+      accountNumber: number;
+      accountType?: number;
+      branch: string;
+    }) => getForeignTransactions(page, headers, options, account),
 
     // credit cards
 

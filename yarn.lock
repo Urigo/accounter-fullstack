@@ -256,6 +256,7 @@ __metadata:
     date-fns: "npm:4.3.0"
     inquirer: "npm:13.4.3"
     node-fetch: "npm:3.3.2"
+    node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.14"
     playwright: "npm:1.60.0"
     puppeteer: "npm:25.0.2"
