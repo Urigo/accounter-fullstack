@@ -34,7 +34,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch"
     "@types/pg": "npm:8.20.0"
     pg-promise: "npm:12.6.2"
     slonik: "npm:48.15.0"
@@ -347,7 +347,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.41.1"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch"
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch"
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
@@ -9384,7 +9384,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@slonik/pg-driver@npm:^48.15.0":
+"@slonik/pg-driver@npm:48.15.0":
   version: 48.15.0
   resolution: "@slonik/pg-driver@npm:48.15.0"
   dependencies:
@@ -9419,6 +9419,25 @@ __metadata:
   peerDependencies:
     zod: ^3.25 || ^4
   checksum: 10c0/cc5f0d8b0d0ead8bfc21aac491c8e435d889ea78b247bf45461d657b72c3a4d637ca50885b22379ddc7eb1a4a9dc919bcf04cc91f6d40fbbd1c8d19b32101f2f
+  languageName: node
+  linkType: hard
+
+"@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch":
+  version: 48.15.0
+  resolution: "@slonik/pg-driver@patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch::version=48.15.0&hash=d3bf72"
+  dependencies:
+    "@slonik/driver": "npm:^48.15.0"
+    "@slonik/errors": "npm:^48.15.0"
+    "@slonik/sql-tag": "npm:^48.15.0"
+    "@slonik/types": "npm:^48.15.0"
+    "@slonik/utilities": "npm:^48.15.0"
+    pg: "npm:^8.18.0"
+    pg-query-stream: "npm:^4.12.0"
+    pg-types: "npm:^4.1.0"
+    postgres-array: "npm:^3.0.4"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/787e32cc3712582e4ed67eafb40aff91315e7332093241034e1037bb37fca0e5f5238d0bed987af3b67bda5dc9c9ea7a51de8e53fc42ae2ac2cb021f2bb7afcb
   languageName: node
   linkType: hard
 

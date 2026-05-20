@@ -101,7 +101,7 @@
     "vitest": "4.1.6"
   },
   "resolutions": {
-    "@slonik/pg-driver@npm:^48.14.1": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch",
+    "@slonik/pg-driver@npm:^48.15.0": "patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch",
     "graphql": "16.14.0"
   },
   "lint-staged": {
