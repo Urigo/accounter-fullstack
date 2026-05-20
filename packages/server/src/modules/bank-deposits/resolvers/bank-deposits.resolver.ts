@@ -58,8 +58,10 @@ export const bankDepositsResolvers: BankDepositsModule.Resolvers = {
           depositId: id,
           name: name ?? existing.name,
           currency: existing.currency,
-          openDate: openDate === undefined ? existing.open_date : openDate ? new Date(openDate) : null,
-          closeDate: closeDate === undefined ? existing.close_date : closeDate ? new Date(closeDate) : null,
+          openDate:
+            openDate === undefined ? existing.open_date : openDate ? new Date(openDate) : null,
+          closeDate:
+            closeDate === undefined ? existing.close_date : closeDate ? new Date(closeDate) : null,
           accountId: existing.account_id,
         });
         if (!result) {

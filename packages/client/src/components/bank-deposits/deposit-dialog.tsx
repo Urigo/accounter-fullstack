@@ -1,26 +1,14 @@
 import { useEffect, type ReactElement } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateDeposit } from '@/hooks/use-create-deposit.js';
 import { useUpdateDeposit } from '@/hooks/use-update-deposit.js';
 import { Currency } from '../../gql/graphql.js';
 import { formatTimelessDateString, type TimelessDateString } from '../../helpers/dates.js';
 import { Button } from '../ui/button.js';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../ui/dialog.js';
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '../ui/form.js';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog.js';
+import { Form, FormField, FormItem, FormLabel, FormMessage } from '../ui/form.js';
 import { Input } from '../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.js';
 
@@ -296,11 +284,7 @@ export function DepositDialog({ open, onOpenChange, deposit, onSuccess }: Props)
           <DialogTitle>{isEdit ? 'Edit Deposit' : 'New Deposit'}</DialogTitle>
         </DialogHeader>
         {isEdit ? (
-          <EditForm
-            deposit={deposit}
-            onSuccess={onSuccess}
-            onClose={() => onOpenChange(false)}
-          />
+          <EditForm deposit={deposit} onSuccess={onSuccess} onClose={() => onOpenChange(false)} />
         ) : (
           <CreateForm onSuccess={onSuccess} onClose={() => onOpenChange(false)} />
         )}
