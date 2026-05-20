@@ -50,6 +50,7 @@ import { SalariesTable } from './extended-info/salaries-info.js';
         receiptsCount
         invoicesCount
         ledgerCount
+        miscExpensesCount
         isLedgerLocked
         openDocuments
       }
@@ -72,9 +73,6 @@ import { SalariesTable } from './extended-info/salaries-info.js';
         }
       }
       ...ChargesTableErrorsFields @defer
-      miscExpenses {
-        id
-      }
       ...TableMiscExpensesFields @defer
       ...ExchangeRatesInfo @defer
     }
@@ -171,7 +169,7 @@ export function ChargeExtendedInfo({
   const hasReceipts = !!charge?.metadata?.receiptsCount;
   const hasInvoices = !!charge?.metadata?.invoicesCount;
   const isSalaryCharge = chargeType === 'SalaryCharge';
-  const hasMiscExpenses = !!charge?.miscExpenses?.length;
+  const hasMiscExpenses = !!charge?.metadata?.miscExpensesCount;
   const hasOpenDocuments = charge?.metadata?.openDocuments;
   const isIncomeNoDocsCharge = (charge?.totalAmount?.raw ?? 0) > 0 && !hasReceipts;
   const hasAccountingDocs = hasInvoices || hasReceipts;

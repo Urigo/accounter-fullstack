@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { format, isValid, parse } from 'date-fns';
+import { format, isValid, parse, startOfDay } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
 import {
   InputGroup,
@@ -12,8 +12,8 @@ import {
 import { Calendar } from '../../ui/calendar.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
-const DISPLAY_FORMAT = 'dd/MM/yyyy HH:mm:ss';
-const DATETIME_PATTERN = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
+const DISPLAY_FORMAT = 'yyyy-MM-dd HH:mm:ss';
+const DATETIME_PATTERN = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
 function parseInput(value: string): Date | undefined {
   if (!DATETIME_PATTERN.test(value)) return undefined;
@@ -50,7 +50,7 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
           disabled={disabled}
           id={inputId}
           value={textValue}
-          placeholder="DD/MM/YYYY HH:mm:ss"
+          placeholder="YYYY-MM-DD HH:mm:ss"
           aria-invalid={invalidStructure || undefined}
           aria-describedby={invalidStructure ? invalidMessageId : undefined}
           onChange={e => {
@@ -100,16 +100,7 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
                     setOpen(false);
                     return;
                   }
-                  const base =
-                    valueProp ??
-                    new Date(
-                      selected.getFullYear(),
-                      selected.getMonth(),
-                      selected.getDate(),
-                      0,
-                      0,
-                      0,
-                    );
+                  const base = valueProp ?? startOfDay(new Date());
                   const newDate = new Date(
                     selected.getFullYear(),
                     selected.getMonth(),
@@ -126,20 +117,11 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
               />
               <div className="flex gap-2 border-t p-2">
                 <TimeSpinner
-                  label="HH"
+                  label="Hours"
                   value={valueProp ? valueProp.getHours() : 0}
                   max={23}
                   onChange={h => {
-                    const base =
-                      valueProp ??
-                      new Date(
-                        new Date().getFullYear(),
-                        new Date().getMonth(),
-                        new Date().getDate(),
-                        0,
-                        0,
-                        0,
-                      );
+                    const base = valueProp ?? startOfDay(new Date());
                     const d = new Date(
                       base.getFullYear(),
                       base.getMonth(),
@@ -153,20 +135,11 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
                   }}
                 />
                 <TimeSpinner
-                  label="MM"
+                  label="Minutes"
                   value={valueProp ? valueProp.getMinutes() : 0}
                   max={59}
                   onChange={m => {
-                    const base =
-                      valueProp ??
-                      new Date(
-                        new Date().getFullYear(),
-                        new Date().getMonth(),
-                        new Date().getDate(),
-                        0,
-                        0,
-                        0,
-                      );
+                    const base = valueProp ?? startOfDay(new Date());
                     const d = new Date(
                       base.getFullYear(),
                       base.getMonth(),
@@ -180,20 +153,11 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
                   }}
                 />
                 <TimeSpinner
-                  label="SS"
+                  label="Seconds"
                   value={valueProp ? valueProp.getSeconds() : 0}
                   max={59}
                   onChange={s => {
-                    const base =
-                      valueProp ??
-                      new Date(
-                        new Date().getFullYear(),
-                        new Date().getMonth(),
-                        new Date().getDate(),
-                        0,
-                        0,
-                        0,
-                      );
+                    const base = valueProp ?? startOfDay(new Date());
                     const d = new Date(
                       base.getFullYear(),
                       base.getMonth(),
@@ -213,7 +177,7 @@ export function DateTimePickerInput({ value: valueProp, onChange, disabled, id, 
       </InputGroup>
       {invalidStructure ? (
         <p id={invalidMessageId} className="text-destructive text-xs">
-          Date must use DD/MM/YYYY HH:mm:ss format.
+          Date must use YYYY-MM-DD HH:mm:ss format.
         </p>
       ) : null}
     </div>

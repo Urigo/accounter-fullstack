@@ -132,14 +132,7 @@ export const ChargesTableRow = ({
 
   return (
     <>
-      <tr
-        onClick={() => {
-          if (hasExtendedInfo) {
-            setOpened(prev => !prev);
-            onChange();
-          }
-        }}
-      >
+      <tr>
         <TypeCell data={charge} />
         <DateCell data={charge} />
         <Amount data={charge} />

@@ -52,8 +52,7 @@ export function ComboBox({
 
   if (isDesktop) {
     return (
-      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-      <div className="flex flex-col gap-1 w-full" onClick={e => e.stopPropagation()}>
+      <div className="flex flex-col gap-1 w-full">
         <Popover modal open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
@@ -80,8 +79,7 @@ export function ComboBox({
   }
 
   return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div className="flex flex-col gap-1 w-full" onClick={e => e.stopPropagation()}>
+    <div className="flex flex-col gap-1 w-full">
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Trigger
