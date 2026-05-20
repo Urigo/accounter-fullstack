@@ -19,6 +19,7 @@ import {
   type IssueDocumentClientFieldsFragment,
   type NewDocumentDraftFragment,
 } from '../../../gql/graphql.js';
+import type { CountryCode } from '../../../helpers/countries.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -29,7 +30,6 @@ import {
 } from '../../ui/dialog.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 import { GenerateDocument } from '../documents/issue-document/index.js';
-import type { CountryCode } from '../../../helpers/countries.js';
 import type {
   DocumentClient,
   PreviewDocumentInput,

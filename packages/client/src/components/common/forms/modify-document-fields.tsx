@@ -210,9 +210,7 @@ export const ModifyDocumentFields = ({
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={
-                  processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
@@ -235,9 +233,7 @@ export const ModifyDocumentFields = ({
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={
-                  processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
@@ -284,9 +280,7 @@ export const ModifyDocumentFields = ({
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={
-                  processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({ field: currencyCodeField }): ReactElement => (
                   <CurrencyInput
                     {...noVatField}
