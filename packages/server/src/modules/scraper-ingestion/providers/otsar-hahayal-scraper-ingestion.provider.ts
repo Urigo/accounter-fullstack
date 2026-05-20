@@ -1,0 +1,515 @@
+import { Injectable, Scope } from 'graphql-modules';
+import { sql } from '@pgtyped/runtime';
+import type {
+  ChangedField,
+  ChangedTransaction,
+  InsertedTransactionSummary,
+  OtsarHahayalForeignTransactionInput,
+  OtsarHahayalIlsTransactionInput,
+  ScraperUploadResult,
+} from '../../../__generated__/types.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { formatValue } from '../helpers/utils.helper.js';
+import type {
+  IFetchOtsarHahayalForeignByKeysQuery,
+  IFetchOtsarHahayalForeignByKeysResult,
+  IFetchOtsarHahayalIlsByKeysQuery,
+  IFetchOtsarHahayalIlsByKeysResult,
+  IUploadOtsarHahayalForeignTransactionsQuery,
+  IUploadOtsarHahayalForeignTransactionsResult,
+  IUploadOtsarHahayalIlsTransactionsQuery,
+  IUploadOtsarHahayalIlsTransactionsResult,
+} from '../types.js';
+
+const fetchOtsarHahayalIlsByKeys = sql<IFetchOtsarHahayalIlsByKeysQuery>`
+  SELECT
+    id,
+    account_number,
+    branch_number,
+    date_of_registration,
+    action_code,
+    bfb_source,
+    closing_balance,
+    correspondent_account,
+    correspondent_account_type,
+    correspondent_bank,
+    correspondent_branch,
+    credit_amount,
+    customer_name,
+    date_of_business_day,
+    debit_amount,
+    depositor_id,
+    description,
+    drill_down_url,
+    drill_down_data,
+    first_transaction_of_day,
+    last_transaction_of_day,
+    name,
+    opening_balance,
+    operation_source,
+    reference,
+    salary_ind,
+    transaction_source,
+    transaction_reason,
+    origin_reference
+  FROM accounter_schema.otsar_hahayal_ils_account_transactions
+  WHERE account_number = ANY($accountNumbers!)
+    AND branch_number = ANY($branchNumbers!)
+    AND date_of_registration = ANY($dateOfRegistrations!)
+`;
+
+const uploadOtsarHahayalIlsTransactions = sql<IUploadOtsarHahayalIlsTransactionsQuery>`
+  INSERT INTO accounter_schema.otsar_hahayal_ils_account_transactions (
+    account_number,
+    account_type,
+    branch_number,
+    action_code,
+    bfb_source,
+    closing_balance,
+    correspondent_account,
+    correspondent_account_type,
+    correspondent_bank,
+    correspondent_branch,
+    credit_amount,
+    customer_name,
+    date_of_business_day,
+    date_of_registration,
+    debit_amount,
+    depositor_id,
+    description,
+    drill_down_url,
+    drill_down_data,
+    first_transaction_of_day,
+    last_transaction_of_day,
+    name,
+    opening_balance,
+    operation_source,
+    reference,
+    salary_ind,
+    transaction_source,
+    transaction_reason,
+    origin_reference
+  )
+  VALUES $$transactions(
+    accountNumber,
+    accountType,
+    branchNumber,
+    actionCode,
+    bfbSource,
+    closingBalance,
+    correspondentAccount,
+    correspondentAccountType,
+    correspondentBank,
+    correspondentBranch,
+    creditAmount,
+    customerName,
+    dateOfBusinessDay,
+    dateOfRegistration,
+    debitAmount,
+    depositorId,
+    description,
+    drillDownUrl,
+    drillDownData,
+    firstTransactionOfDay,
+    lastTransactionOfDay,
+    name,
+    openingBalance,
+    operationSource,
+    reference,
+    salaryInd,
+    transactionSource,
+    transactionReason,
+    originReference
+  )
+  ON CONFLICT (account_number, branch_number, date_of_registration, date_of_business_day, reference, origin_reference, credit_amount, debit_amount) DO NOTHING
+  RETURNING id, account_number, branch_number, date_of_registration, description, credit_amount, debit_amount;
+`;
+
+const fetchOtsarHahayalForeignByKeys = sql<IFetchOtsarHahayalForeignByKeysQuery>`
+  SELECT
+    id,
+    account,
+    branch,
+    account_type,
+    currency,
+    opening_balance,
+    balance,
+    value_date,
+    credit,
+    debit,
+    description,
+    sp,
+    reference,
+    date,
+    sub_transactions
+  FROM accounter_schema.otsar_hahayal_foreign_account_transactions
+  WHERE account = ANY($accounts!)
+    AND branch = ANY($branches!)
+    AND date = ANY($dates!)
+    AND reference = ANY($references!)
+`;
+
+const uploadOtsarHahayalForeignTransactions = sql<IUploadOtsarHahayalForeignTransactionsQuery>`
+  INSERT INTO accounter_schema.otsar_hahayal_foreign_account_transactions (
+    account,
+    branch,
+    account_type,
+    currency,
+    opening_balance,
+    balance,
+    value_date,
+    credit,
+    debit,
+    description,
+    sp,
+    reference,
+    date,
+    sub_transactions
+  )
+  VALUES $$transactions(
+    account,
+    branch,
+    accountType,
+    currency,
+    openingBalance,
+    balance,
+    valueDate,
+    credit,
+    debit,
+    description,
+    sp,
+    reference,
+    date,
+    subTransactions
+  )
+  ON CONFLICT (account, branch, date, value_date, reference, description) DO NOTHING
+  RETURNING id, account, branch, currency, date, description, credit, debit;
+`;
+
+const OTSAR_HAHAYAL_ILS_DIFF_FIELDS: Array<{
+  key: string & keyof IFetchOtsarHahayalIlsByKeysResult;
+  incoming: (t: OtsarHahayalIlsTransactionInput) => string | number | boolean | null;
+}> = [
+  { key: 'action_code', incoming: t => t.actionCode },
+  { key: 'bfb_source', incoming: t => t.bfbSource },
+  { key: 'closing_balance', incoming: t => t.closingBalance },
+  { key: 'correspondent_account', incoming: t => t.correspondentAccount },
+  { key: 'correspondent_account_type', incoming: t => t.correspondentAccountType },
+  { key: 'correspondent_bank', incoming: t => t.correspondentBank },
+  { key: 'correspondent_branch', incoming: t => t.correspondentBranch },
+  { key: 'credit_amount', incoming: t => t.creditAmount },
+  { key: 'customer_name', incoming: t => t.customerName },
+  { key: 'debit_amount', incoming: t => t.debitAmount },
+  { key: 'description', incoming: t => t.description },
+  { key: 'drill_down_url', incoming: t => t.drillDownUrl },
+  { key: 'first_transaction_of_day', incoming: t => t.firstTransactionOfDay },
+  { key: 'last_transaction_of_day', incoming: t => t.lastTransactionOfDay },
+  { key: 'name', incoming: t => t.name },
+  { key: 'opening_balance', incoming: t => t.openingBalance },
+  { key: 'operation_source', incoming: t => t.operationSource },
+  { key: 'salary_ind', incoming: t => t.salaryInd },
+  { key: 'transaction_source', incoming: t => t.transactionSource },
+  { key: 'transaction_reason', incoming: t => t.transactionReason },
+];
+
+const OTSAR_HAHAYAL_ILS_NUMERIC_FIELDS: (keyof IFetchOtsarHahayalIlsByKeysResult)[] = [
+  'closing_balance',
+  'credit_amount',
+  'debit_amount',
+  'opening_balance',
+] as const;
+
+function diffOtsarHahayalIlsRow(
+  existing: IFetchOtsarHahayalIlsByKeysResult,
+  incoming: OtsarHahayalIlsTransactionInput,
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of OTSAR_HAHAYAL_ILS_DIFF_FIELDS) {
+    const isNumberField = OTSAR_HAHAYAL_ILS_NUMERIC_FIELDS.includes(key);
+    const oldValue = formatValue(existing[key], isNumberField);
+    const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
+
+const OTSAR_HAHAYAL_FOREIGN_DIFF_FIELDS: Array<{
+  key: string & keyof IFetchOtsarHahayalForeignByKeysResult;
+  incoming: (t: OtsarHahayalForeignTransactionInput) => string | number | boolean | null;
+}> = [
+  { key: 'account_type', incoming: t => t.accountType },
+  { key: 'currency', incoming: t => t.currency },
+  { key: 'opening_balance', incoming: t => t.openingBalance },
+  { key: 'balance', incoming: t => t.balance ?? null },
+  { key: 'credit', incoming: t => t.credit },
+  { key: 'debit', incoming: t => t.debit },
+  { key: 'description', incoming: t => t.description },
+  { key: 'sp', incoming: t => t.sp ?? null },
+];
+
+const OTSAR_HAHAYAL_FOREIGN_NUMERIC_FIELDS: (keyof IFetchOtsarHahayalForeignByKeysResult)[] = [
+  'opening_balance',
+  'balance',
+  'credit',
+  'debit',
+] as const;
+
+function diffOtsarHahayalForeignRow(
+  existing: IFetchOtsarHahayalForeignByKeysResult,
+  incoming: OtsarHahayalForeignTransactionInput,
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of OTSAR_HAHAYAL_FOREIGN_DIFF_FIELDS) {
+    const isNumberField = OTSAR_HAHAYAL_FOREIGN_NUMERIC_FIELDS.includes(key);
+    const oldValue = formatValue(existing[key], isNumberField);
+    const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
+
+@Injectable({
+  scope: Scope.Operation,
+  global: true,
+})
+export class OtsarHahayalScraperIngestionProvider {
+  constructor(private db: TenantAwareDBClient) {}
+
+  async uploadOtsarHahayalIlsTransactions(
+    transactions: readonly OtsarHahayalIlsTransactionInput[],
+  ): Promise<ScraperUploadResult> {
+    try {
+      if (transactions.length === 0)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
+
+      const dateOfRegistrations = transactions
+        .map(t => (t.dateOfRegistration ? new Date(t.dateOfRegistration) : null))
+        .filter((d): d is Date => d !== null);
+      const accountNumbers = transactions
+        .map(t => t.accountNumber ?? null)
+        .filter((n): n is number => n !== null);
+      const branchNumbers = transactions
+        .map(t => t.branchNumber ?? null)
+        .filter((n): n is number => n !== null);
+
+      const existing = await fetchOtsarHahayalIlsByKeys.run(
+        { accountNumbers, branchNumbers, dateOfRegistrations },
+        this.db,
+      );
+
+      const existingByKey = new Map<string, IFetchOtsarHahayalIlsByKeysResult>();
+      for (const row of existing) {
+        const key = [
+          row.account_number,
+          row.branch_number,
+          row.date_of_registration ? dateToTimelessDateString(row.date_of_registration) : '',
+          row.date_of_business_day ? dateToTimelessDateString(row.date_of_business_day) : '',
+          row.reference,
+          row.origin_reference,
+          row.credit_amount,
+          row.debit_amount,
+        ].join('_');
+        existingByKey.set(key, row);
+      }
+
+      const params = transactions.map(t => ({
+        accountNumber: t.accountNumber,
+        accountType: t.accountType,
+        branchNumber: t.branchNumber,
+        actionCode: t.actionCode,
+        bfbSource: t.bfbSource,
+        closingBalance: t.closingBalance,
+        correspondentAccount: t.correspondentAccount,
+        correspondentAccountType: t.correspondentAccountType,
+        correspondentBank: t.correspondentBank,
+        correspondentBranch: t.correspondentBranch,
+        creditAmount: t.creditAmount,
+        customerName: t.customerName,
+        dateOfBusinessDay: t.dateOfBusinessDay,
+        dateOfRegistration: t.dateOfRegistration,
+        debitAmount: t.debitAmount,
+        depositorId: t.depositorId,
+        description: t.description,
+        drillDownUrl: t.drillDownUrl,
+        drillDownData: t.drillDownData ?? null,
+        firstTransactionOfDay: t.firstTransactionOfDay,
+        lastTransactionOfDay: t.lastTransactionOfDay,
+        name: t.name,
+        openingBalance: t.openingBalance,
+        operationSource: t.operationSource,
+        reference: t.reference,
+        salaryInd: t.salaryInd,
+        transactionSource: t.transactionSource,
+        transactionReason: t.transactionReason,
+        originReference: t.originReference ?? '',
+      }));
+
+      const result: IUploadOtsarHahayalIlsTransactionsResult[] =
+        await uploadOtsarHahayalIlsTransactions.run({ transactions: params }, this.db);
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+      const insertedIdSet = new Set(insertedIds);
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.date_of_registration ? dateToTimelessDateString(r.date_of_registration) : null,
+        description: r.description ?? null,
+        amount:
+          Number(r.debit_amount) === 0 ? String(r.credit_amount) : String(-Number(r.debit_amount)),
+        account: String(r.account_number),
+      }));
+
+      const changedTransactions: ChangedTransaction[] = [];
+      for (const t of transactions) {
+        const key = [
+          t.accountNumber,
+          t.branchNumber,
+          t.dateOfRegistration ? dateToTimelessDateString(new Date(t.dateOfRegistration)) : '',
+          t.dateOfBusinessDay ? dateToTimelessDateString(new Date(t.dateOfBusinessDay)) : '',
+          t.reference,
+          t.originReference ?? '',
+          t.creditAmount,
+          t.debitAmount,
+        ].join('_');
+        const existingRow = existingByKey.get(key);
+        if (existingRow && !insertedIdSet.has(existingRow.id)) {
+          const changedFields = diffOtsarHahayalIlsRow(existingRow, t);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: existingRow.id, changedFields });
+          }
+        }
+      }
+
+      return {
+        inserted: insertedIds.length,
+        skipped: transactions.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    } catch (error) {
+      console.error('Error uploading Otsar HaHayal ILS transactions:', error);
+      throw error;
+    }
+  }
+
+  async uploadOtsarHahayalForeignTransactions(
+    transactions: readonly OtsarHahayalForeignTransactionInput[],
+  ): Promise<ScraperUploadResult> {
+    try {
+      if (transactions.length === 0)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
+
+      const accounts = transactions
+        .map(t => t.account ?? null)
+        .filter((n): n is number => n !== null);
+      const branches = transactions
+        .map(t => t.branch ?? null)
+        .filter((n): n is number => n !== null);
+      const dates = transactions
+        .map(t => (t.date ? new Date(t.date) : null))
+        .filter((d): d is Date => d !== null);
+      const references = transactions
+        .map(t => t.reference ?? null)
+        .filter((r): r is string => r !== null);
+
+      const existing = await fetchOtsarHahayalForeignByKeys.run(
+        { accounts, branches, dates, references },
+        this.db,
+      );
+
+      const existingByKey = new Map<string, IFetchOtsarHahayalForeignByKeysResult>();
+      for (const row of existing) {
+        const key = [
+          row.account,
+          row.branch,
+          row.date ? dateToTimelessDateString(row.date) : '',
+          row.value_date ? dateToTimelessDateString(row.value_date) : '',
+          row.reference,
+          row.description,
+        ].join('_');
+        existingByKey.set(key, row);
+      }
+
+      const params = transactions.map(t => ({
+        account: t.account,
+        branch: t.branch,
+        accountType: t.accountType,
+        currency: t.currency,
+        openingBalance: t.openingBalance,
+        balance: t.balance ?? null,
+        valueDate: t.valueDate,
+        credit: t.credit,
+        debit: t.debit,
+        description: t.description,
+        sp: t.sp ?? null,
+        reference: t.reference,
+        date: t.date,
+        subTransactions: t.subTransactions,
+      }));
+
+      const result: IUploadOtsarHahayalForeignTransactionsResult[] =
+        await uploadOtsarHahayalForeignTransactions.run({ transactions: params }, this.db);
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+      const insertedIdSet = new Set(insertedIds);
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.date ? dateToTimelessDateString(r.date) : null,
+        description: r.description ?? null,
+        amount: Number(r.debit) === 0 ? String(r.credit) : String(-Number(r.debit)),
+        account: String(r.account),
+      }));
+
+      const changedTransactions: ChangedTransaction[] = [];
+      for (const t of transactions) {
+        const key = [
+          t.account,
+          t.branch,
+          t.date ? dateToTimelessDateString(new Date(t.date)) : '',
+          t.valueDate ? dateToTimelessDateString(new Date(t.valueDate)) : '',
+          t.reference,
+          t.description,
+        ].join('_');
+        const existingRow = existingByKey.get(key);
+        if (existingRow && !insertedIdSet.has(existingRow.id)) {
+          const changedFields = diffOtsarHahayalForeignRow(existingRow, t);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: existingRow.id, changedFields });
+          }
+        }
+      }
+
+      return {
+        inserted: insertedIds.length,
+        skipped: transactions.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    } catch (error) {
+      console.error('Error uploading Otsar HaHayal foreign transactions:', error);
+      throw error;
+    }
+  }
+}

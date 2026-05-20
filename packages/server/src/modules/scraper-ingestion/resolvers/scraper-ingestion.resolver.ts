@@ -1,4 +1,5 @@
 import { IsracardAmexScraperIngestionProvider } from '../providers/isracard-amex-scraper-ingestion.provider.js';
+import { OtsarHahayalScraperIngestionProvider } from '../providers/otsar-hahayal-scraper-ingestion.provider.js';
 import { PoalimScraperIngestionProvider } from '../providers/poalim-scraper-ingestion.provider.js';
 import { ScraperIngestionProvider } from '../providers/scraper-ingestion.provider.js';
 import type { ScraperIngestionModule } from '../types.js';
@@ -31,5 +32,11 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
 
     uploadCurrencyRates: (_, { rates }, { injector }) =>
       injector.get(ScraperIngestionProvider).uploadCurrencyRates(rates),
+
+    uploadOtsarHahayalIlsTransactions: (_, { transactions }, { injector }) =>
+      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalIlsTransactions(transactions),
+
+    uploadOtsarHahayalForeignTransactions: (_, { transactions }, { injector }) =>
+      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalForeignTransactions(transactions),
   },
 };

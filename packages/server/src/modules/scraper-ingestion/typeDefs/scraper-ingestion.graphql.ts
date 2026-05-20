@@ -478,6 +478,61 @@ export default gql`
     usd: Float
   }
 
+  # ── Otsar HaHayal ILS ────────────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal ILS (NIS) bank account transaction "
+  input OtsarHahayalIlsTransactionInput {
+    accountNumber: Int!
+    accountType: Int!
+    branchNumber: Int!
+    actionCode: Int!
+    bfbSource: String!
+    closingBalance: Float!
+    correspondentAccount: Int!
+    correspondentAccountType: Int!
+    correspondentBank: Int!
+    correspondentBranch: Int!
+    creditAmount: Float!
+    customerName: String!
+    dateOfBusinessDay: String!
+    dateOfRegistration: String!
+    debitAmount: Float!
+    depositorId: Int!
+    description: String!
+    drillDownUrl: String!
+    drillDownData: String
+    firstTransactionOfDay: Boolean!
+    lastTransactionOfDay: Boolean!
+    name: String!
+    openingBalance: Float!
+    operationSource: String!
+    reference: Int!
+    salaryInd: Int!
+    transactionSource: String!
+    transactionReason: String!
+    originReference: String
+  }
+
+  # ── Otsar HaHayal Foreign ─────────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal foreign currency bank account transaction "
+  input OtsarHahayalForeignTransactionInput {
+    account: Int!
+    branch: Int!
+    accountType: String!
+    currency: String!
+    openingBalance: Float!
+    balance: Float
+    valueDate: String!
+    credit: Float!
+    debit: Float!
+    description: String!
+    sp: Int
+    reference: String!
+    date: String!
+    subTransactions: String!
+  }
+
   # ── Mutations ────────────────────────────────────────────────────────────────
 
   extend type Mutation {
@@ -508,5 +563,13 @@ export default gql`
 
     uploadCurrencyRates(rates: [CurrencyRateInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalIlsTransactions(
+      transactions: [OtsarHahayalIlsTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalForeignTransactions(
+      transactions: [OtsarHahayalForeignTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
   }
 `;
