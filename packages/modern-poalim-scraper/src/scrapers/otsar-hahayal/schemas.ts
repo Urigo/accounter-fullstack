@@ -584,3 +584,101 @@ export const userDataSchema = z
 
 export type UserData = z.infer<typeof userDataSchema>;
 export type Account = z.infer<typeof accountSchema>;
+
+const creditCardDebitSchema = z
+  .object({
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+    shekelAmount: z.number(),
+    dollarAmount: z.number(),
+    euroAmount: z.number(),
+    shekelMatahAmount: z.number(),
+    obligationShekelAmount: z.number(),
+  })
+  .strict();
+
+const creditCardSchema = z
+  .object({
+    resourceId: z.uuid(),
+    maskedPan: z.string().regex(/^\d{6}x{6}\d{4}$/),
+    isBlocked: z.boolean(),
+    ownerName: z.string().min(1),
+    clubId: z.string().regex(/^\d{3}$/),
+    companyCode: z.string().regex(/^\d{3}$/),
+    cardType: z.literal(9),
+    creditLimit: z.number().positive(),
+    usedCreditLimit: z.number().nonnegative(),
+    availableCredit: z.number(),
+    debitDay: z.number().int().min(1).max(31),
+    address: z.string().min(1),
+    issuer: z.string().min(1),
+    issuranceOperator: z.string().min(1),
+    club: z.string().min(1),
+    status: z.null(),
+    flagSSO: z.boolean(),
+    expirationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    nextDebit: creditCardDebitSchema,
+    lastDebit: creditCardDebitSchema,
+    currentDebit: creditCardDebitSchema,
+    clubCard1: z
+      .string()
+      .regex(/^\d{7}$/)
+      .nullable(),
+    clubCard2: z
+      .string()
+      .regex(/^\d{7}$/)
+      .nullable(),
+    clubCard3: z
+      .string()
+      .regex(/^\d{7}$/)
+      .nullable(),
+    clubCard4: z
+      .string()
+      .regex(/^\d{7}$/)
+      .nullable(),
+    clubCard5: z
+      .string()
+      .regex(/^\d{7}$/)
+      .nullable(),
+    cardImageFileName: z.string().min(1),
+  })
+  .strict();
+
+const creditCardTotalsEntrySchema = z
+  .object({
+    shekelMatah: z.number(),
+    dollar: z.number(),
+    shekel: z.number(),
+    euro: z.number(),
+    obligation: z.number().nullable(),
+  })
+  .strict();
+
+const companySSOInfoSchema = z
+  .object({
+    companyCode: z.number().int().positive(),
+    maskedPan: z.string().regex(/^\d{6}x{6}\d{4}$/),
+    enableSSO: z.boolean(),
+    text: z.string().min(1),
+  })
+  .strict();
+
+export const creditCardsResponseSchema = z
+  .object({
+    cards: z.array(creditCardSchema),
+    totals: z
+      .object({
+        nextDebit: creditCardTotalsEntrySchema,
+        lastDebit: creditCardTotalsEntrySchema,
+        currentDebit: creditCardTotalsEntrySchema,
+      })
+      .strict(),
+    externalCards: z.null(),
+    companiesSSOInfo: z.array(companySSOInfoSchema),
+  })
+  .strict();
+
+export type CreditCardsResponse = z.infer<typeof creditCardsResponseSchema>;
+export type CreditCard = z.infer<typeof creditCardSchema>;

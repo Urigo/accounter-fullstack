@@ -154,16 +154,7 @@ function parseForeignXls(buffer: Buffer): ForeignAccountData {
   };
 }
 
-export async function getForeignTransactions(
-  page: Page,
-  _headers: Record<string, string>,
-  options: OtsarHahayalOptions,
-  _account: {
-    accountNumber: number;
-    accountType?: number;
-    branch: string;
-  },
-) {
+export async function getForeignTransactions(page: Page, options: OtsarHahayalOptions) {
   const startDate = format(
     options.fromDate
       ? new Date(options.fromDate)
@@ -171,7 +162,6 @@ export async function getForeignTransactions(
     'dd/MM/yyyy',
   );
   const endDate = format(options.toDate ? new Date(options.toDate) : new Date(), 'dd/MM/yyyy');
-  // route to https://online.bankotsar.co.il/appsng/Resources/PortalNG/shell/#/Online/OnForeignCurrency/OnCurrentAccountFC/AuthFCCurrentMovements
   await page.goto(
     'https://online.bankotsar.co.il/appsng/Resources/PortalNG/shell/#/Online/OnForeignCurrency/OnCurrentAccountFC/AuthFCCurrentMovements',
   );

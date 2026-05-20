@@ -1,5 +1,6 @@
 import { chromium } from 'playwright';
 import { getAccounts } from './accounts.js';
+import { getCreditCards } from './credit-cards.js';
 import { getForeignTransactions } from './foreign-transactions.js';
 import { getIlsTransactions } from './ils-transactions.js';
 import { loginAndGetUserData } from './login-fetch-user-data.js';
@@ -67,13 +68,12 @@ export async function otsarHahayal(
     }) => getIlsTransactions(page, headers, options, account),
 
     // foreign transactions
-    foreignTransactions: async (account: {
-      accountNumber: number;
-      accountType?: number;
-      branch: string;
-    }) => getForeignTransactions(page, headers, options, account),
+    foreignTransactions: async () => getForeignTransactions(page, options),
 
     // credit cards
+    getCreditCards: async () => getCreditCards(page, options, headers),
+
+    // credit card transactions
 
     // investments
 
