@@ -1,12 +1,11 @@
 import type { ReactElement } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import { DateTimePicker } from '@mantine/dates';
 import { type InsertMiscExpenseInput, type UpdateMiscExpenseInput } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
-import { ComboBox, CurrencyInput, DatePickerInput } from '../index.js';
+import { ComboBox, CurrencyInput, DatePickerInput, DateTimePickerInput } from '../index.js';
 
 interface Props<T extends boolean> {
   isInsert: T;
@@ -141,23 +140,19 @@ export const ModifyMiscExpenseFields = ({
             return !Number.isNaN(value.getTime()) || 'Invalid date and time format';
           },
         }}
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel htmlFor="misc-expense-value-date">Value Date</FormLabel>
             <FormControl>
-              <DateTimePicker
+              <DateTimePickerInput
                 id="misc-expense-value-date"
-                {...field}
+                value={field.value ?? null}
                 onChange={(date?: Date | null): void => {
                   setValue('valueDate', date);
                   field.onChange(date);
                 }}
-                onPointerEnterCapture={(): void => {}}
-                onPointerLeaveCapture={(): void => {}}
                 required={isInsert}
-                placeholder="Pick date and time"
-                valueFormat="DD/MM/YYYY HH:mm:ss"
-                withSeconds
+                aria-invalid={!!fieldState.error}
               />
             </FormControl>
             <FormMessage />
