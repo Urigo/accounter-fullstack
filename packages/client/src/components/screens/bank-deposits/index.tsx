@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactElement } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -10,6 +10,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
+import { DepositDialog } from '@/components/bank-deposits/deposit-dialog.js';
 import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Badge } from '@/components/ui/badge.js';
 import { Button } from '@/components/ui/button.js';
@@ -21,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import { AllDepositsDocument } from '@/gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -55,6 +57,7 @@ import { AllDepositsDocument } from '@/gql/graphql.js';
 
 type DepositRow = {
   id: string;
+  name: string;
   currency: string | null;
   openDate: string | null;
   closeDate: string | null;
@@ -70,6 +73,8 @@ type DepositRow = {
 export function DepositsScreen(): ReactElement {
   const [{ data, fetching }, refetch] = useQuery({ query: AllDepositsDocument });
   const [sorting, setSorting] = useState<SortingState>([{ id: 'openDate', desc: false }]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingDeposit, setEditingDeposit] = useState<DepositRow | null>(null);
 
   const rows: DepositRow[] = useMemo(() => {
     const deposits = data?.allDeposits ?? [];
@@ -167,6 +172,29 @@ export function DepositsScreen(): ReactElement {
       ),
       sortingFn: (a, b) => a.original.totalInterestRaw - b.original.totalInterestRaw,
     },
+    {
+      id: 'actions',
+      header: () => null,
+      cell: ({ row }) => (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={e => {
+                e.stopPropagation();
+                setEditingDeposit(row.original);
+              }}
+              aria-label="Edit deposit"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Edit deposit</TooltipContent>
+        </Tooltip>
+      ),
+      enableSorting: false,
+    },
   ]);
   const columns = columnsRef.current;
 
@@ -185,6 +213,10 @@ export function DepositsScreen(): ReactElement {
     <div className="max-w-[95vw]">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Bank Deposits</h1>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Deposit
+        </Button>
       </div>
 
       <div className="mt-6 overflow-hidden rounded-md border">
@@ -242,6 +274,21 @@ export function DepositsScreen(): ReactElement {
           </TableBody>
         </Table>
       </div>
+
+      <DepositDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={() => refetch({ requestPolicy: 'network-only' })}
+      />
+
+      <DepositDialog
+        open={!!editingDeposit}
+        onOpenChange={open => {
+          if (!open) setEditingDeposit(null);
+        }}
+        deposit={editingDeposit ?? undefined}
+        onSuccess={() => refetch({ requestPolicy: 'network-only' })}
+      />
     </div>
   );
 }
