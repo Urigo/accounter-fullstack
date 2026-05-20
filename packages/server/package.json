@@ -82,7 +82,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.14.1#~/.yarn/patches/@slonik-pg-driver-npm-48.14.1-71aead68d1.patch",
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A48.15.0#~/.yarn/patches/@slonik-pg-driver-npm-48.15.0-71aead68d1.patch",
     "@types/basic-auth": "1.1.8",
     "@types/bcrypt": "6.0.0",
     "@types/inline-css": "3.0.4",
@@ -91,7 +91,7 @@
     "nodemon": "3.1.14",
     "pino-pretty": "13.1.3",
     "rimraf": "6.1.3",
-    "slonik": "48.14.1",
+    "slonik": "48.15.0",
     "tsc-alias": "1.8.17",
     "tsx": "4.22.1",
     "typescript": "6.0.3"
