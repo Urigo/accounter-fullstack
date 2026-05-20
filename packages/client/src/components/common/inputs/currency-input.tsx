@@ -61,6 +61,7 @@ type CurrencyCodeFieldProps = {
   error?: string;
   disabled?: boolean;
   form?: string;
+  defaultValue?: Currency | null;
 };
 
 function CurrencySelect({
