@@ -62,7 +62,7 @@
     "bcrypt": "6.0.0",
     "cloudinary": "2.10.0",
     "dataloader": "2.2.3",
-    "date-fns": "4.2.1",
+    "date-fns": "4.3.0",
     "dotenv": "17.4.2",
     "dotenv-cli": "11.0.0",
     "googleapis": "171.4.0",
