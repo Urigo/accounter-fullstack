@@ -11,6 +11,7 @@ const STUB_VAULT = {
   amexAccounts: [],
   calAccounts: [],
   maxAccounts: [],
+  otsarHahayalAccounts: [],
   accountRecords: [],
   settings: { showBrowser: false, fetchBankOfIsraelRates: true, concurrentScraping: false },
 };

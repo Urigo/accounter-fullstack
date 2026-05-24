@@ -75,6 +75,7 @@ const STUB_VAULT = {
   amexAccounts: [],
   calAccounts: [],
   maxAccounts: [],
+  otsarHahayalAccounts: [],
   accountRecords: [
     {
       sourceType: 'poalim',
