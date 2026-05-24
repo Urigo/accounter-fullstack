@@ -29,7 +29,7 @@
     "@auth0/auth0-react": "2.17.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "@hookform/resolvers": "5.2.2",
+    "@hookform/resolvers": "5.4.0",
     "@mantine/carousel": "6.0.22",
     "@mantine/core": "6.0.22",
     "@mantine/dates": "6.0.22",
