@@ -44,7 +44,6 @@ export const getCurrencyOptions = () => [
   // { value: Currency.Ron, label: 'Romanian Leu (RON)' },
   // { value: Currency.Zar, label: 'South African Rand (ZAR)' },
   // { value: Currency.Hrk, label: 'Croatian Kuna (HRK)' },
-  { value: Currency.Uah, label: 'Ukrainian Hryvnia (UAH)' },
 ];
 
 export const getVatTypeOptions = () => [

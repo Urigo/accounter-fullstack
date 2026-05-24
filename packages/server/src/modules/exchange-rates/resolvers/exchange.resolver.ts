@@ -24,22 +24,20 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     },
   },
   ExchangeRates: {
-    aud: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'aud'),
-    cad: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'cad'),
-    eur: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'eur'),
-    gbp: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'gbp'),
-    jpy: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'jpy'),
-    sek: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'sek'),
-    uah: async (timelessDate, _, { injector }) =>
-      getFiatExchangeRate(injector, timelessDate, 'uah'),
     usd: async (timelessDate, _, { injector }) =>
       getFiatExchangeRate(injector, timelessDate, 'usd'),
+    gbp: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'gbp'),
+    eur: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'eur'),
+    cad: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'cad'),
+    jpy: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'jpy'),
+    aud: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'aud'),
+    sek: async (timelessDate, _, { injector }) =>
+      getFiatExchangeRate(injector, timelessDate, 'sek'),
     ils: () => {
       return 1;
     },

@@ -29,7 +29,6 @@ export enum Currency {
   Ils = 'ILS',
   Jpy = 'JPY',
   Sek = 'SEK',
-  Uah = 'UAH',
   Usd = 'USD',
   Usdc = 'USDC',
 }
