@@ -34,12 +34,18 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
       injector.get(ScraperIngestionProvider).uploadCurrencyRates(rates),
 
     uploadOtsarHahayalIlsTransactions: (_, { transactions }, { injector }) =>
-      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalIlsTransactions(transactions),
+      injector
+        .get(OtsarHahayalScraperIngestionProvider)
+        .uploadOtsarHahayalIlsTransactions(transactions),
 
     uploadOtsarHahayalForeignTransactions: (_, { transactions }, { injector }) =>
-      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalForeignTransactions(transactions),
+      injector
+        .get(OtsarHahayalScraperIngestionProvider)
+        .uploadOtsarHahayalForeignTransactions(transactions),
 
     uploadOtsarHahayalCreditCardTransactions: (_, { transactions }, { injector }) =>
-      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalCreditCardTransactions(transactions),
+      injector
+        .get(OtsarHahayalScraperIngestionProvider)
+        .uploadOtsarHahayalCreditCardTransactions(transactions),
   },
 };
