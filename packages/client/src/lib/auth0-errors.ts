@@ -7,6 +7,19 @@ export const AUTH0_ERROR_MESSAGES: Record<string, string> = {
   invalid_token: 'Your session has expired. Please log in again.',
 };
 
+// Auth0 error codes that mean the user must authenticate interactively again:
+// the refresh token is unknown/invalid/expired/missing, so silent renewal can never succeed.
+const REAUTH_REQUIRED_ERROR_CODES = new Set([
+  'login_required',
+  'invalid_token',
+  'invalid_grant',
+  'missing_refresh_token',
+]);
+
+export function isReauthRequiredAuth0Error(error: Error & { error?: string }): boolean {
+  return error.error != null && REAUTH_REQUIRED_ERROR_CODES.has(error.error);
+}
+
 export function isNetworkError(error: Error & { error?: string }): boolean {
   return (
     error.error === 'network_error' ||

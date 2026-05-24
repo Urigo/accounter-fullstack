@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH0_ERROR_MESSAGES, getAuth0ErrorMessage } from '../auth0-errors.js';
+import {
+  AUTH0_ERROR_MESSAGES,
+  getAuth0ErrorMessage,
+  isReauthRequiredAuth0Error,
+} from '../auth0-errors.js';
 
 describe('AUTH0_ERROR_MESSAGES', () => {
   it('maps all expected Auth0 error codes to human-readable messages', () => {
@@ -41,5 +45,29 @@ describe('getAuth0ErrorMessage', () => {
     const error = new Error('Something unexpected happened');
 
     expect(getAuth0ErrorMessage(error)).toBe('An unexpected error occurred. Please try again.');
+  });
+});
+
+describe('isReauthRequiredAuth0Error', () => {
+  it.each(['login_required', 'invalid_token', 'invalid_grant', 'missing_refresh_token'])(
+    'treats %s as requiring interactive re-authentication',
+    code => {
+      const error = Object.assign(new Error('refresh failed'), { error: code });
+
+      expect(isReauthRequiredAuth0Error(error)).toBe(true);
+    },
+  );
+
+  it('does not treat network errors as requiring re-authentication', () => {
+    const error = Object.assign(new Error('Network request failed'), { error: 'network_error' });
+
+    expect(isReauthRequiredAuth0Error(error)).toBe(false);
+  });
+
+  it('returns false for unknown or missing error codes', () => {
+    expect(isReauthRequiredAuth0Error(new Error('no code'))).toBe(false);
+    expect(
+      isReauthRequiredAuth0Error(Object.assign(new Error('weird'), { error: 'something_else' })),
+    ).toBe(false);
   });
 });

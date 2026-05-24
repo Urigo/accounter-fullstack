@@ -178,6 +178,53 @@ describe('URQL auth exchange hardening', () => {
     expect(globalThis.location.href).toBe(`${ROUTES.LOGIN}?reauth=1`);
   });
 
+  it('resumes with a fresh token after interactive re-auth instead of redirecting', async () => {
+    vi.stubGlobal('location', { href: 'http://localhost/' });
+
+    const provider = vi
+      .fn<TestAccessTokenProvider>()
+      .mockResolvedValueOnce('initial-token')
+      .mockResolvedValueOnce({ status: 'unauthenticated' })
+      .mockResolvedValueOnce('fresh-token');
+
+    const { setReauthHandler } = await import('../lib/reauth-coordinator.js');
+    setReauthHandler(async () => 'authenticated');
+
+    try {
+      const { authConfig } = await initializeAuth(provider);
+
+      await authConfig.refreshAuth();
+
+      expect(globalThis.location.href).toBe('http://localhost/');
+      const operation = authConfig.addAuthToOperation({ context: {} });
+      expect(operation.context.fetchOptions.headers.Authorization).toBe('Bearer fresh-token');
+    } finally {
+      setReauthHandler(null);
+    }
+  });
+
+  it('redirects to login when interactive re-auth is declined', async () => {
+    vi.stubGlobal('location', { href: 'http://localhost/' });
+
+    const provider = vi
+      .fn<TestAccessTokenProvider>()
+      .mockResolvedValueOnce('initial-token')
+      .mockResolvedValueOnce({ status: 'unauthenticated' });
+
+    const { setReauthHandler } = await import('../lib/reauth-coordinator.js');
+    setReauthHandler(async () => 'redirect');
+
+    try {
+      const { authConfig } = await initializeAuth(provider);
+
+      await authConfig.refreshAuth();
+
+      expect(globalThis.location.href).toBe(`${ROUTES.LOGIN}?reauth=1`);
+    } finally {
+      setReauthHandler(null);
+    }
+  });
+
   it('redirects to /login?reauth=1 only once when repeated unauthenticated refresh attempts fail', async () => {
     vi.stubGlobal('location', { href: 'http://localhost/' });
 
