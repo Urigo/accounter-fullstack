@@ -30,7 +30,6 @@ import {
       gbp
       jpy
       sek
-      uah
       usd
       date
     }
@@ -41,7 +40,6 @@ import {
       gbp
       jpy
       sek
-      uah
       usd
       date
     }

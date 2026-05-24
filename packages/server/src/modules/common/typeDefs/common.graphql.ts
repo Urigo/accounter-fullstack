@@ -82,7 +82,6 @@ export default gql`
     ILS
     JPY
     SEK
-    UAH
     USD
     " Crypto currencies "
     ETH

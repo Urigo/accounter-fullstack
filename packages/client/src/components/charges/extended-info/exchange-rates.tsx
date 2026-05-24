@@ -21,7 +21,6 @@ import { Card, CardContent, CardTitle } from '../../ui/card.js';
         ils
         jpy
         sek
-        uah
         usd
         eth
         grt

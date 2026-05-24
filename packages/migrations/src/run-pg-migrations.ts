@@ -175,6 +175,7 @@ import migration_2026_05_12T17_30_00_rls_super_admins_read_only from './actions/
 import migration_2026_05_13T10_00_00_fix_invitations_unique_index from './actions/2026-05-13T10-00-00.fix-invitations-unique-index.js';
 import migration_2026_05_13T12_00_00_add_provider_credentials_table from './actions/2026-05-13T12-00-00.add-provider-credentials-table.js';
 import migration_2026_05_24T10_00_00_support_uah_currency from './actions/2026-05-24T10-00-00.support-uah-currency.js';
+import migration_2026_05_24T11_00_00_revert_uah_currency from './actions/2026-05-24T11-00-00.revert-uah-currency.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -354,6 +355,7 @@ export const MIGRATIONS = [
   migration_2026_05_12T17_30_00_rls_super_admins_read_only,
   migration_2026_05_13T10_00_00_fix_invitations_unique_index,
   migration_2026_05_24T10_00_00_support_uah_currency,
+  migration_2026_05_24T11_00_00_revert_uah_currency,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

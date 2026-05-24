@@ -90,14 +90,13 @@ export const BusinessLedgerRecordsSingle = ({ businessId }: Props): ReactElement
             ),
           style: { whiteSpace: 'nowrap' },
         },
-        ...getCurrencyCells(Currency.Aud),
-        ...getCurrencyCells(Currency.Cad),
         ...getCurrencyCells(Currency.Eur),
-        ...getCurrencyCells(Currency.Gbp),
-        ...getCurrencyCells(Currency.Jpy),
-        ...getCurrencyCells(Currency.Sek),
-        ...getCurrencyCells(Currency.Uah),
         ...getCurrencyCells(Currency.Usd),
+        ...getCurrencyCells(Currency.Gbp),
+        ...getCurrencyCells(Currency.Cad),
+        ...getCurrencyCells(Currency.Jpy),
+        ...getCurrencyCells(Currency.Aud),
+        ...getCurrencyCells(Currency.Sek),
       ]}
     />
   );

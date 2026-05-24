@@ -13,7 +13,7 @@ import type {
 import { MainContext } from '../index.js';
 import type { Logger } from '../logger.js';
 
-const currencies = ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'SEK', 'UAH', 'USD'] as const;
+const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'JPY', 'AUD', 'SEK'] as const;
 type Currency = (typeof currencies)[number];
 
 const getAllExchangeRates = sql<IGetAllExchangeRatesQuery>`
@@ -22,20 +22,16 @@ const getAllExchangeRates = sql<IGetAllExchangeRatesQuery>`
     `;
 
 const insertExchangeRates = sql<IInsertExchangeRatesQuery>`
-      INSERT INTO accounter_schema.exchange_rates
-      (exchange_date, aud, cad, eur, gbp, jpy, sek, uah, usd) VALUES $$newRecords(exchangeDate, aud, cad, eur, gbp, jpy, sek, uah, usd) RETURNING *;
+      INSERT INTO accounter_schema.exchange_rates 
+      (exchange_date, usd, eur, gbp, cad, jpy, aud, sek) VALUES $$newRecords(exchangeDate, usd, eur, gbp, cad, jpy, aud, sek) RETURNING *;
     `;
 
 const updateExchangeRate = sql<IUpdateExchangeRateQuery>`
   UPDATE accounter_schema.exchange_rates
   SET
-  aud = COALESCE(
-    $aud,
-    aud
-  ),
-  cad = COALESCE(
-    $cad,
-    cad
+  usd = COALESCE(
+    $usd,
+    usd
   ),
   eur = COALESCE(
     $eur,
@@ -45,21 +41,21 @@ const updateExchangeRate = sql<IUpdateExchangeRateQuery>`
     $gbp,
     gbp
   ),
+  cad = COALESCE(
+    $cad,
+    cad
+  ),
   jpy = COALESCE(
     $jpy,
     jpy
   ),
+  aud = COALESCE(
+    $aud,
+    aud
+  ),
   sek = COALESCE(
     $sek,
     sek
-  ),
-  uah = COALESCE(
-    $uah,
-    uah
-  ),
-  usd = COALESCE(
-    $usd,
-    usd
   )
   WHERE exchange_date = $exchangeDate
   RETURNING *;
@@ -73,14 +69,13 @@ async function getDatabaseRates(pool: Pool, ctx: CurrencyRatesContext, logger: L
     for (const rate of existingRates) {
       if (rate.exchange_date) {
         dbData.set(format(rate.exchange_date, 'yyyy-MM-dd'), {
-          AUD: rate.aud ? Number(rate.aud) : null,
-          CAD: rate.cad ? Number(rate.cad) : null,
+          USD: rate.usd ? Number(rate.usd) : null,
           EUR: rate.eur ? Number(rate.eur) : null,
           GBP: rate.gbp ? Number(rate.gbp) : null,
+          CAD: rate.cad ? Number(rate.cad) : null,
           JPY: rate.jpy ? Number(rate.jpy) : null,
+          AUD: rate.aud ? Number(rate.aud) : null,
           SEK: rate.sek ? Number(rate.sek) : null,
-          UAH: rate.uah ? Number(rate.uah) : null,
-          USD: rate.usd ? Number(rate.usd) : null,
         });
       }
     }
@@ -96,7 +91,7 @@ async function getDatabaseRates(pool: Pool, ctx: CurrencyRatesContext, logger: L
 async function getBoiRates(ctx: CurrencyRatesContext, logger: Logger) {
   try {
     const res = await fetch(
-      'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS,RER_CAD_ILS,RER_JPY_ILS,RER_AUD_ILS,RER_SEK_ILS,RER_UAH_ILS',
+      'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS,RER_CAD_ILS,RER_JPY_ILS,RER_AUD_ILS,RER_SEK_ILS',
     );
 
     const XMLdata = await res.text();
@@ -184,7 +179,7 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
             pool,
           );
           logger.log(
-            `Exchange rate updated: ${row.exchange_date ? format(row.exchange_date, 'yyyyMMdd') : 'Null date'} | AUD: ${row.aud} | CAD: ${row.cad} | EUR: ${row.eur} | GBP: ${row.gbp} | JPY: ${row.jpy} | SEK: ${row.sek} | UAH: ${row.uah} | USD: ${row.usd}`,
+            `Exchange rate updated: ${row.exchange_date ? format(row.exchange_date, 'yyyyMMdd') : 'Null date'} | USD: ${row.usd} | EUR: ${row.eur} | GBP: ${row.gbp} | CAD: ${row.cad} | JPY: ${row.jpy} | AUD: ${row.aud} | SEK: ${row.sek}`,
           );
         } catch (error) {
           logger.error('Error on updating exchange rates -', error);
@@ -194,14 +189,13 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
       // case date rates do not exist in DB, insert new record
       newRecords.push({
         exchangeDate,
-        aud: rates.AUD,
-        cad: rates.CAD,
+        usd: rates.USD,
         eur: rates.EUR,
         gbp: rates.GBP,
+        cad: rates.CAD,
         jpy: rates.JPY == null ? undefined : rates.JPY * 0.01, // JPY rate from source is for 100 units, convert to rate for 1 unit
+        aud: rates.AUD,
         sek: rates.SEK,
-        uah: rates.UAH,
-        usd: rates.USD,
       });
     }
   }
@@ -211,7 +205,7 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
       const res = await insertExchangeRates.run({ newRecords }, pool);
       let newRecordsPrompt = 'New exchange rates inserted:';
       res.map(row => {
-        newRecordsPrompt += `\n  ${row.exchange_date ? format(row.exchange_date, 'yyyy-MM-dd') : 'Null date'} | AUD: ${row.aud} | CAD: ${row.cad} | EUR: ${row.eur} | GBP: ${row.gbp} | JPY: ${row.jpy} | SEK: ${row.sek} | UAH: ${row.uah} | USD: ${row.usd}`;
+        newRecordsPrompt += `\n  ${row.exchange_date ? format(row.exchange_date, 'yyyy-MM-dd') : 'Null date'} | USD: ${row.usd} | EUR: ${row.eur} | GBP: ${row.gbp} | CAD: ${row.cad} | JPY: ${row.jpy} | AUD: ${row.aud} | SEK: ${row.sek}`;
       });
       logger.log(newRecordsPrompt);
     } catch (error) {
@@ -224,22 +218,20 @@ async function compareAndUpdateRates(pool: Pool, ctx: CurrencyRatesContext, logg
 
 function getCurrencyKey(currency: Currency): keyof Omit<IUpdateExchangeRateParams, 'exchangeDate'> {
   switch (currency) {
-    case 'AUD':
-      return 'aud';
-    case 'CAD':
-      return 'cad';
+    case 'USD':
+      return 'usd';
     case 'EUR':
       return 'eur';
     case 'GBP':
       return 'gbp';
+    case 'CAD':
+      return 'cad';
     case 'JPY':
       return 'jpy';
+    case 'AUD':
+      return 'aud';
     case 'SEK':
       return 'sek';
-    case 'UAH':
-      return 'uah';
-    case 'USD':
-      return 'usd';
     default:
       throw new Error(`Unsupported currency ${currency}`);
   }

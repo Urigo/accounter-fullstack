@@ -63,25 +63,23 @@ export function getRateForCurrency(
   if (
     currencyCode &&
     [
-      Currency.Aud,
-      Currency.Cad,
+      Currency.Usd,
       Currency.Eur,
       Currency.Gbp,
+      Currency.Cad,
       Currency.Jpy,
+      Currency.Aud,
       Currency.Sek,
-      Currency.Uah,
-      Currency.Usd,
     ].includes(currencyCode)
   ) {
     const currencyKey = currencyCode.toLowerCase() as
-      | 'aud'
-      | 'cad'
+      | 'usd'
       | 'eur'
       | 'gbp'
+      | 'cad'
       | 'jpy'
-      | 'sek'
-      | 'uah'
-      | 'usd';
+      | 'aud'
+      | 'sek';
     const rate = parseFloat(exchangeRates[currencyKey] ?? '');
     if (Number.isNaN(rate)) {
       throw new Error(
