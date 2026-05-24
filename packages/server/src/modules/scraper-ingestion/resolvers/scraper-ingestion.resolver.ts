@@ -38,5 +38,8 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
 
     uploadOtsarHahayalForeignTransactions: (_, { transactions }, { injector }) =>
       injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalForeignTransactions(transactions),
+
+    uploadOtsarHahayalCreditCardTransactions: (_, { transactions }, { injector }) =>
+      injector.get(OtsarHahayalScraperIngestionProvider).uploadOtsarHahayalCreditCardTransactions(transactions),
   },
 };

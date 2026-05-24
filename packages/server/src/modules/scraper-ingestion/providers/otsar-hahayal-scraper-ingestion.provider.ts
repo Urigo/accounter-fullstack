@@ -4,6 +4,7 @@ import type {
   ChangedField,
   ChangedTransaction,
   InsertedTransactionSummary,
+  OtsarHahayalCreditCardTransactionInput,
   OtsarHahayalForeignTransactionInput,
   OtsarHahayalIlsTransactionInput,
   ScraperUploadResult,
@@ -12,10 +13,14 @@ import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import type {
+  IFetchOtsarHahayalCreditCardByKeysQuery,
+  IFetchOtsarHahayalCreditCardByKeysResult,
   IFetchOtsarHahayalForeignByKeysQuery,
   IFetchOtsarHahayalForeignByKeysResult,
   IFetchOtsarHahayalIlsByKeysQuery,
   IFetchOtsarHahayalIlsByKeysResult,
+  IUploadOtsarHahayalCreditCardTransactionsQuery,
+  IUploadOtsarHahayalCreditCardTransactionsResult,
   IUploadOtsarHahayalForeignTransactionsQuery,
   IUploadOtsarHahayalForeignTransactionsResult,
   IUploadOtsarHahayalIlsTransactionsQuery,
@@ -186,6 +191,97 @@ const uploadOtsarHahayalForeignTransactions = sql<IUploadOtsarHahayalForeignTran
   ON CONFLICT (account, branch, date, value_date, reference, description) DO NOTHING
   RETURNING id, account, branch, currency, date, description, credit, debit;
 `;
+
+const fetchOtsarHahayalCreditCardByKeys = sql<IFetchOtsarHahayalCreditCardByKeysQuery>`
+  SELECT
+    id,
+    resource_id,
+    masked_pan,
+    card_type,
+    billing_period,
+    date,
+    charge_date,
+    name,
+    deal_amount,
+    charge_amount,
+    notes,
+    wallet_type,
+    charge_currency,
+    deal_currency,
+    counter
+  FROM accounter_schema.otsar_hahayal_creditcard_transactions
+  WHERE resource_id = ANY($resourceIds!)
+    AND card_type = ANY($cardTypes!)
+    AND date = ANY($dates!)
+`;
+
+const uploadOtsarHahayalCreditCardTransactions = sql<IUploadOtsarHahayalCreditCardTransactionsQuery>`
+  INSERT INTO accounter_schema.otsar_hahayal_creditcard_transactions (
+    resource_id,
+    masked_pan,
+    card_type,
+    billing_period,
+    date,
+    charge_date,
+    name,
+    deal_amount,
+    charge_amount,
+    notes,
+    wallet_type,
+    charge_currency,
+    deal_currency,
+    counter
+  )
+  VALUES $$transactions(
+    resourceId,
+    maskedPan,
+    cardType,
+    billingPeriod,
+    date,
+    chargeDate,
+    name,
+    dealAmount,
+    chargeAmount,
+    notes,
+    walletType,
+    chargeCurrency,
+    dealCurrency,
+    counter
+  )
+  ON CONFLICT (resource_id, card_type, date, charge_date, deal_amount, deal_currency, name, notes, counter) DO NOTHING
+  RETURNING id, resource_id, date, name, charge_amount, charge_currency;
+`;
+
+const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: Array<{
+  key: string & keyof IFetchOtsarHahayalCreditCardByKeysResult;
+  incoming: (t: OtsarHahayalCreditCardTransactionInput) => string | number | boolean | null;
+}> = [
+  { key: 'masked_pan', incoming: t => t.maskedPan },
+  { key: 'billing_period', incoming: t => t.billingPeriod },
+  { key: 'charge_date', incoming: t => t.chargeDate },
+  { key: 'charge_amount', incoming: t => t.chargeAmount },
+  { key: 'wallet_type', incoming: t => t.walletType },
+  { key: 'charge_currency', incoming: t => t.chargeCurrency },
+];
+
+const OTSAR_HAHAYAL_CREDITCARD_NUMERIC_FIELDS: (keyof IFetchOtsarHahayalCreditCardByKeysResult)[] =
+  ['deal_amount', 'charge_amount'] as const;
+
+function diffOtsarHahayalCreditCardRow(
+  existing: IFetchOtsarHahayalCreditCardByKeysResult,
+  incoming: OtsarHahayalCreditCardTransactionInput,
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS) {
+    const isNumberField = OTSAR_HAHAYAL_CREDITCARD_NUMERIC_FIELDS.includes(key);
+    const oldValue = formatValue(existing[key], isNumberField);
+    const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
 
 const OTSAR_HAHAYAL_ILS_DIFF_FIELDS: Array<{
   key: string & keyof IFetchOtsarHahayalIlsByKeysResult;
@@ -509,6 +605,111 @@ export class OtsarHahayalScraperIngestionProvider {
       };
     } catch (error) {
       console.error('Error uploading Otsar HaHayal foreign transactions:', error);
+      throw error;
+    }
+  }
+
+  async uploadOtsarHahayalCreditCardTransactions(
+    transactions: readonly OtsarHahayalCreditCardTransactionInput[],
+  ): Promise<ScraperUploadResult> {
+    try {
+      if (transactions.length === 0)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
+
+      const resourceIds = [...new Set(transactions.map(t => t.resourceId))];
+      const cardTypes = [...new Set(transactions.map(t => t.cardType))];
+      const dates = transactions.map(t => new Date(t.date));
+
+      const existing = await fetchOtsarHahayalCreditCardByKeys.run(
+        { resourceIds, cardTypes, dates },
+        this.db,
+      );
+
+      const existingByKey = new Map<string, IFetchOtsarHahayalCreditCardByKeysResult>();
+      for (const row of existing) {
+        const key = [
+          row.resource_id,
+          row.card_type,
+          row.date ? dateToTimelessDateString(row.date) : '',
+          row.charge_date ? dateToTimelessDateString(row.charge_date) : '',
+          row.deal_amount,
+          row.deal_currency,
+          row.name,
+          row.notes,
+          row.counter,
+        ].join('|');
+        existingByKey.set(key, row);
+      }
+
+      const params = transactions.map(t => ({
+        resourceId: t.resourceId,
+        maskedPan: t.maskedPan,
+        cardType: t.cardType,
+        billingPeriod: t.billingPeriod,
+        date: t.date,
+        chargeDate: t.chargeDate,
+        name: t.name,
+        dealAmount: t.dealAmount,
+        chargeAmount: t.chargeAmount,
+        notes: t.notes,
+        walletType: t.walletType,
+        chargeCurrency: t.chargeCurrency,
+        dealCurrency: t.dealCurrency,
+        counter: t.counter,
+      }));
+
+      const result: IUploadOtsarHahayalCreditCardTransactionsResult[] =
+        await uploadOtsarHahayalCreditCardTransactions.run({ transactions: params }, this.db);
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+      const insertedIdSet = new Set(insertedIds);
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.date ? dateToTimelessDateString(r.date) : null,
+        description: r.name ?? null,
+        amount: r.charge_amount == null ? null : String(-Number(r.charge_amount)),
+        account: r.resource_id ?? null,
+      }));
+
+      const changedTransactions: ChangedTransaction[] = [];
+      for (const t of transactions) {
+        const key = [
+          t.resourceId,
+          t.cardType,
+          t.date,
+          t.chargeDate,
+          t.dealAmount,
+          t.dealCurrency,
+          t.name,
+          t.notes,
+          t.counter,
+        ].join('|');
+        const existingRow = existingByKey.get(key);
+        if (existingRow && !insertedIdSet.has(existingRow.id)) {
+          const changedFields = diffOtsarHahayalCreditCardRow(existingRow, t);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: existingRow.id, changedFields });
+          }
+        }
+      }
+
+      return {
+        inserted: insertedIds.length,
+        skipped: transactions.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    } catch (error) {
+      console.error('Error uploading Otsar HaHayal credit card transactions:', error);
       throw error;
     }
   }

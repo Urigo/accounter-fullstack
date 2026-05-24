@@ -533,6 +533,40 @@ export default gql`
     subTransactions: String!
   }
 
+  # ── Otsar HaHayal Credit Card ─────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal credit card transaction "
+  input OtsarHahayalCreditCardTransactionInput {
+    " UUID of the card resource (from CreditCardsResponse) "
+    resourceId: String!
+    " Masked PAN of the card (from CreditCardsResponse) "
+    maskedPan: String!
+    " Card type code (from CreditCardsResponse) "
+    cardType: Int!
+    " Billing period group key (e.g. localDeals, euroDeals) "
+    billingPeriod: String!
+    " Transaction date "
+    date: String!
+    " Charge date "
+    chargeDate: String!
+    " Merchant / transaction name "
+    name: String!
+    " Original deal amount in deal currency "
+    dealAmount: Float!
+    " Charged amount in charge currency "
+    chargeAmount: Float!
+    " Additional notes "
+    notes: String!
+    " Wallet type code "
+    walletType: Int!
+    " Currency the charge is made in "
+    chargeCurrency: String!
+    " Currency of the original deal "
+    dealCurrency: String!
+    " Counter for deduplicating identical transactions in the same billing period "
+    counter: Int!
+  }
+
   # ── Mutations ────────────────────────────────────────────────────────────────
 
   extend type Mutation {
@@ -570,6 +604,10 @@ export default gql`
 
     uploadOtsarHahayalForeignTransactions(
       transactions: [OtsarHahayalForeignTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalCreditCardTransactions(
+      transactions: [OtsarHahayalCreditCardTransactionInput!]!
     ): ScraperUploadResult! @requiresRole(role: "scraper")
   }
 `;

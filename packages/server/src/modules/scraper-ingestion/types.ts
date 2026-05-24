@@ -17,4 +17,10 @@ export type {
   IUploadOtsarHahayalForeignTransactionsParams,
   IUploadOtsarHahayalForeignTransactionsResult,
   IUploadOtsarHahayalForeignTransactionsQuery,
+  IFetchOtsarHahayalCreditCardByKeysParams,
+  IFetchOtsarHahayalCreditCardByKeysResult,
+  IFetchOtsarHahayalCreditCardByKeysQuery,
+  IUploadOtsarHahayalCreditCardTransactionsParams,
+  IUploadOtsarHahayalCreditCardTransactionsResult,
+  IUploadOtsarHahayalCreditCardTransactionsQuery,
 } from './__generated__/otsar-hahayal-scraper-ingestion.types.js';

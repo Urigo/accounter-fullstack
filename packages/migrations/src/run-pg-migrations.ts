@@ -177,6 +177,7 @@ import migration_2026_05_13T12_00_00_add_provider_credentials_table from './acti
 import migration_2026_05_18T12_00_00_add_otsar_hahayal_tables from './actions/2026-05-18T12-00-00.add-otsar-hahayal-tables.js';
 import migration_2026_05_24T10_00_00_support_uah_currency from './actions/2026-05-24T10-00-00.support-uah-currency.js';
 import migration_2026_05_24T11_00_00_revert_uah_currency from './actions/2026-05-24T11-00-00.revert-uah-currency.js';
+import migration_2026_05_24T12_00_00_add_otsar_hahayal_creditcard_transactions from './actions/2026-05-24T12-00-00.add-otsar-hahayal-creditcard-transactions.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -358,6 +359,7 @@ export const MIGRATIONS = [
   migration_2026_05_18T12_00_00_add_otsar_hahayal_tables,
   migration_2026_05_24T10_00_00_support_uah_currency,
   migration_2026_05_24T11_00_00_revert_uah_currency,
+  migration_2026_05_24T12_00_00_add_otsar_hahayal_creditcard_transactions,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
