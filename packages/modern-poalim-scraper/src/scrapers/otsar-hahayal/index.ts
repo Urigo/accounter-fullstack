@@ -1,9 +1,11 @@
 import { chromium } from 'playwright';
 import { getAccounts } from './accounts.js';
+import { getCreditCardTransactions } from './credit-card-transactions.js';
 import { getCreditCards } from './credit-cards.js';
 import { getForeignTransactions } from './foreign-transactions.js';
 import { getIlsTransactions } from './ils-transactions.js';
 import { loginAndGetUserData } from './login-fetch-user-data.js';
+import { TimelessDateString } from './types.js';
 
 export interface OtsarHahayalCredentials {
   userCode: string;
@@ -74,6 +76,14 @@ export async function otsarHahayal(
     getCreditCards: async () => getCreditCards(page, options, headers),
 
     // credit card transactions
+    getCreditCardTransactions: async (
+      card: {
+        resourceId: string;
+        cardType: number;
+        debitDay: number;
+      },
+      month: TimelessDateString,
+    ) => getCreditCardTransactions(page, headers, options, card, month),
 
     // investments
 

@@ -682,3 +682,47 @@ export const creditCardsResponseSchema = z
 
 export type CreditCardsResponse = z.infer<typeof creditCardsResponseSchema>;
 export type CreditCard = z.infer<typeof creditCardSchema>;
+
+const creditCardTransactionCurrencySchema = z.enum(['שקל חדש', 'דולר ארה"ב', 'אירו', 'UAH']);
+
+const creditCardTransactionSchema = z
+  .object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    chargeDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    name: z.string().min(1),
+    dealAmount: z.number(),
+    chargeAmount: z.number(),
+    notes: z.string(),
+    walletType: z.union([z.literal(1), z.literal(3), z.literal(4)]),
+    chargeCurrency: creditCardTransactionCurrencySchema,
+    dealCurrency: creditCardTransactionCurrencySchema,
+    counter: z.number().int().nonnegative().optional(), // addition to handle replicated transactions
+  })
+  .strict();
+
+const creditCardDealGroupSchema = z
+  .object({
+    deals: z.array(creditCardTransactionSchema).nullable(),
+    total: z.number(),
+    chargeDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+  })
+  .strict();
+
+export const creditCardBillingPeriodSchema = z
+  .object({
+    localDeals: creditCardDealGroupSchema,
+    euroDeals: creditCardDealGroupSchema,
+    dollarDeals: creditCardDealGroupSchema,
+    shekelMatahDeals: creditCardDealGroupSchema,
+    localCurrentDebitDeals: creditCardDealGroupSchema,
+    euroCurrentDebitDeals: creditCardDealGroupSchema,
+    dollarCurrentDebitDeals: creditCardDealGroupSchema,
+    shekelMatahCurrentDebitDeals: creditCardDealGroupSchema,
+  })
+  .strict();
+
+export type CreditCardTransaction = z.infer<typeof creditCardTransactionSchema>;
+export type CreditCardBillingPeriod = z.infer<typeof creditCardBillingPeriodSchema>;

@@ -2,13 +2,17 @@ import { Page } from 'playwright';
 import { $ZodIssue } from 'zod/v4/core';
 import { sleep } from '../../utils/sleep.js';
 import { OtsarHahayalOptions } from './index.js';
-import { creditCardsResponseSchema } from './schemas.js';
+import { CreditCardsResponse, creditCardsResponseSchema } from './schemas.js';
 
 export async function getCreditCards(
   page: Page,
   options: OtsarHahayalOptions,
   headers: Record<string, string>,
-): Promise<{ data: unknown | null; isValid: boolean | null; errors: $ZodIssue[] | null }> {
+): Promise<{
+  data: CreditCardsResponse | null;
+  isValid: boolean | null;
+  errors: $ZodIssue[] | null;
+}> {
   page.goto('https://online.bankotsar.co.il/appsng/Resources/PortalNG/shell/#/creditcardCharges');
 
   // stale for random 0.5-1 second

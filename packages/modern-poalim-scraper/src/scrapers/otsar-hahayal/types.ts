@@ -6,6 +6,9 @@ export type {
   IlsTransactionsResponse,
   UserData,
   Account,
+  CreditCardsResponse,
+  CreditCardBillingPeriod,
+  CreditCard,
 } from './schemas.js';
 
 export type IlsTransactionsRequest = {
@@ -18,6 +21,13 @@ export type IlsTransactionsRequest = {
     order: number;
     language: string;
   };
+};
+
+export type CreditCardTransactionsRequest = {
+  resourceId: string;
+  cardType: number;
+  debitDay: number;
+  date: TimelessDateString;
 };
 
 type addZero<T> = T | 0;

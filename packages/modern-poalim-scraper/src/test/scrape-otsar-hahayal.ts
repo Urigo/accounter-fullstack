@@ -1,7 +1,9 @@
 // Script to test out MAX scraping. Run with:
 // tsx packages/modern-poalim-scraper/src/test/scrape-max.ts
+import { addMonths, format } from 'date-fns';
 import dotenv from 'dotenv';
 import { init } from '../index.js';
+import type { TimelessDateString } from '../scrapers/otsar-hahayal/types.js';
 
 dotenv.config({ path: [`.env`, `../../.env`] });
 
@@ -32,16 +34,35 @@ async function main() {
         });
 
         console.log(ilsTransactions);
-
-        const foreignTransactions = await scraper.foreignTransactions({
-          accountNumber: Number(accounts.data[0].account),
-          branch: accounts.data[0].branch,
-        });
-
-        console.log(foreignTransactions);
       }
 
-      console.log(scraper.foreignTransactions);
+      const foreignTransactions = await scraper.foreignTransactions();
+
+      console.log(foreignTransactions);
+
+      const creditCards = await scraper.getCreditCards();
+
+      console.log(creditCards);
+
+      if (creditCards.data?.cards.length) {
+        for (const card of creditCards.data.cards) {
+          let month = addMonths(new Date(), 1);
+          for (let i = 0; i < 12; i++) {
+            const monthString = format(month, 'yyyy-MM-dd') as TimelessDateString;
+            const creditCardTransactions = await scraper.getCreditCardTransactions(
+              {
+                resourceId: card.resourceId,
+                cardType: card.cardType,
+                debitDay: card.debitDay,
+              },
+              monthString,
+            );
+
+            console.log(creditCardTransactions);
+            month = addMonths(month, -1);
+          }
+        }
+      }
     } finally {
       await scraper.close();
     }
