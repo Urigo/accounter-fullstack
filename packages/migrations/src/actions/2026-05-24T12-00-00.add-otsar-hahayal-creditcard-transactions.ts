@@ -142,7 +142,6 @@ export default {
             account_id_var,
             charge_id_var,
             merged_id,
-            NULLIF(TRIM(NEW.name), ''),
             NULLIF(TRIM(CONCAT_WS(' ',
                 NULLIF(TRIM(NEW.name), ''),
                 NULLIF(TRIM(NEW.notes), '')

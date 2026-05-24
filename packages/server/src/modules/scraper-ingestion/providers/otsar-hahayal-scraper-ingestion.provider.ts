@@ -434,8 +434,8 @@ export class OtsarHahayalScraperIngestionProvider {
           row.date_of_business_day ? dateToTimelessDateString(row.date_of_business_day) : '',
           row.reference,
           row.origin_reference,
-          row.credit_amount,
-          row.debit_amount,
+          formatValue(row.credit_amount, true),
+          formatValue(row.debit_amount, true),
         ].join('_');
         existingByKey.set(key, row);
       }
@@ -500,8 +500,8 @@ export class OtsarHahayalScraperIngestionProvider {
           t.dateOfBusinessDay ? dateToTimelessDateString(new Date(t.dateOfBusinessDay)) : '',
           t.reference,
           t.originReference ?? '',
-          t.creditAmount,
-          t.debitAmount,
+          formatValue(t.creditAmount, true),
+          formatValue(t.debitAmount, true),
         ].join('_');
         const existingRow = existingByKey.get(key);
         if (existingRow && !insertedIdSet.has(existingRow.id)) {

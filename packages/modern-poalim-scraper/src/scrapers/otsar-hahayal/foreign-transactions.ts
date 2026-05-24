@@ -115,7 +115,10 @@ function parseForeignXls(buffer: Buffer): ForeignAccountData {
   const account = accountMatch?.[2] ? Number(accountMatch[2]) : 0;
   const accountType = accountTypeMatch?.[1]?.trim() ?? '';
   const currencyLabel = currencyMatch?.[1]?.trim() ?? '';
-  const currency = CURRENCY_MAP[currencyLabel] ?? Currency.Usd;
+  const currency = CURRENCY_MAP[currencyLabel];
+  if (!currency) {
+    throw new Error(`Unknown currency label: ${currencyLabel}`);
+  }
 
   // Row index 6 (0-based): opening balance row — יתרת פתיחה in col E(4), balance in col A(0)
   const openingRow = rows[6];

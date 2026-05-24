@@ -210,7 +210,7 @@ export default {
                 WHEN NEW.debit_amount <> 0 THEN NEW.debit_amount * -1
                 ELSE NEW.credit_amount
             END,
-            NEW.opening_balance,
+            NEW.closing_balance,
             NEW.reference::TEXT,
             'OTSAR_HAHAYAL',
             CASE

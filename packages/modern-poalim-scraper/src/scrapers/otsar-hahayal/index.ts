@@ -43,12 +43,12 @@ export async function otsarHahayal(
   ).toISOString();
   const options = { ...DEFAULT_OPTIONS, fromDate, toDate: now.toISOString(), ...userOptions };
 
-  const browser = await chromium.launch({ headless: options.headless === true ? true : false });
+  const browser = await chromium.launch({ headless: options.headless ?? false });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 
   // after 5 min close the browser to prevent hanging in case of unforeseen issues
-  setTimeout(
+  const timeoutId = setTimeout(
     async () => {
       console.warn('Otsar Hahayal scraper timed out after 5 minutes. Closing browser.');
       await browser.close();
@@ -88,6 +88,7 @@ export async function otsarHahayal(
     // investments
 
     close: async () => {
+      clearTimeout(timeoutId);
       await browser.close();
     },
   };
