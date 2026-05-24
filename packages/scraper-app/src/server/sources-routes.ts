@@ -7,6 +7,7 @@ import {
   DiscountAccountSchema,
   IsracardAmexAccountSchema,
   MaxAccountSchema,
+  OtsarHahayalAccountSchema,
   PoalimAccountSchema,
   type Vault,
 } from './vault.js';
@@ -18,6 +19,7 @@ const SourceConfigSchema = z.discriminatedUnion('type', [
   IsracardAmexAccountSchema.extend({ type: z.literal('amex') }),
   CalAccountSchema.extend({ type: z.literal('cal') }),
   MaxAccountSchema.extend({ type: z.literal('max') }),
+  OtsarHahayalAccountSchema.extend({ type: z.literal('otsar-hahayal') }),
 ]);
 
 export type SourceConfig = z.infer<typeof SourceConfigSchema>;
@@ -31,6 +33,7 @@ function collectSources(vault: Vault): SourceConfig[] {
     ...vault.amexAccounts.map(a => ({ ...a, type: 'amex' as const })),
     ...vault.calAccounts.map(a => ({ ...a, type: 'cal' as const })),
     ...vault.maxAccounts.map(a => ({ ...a, type: 'max' as const })),
+    ...vault.otsarHahayalAccounts.map(a => ({ ...a, type: 'otsar-hahayal' as const })),
   ];
 }
 
@@ -62,6 +65,12 @@ function appendSource(vault: Vault, source: SourceConfig): Vault {
     case 'max':
       v.maxAccounts = [...vault.maxAccounts, rest as (typeof vault.maxAccounts)[number]];
       break;
+    case 'otsar-hahayal':
+      v.otsarHahayalAccounts = [
+        ...vault.otsarHahayalAccounts,
+        rest as (typeof vault.otsarHahayalAccounts)[number],
+      ];
+      break;
   }
   return v;
 }
@@ -74,6 +83,7 @@ type ArrayKey = Extract<
   | 'amexAccounts'
   | 'calAccounts'
   | 'maxAccounts'
+  | 'otsarHahayalAccounts'
 >;
 
 const typeToKey: Record<SourceType, ArrayKey> = {
@@ -83,6 +93,7 @@ const typeToKey: Record<SourceType, ArrayKey> = {
   amex: 'amexAccounts',
   cal: 'calAccounts',
   max: 'maxAccounts',
+  'otsar-hahayal': 'otsarHahayalAccounts',
 };
 
 const typeToPatchSchema: Record<SourceType, z.ZodType> = {
@@ -92,6 +103,7 @@ const typeToPatchSchema: Record<SourceType, z.ZodType> = {
   amex: IsracardAmexAccountSchema.omit({ id: true }).partial(),
   cal: CalAccountSchema.omit({ id: true }).partial(),
   max: MaxAccountSchema.omit({ id: true }).partial(),
+  'otsar-hahayal': OtsarHahayalAccountSchema.omit({ id: true }).partial(),
 };
 
 function findSourceKey(

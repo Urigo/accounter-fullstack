@@ -543,8 +543,8 @@ export default gql`
     maskedPan: String!
     " Card type code (from CreditCardsResponse) "
     cardType: Int!
-    " Billing period group key (e.g. localDeals, euroDeals) "
-    billingPeriod: String!
+    " Deal group key (e.g. localDeals, euroDeals) "
+    dealGroup: String!
     " Transaction date "
     date: String!
     " Charge date "

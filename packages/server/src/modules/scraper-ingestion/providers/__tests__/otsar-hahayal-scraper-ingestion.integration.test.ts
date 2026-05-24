@@ -44,7 +44,7 @@ beforeAll(async () => {
   await runMigrationsIfNeeded(pool);
   const dbProvider = new DBProvider(pool);
   const dbClient = new TenantAwareDBClient(dbProvider, createMockAuthContextProvider());
-  provider = new OtsarHahayalScraperIngestionProvider(dbClient);
+  provider = new OtsarHahayalScraperIngestionProvider(dbClient, createMockAuthContextProvider());
 
   // Disable triggers so inserts don't cascade into charges/transactions,
   // which require financial_accounts and owner_id to be set up.

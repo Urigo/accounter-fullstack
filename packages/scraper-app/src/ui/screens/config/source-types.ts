@@ -71,13 +71,22 @@ export type MaxSource = {
   options?: { acceptedCardNumbers?: string[]; ignoredCardNumbers?: string[] };
 };
 
+export type OtsarHahayalSource = {
+  id: string;
+  type: 'otsar-hahayal';
+  nickname?: string;
+  userCode: string;
+  password: string;
+};
+
 export type SourceConfig =
   | PoalimSource
   | DiscountSource
   | IsracardSource
   | AmexSource
   | CalSource
-  | MaxSource;
+  | MaxSource
+  | OtsarHahayalSource;
 
 export type { SourceType } from '../../../shared/source-types.js';
 
@@ -88,4 +97,6 @@ export const SOURCE_LABELS: Record<SourceType, string> = {
   amex: 'Amex',
   cal: 'CAL',
   max: 'Max',
+  'otsar-hahayal': 'Otsar HaHayal',
+  'otsar-hahayal-credit-card': 'Otsar HaHayal - Credit Card',
 };

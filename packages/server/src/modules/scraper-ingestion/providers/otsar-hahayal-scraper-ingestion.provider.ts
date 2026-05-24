@@ -11,6 +11,7 @@ import type {
 } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import type {
   IFetchOtsarHahayalCreditCardByKeysQuery,
@@ -94,7 +95,8 @@ const uploadOtsarHahayalIlsTransactions = sql<IUploadOtsarHahayalIlsTransactions
     salary_ind,
     transaction_source,
     transaction_reason,
-    origin_reference
+    origin_reference,
+    owner_id
   )
   VALUES $$transactions(
     accountNumber,
@@ -125,7 +127,8 @@ const uploadOtsarHahayalIlsTransactions = sql<IUploadOtsarHahayalIlsTransactions
     salaryInd,
     transactionSource,
     transactionReason,
-    originReference
+    originReference,
+    ownerId
   )
   ON CONFLICT (account_number, branch_number, date_of_registration, date_of_business_day, reference, origin_reference, credit_amount, debit_amount) DO NOTHING
   RETURNING id, account_number, branch_number, date_of_registration, description, credit_amount, debit_amount;
@@ -170,7 +173,8 @@ const uploadOtsarHahayalForeignTransactions = sql<IUploadOtsarHahayalForeignTran
     sp,
     reference,
     date,
-    sub_transactions
+    sub_transactions,
+    owner_id
   )
   VALUES $$transactions(
     account,
@@ -186,7 +190,8 @@ const uploadOtsarHahayalForeignTransactions = sql<IUploadOtsarHahayalForeignTran
     sp,
     reference,
     date,
-    subTransactions
+    subTransactions,
+    ownerId
   )
   ON CONFLICT (account, branch, date, value_date, reference, description) DO NOTHING
   RETURNING id, account, branch, currency, date, description, credit, debit;
@@ -230,13 +235,14 @@ const uploadOtsarHahayalCreditCardTransactions = sql<IUploadOtsarHahayalCreditCa
     wallet_type,
     charge_currency,
     deal_currency,
-    counter
+    counter,
+    owner_id
   )
   VALUES $$transactions(
     resourceId,
     maskedPan,
     cardType,
-    billingPeriod,
+    dealGroup,
     date,
     chargeDate,
     name,
@@ -246,7 +252,8 @@ const uploadOtsarHahayalCreditCardTransactions = sql<IUploadOtsarHahayalCreditCa
     walletType,
     chargeCurrency,
     dealCurrency,
-    counter
+    counter,
+    ownerId
   )
   ON CONFLICT (resource_id, card_type, date, charge_date, deal_amount, deal_currency, name, notes, counter) DO NOTHING
   RETURNING id, resource_id, date, name, charge_amount, charge_currency;
@@ -257,7 +264,7 @@ const OTSAR_HAHAYAL_CREDITCARD_DIFF_FIELDS: Array<{
   incoming: (t: OtsarHahayalCreditCardTransactionInput) => string | number | boolean | null;
 }> = [
   { key: 'masked_pan', incoming: t => t.maskedPan },
-  { key: 'billing_period', incoming: t => t.billingPeriod },
+  { key: 'billing_period', incoming: t => t.dealGroup },
   { key: 'charge_date', incoming: t => t.chargeDate },
   { key: 'charge_amount', incoming: t => t.chargeAmount },
   { key: 'wallet_type', incoming: t => t.walletType },
@@ -374,7 +381,21 @@ function diffOtsarHahayalForeignRow(
   global: true,
 })
 export class OtsarHahayalScraperIngestionProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  private businessIdCache: string | null = null;
+
+  constructor(
+    private db: TenantAwareDBClient,
+    private authContextProvider: AuthContextProvider,
+  ) {}
+
+  private async getBusinessId() {
+    if (this.businessIdCache !== null) {
+      return this.businessIdCache;
+    }
+    const authContext = await this.authContextProvider.getAuthContext();
+    this.businessIdCache = authContext?.tenant.businessId ?? null;
+    return this.businessIdCache;
+  }
 
   async uploadOtsarHahayalIlsTransactions(
     transactions: readonly OtsarHahayalIlsTransactionInput[],
@@ -419,6 +440,8 @@ export class OtsarHahayalScraperIngestionProvider {
         existingByKey.set(key, row);
       }
 
+      const businessId = await this.getBusinessId();
+
       const params = transactions.map(t => ({
         accountNumber: t.accountNumber,
         accountType: t.accountType,
@@ -449,6 +472,7 @@ export class OtsarHahayalScraperIngestionProvider {
         transactionSource: t.transactionSource,
         transactionReason: t.transactionReason,
         originReference: t.originReference ?? '',
+        ownerId: businessId,
       }));
 
       const result: IUploadOtsarHahayalIlsTransactionsResult[] =
@@ -545,6 +569,8 @@ export class OtsarHahayalScraperIngestionProvider {
         existingByKey.set(key, row);
       }
 
+      const businessId = await this.getBusinessId();
+
       const params = transactions.map(t => ({
         account: t.account,
         branch: t.branch,
@@ -560,6 +586,7 @@ export class OtsarHahayalScraperIngestionProvider {
         reference: t.reference,
         date: t.date,
         subTransactions: t.subTransactions,
+        ownerId: businessId,
       }));
 
       const result: IUploadOtsarHahayalForeignTransactionsResult[] =
@@ -647,11 +674,13 @@ export class OtsarHahayalScraperIngestionProvider {
         existingByKey.set(key, row);
       }
 
+      const businessId = await this.getBusinessId();
+
       const params = transactions.map(t => ({
         resourceId: t.resourceId,
         maskedPan: t.maskedPan,
         cardType: t.cardType,
-        billingPeriod: t.billingPeriod,
+        dealGroup: t.dealGroup,
         date: t.date,
         chargeDate: t.chargeDate,
         name: t.name,
@@ -662,6 +691,7 @@ export class OtsarHahayalScraperIngestionProvider {
         chargeCurrency: t.chargeCurrency,
         dealCurrency: t.dealCurrency,
         counter: t.counter,
+        ownerId: businessId,
       }));
 
       const result: IUploadOtsarHahayalCreditCardTransactionsResult[] =
