@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const CurrencyRateEntrySchema = z.object({
   date: z.string(),
-  currency: z.enum(['USD', 'EUR', 'GBP', 'CAD', 'JPY', 'AUD', 'SEK']),
+  currency: z.enum(['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'SEK', 'UAH', 'USD']),
   rate: z.number(),
 });
 

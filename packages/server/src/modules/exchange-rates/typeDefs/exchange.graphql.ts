@@ -16,6 +16,7 @@ export default gql`
     ils: Float
     jpy: Float
     sek: Float
+    uah: Float
     usd: Float
     " crypto currencies "
     eth: Float

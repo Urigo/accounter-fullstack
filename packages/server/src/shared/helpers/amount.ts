@@ -43,34 +43,36 @@ export function formatCurrency<T extends boolean = false>(
   nullable?: T,
 ): Currency | (T extends true ? null : never) {
   switch (raw) {
-    case 'GBP':
-      return Currency.Gbp;
-    case 'לש':
-      return Currency.Gbp;
-    case 'USD':
-      return Currency.Usd;
     case '$':
       return Currency.Usd;
-    case 'EUR':
-      return Currency.Eur;
-    case 'אירו':
-      return Currency.Eur;
-    case 'CAD':
-      return Currency.Cad;
-    case 'JPY':
-      return Currency.Jpy;
     case 'AUD':
       return Currency.Aud;
-    case 'SEK':
-      return Currency.Sek;
-    case 'ILS':
-      return Currency.Ils;
-    case 'GRT':
-      return Currency.Grt;
-    case 'USDC':
-      return Currency.Usdc;
+    case 'CAD':
+      return Currency.Cad;
     case 'ETH':
       return Currency.Eth;
+    case 'EUR':
+      return Currency.Eur;
+    case 'GBP':
+      return Currency.Gbp;
+    case 'GRT':
+      return Currency.Grt;
+    case 'ILS':
+      return Currency.Ils;
+    case 'JPY':
+      return Currency.Jpy;
+    case 'SEK':
+      return Currency.Sek;
+    case 'UAH':
+      return Currency.Uah;
+    case 'USD':
+      return Currency.Usd;
+    case 'USDC':
+      return Currency.Usdc;
+    case 'אירו':
+      return Currency.Eur;
+    case 'לש':
+      return Currency.Gbp;
     case null:
       return Currency.Ils;
     case undefined:
@@ -85,28 +87,30 @@ export function formatCurrency<T extends boolean = false>(
 
 export function getCurrencySymbol(currency: Currency) {
   switch (currency) {
-    case Currency.Gbp:
-      return '£';
-    case Currency.Usd:
-      return '$';
-    case Currency.Eur:
-      return '€';
-    case Currency.Cad:
-      return 'C$';
-    case Currency.Jpy:
-      return '¥';
     case Currency.Aud:
       return 'A$';
-    case Currency.Sek:
-      return 'kr';
-    case Currency.Ils:
-      return '₪';
-    case Currency.Grt:
-      return 'GRT';
-    case Currency.Usdc:
-      return 'USDC';
+    case Currency.Cad:
+      return 'C$';
     case Currency.Eth:
       return 'Ξ';
+    case Currency.Eur:
+      return '€';
+    case Currency.Gbp:
+      return '£';
+    case Currency.Grt:
+      return 'GRT';
+    case Currency.Ils:
+      return '₪';
+    case Currency.Jpy:
+      return '¥';
+    case Currency.Sek:
+      return 'kr';
+    case Currency.Uah:
+      return '₴';
+    case Currency.Usd:
+      return '$';
+    case Currency.Usdc:
+      return 'USDC';
     default:
       throw new GraphQLError(`Unknown currency code: "${currency}". Using "₪" as default symbol.`);
   }

@@ -41,6 +41,7 @@ import { StatsCard } from './stats-card.js';
             gbp
             jpy
             sek
+            uah
             usd
             date
           }
@@ -51,6 +52,7 @@ import { StatsCard } from './stats-card.js';
             gbp
             jpy
             sek
+            uah
             usd
             date
           }
@@ -124,10 +126,21 @@ export const ChartPage = (): ReactElement => {
         {} as Record<string, Array<Transaction>>,
       ) ?? {};
 
-    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad, Jpy, Aud, Sek or GBP, convert to USD. If its USD, do nothing
+    // for each transaction in the transactionsByMonth, check the currency. If its ILS, EURO, Cad, Jpy, Aud, Sek, Uah or GBP, convert to USD. If its USD, do nothing
     const convertedTransactions: Array<{ month: string; converted: Transaction[] }> = [];
     Object.entries(transactionsByMonth).map(([key, value]) => {
       let converted: Array<Transaction | null> = value.map(item => {
+        const currencyMap: Partial<
+          Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'uah'>
+        > = {
+          [Currency.Eur]: 'eur',
+          [Currency.Gbp]: 'gbp',
+          [Currency.Cad]: 'cad',
+          [Currency.Jpy]: 'jpy',
+          [Currency.Aud]: 'aud',
+          [Currency.Sek]: 'sek',
+          [Currency.Uah]: 'uah',
+        };
         switch (item.amount.currency) {
           case Currency.Usd:
             return item;
@@ -152,17 +165,8 @@ export const ChartPage = (): ReactElement => {
           case Currency.Cad:
           case Currency.Jpy:
           case Currency.Aud:
-          case Currency.Sek: {
-            const currencyMap: Partial<
-              Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek'>
-            > = {
-              [Currency.Eur]: 'eur',
-              [Currency.Gbp]: 'gbp',
-              [Currency.Cad]: 'cad',
-              [Currency.Jpy]: 'jpy',
-              [Currency.Aud]: 'aud',
-              [Currency.Sek]: 'sek',
-            };
+          case Currency.Sek:
+          case Currency.Uah: {
             const currencyKey = currencyMap[item.amount.currency as Currency];
             if (!currencyKey) {
               return null;

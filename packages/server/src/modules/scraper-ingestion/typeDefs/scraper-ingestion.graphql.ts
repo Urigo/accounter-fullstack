@@ -475,6 +475,7 @@ export default gql`
     gbp: Float
     jpy: Float
     sek: Float
+    uah: Float
     usd: Float
   }
 

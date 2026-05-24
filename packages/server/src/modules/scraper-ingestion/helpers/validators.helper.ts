@@ -421,12 +421,13 @@ export function validateRates(
 ): IUploadCurrencyRatesParams['rates'] {
   return rates.map(r => ({
     exchangeDate: r.exchangeDate,
-    usd: r.usd,
+    aud: r.aud,
+    cad: r.cad,
     eur: r.eur,
     gbp: r.gbp,
-    cad: r.cad,
     jpy: r.jpy,
-    aud: r.aud,
     sek: r.sek,
+    uah: r.uah,
+    usd: r.usd,
   }));
 }

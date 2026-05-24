@@ -368,26 +368,28 @@ const uploadMaxTransactions = sql<IUploadMaxTransactionsQuery>`
 const uploadCurrencyRates = sql<IUploadCurrencyRatesQuery>`
   INSERT INTO accounter_schema.exchange_rates (
     exchange_date,
-    usd,
+    aud,
+    cad,
     eur,
     gbp,
-    cad,
     jpy,
-    aud,
-    sek
+    sek,
+    uah,
+    usd
   )
   VALUES $$rates(
     exchangeDate,
-    usd,
+    aud,
+    cad,
     eur,
     gbp,
-    cad,
     jpy,
-    aud,
-    sek
+    sek,
+    uah,
+    usd
   )
   ON CONFLICT (exchange_date) DO NOTHING
-  RETURNING exchange_date, usd, eur, gbp, cad, jpy, aud, sek;
+  RETURNING exchange_date, usd, eur, gbp, cad, jpy, aud, sek, uah;
 `;
 
 function diffExchangeRatesRow<T extends IGetExchangeRatesByDatesResult>(
@@ -395,7 +397,7 @@ function diffExchangeRatesRow<T extends IGetExchangeRatesByDatesResult>(
   incoming: IUploadCurrencyRatesParams['rates'][number],
 ): ChangedField[] {
   const changed: ChangedField[] = [];
-  for (const currency of ['aud', 'cad', 'eur', 'gbp', 'jpy', 'sek', 'usd'] as const) {
+  for (const currency of ['aud', 'cad', 'eur', 'gbp', 'jpy', 'sek', 'usd', 'uah'] as const) {
     const oldValue = formatValue(existing[currency], true);
     const newValue = formatValue(incoming[currency], true);
     const oldStr = oldValue;
@@ -548,7 +550,7 @@ export class ScraperIngestionProvider {
 
     const insertedRates: InsertedTransactionSummary[] = result.map(r => {
       const date = dateToTimelessDateString(r.exchange_date!);
-      const description = (['usd', 'eur', 'gbp', 'cad', 'jpy', 'aud', 'sek'] as const)
+      const description = (['aud', 'cad', 'eur', 'gbp', 'jpy', 'sek', 'uah', 'usd'] as const)
         .filter(c => r[c] != null)
         .map(c => `${c.toUpperCase()}=${r[c]}`)
         .join(', ');
