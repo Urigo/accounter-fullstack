@@ -15,8 +15,12 @@ export function getCurrencyFormatter(
 export function currencyCodeToSymbol(currency_code: Currency): string {
   let currencySymbol = '₪';
   switch (currency_code) {
-    case 'USD': {
-      currencySymbol = '$';
+    case 'AUD': {
+      currencySymbol = 'A$';
+      break;
+    }
+    case 'CAD': {
+      currencySymbol = 'C$';
       break;
     }
     case 'EUR': {
@@ -27,20 +31,24 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
       currencySymbol = '£';
       break;
     }
-    case 'CAD': {
-      currencySymbol = 'C$';
-      break;
-    }
     case 'JPY': {
       currencySymbol = '¥';
       break;
     }
-    case 'AUD': {
-      currencySymbol = 'A$';
-      break;
-    }
     case 'SEK': {
       currencySymbol = 'kr';
+      break;
+    }
+    case 'UAH': {
+      currencySymbol = '₴';
+      break;
+    }
+    case 'USD': {
+      currencySymbol = '$';
+      break;
+    }
+    case 'ETH': {
+      currencySymbol = 'ETH';
       break;
     }
     case 'GRT': {
@@ -51,23 +59,20 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
       currencySymbol = 'USDC';
       break;
     }
-    case 'ETH': {
-      currencySymbol = 'ETH';
-      break;
-    }
   }
   return currencySymbol;
 }
 
 export const FIAT_CURRENCIES: Currency[] = [
   Currency.Ils,
-  Currency.Eur,
-  Currency.Usd,
-  Currency.Gbp,
-  Currency.Cad,
-  Currency.Jpy,
   Currency.Aud,
+  Currency.Cad,
+  Currency.Eur,
+  Currency.Gbp,
+  Currency.Jpy,
   Currency.Sek,
+  Currency.Uah,
+  Currency.Usd,
 ] as const;
 
 export function formatAmountWithCurrency(amount: number, currency: Currency, digits = 2): string {

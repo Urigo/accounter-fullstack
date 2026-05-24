@@ -5,9 +5,9 @@ import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.sch
 import { validatePayload } from '../validate-payload.js';
 
 const BOI_URL =
-  'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS,RER_CAD_ILS,RER_JPY_ILS,RER_AUD_ILS,RER_SEK_ILS';
+  'https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS,RER_EUR_ILS,RER_GBP_ILS,RER_CAD_ILS,RER_JPY_ILS,RER_AUD_ILS,RER_SEK_ILS,RER_UAH_ILS';
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'JPY', 'AUD', 'SEK'] as const;
+const CURRENCIES = ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'SEK', 'UAH', 'USD'] as const;
 type SupportedCurrency = (typeof CURRENCIES)[number];
 
 export type Emitter = (msg: ServerMessage) => void;

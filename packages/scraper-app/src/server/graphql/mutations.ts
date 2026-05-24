@@ -739,13 +739,14 @@ export function currencyRatesVars(payload: CurrencyRatesPayload) {
   }
   const rates = Array.from(byDate.entries()).map(([exchangeDate, cols]) => ({
     exchangeDate,
-    usd: cols['usd'],
+    aud: cols['aud'],
+    cad: cols['cad'],
     eur: cols['eur'],
     gbp: cols['gbp'],
-    cad: cols['cad'],
     jpy: cols['jpy'],
-    aud: cols['aud'],
     sek: cols['sek'],
+    uah: cols['uah'],
+    usd: cols['usd'],
   }));
   return { rates };
 }

@@ -139,6 +139,7 @@ export const CurrencyCodeEnum = z.enum([
   'PLN', // Polish Zloty (זלוטי פולני)
   'CZK', // Czech Koruna (כתר צ'כי)
   'HUF', // Hungarian Forint (פורינט הונגרי)
+  'UAH', // Ukrainian Hryvnia (גריבנה אוקראינית)
 ]);
 
 export type CurrencyCode = z.infer<typeof CurrencyCodeEnum>;
@@ -173,6 +174,7 @@ export const CurrencyLabels: Record<CurrencyCode, string> = {
   PLN: 'זלוטי פולני',
   CZK: 'כתר צכי',
   HUF: 'פורינט הונגרי',
+  UAH: 'גריבנה אוקראינית',
 };
 
 // ================================================================================

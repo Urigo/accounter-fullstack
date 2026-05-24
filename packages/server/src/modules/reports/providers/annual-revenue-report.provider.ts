@@ -147,14 +147,15 @@ WITH
 SELECT
   nlr.*,
   CASE
-    WHEN nlr.currency = 'USD' THEN nlr.amount_foreign
-    WHEN nlr.currency = 'ILS' THEN nlr.amount_local / lr.usd -- Convert ILS => USD    
-    WHEN nlr.currency = 'AUD' THEN nlr.amount_foreign * (lr.aud / lr.usd) -- Convert AUD => ILS => USD    
-    WHEN nlr.currency = 'CAD' THEN nlr.amount_foreign * (lr.cad / lr.usd) -- Convert CAD => ILS => USD     
-    WHEN nlr.currency = 'EUR' THEN nlr.amount_foreign * (lr.eur / lr.usd) -- Convert EUR => ILS => USD      
-    WHEN nlr.currency = 'GBP' THEN nlr.amount_foreign * (lr.gbp / lr.usd) -- Convert GBP => ILS => USD      
-    WHEN nlr.currency = 'JPY' THEN nlr.amount_foreign * (lr.jpy / lr.usd) -- Convert JPY => ILS => USD      
-    WHEN nlr.currency = 'SEK' THEN nlr.amount_foreign * (lr.sek / lr.usd) -- Convert SEK => ILS => USD      
+  WHEN nlr.currency = 'USD' THEN nlr.amount_foreign
+  WHEN nlr.currency = 'ILS' THEN nlr.amount_local / lr.usd -- Convert ILS => USD    
+  WHEN nlr.currency = 'AUD' THEN nlr.amount_foreign * (lr.aud / lr.usd) -- Convert AUD => ILS => USD    
+  WHEN nlr.currency = 'CAD' THEN nlr.amount_foreign * (lr.cad / lr.usd) -- Convert CAD => ILS => USD     
+  WHEN nlr.currency = 'EUR' THEN nlr.amount_foreign * (lr.eur / lr.usd) -- Convert EUR => ILS => USD      
+  WHEN nlr.currency = 'GBP' THEN nlr.amount_foreign * (lr.gbp / lr.usd) -- Convert GBP => ILS => USD      
+  WHEN nlr.currency = 'JPY' THEN nlr.amount_foreign * (lr.jpy / lr.usd) -- Convert JPY => ILS => USD      
+  WHEN nlr.currency = 'SEK' THEN nlr.amount_foreign * (lr.sek / lr.usd) -- Convert SEK => ILS => USD      
+  WHEN nlr.currency = 'UAH' THEN nlr.amount_foreign * (lr.uah / lr.usd) -- Convert UAH => ILS => USD      
     WHEN nlr.currency = 'USDC'
     OR nlr.currency = 'GRT'
     OR nlr.currency = 'ETH' THEN nlr.amount_foreign * lr2.value -- Convert Crypto => USD  
@@ -163,13 +164,14 @@ FROM
   normalizedLedgerRevenue nlr
   LEFT JOIN LATERAL (
     SELECT
-      er.usd,
+      er.aud,
+      er.cad,
       er.eur,
       er.gbp,
-      er.cad,
       er.jpy,
-      er.aud,
-      er.sek
+      er.sek,
+      er.uah,
+      er.usd
     FROM
       accounter_schema.exchange_rates er
     WHERE

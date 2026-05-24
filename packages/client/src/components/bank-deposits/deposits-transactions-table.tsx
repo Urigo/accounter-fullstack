@@ -39,7 +39,7 @@ import { identifyInterestTransactionIds } from './utils.js';
 `;
 
 const currencyMap: Partial<
-  Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'usd'>
+  Record<Currency, 'eur' | 'gbp' | 'cad' | 'jpy' | 'aud' | 'sek' | 'uah' | 'usd'>
 > = {
   [Currency.Eur]: 'eur',
   [Currency.Gbp]: 'gbp',
@@ -47,6 +47,7 @@ const currencyMap: Partial<
   [Currency.Jpy]: 'jpy',
   [Currency.Aud]: 'aud',
   [Currency.Sek]: 'sek',
+  [Currency.Uah]: 'uah',
   [Currency.Usd]: 'usd',
 };
 
