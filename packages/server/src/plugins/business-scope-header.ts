@@ -8,7 +8,7 @@ import type { BusinessScopeParseError, BusinessScopeParseResult } from '../share
 export const BUSINESS_SCOPE_HEADER = 'x-business-scope';
 
 const UUID_PATTERN =
-  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
 
 /**
  * Parse the `X-Business-Scope` header value into a requested read scope.
