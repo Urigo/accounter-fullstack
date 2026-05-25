@@ -221,7 +221,7 @@ export class TenantAwareDBClient {
       });
     }
 
-    const { tenant, user, authType } = this.authContext ?? {};
+    const { tenant, user, authType, activeReadScope } = this.authContext ?? {};
 
     const businessIdValue = tenant?.businessId ?? null;
     if (!businessIdValue) {
@@ -234,14 +234,24 @@ export class TenantAwareDBClient {
     // runtime cast error while explicitly clearing the setting.
     const userIdValue = authType === 'apiKey' ? '' : (user?.userId ?? null);
 
+    // Read scope: the businesses this request may read from, serialized as a
+    // Postgres array literal ('{uuid1,uuid2}') for get_current_business_scope().
+    // When empty/absent we pass '' so the DB helper falls back to the single
+    // write-target business. Writes remain pinned to app.current_business_id.
+    const readScopeValue =
+      activeReadScope && activeReadScope.businessIds.length > 0
+        ? `{${activeReadScope.businessIds.map(id => `"${id.replace(/"/g, '\\"')}"`).join(',')}}`
+        : '';
+
     await client.query(
       `
       SELECT
         set_config('app.current_business_id', $1, true),
         set_config('app.current_user_id', $2, true),
-        set_config('app.auth_type', $3, true);
+        set_config('app.auth_type', $3, true),
+        set_config('app.current_business_scope', $4, true);
       `,
-      [businessIdValue, userIdValue, authType],
+      [businessIdValue, userIdValue, authType, readScopeValue],
     );
   }
 
