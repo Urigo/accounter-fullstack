@@ -186,13 +186,20 @@ export class AuthContextProvider {
     }
 
     if (requested.kind === 'invalid') {
-      console.warn('AuthContext: rejecting request with malformed X-Business-Scope header');
+      console.warn('AuthContext: rejecting request with malformed X-Business-Scope header', {
+        errors: requested.errors,
+        userId: context.user?.userId,
+      });
       return null;
     }
 
     const narrowed = narrowReadScope(memberships, requested.businessIds);
     if (!narrowed) {
-      console.warn('AuthContext: rejecting X-Business-Scope outside of user memberships');
+      console.warn('AuthContext: rejecting X-Business-Scope outside of user memberships', {
+        requested: requested.businessIds,
+        allowed: memberships.map(m => m.businessId),
+        userId: context.user?.userId,
+      });
       return null;
     }
 
