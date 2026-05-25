@@ -66,7 +66,7 @@ describe('userContext resolver (single-business baseline)', () => {
   it('appends the bank deposit business id to financial accounts when present', async () => {
     const result = await runResolver({
       ...baseContext,
-      bankDeposits: { bankDepositBusinessId: 'bank-deposit-1' },
+      bankDeposits: { bankDepositBusinessId: 'bank-deposit-1', bankDepositInterestIncomeTaxCategoryId: null },
     });
 
     expect(result.financialAccountsBusinessesIds).toEqual([
