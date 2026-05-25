@@ -33,8 +33,8 @@
 11. Charges migration.
 12. Reports migration.
 13. Ledger migration.
-14. Salaries plus admin-context migration.
-14a. Remaining modules migration (transactions, tags, contracts, green-invoice, charges-matcher).
+14. Salaries plus admin-context migration. 14a. Remaining modules migration (transactions, tags,
+    contracts, green-invoice, charges-matcher).
 15. Cache isolation, full wiring, release validation.
 
 ### Prompt 01: Baseline Guardrails

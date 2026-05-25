@@ -42,9 +42,11 @@ contract cut and no temporary legacy field compatibility.
    - financial-entities (`businesses.resolver.ts`, `businesses.provider.ts`)
    - admin-context (`admin-context.provider.ts`)
    - auth (`invitations.resolver.ts`)
-   - transactions (`transactions.resolver.ts` — `getTransactionsByFilters({ ownerIDs: [adminContext.ownerId] })`)
+   - transactions (`transactions.resolver.ts` —
+     `getTransactionsByFilters({ ownerIDs: [adminContext.ownerId] })`)
    - tags (`tags.provider.ts` — `reassureOwnerIdExists` fallback in `addNewTag`)
-   - contracts (`contracts.provider.ts` — DataLoader keyed by `adminBusinessIds`; cross-business leak risk)
+   - contracts (`contracts.provider.ts` — DataLoader keyed by `adminBusinessIds`; cross-business
+     leak risk)
    - green-invoice (`green-invoice.resolvers.ts` — `ownerId = inputOwnerId ?? adminContext.ownerId`)
    - charges-matcher / `document-business.helper.ts` (indirect admin-context use)
 
@@ -53,6 +55,7 @@ contract cut and no temporary legacy field compatibility.
    resolve that value from the row's owning business via the shared scope helper, not from the
    request's active context. Multi-business reads can return rows from businesses with different
    defaults; relying on a single request-level default silently corrupts formatting.
+
 8. Phase 7: Provider and cache isolation audit (parallel with step 6). Audit operation scope and
    in-memory caching for tenant leakage under multi-business reads, especially broad fetch providers
    and DataLoader usage. Concrete rule: any DataLoader that can be invoked during a multi-business
@@ -60,7 +63,8 @@ contract cut and no temporary legacy field compatibility.
    `(scope, entityId)` rather than `entityId` alone. Specifically audit the loaders in
    `ledger.provider.ts` (`getLedgerRecordsByIdLoader`, `batchLedgerRecordsByChargesIds`,
    `batchLedgerRecordsByFinancialEntityIds`) and the `adminBusinessIds`-keyed loader in
-   `contracts.provider.ts`. See [docs/architecture/provider-cache-patterns.md](../architecture/provider-cache-patterns.md).
+   `contracts.provider.ts`. See
+   [docs/architecture/provider-cache-patterns.md](../architecture/provider-cache-patterns.md).
 9. Phase 8: Verification and rollout readiness (depends on steps 5-8). Execute focused
    auth/RLS/integration suites, then full integration/lint gates, plus manual GraphQL scenario
    validation for multi-business reads and single-business writes.
@@ -128,19 +132,19 @@ contract cut and no temporary legacy field compatibility.
    must return the full membership set.
 2. Add and run TenantAwareDBClient tests covering: session variable propagation for the new
    `app.current_business_scope` array, nested transaction behavior (inner-tx rollback must restore
-   outer-tx scope, not clear it), single-write-target enforcement via `app.current_business_id`,
-   and isolation across pooled connections.
-3. Add a new integration test
-   `packages/server/src/__tests__/rls-multi-business.integration.test.ts` that opens two
-   connections with different scope arrays and asserts the read policies show the expected union
-   while write policies reject out-of-target inserts. (Replaces Prompt 07's hedge wording.)
+   outer-tx scope, not clear it), single-write-target enforcement via `app.current_business_id`, and
+   isolation across pooled connections.
+3. Add a new integration test `packages/server/src/__tests__/rls-multi-business.integration.test.ts`
+   that opens two connections with different scope arrays and asserts the read policies show the
+   expected union while write policies reject out-of-target inserts. (Replaces Prompt 07's hedge
+   wording.)
 4. Add integration tests for read/write semantics: multi-business query aggregation, scoped
    narrowing via header, write mutation fails without explicit business, write mutation fails for
    out-of-scope business.
 5. Run focused integration tests for cache isolation with multi-business scenarios in
    [packages/server/src/**tests**/cache-isolation.integration.test.ts](packages/server/src/__tests__/cache-isolation.integration.test.ts).
-6. Confirm `bootstrap-client.integration.test.ts` still passes after the Step 9 contract cut;
-   update it if it asserts on the removed `adminBusinessId` field.
+6. Confirm `bootstrap-client.integration.test.ts` still passes after the Step 9 contract cut; update
+   it if it asserts on the removed `adminBusinessId` field.
 7. Before running any integration test, ensure migrations are applied:
    `yarn workspace @accounter/migrations migration:run`.
 8. Run repository gates from root: `yarn lint`, `yarn test:integration`.
@@ -153,8 +157,8 @@ contract cut and no temporary legacy field compatibility.
 - Read behavior: default to all accessible businesses when no explicit scope is provided.
 - Write behavior: always single-business target.
 - Scope encoding: both header and GraphQL args.
-- Read scope header name: `X-Business-Scope`, comma-separated UUIDs. Empty / absent means
-  "all memberships".
+- Read scope header name: `X-Business-Scope`, comma-separated UUIDs. Empty / absent means "all
+  memberships".
 - Write target transport: every write mutation takes an explicit `businessId: UUID!` argument.
   Writes never infer the target from the read scope, even when the read scope contains exactly one
   business — the contract is unambiguous on purpose.
@@ -163,17 +167,17 @@ contract cut and no temporary legacy field compatibility.
 - API-key authentication: API keys remain pinned to their stored `business_id`. The
   `X-Business-Scope` header is ignored when authenticating with an API key, and any args scope must
   equal the pinned business or the request is rejected.
-- Super-admin scope: super-admin status (per `super_admins` table) does NOT auto-expand read
-  scope. Super-admins still pass through normal membership scoping; cross-tenant operations
-  continue to go through explicit mutations (e.g. `bootstrapNewClient`).
+- Super-admin scope: super-admin status (per `super_admins` table) does NOT auto-expand read scope.
+  Super-admins still pass through normal membership scoping; cross-tenant operations continue to go
+  through explicit mutations (e.g. `bootstrapNewClient`).
 - `user_context` table model: one row per `(owner_id)` (i.e. per business). The GraphQL
-  `userContext` resolver returns the row matching the active read target when scope is singular,
-  or null when scope spans multiple businesses (callers must narrow). Schema migration of
-  `user_context` to a (user_id, business_id) composite is out of scope for this phase; this
-  decision is recorded so the contract cut in Step 9 doesn't paint into a corner.
-- RLS mechanism: two session variables. `app.current_business_id` (UUID, used by write policies
-  via `WITH CHECK`) + `app.current_business_scope` (UUID array, used by read policies via
-  `USING`). Helper `get_current_business_scope()` is added; `get_current_business_id()` stays.
+  `userContext` resolver returns the row matching the active read target when scope is singular, or
+  null when scope spans multiple businesses (callers must narrow). Schema migration of
+  `user_context` to a (user_id, business_id) composite is out of scope for this phase; this decision
+  is recorded so the contract cut in Step 9 doesn't paint into a corner.
+- RLS mechanism: two session variables. `app.current_business_id` (UUID, used by write policies via
+  `WITH CHECK`) + `app.current_business_scope` (UUID array, used by read policies via `USING`).
+  Helper `get_current_business_scope()` is added; `get_current_business_id()` stays.
 - Active-business persistence strategy: client-side persistence.
 - Compatibility strategy: hard cut (no temporary adminBusinessId compatibility layer).
 
@@ -184,19 +188,21 @@ contract cut and no temporary legacy field compatibility.
    concentrated in:
    - `packages/client/src/providers/user-provider.tsx` (root consumer of `adminBusinessId`)
    - `packages/client/src/hooks/use-update-admin-business.ts`
-   - every `*-filters.tsx` under `components/` (charges, business-ledger, salaries, reports/*)
-   - `components/business/admin/admin-business-section.tsx`, `components/layout/user-nav.tsx`
-   A sibling client plan must exist and be merged before the Step 9 contract cut ships.
+   - every `*-filters.tsx` under `components/` (charges, business-ledger, salaries, reports/\*)
+   - `components/business/admin/admin-business-section.tsx`, `components/layout/user-nav.tsx` A
+     sibling client plan must exist and be merged before the Step 9 contract cut ships.
 2. Prefer introducing a shared scope-resolution helper/provider early to avoid inconsistent
    per-module enforcement during the step-6 module rollout. Concrete shape:
    `packages/server/src/modules/auth/providers/scope.provider.ts`, exposing
    - `getReadScope(context): UUID[]` — args ∩ header ∩ memberships, defaulting to all memberships
-   - `resolveWriteTarget(context, requestedBusinessId): UUID` — throws if not in memberships or missing
-   - `getBusinessPreference(businessId, key)` — replaces field-level `adminContext.defaultLocalCurrency` reads
+   - `resolveWriteTarget(context, requestedBusinessId): UUID` — throws if not in memberships or
+     missing
+   - `getBusinessPreference(businessId, key)` — replaces field-level
+     `adminContext.defaultLocalCurrency` reads
 3. Prioritize charges/reports/ledger first in step 6 since they have the highest concentration of
    ownerId fallback logic and the greatest tenant-safety risk.
-4. Out-of-scope packages for this phase (no admin-context coupling found, but flag for follow-up
-   if behavior changes): `packages/gmail-listener`, `packages/scraper-app`,
-   `packages/*-generator`, `packages/modern-poalim-scraper` and other scrapers. They do not
-   consume `adminBusinessId` directly today; if they ever start calling the GraphQL server with
-   user context, the same gate applies.
+4. Out-of-scope packages for this phase (no admin-context coupling found, but flag for follow-up if
+   behavior changes): `packages/gmail-listener`, `packages/scraper-app`, `packages/*-generator`,
+   `packages/modern-poalim-scraper` and other scrapers. They do not consume `adminBusinessId`
+   directly today; if they ever start calling the GraphQL server with user context, the same gate
+   applies.
