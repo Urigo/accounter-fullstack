@@ -29,19 +29,17 @@ export function tenantFromMembership(membership: BusinessMembership): TenantCont
  * Default read scope = every business the user belongs to, de-duplicated and
  * order-preserving.
  */
-export function readScopeFromMemberships(memberships: BusinessMembership[]): AuthorizedReadScope {
-  const seen = new Set<string>();
-  const businessIds: string[] = [];
-  for (const membership of memberships) {
-    if (!seen.has(membership.businessId)) {
-      seen.add(membership.businessId);
-      businessIds.push(membership.businessId);
-    }
-  }
+export function readScopeFromMemberships(
+  memberships: BusinessMembership[] | undefined | null,
+): AuthorizedReadScope {
+  const businessIds = memberships ? [...new Set(memberships.map(m => m.businessId))] : [];
   return { businessIds };
 }
 
 /** Whether a business id is part of an authorized read scope. */
-export function isBusinessInScope(scope: AuthorizedReadScope, businessId: string): boolean {
-  return scope.businessIds.includes(businessId);
+export function isBusinessInScope(
+  scope: AuthorizedReadScope | undefined | null,
+  businessId: string,
+): boolean {
+  return scope?.businessIds.includes(businessId) ?? false;
 }
