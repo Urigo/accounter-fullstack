@@ -5,6 +5,7 @@ import { Auth0ManagementProvider } from './providers/auth0-management.provider.j
 import { AuthorizationProvider } from './providers/authorization.provider.js';
 import { BusinessUsersProvider } from './providers/business-users.provider.js';
 import { InvitationsProvider } from './providers/invitations.provider.js';
+import { ScopeProvider } from './providers/scope.provider.js';
 import { SuperAdminProvider } from './providers/super-admin.provider.js';
 import { apiKeysResolvers } from './resolvers/api-keys.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
@@ -25,6 +26,7 @@ export const authModule = createModule({
     ApiKeysProvider,
     BusinessUsersProvider,
     InvitationsProvider,
+    ScopeProvider,
     SuperAdminProvider,
   ],
 });
