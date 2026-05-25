@@ -3,6 +3,7 @@ import type { BusinessMembership } from '../../types/auth.js';
 import {
   isBusinessInScope,
   membershipFromTenant,
+  narrowReadScope,
   readScopeFromMemberships,
   tenantFromMembership,
 } from '../auth-scope.js';
@@ -69,5 +70,35 @@ describe('isBusinessInScope', () => {
 
   it('is false for a business outside the scope', () => {
     expect(isBusinessInScope(scope, 'b-3')).toBe(false);
+  });
+});
+
+describe('narrowReadScope', () => {
+  const memberships: BusinessMembership[] = [
+    { businessId: 'b-1', roleId: 'owner' },
+    { businessId: 'b-2', roleId: 'accountant' },
+    { businessId: 'b-3', roleId: 'employee' },
+  ];
+
+  it('narrows to a requested subset, preserving request order', () => {
+    expect(narrowReadScope(memberships, ['b-3', 'b-1'])).toEqual({
+      businessIds: ['b-3', 'b-1'],
+    });
+  });
+
+  it('de-duplicates repeated requested ids', () => {
+    expect(narrowReadScope(memberships, ['b-1', 'b-1', 'b-2'])).toEqual({
+      businessIds: ['b-1', 'b-2'],
+    });
+  });
+
+  it('returns null when any requested id is outside the memberships', () => {
+    expect(narrowReadScope(memberships, ['b-1', 'b-99'])).toBeNull();
+  });
+
+  it('accepts the full membership set', () => {
+    expect(narrowReadScope(memberships, ['b-1', 'b-2', 'b-3'])).toEqual({
+      businessIds: ['b-1', 'b-2', 'b-3'],
+    });
   });
 });

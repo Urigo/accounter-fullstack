@@ -2,10 +2,17 @@ import { useExtendContext, YogaInitialContext } from 'graphql-yoga';
 import type { Plugin } from '@envelop/types';
 import type { DBProvider } from '../modules/app-providers/db.provider.js';
 import { handleDevBypassAuth } from '../modules/auth/providers/auth-context.provider.js';
+import type { BusinessScopeParseResult } from '../shared/types/auth.js';
+import { BUSINESS_SCOPE_HEADER, parseBusinessScopeHeader } from './business-scope-header.js';
 
 export interface RawAuth {
   authType: 'jwt' | 'apiKey' | 'devBypass' | null;
   token: string | null;
+  /**
+   * Parsed `X-Business-Scope` header, present only when the header was sent.
+   * Auth context validates it against the user's memberships.
+   */
+  requestedBusinessScope?: BusinessScopeParseResult;
 }
 
 type QueryablePool = {
@@ -39,6 +46,12 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
       const authHeader = request.headers.get('authorization');
       const apiKeyHeader = request.headers.get('x-api-key');
 
+      // Parse the requested read scope once. Attach it only when the header was
+      // actually sent, so requests without it keep the original rawAuth shape.
+      const parsedScope = parseBusinessScopeHeader(request.headers.get(BUSINESS_SCOPE_HEADER));
+      const scopeFields: { requestedBusinessScope?: BusinessScopeParseResult } =
+        parsedScope.kind === 'absent' ? {} : { requestedBusinessScope: parsedScope };
+
       // Dev bypass takes precedence when explicitly enabled and user is resolvable.
       if (allowDevAuth && devAuthHeader) {
         const userId = devAuthHeader.trim();
@@ -64,6 +77,7 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
                 rawAuth: {
                   authType: 'devBypass',
                   token: userId,
+                  ...scopeFields,
                 },
               };
             }
@@ -79,6 +93,7 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
             rawAuth: {
               authType: 'jwt',
               token,
+              ...scopeFields,
             },
           };
         }
@@ -92,6 +107,7 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
             rawAuth: {
               authType: 'apiKey',
               token,
+              ...scopeFields,
             },
           };
         }
@@ -102,6 +118,7 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
         rawAuth: {
           authType: null,
           token: null,
+          ...scopeFields,
         },
       };
     },
