@@ -1,8 +1,10 @@
 import { GraphQLError } from 'graphql';
+import { type Injector } from 'graphql-modules';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { getMinDate } from '../../ledger/helpers/ledger-lock.js';
 import { generateLedgerRecordsForFinancialCharge } from '../../ledger/resolvers/ledger-generation/financial-ledger-generation.resolver.js';
 import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expenses.provider.js';
@@ -13,13 +15,41 @@ import { ChargesProvider } from '../providers/charges.provider.js';
 import type { ChargesModule } from '../types.js';
 import { commonChargeFields } from './common.js';
 
+// Validate an explicit write-target business against the caller's memberships,
+// then load that business's admin context (not the request's primary), so
+// charge generation uses the correct per-business tax configuration.
+async function getWriteTargetAdminContext(injector: Injector, ownerId: string) {
+  const target = await injector.get(ScopeProvider).resolveWriteTarget(ownerId);
+  const adminContext = await injector.get(AdminContextProvider).getAdminContextByOwnerId(target);
+  if (!adminContext) {
+    throw new GraphQLError('Admin context not found for the target business', {
+      extensions: { code: 'NOT_FOUND' },
+    });
+  }
+  return adminContext;
+}
+
 export const financialChargesResolvers: ChargesModule.Resolvers = {
   Query: {
     annualFinancialCharges: async (_, { ownerId, year }, { injector }) => {
-      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      // This report is shaped around a single business's tax categories. When a
+      // business is requested explicitly, validate it is within the read scope
+      // and use its admin context; otherwise default to the request's primary.
+      let adminContext;
+      if (ownerId) {
+        const [scopedId] = await injector.get(ScopeProvider).getReadScope([ownerId]);
+        adminContext = await injector.get(AdminContextProvider).getAdminContextByOwnerId(scopedId);
+        if (!adminContext) {
+          throw new GraphQLError('Admin context not found for the requested business', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+      } else {
+        adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      }
 
       const charges = await injector.get(ChargesProvider).getChargesByFilters({
-        ownerIds: [ownerId ?? adminContext.ownerId],
+        ownerIds: [adminContext.ownerId],
         type: 'FINANCIAL',
         fromAnyDate: year,
         toAnyDate: year,
@@ -69,7 +99,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         general: {
           taxCategories: { exchangeRevaluationTaxCategoryId },
         },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && date <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -98,7 +128,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         ledgerLock,
         bankDeposits: { bankDepositInterestIncomeTaxCategoryId },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && date <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -130,7 +160,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         ledgerLock,
         authorities: { taxExpensesTaxCategoryId },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -159,7 +189,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         ledgerLock,
         depreciation: { accumulatedDepreciationTaxCategoryId },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -191,7 +221,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         ledgerLock,
         salaries: { recoveryReserveTaxCategoryId },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
@@ -223,7 +253,7 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       const {
         ledgerLock,
         salaries: { vacationReserveTaxCategoryId },
-      } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      } = await getWriteTargetAdminContext(injector, ownerId);
       if (ledgerLock && `${year}-12-31` <= ledgerLock) {
         throw new GraphQLError('Cannot generate revaluation charge for locked period');
       }
