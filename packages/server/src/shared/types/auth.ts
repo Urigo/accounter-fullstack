@@ -35,6 +35,22 @@ export interface AuthorizedReadScope {
   businessIds: string[];
 }
 
+/** A malformed entry in the `X-Business-Scope` request header. */
+export type BusinessScopeParseError =
+  | { code: 'EMPTY_ENTRY' }
+  | { code: 'INVALID_UUID'; value: string };
+
+/**
+ * Result of parsing the `X-Business-Scope` header.
+ * - `absent`: header missing or blank — no narrowing requested.
+ * - `valid`: a de-duplicated, order-preserving list of business ids.
+ * - `invalid`: one or more malformed entries.
+ */
+export type BusinessScopeParseResult =
+  | { kind: 'absent' }
+  | { kind: 'valid'; businessIds: string[] }
+  | { kind: 'invalid'; errors: BusinessScopeParseError[] };
+
 export interface AuthContext {
   authType: AuthType | null;
   token?: string | null;
