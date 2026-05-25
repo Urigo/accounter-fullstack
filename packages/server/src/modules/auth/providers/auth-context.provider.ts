@@ -3,7 +3,7 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
-import type { AuthContext } from '../../../shared/types/auth.js';
+import type { AuthContext, BusinessMembership } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { ALLOWED_API_KEY_ROLES } from '../helpers/api-keys.helper.js';
@@ -22,6 +22,9 @@ export async function handleDevBypassAuth(
     return null;
   }
 
+  // Resolve ALL memberships for the user (previously LIMIT 1). The primary
+  // membership (most recently updated) still backs the single-business tenant
+  // context for now; scope rules are applied in a later step.
   const { rows } = await db.query<{
     user_id: string;
     business_id: string;
@@ -31,8 +34,7 @@ export async function handleDevBypassAuth(
     `SELECT user_id, business_id, role_id, auth0_user_id
      FROM accounter_schema.business_users
      WHERE user_id = $1
-     ORDER BY updated_at DESC
-     LIMIT 1`,
+     ORDER BY updated_at DESC`,
     [normalizedUserId],
   );
 
@@ -40,24 +42,29 @@ export async function handleDevBypassAuth(
     return null;
   }
 
-  const user = rows[0];
+  const primary = rows[0];
+  const memberships: BusinessMembership[] = rows.map(row => ({
+    businessId: row.business_id,
+    roleId: row.role_id,
+  }));
 
   return {
     authType: 'devBypass',
     token: normalizedUserId,
     user: {
-      userId: user.user_id,
-      auth0UserId: user.auth0_user_id,
+      userId: primary.user_id,
+      auth0UserId: primary.auth0_user_id,
       email: 'dev-user',
-      roleId: user.role_id,
+      roleId: primary.role_id,
       permissions: [],
       emailVerified: true,
       permissionsVersion: 0,
     },
     tenant: {
-      businessId: user.business_id,
-      roleId: user.role_id,
+      businessId: primary.business_id,
+      roleId: primary.role_id,
     },
+    memberships,
   };
 }
 
@@ -238,6 +245,9 @@ export class AuthContextProvider {
         emailVerified: true,
         permissionsVersion: 0,
       },
+      // API keys are pinned to a single business, so the membership set is
+      // exactly that one business.
+      memberships: [{ businessId: apiKey.business_id, roleId: apiKey.role_id }],
     };
   }
 
@@ -308,6 +318,7 @@ export class AuthContextProvider {
           businessId: userContext.businessId,
           roleId: userContext.roleId,
         },
+        memberships: userContext.memberships,
         accessTokenExpiresAt: payload.exp,
       };
       this.cachedContext = authContext;
@@ -324,16 +335,23 @@ export class AuthContextProvider {
     auth0UserId: string,
     email: string | null,
     emailVerified: boolean,
-  ): Promise<{ userId: string; businessId: string; roleId: string } | null> {
+  ): Promise<{
+    userId: string;
+    businessId: string;
+    roleId: string;
+    memberships: BusinessMembership[];
+  } | null> {
+    // Resolve ALL memberships for the auth0 subject (previously LIMIT 1).
     const byAuth0Query = `
       SELECT bu.user_id, bu.business_id, bu.role_id
       FROM accounter_schema.business_users bu
       WHERE bu.auth0_user_id = $1
-      LIMIT 1
+      ORDER BY bu.updated_at DESC
     `;
 
+    // Identify the local user by a verified, accepted invitation email.
     const byVerifiedEmailQuery = `
-      SELECT bu.user_id, bu.business_id, bu.role_id
+      SELECT bu.user_id
       FROM accounter_schema.invitations i
       JOIN accounter_schema.business_users bu
         ON bu.user_id = i.user_id
@@ -350,15 +368,32 @@ export class AuthContextProvider {
       WHERE user_id = $2
     `;
 
+    // All memberships for a local user id, after relinking.
+    const byUserIdQuery = `
+      SELECT bu.user_id, bu.business_id, bu.role_id
+      FROM accounter_schema.business_users bu
+      WHERE bu.user_id = $1
+      ORDER BY bu.updated_at DESC
+    `;
+
+    const toResult = (rows: Array<{ user_id: string; business_id: string; role_id: string }>) => {
+      const primary = rows[0];
+      const memberships: BusinessMembership[] = rows.map(row => ({
+        businessId: row.business_id,
+        roleId: row.role_id,
+      }));
+      return {
+        userId: primary.user_id,
+        businessId: primary.business_id,
+        roleId: primary.role_id,
+        memberships,
+      };
+    };
+
     try {
       const byAuth0Result = await this.db.query(byAuth0Query, [auth0UserId]);
       if (byAuth0Result.rowCount && byAuth0Result.rowCount > 0) {
-        const row = byAuth0Result.rows[0];
-        return {
-          userId: row.user_id,
-          businessId: row.business_id,
-          roleId: row.role_id,
-        };
+        return toResult(byAuth0Result.rows);
       }
 
       if (!email || !emailVerified) {
@@ -370,16 +405,17 @@ export class AuthContextProvider {
         return null;
       }
 
-      const row = byEmailResult.rows[0];
+      const userId = byEmailResult.rows[0].user_id;
 
       // Sync newly authenticated Auth0 subject across all memberships of this local user.
-      await this.db.query(relinkAuth0IdQuery, [auth0UserId, row.user_id]);
+      await this.db.query(relinkAuth0IdQuery, [auth0UserId, userId]);
 
-      return {
-        userId: row.user_id,
-        businessId: row.business_id,
-        roleId: row.role_id,
-      };
+      const membershipsResult = await this.db.query(byUserIdQuery, [userId]);
+      if (!membershipsResult.rowCount || membershipsResult.rowCount === 0) {
+        return null;
+      }
+
+      return toResult(membershipsResult.rows);
     } catch (error) {
       console.error('AuthContext: DB lookup failed', error);
       throw error;
