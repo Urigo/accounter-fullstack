@@ -268,5 +268,28 @@ describe('TenantAwareDBClient', () => {
 
       await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
     });
+
+    // Baseline guardrail: today the session is scoped to a SINGLE business via
+    // `app.current_business_id`. The migration will add a read-scope array
+    // (e.g. `app.current_business_scope`). Locking the current variable set makes
+    // that addition an intentional, reviewable change.
+    it('should set exactly the single-business RLS variables and no read-scope array', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes('set_config('),
+      );
+
+      expect(setCall).toBeDefined();
+      const sql = setCall![0] as string;
+      expect(sql).toContain("set_config('app.current_business_id', $1, true)");
+      expect(sql).toContain("set_config('app.current_user_id', $2, true)");
+      expect(sql).toContain("set_config('app.auth_type', $3, true)");
+      // No multi-business read scope is wired yet.
+      expect(sql).not.toContain('app.current_business_scope');
+      expect(setCall![1]).toHaveLength(3);
+    });
   });
 });
