@@ -43,3 +43,29 @@ export function isBusinessInScope(
 ): boolean {
   return scope?.businessIds.includes(businessId) ?? false;
 }
+
+/**
+ * Narrow a user's memberships to a requested set of business ids.
+ *
+ * Returns the requested ids (de-duplicated, request order preserved) as the
+ * read scope, or `null` if ANY requested id is outside the user's memberships —
+ * callers must reject such requests rather than silently dropping unknown ids.
+ */
+export function narrowReadScope(
+  memberships: BusinessMembership[],
+  requestedBusinessIds: string[],
+): AuthorizedReadScope | null {
+  const allowed = new Set(memberships.map(membership => membership.businessId));
+  const seen = new Set<string>();
+  const businessIds: string[] = [];
+  for (const businessId of requestedBusinessIds) {
+    if (!allowed.has(businessId)) {
+      return null;
+    }
+    if (!seen.has(businessId)) {
+      seen.add(businessId);
+      businessIds.push(businessId);
+    }
+  }
+  return { businessIds };
+}

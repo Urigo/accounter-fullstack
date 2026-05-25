@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
+import { narrowReadScope, readScopeFromMemberships } from '../../../shared/helpers/auth-scope.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext, BusinessMembership } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
@@ -65,6 +66,9 @@ export async function handleDevBypassAuth(
       roleId: primary.role_id,
     },
     memberships,
+    // Default read scope is every accessible business; the provider narrows it
+    // when a valid X-Business-Scope header is requested.
+    activeReadScope: readScopeFromMemberships(memberships),
   };
 }
 
@@ -159,6 +163,49 @@ export class AuthContextProvider {
     return null;
   }
 
+  /**
+   * Resolve the request's read scope and attach it to the context.
+   *
+   * - Defaults to every business the user belongs to.
+   * - When a valid `X-Business-Scope` header is present, narrows to that subset;
+   *   rejects (returns null) if it requests a business outside the memberships
+   *   or if the header was malformed.
+   * - API keys are pinned to their single business and ignore the header.
+   */
+  private applyRequestedReadScope(context: AuthContext): AuthContext | null {
+    const memberships = context.memberships ?? [];
+    const defaultScope = readScopeFromMemberships(memberships);
+
+    if (context.authType === 'apiKey') {
+      return { ...context, activeReadScope: defaultScope };
+    }
+
+    const requested = this.rawAuth.requestedBusinessScope;
+    if (!requested || requested.kind === 'absent') {
+      return { ...context, activeReadScope: defaultScope };
+    }
+
+    if (requested.kind === 'invalid') {
+      console.warn('AuthContext: rejecting request with malformed X-Business-Scope header', {
+        errors: requested.errors,
+        userId: context.user?.userId,
+      });
+      return null;
+    }
+
+    const narrowed = narrowReadScope(memberships, requested.businessIds);
+    if (!narrowed) {
+      console.warn('AuthContext: rejecting X-Business-Scope outside of user memberships', {
+        requested: requested.businessIds,
+        allowed: memberships.map(m => m.businessId),
+        userId: context.user?.userId,
+      });
+      return null;
+    }
+
+    return { ...context, activeReadScope: narrowed };
+  }
+
   private async handleDevBypassAuth(): Promise<AuthContext | null> {
     const userId = this.rawAuth.token;
     if (!userId) {
@@ -167,9 +214,10 @@ export class AuthContextProvider {
 
     try {
       const context = await handleDevBypassAuth(this.db, userId);
-      this.cachedContext = context;
+      const scoped = context ? this.applyRequestedReadScope(context) : null;
+      this.cachedContext = scoped;
       this.handlingAuth = null;
-      return context;
+      return scoped;
     } catch (error) {
       console.error('AuthContext: Failed to process dev bypass auth', error);
       this.handlingAuth = null;
@@ -185,9 +233,10 @@ export class AuthContextProvider {
 
     try {
       const context = await this.resolveApiKeyContext(token);
-      this.cachedContext = context;
+      const scoped = context ? this.applyRequestedReadScope(context) : null;
+      this.cachedContext = scoped;
       this.handlingAuth = null;
-      return context;
+      return scoped;
     } catch (error) {
       console.error('AuthContext: Failed to process API key', error);
       this.handlingAuth = null;
@@ -321,9 +370,10 @@ export class AuthContextProvider {
         memberships: userContext.memberships,
         accessTokenExpiresAt: payload.exp,
       };
-      this.cachedContext = authContext;
+      const scoped = this.applyRequestedReadScope(authContext);
+      this.cachedContext = scoped;
       this.handlingAuth = null;
-      return authContext;
+      return scoped;
     } catch (error) {
       console.error('AuthContext: Failed to process authentication token', error);
       this.handlingAuth = null;
