@@ -82,7 +82,7 @@ export async function calculateTaxAmounts(
   // Special tax rate for special taxable income
   const specialTaxableIncomeFilter: FilteringOptions = {
     rule: (_, sortCode) => sortCode === 991,
-    negate: true,
+    negate: false,
   };
   const [untaxableGifts, fines, reserves, nontaxableLinkage, specialTaxableIncome] =
     recordsByFinancialEntityIdAndSortCodeValidations(decoratedLedgerRecords, [
@@ -136,7 +136,8 @@ export async function calculateTaxAmounts(
     salaryExcessExpensesAmount +
     reserves.amount +
     nontaxableLinkage.amount +
-    researchAndDevelopmentExpensesForTax;
+    researchAndDevelopmentExpensesForTax -
+    specialTaxableIncome.amount;
 
   const taxRate = Number(taxRateVariables.tax_rate) / 100;
 

@@ -60,7 +60,7 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     rule: (_, sortCode) => [800, 810].includes(sortCode),
   };
   const costOfSalesFilter: FilteringOptions = {
-    rule: (_, sortCode) => [910, 911, 912].includes(sortCode),
+    rule: (_, sortCode) => [910, 911, 912, 915].includes(sortCode),
   };
   const researchAndDevelopmentExpensesFilter: FilteringOptions = {
     rule: (_, sortCode) => [920, 921, 922, 923, 924, 925, 930, 931].includes(sortCode),
@@ -69,10 +69,10 @@ export function getProfitLossReportAmounts(decoratedLedgerRecords: DecoratedLedg
     rule: (_, sortCode) => [935, 936].includes(sortCode),
   };
   const managementAndGeneralExpensesFilter: FilteringOptions = {
-    rule: (_, sortCode) => [940, 941, 942, 943, 944, 945, 947, 948].includes(sortCode),
+    rule: (_, sortCode) => [940, 941, 942, 943, 944, 945, 946, 947, 948].includes(sortCode),
   };
   const financialExpensesFilter: FilteringOptions = {
-    rule: (_, sortCode) => [990, 991].includes(sortCode),
+    rule: (_, sortCode) => [990, 991, 992].includes(sortCode),
   };
   const otherIncomeFilter: FilteringOptions = {
     rule: (_, sortCode) => sortCode === 995,
