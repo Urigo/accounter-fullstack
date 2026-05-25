@@ -1,5 +1,6 @@
 import { createModule } from 'graphql-modules';
 import { IsracardAmexScraperIngestionProvider } from './providers/isracard-amex-scraper-ingestion.provider.js';
+import { OtsarHahayalScraperIngestionProvider } from './providers/otsar-hahayal-scraper-ingestion.provider.js';
 import { PoalimScraperIngestionProvider } from './providers/poalim-scraper-ingestion.provider.js';
 import { ScraperIngestionProvider } from './providers/scraper-ingestion.provider.js';
 import { scraperIngestionResolvers } from './resolvers/scraper-ingestion.resolver.js';
@@ -16,5 +17,6 @@ export const scraperIngestionModule = createModule({
     ScraperIngestionProvider,
     PoalimScraperIngestionProvider,
     IsracardAmexScraperIngestionProvider,
+    OtsarHahayalScraperIngestionProvider,
   ],
 });

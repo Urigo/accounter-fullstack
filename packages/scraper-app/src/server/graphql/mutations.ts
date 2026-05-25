@@ -8,6 +8,9 @@ import {
   IsracardTransactionInput,
   MutationUploadAmexTransactionsArgs,
   MutationUploadIsracardTransactionsArgs,
+  MutationUploadOtsarHahayalCreditCardTransactionsArgs,
+  MutationUploadOtsarHahayalForeignTransactionsArgs,
+  MutationUploadOtsarHahayalIlsTransactionsArgs,
   UploadPoalimForeignTransactionsMutationVariables,
   UploadPoalimIlsTransactionsMutationVariables,
   UploadPoalimSwiftTransactionsMutationVariables,
@@ -16,6 +19,11 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type {
+  ForeignAccountData,
+  OtsarHahayalCreditCardData,
+  OtsarHahayalIlsData,
+} from '../scrapers/otsar-hahayal.js';
 import { DecoratedSwiftTransactions } from '../scrapers/poalim.js';
 import {
   convertNumberDateToString,
@@ -228,6 +236,85 @@ export const UPLOAD_MAX = /* GraphQL */ `
 export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
   mutation UploadCurrencyRates($rates: [CurrencyRateInput!]!) {
     uploadCurrencyRates(rates: $rates) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_OTSAR_ILS = /* GraphQL */ `
+  mutation UploadOtsarHahayalIlsTransactions($transactions: [OtsarHahayalIlsTransactionInput!]!) {
+    uploadOtsarHahayalIlsTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_OTSAR_FOREIGN = /* GraphQL */ `
+  mutation UploadOtsarHahayalForeignTransactions(
+    $transactions: [OtsarHahayalForeignTransactionInput!]!
+  ) {
+    uploadOtsarHahayalForeignTransactions(transactions: $transactions) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_OTSAR_CREDITCARD = /* GraphQL */ `
+  mutation UploadOtsarHahayalCreditCardTransactions(
+    $transactions: [OtsarHahayalCreditCardTransactionInput!]!
+  ) {
+    uploadOtsarHahayalCreditCardTransactions(transactions: $transactions) {
       inserted
       skipped
       insertedIds
@@ -722,6 +809,93 @@ export function maxVars(payload: MaxPayload) {
       actualPaymentAmount: t.actualPaymentAmount == null ? null : String(t.actualPaymentAmount),
       dealDataAmount: t.dealDataAmount == null ? null : String(t.dealDataAmount),
       dealDataAmountIls: t.dealDataAmountIls == null ? null : String(t.dealDataAmountIls),
+    })),
+  );
+  return { transactions };
+}
+
+export function otsarIlsVars(
+  ilsData: OtsarHahayalIlsData[],
+): MutationUploadOtsarHahayalIlsTransactionsArgs {
+  const transactions = ilsData.flatMap(({ account, accountType, transactions: txns }) =>
+    txns.map(t => ({
+      accountNumber: Number(account.account),
+      accountType,
+      branchNumber: Number(account.branch),
+      actionCode: t.ActionCode,
+      bfbSource: t.bfbSource,
+      closingBalance: t.closingBalance,
+      correspondentAccount: t.CorrespondentAccount,
+      correspondentAccountType: t.CorrespondentAccountType,
+      correspondentBank: t.CorrespondentBank,
+      correspondentBranch: t.CorrespondentBranch,
+      creditAmount: t.creditAmount,
+      customerName: t.CustomerName,
+      dateOfBusinessDay: t.dateOfBusinessDay,
+      dateOfRegistration: t.dateOfRegistration,
+      debitAmount: t.debitAmount,
+      depositorId: t.DepositorId,
+      description: t.description,
+      drillDownUrl: t.drillDownUrl,
+      drillDownData: t.drillDownData == null ? undefined : JSON.stringify(t.drillDownData),
+      firstTransactionOfDay: t.firstTransactionOfDay,
+      lastTransactionOfDay: t.lastTransactionOfDay,
+      name: t.Name,
+      openingBalance: t.openingBalance,
+      operationSource: t.OprationSource,
+      originReference: t.originReference ?? undefined,
+      reference: t.reference,
+      salaryInd: t.SalaryInd,
+      transactionReason: t.TransactionReason,
+      transactionSource: t.transactionSource,
+    })),
+  );
+  return { transactions };
+}
+
+export function otsarForeignVars(
+  foreignData: ForeignAccountData[],
+): MutationUploadOtsarHahayalForeignTransactionsArgs {
+  const transactions = foreignData.flatMap(({ metadata, transactions: txns }) =>
+    txns.map(t => ({
+      account: metadata.account,
+      branch: metadata.branch,
+      accountType: metadata.accountType,
+      currency: metadata.currency,
+      openingBalance: metadata.openingBalance,
+      balance: t.balance ?? undefined,
+      valueDate: t.valueDate,
+      credit: t.credit,
+      debit: t.debit,
+      description: t.description,
+      sp: t.sp ?? undefined,
+      reference: t.reference,
+      date: t.date,
+      subTransactions: JSON.stringify(t.subTransactions),
+    })),
+  );
+  return { transactions };
+}
+
+export function otsarCreditCardVars(
+  creditCardData: OtsarHahayalCreditCardData[],
+): MutationUploadOtsarHahayalCreditCardTransactionsArgs {
+  const transactions = creditCardData.flatMap(({ card, dealGroup, transactions: txns }) =>
+    txns.map(t => ({
+      resourceId: card.resourceId,
+      maskedPan: card.maskedPan,
+      cardType: card.cardType,
+      dealGroup,
+      date: t.date,
+      chargeDate: t.chargeDate,
+      name: t.name,
+      dealAmount: t.dealAmount,
+      chargeAmount: t.chargeAmount,
+      notes: t.notes,
+      walletType: t.walletType,
+      chargeCurrency: t.chargeCurrency,
+      dealCurrency: t.dealCurrency,
+      counter: t.counter ?? 0,
     })),
   );
   return { transactions };

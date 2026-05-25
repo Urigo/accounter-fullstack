@@ -64,6 +64,7 @@ export const financialAccountsResolvers: FinancialAccountsModule.Resolvers = {
           await injector.get(FinancialBankAccountsProvider).insertBankAccounts({
             bankAccounts: [
               {
+                id: account.id,
                 ownerId: input.ownerId,
                 bankNumber: input.bankAccountDetails.bankNumber,
                 branchNumber: input.bankAccountDetails.branchNumber,

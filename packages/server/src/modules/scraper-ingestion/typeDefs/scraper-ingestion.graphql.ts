@@ -478,6 +478,95 @@ export default gql`
     usd: Float
   }
 
+  # ── Otsar HaHayal ILS ────────────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal ILS (NIS) bank account transaction "
+  input OtsarHahayalIlsTransactionInput {
+    accountNumber: Int!
+    accountType: Int!
+    branchNumber: Int!
+    actionCode: Int!
+    bfbSource: String!
+    closingBalance: Float!
+    correspondentAccount: Int!
+    correspondentAccountType: Int!
+    correspondentBank: Int!
+    correspondentBranch: Int!
+    creditAmount: Float!
+    customerName: String!
+    dateOfBusinessDay: String!
+    dateOfRegistration: String!
+    debitAmount: Float!
+    depositorId: Int!
+    description: String!
+    drillDownUrl: String!
+    drillDownData: String
+    firstTransactionOfDay: Boolean!
+    lastTransactionOfDay: Boolean!
+    name: String!
+    openingBalance: Float!
+    operationSource: String!
+    reference: Int!
+    salaryInd: Int!
+    transactionSource: String!
+    transactionReason: String!
+    originReference: String
+  }
+
+  # ── Otsar HaHayal Foreign ─────────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal foreign currency bank account transaction "
+  input OtsarHahayalForeignTransactionInput {
+    account: Int!
+    branch: Int!
+    accountType: String!
+    currency: String!
+    openingBalance: Float!
+    balance: Float
+    valueDate: String!
+    credit: Float!
+    debit: Float!
+    description: String!
+    sp: Int
+    reference: String!
+    date: String!
+    subTransactions: String!
+  }
+
+  # ── Otsar HaHayal Credit Card ─────────────────────────────────────────────────
+
+  " Input for an Otsar HaHayal credit card transaction "
+  input OtsarHahayalCreditCardTransactionInput {
+    " UUID of the card resource (from CreditCardsResponse) "
+    resourceId: String!
+    " Masked PAN of the card (from CreditCardsResponse) "
+    maskedPan: String!
+    " Card type code (from CreditCardsResponse) "
+    cardType: Int!
+    " Deal group key (e.g. localDeals, euroDeals) "
+    dealGroup: String!
+    " Transaction date "
+    date: String!
+    " Charge date "
+    chargeDate: String!
+    " Merchant / transaction name "
+    name: String!
+    " Original deal amount in deal currency "
+    dealAmount: Float!
+    " Charged amount in charge currency "
+    chargeAmount: Float!
+    " Additional notes "
+    notes: String!
+    " Wallet type code "
+    walletType: Int!
+    " Currency the charge is made in "
+    chargeCurrency: String!
+    " Currency of the original deal "
+    dealCurrency: String!
+    " Counter for deduplicating identical transactions in the same billing period "
+    counter: Int!
+  }
+
   # ── Mutations ────────────────────────────────────────────────────────────────
 
   extend type Mutation {
@@ -508,5 +597,17 @@ export default gql`
 
     uploadCurrencyRates(rates: [CurrencyRateInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalIlsTransactions(
+      transactions: [OtsarHahayalIlsTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalForeignTransactions(
+      transactions: [OtsarHahayalForeignTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
+
+    uploadOtsarHahayalCreditCardTransactions(
+      transactions: [OtsarHahayalCreditCardTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
   }
 `;

@@ -5,6 +5,7 @@ import type {
   DiscountSource,
   IsracardSource,
   MaxSource,
+  OtsarHahayalSource,
   PoalimSource,
   SourceConfig,
   SourceType,
@@ -466,6 +467,58 @@ export function MaxForm({ initial = {}, onSave, onCancel }: MaxFormProps): React
   );
 }
 
+type OtsarHahayalFormProps = {
+  initial?: Partial<OtsarHahayalSource>;
+  onSave(data: Omit<OtsarHahayalSource, 'id' | 'type'>): void;
+  onCancel(): void;
+};
+
+export function OtsarHahayalForm({
+  initial = {},
+  onSave,
+  onCancel,
+}: OtsarHahayalFormProps): ReactElement {
+  const [fields, setFields] = useState({
+    nickname: initial.nickname ?? '',
+    userCode: initial.userCode ?? '',
+    password: initial.password ?? '',
+  });
+
+  function set(e: ChangeEvent<HTMLInputElement>) {
+    setFields(f => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  return (
+    <form
+      onSubmit={e => {
+        e.preventDefault();
+        onSave({
+          nickname: fields.nickname || undefined,
+          userCode: fields.userCode,
+          password: fields.password,
+        });
+      }}
+    >
+      <Field label="Nickname" name="nickname" value={fields.nickname} onChange={set} />
+      <Field label="User Code" name="userCode" value={fields.userCode} required onChange={set} />
+      <Field
+        label="Password"
+        name="password"
+        value={fields.password}
+        required
+        password
+        onChange={set}
+      />
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <button type="submit">Save</button>
+        <button type="button" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 type SourceFormProps = {
   sourceType: SourceType;
   initial?: Partial<SourceConfig>;
@@ -513,6 +566,14 @@ export function SourceForm({
     case 'max':
       return (
         <MaxForm initial={initial as Partial<MaxSource>} onSave={onSave} onCancel={onCancel} />
+      );
+    case 'otsar-hahayal':
+      return (
+        <OtsarHahayalForm
+          initial={initial as Partial<OtsarHahayalSource>}
+          onSave={onSave}
+          onCancel={onCancel}
+        />
       );
   }
 }

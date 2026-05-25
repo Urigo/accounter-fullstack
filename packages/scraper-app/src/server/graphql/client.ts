@@ -10,6 +10,11 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type {
+  ForeignAccountData,
+  OtsarHahayalCreditCardData,
+  OtsarHahayalIlsData,
+} from '../scrapers/otsar-hahayal.js';
 import type { DecoratedSwiftTransactions } from '../scrapers/poalim.js';
 import {
   amexVars,
@@ -18,6 +23,9 @@ import {
   discountVars,
   isracardVars,
   maxVars,
+  otsarCreditCardVars,
+  otsarForeignVars,
+  otsarIlsVars,
   poalimForeignVars,
   poalimIlsVars,
   poalimSwiftVars,
@@ -27,6 +35,9 @@ import {
   UPLOAD_DISCOUNT,
   UPLOAD_ISRACARD,
   UPLOAD_MAX,
+  UPLOAD_OTSAR_CREDITCARD,
+  UPLOAD_OTSAR_FOREIGN,
+  UPLOAD_OTSAR_ILS,
   UPLOAD_POALIM_FOREIGN,
   UPLOAD_POALIM_ILS,
   UPLOAD_POALIM_SWIFT,
@@ -105,6 +116,28 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
 
     async uploadCurrencyRates(payload: CurrencyRatesPayload): Promise<ScraperUploadResult> {
       return request(UPLOAD_CURRENCY_RATES, currencyRatesVars(payload), 'uploadCurrencyRates');
+    },
+
+    async uploadOtsarIls(ilsData: OtsarHahayalIlsData[]): Promise<ScraperUploadResult> {
+      return request(UPLOAD_OTSAR_ILS, otsarIlsVars(ilsData), 'uploadOtsarHahayalIlsTransactions');
+    },
+
+    async uploadOtsarForeign(foreignData: ForeignAccountData[]): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_OTSAR_FOREIGN,
+        otsarForeignVars(foreignData),
+        'uploadOtsarHahayalForeignTransactions',
+      );
+    },
+
+    async uploadOtsarCreditCard(
+      creditCardData: OtsarHahayalCreditCardData[],
+    ): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_OTSAR_CREDITCARD,
+        otsarCreditCardVars(creditCardData),
+        'uploadOtsarHahayalCreditCardTransactions',
+      );
     },
   };
 }

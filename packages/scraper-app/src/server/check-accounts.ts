@@ -9,9 +9,21 @@ import type {
 import type { CalPayload } from './payload-schemas/cal.schema.js';
 import type { DiscountPayload } from './payload-schemas/discount.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
+import type { OtsarHahayalCreditCardData } from './scrapers/otsar-hahayal.js';
 import type { AccountRecord } from './vault.js';
 
-export type SourceType = 'poalim' | 'discount' | 'isracard' | 'amex' | 'cal' | 'max';
+export type SourceType =
+  | 'poalim'
+  | 'discount'
+  | 'isracard'
+  | 'amex'
+  | 'cal'
+  | 'max'
+  | 'otsar-hahayal'
+  | 'otsar-hahayal-credit-card';
+
+export type OtsarHahayalAccountsPayload = { account: string; branch: string }[];
+export type OtsarHahayalCreditCardsPayload = Pick<OtsarHahayalCreditCardData, 'card'>[];
 
 export type ValidatedPayload =
   | HapoalimAccountData[number]
@@ -22,7 +34,9 @@ export type ValidatedPayload =
   | DiscountPayload
   | IsracardCardsTransactionsList
   | CalPayload
-  | MaxPayload;
+  | MaxPayload
+  | OtsarHahayalAccountsPayload
+  | OtsarHahayalCreditCardsPayload;
 
 export type { AccountRecord } from './vault.js';
 
@@ -55,6 +69,14 @@ export function extractAccountIdentifiers(type: SourceType, payload: ValidatedPa
     case 'max': {
       const p = payload as MaxPayload;
       return [...new Set(p.map(account => account.accountNumber))];
+    }
+    case 'otsar-hahayal': {
+      const p = payload as OtsarHahayalAccountsPayload;
+      return [...new Set(p.map(a => `${a.branch}-${a.account}`))];
+    }
+    case 'otsar-hahayal-credit-card': {
+      const p = payload as OtsarHahayalCreditCardsPayload;
+      return [...new Set(p.map(({ card }) => card.maskedPan))];
     }
   }
 }

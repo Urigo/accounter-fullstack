@@ -28,6 +28,7 @@ import {
   type MonthlyIsracardPayload,
 } from './scrapers/isracard.js';
 import { scrapeMax } from './scrapers/max.js';
+import { scrapeOtsarHahayal } from './scrapers/otsar-hahayal.js';
 import { scrapePoalim } from './scrapers/poalim.js';
 import { getVault, isLocked } from './vault-store.js';
 import type { Vault } from './vault.js';
@@ -50,6 +51,7 @@ function collectSourceRefs(vault: Vault): SourceRef[] {
     ...vault.amexAccounts.map(a => ({ id: a.id, type: 'amex' as const })),
     ...vault.calAccounts.map(a => ({ id: a.id, type: 'cal' as const })),
     ...vault.maxAccounts.map(a => ({ id: a.id, type: 'max' as const })),
+    ...vault.otsarHahayalAccounts.map(a => ({ id: a.id, type: 'otsar-hahayal' as const })),
   ];
 }
 
@@ -68,6 +70,179 @@ function buildTask(
     type: src.type,
     run: async () => {
       const headless = !vault.settings.showBrowser;
+      if (src.type === 'otsar-hahayal') {
+        try {
+          const creds = vault.otsarHahayalAccounts.find(a => a.id === src.id);
+          if (!creds) throw new Error(`Otsar HaHayal account ${src.id} not found in vault`);
+
+          const { ilsData, foreignData, creditCardData } = await scrapeOtsarHahayal(
+            creds,
+            dateFrom,
+            dateTo,
+            headless,
+            emit,
+          );
+
+          // Register discovered accounts and check they're approved
+          // Merge ILS and foreign accounts — both are identified by account-branch
+          const foreignAccountEntries = foreignData.map(d => ({
+            account: String(d.metadata.account),
+            branch: String(d.metadata.branch),
+          }));
+          const accountPayload = [
+            ...ilsData.map(d => ({ account: d.account.account, branch: d.account.branch })),
+            ...foreignAccountEntries,
+          ];
+          await registerDiscoveredAccounts('otsar-hahayal', creds.id, [accountPayload]);
+          const check = checkAccounts('otsar-hahayal', accountPayload, getVault().accountRecords);
+          if (check.unknown.length > 0) {
+            emit({
+              type: 'task-blocked',
+              sourceId: src.id,
+              sourceType: 'otsar-hahayal',
+              unknownAccounts: check.unknown,
+            });
+            throw new BlockedError(check.unknown);
+          }
+
+          // Filter out ignored bank accounts before uploading
+          const ignoredAccountIds = new Set(check.ignored);
+          const acceptedIlsData = ilsData.filter(
+            d => !ignoredAccountIds.has(`${d.account.branch}-${d.account.account}`),
+          );
+          const acceptedForeignData = foreignData.filter(
+            d => !ignoredAccountIds.has(`${d.metadata.branch}-${d.metadata.account}`),
+          );
+
+          // Register and validate credit cards separately
+          const creditCardPayload = creditCardData.map(d => ({ card: d.card }));
+          let acceptedCreditCardData = creditCardData;
+          if (creditCardPayload.length > 0) {
+            await registerDiscoveredAccounts('otsar-hahayal-credit-card', creds.id, [
+              creditCardPayload,
+            ]);
+            const ccCheck = checkAccounts(
+              'otsar-hahayal-credit-card',
+              creditCardPayload,
+              getVault().accountRecords,
+            );
+            if (ccCheck.unknown.length > 0) {
+              emit({
+                type: 'task-blocked',
+                sourceId: src.id,
+                sourceType: 'otsar-hahayal',
+                unknownAccounts: ccCheck.unknown,
+              });
+              throw new BlockedError(ccCheck.unknown);
+            }
+            // Filter out ignored credit cards before uploading
+            const ignoredCards = new Set(ccCheck.ignored);
+            acceptedCreditCardData = creditCardData.filter(
+              d => !ignoredCards.has(d.card.maskedPan),
+            );
+          }
+
+          if (!uploadClient)
+            return {
+              inserted: 0,
+              skipped: 0,
+              insertedIds: [],
+              insertedTransactions: [],
+              changedTransactions: [],
+            };
+
+          let totalInserted = 0;
+          let totalSkipped = 0;
+          const allIds: string[] = [];
+          const insertedTransactions: InsertedTransactionSummary[] = [];
+          const changedTransactions: ChangedTransaction[] = [];
+
+          if (acceptedIlsData.length > 0) {
+            const ilsCount = acceptedIlsData.reduce((s, d) => s + d.transactions.length, 0);
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId: 'ils',
+              txnType: 'ils',
+              count: ilsCount,
+            });
+            const r = await uploadClient.uploadOtsarIls(acceptedIlsData);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId: 'ils',
+              txnType: 'ils',
+              inserted: r.inserted,
+              skipped: r.skipped,
+            });
+            totalInserted += r.inserted;
+            totalSkipped += r.skipped;
+            allIds.push(...r.insertedIds);
+            insertedTransactions.push(...(r.insertedTransactions ?? []));
+            changedTransactions.push(...(r.changedTransactions ?? []));
+          }
+
+          if (acceptedForeignData.length > 0) {
+            const foreignCount = acceptedForeignData.reduce((s, d) => s + d.transactions.length, 0);
+            emit({
+              type: 'task-account-txns-uploading',
+              sourceId: src.id,
+              accountId: 'foreign',
+              txnType: 'foreign',
+              count: foreignCount,
+            });
+            const rf = await uploadClient.uploadOtsarForeign(acceptedForeignData);
+            emit({
+              type: 'task-account-txns-done',
+              sourceId: src.id,
+              accountId: 'foreign',
+              txnType: 'foreign',
+              inserted: rf.inserted,
+              skipped: rf.skipped,
+            });
+            totalInserted += rf.inserted;
+            totalSkipped += rf.skipped;
+            allIds.push(...rf.insertedIds);
+            insertedTransactions.push(...(rf.insertedTransactions ?? []));
+            changedTransactions.push(...(rf.changedTransactions ?? []));
+          }
+
+          if (acceptedCreditCardData.length > 0) {
+            const ccCount = acceptedCreditCardData.reduce((s, d) => s + d.transactions.length, 0);
+            emit({
+              type: 'task-month-uploading',
+              sourceId: src.id,
+              month: 'credit-cards',
+              transactionCount: ccCount,
+            });
+            const rc = await uploadClient.uploadOtsarCreditCard(acceptedCreditCardData);
+            emit({
+              type: 'task-month-uploaded',
+              sourceId: src.id,
+              month: 'credit-cards',
+              inserted: rc.inserted,
+              skipped: rc.skipped,
+            });
+            totalInserted += rc.inserted;
+            totalSkipped += rc.skipped;
+            allIds.push(...rc.insertedIds);
+            insertedTransactions.push(...(rc.insertedTransactions ?? []));
+            changedTransactions.push(...(rc.changedTransactions ?? []));
+          }
+
+          return {
+            inserted: totalInserted,
+            skipped: totalSkipped,
+            insertedIds: allIds,
+            insertedTransactions,
+            changedTransactions,
+          };
+        } catch (err) {
+          console.error({ err }, '[task] Otsar HaHayal scrape error');
+          throw err;
+        }
+      }
+
       if (src.type === 'poalim') {
         try {
           const creds = vault.poalimAccounts.find(a => a.id === src.id);

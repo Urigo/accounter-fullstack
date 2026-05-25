@@ -137,6 +137,7 @@ const updateBankAccount = sql<IUpdateBankAccountQuery>`
 
 const insertBankAccounts = sql<IInsertBankAccountsQuery>`
   INSERT INTO accounter_schema.financial_bank_accounts (
+    id,
     bank_number,
     branch_number,
     iban,
@@ -157,6 +158,7 @@ const insertBankAccounts = sql<IInsertBankAccountsQuery>`
     owner_id
   )
   VALUES $$bankAccounts(
+    id,
     bankNumber,
     branchNumber,
     iban,

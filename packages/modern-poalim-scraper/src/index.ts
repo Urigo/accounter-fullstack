@@ -2,6 +2,11 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { max, MaxOptions, type MaxCredentials } from './scrapers/max.js';
 import {
+  otsarHahayal,
+  OtsarHahayalCredentials,
+  OtsarHahayalOptions,
+} from './scrapers/otsar-hahayal/index.js';
+import {
   amex,
   AmexCredentials,
   AmexOptions,
@@ -65,6 +70,9 @@ export async function init({
     max: async (credentials: MaxCredentials, options?: MaxOptions) => {
       const page = await newPage(browser);
       return max(page, credentials, options);
+    },
+    otsarHahayal: async (credentials: OtsarHahayalCredentials, options?: OtsarHahayalOptions) => {
+      return otsarHahayal(credentials, options);
     },
     close: () => {
       return browser.close();

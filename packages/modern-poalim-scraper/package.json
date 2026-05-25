@@ -17,19 +17,21 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "yarn json2ts && tsc && node scripts/copy-schemas.mjs",
+    "build": "yarn tsc",
     "dev": "yarn build && concurrently \"tsc -w\" \"nodemon dist/index.js\"",
     "format": "prettier \"**/*.ts\" --write",
-    "json2ts": "json2ts -i src/schemas -o src/__generated__",
     "start": "node dist/index.js",
     "test:hapoalim": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-poalim.js\"",
     "test:isracard": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-isracard.js\"",
-    "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\""
+    "test:max": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-max.js\"",
+    "test:otsar-hahayal": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-otsar-hahayal.js\""
   },
   "dependencies": {
     "date-fns": "4.3.0",
     "inquirer": "13.4.3",
     "node-fetch": "3.3.2",
+    "node-xlsx": "0.24.0",
+    "playwright": "1.60.0",
     "puppeteer": "25.0.2",
     "puppeteer-extra": "3.3.6",
     "puppeteer-extra-plugin-stealth": "2.11.2",
@@ -41,7 +43,6 @@
     "@types/node-fetch": "2.6.13",
     "@types/uuid": "11.0.0",
     "concurrently": "9.2.1",
-    "json-schema-to-typescript": "15.0.4",
     "nodemon": "3.1.14",
     "typescript": "6.0.3"
   },
