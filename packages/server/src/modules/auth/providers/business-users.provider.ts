@@ -12,7 +12,8 @@ import type {
 const getBusinessUsersByAuth0Ids = sql<IGetBusinessUsersByAuth0IdsQuery>`
   SELECT user_id, auth0_user_id, business_id, role_id
   FROM accounter_schema.business_users
-  WHERE auth0_user_id IN $$auth0UserIds;
+  WHERE auth0_user_id IN $$auth0UserIds
+  ORDER BY updated_at DESC;
 `;
 
 const insertBusinessUser = sql<IInsertBusinessUserQuery>`

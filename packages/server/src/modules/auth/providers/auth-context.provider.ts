@@ -376,7 +376,9 @@ export class AuthContextProvider {
       ORDER BY bu.updated_at DESC
     `;
 
-    const toResult = (rows: Array<{ user_id: string; business_id: string; role_id: string }>) => {
+    type MembershipRow = { user_id: string; business_id: string; role_id: string };
+
+    const toResult = (rows: MembershipRow[]) => {
       const primary = rows[0];
       const memberships: BusinessMembership[] = rows.map(row => ({
         businessId: row.business_id,
@@ -391,7 +393,7 @@ export class AuthContextProvider {
     };
 
     try {
-      const byAuth0Result = await this.db.query(byAuth0Query, [auth0UserId]);
+      const byAuth0Result = await this.db.query<MembershipRow>(byAuth0Query, [auth0UserId]);
       if (byAuth0Result.rowCount && byAuth0Result.rowCount > 0) {
         return toResult(byAuth0Result.rows);
       }
@@ -400,7 +402,7 @@ export class AuthContextProvider {
         return null;
       }
 
-      const byEmailResult = await this.db.query(byVerifiedEmailQuery, [email]);
+      const byEmailResult = await this.db.query<{ user_id: string }>(byVerifiedEmailQuery, [email]);
       if (!byEmailResult.rowCount || byEmailResult.rowCount === 0) {
         return null;
       }
@@ -410,7 +412,7 @@ export class AuthContextProvider {
       // Sync newly authenticated Auth0 subject across all memberships of this local user.
       await this.db.query(relinkAuth0IdQuery, [auth0UserId, userId]);
 
-      const membershipsResult = await this.db.query(byUserIdQuery, [userId]);
+      const membershipsResult = await this.db.query<MembershipRow>(byUserIdQuery, [userId]);
       if (!membershipsResult.rowCount || membershipsResult.rowCount === 0) {
         return null;
       }
