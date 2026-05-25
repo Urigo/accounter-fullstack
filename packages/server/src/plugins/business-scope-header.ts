@@ -31,23 +31,33 @@ export function parseBusinessScopeHeader(
   }
 
   const errors: BusinessScopeParseError[] = [];
+  const seenErrors = new Set<string>();
   const seen = new Set<string>();
   const businessIds: string[] = [];
 
   for (const rawEntry of headerValue.split(',')) {
     const entry = rawEntry.trim();
     if (entry === '') {
-      errors.push({ code: 'EMPTY_ENTRY' });
+      if (!seenErrors.has('EMPTY_ENTRY')) {
+        seenErrors.add('EMPTY_ENTRY');
+        errors.push({ code: 'EMPTY_ENTRY' });
+      }
       continue;
     }
     if (!UUID_PATTERN.test(entry)) {
-      errors.push({ code: 'INVALID_UUID', value: entry });
+      const key = `INVALID_UUID:${entry.toLowerCase()}`;
+      if (!seenErrors.has(key)) {
+        seenErrors.add(key);
+        errors.push({ code: 'INVALID_UUID', value: entry });
+      }
       continue;
     }
-    const normalized = entry.toLowerCase();
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      businessIds.push(normalized);
+    if (errors.length === 0) {
+      const normalized = entry.toLowerCase();
+      if (!seen.has(normalized)) {
+        seen.add(normalized);
+        businessIds.push(normalized);
+      }
     }
   }
 
