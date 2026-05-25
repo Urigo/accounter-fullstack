@@ -45,6 +45,53 @@ export function isBusinessInScope(
 }
 
 /**
+ * Resolve the effective read scope for a request by applying the precedence
+ * rule: GraphQL args narrow the header scope, which narrows the user's
+ * memberships. Formally `args ⊆ header ⊆ memberships`.
+ *
+ * - When neither header nor args narrowing is requested, defaults to all
+ *   accessible businesses.
+ * - The header scope must be a subset of the memberships; the args scope must
+ *   be a subset of the (already header-narrowed) scope.
+ * - Returns `null` to signal rejection when any requested id falls outside the
+ *   scope it is narrowing — callers must reject rather than silently drop ids.
+ *
+ * This is the single, reusable precedence check; resolvers and the scope
+ * provider should use it rather than re-implementing narrowing per module.
+ */
+export function resolveReadScopePrecedence(params: {
+  memberships: BusinessMembership[];
+  headerBusinessIds?: string[];
+  argsBusinessIds?: string[];
+}): AuthorizedReadScope | null {
+  const { memberships, headerBusinessIds, argsBusinessIds } = params;
+
+  let scope = readScopeFromMemberships(memberships);
+
+  if (headerBusinessIds && headerBusinessIds.length > 0) {
+    const narrowed = narrowReadScope(memberships, headerBusinessIds);
+    if (!narrowed) {
+      return null;
+    }
+    scope = narrowed;
+  }
+
+  if (argsBusinessIds && argsBusinessIds.length > 0) {
+    const allowed: BusinessMembership[] = scope.businessIds.map(businessId => ({
+      businessId,
+      roleId: '',
+    }));
+    const narrowed = narrowReadScope(allowed, argsBusinessIds);
+    if (!narrowed) {
+      return null;
+    }
+    scope = narrowed;
+  }
+
+  return scope;
+}
+
+/**
  * Narrow a user's memberships to a requested set of business ids.
  *
  * Returns the requested ids (de-duplicated, request order preserved) as the
