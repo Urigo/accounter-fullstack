@@ -5,6 +5,7 @@ import {
   membershipFromTenant,
   narrowReadScope,
   readScopeFromMemberships,
+  resolveReadScopePrecedence,
   tenantFromMembership,
 } from '../auth-scope.js';
 
@@ -100,5 +101,63 @@ describe('narrowReadScope', () => {
     expect(narrowReadScope(memberships, ['b-1', 'b-2', 'b-3'])).toEqual({
       businessIds: ['b-1', 'b-2', 'b-3'],
     });
+  });
+});
+
+describe('resolveReadScopePrecedence', () => {
+  const memberships: BusinessMembership[] = [
+    { businessId: 'b-1', roleId: 'owner' },
+    { businessId: 'b-2', roleId: 'accountant' },
+    { businessId: 'b-3', roleId: 'employee' },
+  ];
+
+  it('defaults to all memberships when neither header nor args narrow', () => {
+    expect(resolveReadScopePrecedence({ memberships })).toEqual({
+      businessIds: ['b-1', 'b-2', 'b-3'],
+    });
+  });
+
+  it('uses the header scope when no args are provided', () => {
+    expect(
+      resolveReadScopePrecedence({ memberships, headerBusinessIds: ['b-2', 'b-3'] }),
+    ).toEqual({ businessIds: ['b-2', 'b-3'] });
+  });
+
+  it('lets args narrow within the header scope (args over header)', () => {
+    expect(
+      resolveReadScopePrecedence({
+        memberships,
+        headerBusinessIds: ['b-2', 'b-3'],
+        argsBusinessIds: ['b-3'],
+      }),
+    ).toEqual({ businessIds: ['b-3'] });
+  });
+
+  it('lets args narrow the memberships when no header is provided', () => {
+    expect(
+      resolveReadScopePrecedence({ memberships, argsBusinessIds: ['b-1'] }),
+    ).toEqual({ businessIds: ['b-1'] });
+  });
+
+  it('rejects a header scope outside the memberships', () => {
+    expect(
+      resolveReadScopePrecedence({ memberships, headerBusinessIds: ['b-9'] }),
+    ).toBeNull();
+  });
+
+  it('rejects args that fall outside the header scope (args must be a subset, not broaden)', () => {
+    expect(
+      resolveReadScopePrecedence({
+        memberships,
+        headerBusinessIds: ['b-2'],
+        argsBusinessIds: ['b-1'],
+      }),
+    ).toBeNull();
+  });
+
+  it('rejects args outside the memberships when no header is provided', () => {
+    expect(
+      resolveReadScopePrecedence({ memberships, argsBusinessIds: ['b-9'] }),
+    ).toBeNull();
   });
 });
