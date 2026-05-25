@@ -1,20 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { userContextResolvers } from '../resolvers/user-context.resolver.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 
 // Baseline guardrails for the multi-business migration.
 // These lock the CURRENT single-business `userContext` contract so the hard-cut
 // in a later step (memberships + active read scope replacing `adminBusinessId`)
 // is visible as an intentional change rather than a silent regression.
 
-type AdminContextFixture = {
-  ownerId: string;
-  defaultLocalCurrency: string;
-  defaultCryptoConversionFiatCurrency: string;
-  ledgerLock?: string;
-  locality: string;
-  financialAccounts: { internalWalletsIds: string[] };
-  bankDeposits: { bankDepositBusinessId: string | null };
-};
+type AdminContextFixture = Awaited<ReturnType<AdminContextProvider['getVerifiedAdminContext']>>;
 
 function buildInjector(adminContext: AdminContextFixture) {
   return {
@@ -36,7 +29,7 @@ async function runResolver(adminContext: AdminContextFixture) {
   return resolver(undefined, undefined, { injector }, undefined);
 }
 
-const baseContext: AdminContextFixture = {
+const baseContext = {
   ownerId: 'owner-1',
   defaultLocalCurrency: 'ILS',
   defaultCryptoConversionFiatCurrency: 'USD',
@@ -44,7 +37,7 @@ const baseContext: AdminContextFixture = {
   locality: 'ISRAEL',
   financialAccounts: { internalWalletsIds: ['wallet-1', 'wallet-2'] },
   bankDeposits: { bankDepositBusinessId: null },
-};
+} as AdminContextFixture;
 
 describe('userContext resolver (single-business baseline)', () => {
   it('exposes the single admin business as adminBusinessId', async () => {
