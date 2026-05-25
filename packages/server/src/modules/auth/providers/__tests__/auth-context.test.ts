@@ -240,4 +240,68 @@ describe('handleDevBypassAuth', () => {
 
     expect(result).toBeNull();
   });
+
+  it('returns null for an empty/whitespace user id without querying', async () => {
+    const db = {
+      query: vi.fn(),
+    } as unknown as Pick<DBProvider, 'query'>;
+
+    expect(await handleDevBypassAuth(db, '   ')).toBeNull();
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  // Baseline guardrail: dev-bypass collapses a user's memberships to a single
+  // business via `ORDER BY updated_at DESC LIMIT 1`. The migration will replace
+  // this single-row lookup with full membership resolution.
+  it('resolves a single business via LIMIT 1 (single-membership baseline)', async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          user_id: 'user-1',
+          business_id: 'biz-1',
+          role_id: 'business_owner',
+          auth0_user_id: null,
+        },
+      ],
+    });
+    const db = { query } as unknown as Pick<DBProvider, 'query'>;
+
+    const result = await handleDevBypassAuth(db, 'user-1');
+
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('LIMIT 1'), ['user-1']);
+    expect(result?.tenant.businessId).toBe('biz-1');
+    expect(Array.isArray(result?.tenant.businessId)).toBe(false);
+  });
+});
+
+// Baseline guardrail: JWT auth maps an Auth0 subject to a single local business
+// via a `LIMIT 1` lookup. The migration will resolve all memberships instead.
+describe('AuthContextProvider single-membership baseline', () => {
+  it('maps the Auth0 user to one business using a LIMIT 1 query', async () => {
+    const mockDb = {
+      query: vi.fn().mockResolvedValue({
+        rowCount: 1,
+        rows: [{ user_id: 'u-1', business_id: 'b-1', role_id: 'admin' }],
+      }),
+    } as any;
+    const mockEnv = { auth0: { domain: 'test.auth0.com', audience: 'aud' } } as any;
+    vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
+    vi.mocked(jose.jwtVerify).mockResolvedValue({
+      payload: { sub: 'auth0|123', exp: 1, email: null, email_verified: false, permissions: [] },
+    } as any);
+
+    const provider = new AuthContextProvider(
+      mockEnv,
+      { authType: 'jwt', token: 'valid-token' } as any,
+      mockDb,
+    );
+    const result = await provider.getAuthContext();
+
+    expect(mockDb.query).toHaveBeenCalledWith(
+      expect.stringContaining('LIMIT 1'),
+      ['auth0|123'],
+    );
+    expect(result?.tenant.businessId).toBe('b-1');
+    expect(Array.isArray(result?.tenant.businessId)).toBe(false);
+  });
 });
