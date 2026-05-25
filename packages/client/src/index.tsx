@@ -6,7 +6,8 @@ import { routes } from './router/config.js';
 import './index.css';
 import 'json-bigint-patch';
 import { ROUTES } from '@/router/routes.js';
-import { isNetworkError } from './lib/auth0-errors.js';
+import { SessionExpiryDialog } from './components/session-expiry-dialog.js';
+import { isReauthRequiredAuth0Error } from './lib/auth0-errors.js';
 import { setUrqlAccessTokenProvider } from './providers/urql.js';
 
 const rootElement = document.getElementById('root');
@@ -45,13 +46,11 @@ function Auth0UrqlTokenBridge() {
     } catch (error) {
       const auth0Error = error as Error & { error?: string };
 
-      // Auth0 uses these codes to indicate the user must authenticate interactively.
-      if (auth0Error.error === 'login_required' || auth0Error.error === 'invalid_token') {
+      // An expired/invalid/missing refresh token means silent renewal can never succeed —
+      // signal "unauthenticated" so the user is re-authenticated instead of seeing a
+      // misleading network error. Genuine transient/network failures stay as errors.
+      if (isReauthRequiredAuth0Error(auth0Error)) {
         return { status: 'unauthenticated' };
-      }
-
-      if (isNetworkError(auth0Error)) {
-        return { status: 'error', error: auth0Error };
       }
 
       return { status: 'error', error: auth0Error };
@@ -64,7 +63,12 @@ function Auth0UrqlTokenBridge() {
     };
   }, []);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <SessionExpiryDialog />
+    </>
+  );
 }
 
 function DevAuthApp() {

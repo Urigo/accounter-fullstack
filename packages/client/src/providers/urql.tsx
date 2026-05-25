@@ -9,6 +9,7 @@ import {
   type Operation,
 } from 'urql';
 import { authExchange } from '@urql/exchange-auth';
+import { requestInteractiveReauth } from '../lib/reauth-coordinator.js';
 import { ROUTES } from '../router/routes.js';
 import { handleUrqlError } from './urql-error-handler.js';
 
@@ -218,6 +219,19 @@ export function getUrqlClient(): Client {
 
             if (refreshedToken.status === 'unauthenticated') {
               bearerToken = null;
+
+              // Offer in-place re-authentication (modal + Auth0 popup) so queued operations
+              // can resume without losing page state. Falls back to a full-page redirect.
+              const outcome = await requestInteractiveReauth();
+              if (outcome === 'authenticated') {
+                const fresh = await getAccessToken({ cacheMode: 'off' });
+                if (fresh.status === 'token') {
+                  loginRedirectInProgress = false;
+                  bearerToken = `Bearer ${fresh.token}`;
+                  return;
+                }
+              }
+
               redirectToLogin();
               return;
             }
