@@ -93,6 +93,7 @@ describe('AuthContextProvider', () => {
            businessId: 'b-1',
            roleId: 'admin',
          },
+         memberships: [{ businessId: 'b-1', roleId: 'admin' }],
          accessTokenExpiresAt: 1234567890,
        });
     });
@@ -134,12 +135,23 @@ describe('AuthContextProvider', () => {
         vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
 
         mockDBProvider.query
+          // byAuth0: no rows for the new subject
           .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+          // byVerifiedEmail: identifies the local user
           .mockResolvedValueOnce({
             rowCount: 1,
-            rows: [{ user_id: 'u-42', business_id: 'b-42', role_id: 'employee' }],
+            rows: [{ user_id: 'u-42' }],
           })
-          .mockResolvedValueOnce({ rowCount: 2, rows: [] });
+          // relink UPDATE
+          .mockResolvedValueOnce({ rowCount: 2, rows: [] })
+          // byUserId: ALL memberships for the relinked user
+          .mockResolvedValueOnce({
+            rowCount: 2,
+            rows: [
+              { user_id: 'u-42', business_id: 'b-42', role_id: 'employee' },
+              { user_id: 'u-42', business_id: 'b-99', role_id: 'accountant' },
+            ],
+          });
 
         const result = await provider.getAuthContext();
 
@@ -158,6 +170,11 @@ describe('AuthContextProvider', () => {
           expect.stringContaining('UPDATE accounter_schema.business_users'),
           ['google-oauth2|new-subject', 'u-42'],
         );
+        expect(mockDBProvider.query).toHaveBeenNthCalledWith(
+          4,
+          expect.stringContaining('WHERE bu.user_id = $1'),
+          ['u-42'],
+        );
 
         expect(result).toEqual({
           authType: 'jwt',
@@ -175,6 +192,10 @@ describe('AuthContextProvider', () => {
             businessId: 'b-42',
             roleId: 'employee',
           },
+          memberships: [
+            { businessId: 'b-42', roleId: 'employee' },
+            { businessId: 'b-99', roleId: 'accountant' },
+          ],
           accessTokenExpiresAt: 1234567890,
         });
       });
@@ -228,6 +249,7 @@ describe('handleDevBypassAuth', () => {
         businessId: 'biz-456',
         roleId: 'business_owner',
       },
+      memberships: [{ businessId: 'biz-456', roleId: 'business_owner' }],
     });
   });
 
@@ -250,38 +272,39 @@ describe('handleDevBypassAuth', () => {
     expect(db.query).not.toHaveBeenCalled();
   });
 
-  // Baseline guardrail: dev-bypass collapses a user's memberships to a single
-  // business via `ORDER BY updated_at DESC LIMIT 1`. The migration will replace
-  // this single-row lookup with full membership resolution.
-  it('resolves a single business via LIMIT 1 (single-membership baseline)', async () => {
+  // dev-bypass now resolves ALL memberships (no LIMIT 1); the primary (most
+  // recently updated) membership still backs the single-business tenant context.
+  it('resolves all memberships and selects the primary as tenant', async () => {
     const query = vi.fn().mockResolvedValue({
       rows: [
-        {
-          user_id: 'user-1',
-          business_id: 'biz-1',
-          role_id: 'business_owner',
-          auth0_user_id: null,
-        },
+        { user_id: 'user-1', business_id: 'biz-1', role_id: 'business_owner', auth0_user_id: null },
+        { user_id: 'user-1', business_id: 'biz-2', role_id: 'accountant', auth0_user_id: null },
       ],
     });
     const db = { query } as unknown as Pick<DBProvider, 'query'>;
 
     const result = await handleDevBypassAuth(db, 'user-1');
 
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('LIMIT 1'), ['user-1']);
+    expect(query).toHaveBeenCalledWith(expect.not.stringContaining('LIMIT 1'), ['user-1']);
     expect(result?.tenant.businessId).toBe('biz-1');
-    expect(Array.isArray(result?.tenant.businessId)).toBe(false);
+    expect(result?.memberships).toEqual([
+      { businessId: 'biz-1', roleId: 'business_owner' },
+      { businessId: 'biz-2', roleId: 'accountant' },
+    ]);
   });
 });
 
-// Baseline guardrail: JWT auth maps an Auth0 subject to a single local business
-// via a `LIMIT 1` lookup. The migration will resolve all memberships instead.
-describe('AuthContextProvider single-membership baseline', () => {
-  it('maps the Auth0 user to one business using a LIMIT 1 query', async () => {
+// JWT auth now resolves all of a user's memberships (no LIMIT 1 on the auth0
+// lookup); the primary membership still backs the single-business tenant context.
+describe('AuthContextProvider membership resolution', () => {
+  it('resolves all memberships for the Auth0 subject without a LIMIT 1 lookup', async () => {
     const mockDb = {
       query: vi.fn().mockResolvedValue({
-        rowCount: 1,
-        rows: [{ user_id: 'u-1', business_id: 'b-1', role_id: 'admin' }],
+        rowCount: 2,
+        rows: [
+          { user_id: 'u-1', business_id: 'b-1', role_id: 'admin' },
+          { user_id: 'u-1', business_id: 'b-2', role_id: 'accountant' },
+        ],
       }),
     } as any;
     const mockEnv = { auth0: { domain: 'test.auth0.com', audience: 'aud' } } as any;
@@ -298,10 +321,13 @@ describe('AuthContextProvider single-membership baseline', () => {
     const result = await provider.getAuthContext();
 
     expect(mockDb.query).toHaveBeenCalledWith(
-      expect.stringContaining('LIMIT 1'),
+      expect.not.stringContaining('LIMIT 1'),
       ['auth0|123'],
     );
     expect(result?.tenant.businessId).toBe('b-1');
-    expect(Array.isArray(result?.tenant.businessId)).toBe(false);
+    expect(result?.memberships).toEqual([
+      { businessId: 'b-1', roleId: 'admin' },
+      { businessId: 'b-2', roleId: 'accountant' },
+    ]);
   });
 });
