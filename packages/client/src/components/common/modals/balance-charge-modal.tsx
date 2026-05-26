@@ -293,9 +293,9 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                             <FormControl>
                               <DatePickerInput
                                 required
-                                value={(field.value as TimelessDateString) ?? undefined}
+                                value={(field.value as TimelessDateString) || undefined}
                                 onChange={(date?: TimelessDateString | null): void => {
-                                  if (date !== field.value) field.onChange(date);
+                                  if (date !== field.value) field.onChange(date ?? undefined);
                                 }}
                                 aria-invalid={!!fieldState.error}
                               />
