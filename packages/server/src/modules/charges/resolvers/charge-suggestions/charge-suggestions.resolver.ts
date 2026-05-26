@@ -10,6 +10,7 @@ import { UUID_REGEX } from '../../../../shared/constants.js';
 import { ChargeTypeEnum } from '../../../../shared/enums.js';
 import { errorSimplifier } from '../../../../shared/errors.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../../auth/providers/scope.provider.js';
 import { suggestionDataSchema } from '../../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '../../../tags/providers/charge-tags.provider.js';
@@ -694,10 +695,17 @@ export const chargeSuggestionsResolvers: ChargesModule.Resolvers = {
         throw new GraphQLError('Business ID is required');
       }
 
-      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
       try {
-        const ownerId = ownerIdInput?.trim() || adminContext.ownerId;
+        // Validate an explicit owner against the read scope (throws if out of
+        // scope); otherwise default to the request's primary business.
+        const trimmedOwnerId = ownerIdInput?.trim();
+        let ownerId: string;
+        if (trimmedOwnerId) {
+          await injector.get(ScopeProvider).getReadScope([trimmedOwnerId]);
+          ownerId = trimmedOwnerId;
+        } else {
+          ownerId = (await injector.get(AdminContextProvider).getVerifiedAdminContext()).ownerId;
+        }
 
         const similarCharges = await injector
           .get(ChargesProvider)

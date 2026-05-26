@@ -3,6 +3,7 @@ import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -46,12 +47,12 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       return transactionIDs;
     },
     transactionsByFinancialEntity: async (_, { financialEntityID }, { injector }) => {
-      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const ownerIDs = await injector.get(ScopeProvider).getReadScope();
       const transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByFilters({
           businessIDs: [financialEntityID],
-          ownerIDs: [adminContext.ownerId],
+          ownerIDs,
         })
         .then(res => res.map(t => t.id));
       return transactions;
