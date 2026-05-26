@@ -76,6 +76,8 @@ const baseUserContext: UserInfo = {
     ledgerLock: null,
     financialAccountsBusinessesIds: [],
     locality: 'IL',
+    memberships: [],
+    activeReadScope: [],
   },
 };
 
