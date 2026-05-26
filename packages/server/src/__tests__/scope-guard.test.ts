@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 const MODULES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'modules');
 
-const FORBIDDEN = [/adminContext\\??\\.ownerId\\b/, /adminContext\\??\\.defaultLocalCurrency\\b/];
+const FORBIDDEN = [/adminContext\??\.ownerId\b/, /adminContext\??\.defaultLocalCurrency\b/];
 
 function collectSourceFiles(dir: string): string[] {
   const out: string[] = [];
