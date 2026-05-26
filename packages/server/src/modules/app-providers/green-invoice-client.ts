@@ -43,7 +43,7 @@ export class GreenInvoiceClientProvider {
 
   private async _doInit(): ReturnType<typeof init> {
     const fromDb = await this.credentialsProvider.getGreenInvoiceCredentials();
-    const creds = fromDb ?? this.env.greenInvoice ?? null;
+    const creds = fromDb ?? null;
 
     if (!creds) {
       throw new GraphQLError('Green Invoice credentials not configured for this tenant', {

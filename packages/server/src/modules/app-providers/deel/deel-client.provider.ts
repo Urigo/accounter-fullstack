@@ -41,7 +41,7 @@ export class DeelClientProvider {
 
   private async _fetchToken(): Promise<string> {
     const fromDb = await this.credentialsProvider.getDeelCredentials();
-    const token = fromDb?.apiToken ?? this.env.deel?.apiToken ?? null;
+    const token = fromDb?.apiToken ?? null;
 
     if (!token) {
       throw new GraphQLError('Deel credentials not configured for this tenant', {
