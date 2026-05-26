@@ -1,3 +1,4 @@
+import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
@@ -507,10 +508,19 @@ export class AdminContextProvider {
     return null;
   }
 
-  public async getAdminContextByOwnerId(ownerId: string): Promise<AdminContext | null> {
-    const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
-    return contexts[0] ? this.normalizeContext(contexts[0]) : null;
+  private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {
+    const uniqueOwnerIds = Array.from(new Set(ownerIds));
+    const contexts = await getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db);
+    const contextsByOwnerId = new Map(contexts.map(c => [c.owner_id, c]));
+    return ownerIds.map(id => {
+      const context = contextsByOwnerId.get(id);
+      return context ? this.normalizeContext(context) : null;
+    });
   }
+
+  public adminContextByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>
+    this.batchAdminContextsByOwnerIds(ownerIds),
+  );
 
   public clearCache() {
     this.cachedContext = null;

@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type {
   IGetAllIssuedDocumentsResult,
@@ -48,9 +49,12 @@ export const greenInvoiceResolvers: GreenInvoiceModule.Resolvers = {
       { ownerId: inputOwnerId, singlePageLimit = true },
       { injector },
     ) => {
-      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-      const ownerId = inputOwnerId ?? adminContext.ownerId;
+      // Sync targets a single business: validate an explicit target against
+      // membership; otherwise (incl. blank input) default to the primary business.
+      const trimmedOwnerId = inputOwnerId?.trim();
+      const ownerId = trimmedOwnerId
+        ? await injector.get(ScopeProvider).resolveWriteTarget(trimmedOwnerId)
+        : (await injector.get(AdminContextProvider).getVerifiedAdminContext()).ownerId;
       const greenInvoiceDocuments = await getGreenInvoiceDocuments(injector, !singlePageLimit);
 
       const issuedDocuments = await injector.get(IssuedDocumentsProvider).getAllIssuedDocuments();

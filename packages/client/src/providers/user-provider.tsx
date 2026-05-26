@@ -9,7 +9,12 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
 /* GraphQL */ `
   query UserContext {
     userContext {
-      adminBusinessId
+      memberships {
+        businessId
+        role
+        businessName
+      }
+      activeReadScope
       defaultLocalCurrency
       defaultCryptoConversionFiatCurrency
       ledgerLock
@@ -24,14 +29,44 @@ type ContextType = {
   setUserContext: (filtersContext: UserInfo | null) => void;
 };
 
+export interface BusinessMembershipInfo {
+  businessId: string;
+  role: string;
+  businessName?: string | null;
+}
+
 export interface UserInfo extends User {
   context: {
+    memberships: BusinessMembershipInfo[];
+    activeReadScope: string[];
+    // Derived client-side from the active read scope while the multi-business
+    // client UI is built; kept so existing single-business consumers compile.
     adminBusinessId: string;
     defaultLocalCurrency: string;
     defaultCryptoConversionFiatCurrency: string;
     ledgerLock?: string | null;
     financialAccountsBusinessesIds: string[];
     locality: string;
+  };
+}
+
+// Map the (now multi-business) server payload to the client context shape,
+// deriving the legacy single-business fields used across the app today.
+function toUserInfoContext(
+  userContext: NonNullable<UserContextQuery['userContext']>,
+): UserInfo['context'] {
+  const memberships = userContext.memberships ?? [];
+  const activeReadScope = userContext.activeReadScope ?? [];
+  const adminBusinessId = activeReadScope[0] ?? memberships[0]?.businessId ?? '';
+  return {
+    memberships,
+    activeReadScope,
+    adminBusinessId,
+    defaultLocalCurrency: userContext.defaultLocalCurrency ?? '',
+    defaultCryptoConversionFiatCurrency: userContext.defaultCryptoConversionFiatCurrency ?? '',
+    ledgerLock: userContext.ledgerLock,
+    financialAccountsBusinessesIds: userContext.financialAccountsBusinessesIds ?? [],
+    locality: userContext.locality ?? '',
   };
 }
 
@@ -100,7 +135,7 @@ function Auth0UserProvider({ children }: { children?: ReactNode }): ReactNode {
 
     setUserContext({
       ...user,
-      context: defaults,
+      context: toUserInfoContext(defaults),
     });
   }, [defaults, user]);
 
@@ -137,7 +172,7 @@ function DevAuthUserProvider({ children }: { children?: ReactNode }): ReactNode 
 
     setUserContext({
       username: 'dev-user',
-      context: defaults,
+      context: toUserInfoContext(defaults),
     });
   }, [defaults]);
 

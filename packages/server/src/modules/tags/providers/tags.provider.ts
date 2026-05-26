@@ -109,8 +109,10 @@ export class TagsProvider {
   public async addNewTag(params: IAddNewTagParams) {
     this.clearCache();
 
-    const adminContext = await this.adminContextProvider.getVerifiedAdminContext();
-    return addNewTag.run(reassureOwnerIdExists(params, adminContext.ownerId), this.db);
+    // TODO(multi-business): accept an explicit target business once the addTag
+    // mutation exposes one; today a tag is created for the request's primary business.
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return addNewTag.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public async renameTag(params: IRenameTagParams) {

@@ -1,7 +1,10 @@
 import { GraphQLError } from 'graphql';
+import { type Injector } from 'graphql-modules';
 import type { Resolvers } from '../../../__generated__/types.js';
+import type { Currency } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { SalariesProvider } from '../providers/salaries.provider.js';
@@ -9,6 +12,27 @@ import type { SalariesModule } from '../types.js';
 import { insertSalaryRecordsFromFile } from './insert-salary-records-from-file.resolvers.js';
 import { insertSalaryRecords } from './insert-salary.resolver.js';
 import { updateSalaryRecord } from './update-salary.resolver.js';
+
+// Resolve a salary record's local currency from its OWNING business so
+// multi-business reads format each record correctly; falls back to the
+// request's primary business currency when the per-business value is absent.
+async function salaryLocalCurrency(
+  injector: Injector,
+  ownerId: string | null | undefined,
+): Promise<Currency> {
+  if (ownerId) {
+    const currency = await injector
+      .get(ScopeProvider)
+      .getBusinessPreference(ownerId, 'defaultLocalCurrency');
+    if (currency) {
+      return currency;
+    }
+  }
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
+  return defaultLocalCurrency;
+}
 
 export const salariesResolvers: SalariesModule.Resolvers &
   Pick<Resolvers, 'UpdateSalaryRecordResult' | 'InsertSalaryRecordsResult'> = {
@@ -161,15 +185,11 @@ export const salariesResolvers: SalariesModule.Resolvers &
   },
   Salary: {
     directAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.direct_payment_amount, defaultLocalCurrency);
     },
     baseAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return DbSalary.base_salary
         ? formatFinancialAmount(DbSalary.base_salary, defaultLocalCurrency)
         : null;
@@ -192,23 +212,17 @@ export const salariesResolvers: SalariesModule.Resolvers &
             .then(res => res ?? null)
         : null,
     pensionEmployeeAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.pension_employee_amount, defaultLocalCurrency);
     },
     pensionEmployeePercentage: DbSalary => DbSalary.pension_employee_percentage,
     pensionEmployerAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.pension_employer_amount, defaultLocalCurrency);
     },
     pensionEmployerPercentage: DbSalary => DbSalary.pension_employer_percentage,
     compensationsAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.compensations_employer_amount, defaultLocalCurrency);
     },
     compensationsPercentage: DbSalary => DbSalary.compensations_employer_percentage,
@@ -220,83 +234,57 @@ export const salariesResolvers: SalariesModule.Resolvers &
             .then(res => res ?? null)
         : null,
     trainingFundEmployeeAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.training_fund_employee_amount, defaultLocalCurrency);
     },
     trainingFundEmployeePercentage: DbSalary => DbSalary.training_fund_employee_percentage,
     trainingFundEmployerAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.training_fund_employer_amount, defaultLocalCurrency);
     },
     trainingFundEmployerPercentage: DbSalary => DbSalary.training_fund_employer_percentage,
     socialSecurityEmployeeAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.social_security_amount_employee, defaultLocalCurrency);
     },
     socialSecurityEmployerAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.social_security_amount_employer, defaultLocalCurrency);
     },
     incomeTaxAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.tax_amount, defaultLocalCurrency);
     },
     healthInsuranceAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.health_payment_amount, defaultLocalCurrency);
     },
     globalAdditionalHoursAmount: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.global_additional_hours, defaultLocalCurrency);
     },
     bonus: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.bonus, defaultLocalCurrency);
     },
     gift: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.gift, defaultLocalCurrency);
     },
     travelAndSubsistence: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.travel_and_subsistence, defaultLocalCurrency);
     },
     recovery: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.recovery, defaultLocalCurrency);
     },
     vacationTakeout: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.vacation_takeout, defaultLocalCurrency);
     },
     notionalExpense: async (DbSalary, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await salaryLocalCurrency(injector, DbSalary.owner_id);
       return formatFinancialAmount(DbSalary.zkufot, defaultLocalCurrency);
     },
     vacationDays: DbSalary => ({

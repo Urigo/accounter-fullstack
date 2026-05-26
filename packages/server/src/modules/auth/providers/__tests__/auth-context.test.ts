@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
+import { GraphQLError } from 'graphql';
 import { AuthContextProvider, handleDevBypassAuth } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
 
@@ -93,6 +94,8 @@ describe('AuthContextProvider', () => {
            businessId: 'b-1',
            roleId: 'admin',
          },
+         memberships: [{ businessId: 'b-1', roleId: 'admin' }],
+         activeReadScope: { businessIds: ['b-1'] },
          accessTokenExpiresAt: 1234567890,
        });
     });
@@ -134,12 +137,23 @@ describe('AuthContextProvider', () => {
         vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
 
         mockDBProvider.query
+          // byAuth0: no rows for the new subject
           .mockResolvedValueOnce({ rowCount: 0, rows: [] })
+          // byVerifiedEmail: identifies the local user
           .mockResolvedValueOnce({
             rowCount: 1,
-            rows: [{ user_id: 'u-42', business_id: 'b-42', role_id: 'employee' }],
+            rows: [{ user_id: 'u-42' }],
           })
-          .mockResolvedValueOnce({ rowCount: 2, rows: [] });
+          // relink UPDATE
+          .mockResolvedValueOnce({ rowCount: 2, rows: [] })
+          // byUserId: ALL memberships for the relinked user
+          .mockResolvedValueOnce({
+            rowCount: 2,
+            rows: [
+              { user_id: 'u-42', business_id: 'b-42', role_id: 'employee' },
+              { user_id: 'u-42', business_id: 'b-99', role_id: 'accountant' },
+            ],
+          });
 
         const result = await provider.getAuthContext();
 
@@ -158,6 +172,11 @@ describe('AuthContextProvider', () => {
           expect.stringContaining('UPDATE accounter_schema.business_users'),
           ['google-oauth2|new-subject', 'u-42'],
         );
+        expect(mockDBProvider.query).toHaveBeenNthCalledWith(
+          4,
+          expect.stringContaining('WHERE bu.user_id = $1'),
+          ['u-42'],
+        );
 
         expect(result).toEqual({
           authType: 'jwt',
@@ -175,19 +194,119 @@ describe('AuthContextProvider', () => {
             businessId: 'b-42',
             roleId: 'employee',
           },
+          memberships: [
+            { businessId: 'b-42', roleId: 'employee' },
+            { businessId: 'b-99', roleId: 'accountant' },
+          ],
+          activeReadScope: { businessIds: ['b-42', 'b-99'] },
           accessTokenExpiresAt: 1234567890,
         });
       });
 
      it('should return null if sub claim is missing', async () => {
         const mockPayload = {}; // No sub
-   
+
         vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: mockPayload } as any);
-   
+
         const result = await provider.getAuthContext();
-   
+
         expect(result).toBeNull();
     });
+  });
+});
+
+describe('AuthContextProvider read-scope resolution', () => {
+  const makeJwtProvider = (
+    membershipRows: Array<{ user_id: string; business_id: string; role_id: string }>,
+    requestedBusinessScope?: unknown,
+  ) => {
+    const mockDb = {
+      query: vi.fn().mockResolvedValue({ rowCount: membershipRows.length, rows: membershipRows }),
+    } as any;
+    const mockEnv = { auth0: { domain: 'test.auth0.com', audience: 'aud' } } as any;
+    vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
+    vi.mocked(jose.jwtVerify).mockResolvedValue({
+      payload: { sub: 'auth0|x', exp: 1, email: null, email_verified: false, permissions: [] },
+    } as any);
+    return new AuthContextProvider(
+      mockEnv,
+      { authType: 'jwt', token: 'valid-token', requestedBusinessScope } as any,
+      mockDb,
+    );
+  };
+
+  const membershipRows = [
+    { user_id: 'u-1', business_id: 'b-1', role_id: 'owner' },
+    { user_id: 'u-1', business_id: 'b-2', role_id: 'accountant' },
+  ];
+
+  it('defaults read scope to all memberships when no header is sent', async () => {
+    const result = await makeJwtProvider(membershipRows).getAuthContext();
+    expect(result?.activeReadScope).toEqual({ businessIds: ['b-1', 'b-2'] });
+  });
+
+  it('narrows read scope to a valid requested subset', async () => {
+    const result = await makeJwtProvider(membershipRows, {
+      kind: 'valid',
+      businessIds: ['b-2'],
+    }).getAuthContext();
+    expect(result?.activeReadScope).toEqual({ businessIds: ['b-2'] });
+    // tenant still reflects the primary membership
+    expect(result?.tenant.businessId).toBe('b-1');
+  });
+
+  it('rejects a requested scope outside the user memberships', async () => {
+    await expect(
+      makeJwtProvider(membershipRows, {
+        kind: 'valid',
+        businessIds: ['b-1', 'b-999'],
+      }).getAuthContext(),
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN' },
+    });
+  });
+
+  it('rejects a malformed scope header', async () => {
+    await expect(
+      makeJwtProvider(membershipRows, {
+        kind: 'invalid',
+        errors: [{ code: 'INVALID_UUID', value: 'nope' }],
+      }).getAuthContext(),
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN' },
+    });
+  });
+
+  it('does not expand scope beyond memberships (no super-admin auto-expansion)', async () => {
+    const result = await makeJwtProvider([
+      { user_id: 'u-1', business_id: 'b-1', role_id: 'owner' },
+    ]).getAuthContext();
+    expect(result?.activeReadScope).toEqual({ businessIds: ['b-1'] });
+  });
+
+  it('pins API-key scope to its business and ignores the header', async () => {
+    const mockDb = {
+      query: vi
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [{ id: 'k1', business_id: 'biz-1', role_id: 'scraper' }],
+        })
+        .mockResolvedValueOnce({ rowCount: 1 }),
+    } as any;
+    const provider = new AuthContextProvider(
+      { auth0: { domain: 'd', audience: 'a' } } as any,
+      {
+        authType: 'apiKey',
+        token: 'key',
+        requestedBusinessScope: { kind: 'valid', businessIds: ['biz-2'] },
+      } as any,
+      mockDb,
+    );
+
+    const result = await provider.getAuthContext();
+
+    expect(result?.tenant.businessId).toBe('biz-1');
+    expect(result?.activeReadScope).toEqual({ businessIds: ['biz-1'] });
   });
 });
 
@@ -228,6 +347,8 @@ describe('handleDevBypassAuth', () => {
         businessId: 'biz-456',
         roleId: 'business_owner',
       },
+      memberships: [{ businessId: 'biz-456', roleId: 'business_owner' }],
+      activeReadScope: { businessIds: ['biz-456'] },
     });
   });
 
@@ -239,5 +360,73 @@ describe('handleDevBypassAuth', () => {
     const result = await handleDevBypassAuth(db, 'missing-user');
 
     expect(result).toBeNull();
+  });
+
+  it('returns null for an empty/whitespace user id without querying', async () => {
+    const db = {
+      query: vi.fn(),
+    } as unknown as Pick<DBProvider, 'query'>;
+
+    expect(await handleDevBypassAuth(db, '   ')).toBeNull();
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  // dev-bypass now resolves ALL memberships (no LIMIT 1); the primary (most
+  // recently updated) membership still backs the single-business tenant context.
+  it('resolves all memberships and selects the primary as tenant', async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        { user_id: 'user-1', business_id: 'biz-1', role_id: 'business_owner', auth0_user_id: null },
+        { user_id: 'user-1', business_id: 'biz-2', role_id: 'accountant', auth0_user_id: null },
+      ],
+    });
+    const db = { query } as unknown as Pick<DBProvider, 'query'>;
+
+    const result = await handleDevBypassAuth(db, 'user-1');
+
+    expect(query).toHaveBeenCalledWith(expect.not.stringContaining('LIMIT 1'), ['user-1']);
+    expect(result?.tenant.businessId).toBe('biz-1');
+    expect(result?.memberships).toEqual([
+      { businessId: 'biz-1', roleId: 'business_owner' },
+      { businessId: 'biz-2', roleId: 'accountant' },
+    ]);
+  });
+});
+
+// JWT auth now resolves all of a user's memberships (no LIMIT 1 on the auth0
+// lookup); the primary membership still backs the single-business tenant context.
+describe('AuthContextProvider membership resolution', () => {
+  it('resolves all memberships for the Auth0 subject without a LIMIT 1 lookup', async () => {
+    const mockDb = {
+      query: vi.fn().mockResolvedValue({
+        rowCount: 2,
+        rows: [
+          { user_id: 'u-1', business_id: 'b-1', role_id: 'admin' },
+          { user_id: 'u-1', business_id: 'b-2', role_id: 'accountant' },
+        ],
+      }),
+    } as any;
+    const mockEnv = { auth0: { domain: 'test.auth0.com', audience: 'aud' } } as any;
+    vi.mocked(jose.createRemoteJWKSet).mockReturnValue({} as any);
+    vi.mocked(jose.jwtVerify).mockResolvedValue({
+      payload: { sub: 'auth0|123', exp: 1, email: null, email_verified: false, permissions: [] },
+    } as any);
+
+    const provider = new AuthContextProvider(
+      mockEnv,
+      { authType: 'jwt', token: 'valid-token' } as any,
+      mockDb,
+    );
+    const result = await provider.getAuthContext();
+
+    expect(mockDb.query).toHaveBeenCalledWith(
+      expect.not.stringContaining('LIMIT 1'),
+      ['auth0|123'],
+    );
+    expect(result?.tenant.businessId).toBe('b-1');
+    expect(result?.memberships).toEqual([
+      { businessId: 'b-1', roleId: 'admin' },
+      { businessId: 'b-2', roleId: 'accountant' },
+    ]);
   });
 });

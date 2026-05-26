@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { type Injector } from 'graphql-modules';
 import { Repeater } from 'graphql-yoga';
 import {
   ChargeSortByField,
@@ -6,8 +7,10 @@ import {
   type ResolversTypes,
 } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
+import type { Currency } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { accountant_statusArray } from '../../charges/types.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
@@ -31,6 +34,27 @@ import type {
   LedgerModule,
 } from '../types.js';
 import { commonChargeLedgerResolver } from './common.resolver.js';
+
+// Resolve a ledger record's local currency from its OWNING business, so
+// multi-business reads format each record in the right currency. Falls back to
+// the request's primary business when the per-business preference is missing.
+async function recordLocalCurrency(
+  injector: Injector,
+  ownerId: string | null | undefined,
+): Promise<Currency> {
+  if (ownerId) {
+    const currency = await injector
+      .get(ScopeProvider)
+      .getBusinessPreference(ownerId, 'defaultLocalCurrency');
+    if (currency) {
+      return currency;
+    }
+  }
+  const { defaultLocalCurrency } = await injector
+    .get(AdminContextProvider)
+    .getVerifiedAdminContext();
+  return defaultLocalCurrency;
+}
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
   Query: {
@@ -371,29 +395,21 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         ? null
         : formatFinancialAmount(DbLedgerRecord.credit_foreign_amount2, DbLedgerRecord.currency),
     localCurrencyDebitAmount1: async (DbLedgerRecord, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await recordLocalCurrency(injector, DbLedgerRecord.owner_id);
       return formatFinancialAmount(DbLedgerRecord.debit_local_amount1, defaultLocalCurrency);
     },
     localCurrencyDebitAmount2: async (DbLedgerRecord, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await recordLocalCurrency(injector, DbLedgerRecord.owner_id);
       return DbLedgerRecord.debit_local_amount2 == null
         ? null
         : formatFinancialAmount(DbLedgerRecord.debit_local_amount2, defaultLocalCurrency);
     },
     localCurrencyCreditAmount1: async (DbLedgerRecord, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await recordLocalCurrency(injector, DbLedgerRecord.owner_id);
       return formatFinancialAmount(DbLedgerRecord.credit_local_amount1, defaultLocalCurrency);
     },
     localCurrencyCreditAmount2: async (DbLedgerRecord, _, { injector }) => {
-      const { defaultLocalCurrency } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
+      const defaultLocalCurrency = await recordLocalCurrency(injector, DbLedgerRecord.owner_id);
       return DbLedgerRecord.credit_local_amount2 == null
         ? null
         : formatFinancialAmount(DbLedgerRecord.credit_local_amount2, defaultLocalCurrency);

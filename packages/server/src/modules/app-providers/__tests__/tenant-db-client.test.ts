@@ -48,6 +48,7 @@ describe('TenantAwareDBClient', () => {
         businessId: 'business-456',
         roleId: 'admin',
       },
+      activeReadScope: { businessIds: ['business-456'] },
     };
 
     const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextProvider;
@@ -250,13 +251,14 @@ describe('TenantAwareDBClient', () => {
         'business-456',
         'user-123',
         'jwt',
+        '{"business-456"}',
       ];
-      
+
       // Find the call that sets variables
-      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) => 
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
         call[0].includes("set_config('app.current_business_id', $1, true)")
       );
-      
+
       expect(setCall).toBeDefined();
       expect(setCall![1]).toEqual(expectedVars);
     });
@@ -267,6 +269,58 @@ describe('TenantAwareDBClient', () => {
       (tenantDBClient as any).authContextInitialized = true;
 
       await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
+    });
+
+    it('sets the write target and the read-scope array session variables', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes('set_config('),
+      );
+
+      expect(setCall).toBeDefined();
+      const sql = setCall![0] as string;
+      expect(sql).toContain("set_config('app.current_business_id', $1, true)");
+      expect(sql).toContain("set_config('app.current_user_id', $2, true)");
+      expect(sql).toContain("set_config('app.auth_type', $3, true)");
+      expect(sql).toContain("set_config('app.current_business_scope', $4, true)");
+      expect(setCall![1]).toHaveLength(4);
+    });
+
+    it('serializes a multi-business read scope as a Postgres array literal', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        activeReadScope: { businessIds: ['business-456', 'business-789'] },
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_scope', $4, true)"),
+      );
+      expect(setCall).toBeDefined();
+      expect(setCall![1][3]).toBe('{"business-456","business-789"}');
+    });
+
+    it('passes an empty read scope when none is resolved (DB falls back to single business)', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        activeReadScope: undefined,
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_scope', $4, true)"),
+      );
+      expect(setCall).toBeDefined();
+      expect(setCall![1][3]).toBe('');
     });
   });
 });

@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { generateReport } from '@accounter/shaam6111-generator';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import {
   convertLocalReportDataToShaam6111ReportData,
@@ -11,8 +12,17 @@ import type { ReportsModule } from '../types.js';
 export const shaam6111Resolvers: ReportsModule.Resolvers = {
   Query: {
     shaam6111: async (_, { year, businessId: requestedBusinessId }, { injector }) => {
-      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-      const businessId = requestedBusinessId ?? ownerId;
+      // Per-business report: a requested business must be within the read scope;
+      // default to the request's primary business otherwise.
+      let businessId: string;
+      if (requestedBusinessId) {
+        // Validates the id is within the read scope (throws otherwise).
+        await injector.get(ScopeProvider).getReadScope([requestedBusinessId]);
+        businessId = requestedBusinessId;
+      } else {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        businessId = ownerId;
+      }
       const reportData = await getShaam6111Data(injector, businessId, year);
 
       return {

@@ -5,6 +5,7 @@ import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
 import { isInvoice, isReceipt } from '../../documents/helpers/common.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
@@ -226,10 +227,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
           }),
         );
 
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        const readScope = await injector.get(ScopeProvider).getReadScope();
 
         const pageCharges = charges
-          .filter(charge => charge.owner_id === ownerId)
+          .filter(charge => !!charge.owner_id && readScope.includes(charge.owner_id))
           .sort((chargeA, chargeB) => {
             const dateA =
               (

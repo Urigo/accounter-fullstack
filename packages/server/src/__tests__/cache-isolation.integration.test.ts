@@ -35,6 +35,7 @@ import { BalanceReportProvider } from '../modules/reports/providers/balance-repo
 import { BankDepositChargesProvider } from '../modules/bank-deposits/providers/bank-deposit-charges.provider.js';
 import { ChargeSpreadProvider } from '../modules/charges/providers/charge-spread.provider.js';
 import { DeelContractsProvider } from '../modules/deel/providers/deel-contracts.provider.js';
+import { ContractsProvider } from '../modules/contracts/providers/contracts.provider.js';
 import { BalanceCancellationProvider } from '../modules/ledger/providers/balance-cancellation.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
 import { EmployeesProvider } from '../modules/salaries/providers/employees.provider.js';
@@ -65,6 +66,7 @@ describe('Cache Isolation Integration', () => {
       ChargeTagsProvider,
       DeelInvoicesProvider,
       DeelContractsProvider,
+      ContractsProvider,
       ChargesProvider,
       ChargeSpreadProvider,
       CryptoExchangeProvider,

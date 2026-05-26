@@ -1,8 +1,10 @@
 import { endOfYear, startOfYear } from 'date-fns';
+import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { CountriesProvider } from '../../countries/providers/countries.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
@@ -31,15 +33,32 @@ interface NormalizedRecord {
 export const annualRevenueResolvers: ReportsModule.Resolvers = {
   Query: {
     annualRevenueReport: async (_, { filters: { year, adminBusinessId } }, { injector }) => {
-      const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-      const ownerId = adminBusinessId ?? adminContext.ownerId;
+      // Per-business report: validate an explicitly requested business against
+      // the read scope and use its admin context; default to the primary.
+      let targetAdminContext;
+      if (adminBusinessId) {
+        // Validates the id is within the read scope (throws otherwise), so the
+        // requested id can be used directly.
+        await injector.get(ScopeProvider).getReadScope([adminBusinessId]);
+        targetAdminContext = await injector
+          .get(AdminContextProvider)
+          .adminContextByOwnerIdLoader.load(adminBusinessId);
+        if (!targetAdminContext) {
+          throw new GraphQLError('Admin context not found for the requested business', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+      } else {
+        targetAdminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      }
+      const ownerId = targetAdminContext.ownerId;
       const incomeTaxCategories = await injector
         .get(TaxCategoriesProvider)
         .taxCategoriesBySortCodeLoader.load(810);
       const date = new Date(year, 6, 1);
       const records = await injector.get(AnnualRevenueReportProvider).getNormalizedRevenueRecords({
         incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
-        incomeToCollectId: adminContext.crossYear.incomeToCollectTaxCategoryId,
+        incomeToCollectId: targetAdminContext.crossYear.incomeToCollectTaxCategoryId,
         ownerId,
         fromDate: dateToTimelessDateString(startOfYear(date)),
         toDate: dateToTimelessDateString(endOfYear(date)),

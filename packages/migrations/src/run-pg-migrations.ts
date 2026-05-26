@@ -179,6 +179,8 @@ import migration_2026_05_24T10_00_00_support_uah_currency from './actions/2026-0
 import migration_2026_05_24T11_00_00_revert_uah_currency from './actions/2026-05-24T11-00-00.revert-uah-currency.js';
 import migration_2026_05_24T12_00_00_add_otsar_hahayal_creditcard_transactions from './actions/2026-05-24T12-00-00.add-otsar-hahayal-creditcard-transactions.js';
 import migration_2026_05_24T13_00_00_update_otsar_hahayal_handlers from './actions/2026-05-24T13-00-00.update-otsar-hahayal-handlers.js';
+import migration_2026_05_25T10_00_00_rls_multi_business_scope from './actions/2026-05-25T10-00-00.rls-multi-business-scope.js';
+import migration_2026_05_26T10_00_00_rls_delete_write_target from './actions/2026-05-26T10-00-00.rls-delete-write-target.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -362,6 +364,8 @@ export const MIGRATIONS = [
   migration_2026_05_24T11_00_00_revert_uah_currency,
   migration_2026_05_24T12_00_00_add_otsar_hahayal_creditcard_transactions,
   migration_2026_05_24T13_00_00_update_otsar_hahayal_handlers,
+  migration_2026_05_25T10_00_00_rls_multi_business_scope,
+  migration_2026_05_26T10_00_00_rls_delete_write_target,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
