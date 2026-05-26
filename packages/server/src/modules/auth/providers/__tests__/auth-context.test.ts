@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as jose from 'jose';
+import { GraphQLError } from 'graphql';
 import { AuthContextProvider, handleDevBypassAuth } from '../auth-context.provider.js';
 import type { DBProvider } from '../../../app-providers/db.provider.js';
 
@@ -255,19 +256,25 @@ describe('AuthContextProvider read-scope resolution', () => {
   });
 
   it('rejects a requested scope outside the user memberships', async () => {
-    const result = await makeJwtProvider(membershipRows, {
-      kind: 'valid',
-      businessIds: ['b-1', 'b-999'],
-    }).getAuthContext();
-    expect(result).toBeNull();
+    await expect(
+      makeJwtProvider(membershipRows, {
+        kind: 'valid',
+        businessIds: ['b-1', 'b-999'],
+      }).getAuthContext(),
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN' },
+    });
   });
 
   it('rejects a malformed scope header', async () => {
-    const result = await makeJwtProvider(membershipRows, {
-      kind: 'invalid',
-      errors: [{ code: 'INVALID_UUID', value: 'nope' }],
-    }).getAuthContext();
-    expect(result).toBeNull();
+    await expect(
+      makeJwtProvider(membershipRows, {
+        kind: 'invalid',
+        errors: [{ code: 'INVALID_UUID', value: 'nope' }],
+      }).getAuthContext(),
+    ).rejects.toMatchObject({
+      extensions: { code: 'FORBIDDEN' },
+    });
   });
 
   it('does not expand scope beyond memberships (no super-admin auto-expansion)', async () => {
