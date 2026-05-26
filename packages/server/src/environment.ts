@@ -60,23 +60,6 @@ const CloudinaryModel = zod.union([
   zod.void(),
 ]);
 
-const GreenInvoiceModel = zod.union([
-  zod
-    .object({
-      GREEN_INVOICE_ID: zod.string().optional(),
-      GREEN_INVOICE_SECRET: zod.string().optional(),
-    })
-    .superRefine((data, ctx) => {
-      if (!!data.GREEN_INVOICE_ID !== !!data.GREEN_INVOICE_SECRET) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'GREEN_INVOICE_ID and GREEN_INVOICE_SECRET must be provided together.',
-        });
-      }
-    }),
-  zod.void(),
-]);
-
 const HiveModel = zod.union([
   zod.object({
     HIVE_TOKEN: zod.string().optional(),
@@ -87,13 +70,6 @@ const HiveModel = zod.union([
 const GoogleDriveModel = zod.union([
   zod.object({
     GOOGLE_DRIVE_API_KEY: zod.string().optional(),
-  }),
-  zod.void(),
-]);
-
-const DeelModel = zod.union([
-  zod.object({
-    DEEL_TOKEN: zod.string().optional(),
   }),
   zod.void(),
 ]);
@@ -203,11 +179,9 @@ const Auth0Model = zod.union([
 const configs = {
   postgres: PostgresModel.safeParse(process.env),
   cloudinary: CloudinaryModel.safeParse(process.env),
-  greenInvoice: GreenInvoiceModel.safeParse(process.env),
   hive: HiveModel.safeParse(process.env),
   googleDrive: GoogleDriveModel.safeParse(process.env),
   auth0: Auth0Model.safeParse(process.env),
-  deel: DeelModel.safeParse(process.env),
   credentials: CredentialsModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
   otel: OtelModel.safeParse(process.env),
@@ -236,11 +210,9 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 
 const postgres = extractConfig(configs.postgres);
 const cloudinary = extractConfig(configs.cloudinary);
-const greenInvoice = extractConfig(configs.greenInvoice);
 const hive = extractConfig(configs.hive);
 const googleDrive = extractConfig(configs.googleDrive);
 const auth0 = extractConfig(configs.auth0);
-const deel = extractConfig(configs.deel);
 const credentials = extractConfig(configs.credentials);
 const general = extractConfig(configs.general);
 const otel = extractConfig(configs.otel);
@@ -262,12 +234,6 @@ export const env = {
         apiSecret: cloudinary.CLOUDINARY_API_SECRET!,
       }
     : undefined,
-  greenInvoice: greenInvoice?.GREEN_INVOICE_ID
-    ? {
-        id: greenInvoice.GREEN_INVOICE_ID!,
-        secret: greenInvoice.GREEN_INVOICE_SECRET!,
-      }
-    : undefined,
   hive: hive?.HIVE_TOKEN
     ? {
         hiveToken: hive.HIVE_TOKEN!,
@@ -276,11 +242,6 @@ export const env = {
   googleDrive: googleDrive?.GOOGLE_DRIVE_API_KEY
     ? {
         driveApiKey: googleDrive.GOOGLE_DRIVE_API_KEY!,
-      }
-    : undefined,
-  deel: deel?.DEEL_TOKEN
-    ? {
-        apiToken: deel.DEEL_TOKEN!,
       }
     : undefined,
   credentialsEncryptionKey: credentials.CREDENTIALS_ENCRYPTION_KEY,
