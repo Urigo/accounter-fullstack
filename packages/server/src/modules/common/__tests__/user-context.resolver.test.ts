@@ -18,7 +18,7 @@ function buildInjector(authContext: AuthContextValue, adminContext: AdminContext
 
 async function runResolver(authContext: AuthContextValue, adminContext: AdminContextFixture) {
   const { injector, adminProvider } = buildInjector(authContext, adminContext);
-  const resolver = userContextResolvers.Query!.userContext as (
+  const resolver = userContextResolvers.Query!.userContext as unknown as (
     parent: unknown,
     args: unknown,
     context: { injector: { get: (token: unknown) => unknown } },
