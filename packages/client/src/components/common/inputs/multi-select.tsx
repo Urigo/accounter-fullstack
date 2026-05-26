@@ -208,7 +208,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                         {option?.label}
                         {removeButton && (
                           <Button
-                            className="h-4 w-4"
+                            className="h-4 w-4  p-0"
                             variant="link"
                             onClick={event => {
                               event.stopPropagation();
@@ -233,7 +233,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                       {`+ ${selectedValues.length - maxCount} more`}
                       {removeButton && (
                         <Button
-                          className="h-4 w-4"
+                          className="h-4 w-4 p-0"
                           variant="link"
                           onClick={event => {
                             event.stopPropagation();

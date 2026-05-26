@@ -98,11 +98,11 @@ describe('AdminContext DI Integration', () => {
     expect(context.ownerId).toBe(scopedOwnerId);
   });
 
-  it('falls back to primary tenant business for multi-business scope', async () => {
+  it('prefers primary tenant business when it is inside multi-business scope', async () => {
     const primaryOwnerId = 'owner-primary';
     const { provider } = createProvider({
       businessId: primaryOwnerId,
-      activeReadScopeBusinessIds: ['owner-scoped-a', 'owner-scoped-b'],
+      activeReadScopeBusinessIds: ['owner-scoped-a', primaryOwnerId, 'owner-scoped-b'],
       rowsByOwnerId: {
         [primaryOwnerId]: {
           owner_id: primaryOwnerId,
@@ -116,6 +116,27 @@ describe('AdminContext DI Integration', () => {
 
     const context = await provider.getVerifiedAdminContext();
     expect(context.ownerId).toBe(primaryOwnerId);
+  });
+
+  it('falls back to first scoped business when primary tenant business is outside scope', async () => {
+    const primaryOwnerId = 'owner-primary';
+    const firstScopedOwnerId = 'owner-scoped-a';
+    const { provider } = createProvider({
+      businessId: primaryOwnerId,
+      activeReadScopeBusinessIds: [firstScopedOwnerId, 'owner-scoped-b'],
+      rowsByOwnerId: {
+        [firstScopedOwnerId]: {
+          owner_id: firstScopedOwnerId,
+          default_local_currency: 'USD',
+          default_fiat_currency_for_crypto_conversions: 'USD',
+          date_established: null,
+          initial_accounter_year: null,
+        },
+      },
+    });
+
+    const context = await provider.getVerifiedAdminContext();
+    expect(context.ownerId).toBe(firstScopedOwnerId);
   });
 
   it('isolates admin context between concurrent requests', async () => {

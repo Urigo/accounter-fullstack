@@ -14,11 +14,15 @@ export const userContextResolvers: CommonModule.Resolvers = {
         (authContext?.memberships ?? [])
           .filter(membership => membership.businessId)
           .map(async m => {
-            const financialEntity = await injector
-              .get(FinancialEntitiesProvider)
-              .getFinancialEntityByIdLoader.load(m.businessId);
-            if (financialEntity?.name) {
-              businessNamesMap.set(m.businessId, financialEntity.name);
+            try {
+              const financialEntity = await injector
+                .get(FinancialEntitiesProvider)
+                .getFinancialEntityByIdLoader.load(m.businessId);
+              if (financialEntity?.name) {
+                businessNamesMap.set(m.businessId, financialEntity.name);
+              }
+            } catch (error) {
+              console.error(`Failed to load financial entity for business ${m.businessId}:`, error);
             }
           }),
       );

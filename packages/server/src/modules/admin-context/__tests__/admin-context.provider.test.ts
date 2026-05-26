@@ -79,7 +79,7 @@ describe('AdminContextProvider', () => {
     expect(result.ownerId).toBe(scopedOwnerId);
   });
 
-  it('should fallback to primary tenant business for multi-business active scope', async () => {
+  it('should prefer primary tenant business when it is inside multi-business active scope', async () => {
     const primaryOwnerId = 'primary-owner-id';
 
     authContextProvider.getAuthContext.mockResolvedValue({
@@ -88,7 +88,7 @@ describe('AdminContextProvider', () => {
         businessId: primaryOwnerId,
       },
       activeReadScope: {
-        businessIds: ['scope-owner-a', 'scope-owner-b'],
+        businessIds: ['scope-owner-a', primaryOwnerId, 'scope-owner-b'],
       },
     } as AuthContext);
 
@@ -104,6 +104,34 @@ describe('AdminContextProvider', () => {
 
     const result = await provider.getVerifiedAdminContext();
     expect(result.ownerId).toBe(primaryOwnerId);
+  });
+
+  it('should fallback to first scoped business when primary tenant business is outside active scope', async () => {
+    const primaryOwnerId = 'primary-owner-id';
+    const firstScopedOwnerId = 'scope-owner-a';
+
+    authContextProvider.getAuthContext.mockResolvedValue({
+      authType: 'jwt',
+      tenant: {
+        businessId: primaryOwnerId,
+      },
+      activeReadScope: {
+        businessIds: [firstScopedOwnerId, 'scope-owner-b'],
+      },
+    } as AuthContext);
+
+    dbProvider.query.mockImplementation((_statement, values) => {
+      const serializedValues = JSON.stringify(values ?? []);
+      if (serializedValues.includes(firstScopedOwnerId)) {
+        return Promise.resolve(
+          asQueryResult([{ owner_id: firstScopedOwnerId, default_local_currency: 'USD' }]),
+        );
+      }
+      return Promise.resolve(asQueryResult([]));
+    });
+
+    const result = await provider.getVerifiedAdminContext();
+    expect(result.ownerId).toBe(firstScopedOwnerId);
   });
 
   it('should use single-business active scope when updating admin context', async () => {

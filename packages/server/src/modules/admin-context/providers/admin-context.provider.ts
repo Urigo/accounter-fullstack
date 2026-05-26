@@ -503,7 +503,9 @@ export class AdminContextProvider {
   /**
    * Resolve the owner business for this request.
    * - Single-business read scope selects that business.
-   * - Multi/no scope falls back to the primary tenant business.
+   * - Multi-business scope prefers the primary tenant business only when it is
+   *   part of the scope; otherwise the first scoped business is used.
+   * - No scope falls back to the primary tenant business.
    */
   private async resolveOwnerIdForRequest(): Promise<string> {
     await this.ensureAuthContext();
@@ -515,9 +517,20 @@ export class AdminContextProvider {
       );
     }
 
-    const scopedBusinessIds = this.authContext.activeReadScope?.businessIds ?? [];
-    const ownerId =
-      scopedBusinessIds.length === 1 ? scopedBusinessIds[0] : this.authContext.tenant.businessId;
+    const scopedBusinessIds = this.authContext.activeReadScope?.businessIds;
+    const primaryOwnerId = this.authContext.tenant.businessId;
+
+    let ownerId = primaryOwnerId;
+    if (scopedBusinessIds && scopedBusinessIds.length > 0) {
+      if (scopedBusinessIds.length === 1) {
+        ownerId = scopedBusinessIds[0];
+      } else {
+        ownerId =
+          primaryOwnerId && scopedBusinessIds.includes(primaryOwnerId)
+            ? primaryOwnerId
+            : scopedBusinessIds[0];
+      }
+    }
 
     if (!ownerId) {
       throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
