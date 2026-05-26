@@ -7,6 +7,9 @@ import type { AuthContext } from '../../../shared/types/auth.js';
 
 type QueryResultWithRows<T extends QueryResultRow = QueryResultRow> = QueryResult<T> & {rowCount: number};
 
+const asQueryResult = (rows: QueryResultRow[]): QueryResultWithRows =>
+  ({ rows, rowCount: rows.length }) as unknown as QueryResultWithRows;
+
 describe('AdminContextProvider', () => {
   let provider: AdminContextProvider;
   let dbProvider: Mocked<TenantAwareDBClient>;
@@ -46,6 +49,119 @@ describe('AdminContextProvider', () => {
     expect(result).toBeDefined();
     expect(result?.defaultLocalCurrency).toBe('USD');
     expect(dbProvider.query).toHaveBeenCalled();
+  });
+
+  it('should prefer single-business active scope over primary tenant business', async () => {
+    const scopedOwnerId = 'scoped-owner-id';
+    const primaryOwnerId = 'primary-owner-id';
+
+    authContextProvider.getAuthContext.mockResolvedValue({
+      authType: 'jwt',
+      tenant: {
+        businessId: primaryOwnerId,
+      },
+      activeReadScope: {
+        businessIds: [scopedOwnerId],
+      },
+    } as AuthContext);
+
+    dbProvider.query.mockImplementation((_statement, values) => {
+      const serializedValues = JSON.stringify(values ?? []);
+      if (serializedValues.includes(scopedOwnerId)) {
+        return Promise.resolve(
+          asQueryResult([{ owner_id: scopedOwnerId, default_local_currency: 'USD' }]),
+        );
+      }
+      return Promise.resolve(asQueryResult([]));
+    });
+
+    const result = await provider.getVerifiedAdminContext();
+    expect(result.ownerId).toBe(scopedOwnerId);
+  });
+
+  it('should prefer primary tenant business when it is inside multi-business active scope', async () => {
+    const primaryOwnerId = 'primary-owner-id';
+
+    authContextProvider.getAuthContext.mockResolvedValue({
+      authType: 'jwt',
+      tenant: {
+        businessId: primaryOwnerId,
+      },
+      activeReadScope: {
+        businessIds: ['scope-owner-a', primaryOwnerId, 'scope-owner-b'],
+      },
+    } as AuthContext);
+
+    dbProvider.query.mockImplementation((_statement, values) => {
+      const serializedValues = JSON.stringify(values ?? []);
+      if (serializedValues.includes(primaryOwnerId)) {
+        return Promise.resolve(
+          asQueryResult([{ owner_id: primaryOwnerId, default_local_currency: 'USD' }]),
+        );
+      }
+      return Promise.resolve(asQueryResult([]));
+    });
+
+    const result = await provider.getVerifiedAdminContext();
+    expect(result.ownerId).toBe(primaryOwnerId);
+  });
+
+  it('should fallback to first scoped business when primary tenant business is outside active scope', async () => {
+    const primaryOwnerId = 'primary-owner-id';
+    const firstScopedOwnerId = 'scope-owner-a';
+
+    authContextProvider.getAuthContext.mockResolvedValue({
+      authType: 'jwt',
+      tenant: {
+        businessId: primaryOwnerId,
+      },
+      activeReadScope: {
+        businessIds: [firstScopedOwnerId, 'scope-owner-b'],
+      },
+    } as AuthContext);
+
+    dbProvider.query.mockImplementation((_statement, values) => {
+      const serializedValues = JSON.stringify(values ?? []);
+      if (serializedValues.includes(firstScopedOwnerId)) {
+        return Promise.resolve(
+          asQueryResult([{ owner_id: firstScopedOwnerId, default_local_currency: 'USD' }]),
+        );
+      }
+      return Promise.resolve(asQueryResult([]));
+    });
+
+    const result = await provider.getVerifiedAdminContext();
+    expect(result.ownerId).toBe(firstScopedOwnerId);
+  });
+
+  it('should use single-business active scope when updating admin context', async () => {
+    const scopedOwnerId = 'scoped-owner-id';
+    const primaryOwnerId = 'primary-owner-id';
+
+    authContextProvider.getAuthContext.mockResolvedValue({
+      authType: 'jwt',
+      tenant: {
+        businessId: primaryOwnerId,
+      },
+      activeReadScope: {
+        businessIds: [scopedOwnerId],
+      },
+    } as AuthContext);
+
+    dbProvider.query.mockImplementation((_statement, values) => {
+      const serializedValues = JSON.stringify(values ?? []);
+      if (serializedValues.includes(scopedOwnerId)) {
+        return Promise.resolve(
+          asQueryResult([{ owner_id: scopedOwnerId, default_local_currency: 'EUR' }]),
+        );
+      }
+      return Promise.resolve(asQueryResult([]));
+    });
+
+    const result = await provider.updateAdminContext({ defaultLocalCurrency: 'EUR' });
+
+    expect(result?.ownerId).toBe(scopedOwnerId);
+    expect(result?.defaultLocalCurrency).toBe('EUR');
   });
 
   it('should cache the result', async () => {

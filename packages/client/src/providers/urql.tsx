@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import {
   createClient,
   fetchExchange,
@@ -34,9 +34,19 @@ type AccessTokenProvider = (options?: {
   cacheMode?: TokenCacheMode;
 }) => Promise<AccessTokenProviderResult>;
 
+const BUSINESS_SCOPE_LS_KEY = 'urql:businessScope';
+
 let accessTokenProvider: AccessTokenProvider | null = null;
 let bearerToken: string | null = null;
 let loginRedirectInProgress = false;
+let businessScope: string | null = (() => {
+  try {
+    return localStorage.getItem(BUSINESS_SCOPE_LS_KEY);
+  } catch {
+    return null;
+  }
+})();
+let onClientReset: ((client: Client) => void) | null = null;
 
 export function setUrqlAccessTokenProvider(provider: AccessTokenProvider | null): void {
   accessTokenProvider = provider;
@@ -44,6 +54,26 @@ export function setUrqlAccessTokenProvider(provider: AccessTokenProvider | null)
     bearerToken = null;
     loginRedirectInProgress = false;
   }
+}
+
+export function getBusinessScopeIds(): string[] {
+  if (!businessScope) return [];
+  return businessScope.split(',');
+}
+
+export function setBusinessScope(ids: string[]): void {
+  businessScope = ids.length > 0 ? ids.join(',') : null;
+  try {
+    if (businessScope) {
+      localStorage.setItem(BUSINESS_SCOPE_LS_KEY, businessScope);
+    } else {
+      localStorage.removeItem(BUSINESS_SCOPE_LS_KEY);
+    }
+  } catch {
+    // ignore
+  }
+  resetUrqlClient();
+  onClientReset?.(getUrqlClient());
 }
 
 function normalizeAccessTokenResult(result: AccessTokenProviderResult): AccessTokenResolution {
@@ -188,17 +218,18 @@ export function getUrqlClient(): Client {
                 return operation;
               }
 
-              return utils.appendHeaders(operation, {
-                'X-Dev-Auth': devAuthUserId,
-              });
+              const devHeaders: Record<string, string> = { 'X-Dev-Auth': devAuthUserId };
+              if (businessScope) devHeaders['x-business-scope'] = businessScope;
+              return utils.appendHeaders(operation, devHeaders);
             }
 
             if (!bearerToken) {
               return operation;
             }
-            return utils.appendHeaders(operation, {
-              Authorization: bearerToken,
-            });
+
+            const headers: Record<string, string> = { Authorization: bearerToken };
+            if (businessScope) headers['x-business-scope'] = businessScope;
+            return utils.appendHeaders(operation, headers);
           },
           didAuthError(error): boolean {
             return (
@@ -258,5 +289,14 @@ export function resetUrqlClient(): void {
 }
 
 export function UrqlProvider({ children }: { children?: ReactNode }): ReactNode {
-  return <Provider value={getUrqlClient()}>{children}</Provider>;
+  const [client, setClient] = useState(getUrqlClient);
+
+  useEffect(() => {
+    onClientReset = setClient;
+    return () => {
+      if (onClientReset === setClient) onClientReset = null;
+    };
+  }, []);
+
+  return <Provider value={client}>{children}</Provider>;
 }

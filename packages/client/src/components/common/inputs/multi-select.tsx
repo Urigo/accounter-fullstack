@@ -1,12 +1,6 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
-import {
-  CheckIcon,
-  ChevronDown,
-  WandSparkles,
-  // XCircle,
-  XIcon,
-} from 'lucide-react';
+import { CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
@@ -109,6 +103,12 @@ interface MultiSelectProps
    * Optional, can be used to add custom styles.
    */
   className?: string;
+
+  /**
+   * If true, renders a remove button for each selected option.
+   * Optional, defaults to false.
+   */
+  removeButton?: boolean;
 }
 
 export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>(
@@ -124,6 +124,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
       modalPopover = false,
       asChild = false,
       className,
+      removeButton,
       ...props
     },
     ref,
@@ -160,11 +161,11 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
       setIsPopoverOpen(prev => !prev);
     };
 
-    // const clearExtraOptions = () => {
-    //   const newSelectedValues = selectedValues.slice(0, maxCount);
-    //   setSelectedValues(newSelectedValues);
-    //   onValueChange(newSelectedValues);
-    // };
+    const clearExtraOptions = () => {
+      const newSelectedValues = selectedValues.slice(0, maxCount);
+      setSelectedValues(newSelectedValues);
+      onValueChange(newSelectedValues);
+    };
 
     const toggleAll = () => {
       if (selectedValues.length === options.length) {
@@ -205,13 +206,18 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                       >
                         {IconComponent && <IconComponent className="h-4 w-4 mr-2" />}
                         {option?.label}
-                        {/* <XCircle
-                          className="ml-2 h-4 w-4 cursor-pointer"
-                          onClick={event => {
-                            event.stopPropagation();
-                            toggleOption(value);
-                          }}
-                        /> */}
+                        {removeButton && (
+                          <Button
+                            className="h-4 w-4  p-0"
+                            variant="link"
+                            onClick={event => {
+                              event.stopPropagation();
+                              toggleOption(value);
+                            }}
+                          >
+                            <XCircle className="h-4 w-4 cursor-pointer" />
+                          </Button>
+                        )}
                       </Badge>
                     );
                   })}
@@ -225,13 +231,18 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                       style={{ animationDuration: `${animation}s` }}
                     >
                       {`+ ${selectedValues.length - maxCount} more`}
-                      {/* <XCircle
-                        className="ml-2 h-4 w-4 cursor-pointer"
-                        onClick={event => {
-                          event.stopPropagation();
-                          clearExtraOptions();
-                        }}
-                      /> */}
+                      {removeButton && (
+                        <Button
+                          className="h-4 w-4 p-0"
+                          variant="link"
+                          onClick={event => {
+                            event.stopPropagation();
+                            clearExtraOptions();
+                          }}
+                        >
+                          <XCircle className="h-4 w-4 cursor-pointer" />
+                        </Button>
+                      )}
                     </Badge>
                   )}
                 </div>
