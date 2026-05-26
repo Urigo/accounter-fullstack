@@ -1,23 +1,21 @@
 'use client';
 
 import { useCallback } from 'react';
-import { format } from 'date-fns';
 import { Plus, XIcon } from 'lucide-react';
 import { useFieldArray, useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input, Select } from '@mantine/core';
-import { DatePickerInput, DateTimePicker } from '@mantine/dates';
 import { Currency, type GenerateBalanceChargeMutationVariables } from '../../../gql/graphql.js';
-import { TIMELESS_DATE_REGEX } from '../../../helpers/index.js';
+import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../helpers/index.js';
 import { useGenerateBalanceCharge } from '../../../hooks/use-balance-charge.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { Button } from '../../ui/button.js';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog.js';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Label } from '../../ui/label.js';
-import { CurrencyInput } from '../index.js';
+import { CurrencyInput, DatePickerInput, DateTimePickerInput } from '../index.js';
 
 export function BalanceChargeModal({
   open,
@@ -290,46 +288,36 @@ function BalanceChargeForm({ onOpenChange }: { onOpenChange: (open: boolean) => 
                           },
                         }}
                         name={`balanceRecords.${index}.invoiceDate`}
-                        render={({ field: { value, ...field } }) => {
-                          const date = value ? new Date(value) : undefined;
-                          return (
-                            <FormItem>
-                              <FormControl>
-                                <DatePickerInput
-                                  {...field}
-                                  required
-                                  onChange={(date?: Date | string | null): void => {
-                                    const newDate = date
-                                      ? typeof date === 'string'
-                                        ? date
-                                        : format(date, 'yyyy-MM-dd')
-                                      : undefined;
-                                    if (newDate !== value) field.onChange(newDate);
-                                  }}
-                                  value={date}
-                                  valueFormat="DD/MM/YYYY"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          );
-                        }}
+                        render={({ field, fieldState }) => (
+                          <FormItem>
+                            <FormControl>
+                              <DatePickerInput
+                                required
+                                value={(field.value as TimelessDateString) || undefined}
+                                onChange={(date?: TimelessDateString | null): void => {
+                                  if (date !== field.value) field.onChange(date ?? undefined);
+                                }}
+                                aria-invalid={!!fieldState.error}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
 
                       <FormField
                         control={control}
                         name={`balanceRecords.${index}.valueDate`}
-                        render={({ field }) => (
+                        render={({ field, fieldState }) => (
                           <FormItem>
                             <FormControl>
-                              <DateTimePicker
-                                {...field}
-                                onPointerEnterCapture={(): void => {}}
-                                onPointerLeaveCapture={(): void => {}}
+                              <DateTimePickerInput
                                 required
-                                placeholder="Value Dates"
-                                valueFormat="DD/MM/YYYY HH:mm:ss"
-                                withSeconds
+                                value={field.value ?? null}
+                                onChange={(date?: Date | null): void => {
+                                  field.onChange(date ?? undefined);
+                                }}
+                                aria-invalid={!!fieldState.error}
                               />
                             </FormControl>
                             <FormMessage />
