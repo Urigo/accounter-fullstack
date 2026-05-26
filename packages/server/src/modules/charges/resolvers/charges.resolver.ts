@@ -124,6 +124,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
           asc: filters?.sortBy?.asc !== false,
           chargeType: filters?.chargesType,
           businessIds: filters?.byBusinesses,
+          businessTripIds: filters?.byBusinessTrips,
+          withMissingCounterparty: filters?.withMissingCounterparty,
           withoutInvoice: filters?.withoutInvoice,
           withoutReceipt: filters?.withoutReceipt,
           withoutDocuments: filters?.withoutDocuments,
@@ -138,14 +140,28 @@ export const chargesResolvers: ChargesModule.Resolvers &
           throw errorSimplifier('Error fetching charges', error);
         });
 
-      const pageCharges = charges.slice(page * limit, (page + 1) * limit);
+      // charge __typename is resolved dynamically, so filter by concrete type post-fetch
+      let filteredCharges = charges;
+      if (filters?.byChargeTypes?.length) {
+        const wantedTypes = new Set<string>(filters.byChargeTypes);
+        const chargeTypes = await Promise.all(
+          charges.map(charge =>
+            getChargeType(charge, injector).catch(error => {
+              throw errorSimplifier('Failed to determine charge type', error);
+            }),
+          ),
+        );
+        filteredCharges = charges.filter((_, index) => wantedTypes.has(chargeTypes[index]));
+      }
+
+      const pageCharges = filteredCharges.slice(page * limit, (page + 1) * limit);
 
       return {
         __typename: 'PaginatedCharges',
         nodes: pageCharges,
         pageInfo: {
-          totalPages: Math.ceil(charges.length / limit),
-          totalRecords: charges.length,
+          totalPages: Math.ceil(filteredCharges.length / limit),
+          totalRecords: filteredCharges.length,
         },
       };
     },
