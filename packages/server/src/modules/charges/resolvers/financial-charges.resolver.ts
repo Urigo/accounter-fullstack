@@ -20,13 +20,15 @@ import { commonChargeFields } from './common.js';
 // charge generation uses the correct per-business tax configuration.
 async function getWriteTargetAdminContext(injector: Injector, ownerId: string) {
   const target = await injector.get(ScopeProvider).resolveWriteTarget(ownerId);
-  const adminContext = await injector.get(AdminContextProvider).getAdminContextByOwnerId(target);
-  if (!adminContext) {
+  const targetAdminContext = await injector
+    .get(AdminContextProvider)
+    .adminContextByOwnerIdLoader.load(target);
+  if (!targetAdminContext) {
     throw new GraphQLError('Admin context not found for the target business', {
       extensions: { code: 'NOT_FOUND' },
     });
   }
-  return adminContext;
+  return targetAdminContext;
 }
 
 export const financialChargesResolvers: ChargesModule.Resolvers = {
@@ -35,21 +37,23 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
       // This report is shaped around a single business's tax categories. When a
       // business is requested explicitly, validate it is within the read scope
       // and use its admin context; otherwise default to the request's primary.
-      let adminContext;
+      let targetAdminContext;
       if (ownerId) {
         const [scopedId] = await injector.get(ScopeProvider).getReadScope([ownerId]);
-        adminContext = await injector.get(AdminContextProvider).getAdminContextByOwnerId(scopedId);
-        if (!adminContext) {
+        targetAdminContext = await injector
+          .get(AdminContextProvider)
+          .adminContextByOwnerIdLoader.load(scopedId);
+        if (!targetAdminContext) {
           throw new GraphQLError('Admin context not found for the requested business', {
             extensions: { code: 'NOT_FOUND' },
           });
         }
       } else {
-        adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        targetAdminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       }
 
       const charges = await injector.get(ChargesProvider).getChargesByFilters({
-        ownerIds: [adminContext.ownerId],
+        ownerIds: [targetAdminContext.ownerId],
         type: 'FINANCIAL',
         fromAnyDate: year,
         toAnyDate: year,
@@ -59,33 +63,33 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         id: `${year}-financial-charges`,
         revaluationCharge: charges.find(c =>
           c.business_array?.includes(
-            adminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
+            targetAdminContext.general.taxCategories.exchangeRevaluationTaxCategoryId,
           ),
         ),
         taxExpensesCharge: charges.find(c =>
-          c.business_array?.includes(adminContext.authorities.taxExpensesTaxCategoryId),
+          c.business_array?.includes(targetAdminContext.authorities.taxExpensesTaxCategoryId),
         ),
-        depreciationCharge: adminContext.depreciation.accumulatedDepreciationTaxCategoryId
+        depreciationCharge: targetAdminContext.depreciation.accumulatedDepreciationTaxCategoryId
           ? charges.find(c =>
               c.business_array?.includes(
-                adminContext.depreciation.accumulatedDepreciationTaxCategoryId!,
+                targetAdminContext.depreciation.accumulatedDepreciationTaxCategoryId!,
               ),
             )
           : null,
-        recoveryReserveCharge: adminContext.salaries.recoveryReserveTaxCategoryId
+        recoveryReserveCharge: targetAdminContext.salaries.recoveryReserveTaxCategoryId
           ? charges.find(c =>
-              c.business_array?.includes(adminContext.salaries.recoveryReserveTaxCategoryId!),
+              c.business_array?.includes(targetAdminContext.salaries.recoveryReserveTaxCategoryId!),
             )
           : null,
-        vacationReserveCharge: adminContext.salaries.vacationReserveTaxCategoryId
+        vacationReserveCharge: targetAdminContext.salaries.vacationReserveTaxCategoryId
           ? charges.find(c =>
-              c.business_array?.includes(adminContext.salaries.vacationReserveTaxCategoryId!),
+              c.business_array?.includes(targetAdminContext.salaries.vacationReserveTaxCategoryId!),
             )
           : null,
-        bankDepositsRevaluationCharge: adminContext.bankDeposits
+        bankDepositsRevaluationCharge: targetAdminContext.bankDeposits
           .bankDepositInterestIncomeTaxCategoryId
           ? charges.find(c =>
-              c.business_array?.includes(adminContext.bankDeposits.bankDepositBusinessId!),
+              c.business_array?.includes(targetAdminContext.bankDeposits.bankDepositBusinessId!),
             )
           : null,
       };
