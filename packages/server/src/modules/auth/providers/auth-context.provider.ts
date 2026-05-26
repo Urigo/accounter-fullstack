@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
@@ -172,7 +173,7 @@ export class AuthContextProvider {
    *   or if the header was malformed.
    * - API keys are pinned to their single business and ignore the header.
    */
-  private applyRequestedReadScope(context: AuthContext): AuthContext | null {
+  private applyRequestedReadScope(context: AuthContext): AuthContext {
     const memberships = context.memberships ?? [];
     const defaultScope = readScopeFromMemberships(memberships);
 
@@ -190,7 +191,9 @@ export class AuthContextProvider {
         errors: requested.errors,
         userId: context.user?.userId,
       });
-      return null;
+      throw new GraphQLError('X-Business-Scope header is malformed', {
+        extensions: { code: 'FORBIDDEN' },
+      });
     }
 
     const narrowed = narrowReadScope(memberships, requested.businessIds);
@@ -200,7 +203,9 @@ export class AuthContextProvider {
         allowed: memberships.map(m => m.businessId),
         userId: context.user?.userId,
       });
-      return null;
+      throw new GraphQLError('X-Business-Scope contains businesses outside your membership', {
+        extensions: { code: 'FORBIDDEN' },
+      });
     }
 
     return { ...context, activeReadScope: narrowed };
@@ -219,8 +224,11 @@ export class AuthContextProvider {
       this.handlingAuth = null;
       return scoped;
     } catch (error) {
-      console.error('AuthContext: Failed to process dev bypass auth', error);
       this.handlingAuth = null;
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      console.error('AuthContext: Failed to process dev bypass auth', error);
       return null;
     }
   }
@@ -238,8 +246,11 @@ export class AuthContextProvider {
       this.handlingAuth = null;
       return scoped;
     } catch (error) {
-      console.error('AuthContext: Failed to process API key', error);
       this.handlingAuth = null;
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      console.error('AuthContext: Failed to process API key', error);
       return null;
     }
   }
@@ -375,8 +386,11 @@ export class AuthContextProvider {
       this.handlingAuth = null;
       return scoped;
     } catch (error) {
-      console.error('AuthContext: Failed to process authentication token', error);
       this.handlingAuth = null;
+      if (error instanceof GraphQLError) {
+        throw error;
+      }
+      console.error('AuthContext: Failed to process authentication token', error);
       return null;
     }
   }
