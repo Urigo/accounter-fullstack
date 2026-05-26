@@ -6,11 +6,25 @@ import type { AuthContextProvider } from '../../auth/providers/auth-context.prov
 
 function createProvider(options: {
   businessId: string | null;
+  activeReadScopeBusinessIds?: string[];
   row?: Record<string, unknown>;
+  rowsByOwnerId?: Record<string, Record<string, unknown>>;
 }) {
-  const query = vi.fn().mockResolvedValue({
-    rows: options.row ? [options.row] : [],
-    rowCount: options.row ? 1 : 0,
+  const query = vi.fn().mockImplementation((_statement, values) => {
+    if (options.rowsByOwnerId) {
+      const serializedValues = JSON.stringify(values ?? []);
+      for (const [ownerId, row] of Object.entries(options.rowsByOwnerId)) {
+        if (serializedValues.includes(ownerId)) {
+          return Promise.resolve({ rows: [row], rowCount: 1 });
+        }
+      }
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    }
+
+    return Promise.resolve({
+      rows: options.row ? [options.row] : [],
+      rowCount: options.row ? 1 : 0,
+    });
   });
 
   const db = {
@@ -23,6 +37,13 @@ function createProvider(options: {
         ? {
             authType: 'jwt',
             tenant: { businessId: options.businessId },
+            ...(options.activeReadScopeBusinessIds
+              ? {
+                  activeReadScope: {
+                    businessIds: options.activeReadScopeBusinessIds,
+                  },
+                }
+              : {}),
           }
         : null,
     ),
@@ -54,6 +75,47 @@ describe('AdminContext DI Integration', () => {
     expect(context.defaultLocalCurrency).toBe('USD');
     expect(auth.getAuthContext).toHaveBeenCalledTimes(1);
     expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses single-business active scope as owner selection', async () => {
+    const primaryOwnerId = 'owner-primary';
+    const scopedOwnerId = 'owner-scoped';
+    const { provider } = createProvider({
+      businessId: primaryOwnerId,
+      activeReadScopeBusinessIds: [scopedOwnerId],
+      rowsByOwnerId: {
+        [scopedOwnerId]: {
+          owner_id: scopedOwnerId,
+          default_local_currency: 'USD',
+          default_fiat_currency_for_crypto_conversions: 'USD',
+          date_established: null,
+          initial_accounter_year: null,
+        },
+      },
+    });
+
+    const context = await provider.getVerifiedAdminContext();
+    expect(context.ownerId).toBe(scopedOwnerId);
+  });
+
+  it('falls back to primary tenant business for multi-business scope', async () => {
+    const primaryOwnerId = 'owner-primary';
+    const { provider } = createProvider({
+      businessId: primaryOwnerId,
+      activeReadScopeBusinessIds: ['owner-scoped-a', 'owner-scoped-b'],
+      rowsByOwnerId: {
+        [primaryOwnerId]: {
+          owner_id: primaryOwnerId,
+          default_local_currency: 'USD',
+          default_fiat_currency_for_crypto_conversions: 'USD',
+          date_established: null,
+          initial_accounter_year: null,
+        },
+      },
+    });
+
+    const context = await provider.getVerifiedAdminContext();
+    expect(context.ownerId).toBe(primaryOwnerId);
   });
 
   it('isolates admin context between concurrent requests', async () => {

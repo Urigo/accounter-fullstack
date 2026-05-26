@@ -1,6 +1,7 @@
 import type { BusinessMembership } from '../../../shared/types/auth.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import type { CommonModule } from '../types.js';
 
 export const userContextResolvers: CommonModule.Resolvers = {
@@ -8,11 +9,26 @@ export const userContextResolvers: CommonModule.Resolvers = {
     userContext: async (_, __, { injector }) => {
       const authContext = await injector.get(AuthContextProvider).getAuthContext();
 
+      const businessNamesMap = new Map<string, string>();
+      await Promise.all(
+        (authContext?.memberships ?? [])
+          .filter(membership => membership.businessId)
+          .map(async m => {
+            const financialEntity = await injector
+              .get(FinancialEntitiesProvider)
+              .getFinancialEntityByIdLoader.load(m.businessId);
+            if (financialEntity?.name) {
+              businessNamesMap.set(m.businessId, financialEntity.name);
+            }
+          }),
+      );
+
       const memberships = (authContext?.memberships ?? []).map(
         (membership: BusinessMembership) => ({
           businessId: membership.businessId,
           role: membership.roleId,
-          businessName: membership.businessName ?? null,
+          businessName:
+            membership.businessName ?? businessNamesMap.get(membership.businessId) ?? null,
         }),
       );
       const activeReadScope = authContext?.activeReadScope?.businessIds ?? [];

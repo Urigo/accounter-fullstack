@@ -444,20 +444,7 @@ export class AdminContextProvider {
       return this.cachedContext;
     }
 
-    await this.ensureAuthContext();
-
-    if (!this.authContext) {
-      throw new GraphQLError(
-        'Auth context not available. AdminContextProvider requires active authentication.',
-        { extensions: { code: 'UNAUTHENTICATED' } },
-      );
-    }
-
-    const ownerId = this.authContext.tenant.businessId;
-
-    if (!ownerId) {
-      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
-    }
+    const ownerId = await this.resolveOwnerIdForRequest();
 
     const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
     const context = contexts[0] ? this.normalizeContext(contexts[0]) : null;
@@ -482,20 +469,7 @@ export class AdminContextProvider {
   }
 
   public async updateAdminContext(params: IUpdateAdminContextParams): Promise<AdminContext | null> {
-    await this.ensureAuthContext();
-
-    if (!this.authContext) {
-      throw new GraphQLError(
-        'Auth context not available. AdminContextProvider requires active authentication.',
-        { extensions: { code: 'UNAUTHENTICATED' } },
-      );
-    }
-
-    const ownerId = this.authContext.tenant.businessId;
-
-    if (!ownerId) {
-      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
-    }
+    const ownerId = await this.resolveOwnerIdForRequest();
 
     this.cachedContext = null;
 
@@ -524,6 +498,32 @@ export class AdminContextProvider {
 
   public clearCache() {
     this.cachedContext = null;
+  }
+
+  /**
+   * Resolve the owner business for this request.
+   * - Single-business read scope selects that business.
+   * - Multi/no scope falls back to the primary tenant business.
+   */
+  private async resolveOwnerIdForRequest(): Promise<string> {
+    await this.ensureAuthContext();
+
+    if (!this.authContext) {
+      throw new GraphQLError(
+        'Auth context not available. AdminContextProvider requires active authentication.',
+        { extensions: { code: 'UNAUTHENTICATED' } },
+      );
+    }
+
+    const scopedBusinessIds = this.authContext.activeReadScope?.businessIds ?? [];
+    const ownerId =
+      scopedBusinessIds.length === 1 ? scopedBusinessIds[0] : this.authContext.tenant.businessId;
+
+    if (!ownerId) {
+      throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');
+    }
+
+    return ownerId;
   }
 
   /**

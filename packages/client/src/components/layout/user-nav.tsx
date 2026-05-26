@@ -4,8 +4,10 @@ import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
 import { UserContext } from '../../providers/index.js';
+import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
 import { ROUTES } from '../../router/routes.js';
 import { ConfirmationModal, LogoutButton, SyncDocumentsModal, Tooltip } from '../common/index.js';
+import { MultiSelect } from '../common/inputs/multi-select.js';
 import { BalanceChargeModal } from '../common/modals/balance-charge-modal.js';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar.js';
 import { Button } from '../ui/button.js';
@@ -23,6 +25,7 @@ export function UserNav(): JSX.Element | null {
   const { isAuthenticated, user } = useAuth0();
   const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
+  const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
   const { executeJobs } = useCornJobs();
 
   if (!isAuthenticated || !user) {
@@ -63,6 +66,17 @@ export function UserNav(): JSX.Element | null {
     .map(part => part[0]?.toUpperCase() + part.slice(1))
     .join(' ');
 
+  const businessOptions = (userContext?.context.memberships ?? []).map(m => ({
+    value: m.businessId,
+    label: m.businessName ?? 'Unknown',
+    description: m.businessId,
+  }));
+
+  function handleBusinessScopeChange(ids: string[]): void {
+    setSelectedBusinessIds(ids);
+    setBusinessScope(ids);
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -83,6 +97,24 @@ export function UserNav(): JSX.Element | null {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {businessOptions.length > 1 && (
+            <>
+              <DropdownMenuLabel className="font-normal">
+                <span className="text-xs text-muted-foreground">Business scope</span>
+              </DropdownMenuLabel>
+              <div className="px-2 pb-1">
+                <MultiSelect
+                  options={businessOptions}
+                  defaultValue={selectedBusinessIds}
+                  onValueChange={handleBusinessScopeChange}
+                  placeholder="All businesses"
+                  maxCount={2}
+                  className="text-xs"
+                />
+              </div>
+              <DropdownMenuSeparator />
+            </>
+          )}
           {userContext?.context.adminBusinessId && (
             <DropdownMenuItem asChild>
               <Link

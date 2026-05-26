@@ -1,17 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { userContextResolvers } from '../resolvers/user-context.resolver.js';
 
 type AdminContextFixture = Awaited<ReturnType<AdminContextProvider['getVerifiedAdminContext']>>;
 type AuthContextValue = Awaited<ReturnType<AuthContextProvider['getAuthContext']>>;
 
-
 function buildInjector(authContext: AuthContextValue, adminContext: AdminContextFixture) {
   const adminProvider = { getVerifiedAdminContext: vi.fn().mockResolvedValue(adminContext) };
   const authProvider = { getAuthContext: vi.fn().mockResolvedValue(authContext) };
+  const financialEntitiesProvider = {
+    getFinancialEntityByIdLoader: {
+      load: vi.fn().mockResolvedValue(null),
+    },
+  };
   const injector = {
-    get: vi.fn((token: unknown) => (token === AuthContextProvider ? authProvider : adminProvider)),
+    get: vi.fn((token: unknown) => {
+      if (token === AuthContextProvider) {
+        return authProvider;
+      }
+      if (token === FinancialEntitiesProvider) {
+        return financialEntitiesProvider;
+      }
+      return adminProvider;
+    }),
   };
   return { injector, adminProvider, authProvider };
 }
