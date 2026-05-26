@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 // module (outside admin-context itself) reintroduces an `adminContext.ownerId`
 // or `adminContext.defaultLocalCurrency` fallback.
 
-const MODULES_DIR = join(dirname(fileURLToPath(import.meta.url)), 'modules');
+const MODULES_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'modules');
 
 const FORBIDDEN = [/adminContext\\??\\.ownerId\\b/, /adminContext\\??\\.defaultLocalCurrency\\b/];
 
