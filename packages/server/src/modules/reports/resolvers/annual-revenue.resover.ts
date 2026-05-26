@@ -35,30 +35,30 @@ export const annualRevenueResolvers: ReportsModule.Resolvers = {
     annualRevenueReport: async (_, { filters: { year, adminBusinessId } }, { injector }) => {
       // Per-business report: validate an explicitly requested business against
       // the read scope and use its admin context; default to the primary.
-      let adminContext;
+      let targetAdminContext;
       if (adminBusinessId) {
         // Validates the id is within the read scope (throws otherwise), so the
         // requested id can be used directly.
         await injector.get(ScopeProvider).getReadScope([adminBusinessId]);
-        adminContext = await injector
+        targetAdminContext = await injector
           .get(AdminContextProvider)
-          .getAdminContextByOwnerId(adminBusinessId);
-        if (!adminContext) {
+          .adminContextByOwnerIdLoader.load(adminBusinessId);
+        if (!targetAdminContext) {
           throw new GraphQLError('Admin context not found for the requested business', {
             extensions: { code: 'NOT_FOUND' },
           });
         }
       } else {
-        adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+        targetAdminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
       }
-      const ownerId = adminContext.ownerId;
+      const ownerId = targetAdminContext.ownerId;
       const incomeTaxCategories = await injector
         .get(TaxCategoriesProvider)
         .taxCategoriesBySortCodeLoader.load(810);
       const date = new Date(year, 6, 1);
       const records = await injector.get(AnnualRevenueReportProvider).getNormalizedRevenueRecords({
         incomeTaxCategoriesIDs: incomeTaxCategories.map(tc => tc.id),
-        incomeToCollectId: adminContext.crossYear.incomeToCollectTaxCategoryId,
+        incomeToCollectId: targetAdminContext.crossYear.incomeToCollectTaxCategoryId,
         ownerId,
         fromDate: dateToTimelessDateString(startOfYear(date)),
         toDate: dateToTimelessDateString(endOfYear(date)),

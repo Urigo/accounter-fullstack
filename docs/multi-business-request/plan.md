@@ -206,3 +206,44 @@ contract cut and no temporary legacy field compatibility.
    `packages/modern-poalim-scraper` and other scrapers. They do not consume `adminBusinessId`
    directly today; if they ever start calling the GraphQL server with user context, the same gate
    applies.
+
+## Implementation Status
+
+Steps 1–15 of the blueprint are implemented (stacked PRs onto `multi-business-request`):
+
+- **1–5** auth foundations: baseline guardrails; membership/read-scope types; full membership
+  resolution across all auth paths; `X-Business-Scope` header parser; auth-context read-scope
+  resolution + validation.
+- **6** `resolveReadScopePrecedence` (args ⊆ header ⊆ memberships).
+- **7** RLS migration: `get_current_business_scope()` + read policies on the scope array, writes
+  pinned to `get_current_business_id()`.
+- **8** tenant DB client sets `app.current_business_scope`.
+- **9** hard-cut `userContext` to `memberships` + `activeReadScope` (single-business preference
+  fields nullable); client `user-provider` adapted.
+- **10** shared `ScopeProvider` (`getReadScope`, `resolveWriteTarget`, `getBusinessPreference`,
+  per-owner admin-context batched by a loader).
+- **11–14a** module migrations: charges, reports, ledger, salaries, transactions, green-invoice,
+  balance-report, charge-suggestions, tags — reads use the scope, writes validate explicit targets,
+  and per-record currency resolves from each row's owning business.
+- **15** cache-isolation audit + a `scope-guard` test enforcing zero `adminContext.ownerId` /
+  `adminContext.defaultLocalCurrency` references in modules (outside `admin-context`).
+
+### Residual risks / follow-ups
+
+1. **Write-target args not yet exposed.** Some mutations still derive the owner from the primary
+   admin context because they take no explicit `businessId` arg (e.g. `generateBalanceCharge`,
+   `addTag`, `insertOrUpdateSalaryRecords`, ledger entry points). Adding required args is a schema +
+   client change; tracked as a follow-up. Tenant safety is still enforced by RLS.
+2. **Client multi-business UI.** The server contract is hard-cut; `user-provider` derives a single
+   `adminBusinessId` from the active scope so existing single-business screens keep working. A real
+   multi-business client (business switcher, scoped filters) is a separate effort and gates
+   production rollout.
+3. **`user_context` table** remains keyed by a single `owner_id`; `userContext` preference fields
+   are null for multi-business scope. A `(user_id, business_id)` model is out of scope for this
+   phase.
+4. **Per-record currency fallback.** Ledger/VAT/salary rows resolve currency from the owning
+   business via `getBusinessPreference`, falling back to the primary business currency when a
+   business has no admin-context row.
+5. **RLS under superuser.** Integration tests connect as a Postgres superuser, which bypasses RLS,
+   so RLS row-filtering is verified via the policy definitions and the scope helper rather than
+   cross-connection visibility. Validate enforcement against a non-superuser role before rollout.
