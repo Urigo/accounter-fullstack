@@ -263,12 +263,32 @@ describe('TenantAwareDBClient', () => {
       expect(setCall![1]).toEqual(expectedVars);
     });
 
-    it('should throw if businessId is missing in auth context', async () => {
+    it('should throw if businessId is missing in auth context and no single-scoped business', async () => {
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
-      (tenantDBClient as any).authContext = { ...mockAuthContext, tenant: {} };
+      // No tenant.businessId and no activeReadScope → no write target can be derived
+      (tenantDBClient as any).authContext = { ...mockAuthContext, tenant: {}, activeReadScope: undefined };
       (tenantDBClient as any).authContextInitialized = true;
 
       await expect(tenantDBClient.query('SELECT 1')).rejects.toThrow('Missing businessId in AuthContext');
+    });
+
+    it('should use the single scoped business as write target when tenant.businessId is absent', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      // tenant.businessId missing but activeReadScope has exactly one business
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        tenant: {},
+        activeReadScope: { businessIds: ['business-456'] },
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_id', $1, true)"),
+      );
+      expect(setCall).toBeDefined();
+      expect(setCall![1][0]).toBe('business-456');
     });
 
     it('sets the write target and the read-scope array session variables', async () => {
@@ -322,5 +342,64 @@ describe('TenantAwareDBClient', () => {
       expect(setCall).toBeDefined();
       expect(setCall![1][3]).toBe('');
     });
+
+    it('uses single scoped business as write target, overriding primary tenant', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      // Primary is 'business-456', but X-Business-Scope narrows to 'business-789'
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        tenant: { businessId: 'business-456', roleId: 'admin' },
+        activeReadScope: { businessIds: ['business-789'] },
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_id', $1, true)"),
+      );
+      expect(setCall).toBeDefined();
+      // write target should be the single scoped business, not the primary
+      expect(setCall![1][0]).toBe('business-789');
+    });
+
+    it('falls back to primary tenant when multi-scope includes primary', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        tenant: { businessId: 'business-456', roleId: 'admin' },
+        activeReadScope: { businessIds: ['business-456', 'business-789'] },
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_id', $1, true)"),
+      );
+      expect(setCall).toBeDefined();
+      expect(setCall![1][0]).toBe('business-456');
+    });
+
+    it('uses first scoped business as write target when multi-scope excludes primary', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      // Primary is 'business-456' but active scope is ['business-789', 'business-abc']
+      // — primary is not in scope, so writing to it would violate RLS WITH CHECK.
+      (tenantDBClient as any).authContext = {
+        ...mockAuthContext,
+        tenant: { businessId: 'business-456', roleId: 'admin' },
+        activeReadScope: { businessIds: ['business-789', 'business-abc'] },
+      };
+      (tenantDBClient as any).authContextInitialized = true;
+
+      await tenantDBClient.query('SELECT 1');
+
+      const setCall = vi.mocked(mockPoolClient.query).mock.calls.find((call: any[]) =>
+        call[0].includes("set_config('app.current_business_id', $1, true)"),
+      );
+      expect(setCall).toBeDefined();
+      expect(setCall![1][0]).toBe('business-789');
+    });
   });
 });
+
