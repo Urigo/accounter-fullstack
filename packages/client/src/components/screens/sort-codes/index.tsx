@@ -25,6 +25,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
   query AllSortCodesForScreen {
     allSortCodes {
       id
+      ownerId
       key
       name
       defaultIrsCode
@@ -86,7 +87,11 @@ const columns: ColumnDef<RowType>[] = [
   {
     id: 'edit',
     cell: ({ row }) => (
-      <EditSortCode sortCodeKey={row.original.key} onAdd={row.original.refetchSortCodes} />
+      <EditSortCode
+        sortCodeKey={row.original.key}
+        ownerId={row.original.ownerId}
+        onAdd={row.original.refetchSortCodes}
+      />
     ),
   },
 ];

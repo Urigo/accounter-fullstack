@@ -66,7 +66,10 @@ export class SortCodesProvider {
     }
     this.allSortCodesCache = getAllSortCodes.run(undefined, this.db).then(data => {
       data.map(sortCode => {
-        this.getSortCodesByIdLoader.prime(sortCode.key, sortCode);
+        this.getSortCodesByIdLoader.prime(
+          { key: sortCode.key, ownerId: sortCode.owner_id },
+          sortCode,
+        );
       });
       return data;
     });
@@ -87,19 +90,21 @@ export class SortCodesProvider {
     this.batchSortCodesByOwnerIds(ownerIds),
   );
 
-  private async batchSortCodesByIds(sortCodesIds: readonly number[]) {
+  private async batchSortCodesByIds(keys: readonly { key: number; ownerId: string }[]) {
     const sortCodes = await getSortCodesByIds.run(
       {
-        isSortCodesIds: sortCodesIds.length > 0 ? 1 : 0,
-        sortCodesIds,
+        isSortCodesIds: keys.length > 0 ? 1 : 0,
+        sortCodesIds: keys.map(k => k.key),
       },
       this.db,
     );
-    return sortCodesIds.map(id => sortCodes.find(record => record.key === id));
+    return keys.map(k =>
+      sortCodes.find(record => record.key === k.key && record.owner_id === k.ownerId),
+    );
   }
 
-  public getSortCodesByIdLoader = new DataLoader((keys: readonly number[]) =>
-    this.batchSortCodesByIds(keys),
+  public getSortCodesByIdLoader = new DataLoader(
+    (keys: readonly { key: number; ownerId: string }[]) => this.batchSortCodesByIds(keys),
   );
 
   public async addSortCode(params: IInsertSortCodeParams) {

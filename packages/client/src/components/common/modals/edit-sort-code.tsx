@@ -23,8 +23,8 @@ import { ModifySortCodeFields } from '../forms/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query SortCodeToUpdate($key: Int!) {
-    sortCode(key: $key) {
+  query SortCodeToUpdate($key: Int!, $ownerId: String!) {
+    sortCode(key: $key, ownerId: $ownerId) {
       id
       key
       name
@@ -35,9 +35,11 @@ import { ModifySortCodeFields } from '../forms/index.js';
 
 export function EditSortCode({
   sortCodeKey,
+  ownerId,
   onAdd,
 }: {
   sortCodeKey: number;
+  ownerId: string;
   onAdd?: (sortCodeKey: number) => void;
 }): ReactElement {
   const [open, setOpen] = useState(false);
@@ -53,7 +55,12 @@ export function EditSortCode({
         <DialogHeader>
           <DialogTitle>Edit Sort Code</DialogTitle>
         </DialogHeader>
-        <ModalContent sortCodeKey={sortCodeKey} close={() => setOpen(false)} onAdd={onAdd} />
+        <ModalContent
+          sortCodeKey={sortCodeKey}
+          ownerId={ownerId}
+          close={() => setOpen(false)}
+          onAdd={onAdd}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -63,13 +70,15 @@ type ModalContentProps = {
   close: () => void;
   onAdd?: (sortCodeKey: number) => void;
   sortCodeKey: number;
+  ownerId: string;
 };
 
-function ModalContent({ sortCodeKey, close, onAdd }: ModalContentProps): ReactElement {
+function ModalContent({ sortCodeKey, ownerId, close, onAdd }: ModalContentProps): ReactElement {
   const [{ data, fetching }] = useQuery({
     query: SortCodeToUpdateDocument,
     variables: {
       key: sortCodeKey,
+      ownerId,
     },
   });
 

@@ -4,7 +4,7 @@ export default gql`
   extend type Query {
     allSortCodes: [SortCode!]! @requiresAuth
     allSortCodesByBusiness(ownerId: String!): [SortCode!]! @requiresAuth
-    sortCode(key: Int!): SortCode @requiresAuth
+    sortCode(key: Int!, ownerId: String!): SortCode @requiresAuth
   }
 
   extend type Mutation {
@@ -26,6 +26,7 @@ export default gql`
   type SortCode {
     id: ID!
     key: Int!
+    ownerId: UUID!
     name: String
     defaultIrsCode: Int
   }
