@@ -378,13 +378,17 @@ export function generateUniformFormatReport(
   const dataText = assembleFile(records);
 
   // Create virtual File objects
-  const iniFile = new File([iniText], `${options.fileNameBase || 'report'}.INI.TXT`, {
-    type: 'text/plain',
+  const iniFile = new File([new Blob([iniText])], `${options.fileNameBase || 'report'}.INI.TXT`, {
+    type: 'text/plain;charset=windows-1255',
   });
 
-  const dataFile = new File([dataText], `${options.fileNameBase || 'report'}.BKMVDATA.TXT`, {
-    type: 'text/plain',
-  });
+  const dataFile = new File(
+    [new Blob([dataText])],
+    `${options.fileNameBase || 'report'}.BKMVDATA.TXT`,
+    {
+      type: 'text/plain;charset=windows-1255',
+    },
+  );
 
   return {
     iniText,

@@ -370,6 +370,7 @@ __metadata:
     graphql-modules: "npm:3.1.1"
     graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.21.0"
+    iconv-lite: "npm:0.7.2"
     inline-css: "npm:4.0.3"
     jose: "npm:6.2.3"
     json-bigint-patch: "npm:0.0.9"

@@ -1,5 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
+// eslint-disable-next-line no-restricted-imports
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -11,6 +13,8 @@ import type {
   IGetSortCodesByOwnerIdsQuery,
   IInsertSortCodeParams,
   IInsertSortCodeQuery,
+  IInsertSortCodesParams,
+  IInsertSortCodesQuery,
   IUpdateSortCodeParams,
   IUpdateSortCodeQuery,
 } from '../types.js';
@@ -32,6 +36,13 @@ const getSortCodesByOwnerIds = sql<IGetSortCodesByOwnerIdsQuery>`
 const insertSortCode = sql<IInsertSortCodeQuery>`
     INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code, owner_id)
     VALUES ($name, $key, $defaultIrsCode, $ownerId)
+    RETURNING *;
+  `;
+
+const insertSortCodes = sql<IInsertSortCodesQuery>`
+    INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code, owner_id)
+    VALUES $$sortCodes(name, key, defaultIrsCode, ownerId)
+    ON CONFLICT (key, owner_id) DO NOTHING
     RETURNING *;
   `;
 
@@ -111,6 +122,13 @@ export class SortCodesProvider {
     this.clearCache();
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return insertSortCode.run(reassureOwnerIdExists(params, ownerId), this.db);
+  }
+
+  public async addSortCodes(params: IInsertSortCodesParams, client?: PoolClient) {
+    this.clearCache();
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    params.sortCodes = params.sortCodes.map(sortCode => reassureOwnerIdExists(sortCode, ownerId));
+    return insertSortCodes.run(params, client ?? this.db);
   }
 
   public async updateSortCode(params: IUpdateSortCodeParams) {

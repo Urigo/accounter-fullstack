@@ -1,5 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
+// eslint-disable-next-line no-restricted-imports
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
@@ -172,9 +174,10 @@ export class FinancialEntitiesProvider {
 
   public insertFinancialEntity(
     params: IInsertFinancialEntitiesParams['financialEntities'][number],
+    client?: PoolClient,
   ) {
     this.allFinancialEntitiesCache = null;
-    return insertFinancialEntities.run({ financialEntities: [params] }, this.db);
+    return insertFinancialEntities.run({ financialEntities: [params] }, client ?? this.db);
   }
 
   private async batchInsertFinancialEntities(
