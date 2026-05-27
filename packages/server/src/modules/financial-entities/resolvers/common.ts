@@ -19,6 +19,7 @@ export const commonFinancialEntityFields:
   | FinancialEntitiesModule.LtdFinancialEntityResolvers
   | FinancialEntitiesModule.PersonalFinancialEntityResolvers = {
   id: dbFinancialEntity => dbFinancialEntity.id,
+  ownerId: dbFinancialEntity => dbFinancialEntity.owner_id,
   name: dbFinancialEntity => dbFinancialEntity.name,
   irsCode: dbFinancialEntity => dbFinancialEntity.irs_code,
   isActive: dbFinancialEntity => !!dbFinancialEntity.is_active,

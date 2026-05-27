@@ -85,7 +85,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
         if (!irsCode && fields.sortCode) {
           const sortCode = await injector
             .get(SortCodesProvider)
-            .getSortCodesByIdLoader.load(fields.sortCode);
+            .getSortCodesByIdLoader.load({ key: fields.sortCode, ownerId });
           if (sortCode?.default_irs_code) {
             irsCode = sortCode.default_irs_code;
           }

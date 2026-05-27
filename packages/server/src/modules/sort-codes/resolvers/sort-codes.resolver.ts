@@ -13,11 +13,21 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
       }
     },
-    sortCode: async (_, { key }, { injector }) => {
+    allSortCodesByBusiness: async (_, { ownerId }, { injector }) => {
+      try {
+        return await injector.get(SortCodesProvider).getSortCodesByOwnerIdLoader.load(ownerId);
+      } catch (e) {
+        console.error(`Error fetching sort codes for business ${ownerId}`, e);
+        throw new GraphQLError(
+          (e as Error)?.message ?? `Error fetching sort codes for business ${ownerId}`,
+        );
+      }
+    },
+    sortCode: async (_, { key, ownerId }, { injector }) => {
       try {
         return await injector
           .get(SortCodesProvider)
-          .getSortCodesByIdLoader.load(key)
+          .getSortCodesByIdLoader.load({ key, ownerId })
           .then(sortCode => sortCode ?? null);
       } catch (e) {
         console.error(`Error fetching sort code ${key}`, e);
@@ -59,8 +69,9 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
     },
   },
   SortCode: {
-    id: dbSortCode => dbSortCode.key.toString(),
+    id: dbSortCode => `${dbSortCode.owner_id}|${dbSortCode.key.toString()}`,
     key: dbSortCode => dbSortCode.key,
+    ownerId: dbSortCode => dbSortCode.owner_id,
     name: dbSortCode => dbSortCode.name,
     defaultIrsCode: dbSortCode => dbSortCode.default_irs_code,
   },
@@ -72,10 +83,10 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
   },
   TaxCategory: {
     sortCode: (parent, _, { injector }) =>
-      parent?.sort_code
+      parent.sort_code && parent.owner_id
         ? injector
             .get(SortCodesProvider)
-            .getSortCodesByIdLoader.load(parent.sort_code)
+            .getSortCodesByIdLoader.load({ key: parent.sort_code, ownerId: parent.owner_id })
             .then(sortCode => sortCode ?? null)
         : null,
   },

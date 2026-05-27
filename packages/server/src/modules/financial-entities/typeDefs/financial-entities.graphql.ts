@@ -16,6 +16,7 @@ export default gql`
   " represent a financial entity of any type, including businesses, tax categories, etc. "
   interface FinancialEntity {
     id: UUID!
+    ownerId: UUID
     name: String!
     irsCode: Int
     createdAt: DateTime!

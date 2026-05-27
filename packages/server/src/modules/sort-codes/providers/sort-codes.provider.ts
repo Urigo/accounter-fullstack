@@ -8,6 +8,7 @@ import type {
   IGetAllSortCodesQuery,
   IGetAllSortCodesResult,
   IGetSortCodesByIdsQuery,
+  IGetSortCodesByOwnerIdsQuery,
   IInsertSortCodeParams,
   IInsertSortCodeQuery,
   IUpdateSortCodeParams,
@@ -22,6 +23,11 @@ const getSortCodesByIds = sql<IGetSortCodesByIdsQuery>`
   SELECT sc.*
   FROM accounter_schema.sort_codes sc
   WHERE ($isSortCodesIds = 0 OR sc.key IN $$sortCodesIds);`;
+
+const getSortCodesByOwnerIds = sql<IGetSortCodesByOwnerIdsQuery>`
+  SELECT sc.*
+  FROM accounter_schema.sort_codes sc
+  WHERE sc.owner_id IN $$ownerIds;`;
 
 const insertSortCode = sql<IInsertSortCodeQuery>`
     INSERT INTO accounter_schema.sort_codes (name, key, default_irs_code, owner_id)
@@ -39,7 +45,7 @@ const updateSortCode = sql<IUpdateSortCodeQuery>`
       $defaultIrsCode,
       default_irs_code
     )
-    WHERE key = $key
+    WHERE key = $key AND owner_id = $ownerId
     RETURNING *;
   `;
 
@@ -60,26 +66,45 @@ export class SortCodesProvider {
     }
     this.allSortCodesCache = getAllSortCodes.run(undefined, this.db).then(data => {
       data.map(sortCode => {
-        this.getSortCodesByIdLoader.prime(sortCode.key, sortCode);
+        this.getSortCodesByIdLoader.prime(
+          { key: sortCode.key, ownerId: sortCode.owner_id },
+          sortCode,
+        );
       });
       return data;
     });
     return this.allSortCodesCache;
   }
 
-  private async batchSortCodesByIds(sortCodesIds: readonly number[]) {
-    const ledgerRecords = await getSortCodesByIds.run(
+  private async batchSortCodesByOwnerIds(ownerIds: readonly string[]) {
+    const sortCodes = await getSortCodesByOwnerIds.run(
       {
-        isSortCodesIds: sortCodesIds.length > 0 ? 1 : 0,
-        sortCodesIds,
+        ownerIds,
       },
       this.db,
     );
-    return sortCodesIds.map(id => ledgerRecords.find(record => record.key === id));
+    return ownerIds.map(id => sortCodes.filter(record => record.owner_id === id));
   }
 
-  public getSortCodesByIdLoader = new DataLoader((keys: readonly number[]) =>
-    this.batchSortCodesByIds(keys),
+  public getSortCodesByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>
+    this.batchSortCodesByOwnerIds(ownerIds),
+  );
+
+  private async batchSortCodesByIds(keys: readonly { key: number; ownerId: string }[]) {
+    const sortCodes = await getSortCodesByIds.run(
+      {
+        isSortCodesIds: keys.length > 0 ? 1 : 0,
+        sortCodesIds: keys.map(k => k.key),
+      },
+      this.db,
+    );
+    return keys.map(k =>
+      sortCodes.find(record => record.key === k.key && record.owner_id === k.ownerId),
+    );
+  }
+
+  public getSortCodesByIdLoader = new DataLoader(
+    (keys: readonly { key: number; ownerId: string }[]) => this.batchSortCodesByIds(keys),
   );
 
   public async addSortCode(params: IInsertSortCodeParams) {

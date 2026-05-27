@@ -267,7 +267,7 @@ export function DynamicReport() {
 
   // ── GQL queries ──────────────────────────────────────────────────────────────
 
-  const { sortCodes } = useGetSortCodes();
+  const { sortCodes } = useGetSortCodes({ ownerId: userContext?.context.adminBusinessId });
 
   const [{ data: businessSumsData }] = useQuery({
     query: DynamicReportDocument,

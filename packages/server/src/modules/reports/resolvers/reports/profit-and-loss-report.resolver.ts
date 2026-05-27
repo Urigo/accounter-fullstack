@@ -215,10 +215,12 @@ export const profitAndLossReportYearMapper: ProfitAndLossReportYearResolvers = {
 };
 
 export const reportCommentaryRecordMapper: ReportCommentaryRecordResolvers = {
-  sortCode: (parent, _, { injector }) => {
+  sortCode: async (parent, _, { injector }) => {
+    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
     return injector
       .get(SortCodesProvider)
-      .getSortCodesByIdLoader.load(parent.sortCode)
+      .getSortCodesByIdLoader.load({ key: parent.sortCode, ownerId })
       .then(res => {
         if (!res) {
           throw new GraphQLError(`Sort code "${parent.sortCode}" not found`);

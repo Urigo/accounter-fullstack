@@ -17,12 +17,14 @@ type ModalProps<T extends boolean> = {
     T extends true ? InsertTaxCategoryInput : UpdateTaxCategoryInput
   >;
   setFetching: (fetching: boolean) => void;
+  ownerId?: string;
 };
 
 export function ModifyTaxCategoryFields({
   formManager,
   setFetching,
   isInsert,
+  ownerId,
 }: ModalProps<boolean>): ReactElement {
   const { control, watch, setValue } = formManager;
 
@@ -31,7 +33,7 @@ export function ModifyTaxCategoryFields({
     selectableSortCodes: sortCodes,
     fetching: fetchingSortCodes,
     sortCodes: rawSortCodes,
-  } = useGetSortCodes();
+  } = useGetSortCodes({ ownerId });
 
   useEffect(() => {
     setFetching(fetchingSortCodes);
