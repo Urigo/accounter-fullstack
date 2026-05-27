@@ -45,12 +45,11 @@ export type ClientFormValues = z.infer<typeof clientFormSchema>;
 
 interface Props {
   businessId: string;
-  client?: ClientFormValues | null;
   onDone?: () => void;
   showTrigger?: boolean;
 }
 
-export function ModifyClientDialog({ client, businessId, onDone, showTrigger = true }: Props) {
+export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientFormValues | null>(null);
 
@@ -65,22 +64,16 @@ export function ModifyClientDialog({ client, businessId, onDone, showTrigger = t
     emails: [],
   };
 
-  const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientFormSchema),
-    defaultValues: client || newClientDefaultValues,
-  });
-
   useEffect(() => {
-    if (client) {
-      setEditingClient(client);
-      form.reset({
-        emails: client.emails,
-        generatedDocumentType: client.generatedDocumentType,
-        businessId: client.businessId,
-      });
+    if (!showTrigger && !!businessId) {
       setIsDialogOpen(true);
     }
-  }, [client, form]);
+  }, [businessId, showTrigger]);
+
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientFormSchema),
+    defaultValues: newClientDefaultValues,
+  });
 
   const handleNew = () => {
     setEditingClient(null);

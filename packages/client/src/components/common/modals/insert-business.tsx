@@ -204,7 +204,6 @@ export function InsertBusiness({
       {client?.businessId && (
         <ModifyClientDialog
           businessId={client.businessId}
-          client={client}
           showTrigger={false}
           onDone={() => {
             onComplete(client.businessId);
