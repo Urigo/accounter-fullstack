@@ -200,7 +200,7 @@ export async function accountsForUniformFormat(
   const [financialEntities, adminBusiness, sortCodes] = await Promise.all([
     financialEntitiesPromise,
     adminBusinessPromise,
-    injector.get(SortCodesProvider).getAllSortCodes(),
+    injector.get(SortCodesProvider).getSortCodesByOwnerIdLoader.load(ownerId),
   ]);
 
   if (!adminBusiness) {

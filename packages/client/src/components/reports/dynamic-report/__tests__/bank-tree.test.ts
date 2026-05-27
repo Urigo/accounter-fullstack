@@ -4,7 +4,7 @@ import type { AllSortCodesQuery, DynamicReportQuery } from '../../../../gql/grap
 
 // ── fixture helpers ───────────────────────────────────────────────────────────
 
-type SortCode = AllSortCodesQuery['allSortCodes'][number];
+type SortCode = AllSortCodesQuery['allSortCodesByBusiness'][number];
 type BusinessSum = Extract<
   NonNullable<DynamicReportQuery['businessTransactionsSumFromLedgerRecords']>,
   { __typename?: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult' }

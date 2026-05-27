@@ -25,6 +25,7 @@ import { ModifyTaxCategoryFields } from '../forms/modify-tax-category-fields.js'
   query TaxCategoryToUpdate($id: UUID!) {
     taxCategory(id: $id) {
       id
+      ownerId
       name
       sortCode {
         id
@@ -132,6 +133,7 @@ function EditTaxCategoryForm({
             isInsert={false}
             formManager={useFormManager}
             setFetching={setFetching}
+            ownerId={taxCategory.ownerId ?? undefined}
           />
         </div>
 

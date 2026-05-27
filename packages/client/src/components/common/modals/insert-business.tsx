@@ -456,7 +456,13 @@ function ContactInformationSection({ form }: SectionProps) {
 }
 
 function DefaultsSection({ form }: SectionProps) {
-  const { selectableSortCodes, fetching: fetchingSortCodes, sortCodes } = useGetSortCodes();
+  const { userContext } = useContext(UserContext);
+
+  const {
+    selectableSortCodes,
+    fetching: fetchingSortCodes,
+    sortCodes,
+  } = useGetSortCodes({ ownerId: userContext?.context.adminBusinessId });
   const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
   const { selectableTags, fetching: fetchingTags } = useGetTags();
 

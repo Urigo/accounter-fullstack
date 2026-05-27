@@ -1,5 +1,6 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
+import { UserContext } from '@/providers/index.js';
 import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { useInsertTaxCategory } from '../../../hooks/use-insert-tax-category.js';
 import { Button } from '../../ui/button.js';
@@ -45,6 +46,8 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
   const { handleSubmit } = formManager;
   const [fetching, setFetching] = useState(false);
 
+  const { userContext } = useContext(UserContext);
+
   const { insertTaxCategory, fetching: addingInProcess } = useInsertTaxCategory();
 
   const onSubmit: SubmitHandler<InsertTaxCategoryInput> = data => {
@@ -67,6 +70,7 @@ function CreateTaxCategoryForm({ close, onAdd }: CreateTaxCategoryFormProps): Re
               formManager as UseFormReturn<UpdateTaxCategoryInput, unknown, UpdateTaxCategoryInput>
             }
             setFetching={setFetching}
+            ownerId={userContext?.context.adminBusinessId}
           />
         </div>
 

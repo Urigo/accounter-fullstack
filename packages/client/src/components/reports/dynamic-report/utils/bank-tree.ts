@@ -18,7 +18,7 @@ type BusinessSum = Extract<
  * - If includeZeroed is false, entities with total.raw === 0 are omitted.
  */
 export function buildInitialBankTree(
-  sortCodes: AllSortCodesQuery['allSortCodes'],
+  sortCodes: AllSortCodesQuery['allSortCodesByBusiness'],
   businessSums: BusinessSum[],
   excludedIds: Set<string>,
   includeZeroed: boolean,

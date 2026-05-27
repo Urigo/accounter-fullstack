@@ -13,6 +13,16 @@ export const sortCodesResolvers: SortCodesModule.Resolvers = {
         throw new GraphQLError((e as Error)?.message ?? 'Error fetching sort codes');
       }
     },
+    allSortCodesByBusiness: async (_, { ownerId }, { injector }) => {
+      try {
+        return await injector.get(SortCodesProvider).getSortCodesByOwnerIdLoader.load(ownerId);
+      } catch (e) {
+        console.error(`Error fetching sort codes for business ${ownerId}`, e);
+        throw new GraphQLError(
+          (e as Error)?.message ?? `Error fetching sort codes for business ${ownerId}`,
+        );
+      }
+    },
     sortCode: async (_, { key }, { injector }) => {
       try {
         return await injector

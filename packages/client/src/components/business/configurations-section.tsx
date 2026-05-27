@@ -65,6 +65,7 @@ import {
     pcn874RecordType
     irsCode
     isActive
+    ownerId
     ... on LtdFinancialEntity {
       optionalVAT
       exemptDealer
@@ -288,7 +289,7 @@ export function ConfigurationsSection({ data, refetchBusiness }: Props) {
 
             <Separator />
 
-            <DefaultSettingsSubSection form={form} />
+            <DefaultSettingsSubSection form={form} business={business} />
 
             <Separator />
 
@@ -458,9 +459,16 @@ function BusinessBehaviorSubSection({ form }: SubSectionProps) {
   );
 }
 
-function DefaultSettingsSubSection({ form }: SubSectionProps) {
+function DefaultSettingsSubSection({
+  form,
+  business,
+}: SubSectionProps & { business: BusinessConfigurationSectionFragment }) {
   const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
-  const { selectableSortCodes, fetching: fetchingSortCodes, sortCodes } = useGetSortCodes();
+  const {
+    selectableSortCodes,
+    fetching: fetchingSortCodes,
+    sortCodes,
+  } = useGetSortCodes({ ownerId: business.ownerId });
   const { selectableTags, fetching: fetchingTags } = useGetTags();
 
   // When sort code changes, update IRS code if sort code has a default IRS code

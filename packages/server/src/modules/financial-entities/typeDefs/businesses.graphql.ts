@@ -10,6 +10,7 @@ export default gql`
   " represent a financial entity of any type that may hold financial accounts (company, business, individual) "
   interface Business implements FinancialEntity {
     id: UUID!
+    ownerId: UUID
     name: String!
 
     pcn874RecordType: Pcn874RecordType
@@ -28,6 +29,7 @@ export default gql`
   " Financial entity, identifier by ID, can be a company or individual "
   type LtdFinancialEntity implements FinancialEntity & Business {
     id: UUID!
+    ownerId: UUID
     country: Country!
     governmentId: String
     name: String!
@@ -79,6 +81,7 @@ export default gql`
   " Financial entity, identifier by ID, represents an actual person "
   type PersonalFinancialEntity implements FinancialEntity & Business {
     id: UUID!
+    ownerId: UUID
     name: String!
     email: String!
 

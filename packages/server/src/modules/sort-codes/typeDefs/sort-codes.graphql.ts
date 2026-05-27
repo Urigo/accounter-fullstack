@@ -3,6 +3,7 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     allSortCodes: [SortCode!]! @requiresAuth
+    allSortCodesByBusiness(ownerId: String!): [SortCode!]! @requiresAuth
     sortCode(key: Int!): SortCode @requiresAuth
   }
 

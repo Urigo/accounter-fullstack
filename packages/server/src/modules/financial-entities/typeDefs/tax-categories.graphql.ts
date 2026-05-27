@@ -62,6 +62,7 @@ export default gql`
   " Tax category entity used for ledger records "
   type TaxCategory implements FinancialEntity {
     id: UUID!
+    ownerId: UUID
     name: String!
     irsCode: Int
     createdAt: DateTime!
