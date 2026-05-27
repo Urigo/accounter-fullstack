@@ -223,7 +223,25 @@ export class TenantAwareDBClient {
 
     const { tenant, user, authType, activeReadScope } = this.authContext ?? {};
 
-    const businessIdValue = tenant?.businessId ?? null;
+    // Write-target: when the request is scoped to one or more businesses via
+    // X-Business-Scope, derive the single write-target as follows:
+    //   - Single scoped business → use it directly.
+    //   - Multiple scoped businesses and primary is among them → use primary.
+    //   - Multiple scoped businesses and primary is NOT among them → use first
+    //     in scope (primary is outside the active scope so writing to it would
+    //     violate the tenant_isolation WITH CHECK policy).
+    //   - No scope → fall back to primary tenant business.
+    const scopedIds = activeReadScope?.businessIds;
+    const primaryBusinessId = tenant?.businessId ?? null;
+    const businessIdValue =
+      scopedIds && scopedIds.length > 0
+        ? scopedIds.length === 1
+          ? scopedIds[0]
+          : primaryBusinessId && scopedIds.includes(primaryBusinessId)
+            ? primaryBusinessId
+            : scopedIds[0]
+        : primaryBusinessId;
+
     if (!businessIdValue) {
       throw new Error('Missing businessId in AuthContext');
     }
