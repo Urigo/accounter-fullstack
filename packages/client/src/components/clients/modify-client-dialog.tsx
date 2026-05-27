@@ -32,7 +32,6 @@ import {
 import { DocumentType } from '@/gql/graphql.js';
 import { getDocumentNameFromType } from '@/helpers/index.js';
 import { useInsertClient } from '@/hooks/use-insert-client.js';
-import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { Badge } from '../ui/badge';
 
 const clientFormSchema = z.object({
@@ -51,9 +50,7 @@ interface Props {
 
 export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: Props) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<ClientFormValues | null>(null);
 
-  const { updateClient } = useUpdateClient();
   const { insertClient } = useInsertClient();
 
   const [newEmail, setNewEmail] = useState('');
@@ -76,7 +73,6 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
   });
 
   const handleNew = () => {
-    setEditingClient(null);
     form.reset(newClientDefaultValues);
     setIsDialogOpen(true);
   };
@@ -100,26 +96,16 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
 
   const onSubmit = useCallback(
     async (values: ClientFormValues) => {
-      if (editingClient) {
-        // Handle client update
-        updateClient({
+      insertClient({
+        fields: {
+          ...values,
           businessId,
-          fields: values,
-        });
-      } else {
-        // Handle new client creation
-        insertClient({
-          fields: {
-            ...values,
-            businessId,
-          },
-        });
-      }
+        },
+      });
       setIsDialogOpen(false);
-      setEditingClient(null);
       onDone?.();
     },
-    [editingClient, onDone, updateClient, businessId, insertClient],
+    [onDone, businessId, insertClient],
   );
 
   return (
@@ -142,10 +128,8 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
       )}
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editingClient ? 'Edit Client' : 'Create New Client'}</DialogTitle>
-          <DialogDescription>
-            {editingClient ? 'Update client details' : 'Add a new client with all required details'}
-          </DialogDescription>
+          <DialogTitle>Create New Client</DialogTitle>
+          <DialogDescription>Add a new client with all required details</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -230,7 +214,7 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
               >
                 Cancel
               </Button>
-              <Button type="submit">{editingClient ? 'Update Client' : 'Create Client'}</Button>
+              <Button type="submit">Create Client</Button>
             </DialogFooter>
           </form>
         </Form>
