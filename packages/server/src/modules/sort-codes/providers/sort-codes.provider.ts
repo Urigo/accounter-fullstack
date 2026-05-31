@@ -126,7 +126,10 @@ export class SortCodesProvider {
 
   public async addSortCodes(params: IInsertSortCodesParams, client?: PoolClient) {
     this.clearCache();
-    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    const hasMissingOwnerId = params.sortCodes.some(sortCode => !sortCode.ownerId);
+    const ownerId = hasMissingOwnerId
+      ? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId
+      : '';
     params.sortCodes = params.sortCodes.map(sortCode => reassureOwnerIdExists(sortCode, ownerId));
     return insertSortCodes.run(params, client ?? this.db);
   }
