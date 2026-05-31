@@ -113,7 +113,7 @@ const missingInfoSuggestions = async (
           business: otsarHahayalBusinessId,
         };
       }
-      case 'CREDIT_CARD': {
+      case 'OTSAR_HAHAYAL_CREDIT_CARD': {
         if (!otsarHahayalCreditCardBusinessId) {
           throw new Error('Otsar Hahayal Credit Card business is not set');
         }
