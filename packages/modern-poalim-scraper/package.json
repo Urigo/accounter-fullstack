@@ -27,7 +27,7 @@
     "test:otsar-hahayal": "yarn build && concurrently \"tsc -w\" \"nodemon dist/test/scrape-otsar-hahayal.js\""
   },
   "dependencies": {
-    "date-fns": "4.3.0",
+    "date-fns": "4.4.0",
     "inquirer": "14.0.0",
     "node-fetch": "3.3.2",
     "node-xlsx": "0.24.0",

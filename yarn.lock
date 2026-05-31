@@ -51,7 +51,7 @@ __metadata:
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
     "@types/pg": "npm:8.20.0"
-    date-fns: "npm:4.3.0"
+    date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
     fast-xml-parser: "npm:5.8.0"
@@ -96,7 +96,7 @@ __metadata:
     clsx: "npm:2.1.1"
     cmdk: "npm:1.1.1"
     csv-parse: "npm:6.2.1"
-    date-fns: "npm:4.3.0"
+    date-fns: "npm:4.4.0"
     dayjs: "npm:1.11.21"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
@@ -253,7 +253,7 @@ __metadata:
     "@types/node-fetch": "npm:2.6.13"
     "@types/uuid": "npm:11.0.0"
     concurrently: "npm:9.2.1"
-    date-fns: "npm:4.3.0"
+    date-fns: "npm:4.4.0"
     inquirer: "npm:14.0.0"
     node-fetch: "npm:3.3.2"
     node-xlsx: "npm:0.24.0"
@@ -308,7 +308,7 @@ __metadata:
     "@testing-library/react": "npm:16.3.2"
     "@testing-library/user-event": "npm:14.6.1"
     "@vitejs/plugin-react": "npm:6.0.2"
-    date-fns: "npm:4.3.0"
+    date-fns: "npm:4.4.0"
     fast-xml-parser: "npm:5.8.0"
     fastify: "npm:5.8.5"
     graphql-request: "npm:7.4.0"
@@ -362,7 +362,7 @@ __metadata:
     bcrypt: "npm:6.0.0"
     cloudinary: "npm:2.10.0"
     dataloader: "npm:2.2.3"
-    date-fns: "npm:4.3.0"
+    date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:172.0.0"
@@ -13335,10 +13335,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"date-fns@npm:4.3.0":
-  version: 4.3.0
-  resolution: "date-fns@npm:4.3.0"
-  checksum: 10c0/f1e8ec36270dd4c9e32d93195fb02a109ff46b397690a68f4a0c3bea0a1882e38a67969004db0a28f890b15bcdd6b323faa2f07cde3b67a2edfacc3fe078f95e
+"date-fns@npm:4.4.0":
+  version: 4.4.0
+  resolution: "date-fns@npm:4.4.0"
+  checksum: 10c0/988f0a13db183f5dfc85c36bbb6847a9c135a9225888bbea4005876ec15539a8613c21a07370a4e7ea543918d5a1cafb423c528b42cdbbde5fdfddb178126b21
   languageName: node
   linkType: hard
 
