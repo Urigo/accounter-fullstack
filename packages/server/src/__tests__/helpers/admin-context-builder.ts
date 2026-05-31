@@ -91,10 +91,12 @@ export async function buildAdminContextFromDb(
     financialAccounts: {
       poalimBusinessId: null,
       discountBusinessId: null,
+      otsarHahayalBusinessId: null,
       swiftBusinessId: null,
       isracardBusinessId: null,
       amexBusinessId: null,
       calBusinessId: null,
+      otsarHahayalCreditCardBusinessId: null,
       etanaBusinessId: null,
       krakenBusinessId: null,
       etherScanBusinessId: null,

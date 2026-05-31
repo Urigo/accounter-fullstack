@@ -182,6 +182,7 @@ import migration_2026_05_24T13_00_00_update_otsar_hahayal_handlers from './actio
 import migration_2026_05_25T10_00_00_rls_multi_business_scope from './actions/2026-05-25T10-00-00.rls-multi-business-scope.js';
 import migration_2026_05_26T10_00_00_rls_delete_write_target from './actions/2026-05-26T10-00-00.rls-delete-write-target.js';
 import migration_2026_05_27T10_00_00_sort_codes_composite_pk from './actions/2026-05-27T10-00-00.sort-codes-composite-pk.js';
+import migration_2026_05_28T10_00_00_add_otsar_hahayal_to_user_context from './actions/2026-05-28T10-00-00.add-otsar-hahayal-to-user-context.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -368,6 +369,7 @@ export const MIGRATIONS = [
   migration_2026_05_25T10_00_00_rls_multi_business_scope,
   migration_2026_05_26T10_00_00_rls_delete_write_target,
   migration_2026_05_27T10_00_00_sort_codes_composite_pk,
+  migration_2026_05_28T10_00_00_add_otsar_hahayal_to_user_context,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

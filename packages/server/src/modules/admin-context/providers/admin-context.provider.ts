@@ -211,6 +211,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       $discountBusinessId,
       discount_business_id
     ),
+    otsar_hahayal_business_id = COALESCE(
+      $otsarHahayalBusinessId,
+      otsar_hahayal_business_id
+    ),
     isracard_business_id = COALESCE(
       $isracardBusinessId,
       isracard_business_id
@@ -222,6 +226,10 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
     cal_business_id = COALESCE(
       $calBusinessId,
       cal_business_id
+    ),
+    otsar_hahayal_credit_card_business_id = COALESCE(
+      $otsarHahayalCreditCardBusinessId,
+      otsar_hahayal_credit_card_business_id
     ),
     etana_business_id = COALESCE(
       $etanaBusinessId,
@@ -304,13 +312,16 @@ export class AdminContextProvider {
       '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
       // TODO: fetch those IDs from DB somehow
     ];
-    const bankAccountIds = [rawContext.poalim_business_id, rawContext.discount_business_id].filter(
-      Boolean,
-    ) as string[];
+    const bankAccountIds = [
+      rawContext.poalim_business_id,
+      rawContext.discount_business_id,
+      rawContext.otsar_hahayal_business_id,
+    ].filter(Boolean) as string[];
     const creditCardIds = [
       rawContext.isracard_business_id,
       rawContext.amex_business_id,
       rawContext.cal_business_id,
+      rawContext.otsar_hahayal_credit_card_business_id,
     ].filter(Boolean) as string[];
     const salaryBatchedBusinessIds = [
       rawContext.batched_employees_business_id,
@@ -377,10 +388,12 @@ export class AdminContextProvider {
       financialAccounts: {
         poalimBusinessId: rawContext.poalim_business_id,
         discountBusinessId: rawContext.discount_business_id,
+        otsarHahayalBusinessId: rawContext.otsar_hahayal_business_id,
         swiftBusinessId: rawContext.swift_business_id,
         isracardBusinessId: rawContext.isracard_business_id,
         amexBusinessId: rawContext.amex_business_id,
         calBusinessId: rawContext.cal_business_id,
+        otsarHahayalCreditCardBusinessId: rawContext.otsar_hahayal_credit_card_business_id,
         etanaBusinessId: rawContext.etana_business_id,
         krakenBusinessId: rawContext.kraken_business_id,
         etherScanBusinessId: rawContext.etherscan_business_id,

@@ -64,9 +64,11 @@ export default gql`
     vacationReserveTaxCategoryId: UUID
     poalimBusinessId: UUID
     discountBusinessId: UUID
+    otsarHahayalBusinessId: UUID
     isracardBusinessId: UUID
     amexBusinessId: UUID
     calBusinessId: UUID
+    otsarHahayalCreditCardBusinessId: UUID
     etanaBusinessId: UUID
     krakenBusinessId: UUID
     etherscanBusinessId: UUID
@@ -134,9 +136,11 @@ export default gql`
     vacationReserveTaxCategory: TaxCategory
     poalimBusiness: Business
     discountBusiness: Business
+    otsarHahayalBusiness: Business
     isracardBusiness: Business
     amexBusiness: Business
     calBusiness: Business
+    otsarHahayalCreditCardBusiness: Business
     etanaBusiness: Business
     krakenBusiness: Business
     etherscanBusiness: Business

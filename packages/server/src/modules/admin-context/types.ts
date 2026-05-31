@@ -47,10 +47,12 @@ export type AdminContext = {
   financialAccounts: {
     poalimBusinessId: string | null;
     discountBusinessId: string | null;
+    otsarHahayalBusinessId: string | null;
     swiftBusinessId: string | null;
     isracardBusinessId: string | null;
     amexBusinessId: string | null;
     calBusinessId: string | null;
+    otsarHahayalCreditCardBusinessId: string | null;
     etanaBusinessId: string | null;
     krakenBusinessId: string | null;
     etherScanBusinessId: string | null;
