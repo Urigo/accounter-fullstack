@@ -374,6 +374,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
             dbAdminContext.financialAccounts.discountBusinessId,
           )
         : null,
+    otsarHahayalBusiness: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.financialAccounts.otsarHahayalBusinessId
+        ? fetchBusiness(
+            injector,
+            'otsarHahayalBusiness',
+            dbAdminContext.financialAccounts.otsarHahayalBusinessId,
+          )
+        : null,
     isracardBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.financialAccounts.isracardBusinessId
         ? fetchBusiness(
@@ -389,6 +397,14 @@ export const adminContextResolvers: AdminContextModule.Resolvers = {
     calBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.financialAccounts.calBusinessId
         ? fetchBusiness(injector, 'calBusiness', dbAdminContext.financialAccounts.calBusinessId)
+        : null,
+    otsarHahayalCreditCardBusiness: async (dbAdminContext, _, { injector }) =>
+      dbAdminContext.financialAccounts.otsarHahayalCreditCardBusinessId
+        ? fetchBusiness(
+            injector,
+            'otsarHahayalCreditCardBusiness',
+            dbAdminContext.financialAccounts.otsarHahayalCreditCardBusinessId,
+          )
         : null,
     etanaBusiness: async (dbAdminContext, _, { injector }) =>
       dbAdminContext.financialAccounts.etanaBusinessId

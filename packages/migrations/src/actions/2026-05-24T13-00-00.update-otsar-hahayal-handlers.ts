@@ -331,7 +331,7 @@ export default {
             NEW.charge_amount * -1,
             0,
             NEW.resource_id::TEXT,
-            'CREDIT_CARD',
+            'OTSAR_HAHAYAL_CREDIT_CARD',
             NULL,
             FALSE,
             NEW.id

@@ -42,6 +42,8 @@ const missingInfoSuggestions = async (
     krakenBusinessId,
     etanaBusinessId,
     isracardBusinessId,
+    otsarHahayalBusinessId,
+    otsarHahayalCreditCardBusinessId,
   } = adminContext.financialAccounts;
 
   const transaction = await injector
@@ -101,6 +103,22 @@ const missingInfoSuggestions = async (
         }
         return {
           business: isracardBusinessId,
+        };
+      }
+      case 'OTSAR_HAHAYAL': {
+        if (!otsarHahayalBusinessId) {
+          throw new Error('Otsar Hahayal business is not set');
+        }
+        return {
+          business: otsarHahayalBusinessId,
+        };
+      }
+      case 'OTSAR_HAHAYAL_CREDIT_CARD': {
+        if (!otsarHahayalCreditCardBusinessId) {
+          throw new Error('Otsar Hahayal Credit Card business is not set');
+        }
+        return {
+          business: otsarHahayalCreditCardBusinessId,
         };
       }
     }
