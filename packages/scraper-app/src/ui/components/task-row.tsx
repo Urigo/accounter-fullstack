@@ -175,7 +175,17 @@ function AccountStepsTable({ steps }: { steps: AccountStep[] }) {
   );
 }
 
-function TaskSteps({ steps, status }: { steps: MonthStep[] | AccountStep[]; status: string }) {
+function CollapsibleSection({
+  label,
+  count,
+  status,
+  children,
+}: {
+  label: string;
+  count: number;
+  status: string;
+  children: React.ReactNode;
+}) {
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -184,9 +194,7 @@ function TaskSteps({ steps, status }: { steps: MonthStep[] | AccountStep[]; stat
     }
   }, [status]);
 
-  if (steps.length === 0) return null;
-
-  const isAccountSteps = 'accountId' in steps[0]!;
+  if (count === 0) return null;
 
   return (
     <div style={{ marginTop: 4 }}>
@@ -205,17 +213,9 @@ function TaskSteps({ steps, status }: { steps: MonthStep[] | AccountStep[]; stat
           gap: 4,
         }}
       >
-        {collapsed ? '▸' : '▾'} {isAccountSteps ? 'Accounts' : 'Months'} ({steps.length})
+        {collapsed ? '▸' : '▾'} {label} ({count})
       </button>
-      {!collapsed && (
-        <div style={{ paddingLeft: 4 }}>
-          {isAccountSteps ? (
-            <AccountStepsTable steps={steps as AccountStep[]} />
-          ) : (
-            <MonthStepsTable steps={steps as MonthStep[]} />
-          )}
-        </div>
-      )}
+      {!collapsed && <div style={{ paddingLeft: 4 }}>{children}</div>}
     </div>
   );
 }
@@ -303,8 +303,15 @@ export function TaskRow({
         )}
       </div>
 
-      {state.steps && state.steps.length > 0 && (
-        <TaskSteps steps={state.steps} status={state.status} />
+      {(state.accountSteps?.length ?? 0) > 0 && (
+        <CollapsibleSection label="Accounts" count={state.accountSteps!.length} status={state.status}>
+          <AccountStepsTable steps={state.accountSteps!} />
+        </CollapsibleSection>
+      )}
+      {(state.monthSteps?.length ?? 0) > 0 && (
+        <CollapsibleSection label="Months" count={state.monthSteps!.length} status={state.status}>
+          <MonthStepsTable steps={state.monthSteps!} />
+        </CollapsibleSection>
       )}
 
       {state.status === 'error' && expanded && (

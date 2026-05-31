@@ -157,20 +157,20 @@ function buildTask(
           const insertedTransactions: InsertedTransactionSummary[] = [];
           const changedTransactions: ChangedTransaction[] = [];
 
-          if (acceptedIlsData.length > 0) {
-            const ilsCount = acceptedIlsData.reduce((s, d) => s + d.transactions.length, 0);
+          for (const d of acceptedIlsData) {
+            const accountId = `${d.account.branch}-${d.account.account}`;
             emit({
               type: 'task-account-txns-uploading',
               sourceId: src.id,
-              accountId: 'ils',
+              accountId,
               txnType: 'ils',
-              count: ilsCount,
+              count: d.transactions.length,
             });
-            const r = await uploadClient.uploadOtsarIls(acceptedIlsData);
+            const r = await uploadClient.uploadOtsarIls([d]);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,
-              accountId: 'ils',
+              accountId,
               txnType: 'ils',
               inserted: r.inserted,
               skipped: r.skipped,
@@ -182,20 +182,20 @@ function buildTask(
             changedTransactions.push(...(r.changedTransactions ?? []));
           }
 
-          if (acceptedForeignData.length > 0) {
-            const foreignCount = acceptedForeignData.reduce((s, d) => s + d.transactions.length, 0);
+          for (const d of acceptedForeignData) {
+            const accountId = `${d.metadata.branch}-${d.metadata.account}`;
             emit({
               type: 'task-account-txns-uploading',
               sourceId: src.id,
-              accountId: 'foreign',
+              accountId,
               txnType: 'foreign',
-              count: foreignCount,
+              count: d.transactions.length,
             });
-            const rf = await uploadClient.uploadOtsarForeign(acceptedForeignData);
+            const rf = await uploadClient.uploadOtsarForeign([d]);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,
-              accountId: 'foreign',
+              accountId,
               txnType: 'foreign',
               inserted: rf.inserted,
               skipped: rf.skipped,
