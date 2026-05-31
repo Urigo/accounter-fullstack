@@ -105,7 +105,7 @@ __metadata:
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.0"
     happy-dom: "npm:20.9.0"
-    html2canvas-pro: "npm:2.0.3"
+    html2canvas-pro: "npm:2.0.4"
     iconv-lite: "npm:0.7.2"
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.16.0"
@@ -367,7 +367,7 @@ __metadata:
     dotenv-cli: "npm:11.0.0"
     googleapis: "npm:172.0.0"
     graphql: "npm:16.14.0"
-    graphql-modules: "npm:3.1.1"
+    graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:1.25.0"
     graphql-yoga: "npm:5.21.0"
     iconv-lite: "npm:0.7.2"
@@ -3988,7 +3988,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/wrap@npm:^10.0.0, @graphql-tools/wrap@npm:^10.0.16, @graphql-tools/wrap@npm:^10.0.2":
+"@graphql-tools/wrap@npm:^10.0.16, @graphql-tools/wrap@npm:^10.0.2":
   version: 10.1.4
   resolution: "@graphql-tools/wrap@npm:10.1.4"
   dependencies:
@@ -4003,7 +4003,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-tools/wrap@npm:^11.1.1, @graphql-tools/wrap@npm:^11.1.14, @graphql-tools/wrap@npm:^11.1.15":
+"@graphql-tools/wrap@npm:^11.0.0, @graphql-tools/wrap@npm:^11.1.1, @graphql-tools/wrap@npm:^11.1.14, @graphql-tools/wrap@npm:^11.1.15":
   version: 11.1.15
   resolution: "@graphql-tools/wrap@npm:11.1.15"
   dependencies:
@@ -16408,17 +16408,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-modules@npm:3.1.1":
-  version: 3.1.1
-  resolution: "graphql-modules@npm:3.1.1"
+"graphql-modules@npm:3.1.2":
+  version: 3.1.2
+  resolution: "graphql-modules@npm:3.1.2"
   dependencies:
     "@graphql-tools/schema": "npm:^10.0.0"
-    "@graphql-tools/wrap": "npm:^10.0.0"
+    "@graphql-tools/wrap": "npm:^11.0.0"
     "@graphql-typed-document-node/core": "npm:^3.1.0"
-    ramda: "npm:^0.30.0"
+    ramda: "npm:^0.32.0"
   peerDependencies:
     graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/94f230bb46146f8eb45d894cb8ff8c1344e4c6a5380096d488be7f86bbe8ee61532222e6deb5a96de945948529ad712112003332fb9847dee85c849a898cb4ae
+  checksum: 10c0/5702e12fcf2266098089fedcd71c1b20a2152cf1db02f6fcf5363a39173697749c9fbe12e134dda586854e4171017e01301252e73ba4d650aaeb2744ae34bab7
   languageName: node
   linkType: hard
 
@@ -16747,13 +16747,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html2canvas-pro@npm:2.0.3":
-  version: 2.0.3
-  resolution: "html2canvas-pro@npm:2.0.3"
+"html2canvas-pro@npm:2.0.4":
+  version: 2.0.4
+  resolution: "html2canvas-pro@npm:2.0.4"
   dependencies:
     css-line-break: "npm:^2.1.0"
     text-segmentation: "npm:^1.0.3"
-  checksum: 10c0/80c2ffdea43cc0e4c6ebe83a703f4d1c90d00c5bb9d2b0ed0bce73934337c30a5a6dcebd49fa4520978432c5239f0559c7c003b50d2b2aeb908826f4c8577d8f
+  checksum: 10c0/a635161b4f4466584ba2c8e92b04b3e68715671ab9d7687f04467f8dd857af18ca8a96ef703e018ea92bc85d6d58413c18eb7b53b32124862d540a94716543d1
   languageName: node
   linkType: hard
 
@@ -21893,10 +21893,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ramda@npm:^0.30.0":
-  version: 0.30.1
-  resolution: "ramda@npm:0.30.1"
-  checksum: 10c0/3ea3e35c80e1a1b78c23de0c72d3382c3446f42052b113b851f1b7fc421e33a45ce92e7aef3c705cc6de3812a209d03417af5c264f67126cda539fd66c8bea71
+"ramda@npm:^0.32.0":
+  version: 0.32.0
+  resolution: "ramda@npm:0.32.0"
+  checksum: 10c0/6ad24338813cbf91932f7f160e33af9159a540580a43386b974365a8c98b8aa63e2a9d98affa9b2ac4b6628ff34705ddf9ced8f2987c04e3562f58f202c41cf9
   languageName: node
   linkType: hard
 
