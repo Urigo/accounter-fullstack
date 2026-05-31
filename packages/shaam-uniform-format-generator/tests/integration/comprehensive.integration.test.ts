@@ -655,8 +655,8 @@ describe('Comprehensive SHAAM Format Integration Test', () => {
     expect(result.dataFile).toBeInstanceOf(File);
     expect(result.iniFile.name).toBe('test-report.INI.TXT');
     expect(result.dataFile.name).toBe('test-report.BKMVDATA.TXT');
-    expect(result.iniFile.type).toBe('text/plain');
-    expect(result.dataFile.type).toBe('text/plain');
+    expect(result.iniFile.type).toBe('text/plain;charset=windows-1255');
+    expect(result.dataFile.type).toBe('text/plain;charset=windows-1255');
 
     // Verify file content matches text content
     expect(result.iniFile.size).toBe(result.iniText.length);

@@ -1,5 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
+// eslint-disable-next-line no-restricted-imports
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -300,6 +302,25 @@ export class BusinessesProvider {
       cache: false,
     },
   );
+
+  public async insertBusiness(
+    newBusiness: IInsertBusinessesParams['businesses'][number],
+    client?: PoolClient,
+  ) {
+    if (newBusiness.id) {
+      await this.invalidateBusinessById(newBusiness.id);
+    }
+    const ownerId =
+      newBusiness.ownerId ?? (await this.adminContextProvider.getVerifiedAdminContext()).ownerId;
+    const businessWithOwnerId = reassureOwnerIdExists(newBusiness, ownerId);
+    const businesses = await insertBusinesses.run(
+      {
+        businesses: [businessWithOwnerId],
+      },
+      client ?? this.db,
+    );
+    return businesses[0];
+  }
 
   public async replaceBusiness(targetBusinessId: string, businessIdToReplace: string) {
     const [businessToReplace, business] = await Promise.all([

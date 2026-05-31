@@ -152,6 +152,7 @@ export default [
               'GreenInvoiceDiscount',
               'GreenInvoiceIncome',
               'GreenInvoicePayment',
+              'ImportShaamFileResult',
               'IncomeExpenseChart',
               'IncomeExpenseChartMonthData',
               'Ledger',
