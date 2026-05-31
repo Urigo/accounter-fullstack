@@ -22,6 +22,15 @@ import { type MigrationExecutor } from '../pg-migrator.js';
 export default {
   name: '2026-05-27T10-00-00.sort-codes-composite-pk.sql',
   run: async ({ connection }) => {
+    // Temporarily disable FORCE RLS on the two affected tables so DDL constraint
+    // validation scans don't trigger get_current_business_id() with no session context.
+    await connection.query(sql.unsafe`
+      ALTER TABLE accounter_schema.financial_entities NO FORCE ROW LEVEL SECURITY
+    `);
+    await connection.query(sql.unsafe`
+      ALTER TABLE accounter_schema.sort_codes NO FORCE ROW LEVEL SECURITY
+    `);
+
     // 1. Drop the FK on financial_entities that references the old single-column PK
     await connection.query(sql.unsafe`
       ALTER TABLE accounter_schema.financial_entities
@@ -62,6 +71,14 @@ export default {
         ADD CONSTRAINT financial_entities_hash_sort_codes_key_fk
           FOREIGN KEY (sort_code, owner_id)
           REFERENCES accounter_schema.sort_codes (key, owner_id)
+    `);
+
+    // Re-enable FORCE RLS on both tables.
+    await connection.query(sql.unsafe`
+      ALTER TABLE accounter_schema.sort_codes FORCE ROW LEVEL SECURITY
+    `);
+    await connection.query(sql.unsafe`
+      ALTER TABLE accounter_schema.financial_entities FORCE ROW LEVEL SECURITY
     `);
   },
 } satisfies MigrationExecutor;
