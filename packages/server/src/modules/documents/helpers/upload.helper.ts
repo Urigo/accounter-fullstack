@@ -77,13 +77,13 @@ export async function getOcrData(
   return {
     isOwnerIssuer,
     documentType: draft.type ?? DocumentType.Unprocessed,
-    serial: draft.referenceCode,
-    date: validateDate(draft.date),
+    serial: draft.referenceCode ?? undefined,
+    date: validateDate(draft.date ?? undefined),
     amount: validateNumber(draft.fullAmount),
     currency: draft.currency,
     vat: validateNumber(draft.vatAmount),
     allocationNumber: draft.allocationNumber ?? undefined,
-    description: draft.description,
+    description: draft.description ?? undefined,
     remarks: draft.issuer,
   };
 }
