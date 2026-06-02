@@ -42,7 +42,7 @@
     "@types/inquirer": "9.0.9",
     "@types/node-fetch": "2.6.13",
     "@types/uuid": "11.0.0",
-    "concurrently": "9.2.1",
+    "concurrently": "10.0.3",
     "nodemon": "3.1.14",
     "typescript": "6.0.3"
   },
