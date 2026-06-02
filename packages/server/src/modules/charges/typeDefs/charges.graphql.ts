@@ -50,6 +50,12 @@ export default gql`
     minDebitDate: DateTime
     " minimal date from linked documents "
     minDocumentsDate: DateTime
+    " maximal event date from linked transactions "
+    maxEventDate: DateTime
+    " maximal debit date from linked transactions "
+    maxDebitDate: DateTime
+    " maximal date from linked documents "
+    maxDocumentsDate: DateTime
     " metadata about the charge "
     metadata: ChargeMetadata
     " the tax year in which the action took place "
@@ -73,6 +79,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -92,6 +101,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -111,6 +123,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -130,6 +145,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -149,6 +167,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -168,6 +189,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -187,6 +211,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -206,6 +233,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -225,6 +255,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean
@@ -244,6 +277,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean

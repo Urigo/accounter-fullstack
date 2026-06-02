@@ -372,6 +372,22 @@ export const financialChargesResolvers: ChargesModule.Resolvers = {
         throw errorSimplifier('Failed to fetch min debit date', error);
       }
     },
+    maxEventDate: async (DbCharge, _, { injector }) => {
+      try {
+        const { ledgerMaxInvoiceDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+        return ledgerMaxInvoiceDate;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch max event date', error);
+      }
+    },
+    maxDebitDate: async (DbCharge, _, { injector }) => {
+      try {
+        const { ledgerMaxValueDate } = await getChargeLedgerMeta(DbCharge.id, injector);
+        return ledgerMaxValueDate;
+      } catch (error) {
+        throw errorSimplifier('Failed to fetch max debit date', error);
+      }
+    },
     // minDocumentsDate:
     // validationData:
     // metadata:

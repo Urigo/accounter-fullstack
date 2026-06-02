@@ -8,6 +8,8 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
   let invalidTransactions = false;
   let transactionsMinDebitDate: Date | null = null;
   let transactionsMinEventDate: Date | null = null;
+  let transactionsMaxDebitDate: Date | null = null;
+  let transactionsMaxEventDate: Date | null = null;
 
   const hasFee = transactions.some(t => t.is_fee);
   const onlyFee = transactions.every(t => t.is_fee);
@@ -28,16 +30,31 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
       if (transactionsMinDebitDate > t.debit_timestamp) {
         transactionsMinDebitDate = t.debit_timestamp;
       }
+
+      transactionsMaxDebitDate ??= t.debit_timestamp;
+      if (transactionsMaxDebitDate < t.debit_timestamp) {
+        transactionsMaxDebitDate = t.debit_timestamp;
+      }
     } else if (t.debit_date) {
       transactionsMinDebitDate ??= t.debit_date;
       if (transactionsMinDebitDate > t.debit_date) {
         transactionsMinDebitDate = t.debit_date;
+      }
+
+      transactionsMaxDebitDate ??= t.debit_date;
+      if (transactionsMaxDebitDate < t.debit_date) {
+        transactionsMaxDebitDate = t.debit_date;
       }
     }
 
     transactionsMinEventDate ??= t.event_date;
     if (transactionsMinEventDate > t.event_date) {
       transactionsMinEventDate = t.event_date;
+    }
+
+    transactionsMaxEventDate ??= t.event_date;
+    if (transactionsMaxEventDate < t.event_date) {
+      transactionsMaxEventDate = t.event_date;
     }
 
     if (!isTransactionsValid(t)) {
@@ -57,5 +74,7 @@ export function getTransactionsMeta(transactions: IGetTransactionsByIdsResult[])
     invalidTransactions,
     transactionsMinDebitDate,
     transactionsMinEventDate,
+    transactionsMaxDebitDate,
+    transactionsMaxEventDate,
   };
 }
