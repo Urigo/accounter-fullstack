@@ -56,7 +56,7 @@
     "@graphql-codegen/graphql-modules-preset": "5.1.5",
     "@graphql-codegen/schema-ast": "5.0.2",
     "@graphql-codegen/typescript": "5.0.10",
-    "@graphql-codegen/typescript-graphql-request": "7.0.1",
+    "@graphql-codegen/typescript-graphql-request": "7.1.0",
     "@graphql-codegen/typescript-resolvers": "5.1.8",
     "@graphql-eslint/eslint-plugin": "4.4.0",
     "@graphql-hive/cli": "0.59.2",
