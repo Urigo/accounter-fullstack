@@ -57,6 +57,6 @@
   ],
   "dockerfile": {
     "enabled": true,
-    "fileMatch": [".*?\\.[dD]ockerfile"]
+    "fileMatch": [".*?\\.[dD]ockerfile", "(^|/)[Dd]ocker[Ff]ile$"]
   }
 }

@@ -21,7 +21,7 @@ RUN yarn workspace @accounter/gmail-listener build
 RUN yarn workspaces focus @accounter/gmail-listener --production
 
 # --- Production Stage ---
-FROM mcr.microsoft.com/playwright:v1.59.1
+FROM mcr.microsoft.com/playwright:v1.60.0
 
 WORKDIR /app
 ENV NODE_ENV=production
