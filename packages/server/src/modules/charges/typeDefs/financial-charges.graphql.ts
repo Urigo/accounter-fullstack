@@ -51,6 +51,9 @@ export default gql`
     minEventDate: DateTime
     minDebitDate: DateTime
     minDocumentsDate: DateTime
+    maxEventDate: DateTime
+    maxDebitDate: DateTime
+    maxDocumentsDate: DateTime
     metadata: ChargeMetadata
     yearsOfRelevance: [YearOfRelevance!]
     optionalVAT: Boolean

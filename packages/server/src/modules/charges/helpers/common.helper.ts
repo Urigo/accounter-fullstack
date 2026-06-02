@@ -136,6 +136,8 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   const proformaCurrencySet = new Set<Currency>();
   let documentsMinAccountancyDate: Date | null = null;
   let documentsMinAnyDate: Date | null = null;
+  let documentsMaxAccountancyDate: Date | null = null;
+  let documentsMaxDate: Date | null = null;
 
   documents.map(d => {
     const amount = d.total_amount ?? 0;
@@ -148,6 +150,11 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
       documentsMinAnyDate ??= d.date;
       if (documentsMinAnyDate > d.date) {
         documentsMinAnyDate = d.date;
+      }
+
+      documentsMaxDate ??= d.date;
+      if (documentsMaxDate < d.date) {
+        documentsMaxDate = d.date;
       }
     }
 
@@ -162,6 +169,11 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
         documentsMinAccountancyDate ??= d.date;
         if (documentsMinAccountancyDate > d.date) {
           documentsMinAccountancyDate = d.date;
+        }
+
+        documentsMaxAccountancyDate ??= d.date;
+        if (documentsMaxAccountancyDate < d.date) {
+          documentsMaxAccountancyDate = d.date;
         }
       }
       if (d.currency_code) {
@@ -179,6 +191,11 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
         documentsMinAccountancyDate ??= d.date;
         if (documentsMinAccountancyDate > d.date) {
           documentsMinAccountancyDate = d.date;
+        }
+
+        documentsMaxAccountancyDate ??= d.date;
+        if (documentsMaxAccountancyDate < d.date) {
+          documentsMaxAccountancyDate = d.date;
         }
       }
       if (d.currency_code) {
@@ -215,6 +232,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
     invalidDocuments,
     documentsMinDate: documentsMinAccountancyDate ?? (documentsMinAnyDate as Date | null),
+    documentsMaxDate: documentsMaxAccountancyDate ?? (documentsMaxDate as Date | null),
   };
 }
 

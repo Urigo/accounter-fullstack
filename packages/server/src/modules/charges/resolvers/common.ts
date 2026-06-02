@@ -66,6 +66,24 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
       .catch(error => {
         throw errorSimplifier('Failed to fetch min documents date', error);
       }),
+  maxEventDate: async (DbCharge, _, { injector }) =>
+    getChargeTransactionsMeta(DbCharge.id, injector)
+      .then(({ transactionsMaxEventDate }) => transactionsMaxEventDate)
+      .catch(error => {
+        throw errorSimplifier('Failed to fetch charge transactions meta', error);
+      }),
+  maxDebitDate: async (DbCharge, _, { injector }) =>
+    getChargeTransactionsMeta(DbCharge.id, injector)
+      .then(({ transactionsMaxDebitDate }) => transactionsMaxDebitDate)
+      .catch(error => {
+        throw errorSimplifier('Failed to fetch max debit date', error);
+      }),
+  maxDocumentsDate: async (DbCharge, _, { injector }) =>
+    getChargeDocumentsMeta(DbCharge.id, injector)
+      .then(docsMeta => docsMeta.documentsMaxDate)
+      .catch(error => {
+        throw errorSimplifier('Failed to fetch max documents date', error);
+      }),
   validationData: (DbCharge, _, { injector }) =>
     validateCharge(DbCharge, injector).catch(error => {
       throw errorSimplifier('Failed to fetch validation data', error);
