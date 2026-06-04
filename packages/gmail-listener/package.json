@@ -43,10 +43,10 @@
   "dependencies": {
     "@google-cloud/pubsub": "5.3.0",
     "@whatwg-node/fetch": "0.10.13",
-    "@whatwg-node/node-fetch": "0.8.5",
+    "@whatwg-node/node-fetch": "0.8.6",
     "dotenv": "17.4.2",
     "googleapis": "173.0.0",
-    "graphql": "16.14.0",
+    "graphql": "16.14.1",
     "inline-css": "4.0.3",
     "playwright": "1.60.0",
     "zod": "4.4.3"
