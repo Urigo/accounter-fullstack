@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "date-fns": "4.4.0",
-    "inquirer": "14.0.0",
+    "inquirer": "14.0.2",
     "node-fetch": "3.3.2",
     "node-xlsx": "0.24.0",
     "playwright": "1.60.0",
