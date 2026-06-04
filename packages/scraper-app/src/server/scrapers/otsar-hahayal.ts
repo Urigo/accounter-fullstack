@@ -78,6 +78,7 @@ export async function scrapeOtsarHahayal(
     {
       fromDate: dateFrom.toISOString(),
       toDate: dateTo.toISOString(),
+      headless,
     },
   );
 
@@ -123,7 +124,7 @@ export async function scrapeOtsarHahayal(
     // Foreign transactions
     const foreignData: ForeignAccountData[] = await scraper.foreignTransactions();
     for (const foreignAccount of foreignData) {
-      const accountId = `${foreignAccount.metadata.branch}-${foreignAccount.metadata.account}`;
+      const accountId = `${foreignAccount.metadata.branch}-${foreignAccount.metadata.account}-${foreignAccount.metadata.subAccount}`;
       emit({
         type: 'task-account-txns-fetching',
         sourceId: creds.id,

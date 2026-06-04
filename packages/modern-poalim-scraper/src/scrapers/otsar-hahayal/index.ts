@@ -43,7 +43,7 @@ export async function otsarHahayal(
   ).toISOString();
   const options = { ...DEFAULT_OPTIONS, fromDate, toDate: now.toISOString(), ...userOptions };
 
-  const browser = await chromium.launch({ headless: options.headless ?? false });
+  const browser = await chromium.launch({ headless: options.headless === true });
   const context = await browser.newContext({ acceptDownloads: true });
   const page = await context.newPage();
 
