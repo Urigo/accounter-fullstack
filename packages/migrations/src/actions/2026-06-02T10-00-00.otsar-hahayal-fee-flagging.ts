@@ -25,6 +25,10 @@ export default {
         FROM accounter_schema.financial_accounts
         WHERE account_number = NEW.account_number::TEXT AND type = 'BANK_ACCOUNT';
 
+        IF account_id_var IS NULL OR owner_id_var IS NULL THEN
+            RAISE EXCEPTION 'Financial account not found or has no owner for account number: %', NEW.account_number;
+        END IF;
+
         -- 3. check if fee
         is_fee_var := (
             NEW.description LIKE '%עמלת מסלול%'
@@ -115,6 +119,10 @@ export default {
         FROM accounter_schema.financial_accounts
         WHERE account_number = NEW.account::TEXT AND type = 'BANK_ACCOUNT';
 
+        IF account_id_var IS NULL OR owner_id_var IS NULL THEN
+            RAISE EXCEPTION 'Financial account not found or has no owner for account number: %', NEW.account_number;
+        END IF;
+
         -- 3. check if fee
         is_fee_var := (
             NEW.description LIKE '%עמלה בגין%'
@@ -193,6 +201,10 @@ export default {
         INTO account_id_var, owner_id_var
         FROM accounter_schema.financial_accounts
         WHERE account_number = NEW.masked_pan::TEXT AND type = 'CREDIT_CARD';
+
+        IF account_id_var IS NULL OR owner_id_var IS NULL THEN
+            RAISE EXCEPTION 'Credit card account not found or has no owner for masked PAN: %', NEW.masked_pan;
+        END IF;
 
         -- 3. resolve currency
         currency_var := CASE NEW.charge_currency
