@@ -56,10 +56,11 @@ export enum Currency {
 
 export type ForeignAccountMetadata = {
   account: number;
-  branch: number;
   accountType: string;
+  branch: number;
   currency: Currency;
   openingBalance: number;
+  subAccount: string;
 };
 
 export type ForeignTransaction = {

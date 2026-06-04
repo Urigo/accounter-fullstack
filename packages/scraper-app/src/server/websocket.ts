@@ -86,7 +86,7 @@ function buildTask(
           // Register discovered accounts and check they're approved
           // Merge ILS and foreign accounts — both are identified by account-branch
           const foreignAccountEntries = foreignData.map(d => ({
-            account: String(d.metadata.account),
+            account: `${String(d.metadata.account)}-${d.metadata.subAccount}`,
             branch: String(d.metadata.branch),
           }));
           const accountPayload = [
@@ -111,7 +111,10 @@ function buildTask(
             d => !ignoredAccountIds.has(`${d.account.branch}-${d.account.account}`),
           );
           const acceptedForeignData = foreignData.filter(
-            d => !ignoredAccountIds.has(`${d.metadata.branch}-${d.metadata.account}`),
+            d =>
+              !ignoredAccountIds.has(
+                `${d.metadata.branch}-${d.metadata.account}-${d.metadata.subAccount}`,
+              ),
           );
 
           // Register and validate credit cards separately
@@ -157,20 +160,20 @@ function buildTask(
           const insertedTransactions: InsertedTransactionSummary[] = [];
           const changedTransactions: ChangedTransaction[] = [];
 
-          if (acceptedIlsData.length > 0) {
-            const ilsCount = acceptedIlsData.reduce((s, d) => s + d.transactions.length, 0);
+          for (const d of acceptedIlsData) {
+            const accountId = `${d.account.branch}-${d.account.account}`;
             emit({
               type: 'task-account-txns-uploading',
               sourceId: src.id,
-              accountId: 'ils',
+              accountId,
               txnType: 'ils',
-              count: ilsCount,
+              count: d.transactions.length,
             });
-            const r = await uploadClient.uploadOtsarIls(acceptedIlsData);
+            const r = await uploadClient.uploadOtsarIls([d]);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,
-              accountId: 'ils',
+              accountId,
               txnType: 'ils',
               inserted: r.inserted,
               skipped: r.skipped,
@@ -182,20 +185,20 @@ function buildTask(
             changedTransactions.push(...(r.changedTransactions ?? []));
           }
 
-          if (acceptedForeignData.length > 0) {
-            const foreignCount = acceptedForeignData.reduce((s, d) => s + d.transactions.length, 0);
+          for (const d of acceptedForeignData) {
+            const accountId = `${d.metadata.branch}-${d.metadata.account}-${d.metadata.subAccount}`;
             emit({
               type: 'task-account-txns-uploading',
               sourceId: src.id,
-              accountId: 'foreign',
+              accountId,
               txnType: 'foreign',
-              count: foreignCount,
+              count: d.transactions.length,
             });
-            const rf = await uploadClient.uploadOtsarForeign(acceptedForeignData);
+            const rf = await uploadClient.uploadOtsarForeign([d]);
             emit({
               type: 'task-account-txns-done',
               sourceId: src.id,
-              accountId: 'foreign',
+              accountId,
               txnType: 'foreign',
               inserted: rf.inserted,
               skipped: rf.skipped,

@@ -57,7 +57,8 @@ export type TaskState = {
   otpSourceId?: string;
   insertedTransactions?: InsertedTransactionSummary[];
   changedTransactions?: ChangedTransaction[];
-  steps?: MonthStep[] | AccountStep[];
+  accountSteps?: AccountStep[];
+  monthSteps?: MonthStep[];
 };
 
 export type RunStatus = 'idle' | 'running' | 'complete';
@@ -106,16 +107,6 @@ function updateAccountStep(
   patch: Partial<AccountStep>,
 ): AccountStep[] {
   return steps.map(s => (s.accountId === accountId ? { ...s, ...patch } : s));
-}
-
-function asMonthSteps(steps: MonthStep[] | AccountStep[] | undefined): MonthStep[] {
-  if (!steps || (steps.length > 0 && 'accountId' in steps[0]!)) return [];
-  return steps as MonthStep[];
-}
-
-function asAccountSteps(steps: MonthStep[] | AccountStep[] | undefined): AccountStep[] {
-  if (!steps || (steps.length > 0 && 'month' in steps[0]!)) return [];
-  return steps as AccountStep[];
 }
 
 export function useRunSocket(): UseRunSocketResult {
@@ -181,21 +172,21 @@ export function useRunSocket(): UseRunSocketResult {
           // ── Per-month progress ─────────────────────────────────────────────
           case 'task-month-fetching': {
             const state = get(msg.sourceId);
-            const monthSteps = asMonthSteps(state.steps);
+            const monthSteps = state.monthSteps ?? [];
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, { phase: 'fetching' }),
+              monthSteps: updateMonthStep(updated, msg.month, { phase: 'fetching' }),
             });
             break;
           }
           case 'task-month-fetched': {
             const state = get(msg.sourceId);
-            const monthSteps = asMonthSteps(state.steps);
+            const monthSteps = state.monthSteps ?? [];
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, {
+              monthSteps: updateMonthStep(updated, msg.month, {
                 phase: 'fetched',
                 transactionCount: msg.transactionCount,
               }),
@@ -204,21 +195,21 @@ export function useRunSocket(): UseRunSocketResult {
           }
           case 'task-month-error': {
             const state = get(msg.sourceId);
-            const monthSteps = asMonthSteps(state.steps);
+            const monthSteps = state.monthSteps ?? [];
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, { phase: 'error', error: msg.error }),
+              monthSteps: updateMonthStep(updated, msg.month, { phase: 'error', error: msg.error }),
             });
             break;
           }
           case 'task-month-uploading': {
             const state = get(msg.sourceId);
-            const monthSteps = asMonthSteps(state.steps);
+            const monthSteps = state.monthSteps ?? [];
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, {
+              monthSteps: updateMonthStep(updated, msg.month, {
                 phase: 'uploading',
                 transactionCount: msg.transactionCount,
               }),
@@ -227,11 +218,11 @@ export function useRunSocket(): UseRunSocketResult {
           }
           case 'task-month-uploaded': {
             const state = get(msg.sourceId);
-            const monthSteps = asMonthSteps(state.steps);
+            const monthSteps = state.monthSteps ?? [];
             const [updated] = findOrCreateMonthStep(monthSteps, msg.month);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateMonthStep(updated, msg.month, {
+              monthSteps: updateMonthStep(updated, msg.month, {
                 phase: 'uploaded',
                 inserted: msg.inserted,
                 skipped: msg.skipped,
@@ -240,54 +231,54 @@ export function useRunSocket(): UseRunSocketResult {
             break;
           }
 
-          // ── Per-account progress (Poalim) ──────────────────────────────────
+          // ── Per-account progress (Poalim / Otsar HaHayal) ─────────────────
           case 'task-accounts-found': {
             const state = get(msg.sourceId);
-            const steps: AccountStep[] = msg.accounts.map(a => ({
+            const accountSteps: AccountStep[] = msg.accounts.map(a => ({
               accountId: `${a.branchNumber}-${a.accountNumber}`,
             }));
-            next.set(msg.sourceId, { ...state, steps });
+            next.set(msg.sourceId, { ...state, accountSteps });
             break;
           }
           case 'task-account-vault-checked': {
             const state = get(msg.sourceId);
-            const accountSteps = asAccountSteps(state.steps);
+            const accountSteps = state.accountSteps ?? [];
             const [updated] = findOrCreateAccountStep(accountSteps, msg.accountId);
             next.set(msg.sourceId, {
               ...state,
-              steps: updateAccountStep(updated, msg.accountId, { vaultStatus: msg.status }),
+              accountSteps: updateAccountStep(updated, msg.accountId, { vaultStatus: msg.status }),
             });
             break;
           }
           case 'task-account-txns-fetching': {
             const state = get(msg.sourceId);
-            const accountSteps = asAccountSteps(state.steps);
+            const accountSteps = state.accountSteps ?? [];
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
               [msg.txnType]: { phase: 'fetching' as const },
             };
             next.set(msg.sourceId, {
               ...state,
-              steps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
+              accountSteps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
             });
             break;
           }
           case 'task-account-txns-uploading': {
             const state = get(msg.sourceId);
-            const accountSteps = asAccountSteps(state.steps);
+            const accountSteps = state.accountSteps ?? [];
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
               [msg.txnType]: { phase: 'uploading' as const, count: msg.count },
             };
             next.set(msg.sourceId, {
               ...state,
-              steps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
+              accountSteps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
             });
             break;
           }
           case 'task-account-txns-done': {
             const state = get(msg.sourceId);
-            const accountSteps = asAccountSteps(state.steps);
+            const accountSteps = state.accountSteps ?? [];
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
               [msg.txnType]: {
@@ -298,7 +289,7 @@ export function useRunSocket(): UseRunSocketResult {
             };
             next.set(msg.sourceId, {
               ...state,
-              steps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
+              accountSteps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
             });
             break;
           }

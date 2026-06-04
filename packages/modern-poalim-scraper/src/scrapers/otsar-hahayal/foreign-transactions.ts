@@ -96,11 +96,15 @@ function groupTransactions(transactions: ForeignTransaction[]): GroupedForeignTr
   return Array.from(groupedTransactions.values());
 }
 
-function parseForeignXls(buffer: Buffer): ForeignAccountData {
+function parseForeignXls(buffer: Buffer, subAccount: string): ForeignAccountData | null {
   const sheets = xlsx.parse<unknown[]>(buffer);
   const sheet = sheets[0];
   if (!sheet) throw new Error('XLS file has no sheets');
   const rows = sheet.data;
+
+  if (rows.length < 7) {
+    return null;
+  }
 
   // Row index 2 (0-based): "חשבון: 123-456789"
   const metaRow = String(rows[2]?.[0] ?? '');
@@ -152,7 +156,7 @@ function parseForeignXls(buffer: Buffer): ForeignAccountData {
   const groupedTransactions = groupTransactions(transactions);
 
   return {
-    metadata: { account, branch, accountType, currency, openingBalance },
+    metadata: { account, branch, accountType, currency, openingBalance, subAccount },
     transactions: groupedTransactions,
   };
 }
@@ -222,7 +226,10 @@ export async function getForeignTransactions(page: Page, options: OtsarHahayalOp
       if (p !== page) await p.close().catch(() => {});
     }
 
-    results.push(parseForeignXls(xlsBuffer));
+    const result = parseForeignXls(xlsBuffer, foreignAccount.value);
+    if (result) {
+      results.push(result);
+    }
   }
 
   return results;
