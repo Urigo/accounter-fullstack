@@ -170,7 +170,7 @@ __metadata:
     "@whatwg-node/fetch": "npm:0.10.13"
     "@whatwg-node/node-fetch": "npm:0.8.5"
     dotenv: "npm:17.4.2"
-    googleapis: "npm:172.0.0"
+    googleapis: "npm:173.0.0"
     graphql: "npm:16.14.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.60.0"
@@ -365,7 +365,7 @@ __metadata:
     date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
-    googleapis: "npm:172.0.0"
+    googleapis: "npm:173.0.0"
     graphql: "npm:16.14.0"
     graphql-modules: "npm:3.1.2"
     graphql-scalars: "npm:1.25.0"
@@ -16188,13 +16188,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis@npm:172.0.0":
-  version: 172.0.0
-  resolution: "googleapis@npm:172.0.0"
+"googleapis@npm:173.0.0":
+  version: 173.0.0
+  resolution: "googleapis@npm:173.0.0"
   dependencies:
     google-auth-library: "npm:^10.2.0"
     googleapis-common: "npm:^8.0.0"
-  checksum: 10c0/0ab9279940b7333c2959dd2e7d21a9126321b782ed87b76705394c31759c6ed257de73813add14b3c52a72df512b7855136d9ece3b8bdb8201aa707479b3b2f4
+  checksum: 10c0/29a4814292ae98390d6db26deeb299160f07730f59075193fec54300035e7d6919e0bec4e45cf4b109370b7a2ebbee186ad9c12ee931a3cf02a40b2c9132d802
   languageName: node
   linkType: hard
 
