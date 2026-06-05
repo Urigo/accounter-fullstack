@@ -80,7 +80,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.0.1"
-    "@mui/x-charts": "npm:8.28.2"
+    "@mui/x-charts": "npm:8.29.0"
     "@tailwindcss/vite": "npm:4.3.0"
     "@tanstack/react-query": "npm:5.101.0"
     "@tanstack/react-table": "npm:8.21.3"
@@ -5179,9 +5179,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts-vendor@npm:8.26.0":
-  version: 8.26.0
-  resolution: "@mui/x-charts-vendor@npm:8.26.0"
+"@mui/x-charts-vendor@npm:8.29.0":
+  version: 8.29.0
+  resolution: "@mui/x-charts-vendor@npm:8.29.0"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@types/d3-array": "npm:^3.2.2"
@@ -5190,13 +5190,13 @@ __metadata:
     "@types/d3-interpolate": "npm:^3.0.4"
     "@types/d3-path": "npm:^3.1.1"
     "@types/d3-scale": "npm:^4.0.9"
-    "@types/d3-shape": "npm:^3.1.7"
+    "@types/d3-shape": "npm:^3.1.8"
     "@types/d3-time": "npm:^3.0.4"
     "@types/d3-time-format": "npm:^4.0.3"
     "@types/d3-timer": "npm:^3.0.2"
     d3-array: "npm:^3.2.4"
     d3-color: "npm:^3.1.0"
-    d3-format: "npm:^3.1.0"
+    d3-format: "npm:^3.1.2"
     d3-interpolate: "npm:^3.0.1"
     d3-path: "npm:^3.1.0"
     d3-scale: "npm:^4.0.2"
@@ -5206,19 +5206,19 @@ __metadata:
     d3-timer: "npm:^3.0.1"
     flatqueue: "npm:^3.0.0"
     internmap: "npm:^2.0.3"
-  checksum: 10c0/9fe72a5ff949cc2e3a7d19f30ccb79c21be91d69cb6489eb263180cb01954d373bfb019c4079bca425eba29bac5e15cdc34e9ee877e2af558e65fda0759e12e6
+  checksum: 10c0/6066a445d7980ea766873757f524722e54cee99aa5be06ae4144a14b4a34f9cb4340ecf1413872c682e5f236603048c19b0270cef3084c3c0c5132cfd88056f0
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:8.28.2":
-  version: 8.28.2
-  resolution: "@mui/x-charts@npm:8.28.2"
+"@mui/x-charts@npm:8.29.0":
+  version: 8.29.0
+  resolution: "@mui/x-charts@npm:8.29.0"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
-    "@mui/x-charts-vendor": "npm:8.26.0"
-    "@mui/x-internal-gestures": "npm:0.4.0"
-    "@mui/x-internals": "npm:8.26.0"
+    "@mui/x-charts-vendor": "npm:8.29.0"
+    "@mui/x-internal-gestures": "npm:0.5.0"
+    "@mui/x-internals": "npm:8.29.0"
     bezier-easing: "npm:^2.1.0"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
@@ -5236,22 +5236,22 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/960896b4055bcd64338daf50be2b34c9fd739fbcb973b4e918febabeb2872fa35e7b4adbbd4375b85d146e803b172965ee52ba39f7199718ca26c0a2a01d9d8b
+  checksum: 10c0/2d5050708af72abf2419dde99f91470bd5defb23cd513a839d35be51edc5a71cf7c7eb76ebfb6380675767465e8c511432cb03f364f2a11ae928cca1e0b2afd7
   languageName: node
   linkType: hard
 
-"@mui/x-internal-gestures@npm:0.4.0":
-  version: 0.4.0
-  resolution: "@mui/x-internal-gestures@npm:0.4.0"
+"@mui/x-internal-gestures@npm:0.5.0":
+  version: 0.5.0
+  resolution: "@mui/x-internal-gestures@npm:0.5.0"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
-  checksum: 10c0/29b278a8933b65acd9530a259fd95d6d4a721e4a5c9f34dfab818a13a50fb560959d56519c35fb9a4b5f924aaf38c8f44407b8e82b90754af255fcaad75d0118
+  checksum: 10c0/2fe5af91d2c95b661933112991adb41fe9679a32a35c018f3880b10695e7d4671a27bb7e0ffef185e2076fb3d333f5bc3d852079492d3485e8f22933e55f52b4
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:8.26.0":
-  version: 8.26.0
-  resolution: "@mui/x-internals@npm:8.26.0"
+"@mui/x-internals@npm:8.29.0":
+  version: 8.29.0
+  resolution: "@mui/x-internals@npm:8.29.0"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
@@ -5259,7 +5259,7 @@ __metadata:
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/819564e1b1c7626f5e237edd81f716a3871df1479f2e2e9fbef45a5963df21c510eca4931f6af726fdcd9dc643a019e44c5d61657865b389ef0a2ab5abb10d6c
+  checksum: 10c0/7dd84c45084404426ec46dd20976ba81cceeb84011be900c07c1f02131fa8fb26049b5974577457552c78c24153b57e0b79c85f8eddca8c3a550ea837529eb74
   languageName: node
   linkType: hard
 
@@ -9763,7 +9763,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/d3-shape@npm:^3.1.0, @types/d3-shape@npm:^3.1.7":
+"@types/d3-shape@npm:^3.1.0, @types/d3-shape@npm:^3.1.8":
   version: 3.1.8
   resolution: "@types/d3-shape@npm:3.1.8"
   dependencies:
@@ -13050,7 +13050,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3-format@npm:1 - 3, d3-format@npm:^3.1.0":
+"d3-format@npm:1 - 3, d3-format@npm:^3.1.2":
   version: 3.1.2
   resolution: "d3-format@npm:3.1.2"
   checksum: 10c0/0de452ae07585238e7f01607a7e0066665c34609652188b6ac7dc9f424f69465a425e07d16d79bd0e5955202ac7f241c66d0c76f68a79fc6f4857c94cf420652
