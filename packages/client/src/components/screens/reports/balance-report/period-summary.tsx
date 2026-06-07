@@ -16,8 +16,8 @@ export const PeriodSummary = ({ periodInfo }: PeriodSummaryProps): ReactNode => 
   }
 
   return (
-    <Card className="mb-4 bg-white p-10">
-      <CardContent className="pt-6 bg-white">
+    <Card className="mb-4">
+      <CardContent className="pt-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Income */}
           <div className="space-y-2">
