@@ -144,6 +144,8 @@ export type PeriodInfo = {
   expense: number;
   delta: number;
   deltaInfo: Partial<{ [key in Currency]: number }>;
+  expenseInfo: Partial<{ [key in Currency]: number }>;
+  incomeInfo: Partial<{ [key in Currency]: number }>;
   cumulative: number;
   transactions: BalanceReportScreenQuery['transactionsForBalanceReport'];
 };
@@ -293,6 +295,8 @@ export const BalanceReport = (): ReactElement => {
           income: 0,
           expense: 0,
           delta: 0,
+          incomeInfo: {},
+          expenseInfo: {},
           deltaInfo: {},
           cumulative: 0,
           transactions: [],
@@ -301,8 +305,13 @@ export const BalanceReport = (): ReactElement => {
       const period = periods.get(key)!;
       if (txn.amountUsd.raw > 0) {
         period.income += txn.amountUsd.raw;
+
+        period.incomeInfo[txn.amount.currency] =
+          (period.incomeInfo[txn.amount.currency] || 0) + txn.amount.raw;
       } else {
         period.expense += txn.amountUsd.raw;
+        period.expenseInfo[txn.amount.currency] =
+          (period.expenseInfo[txn.amount.currency] || 0) + txn.amount.raw;
       }
       period.delta += txn.amountUsd.raw;
       period.deltaInfo[txn.amount.currency] =
@@ -320,6 +329,8 @@ export const BalanceReport = (): ReactElement => {
           expense: value.expense,
           delta: value.delta,
           deltaInfo: value.deltaInfo,
+          incomeInfo: value.incomeInfo,
+          expenseInfo: value.expenseInfo,
           cumulative: cumulativeBalance,
           transactions: value.transactions.sort(
             (t1, t2) => Math.abs(t2.amountUsd.raw) - Math.abs(t1.amountUsd.raw),
@@ -369,6 +380,7 @@ export const BalanceReport = (): ReactElement => {
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
+                        className="bg-white"
                         formatter={(value, name, _item, index) => {
                           const bgColor = `bg-[var(--color-${name})]`;
 

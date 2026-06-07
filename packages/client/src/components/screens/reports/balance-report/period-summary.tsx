@@ -26,6 +26,20 @@ export const PeriodSummary = ({ periodInfo }: PeriodSummaryProps): ReactNode => 
               <div className="h-3 w-3 rounded-sm bg-[hsl(var(--chart-1))]" />
               <p className="text-2xl font-bold">{formatter.format(periodInfo.income)}</p>
             </div>
+            {/* Income breakdown by currency */}
+            {Object.keys(periodInfo.incomeInfo).length > 0 && (
+              <div className="mt-2 space-y-1">
+                {Object.entries(periodInfo.incomeInfo).map(([currencyCode, amount]) => {
+                  const currency = currencyCode as Currency;
+                  const currencyFormatter = getCurrencyFormatter(currency);
+                  return (
+                    <p key={currency} className="text-xs text-muted-foreground">
+                      {currencyFormatter.format(amount ?? 0)}
+                    </p>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Expense */}
@@ -35,6 +49,20 @@ export const PeriodSummary = ({ periodInfo }: PeriodSummaryProps): ReactNode => 
               <div className="h-3 w-3 rounded-sm bg-[hsl(var(--chart-2))]" />
               <p className="text-2xl font-bold">{formatter.format(periodInfo.expense)}</p>
             </div>
+            {/* Expense breakdown by currency */}
+            {Object.keys(periodInfo.expenseInfo).length > 0 && (
+              <div className="mt-2 space-y-1">
+                {Object.entries(periodInfo.expenseInfo).map(([currencyCode, amount]) => {
+                  const currency = currencyCode as Currency;
+                  const currencyFormatter = getCurrencyFormatter(currency);
+                  return (
+                    <p key={currency} className="text-xs text-muted-foreground">
+                      {currencyFormatter.format(amount ?? 0)}
+                    </p>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Delta */}
