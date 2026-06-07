@@ -49,8 +49,8 @@ Use OAuth Playground:
 
 1. Open <https://developers.google.com/oauthplayground>
 2. Click the settings gear and enable "Use your own OAuth credentials"
-3. Paste your OAuth client ID and client secret
-4. Select scope `https://mail.google.com/`
+3. Paste your OAuth client ID and client secret and close the settings dialog
+4. Select scope `https://mail.google.com/` (under Gmail API v1)
 5. Authorize with the mailbox you want the listener to monitor
 6. Exchange authorization code for tokens and copy the refresh token
 
