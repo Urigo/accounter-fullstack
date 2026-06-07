@@ -249,7 +249,7 @@ export class FinancialEntitiesProvider {
     if (entityToReplace.type !== entity.type) {
       throw new Error('Cannot replace entities of different types');
     }
-    if (entity.id === entity.owner_id) {
+    if (entityToReplace.id === entity.owner_id) {
       throw new Error('Cannot replace owner entity');
     }
     this.invalidateFinancialEntityById(entityIdToReplace);
