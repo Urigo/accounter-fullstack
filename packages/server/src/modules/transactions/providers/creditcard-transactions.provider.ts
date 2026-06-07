@@ -14,12 +14,14 @@ const getCreditCardTransactionsByChargeIds = sql<IGetCreditCardTransactionsByCha
         origin_transaction.id        as origin_transaction_id,
         origin_transaction.charge_id as origin_charge_id,
         a.type,
-        a.account_number
+        a.account_number,
+        a.account_name
       FROM accounter_schema.transactions t
       left join accounter_schema.financial_accounts a
         on a.id = t.account_id) t
-      on t.account_number = origin_transaction.source_reference
-        and t.type = 'CREDIT_CARD'
+      on (t.account_number = origin_transaction.source_reference
+         OR origin_transaction.source_description like coalesce('%' || t.account_name || '%', ''))
+         and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)
   WHERE origin_transaction.charge_id in $$chargeIds;`;
@@ -30,12 +32,14 @@ const validateCreditCardTransactionsAmountByChargeIds = sql<IValidateCreditCardT
   FROM accounter_schema.transactions origin_transaction
     left join lateral (SELECT t.*,
         a.type,
-        a.account_number
+        a.account_number,
+        a.account_name
       FROM accounter_schema.transactions t
       left join accounter_schema.financial_accounts a
         on a.id = t.account_id
     ) t
-      on t.account_number = origin_transaction.source_reference
+      on (t.account_number = origin_transaction.source_reference
+         OR origin_transaction.source_description like coalesce('%' || t.account_name || '%', ''))
         and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)

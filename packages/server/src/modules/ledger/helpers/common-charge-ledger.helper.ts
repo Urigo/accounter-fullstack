@@ -186,6 +186,30 @@ export async function ledgerEntryFromDocument(
   return ledgerEntry;
 }
 
+function getCreditCardAccountByTransactionReferenceAndDescription(
+  sourceReference: string,
+  sourceDescription: string | null,
+): string | null {
+  if (sourceReference === '8547') {
+    return '6fed9073-f571-402e-9da0-ac0669f658d2'; // 9200
+  }
+  if (sourceReference === '13795') {
+    if (sourceDescription?.includes('2260')) {
+      return '0e86514c-9ddb-4c82-b731-6107f7293b1f'; //2260
+    }
+    if (sourceDescription?.includes('4333')) {
+      return '782070ce-ec7e-4be0-ab69-46c89528bf04'; //4333
+    }
+  }
+  if (sourceReference === '22200' && sourceDescription?.includes('מסטרקארד')) {
+    return '782070ce-ec7e-4be0-ab69-46c89528bf04'; //4333
+  }
+  if (sourceReference === '11200' && sourceDescription?.includes('כ.א.ל')) {
+    return '6fed9073-f571-402e-9da0-ac0669f658d2'; // 9200
+  }
+  return null;
+}
+
 export async function ledgerEntryFromMainTransaction(
   transaction: IGetTransactionsByChargeIdsResult,
   injector: Injector,
@@ -213,14 +237,19 @@ export async function ledgerEntryFromMainTransaction(
     const account = await injector
       .get(FinancialAccountsProvider)
       .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
-    if (!account) {
+    let accountId = account?.id ?? null;
+    accountId ||= getCreditCardAccountByTransactionReferenceAndDescription(
+      transaction.source_reference,
+      transaction.source_description,
+    );
+    if (!accountId) {
       throw new LedgerError(
         `Transaction reference "${transaction.source_reference}" is missing account`,
       );
     }
     mainAccountId = await getFinancialAccountTaxCategoryId(injector, {
       ...transaction,
-      account_id: account.id,
+      account_id: accountId,
     });
   }
 
