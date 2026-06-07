@@ -238,7 +238,7 @@ export async function ledgerEntryFromMainTransaction(
       .get(FinancialAccountsProvider)
       .getFinancialAccountByAccountNumberLoader.load(transaction.source_reference);
     let accountId = account?.id ?? null;
-    accountId ||= getCreditCardAccountByTransactionReferenceAndDescription(
+    accountId ??= getCreditCardAccountByTransactionReferenceAndDescription(
       transaction.source_reference,
       transaction.source_description,
     );

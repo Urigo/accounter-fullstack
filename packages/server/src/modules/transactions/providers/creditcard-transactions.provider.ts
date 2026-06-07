@@ -20,7 +20,7 @@ const getCreditCardTransactionsByChargeIds = sql<IGetCreditCardTransactionsByCha
       left join accounter_schema.financial_accounts a
         on a.id = t.account_id) t
       on (t.account_number = origin_transaction.source_reference
-         OR origin_transaction.source_description like coalesce('%' || t.account_name || '%', ''))
+         OR (t.account_name IS NOT NULL AND t.account_name <> '' AND origin_transaction.source_description LIKE '%' || t.account_name || '%'))
          and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)
@@ -39,7 +39,7 @@ const validateCreditCardTransactionsAmountByChargeIds = sql<IValidateCreditCardT
         on a.id = t.account_id
     ) t
       on (t.account_number = origin_transaction.source_reference
-         OR origin_transaction.source_description like coalesce('%' || t.account_name || '%', ''))
+         OR (t.account_name IS NOT NULL AND t.account_name <> '' AND origin_transaction.source_description LIKE '%' || t.account_name || '%'))
         and t.type = 'CREDIT_CARD'
         and t.currency = origin_transaction.currency
         and COALESCE(t.debit_date_override, t.debit_date) = COALESCE(origin_transaction.debit_date_override, origin_transaction.debit_date)
