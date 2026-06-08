@@ -3,6 +3,14 @@ import { resolve } from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
+// Node 24+ enables WebStorage (localStorage/sessionStorage) by default.
+// In Node 26 without --localstorage-file, localStorage is undefined and
+// non-overridable by happy-dom. Disable it so happy-dom owns these globals.
+const nodeMajor = parseInt(process.versions.node, 10);
+if (nodeMajor >= 24) {
+  process.env['NODE_OPTIONS'] = `${process.env['NODE_OPTIONS'] ?? ''} --no-webstorage`.trim();
+}
+
 const __dirname = new URL('.', import.meta.url).pathname;
 
 export default defineConfig({
