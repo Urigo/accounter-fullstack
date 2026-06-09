@@ -23,8 +23,8 @@ financial-entities, green-invoice, ledger, misc-expenses, priority, reports, sal
 tags, transactions, vat, workspace-settings
 
 > `gmail-listener` remains as a backward-compat re-export shim
-> (`gmailListenerModule = emailIngestionModule`) for the legacy listener package.
-> New code must import from `email-ingestion` directly.
+> (`gmailListenerModule = emailIngestionModule`) for the legacy listener package. New code must
+> import from `email-ingestion` directly.
 
 ## Provider Patterns
 

@@ -72,13 +72,12 @@ describe('emailIngestionModule', () => {
     expect(CommonTypes).toBeDefined();
   });
 
-  // S02 guard: emailIngestionModule must be importable directly from
-  // email-ingestion without routing through the gmail-listener shim.
+  // S02 guard: emailIngestionModule must be exported directly from
+  // email-ingestion, not only via the gmail-listener shim.
   // This test fails if the export is removed or renamed back.
-  it('is directly exported from email-ingestion (not only via gmail-listener shim)', async () => {
-    const mod = await import('../index.js');
-    expect(mod.emailIngestionModule).toBeDefined();
-    expect(mod.emailIngestionModule.id).toBe('email-ingestion');
+  it('is directly exported from email-ingestion (not only via gmail-listener shim)', () => {
+    expect(emailIngestionModule).toBeDefined();
+    expect(emailIngestionModule.id).toBe('email-ingestion');
   });
 });
 
