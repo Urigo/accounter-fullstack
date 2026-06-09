@@ -10,9 +10,9 @@ import { IInsertDocumentsParams } from '../../documents/types.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { EmailListenerConfig } from '../../financial-entities/types.js';
-import type { GmailListenerModule } from '../types.js';
+import type { EmailIngestionModule } from '../types.js';
 
-export const gmailListenerResolvers: GmailListenerModule.Resolvers = {
+export const emailIngestionResolvers: EmailIngestionModule.Resolvers = {
   Query: {
     businessEmailConfig: async (_, { email }, { injector }) => {
       const business = await injector.get(BusinessesProvider).getBusinessByEmail(email);
@@ -75,7 +75,6 @@ export const gmailListenerResolvers: GmailListenerModule.Resolvers = {
               return;
             }
 
-            // get new document data
             const newDocument = await getDocumentFromFile(
               injector,
               doc,
@@ -107,7 +106,6 @@ export const gmailListenerResolvers: GmailListenerModule.Resolvers = {
               throw new Error(`Charge creation failed for email id=${messageId}`);
             }
 
-            // Assign the new chargeId to all documents
             const documentsWithChargeId = newDocuments.map(doc => ({
               ...doc,
               chargeId: charge.id,
