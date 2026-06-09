@@ -1,7 +1,13 @@
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
 
-dotenv({ path: ['.env', '../../.env'] });
+dotenv({
+  path:
+    process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
+      ? process.env.TEST_ENV_FILE
+      : ['.env', '../../.env'],
+  debug: process.env.RELEASE ? false : true,
+});
 
 // treat an empty string (`''`) as undefined
 const emptyString = <T extends zod.ZodType>(input: T) => {
