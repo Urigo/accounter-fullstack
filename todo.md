@@ -39,12 +39,12 @@ Primary references:
 
 ## Phase 1 - Early Server Renaming (S01-S02)
 
-### S01: Introduce new server module namespace
+### S01: Introduce new server module namespace ✅ PR #3658
 
-- [ ] Create `packages/server/src/modules/email-ingestion/`.
-- [ ] Move or duplicate server logic from gmail-listener naming into new module naming.
-- [ ] Keep compatibility behavior so existing callers are not broken.
-- [ ] Add tests proving both compatibility and new module wiring.
+- [x] Create `packages/server/src/modules/email-ingestion/`.
+- [x] Move or duplicate server logic from gmail-listener naming into new module naming.
+- [x] Keep compatibility behavior so existing callers are not broken.
+- [x] Add tests proving both compatibility and new module wiring.
 
 ### S02: Internal naming migration bridge
 
@@ -55,9 +55,9 @@ Primary references:
 
 ### Phase 1 verification
 
-- [ ] Run targeted server module tests.
-- [ ] Run `yarn test`.
-- [ ] Run `yarn lint`.
+- [x] Run targeted server module tests. (S01: 8/8 pass)
+- [ ] Run `yarn test`. (pending S02)
+- [ ] Run `yarn lint`. (pending S02)
 - [ ] Deploy early server rename changes before gateway integration milestones.
 
 ## Phase 2 - New Gateway Package Foundation (S03-S05)
