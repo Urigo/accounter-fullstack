@@ -46,18 +46,18 @@ Primary references:
 - [x] Keep compatibility behavior so existing callers are not broken.
 - [x] Add tests proving both compatibility and new module wiring.
 
-### S02: Internal naming migration bridge
+### S02: Internal naming migration bridge ✅ (this PR)
 
-- [ ] Rename server provider/resolver/service identifiers to email-ingestion terminology.
-- [ ] Keep compatibility adapters where old names are still needed temporarily.
-- [ ] Update tests and docs to use new naming first.
-- [ ] Verify new work does not depend on deprecated names.
+- [x] Rename server provider/resolver/service identifiers to email-ingestion terminology.
+- [x] Keep compatibility adapters where old names are still needed temporarily.
+- [x] Update tests and docs to use new naming first.
+- [x] Verify new work does not depend on deprecated names.
 
 ### Phase 1 verification
 
-- [x] Run targeted server module tests. (S01: 8/8 pass)
-- [ ] Run `yarn test`. (pending S02)
-- [ ] Run `yarn lint`. (pending S02)
+- [x] Run targeted server module tests. (S01: 8/8 pass, S02: 12/12 pass)
+- [x] Run `yarn test`.
+- [x] Run `yarn lint`.
 - [ ] Deploy early server rename changes before gateway integration milestones.
 
 ## Phase 2 - New Gateway Package Foundation (S03-S05)
