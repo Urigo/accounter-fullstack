@@ -12,6 +12,11 @@ dotenv({
 
 const isNumberString = (input: unknown) => zod.string().regex(/^\d+$/).safeParse(input).success;
 
+const boolFlag = zod
+  .union([zod.literal('1'), zod.literal('0')])
+  .optional()
+  .default('0');
+
 const numberFromNumberOrNumberString = (input: unknown): number | undefined => {
   if (typeof input === 'number') return input;
   if (isNumberString(input)) return Number(input);
@@ -155,6 +160,11 @@ const OtelModel = zod
     }
   });
 
+const V2FlagsModel = zod.object({
+  MULTI_TENANT_INGEST_V2_ENABLED: boolFlag,
+  MULTI_TENANT_INGEST_SHADOW_MODE: boolFlag,
+});
+
 const Auth0Model = zod.union([
   zod.object({
     AUTH0_DOMAIN: zod.string().min(1),
@@ -185,6 +195,7 @@ const configs = {
   credentials: CredentialsModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
   otel: OtelModel.safeParse(process.env),
+  v2Flags: V2FlagsModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -216,6 +227,12 @@ const auth0 = extractConfig(configs.auth0);
 const credentials = extractConfig(configs.credentials);
 const general = extractConfig(configs.general);
 const otel = extractConfig(configs.otel);
+const v2FlagsRaw = extractConfig(configs.v2Flags);
+
+const ingestV2Enabled = v2FlagsRaw.MULTI_TENANT_INGEST_V2_ENABLED === '1';
+// Shadow mode defaults to true when v2 is enabled and not explicitly set.
+const shadowModeRaw = process.env.MULTI_TENANT_INGEST_SHADOW_MODE;
+const shadowMode = shadowModeRaw === '1' ? true : shadowModeRaw === '0' ? false : ingestV2Enabled;
 
 export const env = {
   postgres: {
@@ -272,5 +289,9 @@ export const env = {
         ? Number(otel.OTEL_TRACES_SAMPLER_ARG)
         : undefined,
     startupStrict: otel.OTEL_STARTUP_STRICT === 'true',
+  },
+  v2Flags: {
+    ingestV2Enabled,
+    shadowMode,
   },
 } as const;

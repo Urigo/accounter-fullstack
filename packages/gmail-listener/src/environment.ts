@@ -3,6 +3,11 @@ import zod from 'zod';
 
 dotenv({ path: [`.env`, `../../.env`] });
 
+const boolFlag = zod
+  .union([zod.literal('1'), zod.literal('0')])
+  .optional()
+  .default('0');
+
 const AuthorizationModel = zod.object({
   GMAIL_LISTENER_API_KEY: zod.string(),
 });
@@ -23,10 +28,16 @@ const GeneralModel = zod.object({
   PORT: zod.coerce.number().optional().default(3000),
 });
 
+const V2FlagsModel = zod.object({
+  MULTI_TENANT_INGEST_V2_ENABLED: boolFlag,
+  MULTI_TENANT_INGEST_SHADOW_MODE: boolFlag,
+});
+
 const configs = {
   authorization: AuthorizationModel.safeParse(process.env),
   gmail: GmailModel.safeParse(process.env),
   general: GeneralModel.safeParse(process.env),
+  v2Flags: V2FlagsModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -53,6 +64,12 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 const authorization = extractConfig(configs.authorization);
 const gmail = extractConfig(configs.gmail);
 const general = extractConfig(configs.general);
+const v2FlagsRaw = extractConfig(configs.v2Flags);
+
+const ingestV2Enabled = v2FlagsRaw.MULTI_TENANT_INGEST_V2_ENABLED === '1';
+// Shadow mode defaults to true when v2 is enabled and not explicitly set.
+const shadowModeRaw = process.env.MULTI_TENANT_INGEST_SHADOW_MODE;
+const shadowMode = shadowModeRaw === '1' ? true : shadowModeRaw === '0' ? false : ingestV2Enabled;
 
 export const env = {
   authorization: {
@@ -62,7 +79,7 @@ export const env = {
     clientId: gmail.GMAIL_CLIENT_ID,
     clientSecret: gmail.GMAIL_CLIENT_SECRET,
     refreshToken: gmail.GMAIL_REFRESH_TOKEN,
-    labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents', // Default label if not specified
+    labelPath: gmail.GMAIL_LABEL_PATH?.replace(/\/$/, '') || 'accounter/documents',
     cloudProjectId: gmail.GOOGLE_CLOUD_PROJECT_ID,
     appCredentials: gmail.GOOGLE_APPLICATION_CREDENTIALS,
     topicName: gmail.PUBSUB_TOPIC || 'gmail-notifications',
@@ -71,6 +88,10 @@ export const env = {
   general: {
     serverUrl: general.SERVER_URL,
     port: general.PORT,
+  },
+  v2Flags: {
+    ingestV2Enabled,
+    shadowMode,
   },
 } as const;
 
