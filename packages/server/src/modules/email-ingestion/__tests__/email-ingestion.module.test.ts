@@ -59,7 +59,7 @@ function createMockInjector(providers: MockProviders = {}): Injector {
 }
 
 // ---------------------------------------------------------------------------
-// Module structure
+// Module structure and S02 naming guards
 // ---------------------------------------------------------------------------
 
 describe('emailIngestionModule', () => {
@@ -71,13 +71,37 @@ describe('emailIngestionModule', () => {
     const { CommonTypes } = await import('../index.js');
     expect(CommonTypes).toBeDefined();
   });
+
+  // S02 guard: emailIngestionModule must be exported directly from
+  // email-ingestion, not only via the gmail-listener shim.
+  // This test fails if the export is removed or renamed back.
+  it('is directly exported from email-ingestion (not only via gmail-listener shim)', () => {
+    expect(emailIngestionModule).toBeDefined();
+    expect(emailIngestionModule.id).toBe('email-ingestion');
+  });
+});
+
+// S02 guard: resolver identifiers use email-ingestion naming.
+// These tests fail if the canonical exports are removed or reverted to old names.
+describe('emailIngestionResolvers (S02 naming guard)', () => {
+  it('is exported from the email-ingestion resolver module', () => {
+    expect(emailIngestionResolvers).toBeDefined();
+  });
+
+  it('provides Query.businessEmailConfig resolver', () => {
+    expect(emailIngestionResolvers.Query?.businessEmailConfig).toBeDefined();
+  });
+
+  it('provides Mutation.insertEmailDocuments resolver', () => {
+    expect(emailIngestionResolvers.Mutation?.insertEmailDocuments).toBeDefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
-// Backward compatibility
+// Backward-compat shim (explicit adapter — not new code)
 // ---------------------------------------------------------------------------
 
-describe('gmailListenerModule (backward-compat alias)', () => {
+describe('gmailListenerModule (backward-compat shim)', () => {
   it('is the same module instance as emailIngestionModule', () => {
     expect(gmailListenerModule).toBe(emailIngestionModule);
   });
