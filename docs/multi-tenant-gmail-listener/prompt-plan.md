@@ -2,7 +2,9 @@
 
 ## Goal
 
-Build the v2 multi-tenant ingestion flow from the approved architecture in safe, test-driven increments, while keeping the current listener path running until v2 is fully implemented, deployed, and validated.
+Build the v2 multi-tenant ingestion flow from the approved architecture in safe, test-driven
+increments, while keeping the current listener path running until v2 is fully implemented, deployed,
+and validated.
 
 ## Inputs
 
@@ -57,17 +59,17 @@ Build the v2 multi-tenant ingestion flow from the approved architecture in safe,
 
 ## Iteration Round 2: Incremental Chunks
 
-| Chunk | Outcome | Depends on | Test focus |
-|---|---|---|---|
-| C1 | Feature flags + shared contracts | none | env + type tests |
-| C2 | DB structures in place | C1 | migration smoke + integration |
-| C3 | Server control endpoint works | C2 | resolver/provider unit + integration |
-| C4 | Server ingest endpoint works | C3 | grant/idempotency/dedup tests |
-| C5 | Gateway auth-verified ingress endpoint | C1 | signature/replay unit tests |
-| C6 | Gateway extraction + server orchestration | C4, C5 | gateway unit + contract integration |
-| C7 | Shadow mode + coexistence with current listener | C6 | regression + dual-path tests |
-| C8 | Cloudflare setup + deployment runbook | C7 | staging smoke checklist |
-| C9 | Final hardening and wiring | C8 | full unit + integration + lint |
+| Chunk | Outcome                                         | Depends on | Test focus                           |
+| ----- | ----------------------------------------------- | ---------- | ------------------------------------ |
+| C1    | Feature flags + shared contracts                | none       | env + type tests                     |
+| C2    | DB structures in place                          | C1         | migration smoke + integration        |
+| C3    | Server control endpoint works                   | C2         | resolver/provider unit + integration |
+| C4    | Server ingest endpoint works                    | C3         | grant/idempotency/dedup tests        |
+| C5    | Gateway auth-verified ingress endpoint          | C1         | signature/replay unit tests          |
+| C6    | Gateway extraction + server orchestration       | C4, C5     | gateway unit + contract integration  |
+| C7    | Shadow mode + coexistence with current listener | C6         | regression + dual-path tests         |
+| C8    | Cloudflare setup + deployment runbook           | C7         | staging smoke checklist              |
+| C9    | Final hardening and wiring                      | C8         | full unit + integration + lint       |
 
 Chunk check:
 
@@ -79,7 +81,8 @@ Chunk check:
 
 ## Iteration Round 3: Right-sized Steps
 
-This splits chunks into PR-sized steps that are small enough for safe TDD and large enough to move delivery.
+This splits chunks into PR-sized steps that are small enough for safe TDD and large enough to move
+delivery.
 
 1. S01: Add v2 feature flags and defaults in gateway/server environments + env tests.
 2. S02: Add shared reason-code and outcome enums/constants (server + gateway).
@@ -108,9 +111,12 @@ This splits chunks into PR-sized steps that are small enough for safe TDD and la
 
 What was split further and why:
 
-1. Server ingest work was split into S08-S10 because single-use grant logic, idempotency/dedup, and resolver wiring are distinct risk areas.
-2. Gateway ingress and extraction were split into S11-S13 because auth/replay mistakes and MIME parsing mistakes fail differently and need isolated tests.
-3. Integration and deployment were split into S17-S18 so code correctness and cloud setup correctness can be validated independently.
+1. Server ingest work was split into S08-S10 because single-use grant logic, idempotency/dedup, and
+   resolver wiring are distinct risk areas.
+2. Gateway ingress and extraction were split into S11-S13 because auth/replay mistakes and MIME
+   parsing mistakes fail differently and need isolated tests.
+3. Integration and deployment were split into S17-S18 so code correctness and cloud setup
+   correctness can be validated independently.
 
 Safety check:
 
