@@ -14,13 +14,17 @@ Each module in `src/modules/<name>/` contains:
   wrappers)
 - `index.ts` — module registration via `createModule()`
 
-## Existing Modules (33)
+## Existing Modules (34)
 
 accountant-approval, admin-context, app-providers, auth, bank-deposits, business-trips, charges,
 charges-matcher, charts, common, contracts, corn-jobs, corporate-taxes, countries, deel,
-depreciation, dividends, documents, exchange-rates, financial-accounts, financial-entities,
-gmail-listener, green-invoice, ledger, misc-expenses, priority, reports, salaries, sort-codes, tags,
-transactions, vat, workspace-settings
+depreciation, dividends, documents, email-ingestion, exchange-rates, financial-accounts,
+financial-entities, green-invoice, ledger, misc-expenses, priority, reports, salaries, sort-codes,
+tags, transactions, vat, workspace-settings
+
+> `gmail-listener` remains as a backward-compat re-export shim
+> (`gmailListenerModule = emailIngestionModule`) for the legacy listener package.
+> New code must import from `email-ingestion` directly.
 
 ## Provider Patterns
 
