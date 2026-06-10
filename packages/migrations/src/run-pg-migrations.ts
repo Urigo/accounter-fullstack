@@ -185,6 +185,7 @@ import migration_2026_05_27T10_00_00_sort_codes_composite_pk from './actions/202
 import migration_2026_05_28T10_00_00_add_otsar_hahayal_to_user_context from './actions/2026-05-28T10-00-00.add-otsar-hahayal-to-user-context.js';
 import migration_2026_06_02T10_00_00_otsar_hahayal_fee_flagging from './actions/2026-06-02T10-00-00.otsar-hahayal-fee-flagging.js';
 import migration_2026_06_10T10_00_00_add_email_ingestion_alias_routing from './actions/2026-06-10T10-00-00.add-email-ingestion-alias-routing.js';
+import migration_2026_06_10T11_00_00_add_email_ingestion_grants from './actions/2026-06-10T11-00-00.add-email-ingestion-grants.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -374,6 +375,7 @@ export const MIGRATIONS = [
   migration_2026_05_28T10_00_00_add_otsar_hahayal_to_user_context,
   migration_2026_06_02T10_00_00_otsar_hahayal_fee_flagging,
   migration_2026_06_10T10_00_00_add_email_ingestion_alias_routing,
+  migration_2026_06_10T11_00_00_add_email_ingestion_grants,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
