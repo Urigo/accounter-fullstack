@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import migration from '../actions/2026-06-10T11-00-00.add-email-ingestion-grants.js';
 
 // ---------------------------------------------------------------------------
