@@ -11,7 +11,7 @@ interface PdfProps {
   height?: number;
 }
 
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
+function base64ToUint8Array(base64: string): Uint8Array {
   // Decode the Base64 string into a binary string
   const binaryString = atob(base64);
 
@@ -27,8 +27,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     bytes[i] = binaryString.charCodeAt(i);
   }
 
-  // Return the underlying ArrayBuffer of the Uint8Array
-  return bytes.buffer;
+  return bytes;
 }
 
 export function PdfViewer(props: PdfProps) {
@@ -92,7 +91,7 @@ export function PdfViewer(props: PdfProps) {
   }, []);
 
   useEffect(() => {
-    const loadingTask = PDFJS.getDocument(base64ToArrayBuffer(src));
+    const loadingTask = PDFJS.getDocument({ data: base64ToUint8Array(src) });
     loadingTask.promise.then(
       loadedDoc => {
         setPdfDoc(loadedDoc);
