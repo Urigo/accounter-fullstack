@@ -68,3 +68,34 @@ describe('Email Ingestion Gateway — feature flags env', () => {
     expect(env.featureFlags.shadowMode).toBe(false);
   });
 });
+
+describe('Email Ingestion Gateway — general env', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+    delete process.env.PORT;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('defaults port to 3000 when PORT is absent', async () => {
+    const { env } = await import('../environment.js');
+    expect(env.general.port).toBe(3000);
+  });
+
+  it('treats empty string PORT as default 3000', async () => {
+    process.env.PORT = '';
+    const { env } = await import('../environment.js');
+    expect(env.general.port).toBe(3000);
+  });
+
+  it('parses an explicit PORT value', async () => {
+    process.env.PORT = '4001';
+    const { env } = await import('../environment.js');
+    expect(env.general.port).toBe(4001);
+  });
+});

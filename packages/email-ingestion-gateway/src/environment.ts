@@ -17,6 +17,10 @@ const emptyString = <T extends zod.ZodType>(input: T) => {
   }, input);
 };
 
+const GeneralModel = zod.object({
+  PORT: emptyString(zod.coerce.number().optional().default(3000)),
+});
+
 const FeatureFlagsModel = zod.object({
   EMAIL_INGESTION_V2_ENABLED: emptyString(
     zod
@@ -33,6 +37,7 @@ const FeatureFlagsModel = zod.object({
 });
 
 const configs = {
+  general: GeneralModel.safeParse(process.env),
   featureFlags: FeatureFlagsModel.safeParse(process.env),
 };
 
@@ -57,9 +62,13 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
   return config.data;
 }
 
+const general = extractConfig(configs.general);
 const featureFlags = extractConfig(configs.featureFlags);
 
 export const env = {
+  general: {
+    port: general.PORT,
+  },
   featureFlags: {
     v2Enabled: featureFlags.EMAIL_INGESTION_V2_ENABLED === '1',
     shadowMode: featureFlags.EMAIL_INGESTION_SHADOW_MODE === '1',
