@@ -76,11 +76,11 @@ Primary references:
 - [x] Add independent env module and health endpoint.
 - [x] Ensure workspace build/test scripts include new package.
 
-### S05: Gateway runtime baseline
+### S05: Gateway runtime baseline ✅ (this PR)
 
-- [ ] Add structured logging and correlation scaffolding.
-- [ ] Add readiness endpoint and runtime error boundaries.
-- [ ] Add smoke/unit tests for bootstrap, env parsing, and health endpoints.
+- [x] Add structured logging and correlation scaffolding.
+- [x] Add readiness endpoint and runtime error boundaries.
+- [x] Add smoke/unit tests for bootstrap, env parsing, and health endpoints.
 
 ### Phase 2 verification
 
