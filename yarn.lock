@@ -69,7 +69,7 @@ __metadata:
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:1.8.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:1.2.0"
-    "@auth0/auth0-react": "npm:2.17.0"
+    "@auth0/auth0-react": "npm:2.18.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:5.4.0"
@@ -535,15 +535,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@auth0/auth0-react@npm:2.17.0":
-  version: 2.17.0
-  resolution: "@auth0/auth0-react@npm:2.17.0"
+"@auth0/auth0-react@npm:2.18.0":
+  version: 2.18.0
+  resolution: "@auth0/auth0-react@npm:2.18.0"
   dependencies:
     "@auth0/auth0-spa-js": "npm:^2.20.0"
   peerDependencies:
     react: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
     react-dom: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
-  checksum: 10c0/bc42f7c851493f05eecee7ae14c4b5abcc2b00ef1dba95dc5b58b9c8f8a2a8dc372383968d2fd7315525438d42dc0db8e2fd12b11876b3d1584683a720e37b5e
+  checksum: 10c0/761e0caafc27deda7e247de5ef9c29c45ef0698c3a33137eff83bb5e361e5d690ed4f5c0f527ff07172fcdd56ae7e4410dd874d94859b4c2a33d942510761b49
   languageName: node
   linkType: hard
 
