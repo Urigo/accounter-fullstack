@@ -51,6 +51,10 @@ export const ModifyDocumentFields = ({
     isDocumentProforma(document) ||
     isDocumentCreditInvoice(document);
 
+  const processedDoc = isDocumentProcessed
+    ? (document as Extract<NonNullable<EditDocumentQuery['documentById']>, { date: unknown }>)
+    : undefined;
+
   const type = watch('documentType');
 
   // auto update vat currency according to amount currency
@@ -98,7 +102,7 @@ export const ModifyDocumentFields = ({
           <FormField
             name="date"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.date : undefined}
+            defaultValue={processedDoc?.date}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
@@ -125,7 +129,7 @@ export const ModifyDocumentFields = ({
           <FormField
             name="serialNumber"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.serialNumber : undefined}
+            defaultValue={processedDoc?.serialNumber}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Serial Number</FormLabel>
@@ -143,7 +147,7 @@ export const ModifyDocumentFields = ({
           <FormField
             name="allocationNumber"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.allocationNumber : undefined}
+            defaultValue={processedDoc?.allocationNumber}
             rules={{
               pattern: {
                 value: /^\d{9}$/,
@@ -163,7 +167,7 @@ export const ModifyDocumentFields = ({
           <FormField
             name="debtorId"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.debtor?.id : undefined}
+            defaultValue={processedDoc?.debtor?.id}
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Debtor</FormLabel>
@@ -182,7 +186,7 @@ export const ModifyDocumentFields = ({
           <FormField
             name="creditorId"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.creditor?.id : undefined}
+            defaultValue={processedDoc?.creditor?.id}
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Creditor</FormLabel>
@@ -201,16 +205,12 @@ export const ModifyDocumentFields = ({
           <Controller
             name="vat.raw"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.vat?.raw : undefined}
+            defaultValue={processedDoc?.vat?.raw}
             render={({ field: vatField, fieldState: vatFieldState }): ReactElement => (
               <Controller
                 name="vat.currency"
                 control={control}
-                defaultValue={
-                  isDocumentProcessed
-                    ? (document?.amount?.currency ?? Currency.Ils)
-                    : defaultCurrency
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
@@ -228,16 +228,12 @@ export const ModifyDocumentFields = ({
           <Controller
             name="amount.raw"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.amount?.raw : undefined}
+            defaultValue={processedDoc?.amount?.raw}
             render={({ field: amountField, fieldState: amountFieldState }): ReactElement => (
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={
-                  isDocumentProcessed
-                    ? (document?.amount?.currency ?? Currency.Ils)
-                    : defaultCurrency
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({
                   field: currencyCodeField,
                   fieldState: currencyCodeFieldState,
@@ -255,7 +251,7 @@ export const ModifyDocumentFields = ({
           <Controller
             name="vatReportDateOverride"
             control={control}
-            defaultValue={isDocumentProcessed ? document?.vatReportDateOverride : undefined}
+            defaultValue={processedDoc?.vatReportDateOverride}
             rules={{
               pattern: {
                 value: TIMELESS_DATE_REGEX,
@@ -279,16 +275,12 @@ export const ModifyDocumentFields = ({
           <Controller
             name="noVatAmount"
             control={control}
-            defaultValue={isDocumentProcessed ? (document?.noVatAmount ?? undefined) : undefined}
+            defaultValue={processedDoc?.noVatAmount ?? undefined}
             render={({ field: noVatField, fieldState: noVatFieldState }): ReactElement => (
               <Controller
                 name="amount.currency"
                 control={control}
-                defaultValue={
-                  isDocumentProcessed
-                    ? (document?.amount?.currency ?? Currency.Ils)
-                    : defaultCurrency
-                }
+                defaultValue={processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils}
                 render={({ field: currencyCodeField }): ReactElement => (
                   <CurrencyInput
                     {...noVatField}
@@ -369,16 +361,14 @@ export const ModifyDocumentFields = ({
       <FormField
         name="exchangeRateOverride"
         control={control}
-        defaultValue={isDocumentProcessed ? document?.exchangeRateOverride : undefined}
+        defaultValue={processedDoc?.exchangeRateOverride}
         render={({ field }): ReactElement => (
           <FormItem>
             <FormLabel>
               Exchange Rate Override
               <span className="text-xs text-muted-foreground">
                 {`(${
-                  isDocumentProcessed
-                    ? (document?.amount?.currency ?? Currency.Ils)
-                    : defaultCurrency
+                  processedDoc?.amount?.currency ?? defaultCurrency ?? Currency.Ils
                 } => ${Currency.Ils})`}
               </span>
             </FormLabel>

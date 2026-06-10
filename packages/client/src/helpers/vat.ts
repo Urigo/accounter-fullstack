@@ -1,4 +1,6 @@
-import { Currency, type FinancialAmount } from '../gql/graphql.js';
+import { Currency } from '../gql/graphql.js';
+
+type FinancialAmount = { raw: number; formatted: string; currency: Currency };
 
 export function formatFinancialAmount(
   rawAmount: number,

@@ -19,6 +19,7 @@ import {
   type IssueDocumentClientFieldsFragment,
   type NewDocumentDraftFragment,
 } from '../../../gql/graphql.js';
+import type { CountryCode } from '../../../helpers/countries.js';
 import { Button } from '../../ui/button.js';
 import {
   Dialog,
@@ -64,7 +65,7 @@ export function normalizeClientInfo(clientInfo: IssueDocumentClientFieldsFragmen
     // add: ___;
     address: clientInfo.originalBusiness.address ?? undefined,
     city: clientInfo.originalBusiness.city ?? undefined,
-    country: clientInfo.originalBusiness.country.code,
+    country: clientInfo.originalBusiness.country.code as CountryCode,
     emails: clientInfo.emails,
     // fax: ___,
     id: clientInfo.id,

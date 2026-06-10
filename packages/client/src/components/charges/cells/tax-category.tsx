@@ -15,10 +15,8 @@ import { getFragmentData, type FragmentType } from '../../../gql/index.js';
       id
       name
     }
-    ... on Charge @defer {
-      validationData {
-        missingInfo
-      }
+    validationData {
+      missingInfo
     }
   }
 `;

@@ -91,7 +91,7 @@ export const AccommodationsRow = ({ data, businessTripId, onChange }: Props): Re
               <FormField
                 name="country"
                 control={control}
-                defaultValue={accommodationExpense.country}
+                defaultValue={accommodationExpense.country?.id ?? undefined}
                 render={({ field }) => (
                   // TODO: replace with country select
                   <FormItem>

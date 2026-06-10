@@ -18,10 +18,8 @@ import { DragFile, ListCapsule } from '../../common/index.js';
         invalidLedger
       }
     }
-    ... on Charge @defer {
-      validationData {
-        missingInfo
-      }
+    validationData {
+      missingInfo
     }
   }
 `;

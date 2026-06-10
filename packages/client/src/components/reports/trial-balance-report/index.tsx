@@ -15,6 +15,7 @@ import { TrialBalanceTable } from './trial-balance-table.js';
   query TrialBalanceReport($filters: BusinessTransactionsFilter) {
     businessTransactionsSumFromLedgerRecords(filters: $filters) {
       ... on BusinessTransactionsSumFromLedgerRecordsSuccessfulResult {
+        __typename
         ...TrialBalanceTableFields
       }
       ... on CommonError {

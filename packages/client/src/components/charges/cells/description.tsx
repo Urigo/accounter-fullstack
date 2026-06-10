@@ -13,13 +13,11 @@ import { ConfirmMiniButton, SimilarChargesByIdModal } from '../../common/index.j
   fragment ChargesTableDescriptionFields on Charge {
     id
     userDescription
-    ... on Charge @defer {
-      validationData {
-        missingInfo
-      }
-      missingInfoSuggestions {
-        description
-      }
+    validationData {
+      missingInfo
+    }
+    missingInfoSuggestions {
+      description
     }
   }
 `;

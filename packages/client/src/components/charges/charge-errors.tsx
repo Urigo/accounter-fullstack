@@ -7,15 +7,9 @@ import { getFragmentData, type FragmentType } from '../../gql/index.js';
 /* GraphQL */ `
   fragment ChargesTableErrorsFields on Charge {
     id
-    ... on Charge @defer {
-      errorsLedger: ledger {
-        ... on Ledger @defer {
-          validate {
-            ... on LedgerValidation @defer {
-              errors
-            }
-          }
-        }
+    errorsLedger: ledger {
+      validate {
+        errors
       }
     }
   }
