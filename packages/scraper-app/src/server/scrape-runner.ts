@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
+import type { RunRecord as SerializedRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
 import type { ScraperUploadResult } from './gql/index.js';
 
@@ -27,7 +27,7 @@ export type ScrapeTask = {
   run: () => Promise<ScraperUploadResult>;
 };
 
-export type { SourceRunRecord };
+export type { SourceRunRecord } from '../shared/types.js';
 export type RunRecord = Omit<SerializedRunRecord, 'startedAt' | 'completedAt'> & {
   startedAt: Date;
   completedAt: Date;

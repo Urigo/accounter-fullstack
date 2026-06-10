@@ -1,6 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { ErrorBoundary } from './components/error-boundary.js';
-import { useVault, VaultContext, VaultProvider } from './contexts/vault-context.js';
+import { useVault, VaultProvider } from './contexts/vault-context.js';
 import { useRunSocket } from './lib/ws.js';
 import { Config } from './screens/config/config.js';
 import { History } from './screens/history.js';
@@ -8,7 +8,7 @@ import { Run } from './screens/run.js';
 import { VaultSetup } from './screens/vault-setup.js';
 import { VaultUnlock } from './screens/vault-unlock.js';
 
-export { VaultContext };
+export { VaultContext } from './contexts/vault-context.js';
 
 type AppTab = 'run' | 'history' | 'config';
 
