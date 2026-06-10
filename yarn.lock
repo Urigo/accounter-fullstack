@@ -136,6 +136,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/email-ingestion-gateway@workspace:packages/email-ingestion-gateway":
+  version: 0.0.0-use.local
+  resolution: "@accounter/email-ingestion-gateway@workspace:packages/email-ingestion-gateway"
+  dependencies:
+    "@types/node": "npm:25.9.2"
+    dotenv: "npm:17.4.2"
+    tsx: "npm:4.22.4"
+    typescript: "npm:6.0.3"
+    zod: "npm:4.4.3"
+  languageName: unknown
+  linkType: soft
+
 "@accounter/etana-scraper@workspace:packages/etana-scraper":
   version: 0.0.0-use.local
   resolution: "@accounter/etana-scraper@workspace:packages/etana-scraper"
