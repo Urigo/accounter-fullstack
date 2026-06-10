@@ -85,10 +85,17 @@ describe('alias routing DDL', () => {
     expect(ddl).toMatch(/FORCE ROW LEVEL SECURITY/i);
   });
 
-  it('includes a tenant isolation RLS policy', () => {
+  it('includes an unrestricted SELECT policy for alias resolution', () => {
     ddl = getMigrationSql();
-    expect(ddl).toMatch(/CREATE POLICY/i);
-    expect(ddl).toMatch(/tenant_isolation/i);
+    // alias resolution must work before tenant context is set
+    expect(ddl).toMatch(/alias_resolution_select/i);
+    expect(ddl).toMatch(/FOR SELECT/i);
+    expect(ddl).toMatch(/USING\s*\(\s*TRUE\s*\)/i);
+  });
+
+  it('includes a tenant-scoped write policy for INSERT/UPDATE/DELETE', () => {
+    ddl = getMigrationSql();
+    expect(ddl).toMatch(/tenant_isolation_write/i);
     expect(ddl).toMatch(/get_current_business_id/);
   });
 

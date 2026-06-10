@@ -26,7 +26,14 @@ export default {
 
     ALTER TABLE accounter_schema.email_ingestion_alias_routing ENABLE ROW LEVEL SECURITY;
 
-    CREATE POLICY tenant_isolation ON accounter_schema.email_ingestion_alias_routing
+    -- Alias resolution must happen before tenant context is known (that is the
+    -- whole point of this lookup), so SELECT is unrestricted for any authenticated
+    -- server connection.  Writes remain scoped to the row-owning tenant.
+    CREATE POLICY alias_resolution_select ON accounter_schema.email_ingestion_alias_routing
+      FOR SELECT
+      USING (TRUE);
+
+    CREATE POLICY tenant_isolation_write ON accounter_schema.email_ingestion_alias_routing
       FOR ALL
       USING (owner_id = accounter_schema.get_current_business_id())
       WITH CHECK (owner_id = accounter_schema.get_current_business_id());
