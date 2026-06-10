@@ -161,7 +161,7 @@ export const BalanceReport = (): ReactElement => {
       period: Periods.MONTHLY,
       fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
       filterFinancialAccounts: true,
-      financialAccountsBusinesses: userContext?.context.financialAccountsBusinessesIds ?? [],
+      financialAccountsBusinesses: userContext?.context.financialAccountsBusinessesIds,
       includedCounterparties: [],
       excludedCounterparties: [],
       includedTags: [],

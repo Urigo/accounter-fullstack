@@ -68,7 +68,7 @@ type BalanceReportFilterFormValues = z.infer<typeof balanceReportFilterSchema>;
 export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   period: Period;
   filterFinancialAccounts: boolean;
-  financialAccountsBusinesses: string[];
+  financialAccountsBusinesses?: string[];
   includedCounterparties: string[];
   excludedCounterparties: string[];
   includedTags: string[];
