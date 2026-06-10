@@ -69,12 +69,12 @@ Primary references:
 - [x] Add env parsing tests for defaults and explicit values.
 - [x] Verify default behavior stays legacy-safe when flags are off.
 
-### S04: Scaffold greenfield gateway package
+### S04: Scaffold greenfield gateway package ✅ (this PR)
 
-- [ ] Create `packages/email-ingestion-gateway` package scaffold.
-- [ ] Add package scripts, tsconfig, entrypoint, and baseline types.
-- [ ] Add independent env module and health endpoint.
-- [ ] Ensure workspace build/test scripts include new package.
+- [x] Create `packages/email-ingestion-gateway` package scaffold.
+- [x] Add package scripts, tsconfig, entrypoint, and baseline types.
+- [x] Add independent env module and health endpoint.
+- [x] Ensure workspace build/test scripts include new package.
 
 ### S05: Gateway runtime baseline
 
