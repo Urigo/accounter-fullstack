@@ -160,6 +160,8 @@ export const BalanceReport = (): ReactElement => {
       toDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
       period: Periods.MONTHLY,
       fromDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
+      filterFinancialAccounts: true,
+      financialAccountsBusinesses: userContext?.context.financialAccountsBusinessesIds ?? [],
       includedCounterparties: [],
       excludedCounterparties: [],
       includedTags: [],
@@ -176,7 +178,11 @@ export const BalanceReport = (): ReactElement => {
       }
     }
     return defaultFilters;
-  }, [userContext?.context.adminBusinessId, get]);
+  }, [
+    userContext?.context.adminBusinessId,
+    userContext?.context.financialAccountsBusinessesIds,
+    get,
+  ]);
   const [filter, setFilter] = useState<BalanceReportFilter>(initialFilters);
   const [extendedPeriod, setExtendedPeriod] = useState<string | undefined>(undefined);
   const [visibleSets, setVisibleSets] = useState<string[]>(Object.keys(chartConfig));
@@ -221,6 +227,12 @@ export const BalanceReport = (): ReactElement => {
 
   const periods = useMemo((): PeriodInfo[] => {
     if (!data?.transactionsForBalanceReport) return [];
+    // when enabled, filter out internal transactions to the configured financial accounts businesses
+    const shouldFilterFinancialAccounts = filter.filterFinancialAccounts !== false;
+    const financialAccountsBusinesses =
+      filter.financialAccountsBusinesses ??
+      userContext?.context.financialAccountsBusinessesIds ??
+      [];
     const periods = new Map<string, PeriodInfo>();
     data.transactionsForBalanceReport.map(txn => {
       // filter by counterparty
@@ -230,8 +242,9 @@ export const BalanceReport = (): ReactElement => {
           return;
         }
         if (
+          shouldFilterFinancialAccounts &&
           !txn.isFee &&
-          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
+          financialAccountsBusinesses.includes(txn.counterparty.id)
         ) {
           // filter out internal transactions
           return;
@@ -242,8 +255,9 @@ export const BalanceReport = (): ReactElement => {
         }
       } else if (txn.counterparty?.id) {
         if (
+          shouldFilterFinancialAccounts &&
           !txn.isFee &&
-          userContext?.context.financialAccountsBusinessesIds?.includes(txn.counterparty.id)
+          financialAccountsBusinesses.includes(txn.counterparty.id)
         ) {
           // filter out internal transactions
           return;
@@ -340,6 +354,8 @@ export const BalanceReport = (): ReactElement => {
   }, [
     data,
     filter.period,
+    filter.filterFinancialAccounts,
+    filter.financialAccountsBusinesses,
     filter.includedCounterparties,
     filter.excludedCounterparties,
     filter.includedAccounts,
