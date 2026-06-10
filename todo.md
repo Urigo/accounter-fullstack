@@ -62,12 +62,12 @@ Primary references:
 
 ## Phase 2 - New Gateway Package Foundation (S03-S05)
 
-### S03: Feature flags and env defaults
+### S03: Feature flags and env defaults ✅ (this PR)
 
-- [ ] Add v2 and shadow flags to server env validation.
-- [ ] Add matching flags to new gateway env validation.
-- [ ] Add env parsing tests for defaults and explicit values.
-- [ ] Verify default behavior stays legacy-safe when flags are off.
+- [x] Add v2 and shadow flags to server env validation.
+- [x] Add matching flags to new gateway env validation.
+- [x] Add env parsing tests for defaults and explicit values.
+- [x] Verify default behavior stays legacy-safe when flags are off.
 
 ### S04: Scaffold greenfield gateway package
 
@@ -84,7 +84,7 @@ Primary references:
 
 ### Phase 2 verification
 
-- [ ] Run package-level tests for new gateway.
+- [ ] Run package-level tests for new gateway. (S03: 12/12 pass)
 - [ ] Run `yarn test`.
 - [ ] Confirm import-guard check catches legacy imports.
 
