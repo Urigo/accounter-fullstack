@@ -13,11 +13,11 @@ export function log(
   correlationId?: string,
 ): void {
   const entry: LogEntry = {
+    ...fields,
     timestamp: new Date().toISOString(),
     level,
     ...(correlationId !== undefined && { correlationId }),
     message,
-    ...fields,
   };
   if (level === 'error') {
     console.error(JSON.stringify(entry));

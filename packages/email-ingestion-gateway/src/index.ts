@@ -44,7 +44,9 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
     }
   } catch (err) {
     log('error', 'unhandled request error', { error: String(err) }, correlationId);
-    sendJson(res, 500, { error: 'Internal server error' });
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: 'Internal server error' });
+    }
   }
 }
 
