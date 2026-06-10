@@ -12,7 +12,7 @@ export function sendJson(res: ServerResponse, statusCode: number, data: JsonObje
 
 export const routes: Record<
   string,
-  Record<string, (req: IncomingMessage, res: ServerResponse) => void>
+  Record<string, (req: IncomingMessage, res: ServerResponse) => void | Promise<void>>
 > = {
   GET: {
     '/health': (_req, res) => {
@@ -22,18 +22,18 @@ export const routes: Record<
   },
 };
 
-export const server = createServer((req, res) => {
-  const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
-  const handler = routes[req.method ?? '']?.[url.pathname];
-  if (handler) {
-    try {
-      handler(req, res);
-    } catch (err) {
-      console.error('[gateway] Unhandled request error:', err);
-      sendJson(res, 500, { error: 'Internal server error' });
+export const server = createServer(async (req, res) => {
+  try {
+    const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+    const handler = routes[req.method ?? '']?.[url.pathname];
+    if (handler) {
+      await handler(req, res);
+    } else {
+      sendJson(res, 404, { error: 'Not found' });
     }
-  } else {
-    sendJson(res, 404, { error: 'Not found' });
+  } catch (err) {
+    console.error('[gateway] Unhandled request error:', err);
+    sendJson(res, 500, { error: 'Internal server error' });
   }
 });
 
