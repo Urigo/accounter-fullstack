@@ -90,12 +90,12 @@ Primary references:
 
 ## Phase 3 - Contracts and Persistence (S06-S09)
 
-### S06: Canonical contracts and reason codes
+### S06: Canonical contracts and reason codes ✅ (this PR)
 
-- [ ] Add canonical outcomes and reason codes in server.
-- [ ] Add equivalent constants in new gateway package.
-- [ ] Ensure no runtime import from legacy package for shared constants.
-- [ ] Add tests guarding completeness and naming stability.
+- [x] Add canonical outcomes and reason codes in server.
+- [x] Add equivalent constants in new gateway package.
+- [x] Ensure no runtime import from legacy package for shared constants.
+- [x] Add tests guarding completeness and naming stability.
 
 ### S07: Alias routing migration
 
