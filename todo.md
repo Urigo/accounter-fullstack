@@ -104,12 +104,12 @@ Primary references:
 - [x] Add uniqueness/indexes for efficient lookups.
 - [x] Register migration in `packages/migrations/src/run-pg-migrations.ts`.
 
-### S08: Grants migration
+### S08: Grants migration ✅ (this PR)
 
-- [ ] Create migration for ingest grants table with `jti` uniqueness.
-- [ ] Include tenant binding, message binding, `expires_at`, `consumed_at`.
-- [ ] Add lookup and expiry indexes.
-- [ ] Register migration in migration runner.
+- [x] Create migration for ingest grants table with `jti` uniqueness.
+- [x] Include tenant binding, message binding, `expires_at`, `consumed_at`.
+- [x] Add lookup and expiry indexes.
+- [x] Register migration in migration runner.
 
 ### S09: Replay nonce and quarantine migrations
 
