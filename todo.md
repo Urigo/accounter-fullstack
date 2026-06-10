@@ -97,12 +97,12 @@ Primary references:
 - [x] Ensure no runtime import from legacy package for shared constants.
 - [x] Add tests guarding completeness and naming stability.
 
-### S07: Alias routing migration
+### S07: Alias routing migration ✅ (this PR)
 
-- [ ] Create migration for recipient alias routing table.
-- [ ] Add normalization strategy and active flag.
-- [ ] Add uniqueness/indexes for efficient lookups.
-- [ ] Register migration in `packages/migrations/src/run-pg-migrations.ts`.
+- [x] Create migration for recipient alias routing table.
+- [x] Add normalization strategy and active flag.
+- [x] Add uniqueness/indexes for efficient lookups.
+- [x] Register migration in `packages/migrations/src/run-pg-migrations.ts`.
 
 ### S08: Grants migration
 
