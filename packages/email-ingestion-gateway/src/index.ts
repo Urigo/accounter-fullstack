@@ -1,7 +1,7 @@
-/* eslint-disable no-console */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { env } from './environment.js';
-import type { HealthResponse, JsonObject } from './types.js';
+import { generateCorrelationId, log } from './logger.js';
+import type { HealthResponse, JsonObject, ReadinessResponse } from './types.js';
 
 const PORT = env.general.port;
 
@@ -19,12 +19,23 @@ export const routes: Record<
       const body: HealthResponse = { status: 'ok' };
       sendJson(res, 200, body);
     },
+    '/readiness': (_req, res) => {
+      const body: ReadinessResponse = { ready: true };
+      sendJson(res, 200, body);
+    },
   },
 };
 
-export const server = createServer(async (req, res) => {
+export async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const correlationId =
+    (req.headers['x-correlation-id'] as string | undefined) ?? generateCorrelationId();
+  res.setHeader('X-Correlation-Id', correlationId);
+
   try {
     const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+
+    log('info', 'incoming request', { method: req.method, path: url.pathname }, correlationId);
+
     const handler = routes[req.method ?? '']?.[url.pathname];
     if (handler) {
       await handler(req, res);
@@ -32,13 +43,15 @@ export const server = createServer(async (req, res) => {
       sendJson(res, 404, { error: 'Not found' });
     }
   } catch (err) {
-    console.error('[gateway] Unhandled request error:', err);
+    log('error', 'unhandled request error', { error: String(err) }, correlationId);
     sendJson(res, 500, { error: 'Internal server error' });
   }
-});
+}
+
+export const server = createServer(requestHandler);
 
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
-    console.log(`[email-ingestion-gateway] Listening on port ${PORT}`);
+    log('info', 'gateway started', { port: PORT });
   });
 }
