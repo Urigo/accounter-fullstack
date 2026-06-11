@@ -313,6 +313,9 @@ export default [
       'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
       'packages/server/src/modules/vat/providers/vat.provider.ts',
       'packages/server/src/modules/email-ingestion/providers/email-ingestion-control.provider.ts',
+      // Idempotency and dedup are control-plane operations (no tenant context at call time);
+      // same rationale as email-ingestion-control.provider above.
+      'packages/server/src/modules/email-ingestion/providers/email-ingestion-idempotency.provider.ts',
       // Exempt migrations, scripts, and tests that may need direct DB access for setup, maintenance, or testing purposes
       '**/migrations/**/*.ts',
       '**/scripts/**/*.ts',
