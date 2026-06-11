@@ -32,10 +32,12 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
 
     return {
       __typename: 'IngestControlDecision',
+      id: grant.decisionId,
       tenantId: grant.tenantId,
       decisionId: grant.decisionId,
       auditId: grant.auditId,
       grant: {
+        id: grant.jti,
         jti: grant.jti,
         tenantId: grant.tenantId,
         action: grant.action,

@@ -21,6 +21,7 @@ export default gql`
       @requiresRole(role: "gmail_listener")
   }
 
+  " Input for requesting a short-lived ingest control grant "
   input IngestControlInput {
     " Recipient alias the message was delivered to "
     recipientAlias: String!
@@ -36,6 +37,7 @@ export default gql`
 
   " Short-lived single-use ingest grant "
   type IngestGrant {
+    id: UUID!
     jti: String!
     tenantId: String!
     action: String!
@@ -44,12 +46,14 @@ export default gql`
 
   " Decision record returned when control is granted "
   type IngestControlDecision {
+    id: UUID!
     tenantId: String!
     decisionId: String!
     auditId: String!
     grant: IngestGrant!
   }
 
+  " Result of a requestIngestControl mutation: either a decision with a grant or an error "
   union IngestControlResult = IngestControlDecision | CommonError
 
   " configuration for business email processing "
