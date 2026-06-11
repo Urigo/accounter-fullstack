@@ -52,9 +52,9 @@
     "@eslint/eslintrc": "3.3.5",
     "@eslint/js": "10.0.1",
     "@graphql-codegen/cli": "7.1.2",
-    "@graphql-codegen/client-preset": "6.0.0",
-    "@graphql-codegen/graphql-modules-preset": "6.0.0",
-    "@graphql-codegen/schema-ast": "6.0.0",
+    "@graphql-codegen/client-preset": "6.0.1",
+    "@graphql-codegen/graphql-modules-preset": "6.0.1",
+    "@graphql-codegen/schema-ast": "6.0.1",
     "@graphql-codegen/typescript": "6.0.2",
     "@graphql-codegen/typescript-graphql-request": "7.1.0",
     "@graphql-codegen/typescript-resolvers": "6.0.2",
@@ -87,7 +87,7 @@
     "eslint-plugin-unicorn": "65.0.1",
     "glob": "13.0.6",
     "globals": "17.6.0",
-    "graphql": "16.14.1",
+    "graphql": "16.14.2",
     "husky": "9.1.7",
     "lint-staged": "17.0.7",
     "pg": "8.21.0",
@@ -101,7 +101,7 @@
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.10.1": "patch:@slonik/pg-driver@npm%3A49.10.1#~/.yarn/patches/@slonik-pg-driver-npm-49.10.1-7bd58c1a0b.patch",
-    "graphql": "16.14.1"
+    "graphql": "16.14.2"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
