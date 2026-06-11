@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 import { IngestReasonCode } from '../contracts.js';
 
@@ -51,10 +51,16 @@ function makeProvider(
 // ---------------------------------------------------------------------------
 
 describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
-  it('returns valid=true and grant data on successful consume', async () => {
+  beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
+  });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns valid=true and grant data on successful consume', async () => {
     const { provider } = makeProvider();
     const result = await provider.validateAndConsumeGrant(baseInput);
 
@@ -62,8 +68,6 @@ describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
       valid: true,
       grant: expect.objectContaining({ jti: 'jti-uuid', tenantId: 'tenant-uuid', action: 'ingest' }),
     });
-
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when jti is not found', async () => {
@@ -74,84 +78,56 @@ describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
   });
 
   it('returns GRANT_INVALID when grant is already consumed', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const consumed = { ...baseGrant, consumed_at: new Date(NOW.getTime() - 60_000) };
     const { provider } = makeProvider([consumed], []);
     const result = await provider.validateAndConsumeGrant(baseInput);
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when grant is expired', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const expired = { ...baseGrant, expires_at: PAST };
     const { provider } = makeProvider([expired], []);
     const result = await provider.validateAndConsumeGrant(baseInput);
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('returns TENANT_MISMATCH when owner_id does not match tenantId', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const { provider } = makeProvider();
     const result = await provider.validateAndConsumeGrant({ ...baseInput, tenantId: 'other-tenant' });
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.TENANT_MISMATCH });
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when message_id does not match', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const { provider } = makeProvider();
     const result = await provider.validateAndConsumeGrant({ ...baseInput, messageId: 'wrong-msg' });
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when raw_message_hash does not match', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const { provider } = makeProvider();
     const result = await provider.validateAndConsumeGrant({ ...baseInput, rawMessageHash: 'wrong-hash' });
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when action is not ingest', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     const wrongAction = { ...baseGrant, action: 'other' };
     const { provider } = makeProvider([wrongAction], []);
     const result = await provider.validateAndConsumeGrant(baseInput);
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('returns GRANT_INVALID when consume UPDATE returns no rows (race condition)', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(NOW);
-
     // grant lookup succeeds but consume returns 0 rows (another request consumed it first)
     const { provider } = makeProvider([baseGrant], []);
     const result = await provider.validateAndConsumeGrant(baseInput);
 
     expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
-    vi.useRealTimers();
   });
 
   it('does not call consume when validation fails', async () => {
