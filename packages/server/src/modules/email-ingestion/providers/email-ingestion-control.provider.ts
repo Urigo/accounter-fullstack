@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from 'graphql-modules';
+import { Injectable, Scope } from 'graphql-modules';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestReasonCode } from '../contracts.js';
 
@@ -34,7 +34,10 @@ export type IssueGrantInput = {
 // Provider
 // ---------------------------------------------------------------------------
 
-@Injectable()
+@Injectable({
+  scope: Scope.Singleton,
+  global: true,
+})
 export class EmailIngestionControlProvider {
   constructor(private dbProvider: DBProvider) {}
 
