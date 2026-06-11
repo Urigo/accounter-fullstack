@@ -111,25 +111,25 @@ Primary references:
 - [x] Add lookup and expiry indexes.
 - [x] Register migration in migration runner.
 
-### S09: Replay nonce and quarantine migrations
+### S09: Replay nonce and quarantine migrations ✅ (this PR)
 
-- [ ] Create replay nonce persistence with uniqueness guarantees.
-- [ ] Create quarantine table with required fields:
-- [ ] reason_code
-- [ ] tenant_candidate
-- [ ] message identifiers
-- [ ] raw_message_hash
-- [ ] correlation_id
-- [ ] status
-- [ ] retry_count
-- [ ] created_at and updated_at
-- [ ] Add triage indexes by reason_code, status, and date.
-- [ ] Register migration(s) in runner.
+- [x] Create replay nonce persistence with uniqueness guarantees.
+- [x] Create quarantine table with required fields:
+- [x] reason_code
+- [x] tenant_candidate
+- [x] message identifiers
+- [x] raw_message_hash
+- [x] correlation_id
+- [x] status
+- [x] retry_count
+- [x] created_at and updated_at
+- [x] Add triage indexes by reason_code, status, and date.
+- [x] Register migration(s) in runner.
 
 ### Phase 3 verification
 
-- [ ] Run `yarn local:setup`.
-- [ ] Run migration/integration tests for new tables.
+- [x] Run `yarn local:setup`.
+- [x] Run migration/integration tests for new tables. (S09: 26/26 pass)
 - [ ] Validate uniqueness constraints and consume-once assumptions.
 
 ## Phase 4 - Server Control and Ingest Core (S10-S14)
