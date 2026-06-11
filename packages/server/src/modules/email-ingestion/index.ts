@@ -15,4 +15,3 @@ export const emailIngestionModule = createModule({
 
 export * as CommonTypes from './types.js';
 export * from './contracts.js';
-export * from './providers/email-ingestion-control.provider.js';
