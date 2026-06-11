@@ -56,16 +56,7 @@ interface ParsedFileData {
     a000: ReturnType<typeof parseA000> | null;
     a000Sum: ReturnType<typeof parseA000Sum>[];
   };
-  dataRecords: {
-    a100: ParsedDataRecords['a100'] | null;
-    b100: ParsedDataRecords['b100'];
-    b110: ParsedDataRecords['b110'];
-    c100: ParsedDataRecords['c100'];
-    d110: ParsedDataRecords['d110'];
-    d120: ParsedDataRecords['d120'];
-    m100: ParsedDataRecords['m100'];
-    z900: ParsedDataRecords['z900'] | null;
-  };
+  dataRecords: ParsedDataRecords;
 }
 
 /**
@@ -241,8 +232,8 @@ function convertToStructuredData(
       name: 'Unknown Business',
       taxId: '0',
       reportingPeriod: {
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
+        startDate: '1900-01-01',
+        endDate: '1900-01-01',
       },
     },
     documents: [],
@@ -254,13 +245,40 @@ function convertToStructuredData(
   // Extract business metadata from A000 or A100
   if (parsedData.iniData.a000) {
     const a000 = parsedData.iniData.a000;
+    let startDate = '1900-01-01';
+    let endDate = '1900-01-01';
+
+    try {
+      startDate = formatDateFromShaam(a000.startDate);
+    } catch (error) {
+      errors.push({
+        recordType: 'A000',
+        recordIndex: 0,
+        field: 'startDate',
+        message: `Failed to convert A000 startDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: validationMode === 'strict' ? 'error' : 'warning',
+      });
+    }
+
+    try {
+      endDate = formatDateFromShaam(a000.endDate);
+    } catch (error) {
+      errors.push({
+        recordType: 'A000',
+        recordIndex: 0,
+        field: 'endDate',
+        message: `Failed to convert A000 endDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: validationMode === 'strict' ? 'error' : 'warning',
+      });
+    }
+
     result.business = {
       businessId: a000.primaryIdentifier,
       name: a000.businessName || 'Unknown Business',
       taxId: a000.vatId,
       reportingPeriod: {
-        startDate: a000.startDate ? formatDateFromShaam(a000.startDate) : '2024-01-01',
-        endDate: a000.endDate ? formatDateFromShaam(a000.endDate) : '2024-12-31',
+        startDate,
+        endDate,
       },
     };
 
