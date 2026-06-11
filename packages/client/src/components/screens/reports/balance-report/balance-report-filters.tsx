@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
@@ -13,6 +13,7 @@ import { TIMELESS_DATE_REGEX, type TimelessDateString } from '../../../../helper
 import { useGetFinancialEntities } from '../../../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../../../hooks/use-url-query.js';
+import { UserContext } from '../../../../providers/user-provider.js';
 import { ComboBox, DatePickerInput, MultiSelect, PopUpModal } from '../../../common/index.js';
 import { Button } from '../../../ui/button.js';
 import {
@@ -23,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '../../../ui/form.js';
+import { Switch } from '../../../ui/switch.js';
 
 export function encodeBalanceReportFilters(filter?: BalanceReportFilter | null): string | null {
   return encodeFilters(filter ?? null);
@@ -51,6 +53,8 @@ const balanceReportFilterSchema = z.object({
     Periods.SEMI_ANNUALLY,
     Periods.ANNUALLY,
   ]),
+  filterFinancialAccounts: z.boolean(),
+  financialAccountsBusinesses: z.array(z.string()),
   includedCounterparties: z.array(z.string()),
   excludedCounterparties: z.array(z.string()),
   includedTags: z.array(z.string()),
@@ -63,6 +67,8 @@ type BalanceReportFilterFormValues = z.infer<typeof balanceReportFilterSchema>;
 
 export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   period: Period;
+  filterFinancialAccounts: boolean;
+  financialAccountsBusinesses?: string[];
   includedCounterparties: string[];
   excludedCounterparties: string[];
   includedTags: string[];
@@ -71,12 +77,18 @@ export type BalanceReportFilter = BalanceReportScreenQueryVariables & {
   excludedAccounts: string[];
 };
 
-function filterToFormValues(filter: BalanceReportFilter): BalanceReportFilterFormValues {
+function filterToFormValues(
+  filter: BalanceReportFilter,
+  defaultFinancialAccountsBusinesses: string[],
+): BalanceReportFilterFormValues {
   return {
     ownerId: filter.ownerId ?? undefined,
     fromDate: filter.fromDate,
     toDate: filter.toDate,
     period: filter.period ?? Periods.MONTHLY,
+    filterFinancialAccounts: filter.filterFinancialAccounts ?? true,
+    financialAccountsBusinesses:
+      filter.financialAccountsBusinesses ?? defaultFinancialAccountsBusinesses,
     includedCounterparties: filter.includedCounterparties ?? [],
     excludedCounterparties: filter.excludedCounterparties ?? [],
     includedTags: filter.includedTags ?? [],
@@ -97,9 +109,14 @@ function BalanceReportFiltersForm({
   setFilter,
   closeModal,
 }: BalanceReportFiltersFormProps): ReactElement {
+  const { userContext } = useContext(UserContext);
+  const defaultFinancialAccountsBusinesses = useMemo(
+    () => userContext?.context.financialAccountsBusinessesIds ?? [],
+    [userContext?.context.financialAccountsBusinessesIds],
+  );
   const form = useForm<BalanceReportFilterFormValues>({
     resolver: zodResolver(balanceReportFilterSchema),
-    defaultValues: filterToFormValues(filter),
+    defaultValues: filterToFormValues(filter, defaultFinancialAccountsBusinesses),
   });
 
   const { selectableAdminBusinesses: adminBusinesses, fetching: fetchingAdminBusinesses } =
@@ -127,6 +144,7 @@ function BalanceReportFiltersForm({
     () => includedAccounts.length > 0,
     [includedAccounts],
   );
+  const filterFinancialAccounts = form.watch('filterFinancialAccounts');
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -204,6 +222,43 @@ function BalanceReportFiltersForm({
                     value={field.value}
                     placeholder="Select period"
                     formPart
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="filterFinancialAccounts"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Filter Out Financial Accounts</FormLabel>
+                <FormControl>
+                  <div className="flex h-9 items-center">
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="financialAccountsBusinesses"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Financial Accounts Businesses</FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    asChild
+                    options={financialEntities}
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? []}
+                    value={field.value ?? []}
+                    placeholder="Scroll to see all options"
+                    variant="default"
+                    disabled={financialEntitiesFetching || !filterFinancialAccounts}
                   />
                 </FormControl>
                 <FormMessage />
