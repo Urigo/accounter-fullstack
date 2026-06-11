@@ -104,14 +104,20 @@ Chunk check:
 11. S11: Implement control GraphQL operation in `email-ingestion` module.
 12. S12: Implement grant validation + single-use consume provider logic.
 13. S13: Implement idempotency + dedup in ingest flow.
-14. S14: Implement ingest GraphQL operation and reason-code mapping.
-15. S15: Implement gateway Cloudflare authenticity verifier.
-16. S16: Implement gateway webhook endpoint and payload validation.
-17. S17: Implement gateway extraction pipeline with limits (duplicate/adapt, do not import legacy
+14. S13.5: Implement Gateway control-plane service credential and auth path.
+15. S13.6: Harden server data-plane provider boundaries (operation scope, TenantAwareDBClient,
+   and explicit raw DB bootstrap boundary).
+16. S14: Implement ingest GraphQL operation, replace legacy-style active ingest path, and
+   reason-code mapping.
+17. S15: Implement gateway Cloudflare authenticity verifier.
+18. S16: Implement gateway webhook endpoint and payload validation.
+19. S17: Implement gateway extraction pipeline with limits (duplicate/adapt, do not import legacy
     code).
-18. S18: Implement gateway server client and control->ingest orchestration.
-19. S19: Add observability, shadow mode, and adversarial integration suites.
-20. S20: Add Cloudflare setup runbook, final wiring review, and release checklist.
+20. S18: Implement gateway server client and control->new-ingest orchestration.
+21. S19: Add observability, shadow mode, live-path integration, and adversarial integration
+   suites.
+22. S20: Add Cloudflare setup runbook, final wiring review, DB-boundary audit, and release
+   checklist.
 
 ---
 
@@ -123,7 +129,8 @@ Why this sizing is safe and effective:
 2. Greenfield gateway package avoids hidden coupling to legacy listener internals.
 3. Migrations are completed before core control/ingest business logic.
 4. Security-critical checks (signature, replay, grant consume) are isolated and tested early.
-5. Orchestration happens only after server contracts and gateway extraction are stable.
+5. Orchestration happens only after control auth, data-plane DB boundaries, live ingest path, and
+   gateway extraction are stable.
 6. Final step focuses on deployment and rollback readiness, not new core logic.
 
 ---
@@ -426,19 +433,73 @@ Verification:
 2. Run yarn test.
 ```
 
+### Prompt 13.5 - Gateway control-plane service credential
+
+```text
+You are implementing Step S13.5.
+
+Goal:
+Add a distinct server auth path for the Gateway control-plane identity so control operations do not depend on tenant-scoped gmail_listener API keys.
+
+Tasks:
+1. Extend server auth extraction to recognize the Gateway control-plane credential format.
+2. Extend AuthContext resolution to validate that credential and map it to a dedicated control-plane role/scope without creating a tenant-scoped write context.
+3. Update the email-ingestion control GraphQL operation to require the new control-plane role instead of tenant gmail_listener auth.
+4. Ensure the control-plane identity cannot call ingest mutations and cannot reach tenant-scoped write paths backed by TenantAwareDBClient.
+5. Add tests for:
+   - valid control-plane credential can call requestIngestControl
+   - invalid control-plane credential is rejected
+   - tenant gmail_listener key cannot satisfy control-plane auth unless explicitly intended
+   - control-plane credential cannot call ingest endpoint
+
+TDD requirements:
+1. Add failing auth and resolver tests first.
+
+Verification:
+1. Run targeted auth and email-ingestion tests.
+2. Run yarn test.
+```
+
+### Prompt 13.6 - Server data-plane DB boundary hardening
+
+```text
+You are implementing Step S13.6.
+
+Goal:
+Align email-ingestion data-plane providers with the server's request-level DB rules.
+
+Tasks:
+1. Refactor tenant-bound email-ingestion providers to Scope.Operation.
+2. Use TenantAwareDBClient for idempotency, dedup, quarantine, and other tenant-bound ingest reads/writes after tenant identity is established.
+3. Keep DBProvider/raw pool access only for pre-tenant bootstrap/control-plane operations such as alias resolution and grant issuance, and only where a tenant-aware session cannot exist yet.
+4. If a hybrid approach is used, split control-plane/raw DB logic from data-plane/tenant-aware logic rather than mixing both responsibilities in one provider.
+5. Update tests and injector mocks for the new provider boundaries.
+6. Add tests proving tenant-bound ingest logic runs under tenant guardrails and rejects cross-tenant access.
+
+TDD requirements:
+1. Add failing provider and integration tests first.
+
+Verification:
+1. Run targeted email-ingestion provider tests.
+2. Run targeted email-ingestion integration tests.
+3. Run yarn test.
+```
+
 ### Prompt 14 - Server ingest GraphQL operation
 
 ```text
 You are implementing Step S14.
 
 Goal:
-Expose ingest endpoint through email-ingestion GraphQL module.
+Expose the v2 ingest endpoint through the email-ingestion GraphQL module and make it the authoritative runtime path.
 
 Tasks:
 1. Add ingest operation input/output types and resolver.
-2. Wire grant validation, idempotency, dedup, and reason-code mapping.
-3. Add resolver tests for inserted/duplicate/quarantined/rejected outcomes.
-4. Run yarn generate and fix generated typing errors.
+2. Wire grant validation, operation-scoped idempotency/dedup providers, quarantine handling, and reason-code mapping.
+3. Make the new ingest mutation the authoritative runtime path for v2 ingestion.
+4. If insertEmailDocuments must remain for compatibility, convert it into a thin compatibility adapter that delegates to the new ingest path instead of preserving parallel legacy ingest logic.
+5. Add resolver and integration tests for inserted/duplicate/quarantined/rejected outcomes, plus compatibility-delegation coverage if the legacy mutation remains exposed.
+6. Run yarn generate and fix generated typing errors.
 
 TDD requirements:
 1. Resolver tests first.
@@ -527,22 +588,23 @@ Verification:
 2. Run yarn test.
 ```
 
-### Prompt 18 - Gateway control->ingest orchestration
+### Prompt 18 - Gateway control->new-ingest orchestration
 
 ```text
 You are implementing Step S18 in packages/email-ingestion-gateway.
 
 Goal:
-Call server control endpoint then ingest endpoint with retries and idempotency.
+Call the server control endpoint then the new server ingest endpoint with retries and idempotency.
 
 Tasks:
-1. Add GraphQL client operations for control and ingest.
-2. Include correlation_id and idempotency_key in requests.
-3. Implement timeout/retry policy:
+1. Add GraphQL client operations for requestIngestControl and the new ingest mutation.
+2. Gateway must target the new ingest endpoint, not the legacy compatibility mutation.
+3. Include correlation_id, idempotency_key, and grant payload in requests.
+4. Implement timeout/retry policy:
    - control: 3s, up to 2 retries with backoff
    - ingest: 10s, 1 retry for network/5xx
-4. Add tests for retry matrix and outcome mapping.
-5. Run yarn generate if operation typings are generated.
+5. Add tests for retry matrix, endpoint selection, and outcome mapping.
+6. Run yarn generate if operation typings are generated.
 
 TDD requirements:
 1. Retry and mapping tests first.
@@ -572,6 +634,8 @@ Tasks:
    - grant reuse
    - tenant mismatch
    - cross-tenant insertion prevention
+   - compatibility mutation delegation, if legacy ingest compatibility remains exposed
+   - end-to-end proof that grant validation, idempotency, dedup, and quarantine logic run on the live ingest path, not only in provider unit tests
 
 TDD requirements:
 1. Integration tests first, then implementation hardening.
@@ -587,7 +651,7 @@ Verification:
 You are implementing Step S20.
 
 Goal:
-Finish deployment readiness with explicit Cloudflare setup instructions and final no-orphan wiring pass.
+Finish deployment readiness with explicit Cloudflare setup instructions and a final wiring and DB-boundary audit.
 
 Tasks:
 1. Create/update runbook docs under docs/multi-tenant-gmail-listener/ including:
@@ -599,18 +663,24 @@ Tasks:
    - staging smoke tests (valid, invalid signature, replay, unknown alias)
    - rollback to legacy listener path
 2. Verify no orphaned code in new server module and new gateway package.
-3. Ensure compatibility path for legacy listener remains operational.
-4. Run final validation sequence:
+3. Ensure the compatibility path for the legacy listener is either still operational as an adapter or intentionally fenced off from v2 gateway usage.
+4. Run a final wiring audit confirming:
+   - tenant-bound email-ingestion providers use Scope.Operation and TenantAwareDBClient
+   - DBProvider/raw pool access remains only on bootstrap/control-plane paths
+   - gateway targets requestIngestControl plus the new ingest mutation, not the legacy compatibility mutation
+   - idempotency/dedup/quarantine logic is invoked end-to-end on the live path
+5. Run final validation sequence:
    - yarn generate
    - yarn lint
    - yarn test
    - yarn test:integration
-5. Produce release checklist with cutover and rollback criteria.
+6. Produce release checklist with cutover and rollback criteria.
 
 Definition of done:
 1. All tests and lint are green.
 2. New naming is deployed in server before gateway cutover.
 3. No runtime code sharing exists between legacy and new gateway packages.
+4. No tenant-bound ingest path depends on singleton providers backed only by DBProvider.
 ```
 
 ---
@@ -619,7 +689,7 @@ Definition of done:
 
 1. Prompts 01-03: naming and guardrails first, deploy early.
 2. Prompts 04-09: gateway scaffold + migrations foundation.
-3. Prompts 10-14: server control/ingest core complete.
+3. Prompts 10-14: server control/ingest core, auth path, and DB-boundary hardening.
 4. Prompts 15-19: gateway integration + security hardening.
 5. Prompt 20: deployment readiness and cutover controls.
 
