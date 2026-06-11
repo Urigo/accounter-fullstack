@@ -192,6 +192,11 @@ export class EmailIngestionIdempotencyProvider {
       { idempotencyKey: input.idempotencyKey, ownerId: input.tenantId },
       this.dbProvider.pool,
     );
+    if (!existing[0]) {
+      throw new Error(
+        `Failed to retrieve existing idempotency record after conflict for key: ${input.idempotencyKey}`,
+      );
+    }
     return rowToIdempotencyRecord(existing[0]);
   }
 
@@ -229,6 +234,11 @@ export class EmailIngestionIdempotencyProvider {
       { ownerId: input.tenantId, fingerprint: input.fingerprint },
       this.dbProvider.pool,
     );
+    if (!existing[0]) {
+      throw new Error(
+        `Failed to retrieve existing dedup record after conflict for fingerprint: ${input.fingerprint}`,
+      );
+    }
     return rowToDedupRecord(existing[0]);
   }
 }
