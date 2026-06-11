@@ -1,4 +1,5 @@
 import { createModule } from 'graphql-modules';
+import { EmailIngestionControlProvider } from './providers/email-ingestion-control.provider.js';
 import { emailIngestionResolvers } from './resolvers/email-ingestion.resolver.js';
 import emailIngestion from './typeDefs/email-ingestion.graphql.js';
 
@@ -9,6 +10,7 @@ export const emailIngestionModule = createModule({
   dirname: __dirname,
   typeDefs: [emailIngestion],
   resolvers: [emailIngestionResolvers],
+  providers: [EmailIngestionControlProvider],
 });
 
 export * as CommonTypes from './types.js';
