@@ -3,18 +3,8 @@
  */
 
 import { z } from 'zod';
-import {
-  parseA000,
-  parseA000Sum,
-  parseA100,
-  parseB100,
-  parseB110,
-  parseC100,
-  parseD110,
-  parseD120,
-  parseM100,
-  parseZ900,
-} from '../generator/records/index.js';
+import { parseA000, parseA000Sum } from '../generator/records/index.js';
+import { parseDataFile, type ParsedDataRecords } from '../parser/data-parser.js';
 import type {
   Account,
   Document,
@@ -66,16 +56,7 @@ interface ParsedFileData {
     a000: ReturnType<typeof parseA000> | null;
     a000Sum: ReturnType<typeof parseA000Sum>[];
   };
-  dataRecords: {
-    a100: ReturnType<typeof parseA100> | null;
-    b100: ReturnType<typeof parseB100>[];
-    b110: ReturnType<typeof parseB110>[];
-    c100: ReturnType<typeof parseC100>[];
-    d110: ReturnType<typeof parseD110>[];
-    d120: ReturnType<typeof parseD120>[];
-    m100: ReturnType<typeof parseM100>[];
-    z900: ReturnType<typeof parseZ900> | null;
-  };
+  dataRecords: ParsedDataRecords;
 }
 
 /**
@@ -111,10 +92,10 @@ export function parseUniformFormatFiles(
   const structuredData = convertToStructuredData(parsedData, errors, validationMode);
 
   // Perform individual validation
-  performIndividualValidation(structuredData, errors, validationMode);
+  performRecordsValidation(structuredData, errors, validationMode);
 
   // Perform cross-validation
-  const crossValidationPassed = performCrossValidation(parsedData, errors, validationMode);
+  const crossValidationPassed = performCrossFileValidation(parsedData, errors, validationMode);
 
   // Handle validation errors based on mode
   if (
@@ -204,67 +185,32 @@ function parseFilesSeparately(
   }
 
   // Parse data file
-  const dataLines = dataContent.split('\n').filter(line => line.trim().length > 0);
-  for (let i = 0; i < dataLines.length; i++) {
-    const line = dataLines[i];
-    if (line.length < 4) continue;
+  const parsedDataFile = parseDataFile(dataContent);
 
-    const recordType = line.substring(0, 4);
-    const cleanLine = line.replace(/\r?\n?$/, '').replace(/\r$/, '');
+  parsedData.dataRecords = parsedDataFile.records;
 
-    try {
-      switch (recordType) {
-        case 'A100':
-          parsedData.dataRecords.a100 = parseA100(cleanLine);
-          recordCounts['A100'] = (recordCounts['A100'] || 0) + 1;
-          break;
-        case 'B100':
-          parsedData.dataRecords.b100.push(parseB100(cleanLine));
-          recordCounts['B100'] = (recordCounts['B100'] || 0) + 1;
-          break;
-        case 'B110':
-          parsedData.dataRecords.b110.push(parseB110(cleanLine));
-          recordCounts['B110'] = (recordCounts['B110'] || 0) + 1;
-          break;
-        case 'C100':
-          parsedData.dataRecords.c100.push(parseC100(cleanLine));
-          recordCounts['C100'] = (recordCounts['C100'] || 0) + 1;
-          break;
-        case 'D110':
-          parsedData.dataRecords.d110.push(parseD110(cleanLine));
-          recordCounts['D110'] = (recordCounts['D110'] || 0) + 1;
-          break;
-        case 'D120':
-          parsedData.dataRecords.d120.push(parseD120(cleanLine));
-          recordCounts['D120'] = (recordCounts['D120'] || 0) + 1;
-          break;
-        case 'M100':
-          parsedData.dataRecords.m100.push(parseM100(cleanLine));
-          recordCounts['M100'] = (recordCounts['M100'] || 0) + 1;
-          break;
-        case 'Z900':
-          parsedData.dataRecords.z900 = parseZ900(cleanLine);
-          recordCounts['Z900'] = (recordCounts['Z900'] || 0) + 1;
-          break;
-        default:
-          if (!options.skipUnknownRecords) {
-            errors.push({
-              recordType: 'UNKNOWN_DATA',
-              recordIndex: i,
-              field: 'recordType',
-              message: `Unknown data record type: ${recordType}`,
-              severity: options.validationMode === 'strict' ? 'error' : 'warning',
-            });
-          }
-          break;
-      }
-    } catch (error) {
+  for (const [recordType, count] of Object.entries(parsedDataFile.summary.perType)) {
+    recordCounts[recordType] = (recordCounts[recordType] || 0) + count;
+  }
+
+  for (const parseError of parsedDataFile.errors) {
+    errors.push({
+      recordType: parseError.recordType,
+      recordIndex: parseError.lineNumber - 1,
+      field: 'parsing',
+      message: `Failed to parse ${parseError.recordType} record: ${parseError.message}`,
+      severity: 'error',
+    });
+  }
+
+  if (!options.skipUnknownRecords) {
+    for (const unknownRecord of parsedDataFile.unknownRecords) {
       errors.push({
-        recordType,
-        recordIndex: i,
-        field: 'parsing',
-        message: `Failed to parse ${recordType} record: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        severity: 'error',
+        recordType: 'UNKNOWN_DATA',
+        recordIndex: unknownRecord.lineNumber - 1,
+        field: 'recordType',
+        message: `Unknown data record type: ${unknownRecord.recordType}`,
+        severity: options.validationMode === 'strict' ? 'error' : 'warning',
       });
     }
   }
@@ -286,8 +232,8 @@ function convertToStructuredData(
       name: 'Unknown Business',
       taxId: '0',
       reportingPeriod: {
-        startDate: '2024-01-01',
-        endDate: '2024-12-31',
+        startDate: '1900-01-01',
+        endDate: '1900-01-01',
       },
     },
     documents: [],
@@ -299,13 +245,40 @@ function convertToStructuredData(
   // Extract business metadata from A000 or A100
   if (parsedData.iniData.a000) {
     const a000 = parsedData.iniData.a000;
+    let startDate = '1900-01-01';
+    let endDate = '1900-01-01';
+
+    try {
+      startDate = formatDateFromShaam(a000.startDate);
+    } catch (error) {
+      errors.push({
+        recordType: 'A000',
+        recordIndex: 0,
+        field: 'startDate',
+        message: `Failed to convert A000 startDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: validationMode === 'strict' ? 'error' : 'warning',
+      });
+    }
+
+    try {
+      endDate = formatDateFromShaam(a000.endDate);
+    } catch (error) {
+      errors.push({
+        recordType: 'A000',
+        recordIndex: 0,
+        field: 'endDate',
+        message: `Failed to convert A000 endDate: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: validationMode === 'strict' ? 'error' : 'warning',
+      });
+    }
+
     result.business = {
       businessId: a000.primaryIdentifier,
       name: a000.businessName || 'Unknown Business',
       taxId: a000.vatId,
       reportingPeriod: {
-        startDate: a000.startDate ? formatDateFromShaam(a000.startDate) : '2024-01-01',
-        endDate: a000.endDate ? formatDateFromShaam(a000.endDate) : '2024-12-31',
+        startDate,
+        endDate,
       },
     };
 
@@ -473,9 +446,9 @@ function convertToStructuredData(
 }
 
 /**
- * Perform individual validation using Zod schemas
+ * Perform record-level validation using Zod schemas
  */
-function performIndividualValidation(
+function performRecordsValidation(
   data: ReportInput,
   errors: ValidationError[],
   validationMode: ValidationMode,
@@ -579,7 +552,7 @@ function performIndividualValidation(
 /**
  * Perform cross-validation between INI and data files
  */
-function performCrossValidation(
+function performCrossFileValidation(
   parsedData: ParsedFileData,
   errors: ValidationError[],
   validationMode: ValidationMode,
@@ -692,8 +665,14 @@ function performCrossValidation(
  * Formats a SHAAM date string (YYYYMMDD) to ISO format (YYYY-MM-DD)
  */
 function formatDateFromShaam(shaamDate: string): string {
-  if (!shaamDate || shaamDate.length !== 8) {
-    return '2024-01-01'; // Default fallback
+  // if shaamDate is not 8 digits string, throw an error
+  if (
+    !shaamDate ||
+    typeof shaamDate !== 'string' ||
+    shaamDate.length !== 8 ||
+    !/^\d{8}$/.test(shaamDate)
+  ) {
+    throw new Error(`Invalid SHAAM date format: "${shaamDate}" (expected YYYYMMDD)`);
   }
 
   const year = shaamDate.substring(0, 4);
