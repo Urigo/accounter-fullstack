@@ -1,5 +1,6 @@
 import { createModule } from 'graphql-modules';
 import { EmailIngestionControlProvider } from './providers/email-ingestion-control.provider.js';
+import { emailIngestionControlResolver } from './resolvers/email-ingestion-control.resolver.js';
 import { emailIngestionResolvers } from './resolvers/email-ingestion.resolver.js';
 import emailIngestion from './typeDefs/email-ingestion.graphql.js';
 
@@ -9,7 +10,7 @@ export const emailIngestionModule = createModule({
   id: 'email-ingestion',
   dirname: __dirname,
   typeDefs: [emailIngestion],
-  resolvers: [emailIngestionResolvers],
+  resolvers: [emailIngestionResolvers, emailIngestionControlResolver],
   providers: [EmailIngestionControlProvider],
 });
 

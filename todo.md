@@ -140,13 +140,13 @@ Primary references:
 - [x] Include decision and audit metadata.
 - [x] Add tests for known/unknown/inactive alias flows.
 
-### S11: Control GraphQL operation
+### S11: Control GraphQL operation ✅ (this PR)
 
-- [ ] Add control operation typeDefs under email-ingestion naming.
-- [ ] Add resolver wiring via injector.
-- [ ] Enforce control-plane auth and role constraints.
-- [ ] Add resolver success/auth-failure tests.
-- [ ] Run GraphQL codegen.
+- [x] Add control operation typeDefs under email-ingestion naming.
+- [x] Add resolver wiring via injector.
+- [x] Enforce control-plane auth and role constraints.
+- [x] Add resolver success/auth-failure tests.
+- [x] Run GraphQL codegen.
 
 ### S12: Grant validation and single-use consume
 
