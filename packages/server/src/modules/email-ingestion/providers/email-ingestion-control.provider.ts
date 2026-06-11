@@ -1,7 +1,28 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
+import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestReasonCode } from '../contracts.js';
+import type { IGetAliasByAliasQuery, IInsertIngestGrantQuery } from '../types.js';
+
+// ---------------------------------------------------------------------------
+// Queries
+// ---------------------------------------------------------------------------
+
+const getAliasByAlias = sql<IGetAliasByAliasQuery>`
+  SELECT owner_id
+    FROM accounter_schema.email_ingestion_alias_routing
+   WHERE lower(alias) = $alias
+     AND is_active = TRUE
+   LIMIT 1
+`;
+
+const insertIngestGrant = sql<IInsertIngestGrantQuery>`
+  INSERT INTO accounter_schema.email_ingestion_grants
+    (jti, owner_id, message_id, raw_message_hash, action, expires_at)
+  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt)
+  RETURNING id, jti, owner_id, action, expires_at
+`;
 
 // ---------------------------------------------------------------------------
 // Output types
@@ -49,20 +70,13 @@ export class EmailIngestionControlProvider {
    * explicitly allow cross-tenant reads at the DB policy level.
    */
   async resolveAlias(alias: string): Promise<AliasResolutionResult> {
-    const result = await this.dbProvider.pool.query<{ owner_id: string }>(
-      `SELECT owner_id
-         FROM accounter_schema.email_ingestion_alias_routing
-        WHERE lower(alias) = $1
-          AND is_active = TRUE
-        LIMIT 1`,
-      [alias.toLowerCase()],
-    );
+    const rows = await getAliasByAlias.run({ alias: alias.toLowerCase() }, this.dbProvider.pool);
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return { found: false, reason: IngestReasonCode.UNKNOWN_ALIAS };
     }
 
-    return { found: true, tenantId: result.rows[0].owner_id };
+    return { found: true, tenantId: rows[0].owner_id };
   }
 
   /**
@@ -78,21 +92,12 @@ export class EmailIngestionControlProvider {
 
     const { tenantId, messageId, rawMessageHash, expiresAt } = input;
 
-    const result = await this.dbProvider.pool.query<{
-      id: string;
-      jti: string;
-      owner_id: string;
-      action: string;
-      expires_at: Date;
-    }>(
-      `INSERT INTO accounter_schema.email_ingestion_grants
-         (jti, owner_id, message_id, raw_message_hash, action, expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, jti, owner_id, action, expires_at`,
-      [jti, tenantId, messageId, rawMessageHash, 'ingest', expiresAt],
+    const rows = await insertIngestGrant.run(
+      { jti, ownerId: tenantId, messageId, rawMessageHash, action: 'ingest', expiresAt },
+      this.dbProvider.pool,
     );
 
-    const row = result.rows[0];
+    const row = rows[0];
 
     return {
       jti: row.jti,
