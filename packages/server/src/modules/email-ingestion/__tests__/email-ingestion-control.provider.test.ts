@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import type { DBProvider } from '../../app-providers/db.provider.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 // ---------------------------------------------------------------------------
@@ -8,10 +8,14 @@ import { EmailIngestionControlProvider } from '../providers/email-ingestion-cont
 
 type MockQueryResult = { rows: Record<string, unknown>[]; rowCount: number };
 
-function makeDb(queryImpl: (text: string, params?: unknown[]) => MockQueryResult): TenantAwareDBClient {
+function makeDbProvider(
+  queryImpl: (text: string, params?: unknown[]) => MockQueryResult,
+): DBProvider {
   return {
-    query: vi.fn().mockImplementation(queryImpl),
-  } as unknown as TenantAwareDBClient;
+    pool: {
+      query: vi.fn().mockImplementation(queryImpl),
+    },
+  } as unknown as DBProvider;
 }
 
 // ---------------------------------------------------------------------------
@@ -20,7 +24,7 @@ function makeDb(queryImpl: (text: string, params?: unknown[]) => MockQueryResult
 
 describe('EmailIngestionControlProvider.resolveAlias', () => {
   it('returns found=true with tenantId for a known active alias', async () => {
-    const db = makeDb(() => ({
+    const db = makeDbProvider(() => ({
       rows: [{ owner_id: 'tenant-uuid-1' }],
       rowCount: 1,
     }));
@@ -34,7 +38,7 @@ describe('EmailIngestionControlProvider.resolveAlias', () => {
   });
 
   it('returns found=false with UNKNOWN_ALIAS reason when alias is not in table', async () => {
-    const db = makeDb(() => ({ rows: [], rowCount: 0 }));
+    const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
     const provider = new EmailIngestionControlProvider(db);
     const result = await provider.resolveAlias('notfound@example.com');
 
@@ -46,7 +50,7 @@ describe('EmailIngestionControlProvider.resolveAlias', () => {
 
   it('returns found=false for an inactive alias (query filters is_active=TRUE)', async () => {
     // The provider queries with is_active = TRUE, so an inactive alias returns 0 rows.
-    const db = makeDb(() => ({ rows: [], rowCount: 0 }));
+    const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
     const provider = new EmailIngestionControlProvider(db);
     const result = await provider.resolveAlias('inactive@example.com');
 
@@ -58,7 +62,7 @@ describe('EmailIngestionControlProvider.resolveAlias', () => {
 
   it('queries with lowercased alias and active flag', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
-    const db = { query } as unknown as TenantAwareDBClient;
+    const db = { pool: { query } } as unknown as DBProvider;
     const provider = new EmailIngestionControlProvider(db);
 
     await provider.resolveAlias('Mixed@Case.Example.COM');
@@ -83,10 +87,10 @@ describe('EmailIngestionControlProvider.issueGrant', () => {
   };
 
   let provider: EmailIngestionControlProvider;
-  let mockDb: TenantAwareDBClient;
+  let mockDb: DBProvider;
 
   beforeEach(() => {
-    mockDb = makeDb(() => ({
+    mockDb = makeDbProvider(() => ({
       rows: [
         {
           id: 'grant-row-uuid',
@@ -135,7 +139,7 @@ describe('EmailIngestionControlProvider.issueGrant', () => {
 
   it('inserts into the grants table with correct tenant binding', async () => {
     await provider.issueGrant(grantInput);
-    const query = (mockDb.query as ReturnType<typeof vi.fn>);
+    const query = mockDb.pool.query as ReturnType<typeof vi.fn>;
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
     expect(sql.toLowerCase()).toMatch(/insert.*email_ingestion_grants/s);
     expect(params).toContain('tenant-uuid-1');

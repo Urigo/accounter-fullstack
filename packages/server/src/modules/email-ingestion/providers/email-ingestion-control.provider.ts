@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Scope } from 'graphql-modules';
-import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { Injectable } from 'graphql-modules';
+import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestReasonCode } from '../contracts.js';
 
 // ---------------------------------------------------------------------------
@@ -34,18 +34,19 @@ export type IssueGrantInput = {
 // Provider
 // ---------------------------------------------------------------------------
 
-@Injectable({
-  scope: Scope.Operation,
-})
+@Injectable()
 export class EmailIngestionControlProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(private dbProvider: DBProvider) {}
 
   /**
    * Resolve a recipient alias to the owning tenant.
-   * Returns UNKNOWN_ALIAS when no active alias matches.
+   * Bypasses RLS via raw pool: alias lookup is a bootstrap step that runs
+   * before any tenant context is known, so TenantAwareDBClient would throw
+   * UNAUTHENTICATED. The alias_routing table has FOR SELECT USING (TRUE) to
+   * explicitly allow cross-tenant reads at the DB policy level.
    */
   async resolveAlias(alias: string): Promise<AliasResolutionResult> {
-    const result = await this.db.query<{ owner_id: string }>(
+    const result = await this.dbProvider.pool.query<{ owner_id: string }>(
       `SELECT owner_id
          FROM accounter_schema.email_ingestion_alias_routing
         WHERE lower(alias) = $1
@@ -54,7 +55,7 @@ export class EmailIngestionControlProvider {
       [alias.toLowerCase()],
     );
 
-    if (result.rowCount === 0) {
+    if (result.rows.length === 0) {
       return { found: false, reason: IngestReasonCode.UNKNOWN_ALIAS };
     }
 
@@ -64,6 +65,8 @@ export class EmailIngestionControlProvider {
   /**
    * Issue a short-lived, single-use ingest grant for the given tenant and message.
    * Returns the persisted grant together with decision/audit metadata.
+   * Uses raw pool so the INSERT succeeds without an active tenant session;
+   * tenant binding is enforced explicitly via the owner_id parameter.
    */
   async issueGrant(input: IssueGrantInput): Promise<IssuedGrant> {
     const jti = randomUUID();
@@ -72,7 +75,7 @@ export class EmailIngestionControlProvider {
 
     const { tenantId, messageId, rawMessageHash, expiresAt } = input;
 
-    const result = await this.db.query<{
+    const result = await this.dbProvider.pool.query<{
       id: string;
       jti: string;
       owner_id: string;
