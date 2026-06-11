@@ -148,11 +148,11 @@ Primary references:
 - [x] Add resolver success/auth-failure tests.
 - [x] Run GraphQL codegen.
 
-### S12: Grant validation and single-use consume
+### S12: Grant validation and single-use consume ✅ (this PR)
 
-- [ ] Implement strict validation: scope, tenant, message binding, expiry, unconsumed.
-- [ ] Implement atomic consume-once behavior.
-- [ ] Add negative tests for reused/expired/mismatched grant behavior.
+- [x] Implement strict validation: scope, tenant, message binding, expiry, unconsumed.
+- [x] Implement atomic consume-once behavior.
+- [x] Add negative tests for reused/expired/mismatched grant behavior.
 
 ### S13: Idempotency and dedup
 
