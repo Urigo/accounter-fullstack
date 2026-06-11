@@ -188,6 +188,7 @@ import migration_2026_06_10T10_00_00_add_email_ingestion_alias_routing from './a
 import migration_2026_06_10T11_00_00_add_email_ingestion_grants from './actions/2026-06-10T11-00-00.add-email-ingestion-grants.js';
 import migration_2026_06_10T12_00_00_add_email_ingestion_replay_nonces from './actions/2026-06-10T12-00-00.add-email-ingestion-replay-nonces.js';
 import migration_2026_06_10T13_00_00_add_email_ingestion_quarantine from './actions/2026-06-10T13-00-00.add-email-ingestion-quarantine.js';
+import migration_2026_06_11T10_00_00_add_email_ingestion_idempotency from './actions/2026-06-11T10-00-00.add-email-ingestion-idempotency.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -380,6 +381,7 @@ export const MIGRATIONS = [
   migration_2026_06_10T11_00_00_add_email_ingestion_grants,
   migration_2026_06_10T12_00_00_add_email_ingestion_replay_nonces,
   migration_2026_06_10T13_00_00_add_email_ingestion_quarantine,
+  migration_2026_06_11T10_00_00_add_email_ingestion_idempotency,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

@@ -154,12 +154,12 @@ Primary references:
 - [x] Implement atomic consume-once behavior.
 - [x] Add negative tests for reused/expired/mismatched grant behavior.
 
-### S13: Idempotency and dedup
+### S13: Idempotency and dedup ✅ (this PR)
 
-- [ ] Implement idempotency key persistence and stable duplicate result behavior.
-- [ ] Implement tenant-scoped dedup fingerprints.
-- [ ] Persist dedup decisions for auditability.
-- [ ] Add tests for duplicate handling and cross-tenant isolation.
+- [x] Implement idempotency key persistence and stable duplicate result behavior.
+- [x] Implement tenant-scoped dedup fingerprints.
+- [x] Persist dedup decisions for auditability.
+- [x] Add tests for duplicate handling and cross-tenant isolation.
 
 ### S14: Ingest GraphQL operation
 
