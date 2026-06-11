@@ -161,6 +161,16 @@ Primary references:
 - [x] Persist dedup decisions for auditability.
 - [x] Add tests for duplicate handling and cross-tenant isolation.
 
+### S13.5: Gateway control-plane service credential ✅ (this PR)
+
+- [x] Add `'gatewayControlPlane'` to `AuthType` and `RawAuth.authType`.
+- [x] Extend auth plugin to extract `X-Gateway-CP-Token` header.
+- [x] Add `GATEWAY_CP_TOKEN` optional env var with timing-safe validation.
+- [x] Implement `handleGatewayControlPlaneAuth()` in `AuthContextProvider`: no DB, no tenant, `roleId: 'gateway_control_plane'`.
+- [x] Update `requestIngestControl` to require `@requiresRole(role: "gateway_control_plane")`.
+- [x] Add TDD tests: valid/invalid token, missing env, no DB calls.
+- [x] Add role isolation tests: gateway_control_plane can call control op, gmail_listener cannot, gateway_control_plane cannot call ingest op.
+
 ### S14: Ingest GraphQL operation
 
 - [ ] Add ingest operation typeDefs and resolver under email-ingestion module.

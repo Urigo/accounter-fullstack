@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -161,6 +161,11 @@ export class AuthContextProvider {
       return this.handlingAuth;
     }
 
+    if (this.rawAuth.authType === 'gatewayControlPlane') {
+      this.handlingAuth = this.handleGatewayControlPlaneAuth();
+      return this.handlingAuth;
+    }
+
     return null;
   }
 
@@ -309,6 +314,54 @@ export class AuthContextProvider {
       // exactly that one business.
       memberships: [{ businessId: apiKey.business_id, roleId: apiKey.role_id }],
     };
+  }
+
+  private async handleGatewayControlPlaneAuth(): Promise<AuthContext | null> {
+    const token = this.rawAuth.token;
+    if (!token) {
+      this.handlingAuth = null;
+      this.cachedContext = null;
+      return null;
+    }
+
+    const expectedToken = this.env.gatewayControlPlane?.token;
+    if (!expectedToken) {
+      this.handlingAuth = null;
+      this.cachedContext = null;
+      return null;
+    }
+
+    // Timing-safe comparison: hash both values to ensure equal-length buffers
+    // and prevent token-length leakage.
+    const tokenHash = createHash('sha256').update(token).digest();
+    const expectedHash = createHash('sha256').update(expectedToken).digest();
+    if (!timingSafeEqual(tokenHash, expectedHash)) {
+      this.handlingAuth = null;
+      this.cachedContext = null;
+      return null;
+    }
+
+    const context: AuthContext = {
+      authType: 'gatewayControlPlane',
+      token,
+      user: {
+        userId: 'gateway-control-plane',
+        auth0UserId: null,
+        email: '',
+        roleId: 'gateway_control_plane',
+        permissions: [],
+        emailVerified: false,
+        permissionsVersion: 0,
+      },
+      // Empty businessId: no real tenant context for the control-plane identity.
+      // TenantAwareDBClient will fail if called with this context, enforcing that
+      // control-plane operations only use the raw DBProvider pool.
+      tenant: { businessId: '' },
+    };
+
+    this.cachedContext = context;
+    this.handlingAuth = null;
+    return context;
   }
 
   private async handleJwtAuth(): Promise<AuthContext | null> {
