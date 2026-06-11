@@ -3,18 +3,8 @@
  */
 
 import { z } from 'zod';
-import {
-  parseA000,
-  parseA000Sum,
-  parseA100,
-  parseB100,
-  parseB110,
-  parseC100,
-  parseD110,
-  parseD120,
-  parseM100,
-  parseZ900,
-} from '../generator/records/index.js';
+import { parseA000, parseA000Sum } from '../generator/records/index.js';
+import { parseDataFile, type ParsedDataRecords } from '../parser/data-parser.js';
 import type {
   Account,
   Document,
@@ -67,14 +57,14 @@ interface ParsedFileData {
     a000Sum: ReturnType<typeof parseA000Sum>[];
   };
   dataRecords: {
-    a100: ReturnType<typeof parseA100> | null;
-    b100: ReturnType<typeof parseB100>[];
-    b110: ReturnType<typeof parseB110>[];
-    c100: ReturnType<typeof parseC100>[];
-    d110: ReturnType<typeof parseD110>[];
-    d120: ReturnType<typeof parseD120>[];
-    m100: ReturnType<typeof parseM100>[];
-    z900: ReturnType<typeof parseZ900> | null;
+    a100: ParsedDataRecords['a100'] | null;
+    b100: ParsedDataRecords['b100'];
+    b110: ParsedDataRecords['b110'];
+    c100: ParsedDataRecords['c100'];
+    d110: ParsedDataRecords['d110'];
+    d120: ParsedDataRecords['d120'];
+    m100: ParsedDataRecords['m100'];
+    z900: ParsedDataRecords['z900'] | null;
   };
 }
 
@@ -111,10 +101,10 @@ export function parseUniformFormatFiles(
   const structuredData = convertToStructuredData(parsedData, errors, validationMode);
 
   // Perform individual validation
-  performIndividualValidation(structuredData, errors, validationMode);
+  performRecordsValidation(structuredData, errors, validationMode);
 
   // Perform cross-validation
-  const crossValidationPassed = performCrossValidation(parsedData, errors, validationMode);
+  const crossValidationPassed = performCrossFileValidation(parsedData, errors, validationMode);
 
   // Handle validation errors based on mode
   if (
@@ -204,67 +194,32 @@ function parseFilesSeparately(
   }
 
   // Parse data file
-  const dataLines = dataContent.split('\n').filter(line => line.trim().length > 0);
-  for (let i = 0; i < dataLines.length; i++) {
-    const line = dataLines[i];
-    if (line.length < 4) continue;
+  const parsedDataFile = parseDataFile(dataContent);
 
-    const recordType = line.substring(0, 4);
-    const cleanLine = line.replace(/\r?\n?$/, '').replace(/\r$/, '');
+  parsedData.dataRecords = parsedDataFile.records;
 
-    try {
-      switch (recordType) {
-        case 'A100':
-          parsedData.dataRecords.a100 = parseA100(cleanLine);
-          recordCounts['A100'] = (recordCounts['A100'] || 0) + 1;
-          break;
-        case 'B100':
-          parsedData.dataRecords.b100.push(parseB100(cleanLine));
-          recordCounts['B100'] = (recordCounts['B100'] || 0) + 1;
-          break;
-        case 'B110':
-          parsedData.dataRecords.b110.push(parseB110(cleanLine));
-          recordCounts['B110'] = (recordCounts['B110'] || 0) + 1;
-          break;
-        case 'C100':
-          parsedData.dataRecords.c100.push(parseC100(cleanLine));
-          recordCounts['C100'] = (recordCounts['C100'] || 0) + 1;
-          break;
-        case 'D110':
-          parsedData.dataRecords.d110.push(parseD110(cleanLine));
-          recordCounts['D110'] = (recordCounts['D110'] || 0) + 1;
-          break;
-        case 'D120':
-          parsedData.dataRecords.d120.push(parseD120(cleanLine));
-          recordCounts['D120'] = (recordCounts['D120'] || 0) + 1;
-          break;
-        case 'M100':
-          parsedData.dataRecords.m100.push(parseM100(cleanLine));
-          recordCounts['M100'] = (recordCounts['M100'] || 0) + 1;
-          break;
-        case 'Z900':
-          parsedData.dataRecords.z900 = parseZ900(cleanLine);
-          recordCounts['Z900'] = (recordCounts['Z900'] || 0) + 1;
-          break;
-        default:
-          if (!options.skipUnknownRecords) {
-            errors.push({
-              recordType: 'UNKNOWN_DATA',
-              recordIndex: i,
-              field: 'recordType',
-              message: `Unknown data record type: ${recordType}`,
-              severity: options.validationMode === 'strict' ? 'error' : 'warning',
-            });
-          }
-          break;
-      }
-    } catch (error) {
+  for (const [recordType, count] of Object.entries(parsedDataFile.summary.perType)) {
+    recordCounts[recordType] = (recordCounts[recordType] || 0) + count;
+  }
+
+  for (const parseError of parsedDataFile.errors) {
+    errors.push({
+      recordType: parseError.recordType,
+      recordIndex: parseError.lineNumber - 1,
+      field: 'parsing',
+      message: `Failed to parse ${parseError.recordType} record: ${parseError.message}`,
+      severity: 'error',
+    });
+  }
+
+  if (!options.skipUnknownRecords) {
+    for (const unknownRecord of parsedDataFile.unknownRecords) {
       errors.push({
-        recordType,
-        recordIndex: i,
-        field: 'parsing',
-        message: `Failed to parse ${recordType} record: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        severity: 'error',
+        recordType: 'UNKNOWN_DATA',
+        recordIndex: unknownRecord.lineNumber - 1,
+        field: 'recordType',
+        message: `Unknown data record type: ${unknownRecord.recordType}`,
+        severity: options.validationMode === 'strict' ? 'error' : 'warning',
       });
     }
   }
@@ -473,9 +428,9 @@ function convertToStructuredData(
 }
 
 /**
- * Perform individual validation using Zod schemas
+ * Perform record-level validation using Zod schemas
  */
-function performIndividualValidation(
+function performRecordsValidation(
   data: ReportInput,
   errors: ValidationError[],
   validationMode: ValidationMode,
@@ -579,7 +534,7 @@ function performIndividualValidation(
 /**
  * Perform cross-validation between INI and data files
  */
-function performCrossValidation(
+function performCrossFileValidation(
   parsedData: ParsedFileData,
   errors: ValidationError[],
   validationMode: ValidationMode,
@@ -692,8 +647,14 @@ function performCrossValidation(
  * Formats a SHAAM date string (YYYYMMDD) to ISO format (YYYY-MM-DD)
  */
 function formatDateFromShaam(shaamDate: string): string {
-  if (!shaamDate || shaamDate.length !== 8) {
-    return '2024-01-01'; // Default fallback
+  // if shaamDate is not 8 digits string, throw an error
+  if (
+    !shaamDate ||
+    typeof shaamDate !== 'string' ||
+    shaamDate.length !== 8 ||
+    !/^\d{8}$/.test(shaamDate)
+  ) {
+    throw new Error(`Invalid SHAAM date format: "${shaamDate}" (expected YYYYMMDD)`);
   }
 
   const year = shaamDate.substring(0, 4);
