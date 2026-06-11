@@ -11,40 +11,42 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
 ) => {
   const control = injector.get(EmailIngestionControlProvider);
 
-  let aliasResult: Awaited<ReturnType<EmailIngestionControlProvider['resolveAlias']>>;
   try {
-    aliasResult = await control.resolveAlias(input.recipientAlias);
+    const aliasResult = await control.resolveAlias(input.recipientAlias);
+
+    if (!aliasResult.found) {
+      return {
+        __typename: 'CommonError',
+        message: `${aliasResult.reason}: ${input.recipientAlias}`,
+      };
+    }
+
+    const expiresAt = new Date(Date.now() + GRANT_TTL_MS);
+    const grant = await control.issueGrant({
+      tenantId: aliasResult.tenantId,
+      messageId: input.messageId,
+      rawMessageHash: input.rawMessageHash,
+      expiresAt,
+      correlationId: input.correlationId ?? undefined,
+    });
+
+    return {
+      __typename: 'IngestControlDecision',
+      tenantId: grant.tenantId,
+      decisionId: grant.decisionId,
+      auditId: grant.auditId,
+      grant: {
+        jti: grant.jti,
+        tenantId: grant.tenantId,
+        action: grant.action,
+        expiresAt: grant.expiresAt.toISOString(),
+      },
+    };
   } catch (err) {
-    throw new GraphQLError('Failed to resolve recipient alias', {
+    throw new GraphQLError('Failed to process ingest control request', {
       extensions: { code: 'INTERNAL_SERVER_ERROR', cause: err },
     });
   }
-
-  if (!aliasResult.found) {
-    return { __typename: 'CommonError', message: `${aliasResult.reason}: ${input.recipientAlias}` };
-  }
-
-  const expiresAt = new Date(Date.now() + GRANT_TTL_MS);
-  const grant = await control.issueGrant({
-    tenantId: aliasResult.tenantId,
-    messageId: input.messageId,
-    rawMessageHash: input.rawMessageHash,
-    expiresAt,
-    correlationId: input.correlationId ?? undefined,
-  });
-
-  return {
-    __typename: 'IngestControlDecision',
-    tenantId: grant.tenantId,
-    decisionId: grant.decisionId,
-    auditId: grant.auditId,
-    grant: {
-      jti: grant.jti,
-      tenantId: grant.tenantId,
-      action: grant.action,
-      expiresAt: grant.expiresAt.toISOString(),
-    },
-  };
 };
 
 export const emailIngestionControlResolver = {

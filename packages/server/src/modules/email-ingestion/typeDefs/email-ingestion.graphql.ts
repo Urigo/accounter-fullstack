@@ -28,8 +28,8 @@ export default gql`
     messageId: String!
     " SHA-256 hex hash of the raw MIME message "
     rawMessageHash: String!
-    " ISO-8601 timestamp the message was received "
-    receivedAt: String!
+    " ISO-8601 timestamp the message was received (reserved for future replay-window validation) "
+    receivedAt: String
     " Optional correlation ID for distributed tracing "
     correlationId: String
   }
