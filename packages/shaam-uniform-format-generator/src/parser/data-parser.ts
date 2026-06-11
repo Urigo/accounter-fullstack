@@ -57,10 +57,7 @@ export interface ParseDataFileResult {
  * @returns Parsed data structure
  */
 export function parseDataFile(content: string): ParseDataFileResult {
-  const lines = content
-    .split(/\r?\n/)
-    .map(line => line.replace(/\r$/, ''))
-    .filter(line => line.trim().length > 0);
+  const lines = content.split(/\r?\n/).map(line => line.replace(/\r$/, ''));
 
   const records = {
     a100: null as ReturnType<typeof parseA100> | null,
@@ -79,6 +76,7 @@ export function parseDataFile(content: string): ParseDataFileResult {
 
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index];
+    if (line.trim().length === 0) continue;
     if (line.length < 4) continue;
 
     const lineNumber = index + 1;
