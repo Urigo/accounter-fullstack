@@ -134,11 +134,11 @@ Primary references:
 
 ## Phase 4 - Server Control and Ingest Core (S10-S14)
 
-### S10: Control provider
+### S10: Control provider ✅ (this PR)
 
-- [ ] Implement alias resolution and grant issuance in email-ingestion module.
-- [ ] Include decision and audit metadata.
-- [ ] Add tests for known/unknown/inactive alias flows.
+- [x] Implement alias resolution and grant issuance in email-ingestion module.
+- [x] Include decision and audit metadata.
+- [x] Add tests for known/unknown/inactive alias flows.
 
 ### S11: Control GraphQL operation
 
