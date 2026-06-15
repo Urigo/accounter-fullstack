@@ -42,8 +42,11 @@ function makeProvider(queryResponses: Array<{ rows: unknown[]; rowCount: number 
   for (const resp of queryResponses) {
     queryFn.mockResolvedValueOnce(resp);
   }
-  const pool = { query: queryFn };
-  return { provider: new EmailIngestionIdempotencyProvider({ pool } as never), queryFn };
+  // The provider injects TenantAwareDBClient and runs all queries through it,
+  // so RLS session variables are set and tenant_isolation policies apply.
+  // pgtyped calls `.query(text, values)` on the injected client.
+  const db = { query: queryFn };
+  return { provider: new EmailIngestionIdempotencyProvider(db as never), queryFn };
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +197,67 @@ describe('EmailIngestionIdempotencyProvider.persistDedupFingerprint', () => {
     });
 
     expect(queryFn).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tenant guardrails (RLS boundary)
+// ---------------------------------------------------------------------------
+
+/**
+ * These tests assert the data-plane boundary hardening (S13.6): the provider
+ * runs every read/write through the injected TenantAwareDBClient (not the raw
+ * pool), so RLS session variables are applied and tenant_isolation policies
+ * enforce owner_id = current_business_id. A WITH CHECK violation (cross-tenant
+ * write) surfaces as a thrown error rather than being silently swallowed.
+ */
+describe('EmailIngestionIdempotencyProvider tenant guardrails', () => {
+  it('routes idempotency reads through the injected tenant-aware client', async () => {
+    const { provider, queryFn } = makeProvider([{ rows: [], rowCount: 0 }]);
+    await provider.checkIdempotencyKey(IDEM_KEY, TENANT_A);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes dedup reads through the injected tenant-aware client', async () => {
+    const { provider, queryFn } = makeProvider([{ rows: [], rowCount: 0 }]);
+    await provider.checkDedupFingerprint(FINGERPRINT, TENANT_A);
+    expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates an RLS WITH CHECK violation on cross-tenant idempotency write', async () => {
+    const queryFn = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error('new row violates row-level security policy for table "..."'),
+      );
+    const provider = new EmailIngestionIdempotencyProvider({ query: queryFn } as never);
+
+    await expect(
+      provider.persistIdempotencyKey({
+        idempotencyKey: IDEM_KEY,
+        tenantId: TENANT_B,
+        outcome: IngestOutcome.INSERTED,
+        ingestId: INGEST_ID,
+        auditId: AUDIT_ID,
+      }),
+    ).rejects.toThrow(/row-level security/);
+  });
+
+  it('propagates an RLS WITH CHECK violation on cross-tenant dedup write', async () => {
+    const queryFn = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error('new row violates row-level security policy for table "..."'),
+      );
+    const provider = new EmailIngestionIdempotencyProvider({ query: queryFn } as never);
+
+    await expect(
+      provider.persistDedupFingerprint({
+        tenantId: TENANT_B,
+        fingerprint: FINGERPRINT,
+        outcome: IngestOutcome.INSERTED,
+      }),
+    ).rejects.toThrow(/row-level security/);
   });
 });
 
