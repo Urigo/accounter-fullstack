@@ -18,10 +18,11 @@ import type { Pool, PoolClient } from 'pg';
 const SCHEMA = 'accounter_schema';
 
 /**
- * Per-process unique role name. Avoids collisions when Vitest runs test files in
- * parallel workers (each worker is a separate process).
+ * Unique role name per worker. `process.pid` alone is not enough: in Vitest's
+ * thread pool, parallel workers share one process (and thus one pid), so a random
+ * suffix is appended to avoid role-name collisions across concurrent test files.
  */
-export const RLS_TEST_ROLE = `rls_test_user_${process.pid}`;
+export const RLS_TEST_ROLE = `rls_test_user_${process.pid}_${Math.random().toString(36).slice(2, 10)}`;
 
 /** A table privilege grant: e.g. `{ table: 'sort_codes', privileges: 'INSERT, SELECT' }`. */
 export interface RlsRoleGrant {
@@ -64,15 +65,27 @@ export async function ensureRlsRole(pool: Pool, options: RlsRoleOptions = {}): P
   }
 }
 
-/** Revoke grants and drop the per-process RLS role. Mirror of {@link ensureRlsRole}. */
-export async function dropRlsRole(pool: Pool, options: RlsRoleOptions = {}): Promise<void> {
+/**
+ * Drop the RLS role. Mirror of {@link ensureRlsRole}.
+ *
+ * A bare `DROP ROLE` would fail while the role still holds the schema/table grants
+ * from ensureRlsRole — Postgres tracks them in pg_shdepend and refuses to drop a
+ * role other objects depend on. So we first `DROP OWNED BY`, which revokes every
+ * privilege granted to the role in the current database, then drop the role. The
+ * whole thing is guarded on role existence so a failed setup (role never created)
+ * surfaces the real error instead of a "role does not exist" during teardown.
+ */
+export async function dropRlsRole(pool: Pool): Promise<void> {
   const client = await pool.connect();
   try {
-    for (const { table, privileges } of options.grants ?? []) {
-      await client.query(`REVOKE ${privileges} ON ${SCHEMA}.${table} FROM ${RLS_TEST_ROLE}`);
-    }
-    await client.query(`REVOKE USAGE ON SCHEMA ${SCHEMA} FROM ${RLS_TEST_ROLE}`);
-    await client.query(`DROP ROLE IF EXISTS ${RLS_TEST_ROLE}`);
+    await client.query(
+      `DO $$ BEGIN
+         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${RLS_TEST_ROLE}') THEN
+           EXECUTE 'DROP OWNED BY ${RLS_TEST_ROLE}';
+           EXECUTE 'DROP ROLE ${RLS_TEST_ROLE}';
+         END IF;
+       END $$`,
+    );
   } finally {
     client.release();
   }

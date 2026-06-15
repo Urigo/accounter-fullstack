@@ -226,6 +226,7 @@ describe('RLS write-target: X-Business-Scope header controls insert target', () 
   });
 
   afterAll(async () => {
+    if (!pool) return;
     const teardown = await pool.connect();
     try {
       await teardown.query('SET row_security = off');
@@ -251,7 +252,7 @@ describe('RLS write-target: X-Business-Scope header controls insert target', () 
     } finally {
       teardown.release();
     }
-    await dropRlsRole(pool, { grants: SORT_CODES_GRANTS });
+    await dropRlsRole(pool);
     // Pool managed by global vitest setup — do not close here.
   });
 
