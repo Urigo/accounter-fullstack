@@ -244,4 +244,68 @@ describe('POST /webhook — createWebhookHandler', () => {
     await h(makeReq(VALID_BODY, { 'x-cf-signature': undefined }), res);
     expect(mockVerifier.verify).not.toHaveBeenCalled();
   });
+
+  // -------------------------------------------------------------------------
+  // Body read errors
+  // -------------------------------------------------------------------------
+
+  it('returns 400 (not 413) when the request stream emits an error', async () => {
+    const stream = new PassThrough();
+    const req = Object.assign(stream, {
+      headers: {
+        'x-cf-timestamp': VALID_TIMESTAMP,
+        'x-cf-signature': 'a'.repeat(64),
+        'x-cf-nonce': 'unique-nonce-abc',
+      },
+      method: 'POST',
+      socket: { remoteAddress: '127.0.0.1' },
+    }) as unknown as IncomingMessage;
+
+    // Emit a network error after the handler starts reading
+    setImmediate(() => stream.destroy(new Error('ECONNRESET')));
+
+    const { res, getStatus, getBody } = makeRes();
+    await handler(req, res);
+    expect(getStatus()).toBe(400);
+    expect(getBody()).toMatchObject({ error: 'Bad request' });
+  });
+
+  // -------------------------------------------------------------------------
+  // Source IP resolution
+  // -------------------------------------------------------------------------
+
+  it('passes cf-connecting-ip as sourceIp when present', async () => {
+    const mockVerifier = makeVerifier({ valid: true });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const req = makeReq(VALID_BODY, { 'cf-connecting-ip': '198.41.128.5' });
+    const { res } = makeRes();
+    await h(req, res);
+
+    const arg = (mockVerifier.verify as ReturnType<typeof vi.fn>).mock
+      .calls[0][0] as Parameters<CloudflareAuthenticityVerifier['verify']>[0];
+    expect(arg.sourceIp).toBe('198.41.128.5');
+  });
+
+  it('strips ::ffff: prefix from IPv4-mapped IPv6 addresses', async () => {
+    const mockVerifier = makeVerifier({ valid: true });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const stream = new PassThrough();
+    stream.end(VALID_BODY);
+    const req = Object.assign(stream, {
+      headers: {
+        'x-cf-timestamp': VALID_TIMESTAMP,
+        'x-cf-signature': 'a'.repeat(64),
+        'x-cf-nonce': 'unique-nonce-abc',
+      },
+      method: 'POST',
+      socket: { remoteAddress: '::ffff:192.168.1.1' },
+    }) as unknown as IncomingMessage;
+
+    const { res } = makeRes();
+    await h(req, res);
+
+    const arg = (mockVerifier.verify as ReturnType<typeof vi.fn>).mock
+      .calls[0][0] as Parameters<CloudflareAuthenticityVerifier['verify']>[0];
+    expect(arg.sourceIp).toBe('192.168.1.1');
+  });
 });

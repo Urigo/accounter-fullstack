@@ -5,6 +5,10 @@ import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifi
 
 const MAX_BODY_BYTES = 1_048_576; // 1 MiB
 
+class PayloadTooLargeError extends Error {
+  override name = 'PayloadTooLargeError';
+}
+
 const WebhookBodySchema = zod.object({
   recipientAlias: zod.string().min(1),
   messageId: zod.string().min(1),
@@ -35,9 +39,15 @@ export function createWebhookHandler(deps: WebhookDeps) {
       return;
     }
 
-    // Establish a correlation ID before any I/O for structured logging
+    // Establish a correlation ID before any I/O for structured logging.
+    // Prefer the value already set on the response by requestHandler (which read it from the
+    // incoming request header or generated it), so both layers share the same ID.
     const reqCorrelationId =
-      (req.headers['x-correlation-id'] as string | undefined) ?? generateCorrelationId();
+      (typeof res.getHeader === 'function'
+        ? (res.getHeader('X-Correlation-Id') as string | undefined)
+        : undefined) ??
+      (req.headers['x-correlation-id'] as string | undefined) ??
+      generateCorrelationId();
     res.setHeader('X-Correlation-Id', reqCorrelationId);
 
     // 2. Validate required authenticity headers before reading the body (cheap, fail-fast)
@@ -67,16 +77,24 @@ export function createWebhookHandler(deps: WebhookDeps) {
     let rawBody: Buffer;
     try {
       rawBody = await readRawBody(req, MAX_BODY_BYTES);
-    } catch {
-      writeJson(res, 413, { error: 'Payload too large' });
+    } catch (err) {
+      if (err instanceof PayloadTooLargeError) {
+        writeJson(res, 413, { error: 'Payload too large' });
+      } else {
+        writeJson(res, 400, { error: 'Bad request', details: 'Failed to read request body' });
+      }
       return;
     }
 
     // 4. Authenticity verification: IP allowlist + timestamp window + HMAC + nonce replay
-    const sourceIp =
+    let sourceIp =
+      (req.headers['cf-connecting-ip'] as string | undefined)?.trim() ??
       (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
       req.socket?.remoteAddress ??
       '';
+    if (sourceIp.startsWith('::ffff:')) {
+      sourceIp = sourceIp.slice(7);
+    }
 
     const input: AuthenticityInput = { rawBody, signature, timestampSeconds, nonce, sourceIp };
     const verdict = await verifier.verify(input);
@@ -105,7 +123,9 @@ export function createWebhookHandler(deps: WebhookDeps) {
     if (!bodyResult.success) {
       writeJson(res, 400, {
         error: 'Bad request',
-        details: bodyResult.error.issues.map(i => i.message).join('; '),
+        details: bodyResult.error.issues
+          .map(i => (i.path.length > 0 ? `${i.path.join('.')}: ${i.message}` : i.message))
+          .join('; '),
       });
       return;
     }
@@ -133,7 +153,7 @@ export async function readRawBody(req: IncomingMessage, maxBytes: number): Promi
       size += chunk.length;
       if (size > maxBytes) {
         req.destroy();
-        reject(new Error(`Request body exceeds ${maxBytes} bytes`));
+        reject(new PayloadTooLargeError(`Request body exceeds ${maxBytes} bytes`));
         return;
       }
       chunks.push(chunk);
