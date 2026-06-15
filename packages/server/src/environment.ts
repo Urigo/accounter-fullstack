@@ -155,6 +155,10 @@ const OtelModel = zod
     }
   });
 
+const GatewayControlPlaneModel = zod.object({
+  GATEWAY_CP_TOKEN: emptyString(zod.string().optional()),
+});
+
 const EmailIngestionModel = zod.object({
   EMAIL_INGESTION_V2_ENABLED: emptyString(
     zod
@@ -201,6 +205,7 @@ const configs = {
   general: GeneralModel.safeParse(process.env),
   otel: OtelModel.safeParse(process.env),
   emailIngestion: EmailIngestionModel.safeParse(process.env),
+  gatewayControlPlane: GatewayControlPlaneModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -233,6 +238,7 @@ const credentials = extractConfig(configs.credentials);
 const general = extractConfig(configs.general);
 const otel = extractConfig(configs.otel);
 const emailIngestion = extractConfig(configs.emailIngestion);
+const gatewayControlPlane = extractConfig(configs.gatewayControlPlane);
 
 export const env = {
   postgres: {
@@ -293,5 +299,8 @@ export const env = {
   emailIngestion: {
     v2Enabled: emailIngestion.EMAIL_INGESTION_V2_ENABLED === '1',
     shadowMode: emailIngestion.EMAIL_INGESTION_SHADOW_MODE === '1',
+  },
+  gatewayControlPlane: {
+    token: gatewayControlPlane.GATEWAY_CP_TOKEN,
   },
 } as const;
