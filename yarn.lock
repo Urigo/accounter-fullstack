@@ -5,7 +5,7 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
-"@0no-co/graphql.web@npm:^1.0.13, @0no-co/graphql.web@npm:^1.0.5":
+"@0no-co/graphql.web@npm:^1.0.13":
   version: 1.2.0
   resolution: "@0no-co/graphql.web@npm:1.2.0"
   peerDependencies:
@@ -17,16 +17,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@0no-co/graphqlsp@npm:1.15.4":
-  version: 1.15.4
-  resolution: "@0no-co/graphqlsp@npm:1.15.4"
+"@0no-co/graphql.web@npm:^1.3.1":
+  version: 1.3.2
+  resolution: "@0no-co/graphql.web@npm:1.3.2"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
+  peerDependenciesMeta:
+    graphql:
+      optional: true
+  checksum: 10c0/ba55ed4953e922ab41bbaef36317d48e615b0b1696ced24dbcf812136ebe37778e052d753a498926a8ff39843d379f5207263fc765632c1e51041188e694ded8
+  languageName: node
+  linkType: hard
+
+"@0no-co/graphqlsp@npm:1.17.2":
+  version: 1.17.2
+  resolution: "@0no-co/graphqlsp@npm:1.17.2"
   dependencies:
-    "@gql.tada/internal": "npm:^1.0.0"
+    "@gql.tada/internal": "npm:^1.2.0"
     graphql: "npm:^15.5.0 || ^16.0.0 || ^17.0.0"
   peerDependencies:
     graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
     typescript: ^5.0.0 || ^6.0.0
-  checksum: 10c0/3cf8c26a08782c28b232c3b0425dcc6fea2cf60c8dce98e40501078d60a2cdd26fd6f84786d93e3298dffec32ffccc436180338e1002fac4d800d69cf44ca2ed
+  checksum: 10c0/4de404dc4ceeec0ba1dd5ebb02eb194bb2d7112a485bc3544f55a861f87a1ad0e0e1ca381ea847b13ae4361e3f68868309a23c516798bfcf72822659f42b87f7
   languageName: node
   linkType: hard
 
@@ -2030,15 +2042,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gql.tada/internal@npm:^1.0.0":
-  version: 1.0.9
-  resolution: "@gql.tada/internal@npm:1.0.9"
+"@gql.tada/internal@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@gql.tada/internal@npm:1.2.0"
   dependencies:
-    "@0no-co/graphql.web": "npm:^1.0.5"
+    "@0no-co/graphql.web": "npm:^1.3.1"
   peerDependencies:
     graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-    typescript: ^5.0.0 || ^6.0.0
-  checksum: 10c0/5599ab58bc5859bf9d38f13e4ca0aae564cf7e94fbfa9afdb9932d4719fb945cb19da917fe23ed0cf115550ce07d31bcac89c229385fe7077754b54c2bed16e9
+    typescript: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
+  checksum: 10c0/76b40c4e90c4b13f5a5cf208edeff40f557814d11856c11c4d23df79c5488fad3f6754c08f5ec137a9b0b38dc04fcd51d4a26ff6775507c2e4063281a85c8418
   languageName: node
   linkType: hard
 
@@ -11211,7 +11223,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "accounter-monorepo@workspace:."
   dependencies:
-    "@0no-co/graphqlsp": "npm:1.15.4"
+    "@0no-co/graphqlsp": "npm:1.17.2"
     "@changesets/changelog-github": "npm:0.7.0"
     "@changesets/cli": "npm:2.31.0"
     "@eslint/compat": "npm:2.1.0"
