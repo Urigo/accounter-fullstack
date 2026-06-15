@@ -222,12 +222,12 @@ Primary references:
 
 ## Phase 5 - New Gateway Implementation (S15-S18)
 
-### S15: Cloudflare authenticity verifier
+### S15: Cloudflare authenticity verifier ✅ (this PR)
 
-- [ ] Add signature/mTLS authenticity checks in new gateway package.
-- [ ] Add IP allowlist check as defense-in-depth.
-- [ ] Add timestamp window and nonce replay checks.
-- [ ] Add tests for valid/invalid/stale/replayed requests.
+- [x] Add signature/mTLS authenticity checks in new gateway package.
+- [x] Add IP allowlist check as defense-in-depth.
+- [x] Add timestamp window and nonce replay checks.
+- [x] Add tests for valid/invalid/stale/replayed requests.
 
 ### S16: Webhook endpoint
 
