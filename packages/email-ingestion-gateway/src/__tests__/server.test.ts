@@ -58,7 +58,13 @@ describe('GET /readiness', () => {
 describe('unknown route', () => {
   it('is not present in the routes table', () => {
     expect(routes.GET['/unknown']).toBeUndefined();
-    expect(routes.POST).toBeUndefined();
+    expect(routes.POST['/unknown']).toBeUndefined();
+  });
+});
+
+describe('POST /webhook', () => {
+  it('is registered in the routes table', () => {
+    expect(typeof routes.POST['/webhook']).toBe('function');
   });
 });
 

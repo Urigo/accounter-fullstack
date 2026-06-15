@@ -229,12 +229,12 @@ Primary references:
 - [x] Add timestamp window and nonce replay checks.
 - [x] Add tests for valid/invalid/stale/replayed requests.
 
-### S16: Webhook endpoint
+### S16: Webhook endpoint ✅ (this PR)
 
-- [ ] Add Cloudflare ingress endpoint in new gateway service.
-- [ ] Apply route-specific authenticity and replay checks.
-- [ ] Enforce feature-flag gating.
-- [ ] Add endpoint tests for malformed/auth-failure/disabled cases.
+- [x] Add Cloudflare ingress endpoint in new gateway service.
+- [x] Apply route-specific authenticity and replay checks.
+- [x] Enforce feature-flag gating.
+- [x] Add endpoint tests for malformed/auth-failure/disabled cases.
 
 ### S17: Extraction pipeline (duplicate/adapt, no sharing)
 
