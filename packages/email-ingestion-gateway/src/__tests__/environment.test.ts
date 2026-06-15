@@ -99,3 +99,62 @@ describe('Email Ingestion Gateway — general env', () => {
     expect(env.general.port).toBe(4001);
   });
 });
+
+describe('Email Ingestion Gateway — Cloudflare env', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+    delete process.env.CF_WEBHOOK_SECRET;
+    delete process.env.CF_IP_ALLOWLIST;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('defaults webhookSecret to empty string when CF_WEBHOOK_SECRET is absent', async () => {
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.webhookSecret).toBe('');
+  });
+
+  it('treats empty CF_WEBHOOK_SECRET as empty string', async () => {
+    process.env.CF_WEBHOOK_SECRET = '';
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.webhookSecret).toBe('');
+  });
+
+  it('exposes CF_WEBHOOK_SECRET when set', async () => {
+    process.env.CF_WEBHOOK_SECRET = 'super-secret-value';
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.webhookSecret).toBe('super-secret-value');
+  });
+
+  it('defaults ipAllowlist to empty array when CF_IP_ALLOWLIST is absent', async () => {
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.ipAllowlist).toEqual([]);
+  });
+
+  it('parses a single IP from CF_IP_ALLOWLIST', async () => {
+    process.env.CF_IP_ALLOWLIST = '198.41.128.1';
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.ipAllowlist).toEqual(['198.41.128.1']);
+  });
+
+  it('parses multiple entries from a comma-separated CF_IP_ALLOWLIST', async () => {
+    process.env.CF_IP_ALLOWLIST = '198.41.128.0/20, 172.16.0.0/12, 10.0.0.1';
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.ipAllowlist).toEqual([
+      '198.41.128.0/20',
+      '172.16.0.0/12',
+      '10.0.0.1',
+    ]);
+  });
+
+  it('treats empty CF_IP_ALLOWLIST as empty array', async () => {
+    process.env.CF_IP_ALLOWLIST = '';
+    const { env } = await import('../environment.js');
+    expect(env.cloudflare.ipAllowlist).toEqual([]);
+  });
+});
