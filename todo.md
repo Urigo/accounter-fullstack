@@ -173,6 +173,25 @@ Primary references:
 - [x] Add role isolation tests: gateway_control_plane can call control op, gmail_listener cannot,
       gateway_control_plane cannot call ingest op.
 
+### S13.6: Server data-plane DB boundary hardening ✅ (this PR)
+
+- [x] Refactor `EmailIngestionIdempotencyProvider` to `Scope.Operation`.
+- [x] Inject `TenantAwareDBClient` (RLS-enforced) for idempotency + dedup reads/writes instead of
+      the raw `DBProvider` pool.
+- [x] Keep `DBProvider`/raw-pool access only in `EmailIngestionControlProvider` for pre-tenant
+      control-plane ops (alias resolution, grant issuance/validation) where no tenant session exists
+      yet.
+- [x] Confirm control-plane and data-plane responsibilities live in separate providers (no hybrid).
+- [x] Remove the `no-restricted-imports` ESLint exemption for the idempotency provider (no longer
+      touches `DBProvider`).
+- [x] Update provider tests/mocks to the new `TenantAwareDBClient` boundary.
+- [x] Add tenant-guardrail tests: reads route through the tenant-aware client; cross-tenant writes
+      propagate the RLS WITH CHECK violation.
+- [ ] Live-DB integration test for RLS row-filtering (deferred: superuser test connection bypasses
+      RLS row-filtering; cross-tenant isolation is asserted via owner_id scoping + WITH CHECK
+      propagation at the provider boundary). Quarantine provider is tenant-bound and will follow the
+      same boundary when introduced (S14).
+
 ### S14: Ingest GraphQL operation
 
 - [ ] Add ingest operation typeDefs and resolver under email-ingestion module.
