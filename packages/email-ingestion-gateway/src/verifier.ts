@@ -40,6 +40,8 @@ export interface NonceStore {
 
 export class MemoryNonceStore implements NonceStore {
   private readonly seen = new Map<string, number>();
+  // Insertion-ordered queue for O(1) amortized expiry without full-map scans
+  private readonly expiryQueue: { nonce: string; expiresAt: number }[] = [];
   private readonly clock: () => number;
 
   constructor(currentTimeSeconds?: () => number) {
@@ -48,12 +50,17 @@ export class MemoryNonceStore implements NonceStore {
 
   async checkAndStore(nonce: string, expirySeconds: number): Promise<boolean> {
     const now = this.clock();
-    // Evict expired entries on each call to bound memory usage
-    for (const [key, exp] of this.seen) {
-      if (exp < now) this.seen.delete(key);
+    // Evict from the front of the queue (entries are in chronological order)
+    while (this.expiryQueue.length > 0 && (this.expiryQueue[0]?.expiresAt ?? 0) < now) {
+      const expired = this.expiryQueue.shift();
+      if (expired && this.seen.get(expired.nonce) === expired.expiresAt) {
+        this.seen.delete(expired.nonce);
+      }
     }
     if (this.seen.has(nonce)) return false;
-    this.seen.set(nonce, now + expirySeconds);
+    const expiresAt = now + expirySeconds;
+    this.seen.set(nonce, expiresAt);
+    this.expiryQueue.push({ nonce, expiresAt });
     return true;
   }
 }
@@ -108,7 +115,7 @@ export class CloudflareAuthenticityVerifier {
     timestampSeconds: number,
     signature: string,
   ): boolean {
-    if (!signature) return false;
+    if (!signature || !/^[0-9a-fA-F]{64}$/.test(signature)) return false;
 
     const prefix = Buffer.from(`${timestampSeconds}.`);
     const body = Buffer.isBuffer(rawBody) ? rawBody : Buffer.from(rawBody);
@@ -146,8 +153,10 @@ function matchesCidrOrIp(ip: string, entry: string): boolean {
 function matchesIpv4Cidr(ip: string, cidr: string): boolean {
   const slashIdx = cidr.lastIndexOf('/');
   const network = cidr.slice(0, slashIdx);
-  const prefixLen = parseInt(cidr.slice(slashIdx + 1), 10);
-  if (isNaN(prefixLen) || prefixLen < 0 || prefixLen > 32) return false;
+  const prefixStr = cidr.slice(slashIdx + 1);
+  if (!/^\d+$/.test(prefixStr)) return false;
+  const prefixLen = parseInt(prefixStr, 10);
+  if (prefixLen > 32) return false;
   if (prefixLen === 0) return true;
 
   const ipNum = ipv4ToNumber(ip);
@@ -165,8 +174,10 @@ function ipv4ToNumber(ip: string): number | null {
   if (parts.length !== 4) return null;
   let result = 0;
   for (const part of parts) {
+    // Reject trailing non-digits, leading zeros (octal ambiguity), and empty strings
+    if (!/^(0|[1-9]\d*)$/.test(part)) return null;
     const n = parseInt(part, 10);
-    if (isNaN(n) || n < 0 || n > 255) return null;
+    if (n > 255) return null;
     result = result * 256 + n;
   }
   return result;

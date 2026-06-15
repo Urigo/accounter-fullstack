@@ -83,6 +83,17 @@ describe('CloudflareAuthenticityVerifier', () => {
       );
       expect(result).toEqual({ valid: false, reason: IngestReasonCode.INVALID_AUTH });
     });
+
+    it('rejects a signature with trailing garbage after valid hex (strict length check)', async () => {
+      const valid = buildSignature(SECRET, FIXED_NOW, RAW_BODY);
+      const result = await verifier.verify(makeInput({ signature: valid + 'zz' }));
+      expect(result).toEqual({ valid: false, reason: IngestReasonCode.INVALID_AUTH });
+    });
+
+    it('rejects a signature that is valid hex but shorter than 64 chars', async () => {
+      const result = await verifier.verify(makeInput({ signature: 'deadbeef' }));
+      expect(result).toEqual({ valid: false, reason: IngestReasonCode.INVALID_AUTH });
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -264,6 +275,17 @@ describe('MemoryNonceStore', () => {
     const store = new MemoryNonceStore(() => fakeTime);
     await store.checkAndStore('n1', 300); // expires at 1_000_300
     fakeTime = 1_000_299; // 1 second before expiry
+    expect(await store.checkAndStore('n1', 300)).toBe(false);
+  });
+
+  it('re-accepts a nonce after it expires and is evicted from the queue', async () => {
+    let fakeTime = 1_000_000;
+    const store = new MemoryNonceStore(() => fakeTime);
+    await store.checkAndStore('n1', 10); // expires at 1_000_010
+    fakeTime = 1_000_011;
+    await store.checkAndStore('n1', 300); // re-accepted; expires at 1_001_311
+    fakeTime = 1_000_012;
+    // n1 is live again — must be rejected
     expect(await store.checkAndStore('n1', 300)).toBe(false);
   });
 });
