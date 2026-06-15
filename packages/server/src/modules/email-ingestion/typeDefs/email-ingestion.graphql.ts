@@ -18,7 +18,7 @@ export default gql`
     " Request a short-lived ingest control grant for a verified incoming message "
     requestIngestControl(input: IngestControlInput!): IngestControlResult!
       @requiresAuth
-      @requiresRole(role: "gmail_listener")
+      @requiresRole(role: "gateway_control_plane")
   }
 
   " Input for requesting a short-lived ingest control grant "

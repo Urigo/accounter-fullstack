@@ -6,7 +6,7 @@ import type { BusinessScopeParseResult } from '../shared/types/auth.js';
 import { BUSINESS_SCOPE_HEADER, parseBusinessScopeHeader } from './business-scope-header.js';
 
 export interface RawAuth {
-  authType: 'jwt' | 'apiKey' | 'devBypass' | null;
+  authType: 'jwt' | 'apiKey' | 'devBypass' | 'gatewayControlPlane' | null;
   token: string | null;
   /**
    * Parsed `X-Business-Scope` header, present only when the header was sent.
@@ -45,6 +45,7 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
       const devAuthHeader = request.headers.get('x-dev-auth');
       const authHeader = request.headers.get('authorization');
       const apiKeyHeader = request.headers.get('x-api-key');
+      const gatewayCpTokenHeader = request.headers.get('x-gateway-cp-token');
 
       // Parse the requested read scope once. Attach it only when the header was
       // actually sent, so requests without it keep the original rawAuth shape.
@@ -82,6 +83,20 @@ export const authPlugin = (): Plugin<{ rawAuth: RawAuth }> => {
               };
             }
           }
+        }
+      }
+
+      // Gateway control-plane service identity (no tenant context)
+      if (gatewayCpTokenHeader) {
+        const token = gatewayCpTokenHeader.trim();
+        if (token.length > 0) {
+          return {
+            rawAuth: {
+              authType: 'gatewayControlPlane',
+              token,
+              ...scopeFields,
+            },
+          };
         }
       }
 
