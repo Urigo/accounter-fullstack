@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import type { Pool, PoolClient } from 'pg';
 import { TestDatabase } from './helpers/db-setup.js';
+import { dropRlsRole, ensureRlsRole, runAsRlsRole } from './helpers/rls-role.js';
 
 /**
  * Integration tests for the X-Business-Scope write-target logic.
@@ -23,13 +24,12 @@ const A = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
 const B = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
 const C = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
 
-// Temporary non-superuser role used to test RLS enforcement.
-// The test pool connects as postgres (BYPASSRLS), so inserts as postgres always
-// bypass RLS regardless of FORCE ROW LEVEL SECURITY. We SET LOCAL ROLE to this
+// The non-superuser role used to test RLS enforcement (see helpers/rls-role.ts):
+// the test pool connects as postgres (BYPASSRLS), so inserts as postgres always
+// bypass RLS regardless of FORCE ROW LEVEL SECURITY. runAsRlsRole drops to a
 // non-privileged role for the inserts-under-test so Postgres actually evaluates
 // the WITH CHECK policy.
-// Per-process unique name avoids collisions when Vitest runs files in parallel workers.
-const RLS_TEST_ROLE = `rls_test_user_${process.pid}`;
+const SORT_CODES_GRANTS = [{ table: 'sort_codes', privileges: 'INSERT, SELECT' }];
 
 /**
  * Mirrors the write-target and read-scope derivation from:
@@ -87,21 +87,17 @@ async function attemptInsert(
   );
 
   // Drop to a non-superuser role so Postgres actually evaluates the RLS
-  // WITH CHECK policy. The pool connects as postgres which has BYPASSRLS;
-  // SET LOCAL ROLE confines the privilege drop to this savepoint scope.
-  await client.query(`SAVEPOINT rls_check`);
+  // WITH CHECK policy (the pool connects as postgres, which has BYPASSRLS).
   try {
-    await client.query(`SET LOCAL ROLE ${RLS_TEST_ROLE}`);
-    const result = await client.query(
-      `INSERT INTO accounter_schema.sort_codes (key, name, owner_id)
-       VALUES ($1, 'rls-test', $2)`,
-      [key, targetOwnerId],
-    );
-    await client.query(`RESET ROLE`);
-    await client.query(`RELEASE SAVEPOINT rls_check`);
-    return (result.rowCount ?? 0) > 0;
+    return await runAsRlsRole(client, async () => {
+      const result = await client.query(
+        `INSERT INTO accounter_schema.sort_codes (key, name, owner_id)
+         VALUES ($1, 'rls-test', $2)`,
+        [key, targetOwnerId],
+      );
+      return (result.rowCount ?? 0) > 0;
+    });
   } catch (err) {
-    await client.query(`ROLLBACK TO SAVEPOINT rls_check`);
     // 42501 = insufficient_privilege — the expected RLS WITH CHECK rejection.
     // Rethrow anything else so unexpected errors (bad SQL, missing table, etc.)
     // surface as real test failures rather than silent false negatives.
@@ -192,21 +188,12 @@ describe('RLS write-target: X-Business-Scope header controls insert target', () 
     db = new TestDatabase();
     pool = await db.connect();
 
+    // Create the non-superuser role for RLS enforcement and grant it the
+    // table + schema privileges needed for the INSERT under test.
+    await ensureRlsRole(pool, { grants: SORT_CODES_GRANTS });
+
     const setup = await pool.connect();
     try {
-      // Create a temporary non-superuser role for RLS enforcement testing.
-      // Must be done outside a transaction (CREATE ROLE is not transactional).
-      await setup.query(
-        `DO $$ BEGIN
-           IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '${RLS_TEST_ROLE}') THEN
-             CREATE ROLE ${RLS_TEST_ROLE} LOGIN PASSWORD 'unused';
-           END IF;
-         END $$`,
-      );
-      // Grant table + schema privileges needed for the INSERT under test.
-      await setup.query(`GRANT USAGE ON SCHEMA accounter_schema TO ${RLS_TEST_ROLE}`);
-      await setup.query(`GRANT INSERT, SELECT ON accounter_schema.sort_codes TO ${RLS_TEST_ROLE}`);
-
       // Create fixture businesses A, B, C as self-owned entities.
       // Committed so they persist across all per-test rolled-back transactions.
       await setup.query('BEGIN');
@@ -239,6 +226,7 @@ describe('RLS write-target: X-Business-Scope header controls insert target', () 
   });
 
   afterAll(async () => {
+    if (!pool) return;
     const teardown = await pool.connect();
     try {
       await teardown.query('SET row_security = off');
@@ -261,12 +249,10 @@ describe('RLS write-target: X-Business-Scope header controls insert target', () 
         [A, B, C],
       );
       await teardown.query('RESET row_security');
-      await teardown.query(`REVOKE INSERT, SELECT ON accounter_schema.sort_codes FROM ${RLS_TEST_ROLE}`);
-      await teardown.query(`REVOKE USAGE ON SCHEMA accounter_schema FROM ${RLS_TEST_ROLE}`);
-      await teardown.query(`DROP ROLE IF EXISTS ${RLS_TEST_ROLE}`);
     } finally {
       teardown.release();
     }
+    await dropRlsRole(pool);
     // Pool managed by global vitest setup — do not close here.
   });
 

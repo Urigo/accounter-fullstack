@@ -8,9 +8,12 @@ import { TestDatabase } from './helpers/db-setup.js';
  * - tenant_isolation policies read via the scope array (USING) while writes
  *   stay pinned to the single business (WITH CHECK).
  *
- * Note: the test DB connects as a superuser, which bypasses RLS row filtering,
- * so this asserts the helper behavior and the policy definitions (via
- * pg_policies) rather than cross-connection row visibility.
+ * This file asserts the helper behavior and the policy definitions (via
+ * pg_policies). The actual row filtering is exercised under a non-superuser role
+ * in rls-read-visibility.integration.test.ts (USING / reads) and
+ * rls-write-target.integration.test.ts (WITH CHECK / writes) — the test DB
+ * connects as a superuser (BYPASSRLS), so those tests drop to a non-privileged
+ * role to make Postgres evaluate the policies.
  */
 describe('multi-business RLS scope', () => {
   let db: TestDatabase;
