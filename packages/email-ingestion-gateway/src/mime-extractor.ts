@@ -4,6 +4,7 @@ import { IngestReasonCode } from './contracts.js';
 export const MAX_RAW_MIME_BYTES = 25 * 1024 * 1024; // 25 MB
 export const MAX_ATTACHMENT_COUNT = 10;
 export const MAX_EXTRACTED_BYTES = 20 * 1024 * 1024; // 20 MB
+export const MAX_MIME_DEPTH = 10;
 
 export interface ExtractedDocument {
   filename: string | undefined;
@@ -153,7 +154,9 @@ function getMediaType(contentType: string): string {
 }
 
 function getParam(contentType: string, param: string): string | undefined {
-  const re = new RegExp(`${param}=(?:"([^"]+)"|([^\\s;]+))`, 'i');
+  // Require the param name to be preceded by ';', whitespace, or start-of-string
+  // to avoid matching suffixes (e.g. "x-boundary" when looking for "boundary").
+  const re = new RegExp(`(?:^|[\\s;])${param}=(?:"([^"]+)"|([^\\s;]+))`, 'i');
   const m = contentType.match(re);
   return m?.[1] ?? m?.[2];
 }
@@ -179,9 +182,8 @@ function getFilename(headers: Headers): string | undefined {
 function decodeBody(body: Buffer, encoding: string | undefined): Buffer {
   const enc = (encoding ?? '7bit').trim().toLowerCase();
   if (enc === 'base64') {
-    // Strip whitespace before decoding (base64 lines have CRLF)
-    const cleaned = body.toString('latin1').replace(/\s+/g, '');
-    return Buffer.from(cleaned, 'base64');
+    // Buffer.from(..., 'base64') already ignores all whitespace, including CRLF line endings.
+    return Buffer.from(body.toString('ascii'), 'base64');
   }
   if (enc === 'quoted-printable') {
     return decodeQuotedPrintable(body.toString('latin1'));
@@ -243,8 +245,22 @@ function splitMultipartParts(body: Buffer, boundary: string): Buffer[] {
   const closing = Buffer.from(`--${boundary}--`);
   const parts: Buffer[] = [];
 
+  // RFC 2046 §5.1.1: each boundary must be preceded by a CRLF (or be at
+  // position 0). Without this check, boundary strings that appear inside
+  // base64 content could be incorrectly treated as delimiters.
+  const findBoundary = (start: number): number => {
+    let s = start;
+    while (s < body.length) {
+      const idx = body.indexOf(delim, s);
+      if (idx < 0) return -1;
+      if (idx === 0 || body[idx - 1] === 0x0a) return idx;
+      s = idx + 1;
+    }
+    return -1;
+  };
+
   // Find the first boundary
-  let pos = bufferIndexOf(body, delim, 0);
+  let pos = findBoundary(0);
   if (pos < 0) return parts;
 
   while (pos < body.length) {
@@ -264,7 +280,7 @@ function splitMultipartParts(body: Buffer, boundary: string): Buffer[] {
     if (body[partStart] === 0x0a) partStart++;
 
     // Find the next boundary occurrence
-    const nextDelim = bufferIndexOf(body, delim, partStart);
+    const nextDelim = findBoundary(partStart);
 
     let partEnd: number;
     if (nextDelim < 0) {
@@ -291,7 +307,11 @@ function splitMultipartParts(body: Buffer, boundary: string): Buffer[] {
 // Recursive MIME part parser
 // ---------------------------------------------------------------------------
 
-function parseMimePart(raw: Buffer): ParsedPart {
+function parseMimePart(raw: Buffer, depth = 0): ParsedPart {
+  if (depth > MAX_MIME_DEPTH) {
+    throw new Error('Max MIME nesting depth exceeded');
+  }
+
   const { headerText, body } = splitHeaderBody(raw);
   const headers = parseHeaders(headerText);
 
@@ -306,7 +326,7 @@ function parseMimePart(raw: Buffer): ParsedPart {
 
     const subParts = splitMultipartParts(body, boundary);
     for (const part of subParts) {
-      const sub = parseMimePart(part);
+      const sub = parseMimePart(part, depth + 1);
       documents.push(...sub.documents);
     }
   } else if (isDocumentPart(headers)) {

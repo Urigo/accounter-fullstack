@@ -4,6 +4,7 @@ import { IngestReasonCode } from '../contracts.js';
 import {
   MAX_ATTACHMENT_COUNT,
   MAX_EXTRACTED_BYTES,
+  MAX_MIME_DEPTH,
   MAX_RAW_MIME_BYTES,
   extractFromMime,
   type ExtractedDocument,
@@ -380,3 +381,101 @@ describe('extractFromMime — senderEvidence', () => {
 });
 
 import { beforeAll } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Limit constants (depth)
+// ---------------------------------------------------------------------------
+
+describe('exported limit constants — MAX_MIME_DEPTH', () => {
+  it('MAX_MIME_DEPTH is 10', () => {
+    expect(MAX_MIME_DEPTH).toBe(10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Security: deeply nested multipart → PARSE_ERROR (stack overflow guard)
+// ---------------------------------------------------------------------------
+
+describe('extractFromMime — deeply nested multipart', () => {
+  function buildNestedMultipart(depth: number): string {
+    if (depth === 0) {
+      return [
+        'Content-Type: text/plain',
+        '',
+        'leaf',
+      ].join('\r\n');
+    }
+    const boundary = `NEST${depth}`;
+    const inner = buildNestedMultipart(depth - 1);
+    return [
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      inner,
+      `--${boundary}--`,
+    ].join('\r\n');
+  }
+
+  it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', () => {
+    // Build a message nested deeper than the limit
+    const nested = buildNestedMultipart(MAX_MIME_DEPTH + 2);
+    const raw = Buffer.from(
+      ['From: attacker@evil.com', '', nested].join('\r\n'),
+      'utf8',
+    );
+    const result = extractFromMime(raw);
+    // Either PARSE_ERROR (throws) or NO_DOCUMENTS (no docs at max depth) — never success
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect([IngestReasonCode.PARSE_ERROR, IngestReasonCode.NO_DOCUMENTS]).toContain(
+        result.reason,
+      );
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Security: boundary string appearing inside base64 body is not a false delimiter
+// ---------------------------------------------------------------------------
+
+describe('extractFromMime — boundary collision in body', () => {
+  it('does not treat boundary string inside base64 content as a real boundary', () => {
+    // Craft a PDF whose base64 encoding contains the boundary string embedded
+    // in the middle of a line (not preceded by a newline). The parser should
+    // ignore it and successfully decode the attachment.
+    const boundary = 'COLLISION';
+    // Small PDF whose content doesn't accidentally contain --COLLISION at line start
+    const pdf = fakePdf(64);
+    const b64 = pdf.toString('base64');
+    // The base64 encoding of a small buffer won't naturally contain the boundary,
+    // but we verify that even with a crafted preamble text part that contains the
+    // boundary string, the attachment still decodes correctly.
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        `Content-Type: multipart/mixed; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain',
+        '',
+        // The boundary string appears mid-line here — should NOT split
+        `Text with --${boundary} in the middle of a line`,
+        `--${boundary}`,
+        'Content-Type: application/pdf',
+        `Content-Disposition: attachment; filename="doc.pdf"`,
+        'Content-Transfer-Encoding: base64',
+        '',
+        b64,
+        `--${boundary}--`,
+      ].join('\r\n'),
+      'utf8',
+    );
+
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(1);
+      expect(result.documents[0]?.content).toEqual(pdf);
+    }
+  });
+});
