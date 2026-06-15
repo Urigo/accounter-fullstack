@@ -161,6 +161,7 @@ export default [
               'ImportShaamFileResult',
               'IncomeExpenseChart',
               'IncomeExpenseChartMonthData',
+              'IngestEmailSuccess',
               'Ledger',
               'LedgerBalanceInfo',
               'LedgerBalanceUnbalancedEntity',
@@ -313,6 +314,10 @@ export default [
       'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
       'packages/server/src/modules/vat/providers/vat.provider.ts',
       'packages/server/src/modules/email-ingestion/providers/email-ingestion-control.provider.ts',
+      // email-ingestion-ingest.provider.ts uses raw pool intentionally: the ingest endpoint is
+      // called with gateway_control_plane auth (empty businessId), so TenantAwareDBClient would
+      // throw UNAUTHENTICATED. Tenant isolation is enforced via explicit owner_id parameters.
+      'packages/server/src/modules/email-ingestion/providers/email-ingestion-ingest.provider.ts',
       // NOTE: email-ingestion-idempotency.provider.ts was previously exempt but no longer
       // accesses DBProvider directly — as of S13.6 it injects TenantAwareDBClient (RLS-enforced).
       // Exempt migrations, scripts, and tests that may need direct DB access for setup, maintenance, or testing purposes

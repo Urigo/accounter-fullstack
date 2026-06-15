@@ -30,6 +30,8 @@ function makeYoga(roleId: string | null) {
         type Mutation {
           " Mirrors requestIngestControl: requires gateway_control_plane role "
           requestIngestControl: String! @requiresAuth @requiresRole(role: "gateway_control_plane")
+          " Mirrors ingestEmail: requires gateway_control_plane role "
+          ingestEmail: String! @requiresAuth @requiresRole(role: "gateway_control_plane")
           " Mirrors insertEmailDocuments: requires gmail_listener role "
           insertEmailDocuments: String! @requiresAuth @requiresRole(role: "gmail_listener")
         }
@@ -39,6 +41,7 @@ function makeYoga(roleId: string | null) {
       Query: { noop: () => null },
       Mutation: {
         requestIngestControl: () => 'control-ok',
+        ingestEmail: () => 'ingest-email-ok',
         insertEmailDocuments: () => 'ingest-ok',
       },
     },
@@ -107,6 +110,22 @@ describe('gateway_control_plane role isolation', () => {
   it('gmail_listener cannot call requestIngestControl (FORBIDDEN)', async () => {
     const yoga = makeYoga('gmail_listener');
     const result = await execute(yoga, 'mutation { requestIngestControl }');
+
+    expect(result.data).toBeNull();
+    expect(result.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+  });
+
+  it('gateway_control_plane can call ingestEmail', async () => {
+    const yoga = makeYoga('gateway_control_plane');
+    const result = await execute(yoga, 'mutation { ingestEmail }');
+
+    expect(result.errors).toBeUndefined();
+    expect(result.data).toEqual({ ingestEmail: 'ingest-email-ok' });
+  });
+
+  it('gmail_listener cannot call ingestEmail (FORBIDDEN)', async () => {
+    const yoga = makeYoga('gmail_listener');
+    const result = await execute(yoga, 'mutation { ingestEmail }');
 
     expect(result.data).toBeNull();
     expect(result.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
