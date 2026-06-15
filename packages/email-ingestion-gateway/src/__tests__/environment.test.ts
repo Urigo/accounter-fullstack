@@ -158,3 +158,52 @@ describe('Email Ingestion Gateway — Cloudflare env', () => {
     expect(env.cloudflare.ipAllowlist).toEqual([]);
   });
 });
+
+describe('Email Ingestion Gateway — server env', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.resetModules();
+    process.env = { ...originalEnv };
+    delete process.env.GATEWAY_SERVER_URL;
+    delete process.env.GATEWAY_CP_TOKEN;
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('defaults serverUrl to http://localhost:4000 when absent', async () => {
+    const { env } = await import('../environment.js');
+    expect(env.server.url).toBe('http://localhost:4000');
+  });
+
+  it('treats empty GATEWAY_SERVER_URL as default', async () => {
+    process.env.GATEWAY_SERVER_URL = '';
+    const { env } = await import('../environment.js');
+    expect(env.server.url).toBe('http://localhost:4000');
+  });
+
+  it('exposes GATEWAY_SERVER_URL when set', async () => {
+    process.env.GATEWAY_SERVER_URL = 'http://server:4000';
+    const { env } = await import('../environment.js');
+    expect(env.server.url).toBe('http://server:4000');
+  });
+
+  it('defaults cpToken to empty string when absent', async () => {
+    const { env } = await import('../environment.js');
+    expect(env.server.cpToken).toBe('');
+  });
+
+  it('exposes GATEWAY_CP_TOKEN when set', async () => {
+    process.env.GATEWAY_CP_TOKEN = 'super-secret';
+    const { env } = await import('../environment.js');
+    expect(env.server.cpToken).toBe('super-secret');
+  });
+
+  it('treats empty GATEWAY_CP_TOKEN as empty string', async () => {
+    process.env.GATEWAY_CP_TOKEN = '';
+    const { env } = await import('../environment.js');
+    expect(env.server.cpToken).toBe('');
+  });
+});

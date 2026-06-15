@@ -43,10 +43,18 @@ const CloudflareModel = zod.object({
   CF_IP_ALLOWLIST: emptyString(zod.string().optional().default('')),
 });
 
+const ServerModel = zod.object({
+  /** Base URL of the accounter GraphQL server (e.g. http://localhost:4000) */
+  GATEWAY_SERVER_URL: emptyString(zod.string().url().optional().default('http://localhost:4000')),
+  /** Shared secret sent in X-Gateway-CP-Token header for gateway_control_plane auth */
+  GATEWAY_CP_TOKEN: emptyString(zod.string().optional().default('')),
+});
+
 const configs = {
   general: GeneralModel.safeParse(process.env),
   featureFlags: FeatureFlagsModel.safeParse(process.env),
   cloudflare: CloudflareModel.safeParse(process.env),
+  server: ServerModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -73,6 +81,7 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 const general = extractConfig(configs.general);
 const featureFlags = extractConfig(configs.featureFlags);
 const cloudflare = extractConfig(configs.cloudflare);
+const server = extractConfig(configs.server);
 
 export const env = {
   general: {
@@ -88,6 +97,10 @@ export const env = {
       .split(',')
       .map(s => s.trim())
       .filter(Boolean),
+  },
+  server: {
+    url: server.GATEWAY_SERVER_URL,
+    cpToken: server.GATEWAY_CP_TOKEN,
   },
 } as const;
 

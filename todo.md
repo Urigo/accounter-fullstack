@@ -247,14 +247,14 @@ Primary references:
 - [x] Add boundary and failure tests.
 - [x] Confirm no extraction-helper imports from legacy listener package.
 
-### S18: Control -> ingest orchestration
+### S18: Control -> ingest orchestration ✅ (this PR)
 
-- [ ] Add server client operations for control and ingest.
-- [ ] Include `correlation_id` and `idempotency_key` in payloads.
-- [ ] Implement retries/timeouts:
-- [ ] control: 3s timeout, up to 2 retries with backoff
-- [ ] ingest: 10s timeout, 1 retry for network or 5xx only
-- [ ] Add retry matrix and outcome mapping tests.
+- [x] Add server client operations for control and ingest.
+- [x] Include `correlation_id` and `idempotency_key` in payloads.
+- [x] Implement retries/timeouts:
+- [x] control: 3s timeout, up to 2 retries with backoff
+- [x] ingest: 10s timeout, 1 retry for network or 5xx only
+- [x] Add retry matrix and outcome mapping tests.
 
 ### Phase 5 verification
 
