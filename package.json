@@ -9,7 +9,7 @@
       "!packages/old-accounter"
     ]
   },
-  "packageManager": "yarn@4.16.0",
+  "packageManager": "yarn@4.17.0",
   "engines": {
     "node": "26.3.0"
   },
