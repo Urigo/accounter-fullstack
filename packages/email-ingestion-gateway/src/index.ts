@@ -2,6 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { env } from './environment.js';
 import { generateCorrelationId, log } from './logger.js';
 import type { HealthResponse, JsonObject, ReadinessResponse } from './types.js';
+import { CloudflareAuthenticityVerifier } from './verifier.js';
+import { createWebhookHandler } from './webhook.js';
 
 const PORT = env.general.port;
 
@@ -9,6 +11,14 @@ export function sendJson(res: ServerResponse, statusCode: number, data: JsonObje
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
 }
+
+const webhookHandler = createWebhookHandler({
+  verifier: new CloudflareAuthenticityVerifier({
+    webhookSecret: env.cloudflare.webhookSecret,
+    ipAllowlist: [...env.cloudflare.ipAllowlist],
+  }),
+  featureFlags: env.featureFlags,
+});
 
 export const routes: Record<
   string,
@@ -23,6 +33,9 @@ export const routes: Record<
       const body: ReadinessResponse = { ready: true };
       sendJson(res, 200, body);
     },
+  },
+  POST: {
+    '/webhook': webhookHandler,
   },
 };
 

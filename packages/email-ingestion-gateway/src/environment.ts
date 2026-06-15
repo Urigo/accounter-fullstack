@@ -36,9 +36,17 @@ const FeatureFlagsModel = zod.object({
   ),
 });
 
+const CloudflareModel = zod.object({
+  /** Shared HMAC-SHA256 secret for validating Cloudflare webhook signatures */
+  CF_WEBHOOK_SECRET: emptyString(zod.string().optional()),
+  /** Comma-separated list of allowed source IPs or IPv4 CIDRs (empty = allowlist disabled) */
+  CF_IP_ALLOWLIST: emptyString(zod.string().optional().default('')),
+});
+
 const configs = {
   general: GeneralModel.safeParse(process.env),
   featureFlags: FeatureFlagsModel.safeParse(process.env),
+  cloudflare: CloudflareModel.safeParse(process.env),
 };
 
 const environmentErrors: Array<string> = [];
@@ -64,6 +72,7 @@ function extractConfig<Output>(config: zod.ZodSafeParseResult<Output>): Output {
 
 const general = extractConfig(configs.general);
 const featureFlags = extractConfig(configs.featureFlags);
+const cloudflare = extractConfig(configs.cloudflare);
 
 export const env = {
   general: {
@@ -72,6 +81,13 @@ export const env = {
   featureFlags: {
     v2Enabled: featureFlags.EMAIL_INGESTION_V2_ENABLED === '1',
     shadowMode: featureFlags.EMAIL_INGESTION_SHADOW_MODE === '1',
+  },
+  cloudflare: {
+    webhookSecret: cloudflare.CF_WEBHOOK_SECRET ?? '',
+    ipAllowlist: (cloudflare.CF_IP_ALLOWLIST ?? '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean),
   },
 } as const;
 
