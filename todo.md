@@ -236,16 +236,16 @@ Primary references:
 - [x] Enforce feature-flag gating.
 - [x] Add endpoint tests for malformed/auth-failure/disabled cases.
 
-### S17: Extraction pipeline (duplicate/adapt, no sharing)
+### S17: Extraction pipeline (duplicate/adapt, no sharing) ✅ (this PR)
 
-- [ ] Implement MIME parsing and extraction in new gateway package.
-- [ ] Enforce limits:
-- [ ] raw MIME <= 25 MB
-- [ ] attachment count <= 10
-- [ ] extracted documents total <= 20 MB
-- [ ] Map failures to canonical reason codes.
-- [ ] Add boundary and failure tests.
-- [ ] Confirm no extraction-helper imports from legacy listener package.
+- [x] Implement MIME parsing and extraction in new gateway package.
+- [x] Enforce limits:
+- [x] raw MIME <= 25 MB
+- [x] attachment count <= 10
+- [x] extracted documents total <= 20 MB
+- [x] Map failures to canonical reason codes.
+- [x] Add boundary and failure tests.
+- [x] Confirm no extraction-helper imports from legacy listener package.
 
 ### S18: Control -> ingest orchestration
 
