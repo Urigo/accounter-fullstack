@@ -26,7 +26,7 @@
       "matchUpdateTypes": ["patch"],
       "groupName": "all patch dependencies",
       "groupSlug": "all-patch",
-      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//", "*"]
+      "matchPackageNames": ["!/@changesets/*/", "!/typescript/", "!/^@theguild//"]
     },
     {
       "groupName": "Yoga/Envelop",
