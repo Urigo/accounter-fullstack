@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { DBProvider } from '../../app-providers/db.provider.js';
+import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { IngestOutcome } from '../contracts.js';
 import type {
   IGetDedupRecordQuery,
@@ -143,12 +143,27 @@ function rowToDedupRecord(row: {
 // Provider
 // ---------------------------------------------------------------------------
 
+/**
+ * Data-plane provider for ingest idempotency and dedup.
+ *
+ * S13.6 boundary: these are tenant-bound reads/writes that run AFTER tenant
+ * identity is established, so they go through TenantAwareDBClient at
+ * Scope.Operation. This sets the RLS session variables, and the
+ * `tenant_isolation` policies on `email_ingestion_idempotency_keys` and
+ * `email_ingestion_dedup_fingerprints` enforce owner_id = current_business_id
+ * (defense-in-depth alongside the explicit owner_id filters below). A
+ * cross-tenant write violates WITH CHECK and is rejected by the database.
+ *
+ * Control-plane/pre-tenant operations (alias resolution, grant issuance and
+ * validation) live in EmailIngestionControlProvider, which uses the raw pool
+ * because no tenant-aware session can exist yet.
+ */
 @Injectable({
-  scope: Scope.Singleton,
+  scope: Scope.Operation,
   global: true,
 })
 export class EmailIngestionIdempotencyProvider {
-  constructor(private dbProvider: DBProvider) {}
+  constructor(private db: TenantAwareDBClient) {}
 
   /**
    * Look up a prior outcome by idempotency key + tenant.
@@ -158,10 +173,7 @@ export class EmailIngestionIdempotencyProvider {
     idempotencyKey: string,
     tenantId: string,
   ): Promise<IdempotencyRecord | null> {
-    const rows = await getIdempotencyRecord.run(
-      { idempotencyKey, ownerId: tenantId },
-      this.dbProvider.pool,
-    );
+    const rows = await getIdempotencyRecord.run({ idempotencyKey, ownerId: tenantId }, this.db);
     return rows.length > 0 ? rowToIdempotencyRecord(rows[0]) : null;
   }
 
@@ -180,7 +192,7 @@ export class EmailIngestionIdempotencyProvider {
         ingestId: input.ingestId ?? null,
         auditId: input.auditId,
       },
-      this.dbProvider.pool,
+      this.db,
     );
 
     if (rows.length > 0) {
@@ -190,7 +202,7 @@ export class EmailIngestionIdempotencyProvider {
     // Conflict: another concurrent request inserted first — fetch the stored record.
     const existing = await getIdempotencyRecord.run(
       { idempotencyKey: input.idempotencyKey, ownerId: input.tenantId },
-      this.dbProvider.pool,
+      this.db,
     );
     if (!existing[0]) {
       throw new Error(
@@ -205,7 +217,7 @@ export class EmailIngestionIdempotencyProvider {
    * Returns null when the fingerprint is new for this tenant.
    */
   async checkDedupFingerprint(fingerprint: string, tenantId: string): Promise<DedupRecord | null> {
-    const rows = await getDedupRecord.run({ ownerId: tenantId, fingerprint }, this.dbProvider.pool);
+    const rows = await getDedupRecord.run({ ownerId: tenantId, fingerprint }, this.db);
     return rows.length > 0 ? rowToDedupRecord(rows[0]) : null;
   }
 
@@ -222,7 +234,7 @@ export class EmailIngestionIdempotencyProvider {
         ingestId: input.ingestId ?? null,
         correlationId: input.correlationId ?? null,
       },
-      this.dbProvider.pool,
+      this.db,
     );
 
     if (rows.length > 0) {
@@ -232,7 +244,7 @@ export class EmailIngestionIdempotencyProvider {
     // Conflict: fetch the existing record inserted by a concurrent request.
     const existing = await getDedupRecord.run(
       { ownerId: input.tenantId, fingerprint: input.fingerprint },
-      this.dbProvider.pool,
+      this.db,
     );
     if (!existing[0]) {
       throw new Error(
