@@ -11,7 +11,7 @@ export default gql`
   extend type Query {
     listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
     listBusinessUsers: [BusinessUser!]! @requiresRole(role: "business_owner")
-    listInvitations: [InvitationPayload!]! @requiresRole(role: "business_owner")
+    listInvitations: [Invitation!]! @requiresRole(role: "business_owner")
   }
 
   extend type Mutation {
@@ -25,13 +25,21 @@ export default gql`
     revokeInvitation(id: ID!): Boolean! @requiresRole(role: "business_owner")
   }
 
-  " Invitation payload returned after creating an invitation "
+  " Invitation payload returned after creating an invitation (includes the one-time token) "
   type InvitationPayload {
     id: ID!
     email: String!
     roleId: String!
     expiresAt: DateTime!
     token: String!
+  }
+
+  " Stored invitation state, as listed for management (never exposes the one-time token) "
+  type Invitation {
+    id: ID!
+    email: String!
+    roleId: String!
+    expiresAt: DateTime!
   }
 
   " Result payload returned after accepting an invitation "
