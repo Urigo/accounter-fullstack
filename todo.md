@@ -194,8 +194,8 @@ Primary references:
 
 ### S14: Ingest GraphQL operation ✅ (this PR)
 
-- [x] Add `ingestEmail` mutation + `IngestEmailInput`, `ExtractedDocumentInput`, `IngestEmailSuccess`,
-      `IngestOutcome` enum, `IngestEmailResult` union to typeDefs.
+- [x] Add `ingestEmail` mutation + `IngestEmailInput`, `ExtractedDocumentInput`,
+      `IngestEmailSuccess`, `IngestOutcome` enum, `IngestEmailResult` union to typeDefs.
 - [x] Create `EmailIngestionIngestProvider` (Scope.Singleton, raw pool) — orchestrates grant
       validation → idempotency check → dedup check → quarantine → insert flow.
 - [x] Create `email-ingestion-ingest.resolver.ts` — maps `IngestResult` outcomes to GraphQL enum
@@ -207,7 +207,8 @@ Primary references:
 - [x] TDD: resolver tests for all 4 outcomes + unexpected error + field pass-through.
 - [x] TDD: provider tests for grant validation, idempotency hit, dedup hit, quarantine (no docs),
       happy path (inserted) + DB call count.
-- [x] Add `ingestEmail` role isolation tests (gateway_control_plane can call; gmail_listener cannot).
+- [x] Add `ingestEmail` role isolation tests (gateway_control_plane can call; gmail_listener
+      cannot).
 - [x] Run GraphQL codegen (`node_modules/.bin/graphql-codegen`) — types generated successfully.
 - [x] `insertEmailDocuments` kept as-is (legacy gmail-listener compat) — delegation deferred because
       input shapes are incompatible (raw file blobs vs. pre-extracted metadata).

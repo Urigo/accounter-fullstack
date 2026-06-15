@@ -264,6 +264,10 @@ export class EmailIngestionIngestProvider {
     }
 
     // 5. Happy path: record the ingest.
+    // TODO: persist extractedDocuments to the documents table and link to a charge.
+    // Document storage is deferred — this step establishes the control flow (grant
+    // validation, idempotency, dedup, quarantine). Full document insertion will be
+    // wired in when DocumentsProvider is integrated into the ingest path.
     const ingestId = randomUUID();
     const auditId = randomUUID();
 
@@ -318,6 +322,13 @@ export class EmailIngestionIngestProvider {
 
     if (idemRows.length > 0) {
       return { ingestId: idemRows[0].ingest_id, auditId: idemRows[0].audit_id };
+    }
+
+    // Conflict: a concurrent request inserted the idempotency record first.
+    // Fetch the stored record so we return the IDs that were actually persisted.
+    const existing = await checkIdempotencyKey.run({ idempotencyKey, ownerId: tenantId }, pool);
+    if (existing.length > 0) {
+      return { ingestId: existing[0].ingest_id, auditId: existing[0].audit_id };
     }
     return { ingestId, auditId };
   }
