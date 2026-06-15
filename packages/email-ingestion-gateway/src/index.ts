@@ -7,6 +7,12 @@ import { createWebhookHandler } from './webhook.js';
 
 const PORT = env.general.port;
 
+// Fail fast in production when v2 is enabled without a signing secret — an empty
+// HMAC key allows any attacker to forge valid signatures.
+if (process.env.NODE_ENV === 'production' && !env.cloudflare.webhookSecret) {
+  throw new Error('CF_WEBHOOK_SECRET must be configured in production');
+}
+
 export function sendJson(res: ServerResponse, statusCode: number, data: JsonObject): void {
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
