@@ -192,12 +192,25 @@ Primary references:
       propagation at the provider boundary). Quarantine provider is tenant-bound and will follow the
       same boundary when introduced (S14).
 
-### S14: Ingest GraphQL operation
+### S14: Ingest GraphQL operation ✅ (this PR)
 
-- [ ] Add ingest operation typeDefs and resolver under email-ingestion module.
-- [ ] Wire grant validation + idempotency + dedup + reason mapping.
-- [ ] Add resolver tests for inserted/duplicate/quarantined/rejected outcomes.
-- [ ] Run GraphQL codegen and resolve generated typing issues.
+- [x] Add `ingestEmail` mutation + `IngestEmailInput`, `ExtractedDocumentInput`, `IngestEmailSuccess`,
+      `IngestOutcome` enum, `IngestEmailResult` union to typeDefs.
+- [x] Create `EmailIngestionIngestProvider` (Scope.Singleton, raw pool) — orchestrates grant
+      validation → idempotency check → dedup check → quarantine → insert flow.
+- [x] Create `email-ingestion-ingest.resolver.ts` — maps `IngestResult` outcomes to GraphQL enum
+      (INSERTED/DUPLICATE/QUARANTINED/REJECTED) and CommonError on unexpected failure.
+- [x] Register new provider and resolver in `index.ts`.
+- [x] Add `IngestEmailSuccess` to ESLint `strict-id-in-types` exceptions.
+- [x] Add `email-ingestion-ingest.provider.ts` to `no-restricted-imports` exemption (uses raw pool
+      intentionally; TenantAwareDBClient throws UNAUTHENTICATED for gateway_control_plane auth).
+- [x] TDD: resolver tests for all 4 outcomes + unexpected error + field pass-through.
+- [x] TDD: provider tests for grant validation, idempotency hit, dedup hit, quarantine (no docs),
+      happy path (inserted) + DB call count.
+- [x] Add `ingestEmail` role isolation tests (gateway_control_plane can call; gmail_listener cannot).
+- [x] Run GraphQL codegen (`node_modules/.bin/graphql-codegen`) — types generated successfully.
+- [x] `insertEmailDocuments` kept as-is (legacy gmail-listener compat) — delegation deferred because
+      input shapes are incompatible (raw file blobs vs. pre-extracted metadata).
 
 ### Phase 4 verification
 
