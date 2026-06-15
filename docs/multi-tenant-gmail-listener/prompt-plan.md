@@ -105,19 +105,18 @@ Chunk check:
 12. S12: Implement grant validation + single-use consume provider logic.
 13. S13: Implement idempotency + dedup in ingest flow.
 14. S13.5: Implement Gateway control-plane service credential and auth path.
-15. S13.6: Harden server data-plane provider boundaries (operation scope, TenantAwareDBClient,
-   and explicit raw DB bootstrap boundary).
+15. S13.6: Harden server data-plane provider boundaries (operation scope, TenantAwareDBClient, and
+    explicit raw DB bootstrap boundary).
 16. S14: Implement ingest GraphQL operation, replace legacy-style active ingest path, and
-   reason-code mapping.
+    reason-code mapping.
 17. S15: Implement gateway Cloudflare authenticity verifier.
 18. S16: Implement gateway webhook endpoint and payload validation.
 19. S17: Implement gateway extraction pipeline with limits (duplicate/adapt, do not import legacy
     code).
 20. S18: Implement gateway server client and control->new-ingest orchestration.
-21. S19: Add observability, shadow mode, live-path integration, and adversarial integration
-   suites.
+21. S19: Add observability, shadow mode, live-path integration, and adversarial integration suites.
 22. S20: Add Cloudflare setup runbook, final wiring review, DB-boundary audit, and release
-   checklist.
+    checklist.
 
 ---
 
