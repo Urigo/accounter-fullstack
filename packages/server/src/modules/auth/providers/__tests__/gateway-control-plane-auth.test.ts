@@ -88,6 +88,8 @@ describe('AuthContextProvider gateway control-plane auth', () => {
       mockDb as never,
     );
 
-    await expect(provider.getAuthContext()).resolves.not.toThrow();
+    const context = await provider.getAuthContext();
+    expect(context?.authType).toBe('gatewayControlPlane');
+    expect(context?.user?.roleId).toBe('gateway_control_plane');
   });
 });

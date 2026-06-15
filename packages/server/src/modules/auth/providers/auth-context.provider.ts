@@ -317,6 +317,12 @@ export class AuthContextProvider {
   }
 
   private async handleGatewayControlPlaneAuth(): Promise<AuthContext | null> {
+    // Yield to the microtask queue so getAuthContext can assign this.handlingAuth
+    // before any early-return path clears it. Without this, the function runs
+    // synchronously (no await), clearing this.handlingAuth before the caller's
+    // assignment, which then overwrites null with the resolved promise.
+    await Promise.resolve();
+
     const token = this.rawAuth.token;
     if (!token) {
       this.handlingAuth = null;
@@ -326,6 +332,10 @@ export class AuthContextProvider {
 
     const expectedToken = this.env.gatewayControlPlane?.token;
     if (!expectedToken) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        'AuthContext: GATEWAY_CP_TOKEN is not configured; rejecting gateway control-plane auth attempt',
+      );
       this.handlingAuth = null;
       this.cachedContext = null;
       return null;
