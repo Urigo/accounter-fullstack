@@ -10,6 +10,8 @@ export default gql`
 
   extend type Query {
     listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
+    listBusinessUsers: [BusinessUser!]! @requiresRole(role: "business_owner")
+    listInvitations: [InvitationPayload!]! @requiresRole(role: "business_owner")
   }
 
   extend type Mutation {
@@ -19,6 +21,8 @@ export default gql`
     generateApiKey(name: String!, roleId: String!): GenerateApiKeyPayload!
       @requiresRole(role: "business_owner")
     revokeApiKey(id: ID!): Boolean! @requiresRole(role: "business_owner")
+    removeBusinessUser(userId: ID!): Boolean! @requiresRole(role: "business_owner")
+    revokeInvitation(id: ID!): Boolean! @requiresRole(role: "business_owner")
   }
 
   " Invitation payload returned after creating an invitation "
@@ -49,6 +53,15 @@ export default gql`
     name: String!
     roleId: String!
     lastUsedAt: DateTime
+    createdAt: DateTime!
+  }
+
+  " Business user member of a tenant "
+  type BusinessUser {
+    id: ID!
+    email: String!
+    name: String
+    roleId: String!
     createdAt: DateTime!
   }
 `;
