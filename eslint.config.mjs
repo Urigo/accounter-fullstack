@@ -313,9 +313,8 @@ export default [
       'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
       'packages/server/src/modules/vat/providers/vat.provider.ts',
       'packages/server/src/modules/email-ingestion/providers/email-ingestion-control.provider.ts',
-      // Idempotency and dedup are control-plane operations (no tenant context at call time);
-      // same rationale as email-ingestion-control.provider above.
-      'packages/server/src/modules/email-ingestion/providers/email-ingestion-idempotency.provider.ts',
+      // NOTE: email-ingestion-idempotency.provider.ts was previously exempt but no longer
+      // accesses DBProvider directly — as of S13.6 it injects TenantAwareDBClient (RLS-enforced).
       // Exempt migrations, scripts, and tests that may need direct DB access for setup, maintenance, or testing purposes
       '**/migrations/**/*.ts',
       '**/scripts/**/*.ts',
