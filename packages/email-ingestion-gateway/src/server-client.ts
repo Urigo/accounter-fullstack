@@ -4,7 +4,7 @@ import { IngestReasonCode } from './contracts.js';
 // Exported policy constants
 // ---------------------------------------------------------------------------
 
-export const CONTROL_TIMEOUT_MS = 3_000;
+export const CONTROL_TIMEOUT_MS = 3000;
 export const CONTROL_MAX_RETRIES = 2;
 export const INGEST_TIMEOUT_MS = 10_000;
 export const INGEST_MAX_RETRIES = 1;
