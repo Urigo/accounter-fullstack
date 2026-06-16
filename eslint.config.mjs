@@ -69,8 +69,12 @@ export default [
     rules: {
       'no-console': 1,
       'import/no-default-export': 'off',
-      'unicorn/prefer-export-from': ['error', { ignoreUsedVariables: true }],
-      'unicorn/filename-case': 'error',
+      // @theguild/eslint-config sets ignoreUsedVariables which was removed in unicorn v55+;
+      // override here using the current option name with equivalent semantics.
+      'unicorn/prefer-export-from': ['error', { checkUsedVariables: false }],
+      // unicorn v65 added directory-name checking (checkDirectories defaults to true);
+      // preserve pre-v65 behaviour of only checking file names.
+      'unicorn/filename-case': ['error', { checkDirectories: false }],
     },
   },
   {

@@ -1,7 +1,7 @@
 import { fetch } from './fetch.js';
 import { ensureEnv } from './utils.js';
 
-const GWEY_TO_VALUE = 0.000_000_000_000_000_001; // 10^-18
+const GWEY_TO_VALUE = 0.000000000000000001; // 10^-18
 
 type EtherscanResponse<T> =
   | {
