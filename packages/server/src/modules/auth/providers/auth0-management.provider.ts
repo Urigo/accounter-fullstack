@@ -67,6 +67,28 @@ export class Auth0ManagementProvider {
     }
   }
 
+  /**
+   * Fetch the display identity (email + name) for an Auth0 user.
+   * Returns null when the lookup fails so callers can degrade gracefully
+   * instead of failing the whole request.
+   */
+  async getUserProfileById(
+    auth0UserId: string,
+  ): Promise<{ email: string | null; name: string | null } | null> {
+    const client = this.getClient();
+
+    try {
+      const user = await client.users.get(auth0UserId);
+      return {
+        email: typeof user?.email === 'string' ? user.email : null,
+        name: typeof user?.name === 'string' ? user.name : null,
+      };
+    } catch (error) {
+      console.error(`Failed to get Auth0 user profile by id ${auth0UserId}:`, error);
+      return null;
+    }
+  }
+
   async createBlockedUser(email: string, password?: string): Promise<string> {
     const client = this.getClient();
 
