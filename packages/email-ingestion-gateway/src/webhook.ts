@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import zod from 'zod';
 import { generateCorrelationId, log } from './logger.js';
+import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
 import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifier.js';
 
 const MAX_BODY_BYTES = 1_048_576; // 1 MiB
@@ -23,11 +24,12 @@ export type WebhookBody = zod.infer<typeof WebhookBodySchema>;
 
 export interface WebhookDeps {
   verifier: Pick<CloudflareAuthenticityVerifier, 'verify'>;
-  featureFlags: { v2Enabled: boolean };
+  featureFlags: { v2Enabled: boolean; shadowMode: boolean };
+  serverClient?: OrchestratorDeps['serverClient'];
 }
 
 export function createWebhookHandler(deps: WebhookDeps) {
-  const { verifier, featureFlags } = deps;
+  const { verifier, featureFlags, serverClient } = deps;
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     // 1. Feature-flag gate — reject early if v2 ingestion is not enabled
@@ -140,8 +142,78 @@ export function createWebhookHandler(deps: WebhookDeps) {
       effectiveCorrelationId,
     );
 
-    // 6. Return structured acceptance — orchestration (control → ingest) is wired in S18
-    writeJson(res, 202, { status: 'accepted', correlationId: effectiveCorrelationId });
+    // 6. Orchestrate: control → ingest (skip when no serverClient is wired)
+    if (!serverClient) {
+      writeJson(res, 202, { status: 'accepted', correlationId: effectiveCorrelationId });
+      return;
+    }
+
+    const orchestrateInput = {
+      recipientAlias: body.recipientAlias,
+      messageId: body.messageId,
+      rawMessageHash: body.rawMessageHash,
+      correlationId: effectiveCorrelationId,
+      receivedAt: body.receivedAt,
+      extractedDocuments: [],
+    };
+
+    if (featureFlags.shadowMode) {
+      // Shadow mode: respond immediately and run orchestration asynchronously.
+      // The legacy listener remains the authoritative handler; v2 path is shadow-validated.
+      writeJson(res, 202, {
+        status: 'accepted',
+        correlationId: effectiveCorrelationId,
+        shadow: true,
+      });
+      orchestrate(orchestrateInput, { serverClient })
+        .then(result => {
+          if (!result.success) {
+            log(
+              'warn',
+              'shadow:orchestration:failed',
+              { reason: result.reason },
+              effectiveCorrelationId,
+            );
+          } else {
+            log(
+              'info',
+              'shadow:orchestration:complete',
+              { outcome: result.outcome, tenantId: result.tenantId },
+              effectiveCorrelationId,
+            );
+          }
+        })
+        .catch((err: unknown) => {
+          log(
+            'error',
+            'shadow:orchestration:error',
+            { error: String(err) },
+            effectiveCorrelationId,
+          );
+        });
+      return;
+    }
+
+    // Production mode: await orchestration and include outcome in response.
+    const result = await orchestrate(orchestrateInput, { serverClient });
+
+    if (!result.success) {
+      writeJson(res, 202, {
+        status: 'accepted',
+        correlationId: effectiveCorrelationId,
+        failed: true,
+        reason: result.reason,
+      });
+    } else {
+      writeJson(res, 202, {
+        status: 'accepted',
+        correlationId: effectiveCorrelationId,
+        outcome: result.outcome,
+        ingestId: result.ingestId ?? undefined,
+        auditId: result.auditId,
+        reasonCode: result.reasonCode ?? undefined,
+      });
+    }
   };
 }
 

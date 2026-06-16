@@ -264,18 +264,23 @@ Primary references:
 
 ## Phase 6 - Observability, Security, and Rollout Readiness (S19-S20)
 
-### S19: Observability and adversarial suites
+### S19: Observability and adversarial suites ✅ (this PR)
 
-- [ ] Propagate a single correlation_id end-to-end.
-- [ ] Add structured logs: correlation_id, decision_id, audit_id, reason_code, outcome, tenant_id.
-- [ ] Add metrics: success, quarantine by reason, replay rejects, dedup hits, latency.
-- [ ] Add integration and adversarial tests:
-- [ ] invalid auth
-- [ ] replay attempt
-- [ ] grant reuse
-- [ ] tenant mismatch
-- [ ] cross-tenant insertion prevention
-- [ ] Add shadow-mode parity tests while legacy path remains active.
+- [x] Propagate a single correlation_id end-to-end (gateway → control call → ingest call).
+- [x] Add structured logs: correlation_id, decision_id, audit_id, reason_code, outcome, tenant_id,
+      durationMs at each orchestration step.
+- [ ] Add metrics: success, quarantine by reason, replay rejects, dedup hits, latency (deferred to S20).
+- [x] Add `orchestrator.ts`: control → ingest orchestration with structured logging.
+- [x] Wire webhook handler to orchestrator (production + shadow mode).
+- [x] Add integration and adversarial tests:
+- [x] invalid auth (real HMAC verifier, wrong secret → INVALID_AUTH)
+- [x] replay attempt (same nonce reused → REPLAY_DETECTED)
+- [x] grant reuse (server returns GRANT_INVALID)
+- [x] tenant mismatch (server returns REJECTED with TENANT_MISMATCH reasonCode)
+- [x] cross-tenant insertion prevention (REJECTED with TENANT_MISMATCH)
+- [x] unknown alias (UNKNOWN_ALIAS — ingest not called)
+- [x] grant/tenant/message binding assertions (scope cannot be substituted)
+- [x] Add shadow-mode parity tests (fire-and-forget, always 202, failures logged not surfaced).
 
 ### S20: Cloudflare setup, final wiring, release checklist
 
