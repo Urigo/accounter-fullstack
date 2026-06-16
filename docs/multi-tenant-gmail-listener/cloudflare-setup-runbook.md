@@ -24,8 +24,10 @@ endpoint.
 // workers/email-forwarder/index.js
 export default {
   async email(message, env) {
-    const rawBytes = await message.raw()
-    const rawBuffer = Buffer.from(rawBytes)
+    // message.raw is a ReadableStream property (not a method); Buffer is not
+    // available in Workers without nodejs_compat — use standard Web APIs throughout.
+    const rawBuffer = await new Response(message.raw).arrayBuffer()
+    const rawBytes = new Uint8Array(rawBuffer)
 
     const timestamp = Math.floor(Date.now() / 1000)
     const nonce = crypto.randomUUID()
@@ -38,17 +40,17 @@ export default {
       false,
       ['sign']
     )
-    const prefix = new TextEncoder().encode(`${timestamp}.`)
-    const payload = new Uint8Array(prefix.length + rawBuffer.length)
+    const prefix = new TextEncoder().encode(timestamp + '.')
+    const payload = new Uint8Array(prefix.length + rawBytes.length)
     payload.set(prefix, 0)
-    payload.set(rawBuffer, prefix.length)
+    payload.set(rawBytes, prefix.length)
     const sigBytes = await crypto.subtle.sign('HMAC', key, payload)
     const signature = Array.from(new Uint8Array(sigBytes))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
 
     // Compute SHA-256 of the raw MIME bytes
-    const hashBytes = await crypto.subtle.digest('SHA-256', rawBuffer)
+    const hashBytes = await crypto.subtle.digest('SHA-256', rawBytes)
     const rawMessageHash = Array.from(new Uint8Array(hashBytes))
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
@@ -61,16 +63,29 @@ export default {
       correlationId: nonce
     })
 
-    await fetch(`${env.GATEWAY_URL}/webhook`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-cf-timestamp': String(timestamp),
-        'x-cf-signature': signature,
-        'x-cf-nonce': nonce
-      },
-      body
-    })
+    try {
+      const res = await fetch(`${env.GATEWAY_URL}/webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-cf-timestamp': String(timestamp),
+          'x-cf-signature': signature,
+          'x-cf-nonce': nonce
+        },
+        body
+      })
+      if (!res.ok) {
+        throw new Error('Gateway returned status ' + res.status)
+      }
+    } catch {
+      // Gateway is unavailable or disabled (e.g. EMAIL_INGESTION_V2_ENABLED=0).
+      // Forward to the legacy Gmail inbox so no email is lost during rollback.
+      if (env.FALLBACK_EMAIL) {
+        await message.forward(env.FALLBACK_EMAIL)
+      } else {
+        throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured')
+      }
+    }
   }
 }
 ```
@@ -80,6 +95,7 @@ export default {
 ```bash
 wrangler secret put CF_WEBHOOK_SECRET # paste the shared secret value
 wrangler secret put GATEWAY_URL       # e.g. https://gateway.example.com
+wrangler secret put FALLBACK_EMAIL    # legacy Gmail inbox for rollback fallback
 ```
 
 **Step 3 — Wire email addresses** in Cloudflare Email Routing:

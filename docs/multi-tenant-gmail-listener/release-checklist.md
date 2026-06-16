@@ -32,7 +32,7 @@ level via `@requiresRole(role: "gateway_control_plane")`.
 
 ```bash
 # Run this check before any merge to the gateway package
-grep -rn 'from.*packages/gmail-listener\|require.*packages/gmail-listener' \
+grep -rnE '@accounter/gmail-listener|packages/gmail-listener' \
   packages/email-ingestion-gateway/src/
 # Expected: no output
 ```
