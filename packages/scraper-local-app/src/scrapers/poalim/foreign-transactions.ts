@@ -185,7 +185,7 @@ const PoalimForeignTransactionSchema = z.object({
   currentBalance: z.number().refine(n => n >= -99_999_999.99 && n <= 99_999_999.99),
   referenceCatenatedNumber: z.number().int(),
   referenceNumber: z.number().int(),
-  currencyRate: z.number().refine(n => n >= -999.9999999 && n <= 999.9999999),
+  currencyRate: z.number().refine(n => n >= -999.999_999_9 && n <= 999.999_999_9),
 
   eventDetails: z.string().max(20).nullable(),
   rateFixingCode: z.number().int(),
