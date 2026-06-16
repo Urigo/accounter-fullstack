@@ -116,7 +116,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
-    happy-dom: "npm:20.10.3"
+    happy-dom: "npm:20.10.4"
     html2canvas-pro: "npm:2.0.4"
     iconv-lite: "npm:0.7.2"
     json-bigint-patch: "npm:0.0.9"
@@ -367,7 +367,7 @@ __metadata:
     "@types/node": "npm:25.9.3"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.205"
+    ai: "npm:6.0.206"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.11.0"
     basic-auth: "npm:2.0.1"
@@ -439,16 +439,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.131":
-  version: 3.0.131
-  resolution: "@ai-sdk/gateway@npm:3.0.131"
+"@ai-sdk/gateway@npm:3.0.132":
+  version: 3.0.132
+  resolution: "@ai-sdk/gateway@npm:3.0.132"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
     "@ai-sdk/provider-utils": "npm:4.0.29"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/e12690ef13cf1588fa63b073e5aa5c8e4058f1faa743050a2b838a0045b298c4d9bd514bac8c515b1f1ae2bfd5b651e60600de13367e485e31a35a50dad6b153
+  checksum: 10c0/ddf4ecb202ddd22c8c34a44e1ea388cbc099d15fbf9413f5a23d65fb652f47c6e0ea3a92af1f28aecdcf8d8e3afc69159d8bef7f1bccded40a4ceafabf13f205
   languageName: node
   linkType: hard
 
@@ -11322,17 +11322,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.205":
-  version: 6.0.205
-  resolution: "ai@npm:6.0.205"
+"ai@npm:6.0.206":
+  version: 6.0.206
+  resolution: "ai@npm:6.0.206"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.131"
+    "@ai-sdk/gateway": "npm:3.0.132"
     "@ai-sdk/provider": "npm:3.0.10"
     "@ai-sdk/provider-utils": "npm:4.0.29"
     "@opentelemetry/api": "npm:^1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/6d5ba62c4ba9af335c3fef54335cae6773a82bc9f168d66c4c725d4b537fa9fab8bc69a8c0c2fbee1ad96aa26a7903976cda70a572199ffc6be4061e6c86522a
+  checksum: 10c0/c595d8726b7191437998055bad7a73f5db1bb2cebe85f93e7ced1aace21f5451d4486e928337e254cda491f449f2d5f00cb91303048cafdf850310c019b20f73
   languageName: node
   linkType: hard
 
@@ -16824,9 +16824,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:20.10.3":
-  version: 20.10.3
-  resolution: "happy-dom@npm:20.10.3"
+"happy-dom@npm:20.10.4":
+  version: 20.10.4
+  resolution: "happy-dom@npm:20.10.4"
   dependencies:
     "@types/node": "npm:>=20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
@@ -16835,7 +16835,7 @@ __metadata:
     entities: "npm:^7.0.1"
     whatwg-mimetype: "npm:^3.0.0"
     ws: "npm:^8.21.0"
-  checksum: 10c0/d3d1766645ee802f012982d4ddcb6e3817548b40466c91b4216a241bcaf80b18e3417d08503d59ebc10be2a3299f5f3dcf327081bc47b13895c3c22c6dbb00fa
+  checksum: 10c0/cc45b7392e13f8da8069df0206381ad4b531086df2e5dc1b5bcb5e88c6c7df0262154925708e338fed3bb041907ad9bf77a24c437706bb3e9f7753bc1816d652
   languageName: node
   linkType: hard
 
