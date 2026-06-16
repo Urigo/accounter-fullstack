@@ -7,6 +7,22 @@ import { InvitationsProvider } from '../providers/invitations.provider.js';
 import type { AuthModule } from '../types.js';
 
 export const invitationsResolvers: AuthModule.Resolvers = {
+  Query: {
+    listInvitations: async (_, __, { injector }) => {
+      try {
+        return await injector.get(InvitationsProvider).listInvitations();
+      } catch (error) {
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+
+        throw new GraphQLError('Failed to list invitations', {
+          originalError: error instanceof Error ? error : undefined,
+          extensions: { code: 'INVITATION_LIST_FAILED' },
+        });
+      }
+    },
+  },
   Mutation: {
     createInvitation: async (_, { email, roleId }, { injector }) => {
       const authContext = await injector.get(AuthContextProvider).getAuthContext();
@@ -99,6 +115,20 @@ export const invitationsResolvers: AuthModule.Resolvers = {
 
         throw new GraphQLError('Failed to accept invitation', {
           extensions: { code: 'INVITATION_ACCEPT_FAILED' },
+        });
+      }
+    },
+    revokeInvitation: async (_, { id }, { injector }) => {
+      try {
+        return await injector.get(InvitationsProvider).revokeInvitation(id);
+      } catch (error) {
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+
+        throw new GraphQLError('Failed to revoke invitation', {
+          originalError: error instanceof Error ? error : undefined,
+          extensions: { code: 'INVITATION_REVOCATION_FAILED' },
         });
       }
     },
