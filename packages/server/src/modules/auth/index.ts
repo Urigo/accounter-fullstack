@@ -8,6 +8,7 @@ import { InvitationsProvider } from './providers/invitations.provider.js';
 import { ScopeProvider } from './providers/scope.provider.js';
 import { SuperAdminProvider } from './providers/super-admin.provider.js';
 import { apiKeysResolvers } from './resolvers/api-keys.resolver.js';
+import { businessUsersResolvers } from './resolvers/business-users.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
 import auth from './typeDefs/auth.graphql.js';
 
@@ -17,7 +18,7 @@ export const authModule = createModule({
   id: 'auth',
   dirname: __dirname,
   typeDefs: [auth],
-  resolvers: [invitationsResolvers, apiKeysResolvers],
+  resolvers: [invitationsResolvers, apiKeysResolvers, businessUsersResolvers],
   providers: () => [
     AcceptInvitationsProvider,
     Auth0ManagementProvider,
