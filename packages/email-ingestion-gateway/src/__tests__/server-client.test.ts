@@ -195,6 +195,32 @@ describe('ServerClient.requestControl — success', () => {
 });
 
 // ---------------------------------------------------------------------------
+// requestControl — GraphQL-level errors (errors[] in response body)
+// ---------------------------------------------------------------------------
+
+describe('ServerClient.requestControl — GraphQL errors', () => {
+  it('returns TRANSIENT_UPSTREAM when server returns top-level GraphQL errors', async () => {
+    const client = makeClient(
+      makeFetch([{ body: { errors: [{ message: 'internal server error' }], data: null } }]),
+    );
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+    }
+  });
+
+  it('returns TRANSIENT_UPSTREAM when data is null (no requestIngestControl field)', async () => {
+    const client = makeClient(makeFetch([{ body: { data: null } }]));
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // requestControl — UNKNOWN_ALIAS (CommonError from server)
 // ---------------------------------------------------------------------------
 
@@ -325,6 +351,32 @@ describe('ServerClient.requestControl — timeout', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).toBe(IngestReasonCode.TIMEOUT);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// requestIngest — GraphQL-level errors
+// ---------------------------------------------------------------------------
+
+describe('ServerClient.requestIngest — GraphQL errors', () => {
+  it('returns TRANSIENT_UPSTREAM when server returns top-level GraphQL errors', async () => {
+    const client = makeClient(
+      makeFetch([{ body: { errors: [{ message: 'schema error' }], data: null } }]),
+    );
+    const result = await client.requestIngest(INGEST_INPUT);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
+    }
+  });
+
+  it('returns TRANSIENT_UPSTREAM when data is null (no ingestEmail field)', async () => {
+    const client = makeClient(makeFetch([{ body: { data: null } }]));
+    const result = await client.requestIngest(INGEST_INPUT);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.reason).toBe(IngestReasonCode.TRANSIENT_UPSTREAM);
     }
   });
 });

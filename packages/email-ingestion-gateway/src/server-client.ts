@@ -204,8 +204,17 @@ export class ServerClient {
         100,
       );
       const result = (
-        data as { requestIngestControl: { __typename: string; message?: string } & ControlDecision }
-      ).requestIngestControl;
+        data as {
+          requestIngestControl?: { __typename: string; message?: string } & ControlDecision;
+        }
+      )?.requestIngestControl;
+      if (!result) {
+        return {
+          success: false,
+          reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+          message: 'Invalid or empty response from server',
+        };
+      }
       if (result.__typename === 'CommonError') {
         return {
           success: false,
@@ -232,7 +241,7 @@ export class ServerClient {
       );
       const result = (
         data as {
-          ingestEmail: {
+          ingestEmail?: {
             __typename: string;
             message?: string;
             outcome?: string;
@@ -242,7 +251,14 @@ export class ServerClient {
             reasonCode?: string | null;
           };
         }
-      ).ingestEmail;
+      )?.ingestEmail;
+      if (!result) {
+        return {
+          success: false,
+          reason: IngestReasonCode.TRANSIENT_UPSTREAM,
+          message: 'Invalid or empty response from server',
+        };
+      }
       if (result.__typename === 'CommonError') {
         return {
           success: false,
@@ -252,9 +268,7 @@ export class ServerClient {
       }
       return {
         success: true,
-        outcome: result.outcome as IngestResult extends { success: true }
-          ? IngestResult['outcome']
-          : never,
+        outcome: result.outcome as 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED',
         ingestId: result.ingestId,
         existingIngestId: result.existingIngestId,
         auditId: result.auditId ?? '',
@@ -288,7 +302,10 @@ export class ServerClient {
       throw new HttpError(res.status, await res.text());
     }
 
-    const json = (await res.json()) as { data?: unknown };
+    const json = (await res.json()) as { data?: unknown; errors?: Array<{ message: string }> };
+    if (json.errors && json.errors.length > 0) {
+      throw new Error('GraphQL errors: ' + json.errors.map(e => e.message).join(', '));
+    }
     return json.data;
   }
 
