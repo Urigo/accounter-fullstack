@@ -53,6 +53,11 @@ const ContractsScreen = lazy(() =>
     default: m.ContractsScreen,
   })),
 );
+const AuthManagement = lazy(() =>
+  import('../components/admin-settings/auth-management/index.js').then(m => ({
+    default: m.AuthManagement,
+  })),
+);
 
 // Business Trips
 const BusinessTrips = lazy(() =>
@@ -336,6 +341,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Business Ledger',
                   breadcrumb: 'Ledger',
+                },
+              },
+              {
+                path: ':businessId/auth-management',
+                element: withSuspense(AuthManagement),
+                handle: {
+                  title: 'Access Management',
+                  breadcrumb: 'Access Management',
                 },
               },
               {

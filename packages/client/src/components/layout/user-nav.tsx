@@ -1,5 +1,5 @@
 import { useContext, useState, type JSX } from 'react';
-import { CircleCheckBig, FileDown, Shield, User2Icon } from 'lucide-react';
+import { CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
@@ -116,17 +116,25 @@ export function UserNav(): JSX.Element | null {
             </>
           )}
           {userContext?.context.adminBusinessId && (
-            <DropdownMenuItem asChild>
-              <Link
-                to={{
-                  pathname: ROUTES.BUSINESSES.DETAIL(userContext.context.adminBusinessId),
-                  search: '?tab=admin',
-                }}
-              >
-                <Shield className="size-4" />
-                <span className="hidden sm:inline">Admin Configurations</span>
-              </Link>
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem asChild>
+                <Link
+                  to={{
+                    pathname: ROUTES.BUSINESSES.DETAIL(userContext.context.adminBusinessId),
+                    search: '?tab=admin',
+                  }}
+                >
+                  <Shield className="size-4" />
+                  <span className="hidden sm:inline">Admin Configurations</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to={ROUTES.BUSINESSES.AUTH_MANAGEMENT(userContext.context.adminBusinessId)}>
+                  <KeyRound className="size-4" />
+                  <span className="hidden sm:inline">Access Management</span>
+                </Link>
+              </DropdownMenuItem>
+            </>
           )}
           <DropdownMenuItem>
             <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
