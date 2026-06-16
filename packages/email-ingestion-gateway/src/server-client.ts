@@ -1,4 +1,12 @@
+import { ClientError, GraphQLClient } from 'graphql-request';
 import { IngestReasonCode } from './contracts.js';
+import type {
+  IngestEmailMutation,
+  IngestEmailMutationVariables,
+  RequestIngestControlMutation,
+  RequestIngestControlMutationVariables,
+} from './gql/index.js';
+import { INGEST_EMAIL_MUTATION, REQUEST_INGEST_CONTROL_MUTATION } from './graphql/mutations.js';
 
 // ---------------------------------------------------------------------------
 // Exported policy constants
@@ -10,53 +18,7 @@ export const INGEST_TIMEOUT_MS = 10_000;
 export const INGEST_MAX_RETRIES = 1;
 
 // ---------------------------------------------------------------------------
-// GraphQL operation strings
-// ---------------------------------------------------------------------------
-
-const REQUEST_INGEST_CONTROL_MUTATION = `
-  mutation RequestIngestControl($input: IngestControlInput!) {
-    requestIngestControl(input: $input) {
-      __typename
-      ... on IngestControlDecision {
-        id
-        tenantId
-        decisionId
-        auditId
-        grant {
-          id
-          jti
-          tenantId
-          action
-          expiresAt
-        }
-      }
-      ... on CommonError {
-        message
-      }
-    }
-  }
-`;
-
-const INGEST_EMAIL_MUTATION = `
-  mutation IngestEmail($input: IngestEmailInput!) {
-    ingestEmail(input: $input) {
-      __typename
-      ... on IngestEmailSuccess {
-        outcome
-        ingestId
-        existingIngestId
-        auditId
-        reasonCode
-      }
-      ... on CommonError {
-        message
-      }
-    }
-  }
-`;
-
-// ---------------------------------------------------------------------------
-// Domain types
+// Domain types (public API)
 // ---------------------------------------------------------------------------
 
 export interface ControlInput {
@@ -141,20 +103,6 @@ export interface ServerClientDeps {
 }
 
 // ---------------------------------------------------------------------------
-// HTTP error sentinel
-// ---------------------------------------------------------------------------
-
-class HttpError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = 'HttpError';
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Retry helpers
 // ---------------------------------------------------------------------------
 
@@ -165,8 +113,8 @@ function isTimeoutError(err: unknown): boolean {
 }
 
 function isRetryable(err: unknown): boolean {
-  if (err instanceof HttpError) return err.status >= 500;
-  return true; // network errors, timeouts — always retryable
+  if (err instanceof ClientError) return (err.response.status ?? 500) >= 500;
+  return true; // network errors (TypeError), timeouts (DOMException) — always retryable
 }
 
 function classifyFinalError(
@@ -180,15 +128,14 @@ function classifyFinalError(
 // ---------------------------------------------------------------------------
 
 export class ServerClient {
-  private readonly serverUrl: string;
-  private readonly cpToken: string;
-  private readonly fetchFn: typeof globalThis.fetch;
+  private readonly gqlClient: GraphQLClient;
   private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(deps: ServerClientDeps) {
-    this.serverUrl = deps.serverUrl;
-    this.cpToken = deps.cpToken;
-    this.fetchFn = deps.fetch ?? globalThis.fetch;
+    this.gqlClient = new GraphQLClient(`${deps.serverUrl}/graphql`, {
+      headers: { 'X-Gateway-CP-Token': deps.cpToken },
+      fetch: deps.fetch,
+    });
     this.sleep = deps.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
   }
 
@@ -199,15 +146,19 @@ export class ServerClient {
   async requestControl(input: ControlInput): Promise<ControlResult> {
     try {
       const data = await this.withRetry(
-        () => this.gqlPost(REQUEST_INGEST_CONTROL_MUTATION, { input }, CONTROL_TIMEOUT_MS),
+        () =>
+          this.gqlClient.request<
+            RequestIngestControlMutation,
+            RequestIngestControlMutationVariables
+          >({
+            document: REQUEST_INGEST_CONTROL_MUTATION,
+            variables: { input },
+            signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
+          }),
         CONTROL_MAX_RETRIES,
         100,
       );
-      const result = (
-        data as {
-          requestIngestControl?: { __typename: string; message?: string } & ControlDecision;
-        }
-      )?.requestIngestControl;
+      const result = data.requestIngestControl;
       if (!result) {
         return {
           success: false,
@@ -222,7 +173,7 @@ export class ServerClient {
           message: result.message ?? 'Unknown alias',
         };
       }
-      return { success: true, decision: result as unknown as ControlDecision };
+      return { success: true, decision: result };
     } catch (err) {
       return {
         success: false,
@@ -235,23 +186,16 @@ export class ServerClient {
   async requestIngest(input: IngestInput): Promise<IngestResult> {
     try {
       const data = await this.withRetry(
-        () => this.gqlPost(INGEST_EMAIL_MUTATION, { input }, INGEST_TIMEOUT_MS),
+        () =>
+          this.gqlClient.request<IngestEmailMutation, IngestEmailMutationVariables>({
+            document: INGEST_EMAIL_MUTATION,
+            variables: { input },
+            signal: AbortSignal.timeout(INGEST_TIMEOUT_MS),
+          }),
         INGEST_MAX_RETRIES,
         100,
       );
-      const result = (
-        data as {
-          ingestEmail?: {
-            __typename: string;
-            message?: string;
-            outcome?: string;
-            ingestId?: string | null;
-            existingIngestId?: string | null;
-            auditId?: string;
-            reasonCode?: string | null;
-          };
-        }
-      )?.ingestEmail;
+      const result = data.ingestEmail;
       if (!result) {
         return {
           success: false,
@@ -271,7 +215,7 @@ export class ServerClient {
         outcome: result.outcome as 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED',
         ingestId: result.ingestId,
         existingIngestId: result.existingIngestId,
-        auditId: result.auditId ?? '',
+        auditId: result.auditId,
         reasonCode: result.reasonCode,
       };
     } catch (err) {
@@ -286,28 +230,6 @@ export class ServerClient {
   // -------------------------------------------------------------------------
   // Private helpers
   // -------------------------------------------------------------------------
-
-  private async gqlPost(query: string, variables: unknown, timeoutMs: number): Promise<unknown> {
-    const res = await this.fetchFn(`${this.serverUrl}/graphql`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Gateway-CP-Token': this.cpToken,
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-
-    if (!res.ok) {
-      throw new HttpError(res.status, await res.text());
-    }
-
-    const json = (await res.json()) as { data?: unknown; errors?: Array<{ message: string }> };
-    if (json.errors && json.errors.length > 0) {
-      throw new Error('GraphQL errors: ' + json.errors.map(e => e.message).join(', '));
-    }
-    return json.data;
-  }
 
   private async withRetry<T>(
     fn: () => Promise<T>,

@@ -128,6 +128,7 @@ function makeFetch(
     return {
       ok: status >= 200 && status < 300,
       status,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
       text: async () => JSON.stringify(body),
       json: async () => body,
     } as Response;
@@ -175,12 +176,12 @@ describe('ServerClient.requestControl — success', () => {
     await client.requestControl(CONTROL_INPUT);
 
     const [url, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      string,
+      URL | string,
       RequestInit,
     ];
-    expect(url).toBe(`${BASE_URL}/graphql`);
-    expect((opts.headers as Record<string, string>)['Content-Type']).toBe('application/json');
-    expect((opts.headers as Record<string, string>)['X-Gateway-CP-Token']).toBe(CP_TOKEN);
+    expect(String(url)).toBe(`${BASE_URL}/graphql`);
+    expect((opts.headers as Headers).get('Content-Type')).toBe('application/json');
+    expect((opts.headers as Headers).get('X-Gateway-CP-Token')).toBe(CP_TOKEN);
   });
 
   it('sends the correlationId in the request body', async () => {
