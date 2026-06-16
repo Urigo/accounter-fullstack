@@ -144,6 +144,12 @@ export function createWebhookHandler(deps: WebhookDeps) {
 
     // 6. Orchestrate: control → ingest (skip when no serverClient is wired)
     if (!serverClient) {
+      log(
+        'warn',
+        'webhook: skipped orchestration — serverClient not configured',
+        {},
+        effectiveCorrelationId,
+      );
       writeJson(res, 202, { status: 'accepted', correlationId: effectiveCorrelationId });
       return;
     }
@@ -167,18 +173,18 @@ export function createWebhookHandler(deps: WebhookDeps) {
       });
       orchestrate(orchestrateInput, { serverClient })
         .then(result => {
-          if (!result.success) {
-            log(
-              'warn',
-              'shadow:orchestration:failed',
-              { reason: result.reason },
-              effectiveCorrelationId,
-            );
-          } else {
+          if (result.success) {
             log(
               'info',
               'shadow:orchestration:complete',
               { outcome: result.outcome, tenantId: result.tenantId },
+              effectiveCorrelationId,
+            );
+          } else {
+            log(
+              'warn',
+              'shadow:orchestration:failed',
+              { reason: result.reason },
               effectiveCorrelationId,
             );
           }
@@ -197,21 +203,22 @@ export function createWebhookHandler(deps: WebhookDeps) {
     // Production mode: await orchestration and include outcome in response.
     const result = await orchestrate(orchestrateInput, { serverClient });
 
-    if (!result.success) {
-      writeJson(res, 202, {
-        status: 'accepted',
-        correlationId: effectiveCorrelationId,
-        failed: true,
-        reason: result.reason,
-      });
-    } else {
+    if (result.success) {
       writeJson(res, 202, {
         status: 'accepted',
         correlationId: effectiveCorrelationId,
         outcome: result.outcome,
         ingestId: result.ingestId ?? undefined,
+        existingIngestId: result.existingIngestId ?? undefined,
         auditId: result.auditId,
         reasonCode: result.reasonCode ?? undefined,
+      });
+    } else {
+      writeJson(res, 202, {
+        status: 'accepted',
+        correlationId: effectiveCorrelationId,
+        failed: true,
+        reason: result.reason,
       });
     }
   };

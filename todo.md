@@ -269,7 +269,8 @@ Primary references:
 - [x] Propagate a single correlation_id end-to-end (gateway → control call → ingest call).
 - [x] Add structured logs: correlation_id, decision_id, audit_id, reason_code, outcome, tenant_id,
       durationMs at each orchestration step.
-- [ ] Add metrics: success, quarantine by reason, replay rejects, dedup hits, latency (deferred to S20).
+- [ ] Add metrics: success, quarantine by reason, replay rejects, dedup hits, latency (deferred to
+      S20).
 - [x] Add `orchestrator.ts`: control → ingest orchestration with structured logging.
 - [x] Wire webhook handler to orchestrator (production + shadow mode).
 - [x] Add integration and adversarial tests:

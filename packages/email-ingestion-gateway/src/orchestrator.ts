@@ -96,7 +96,13 @@ export async function orchestrate(
     log(
       'warn',
       'orchestrate:ingest:failed',
-      { reason: ingestResult.reason, durationMs: Date.now() - t0 },
+      {
+        reason: ingestResult.reason,
+        tenantId: decision.tenantId,
+        decisionId: decision.decisionId,
+        auditId: decision.auditId,
+        durationMs: Date.now() - t0,
+      },
       correlationId,
     );
     return { success: false, reason: ingestResult.reason, message: ingestResult.message };

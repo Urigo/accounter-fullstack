@@ -346,8 +346,9 @@ describe('POST /webhook — shadow mode', () => {
     expect(getStatus()).toBe(202);
     expect(getBody()).toMatchObject({ status: 'accepted', shadow: true });
 
-    // Cleanup dangling promise
+    // Cleanup: reject and await so no dangling promise warning from vitest
     resolveIngest();
+    await expect(hangingPromise).rejects.toThrow('test cleanup');
   });
 
   it('returns 202 in shadow mode even when orchestration fails', async () => {
