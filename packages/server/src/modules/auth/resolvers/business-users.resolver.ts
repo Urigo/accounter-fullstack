@@ -13,6 +13,7 @@ export const businessUsersResolvers: AuthModule.Resolvers = {
         }
 
         throw new GraphQLError('Failed to list business users', {
+          originalError: error instanceof Error ? error : undefined,
           extensions: { code: 'BUSINESS_USER_LIST_FAILED' },
         });
       }
@@ -28,6 +29,7 @@ export const businessUsersResolvers: AuthModule.Resolvers = {
         }
 
         throw new GraphQLError('Failed to remove business user', {
+          originalError: error instanceof Error ? error : undefined,
           extensions: { code: 'BUSINESS_USER_REMOVAL_FAILED' },
         });
       }

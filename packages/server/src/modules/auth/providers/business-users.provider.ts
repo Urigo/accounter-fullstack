@@ -30,6 +30,32 @@ export type BusinessUserRecord = {
   createdAt: Date;
 };
 
+// Cap on parallel Auth0 Management API lookups, to stay well within Auth0's
+// rate limits even when a business has many users.
+const AUTH0_LOOKUP_CONCURRENCY = 5;
+
+/**
+ * Map over `items` running at most `limit` mappers concurrently.
+ * A small pool-based limiter so we don't fan out unbounded external calls
+ * (and without pulling in an extra dependency).
+ */
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  mapper: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const current = nextIndex++;
+      results[current] = await mapper(items[current]);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 const getBusinessUsersByAuth0Ids = sql<IGetBusinessUsersByAuth0IdsQuery>`
   SELECT user_id, auth0_user_id, business_id, role_id
   FROM accounter_schema.business_users
@@ -132,28 +158,26 @@ export class BusinessUsersProvider {
 
     const rows = await listBusinessUsers.run({ ownerId: authContext.tenant.businessId }, this.db);
 
-    return Promise.all(
-      rows.map(async row => {
-        let email = row.fallback_email ?? null;
-        let name: string | null = null;
+    return mapWithConcurrency(rows, AUTH0_LOOKUP_CONCURRENCY, async row => {
+      let email = row.fallback_email ?? null;
+      let name: string | null = null;
 
-        if (row.auth0_user_id) {
-          const profile = await this.auth0ManagementProvider.getUserProfileById(row.auth0_user_id);
-          if (profile) {
-            email = profile.email ?? email;
-            name = profile.name ?? null;
-          }
+      if (row.auth0_user_id) {
+        const profile = await this.auth0ManagementProvider.getUserProfileById(row.auth0_user_id);
+        if (profile) {
+          email = profile.email ?? email;
+          name = profile.name ?? null;
         }
+      }
 
-        return {
-          id: row.user_id,
-          email: email ?? '',
-          name,
-          roleId: row.role_id,
-          createdAt: row.created_at,
-        };
-      }),
-    );
+      return {
+        id: row.user_id,
+        email: email ?? '',
+        name,
+        roleId: row.role_id,
+        createdAt: row.created_at,
+      };
+    });
   }
 
   /**
@@ -161,10 +185,18 @@ export class BusinessUsersProvider {
    * Restricted to business owners and strictly scoped to the caller's tenant, so
    * a membership belonging to another business can never be removed. Deleting the
    * relation does not touch the user's global Auth0 identity.
+   * Owners cannot remove themselves, which would cause an immediate self-lockout
+   * (and orphan the tenant if they were the sole owner).
    * Returns false when no matching membership exists in the current business.
    */
   public async removeBusinessUser(userId: string): Promise<boolean> {
     const authContext = await this.requireBusinessOwner();
+
+    if (userId === authContext.user.userId) {
+      throw new GraphQLError('Cannot remove yourself from the business', {
+        extensions: { code: 'CANNOT_REMOVE_SELF' },
+      });
+    }
 
     return this.db.transaction(async client => {
       const rows = await deleteBusinessUser.run(

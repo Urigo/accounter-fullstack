@@ -276,4 +276,13 @@ describe('BusinessUsersProvider.removeBusinessUser', () => {
     expect(mockDb.query).not.toHaveBeenCalled();
     expect(mockAuditProvider.log).not.toHaveBeenCalled();
   });
+
+  it('rejects self-removal and never deletes (prevents owner self-lockout)', async () => {
+    const provider = buildManagementProvider();
+    await expect(provider.removeBusinessUser('owner-user-id')).rejects.toSatisfy(
+      error => error instanceof Error && (error as any).extensions?.code === 'CANNOT_REMOVE_SELF',
+    );
+    expect(mockDb.query).not.toHaveBeenCalled();
+    expect(mockAuditProvider.log).not.toHaveBeenCalled();
+  });
 });
