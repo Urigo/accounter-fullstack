@@ -84,7 +84,7 @@ describe('POST /webhook — createWebhookHandler', () => {
 
   beforeEach(() => {
     verifier = makeVerifier({ valid: true });
-    handler = createWebhookHandler({ verifier, featureFlags: { v2Enabled: true } });
+    handler = createWebhookHandler({ verifier, featureFlags: { v2Enabled: true, shadowMode: false } });
   });
 
   // -------------------------------------------------------------------------
@@ -94,7 +94,7 @@ describe('POST /webhook — createWebhookHandler', () => {
   it('returns 503 when v2 is disabled', async () => {
     const disabledHandler = createWebhookHandler({
       verifier,
-      featureFlags: { v2Enabled: false },
+      featureFlags: { v2Enabled: false, shadowMode: false },
     });
     const { res, getStatus, getBody } = makeRes();
     await disabledHandler(makeReq(), res);
@@ -141,7 +141,7 @@ describe('POST /webhook — createWebhookHandler', () => {
   it('returns 401 with INVALID_AUTH when the verifier rejects the request', async () => {
     const h = createWebhookHandler({
       verifier: makeVerifier({ valid: false, reason: IngestReasonCode.INVALID_AUTH }),
-      featureFlags: { v2Enabled: true },
+      featureFlags: { v2Enabled: true, shadowMode: false },
     });
     const { res, getStatus, getBody } = makeRes();
     await h(makeReq(), res);
@@ -155,7 +155,7 @@ describe('POST /webhook — createWebhookHandler', () => {
   it('returns 401 with REPLAY_DETECTED on nonce replay', async () => {
     const h = createWebhookHandler({
       verifier: makeVerifier({ valid: false, reason: IngestReasonCode.REPLAY_DETECTED }),
-      featureFlags: { v2Enabled: true },
+      featureFlags: { v2Enabled: true, shadowMode: false },
     });
     const { res, getStatus, getBody } = makeRes();
     await h(makeReq(), res);
@@ -223,7 +223,7 @@ describe('POST /webhook — createWebhookHandler', () => {
 
   it('calls the verifier with the raw body bytes and header values', async () => {
     const mockVerifier = makeVerifier({ valid: true });
-    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true, shadowMode: false } });
     const { res } = makeRes();
     await h(makeReq(), res);
 
@@ -239,7 +239,7 @@ describe('POST /webhook — createWebhookHandler', () => {
 
   it('does not call the verifier when a required header is missing', async () => {
     const mockVerifier = makeVerifier({ valid: true });
-    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true, shadowMode: false } });
     const { res } = makeRes();
     await h(makeReq(VALID_BODY, { 'x-cf-signature': undefined }), res);
     expect(mockVerifier.verify).not.toHaveBeenCalled();
@@ -276,7 +276,7 @@ describe('POST /webhook — createWebhookHandler', () => {
 
   it('passes cf-connecting-ip as sourceIp when present', async () => {
     const mockVerifier = makeVerifier({ valid: true });
-    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true, shadowMode: false } });
     const req = makeReq(VALID_BODY, { 'cf-connecting-ip': '198.41.128.5' });
     const { res } = makeRes();
     await h(req, res);
@@ -288,7 +288,7 @@ describe('POST /webhook — createWebhookHandler', () => {
 
   it('strips ::ffff: prefix from IPv4-mapped IPv6 addresses', async () => {
     const mockVerifier = makeVerifier({ valid: true });
-    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true } });
+    const h = createWebhookHandler({ verifier: mockVerifier, featureFlags: { v2Enabled: true, shadowMode: false } });
     const stream = new PassThrough();
     stream.end(VALID_BODY);
     const req = Object.assign(stream, {
@@ -307,5 +307,69 @@ describe('POST /webhook — createWebhookHandler', () => {
     const arg = (mockVerifier.verify as ReturnType<typeof vi.fn>).mock
       .calls[0][0] as Parameters<CloudflareAuthenticityVerifier['verify']>[0];
     expect(arg.sourceIp).toBe('192.168.1.1');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shadow mode
+// ---------------------------------------------------------------------------
+
+describe('POST /webhook — shadow mode', () => {
+  it('returns 202 with shadow:true and does not await orchestration', async () => {
+    const verifier = makeVerifier({ valid: true });
+    let resolveIngest!: () => void;
+    const hangingPromise = new Promise<never>((_res, _rej) => {
+      resolveIngest = () => _rej(new Error('test cleanup'));
+    });
+    const serverClient = {
+      requestControl: vi.fn().mockResolvedValue({
+        success: true,
+        decision: {
+          id: 'd1',
+          tenantId: 't1',
+          decisionId: 'dec1',
+          auditId: 'a1',
+          grant: { id: 'g1', jti: 'jti-1', tenantId: 't1', action: 'ingest', expiresAt: '2099-01-01T00:00:00Z' },
+        },
+      }),
+      requestIngest: vi.fn().mockReturnValue(hangingPromise),
+    };
+    const handler = createWebhookHandler({
+      verifier,
+      featureFlags: { v2Enabled: true, shadowMode: true },
+      serverClient,
+    });
+    const { res, getStatus, getBody } = makeRes();
+    await handler(makeReq(), res);
+
+    // Handler returned without waiting for the hanging ingest promise
+    expect(getStatus()).toBe(202);
+    expect(getBody()).toMatchObject({ status: 'accepted', shadow: true });
+
+    // Cleanup: reject and await so no dangling promise warning from vitest
+    resolveIngest();
+    await expect(hangingPromise).rejects.toThrow('test cleanup');
+  });
+
+  it('returns 202 in shadow mode even when orchestration fails', async () => {
+    const verifier = makeVerifier({ valid: true });
+    const serverClient = {
+      requestControl: vi.fn().mockResolvedValue({
+        success: false,
+        reason: 'UNKNOWN_ALIAS',
+        message: 'not found',
+      }),
+      requestIngest: vi.fn(),
+    };
+    const handler = createWebhookHandler({
+      verifier,
+      featureFlags: { v2Enabled: true, shadowMode: true },
+      serverClient,
+    });
+    const { res, getStatus, getBody } = makeRes();
+    await handler(makeReq(), res);
+    expect(getStatus()).toBe(202);
+    expect(getBody()).toMatchObject({ shadow: true });
+    expect((getBody() as Record<string, unknown>)['failed']).toBeUndefined();
   });
 });
