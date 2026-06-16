@@ -130,8 +130,6 @@ describe('InvitationsProvider', () => {
         // deleteInvitation
         .mockResolvedValueOnce({ rows: [{ id: 'inv-1', user_id: 'placeholder-user' }], rowCount: 1 })
         // deletePendingInvitationPlaceholder
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })
-        // audit log insert
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
       const provider = buildProvider();
