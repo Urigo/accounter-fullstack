@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "dotenv": "17.4.2",
+    "graphql-request": "7.4.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

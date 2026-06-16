@@ -154,6 +154,7 @@ __metadata:
   dependencies:
     "@types/node": "npm:25.9.2"
     dotenv: "npm:17.4.2"
+    graphql-request: "npm:7.4.0"
     tsx: "npm:4.22.4"
     typescript: "npm:6.0.3"
     zod: "npm:4.4.3"
