@@ -10,6 +10,7 @@ const config: CodegenConfig = {
     './packages/client/**/*.graphql.ts',
     './packages/gmail-listener/src/server-requests.ts',
     './packages/scraper-app/src/server/graphql/mutations.ts',
+    './packages/email-ingestion-gateway/src/graphql/mutations.ts',
   ],
   emitLegacyCommonJSImports: false,
   generates: {
@@ -223,6 +224,20 @@ const config: CodegenConfig = {
             input: 'File',
             output: 'string',
           },
+          UUID: {
+            input: 'string',
+            output: 'string',
+          },
+        },
+      },
+    },
+    'packages/email-ingestion-gateway/src/gql/index.ts': {
+      plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
+      config: {
+        enumType: 'const',
+        useTypeImports: true,
+        rawRequest: true,
+        scalars: {
           UUID: {
             input: 'string',
             output: 'string',
