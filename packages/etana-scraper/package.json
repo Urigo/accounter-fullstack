@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@whatwg-node/fetch": "0.10.13",
-    "csv-parse": "6.2.1",
+    "csv-parse": "7.0.0",
     "diary": "0.4.5",
     "dotenv": "17.4.2",
     "pg-promise": "12.6.2"
