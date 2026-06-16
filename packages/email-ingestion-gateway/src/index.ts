@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { env } from './environment.js';
 import { generateCorrelationId, log } from './logger.js';
+import { ServerClient } from './server-client.js';
 import type { HealthResponse, JsonObject, ReadinessResponse } from './types.js';
 import { CloudflareAuthenticityVerifier } from './verifier.js';
 import { createWebhookHandler } from './webhook.js';
@@ -24,6 +25,10 @@ const webhookHandler = createWebhookHandler({
     ipAllowlist: [...env.cloudflare.ipAllowlist],
   }),
   featureFlags: env.featureFlags,
+  serverClient: new ServerClient({
+    serverUrl: env.server.url,
+    cpToken: env.server.cpToken,
+  }),
 });
 
 export const routes: Record<
