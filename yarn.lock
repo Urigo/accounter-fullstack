@@ -139,7 +139,7 @@ __metadata:
     tailwindcss: "npm:4.3.1"
     tailwindcss-animate: "npm:1.0.7"
     typescript: "npm:6.0.3"
-    urql: "npm:5.0.2"
+    urql: "npm:5.0.3"
     vaul: "npm:1.1.2"
     vite: "npm:8.0.16"
     vite-plugin-node-polyfills: "npm:0.28.0"
@@ -10966,13 +10966,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@urql/core@npm:^6.0.0, @urql/core@npm:^6.0.1":
+"@urql/core@npm:^6.0.0":
   version: 6.0.1
   resolution: "@urql/core@npm:6.0.1"
   dependencies:
     "@0no-co/graphql.web": "npm:^1.0.13"
     wonka: "npm:^6.3.2"
   checksum: 10c0/44ff0d12dcef1e47338a9ff1217759d1124fa66eec1eec21ff9622e44c179b9d66fa78f462f195bfd8b790b04609abbe5a0674cbfcb0bc6d9c6fe6223d7d7b5b
+  languageName: node
+  linkType: hard
+
+"@urql/core@npm:^6.0.2":
+  version: 6.0.2
+  resolution: "@urql/core@npm:6.0.2"
+  dependencies:
+    "@0no-co/graphql.web": "npm:^1.0.13"
+    wonka: "npm:^6.3.2"
+  checksum: 10c0/018b42cc4a50d4ef30f85a6bf5d7b207a61c4ca76150927fd780e9006f86722cbf22798ece8d0ac274e03168c2fb268e7680160e03234da9e2f668f6316cd56f
   languageName: node
   linkType: hard
 
@@ -25544,16 +25554,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"urql@npm:5.0.2":
-  version: 5.0.2
-  resolution: "urql@npm:5.0.2"
+"urql@npm:5.0.3":
+  version: 5.0.3
+  resolution: "urql@npm:5.0.3"
   dependencies:
-    "@urql/core": "npm:^6.0.1"
+    "@urql/core": "npm:^6.0.2"
     wonka: "npm:^6.3.2"
   peerDependencies:
     "@urql/core": ^6.0.0
     react: ">= 16.8.0"
-  checksum: 10c0/13bb21fd3d7d7946854bb4ec16932004fbe4649f4edf78fba5b09c6f65a0e2a40477e8998f970aa5a56be6f5b74d1ca5c29cc553567da0c4730783bed461f477
+  checksum: 10c0/a9928d52d7e734df123b767a236caaadb25240d0c7b5d789a2885ed108a0d55f2a1222329ffd6c95a5632913b4fd8263979a821f35e423c2acd2035b89efd850
   languageName: node
   linkType: hard
 
