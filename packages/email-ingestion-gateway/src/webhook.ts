@@ -22,6 +22,15 @@ const MESSAGE_ID_HEADER = 'x-cf-message-id';
 /** Header carrying the original received-at timestamp (ISO-8601, optional). */
 const RECEIVED_AT_HEADER = 'x-cf-received-at';
 
+/**
+ * Safely read a single header value. `IncomingHttpHeaders` values may be
+ * `string[]` (duplicated headers, HTTP/2), so we never assume a bare string —
+ * calling string methods on an array would crash the request handler.
+ */
+function getSingleHeader(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export interface WebhookDeps {
   verifier: Pick<CloudflareAuthenticityVerifier, 'verify'>;
   featureFlags: { v2Enabled: boolean; shadowMode: boolean };
@@ -48,14 +57,14 @@ export function createWebhookHandler(deps: WebhookDeps) {
       (typeof res.getHeader === 'function'
         ? (res.getHeader('X-Correlation-Id') as string | undefined)
         : undefined) ??
-      (req.headers['x-correlation-id'] as string | undefined) ??
+      getSingleHeader(req.headers['x-correlation-id']) ??
       generateCorrelationId();
     res.setHeader('X-Correlation-Id', reqCorrelationId);
 
     // 2. Validate required authenticity headers before reading the body (cheap, fail-fast)
-    const timestampStr = req.headers['x-cf-timestamp'] as string | undefined;
-    const signature = req.headers['x-cf-signature'] as string | undefined;
-    const nonce = req.headers['x-cf-nonce'] as string | undefined;
+    const timestampStr = getSingleHeader(req.headers['x-cf-timestamp']);
+    const signature = getSingleHeader(req.headers['x-cf-signature']);
+    const nonce = getSingleHeader(req.headers['x-cf-nonce']);
 
     if (!timestampStr || !signature || !nonce) {
       writeJson(res, 400, {
@@ -76,9 +85,9 @@ export function createWebhookHandler(deps: WebhookDeps) {
     const timestampSeconds = parseInt(timestampStr, 10);
 
     // Message metadata travels in headers (the body is the raw MIME message).
-    const recipientAlias = (req.headers[RECIPIENT_HEADER] as string | undefined)?.trim();
-    const messageId = (req.headers[MESSAGE_ID_HEADER] as string | undefined)?.trim();
-    const receivedAt = (req.headers[RECEIVED_AT_HEADER] as string | undefined)?.trim() || undefined;
+    const recipientAlias = getSingleHeader(req.headers[RECIPIENT_HEADER])?.trim();
+    const messageId = getSingleHeader(req.headers[MESSAGE_ID_HEADER])?.trim();
+    const receivedAt = getSingleHeader(req.headers[RECEIVED_AT_HEADER])?.trim() || undefined;
 
     if (!recipientAlias || !messageId) {
       writeJson(res, 400, {
@@ -103,8 +112,8 @@ export function createWebhookHandler(deps: WebhookDeps) {
 
     // 4. Authenticity verification: IP allowlist + timestamp window + HMAC + nonce replay
     let sourceIp =
-      (req.headers['cf-connecting-ip'] as string | undefined)?.trim() ??
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+      getSingleHeader(req.headers['cf-connecting-ip'])?.trim() ??
+      getSingleHeader(req.headers['x-forwarded-for'])?.split(',')[0]?.trim() ??
       req.socket?.remoteAddress ??
       '';
     if (sourceIp.startsWith('::ffff:')) {

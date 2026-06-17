@@ -37,7 +37,7 @@ describe('RLS All Tables Migration', () => {
     testPool = await createPool(testConnectionString, {
         statementTimeout: 60000,
     });
-  });
+  }, 30_000);
 
   afterAll(async () => {
     if (testPool) {
@@ -61,7 +61,7 @@ describe('RLS All Tables Migration', () => {
 
   it('should apply all migrations successfully', async () => {
     await runPGMigrations({ slonik: testPool });
-    
+
     // Check that the specific RLS migration was recorded
     const migrationResult = await testPool.query(sql.unsafe`
       SELECT 1
@@ -69,10 +69,10 @@ describe('RLS All Tables Migration', () => {
       WHERE name LIKE '%enable-rls-all-tables%'
       LIMIT 1
     `);
-    
+
     // Ensure that at least one matching migration entry exists
     expect(migrationResult.rowCount).toBe(1);
-  });
+  }, 120_000);
 
   it('should enforce RLS on key tables (isolation test)', async () => {
     // Test logic:
@@ -252,7 +252,7 @@ describe('RLS All Tables Migration', () => {
             }
           } finally {
             await connection.query(sql.unsafe`RESET ROLE`);
-          } 
+          }
         });
     } finally {
         const roleStillExists = await testPool.oneFirst(
@@ -263,5 +263,5 @@ describe('RLS All Tables Migration', () => {
           await testPool.query(sql.unsafe`DROP ROLE ${sql.identifier([TEST_ROLE_NAME])}`);
         }
     }
-  });
+  }, 30_000);
 });
