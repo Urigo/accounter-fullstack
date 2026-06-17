@@ -10,6 +10,11 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "email-ingestion-gateway:build": "yarn build",
+    "email-ingestion-gateway:build:prod": "yarn generate && yarn build",
+    "email-ingestion-gateway:dev": "yarn dev",
+    "email-ingestion-gateway:start": "yarn start",
+    "generate": "yarn generate:all",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit"
   },
