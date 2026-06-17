@@ -40,6 +40,10 @@ export default {
       false,
       ['sign']
     )
+    // Sign the raw MIME bytes — the gateway verifies the signature over the
+    // exact body it receives, parses the MIME, and extracts attachments. The
+    // gateway also computes the SHA-256 content hash itself, so the worker only
+    // forwards the message and its routing metadata (no hash is sent).
     const prefix = new TextEncoder().encode(timestamp + '.')
     const payload = new Uint8Array(prefix.length + rawBytes.length)
     payload.set(prefix, 0)
@@ -49,30 +53,22 @@ export default {
       .map(b => b.toString(16).padStart(2, '0'))
       .join('')
 
-    // Compute SHA-256 of the raw MIME bytes
-    const hashBytes = await crypto.subtle.digest('SHA-256', rawBytes)
-    const rawMessageHash = Array.from(new Uint8Array(hashBytes))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
-
-    const body = JSON.stringify({
-      recipientAlias: message.to,
-      messageId: message.headers.get('message-id') ?? nonce,
-      rawMessageHash,
-      receivedAt: new Date().toISOString(),
-      correlationId: nonce
-    })
-
     try {
       const res = await fetch(`${env.GATEWAY_URL}/webhook`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'message/rfc822',
           'x-cf-timestamp': String(timestamp),
           'x-cf-signature': signature,
-          'x-cf-nonce': nonce
+          'x-cf-nonce': nonce,
+          // Routing metadata — the body itself is the raw MIME message.
+          'x-cf-recipient': message.to,
+          'x-cf-message-id': message.headers.get('message-id') ?? nonce,
+          'x-cf-received-at': new Date().toISOString(),
+          'x-correlation-id': nonce
         },
-        body
+        // Send the raw MIME bytes as the request body.
+        body: rawBytes
       })
       if (!res.ok) {
         throw new Error('Gateway returned status ' + res.status)
@@ -285,21 +281,23 @@ sign() {
     | awk '{print $2}'
 }
 
+# The body is the raw MIME message; routing metadata travels in headers.
+MIME=$(printf 'From: sender@example.com\r\nTo: %s\r\nSubject: Test\r\nContent-Type: text/plain\r\n\r\nhello\r\n' "$ALIAS")
+
 send() {
-  local ts nonce body sig
+  local ts nonce sig
   ts=$(date +%s)
   nonce=$(uuidgen | tr '[:upper:]' '[:lower:]')
-  body=$(printf '{"recipientAlias":"%s","messageId":"%s","rawMessageHash":"%s"}' \
-    "$ALIAS" "msg-$nonce" \
-    "$(printf 'fake-body' | openssl dgst -sha256 -hex | awk '{print $2}')")
-  sig=$(sign "$ts" "$body")
+  sig=$(sign "$ts" "$MIME")
   curl -s -w '\nHTTP %{http_code}\n' \
     -X POST "$GATEWAY_URL/webhook" \
-    -H "Content-Type: application/json" \
+    -H "Content-Type: message/rfc822" \
     -H "x-cf-timestamp: $ts" \
     -H "x-cf-signature: $sig" \
     -H "x-cf-nonce: $nonce" \
-    -d "$body"
+    -H "x-cf-recipient: $ALIAS" \
+    -H "x-cf-message-id: msg-$nonce" \
+    --data-binary "$MIME"
 }
 ```
 
@@ -315,14 +313,15 @@ send
 ```bash
 ts=$(date +%s)
 nonce=$(uuidgen | tr '[:upper:]' '[:lower:]')
-body='{"recipientAlias":"test@mail.example.com","messageId":"m1","rawMessageHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
 curl -s -w '\nHTTP %{http_code}\n' \
   -X POST "$GATEWAY_URL/webhook" \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: message/rfc822" \
   -H "x-cf-timestamp: $ts" \
   -H "x-cf-signature: 0000000000000000000000000000000000000000000000000000000000000000" \
   -H "x-cf-nonce: $nonce" \
-  -d "$body"
+  -H "x-cf-recipient: test@mail.example.com" \
+  -H "x-cf-message-id: m1" \
+  --data-binary "$MIME"
 # Expected: HTTP 401, body contains {"error":"Unauthorized"}
 ```
 
