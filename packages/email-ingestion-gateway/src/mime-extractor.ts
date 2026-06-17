@@ -268,7 +268,7 @@ function splitMultipartParts(body: Buffer, boundary: string): Buffer[] {
           p >= body.length ||
           body[p] === 0x0d ||
           body[p] === 0x0a ||
-          (body[p] === 0x2d && body[p + 1] === 0x2d)
+          (p + 1 < body.length && body[p] === 0x2d && body[p + 1] === 0x2d)
         ) {
           return idx;
         }
