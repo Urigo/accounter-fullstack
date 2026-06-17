@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.js';
 import { UserContext } from '@/providers/index.js';
 import { ROUTES } from '@/router/routes.js';
+import { ApiKeysTab } from './api-keys-tab.js';
 
 export function AuthManagement(): ReactElement {
   const { businessId } = useParams<{ businessId: string }>();
@@ -26,7 +27,7 @@ export function AuthManagement(): ReactElement {
           <TabsTrigger value="users">Users</TabsTrigger>
         </TabsList>
         <TabsContent value="api-keys">
-          <p className="text-sm text-muted-foreground">API keys management coming soon.</p>
+          <ApiKeysTab />
         </TabsContent>
         <TabsContent value="invitations">
           <p className="text-sm text-muted-foreground">Invitations management coming soon.</p>
