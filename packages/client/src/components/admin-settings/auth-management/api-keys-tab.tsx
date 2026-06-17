@@ -66,7 +66,7 @@ const API_KEY_ROLES = [
 ] as const;
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().trim().min(1, 'Name is required'),
   roleId: z.enum(['scraper', 'gmail_listener']),
 });
 
@@ -133,7 +133,9 @@ export function ApiKeysTab(): ReactElement {
             {apiKeys.map((key: ApiKeyRow) => (
               <TableRow key={key.id}>
                 <TableCell className="font-medium">{key.name}</TableCell>
-                <TableCell>{key.roleId}</TableCell>
+                <TableCell>
+                  {API_KEY_ROLES.find(role => role.value === key.roleId)?.label ?? key.roleId}
+                </TableCell>
                 <TableCell>
                   {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : 'Never'}
                 </TableCell>
@@ -206,7 +208,20 @@ function GenerateApiKeyDialog({ onCreated }: { onCreated: () => void }): ReactEl
           Generate New Key
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent
+        // While the one-time token is visible, block outside-click / Escape
+        // dismissal so it cannot be lost accidentally before being copied.
+        onPointerDownOutside={event => {
+          if (generatedKey) {
+            event.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={event => {
+          if (generatedKey) {
+            event.preventDefault();
+          }
+        }}
+      >
         {generatedKey ? (
           <>
             <DialogHeader>

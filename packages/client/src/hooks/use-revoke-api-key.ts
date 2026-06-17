@@ -32,11 +32,19 @@ export const useRevokeApiKey = (): UseRevokeApiKey => {
         const result = await mutate({ id });
         const data = handleCommonErrors(result, message, notificationId);
         if (data) {
-          toast.success('Success', {
+          if (data.revokeApiKey) {
+            toast.success('Success', {
+              id: notificationId,
+              description: 'API key revoked successfully',
+            });
+            return true;
+          }
+          // No GraphQL error, but the key was not revoked (already revoked or not found).
+          toast.error('Error', {
             id: notificationId,
-            description: 'API key revoked successfully',
+            description: 'Failed to revoke API key. It may have already been revoked.',
           });
-          return data.revokeApiKey;
+          return false;
         }
       } catch (e) {
         console.error(message, e);
