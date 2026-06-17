@@ -29,19 +29,23 @@ export default {
 
     ALTER TABLE accounter_schema.email_ingestion_quarantine ENABLE ROW LEVEL SECURITY;
 
-    -- Quarantine rows are owned by the tenant they were attributed to (when
-    -- known).  tenant_candidate is nullable because alias resolution may have
-    -- failed, but RLS still applies: rows with a non-null tenant_candidate are
-    -- only accessible to that tenant.
+    -- Quarantine rows are owned by the tenant they were attributed to.
+    -- tenant_candidate is nullable because alias resolution may have failed,
+    -- but a normal tenant session must NEVER see another tenant's quarantined
+    -- mail — including orphaned rows (tenant_candidate IS NULL) that could
+    -- contain content addressed to a different tenant. The policy therefore
+    -- only grants a tenant access to rows that resolved to its own business id.
+    -- Orphaned rows (tenant_candidate IS NULL) are intentionally invisible to
+    -- every tenant session and are triaged exclusively through ops tooling that
+    -- bypasses RLS (the gateway ingest path writes via the raw, RLS-bypassing
+    -- pool, so this restriction does not affect quarantine inserts).
     CREATE POLICY tenant_isolation ON accounter_schema.email_ingestion_quarantine
       FOR ALL
       USING (
-        tenant_candidate IS NULL
-        OR tenant_candidate = accounter_schema.get_current_business_id()
+        tenant_candidate = accounter_schema.get_current_business_id()
       )
       WITH CHECK (
-        tenant_candidate IS NULL
-        OR tenant_candidate = accounter_schema.get_current_business_id()
+        tenant_candidate = accounter_schema.get_current_business_id()
       );
 
     ALTER TABLE accounter_schema.email_ingestion_quarantine FORCE ROW LEVEL SECURITY;
