@@ -98,7 +98,11 @@ export function InvitationsTab(): ReactElement {
   const handleRevoke = useCallback(
     async (id: string) => {
       const result = await revokeInvitation(id);
-      if (result) {
+      // Refetch on success and on a `false` result alike: a `false` means the
+      // invitation is no longer pending server-side (already revoked / not
+      // found), so the stale row should be dropped. `undefined` is a thrown
+      // error, where we leave the list untouched.
+      if (result !== undefined) {
         refetch();
       }
     },
