@@ -297,8 +297,8 @@ Primary references:
 - [x] Run final validation sequence:
 - [x] `yarn generate` — no schema changes in S20, codegen not required
 - [x] `yarn lint` — 0 errors (fixed pre-existing unicorn v64/v65 config mismatch)
-- [x] `yarn test` — 295 gateway + email-ingestion tests pass (4 pre-existing
-      failures in scraper-app/migrations unrelated to S20)
+- [x] `yarn test` — 295 gateway + email-ingestion tests pass (4 pre-existing failures in
+      scraper-app/migrations unrelated to S20)
 - [ ] `yarn test:integration` — requires PostgreSQL (skipped in CI-less environment)
 
 ## Anti-coupling Gate (Mandatory Before Merge)
