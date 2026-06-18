@@ -10,6 +10,16 @@ import type { Environment } from '../../../shared/types/index.js';
 export class Auth0ManagementProvider {
   private client: ManagementClient | undefined;
 
+  // Short-lived cache of Auth0 profile lookups. The provider is a Singleton, so
+  // this is shared across requests to avoid hammering the Auth0 Management API
+  // (and its rate limits) when listing users. The TTL bounds staleness so
+  // profile changes in Auth0 still propagate within a few minutes.
+  private profileCache = new Map<
+    string,
+    { profile: { email: string | null; name: string | null }; expiresAt: number }
+  >();
+  private readonly PROFILE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
   constructor(@Inject(ENVIRONMENT) private env: Environment) {
     this.initializeClient();
   }
@@ -75,14 +85,25 @@ export class Auth0ManagementProvider {
   async getUserProfileById(
     auth0UserId: string,
   ): Promise<{ email: string | null; name: string | null } | null> {
+    const cached = this.profileCache.get(auth0UserId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.profile;
+    }
+
     const client = this.getClient();
 
     try {
       const user = await client.users.get(auth0UserId);
-      return {
+      const profile = {
         email: typeof user?.email === 'string' ? user.email : null,
         name: typeof user?.name === 'string' ? user.name : null,
       };
+      // Only successful lookups are cached, so transient failures are retried.
+      this.profileCache.set(auth0UserId, {
+        profile,
+        expiresAt: Date.now() + this.PROFILE_CACHE_TTL_MS,
+      });
+      return profile;
     } catch (error) {
       console.error(`Failed to get Auth0 user profile by id ${auth0UserId}:`, error);
       return null;
