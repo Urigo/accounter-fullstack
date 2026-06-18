@@ -15,11 +15,17 @@ vi.spyOn(console, 'error').mockImplementation(() => {});
 
 const VALID_TIMESTAMP = String(1_700_000_000);
 
-const VALID_BODY = JSON.stringify({
-  recipientAlias: 'invoices@acme.example.com',
-  messageId: '<abc123@mail.example.com>',
-  rawMessageHash: 'a'.repeat(64),
-});
+// The request body is now the raw MIME message; routing metadata (recipient
+// alias, message id) travels in headers.
+const VALID_BODY = [
+  'From: sender@example.com',
+  'To: invoices@acme.example.com',
+  'Subject: Test',
+  'MIME-Version: 1.0',
+  'Content-Type: text/plain; charset=utf-8',
+  '',
+  'See attached.',
+].join('\r\n');
 
 function makeVerifier(verdict: AuthenticityVerdict = { valid: true }) {
   return {
@@ -38,6 +44,8 @@ function makeReq(
     'x-cf-timestamp': VALID_TIMESTAMP,
     'x-cf-signature': 'a'.repeat(64),
     'x-cf-nonce': 'unique-nonce-abc',
+    'x-cf-recipient': 'invoices@acme.example.com',
+    'x-cf-message-id': '<abc123@mail.example.com>',
   };
   for (const [k, v] of Object.entries(headerOverrides)) {
     if (v === undefined) {
@@ -164,39 +172,31 @@ describe('POST /webhook — createWebhookHandler', () => {
   });
 
   // -------------------------------------------------------------------------
-  // Body validation
+  // Metadata header validation
   // -------------------------------------------------------------------------
 
-  it('returns 400 when body is not valid JSON', async () => {
+  it('returns 400 when x-cf-recipient is missing', async () => {
     const { res, getStatus, getBody } = makeRes();
-    await handler(makeReq('not-json'), res);
+    await handler(makeReq(VALID_BODY, { 'x-cf-recipient': undefined }), res);
     expect(getStatus()).toBe(400);
     expect(getBody()).toMatchObject({ error: 'Bad request' });
   });
 
-  it('returns 400 when recipientAlias is missing', async () => {
-    const body = JSON.stringify({ messageId: '<id@x>', rawMessageHash: 'a'.repeat(64) });
+  it('returns 400 when x-cf-message-id is missing', async () => {
     const { res, getStatus } = makeRes();
-    await handler(makeReq(body), res);
+    await handler(makeReq(VALID_BODY, { 'x-cf-message-id': undefined }), res);
     expect(getStatus()).toBe(400);
   });
 
-  it('returns 400 when messageId is missing', async () => {
-    const body = JSON.stringify({ recipientAlias: 'a@b.com', rawMessageHash: 'a'.repeat(64) });
-    const { res, getStatus } = makeRes();
-    await handler(makeReq(body), res);
-    expect(getStatus()).toBe(400);
-  });
-
-  it('returns 400 when rawMessageHash is not a 64-char hex string', async () => {
-    const body = JSON.stringify({
-      recipientAlias: 'a@b.com',
-      messageId: '<id@x>',
-      rawMessageHash: 'tooshort',
+  it('does not call the verifier when a metadata header is missing', async () => {
+    const mockVerifier = makeVerifier({ valid: true });
+    const h = createWebhookHandler({
+      verifier: mockVerifier,
+      featureFlags: { v2Enabled: true, shadowMode: false },
     });
-    const { res, getStatus } = makeRes();
-    await handler(makeReq(body), res);
-    expect(getStatus()).toBe(400);
+    const { res } = makeRes();
+    await h(makeReq(VALID_BODY, { 'x-cf-recipient': undefined }), res);
+    expect(mockVerifier.verify).not.toHaveBeenCalled();
   });
 
   // -------------------------------------------------------------------------
@@ -213,10 +213,9 @@ describe('POST /webhook — createWebhookHandler', () => {
     expect((body as { correlationId: string }).correlationId.length).toBeGreaterThan(0);
   });
 
-  it('uses the correlationId from the request body when present', async () => {
-    const body = JSON.stringify({ ...JSON.parse(VALID_BODY), correlationId: 'client-corr-id' });
+  it('uses the correlationId from the x-correlation-id header when present', async () => {
     const { res, getStatus, getBody } = makeRes();
-    await handler(makeReq(body), res);
+    await handler(makeReq(VALID_BODY, { 'x-correlation-id': 'client-corr-id' }), res);
     expect(getStatus()).toBe(202);
     expect((getBody() as { correlationId: string }).correlationId).toBe('client-corr-id');
   });
@@ -256,6 +255,8 @@ describe('POST /webhook — createWebhookHandler', () => {
         'x-cf-timestamp': VALID_TIMESTAMP,
         'x-cf-signature': 'a'.repeat(64),
         'x-cf-nonce': 'unique-nonce-abc',
+        'x-cf-recipient': 'invoices@acme.example.com',
+        'x-cf-message-id': '<abc123@mail.example.com>',
       },
       method: 'POST',
       socket: { remoteAddress: '127.0.0.1' },
@@ -296,6 +297,8 @@ describe('POST /webhook — createWebhookHandler', () => {
         'x-cf-timestamp': VALID_TIMESTAMP,
         'x-cf-signature': 'a'.repeat(64),
         'x-cf-nonce': 'unique-nonce-abc',
+        'x-cf-recipient': 'invoices@acme.example.com',
+        'x-cf-message-id': '<abc123@mail.example.com>',
       },
       method: 'POST',
       socket: { remoteAddress: '::ffff:192.168.1.1' },

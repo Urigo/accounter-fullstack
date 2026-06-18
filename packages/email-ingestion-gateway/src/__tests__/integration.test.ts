@@ -5,7 +5,7 @@
  * mocked server HTTP responses) to prove that security invariants hold end-to-end.
  */
 import { PassThrough } from 'node:stream';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { IngestReasonCode } from '../contracts.js';
@@ -45,6 +45,10 @@ function makeReq(
     'x-cf-timestamp': timestamp,
     'x-cf-signature': sig,
     'x-cf-nonce': nonce,
+    // Routing metadata travels in headers; the body is the raw MIME message.
+    'x-cf-recipient': 'invoices@acme.example.com',
+    'x-cf-message-id': '<msg001@mail.example.com>',
+    'x-correlation-id': 'e2e-corr-001',
     ...overrides,
   };
   for (const [k, v] of Object.entries(overrides)) {
@@ -76,12 +80,18 @@ function makeRes() {
   };
 }
 
-const VALID_PAYLOAD = JSON.stringify({
-  recipientAlias: 'invoices@acme.example.com',
-  messageId: '<msg001@mail.example.com>',
-  rawMessageHash: 'a'.repeat(64),
-  correlationId: 'e2e-corr-001',
-});
+// The request body is the raw MIME message; routing metadata is sent in headers
+// (see makeReq). This minimal message has no attachments, which is fine for these
+// orchestration-focused tests — the mocked serverClient controls the outcome.
+const VALID_PAYLOAD = [
+  'From: sender@example.com',
+  'To: invoices@acme.example.com',
+  'Subject: Invoice',
+  'MIME-Version: 1.0',
+  'Content-Type: text/plain; charset=utf-8',
+  '',
+  'See attached.',
+].join('\r\n');
 
 const GRANT = {
   id: 'grant-001',
@@ -155,6 +165,54 @@ describe('integration — happy path', () => {
     const b = getBody();
     expect(b).toMatchObject({ status: 'accepted', outcome: 'INSERTED' });
     expect((b as { correlationId: string }).correlationId).toBe('e2e-corr-001');
+  });
+
+  it('extracts a PDF attachment from the raw MIME body and forwards it to ingest', async () => {
+    // Build a multipart MIME with a single base64-encoded PDF attachment.
+    const pdf = Buffer.from('%PDF-1.4 fake invoice body');
+    const boundary = 'MIMEBOUNDARY01';
+    const mime = [
+      'From: vendor@example.com',
+      'To: invoices@acme.example.com',
+      'Subject: Invoice',
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain',
+      '',
+      'See attached.',
+      `--${boundary}`,
+      'Content-Type: application/pdf',
+      'Content-Disposition: attachment; filename="invoice.pdf"',
+      'Content-Transfer-Encoding: base64',
+      '',
+      pdf.toString('base64'),
+      `--${boundary}--`,
+    ].join('\r\n');
+
+    const serverClient = makeServerClient(CONTROL_SUCCESS);
+    const handler = createWebhookHandler({
+      verifier,
+      featureFlags: { v2Enabled: true, shadowMode: false },
+      serverClient,
+    });
+    const { res, getStatus } = makeRes();
+    await handler(makeReq(mime), res);
+
+    expect(getStatus()).toBe(202);
+    expect(serverClient.requestIngest).toHaveBeenCalledOnce();
+    const ingestArg = serverClient.requestIngest.mock.calls[0][0];
+    // The gateway computes the hash over the signed raw MIME body.
+    expect(ingestArg.rawMessageHash).toBe(createHash('sha256').update(mime).digest('hex'));
+    expect(ingestArg.extractedDocuments).toEqual([
+      {
+        hash: createHash('sha256').update(pdf).digest('hex'),
+        sizeBytes: pdf.length,
+        mimeType: 'application/pdf',
+        filename: 'invoice.pdf',
+      },
+    ]);
   });
 
   it('returns 202 with DUPLICATE outcome for repeated delivery', async () => {
@@ -242,6 +300,8 @@ describe('integration — invalid auth', () => {
         'x-cf-timestamp': String(NOW_SECONDS),
         'x-cf-signature': sign(VALID_PAYLOAD, WEBHOOK_SECRET, NOW_SECONDS),
         'x-cf-nonce': nonce, // same nonce = replay
+        'x-cf-recipient': 'invoices@acme.example.com',
+        'x-cf-message-id': '<msg001@mail.example.com>',
       },
       method: 'POST',
       socket: { remoteAddress: '127.0.0.1' },

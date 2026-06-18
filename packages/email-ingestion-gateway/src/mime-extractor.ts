@@ -248,12 +248,31 @@ function splitMultipartParts(body: Buffer, boundary: string): Buffer[] {
   // RFC 2046 §5.1.1: each boundary must be preceded by a CRLF (or be at
   // position 0). Without this check, boundary strings that appear inside
   // base64 content could be incorrectly treated as delimiters.
+  //
+  // The delimiter must also be *followed* only by optional linear whitespace
+  // and a line break, or by `--` (a closing boundary). Without this check a
+  // boundary that is a prefix of a longer boundary (e.g. `foo` vs `foo-1` in
+  // nested multiparts) would match the longer boundary too, splitting parts at
+  // the wrong place and dropping attachments.
   const findBoundary = (start: number): number => {
     let s = start;
     while (s < body.length) {
       const idx = body.indexOf(delim, s);
       if (idx < 0) return -1;
-      if (idx === 0 || body[idx - 1] === 0x0a) return idx;
+      if (idx === 0 || body[idx - 1] === 0x0a) {
+        let p = idx + delim.length;
+        while (p < body.length && (body[p] === 0x20 || body[p] === 0x09)) {
+          p++;
+        }
+        if (
+          p >= body.length ||
+          body[p] === 0x0d ||
+          body[p] === 0x0a ||
+          (p + 1 < body.length && body[p] === 0x2d && body[p + 1] === 0x2d)
+        ) {
+          return idx;
+        }
+      }
       s = idx + 1;
     }
     return -1;
