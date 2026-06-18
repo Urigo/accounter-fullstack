@@ -11,10 +11,19 @@ export type WorkerEnv = {
   FALLBACK_EMAIL?: string;
 };
 
+// Pre-computed hex lookup table. Building the hex string with a single pass and
+// a lookup avoids the multiple large intermediate arrays produced by
+// `Array.from(...).map(...).join('')`, which matters for large emails (e.g. with
+// attachments) under the Worker's strict CPU limits.
+const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
 function hex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes))
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join('');
+  const uint8 = new Uint8Array(bytes);
+  let out = '';
+  for (let i = 0; i < uint8.length; i++) {
+    out += HEX_OCTETS[uint8[i]];
+  }
+  return out;
 }
 
 async function hmacSha256Hex(secret: string, payload: Uint8Array): Promise<string> {
@@ -37,56 +46,68 @@ function joinBytes(prefix: Uint8Array, body: Uint8Array): Uint8Array {
 }
 
 export async function buildGatewayRequest(message: EmailMessageLike, secret: string) {
+  // The gateway's webhook handler expects the raw MIME message as the request
+  // body (it computes the authoritative content hash and extracts attachments
+  // from it) with the message metadata carried in headers. The signature covers
+  // `${timestamp}.${rawBody}`, matching the gateway verifier.
   const rawBuffer = await new Response(message.raw).arrayBuffer();
   const rawBytes = new Uint8Array(rawBuffer);
 
   const timestamp = Math.floor(Date.now() / 1000);
   const nonce = crypto.randomUUID();
-  const rawMessageHash = hex(await crypto.subtle.digest('SHA-256', rawBytes));
+  const messageId = message.headers.get('message-id') ?? nonce;
 
-  const body = JSON.stringify({
-    recipientAlias: message.to,
-    messageId: message.headers.get('message-id') ?? nonce,
-    rawMessageHash,
-    receivedAt: new Date().toISOString(),
-    correlationId: nonce,
-  });
   const prefix = new TextEncoder().encode(`${timestamp}.`);
-  const bodyBytes = new TextEncoder().encode(body);
-  const signature = await hmacSha256Hex(secret, joinBytes(prefix, bodyBytes));
+  const signature = await hmacSha256Hex(secret, joinBytes(prefix, rawBytes));
 
   return {
-    body,
+    body: rawBytes,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'message/rfc822',
       'x-cf-timestamp': String(timestamp),
       'x-cf-signature': signature,
       'x-cf-nonce': nonce,
+      'x-cf-recipient': message.to,
+      'x-cf-message-id': messageId,
+      'x-cf-received-at': new Date().toISOString(),
     },
   };
 }
 
+async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${gatewayUrl}/health`, { method: 'GET' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
-    const request = await buildGatewayRequest(message, env.CF_WEBHOOK_SECRET);
-
-    try {
-      const response = await fetch(`${env.GATEWAY_URL}/webhook`, {
-        method: 'POST',
-        headers: request.headers,
-        body: request.body,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gateway returned status ${response.status}`);
-      }
-    } catch {
+    // Reading `message.raw` disturbs the stream, after which `message.forward()`
+    // can no longer be used. Probe the gateway with a lightweight health check
+    // *before* consuming the stream so an unreachable gateway can still fall
+    // back to forwarding the untouched message.
+    if (!(await isGatewayReachable(env.GATEWAY_URL))) {
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL);
         return;
       }
 
       throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured');
+    }
+
+    const request = await buildGatewayRequest(message, env.CF_WEBHOOK_SECRET);
+
+    const response = await fetch(`${env.GATEWAY_URL}/webhook`, {
+      method: 'POST',
+      headers: request.headers,
+      body: request.body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gateway returned status ${response.status}`);
     }
   },
 };
