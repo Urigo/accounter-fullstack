@@ -9,6 +9,7 @@ vi.mock('auth0', () => {
     create: vi.fn(),
     delete: vi.fn(),
     update: vi.fn(),
+    get: vi.fn(),
     listUsersByEmail: vi.fn(),
   };
   const tickets = {
@@ -165,5 +166,33 @@ describe('Auth0ManagementProvider', () => {
     mockClient.users.create.mockRejectedValue(new Error('Auth0 Error'));
 
     await expect(service.createBlockedUser('fail@test.com')).rejects.toThrow('Failed to create Auth0 user: Auth0 Error');
+  });
+
+  it('getUserProfileById returns email + name and caches the result', async () => {
+    const userId = 'auth0|profile';
+    mockClient.users.get.mockResolvedValue({ email: 'ada@example.com', name: 'Ada Lovelace' });
+
+    const first = await service.getUserProfileById(userId);
+    const second = await service.getUserProfileById(userId);
+
+    expect(first).toEqual({ email: 'ada@example.com', name: 'Ada Lovelace' });
+    expect(second).toEqual({ email: 'ada@example.com', name: 'Ada Lovelace' });
+    // Second call is served from the in-memory cache, not a second Auth0 request.
+    expect(mockClient.users.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('getUserProfileById returns null on failure and does not cache it', async () => {
+    const userId = 'auth0|transient';
+    mockClient.users.get.mockRejectedValueOnce(new Error('boom'));
+
+    const failed = await service.getUserProfileById(userId);
+    expect(failed).toBeNull();
+
+    // A failed lookup is not cached, so a later call retries Auth0.
+    mockClient.users.get.mockResolvedValueOnce({ email: 'x@example.com', name: null });
+    const retry = await service.getUserProfileById(userId);
+
+    expect(retry).toEqual({ email: 'x@example.com', name: null });
+    expect(mockClient.users.get).toHaveBeenCalledTimes(2);
   });
 });
