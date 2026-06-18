@@ -1,26 +1,35 @@
+import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import zod from 'zod';
 import { generateCorrelationId, log } from './logger.js';
+import { extractFromMime, MAX_RAW_MIME_BYTES } from './mime-extractor.js';
 import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
+import type { IngestDocumentInput } from './server-client.js';
 import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifier.js';
 
-const MAX_BODY_BYTES = 1_048_576; // 1 MiB
+// Inbound requests carry the raw MIME message as their body, so the cap matches
+// the MIME extractor's own raw-size limit. The extractor still enforces the
+// limit precisely (returning OVERSIZE_MESSAGE); this guards the read buffer.
+const MAX_BODY_BYTES = MAX_RAW_MIME_BYTES;
 
 class PayloadTooLargeError extends Error {
   override name = 'PayloadTooLargeError';
 }
 
-const WebhookBodySchema = zod.object({
-  recipientAlias: zod.string().min(1),
-  messageId: zod.string().min(1),
-  rawMessageHash: zod
-    .string()
-    .regex(/^[0-9a-fA-F]{64}$/, 'must be a 64-character SHA-256 hex string'),
-  receivedAt: zod.string().optional(),
-  correlationId: zod.string().optional(),
-});
+/** Header carrying the recipient alias the email was addressed to. */
+const RECIPIENT_HEADER = 'x-cf-recipient';
+/** Header carrying the upstream message identifier. */
+const MESSAGE_ID_HEADER = 'x-cf-message-id';
+/** Header carrying the original received-at timestamp (ISO-8601, optional). */
+const RECEIVED_AT_HEADER = 'x-cf-received-at';
 
-export type WebhookBody = zod.infer<typeof WebhookBodySchema>;
+/**
+ * Safely read a single header value. `IncomingHttpHeaders` values may be
+ * `string[]` (duplicated headers, HTTP/2), so we never assume a bare string —
+ * calling string methods on an array would crash the request handler.
+ */
+function getSingleHeader(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export interface WebhookDeps {
   verifier: Pick<CloudflareAuthenticityVerifier, 'verify'>;
@@ -48,14 +57,14 @@ export function createWebhookHandler(deps: WebhookDeps) {
       (typeof res.getHeader === 'function'
         ? (res.getHeader('X-Correlation-Id') as string | undefined)
         : undefined) ??
-      (req.headers['x-correlation-id'] as string | undefined) ??
+      getSingleHeader(req.headers['x-correlation-id']) ??
       generateCorrelationId();
     res.setHeader('X-Correlation-Id', reqCorrelationId);
 
     // 2. Validate required authenticity headers before reading the body (cheap, fail-fast)
-    const timestampStr = req.headers['x-cf-timestamp'] as string | undefined;
-    const signature = req.headers['x-cf-signature'] as string | undefined;
-    const nonce = req.headers['x-cf-nonce'] as string | undefined;
+    const timestampStr = getSingleHeader(req.headers['x-cf-timestamp']);
+    const signature = getSingleHeader(req.headers['x-cf-signature']);
+    const nonce = getSingleHeader(req.headers['x-cf-nonce']);
 
     if (!timestampStr || !signature || !nonce) {
       writeJson(res, 400, {
@@ -75,6 +84,19 @@ export function createWebhookHandler(deps: WebhookDeps) {
 
     const timestampSeconds = parseInt(timestampStr, 10);
 
+    // Message metadata travels in headers (the body is the raw MIME message).
+    const recipientAlias = getSingleHeader(req.headers[RECIPIENT_HEADER])?.trim();
+    const messageId = getSingleHeader(req.headers[MESSAGE_ID_HEADER])?.trim();
+    const receivedAt = getSingleHeader(req.headers[RECEIVED_AT_HEADER])?.trim() || undefined;
+
+    if (!recipientAlias || !messageId) {
+      writeJson(res, 400, {
+        error: 'Bad request',
+        details: `Missing required headers: ${RECIPIENT_HEADER}, ${MESSAGE_ID_HEADER}`,
+      });
+      return;
+    }
+
     // 3. Read raw body — needed before calling the verifier (signature covers the body)
     let rawBody: Buffer;
     try {
@@ -90,9 +112,9 @@ export function createWebhookHandler(deps: WebhookDeps) {
 
     // 4. Authenticity verification: IP allowlist + timestamp window + HMAC + nonce replay
     let sourceIp =
-      (req.headers['cf-connecting-ip'] as string | undefined)?.trim() ??
-      (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-      req.socket?.remoteAddress ??
+      getSingleHeader(req.headers['cf-connecting-ip'])?.trim() ||
+      getSingleHeader(req.headers['x-forwarded-for'])?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
       '';
     if (sourceIp.startsWith('::ffff:')) {
       sourceIp = sourceIp.slice(7);
@@ -112,33 +134,38 @@ export function createWebhookHandler(deps: WebhookDeps) {
       return;
     }
 
-    // 5. Parse and structurally validate JSON body
-    let parsedBody: unknown;
-    try {
-      parsedBody = JSON.parse(rawBody.toString('utf8'));
-    } catch {
-      writeJson(res, 400, { error: 'Bad request', details: 'Body must be valid JSON' });
-      return;
-    }
+    const effectiveCorrelationId = reqCorrelationId;
 
-    const bodyResult = WebhookBodySchema.safeParse(parsedBody);
-    if (!bodyResult.success) {
-      writeJson(res, 400, {
-        error: 'Bad request',
-        details: bodyResult.error.issues
-          .map(i => (i.path.length > 0 ? `${i.path.join('.')}: ${i.message}` : i.message))
-          .join('; '),
-      });
-      return;
-    }
+    // 5. Compute the authoritative content hash and extract candidate documents
+    // from the raw MIME body. The gateway — not the upstream worker — owns the
+    // hash so the server can trust a value derived from the signed payload.
+    const rawMessageHash = createHash('sha256').update(rawBody).digest('hex');
+    const extraction = extractFromMime(rawBody);
 
-    const body = bodyResult.data;
-    const effectiveCorrelationId = body.correlationId ?? reqCorrelationId;
+    let extractedDocuments: IngestDocumentInput[] = [];
+    if (extraction.success) {
+      extractedDocuments = extraction.documents.map(doc => ({
+        hash: doc.sha256,
+        sizeBytes: doc.size,
+        mimeType: doc.mimeType,
+        filename: doc.filename,
+      }));
+    } else {
+      // Extraction failed (no documents, parse error, or oversize). Proceed to
+      // orchestration so the server records an auditable quarantine outcome;
+      // the empty document list drives the NO_DOCUMENTS quarantine path.
+      log(
+        'warn',
+        'webhook: MIME extraction yielded no documents',
+        { reason: extraction.reason },
+        effectiveCorrelationId,
+      );
+    }
 
     log(
       'info',
       'webhook accepted',
-      { recipientAlias: body.recipientAlias, messageId: body.messageId },
+      { recipientAlias, messageId, documentCount: extractedDocuments.length },
       effectiveCorrelationId,
     );
 
@@ -155,12 +182,12 @@ export function createWebhookHandler(deps: WebhookDeps) {
     }
 
     const orchestrateInput = {
-      recipientAlias: body.recipientAlias,
-      messageId: body.messageId,
-      rawMessageHash: body.rawMessageHash,
+      recipientAlias,
+      messageId,
+      rawMessageHash,
       correlationId: effectiveCorrelationId,
-      receivedAt: body.receivedAt,
-      extractedDocuments: [],
+      receivedAt,
+      extractedDocuments,
     };
 
     if (featureFlags.shadowMode) {

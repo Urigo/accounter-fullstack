@@ -478,4 +478,54 @@ describe('extractFromMime — boundary collision in body', () => {
       expect(result.documents[0]?.content).toEqual(pdf);
     }
   });
+
+  it('does not mistake a nested boundary that the outer boundary is a prefix of', () => {
+    // Outer boundary `BND` is a prefix of the inner boundary `BND-1`. A naive
+    // `indexOf("--BND")` matches inside `--BND-1`, so the outer parser would
+    // split parts at the inner boundary and drop the attachment. The delimiter
+    // must be followed by whitespace/CRLF or `--` to count as a real boundary.
+    const outer = 'BND';
+    const inner = 'BND-1';
+    const pdf = fakePdf(64);
+    const b64 = pdf.toString('base64');
+
+    const innerPart = [
+      `Content-Type: multipart/related; boundary="${inner}"`,
+      '',
+      `--${inner}`,
+      'Content-Type: application/pdf',
+      `Content-Disposition: attachment; filename="doc.pdf"`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64,
+      `--${inner}--`,
+    ].join('\r\n');
+
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Prefix collision',
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/mixed; boundary="${outer}"`,
+        '',
+        `--${outer}`,
+        'Content-Type: text/plain',
+        '',
+        'See attached.',
+        `--${outer}`,
+        innerPart,
+        `--${outer}--`,
+      ].join('\r\n'),
+      'utf8',
+    );
+
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(1);
+      expect(result.documents[0]?.content).toEqual(pdf);
+      expect(result.documents[0]?.filename).toBe('doc.pdf');
+    }
+  });
 });
