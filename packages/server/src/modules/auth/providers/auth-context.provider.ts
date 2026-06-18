@@ -218,13 +218,16 @@ export class AuthContextProvider {
     // consumer reading `tenant.businessId` directly would operate on the wrong
     // business. When the primary is still in scope this is a no-op.
     const writeTargetId = resolveWriteTargetBusinessId(context.tenant.businessId, narrowed);
+    const targetMembership = writeTargetId
+      ? memberships.find(m => m.businessId === writeTargetId)
+      : undefined;
     const tenant =
       writeTargetId && writeTargetId !== context.tenant.businessId
         ? {
             ...context.tenant,
             businessId: writeTargetId,
-            roleId:
-              memberships.find(m => m.businessId === writeTargetId)?.roleId ?? context.tenant.roleId,
+            roleId: targetMembership?.roleId ?? context.tenant.roleId,
+            businessName: targetMembership?.businessName,
           }
         : context.tenant;
 
