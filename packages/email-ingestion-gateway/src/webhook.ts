@@ -112,9 +112,9 @@ export function createWebhookHandler(deps: WebhookDeps) {
 
     // 4. Authenticity verification: IP allowlist + timestamp window + HMAC + nonce replay
     let sourceIp =
-      getSingleHeader(req.headers['cf-connecting-ip'])?.trim() ??
-      getSingleHeader(req.headers['x-forwarded-for'])?.split(',')[0]?.trim() ??
-      req.socket?.remoteAddress ??
+      getSingleHeader(req.headers['cf-connecting-ip'])?.trim() ||
+      getSingleHeader(req.headers['x-forwarded-for'])?.split(',')[0]?.trim() ||
+      req.socket?.remoteAddress ||
       '';
     if (sourceIp.startsWith('::ffff:')) {
       sourceIp = sourceIp.slice(7);
