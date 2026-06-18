@@ -14,9 +14,13 @@
     "email-ingestion-gateway:build:prod": "yarn generate && yarn build",
     "email-ingestion-gateway:dev": "yarn dev",
     "email-ingestion-gateway:start": "yarn start",
+    "email-ingestion-gateway:worker:deploy": "yarn worker:deploy",
+    "email-ingestion-gateway:worker:dev": "yarn worker:dev",
     "generate": "yarn generate:all",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "worker:deploy": "wrangler deploy",
+    "worker:dev": "wrangler dev"
   },
   "dependencies": {
     "dotenv": "17.4.2",
@@ -26,6 +30,7 @@
   "devDependencies": {
     "@types/node": "25.9.2",
     "tsx": "4.22.4",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "wrangler": "4.68.0"
   }
 }

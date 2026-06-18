@@ -22,6 +22,11 @@ endpoint.
 
 ```javascript
 // workers/email-forwarder/index.js
+const hex = bytes =>
+  Array.from(new Uint8Array(bytes))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+
 export default {
   async email(message, env) {
     // message.raw is a ReadableStream property (not a method); Buffer is not
@@ -32,7 +37,12 @@ export default {
     const timestamp = Math.floor(Date.now() / 1000)
     const nonce = crypto.randomUUID()
 
-    // Compute HMAC-SHA256 over `${timestamp}.${rawBody}`
+    // Compute HMAC-SHA256 over `${timestamp}.${rawBody}`, where rawBody is the
+    // raw MIME message — the exact bytes sent as the request body. The gateway
+    // verifies the signature over the body it receives, then parses the MIME,
+    // extracts attachments, and computes the SHA-256 content hash itself. The
+    // worker therefore only forwards the message plus routing metadata (in
+    // headers); no hash is sent.
     const key = await crypto.subtle.importKey(
       'raw',
       new TextEncoder().encode(env.CF_WEBHOOK_SECRET),
@@ -40,18 +50,11 @@ export default {
       false,
       ['sign']
     )
-    // Sign the raw MIME bytes — the gateway verifies the signature over the
-    // exact body it receives, parses the MIME, and extracts attachments. The
-    // gateway also computes the SHA-256 content hash itself, so the worker only
-    // forwards the message and its routing metadata (no hash is sent).
     const prefix = new TextEncoder().encode(timestamp + '.')
     const payload = new Uint8Array(prefix.length + rawBytes.length)
     payload.set(prefix, 0)
     payload.set(rawBytes, prefix.length)
-    const sigBytes = await crypto.subtle.sign('HMAC', key, payload)
-    const signature = Array.from(new Uint8Array(sigBytes))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
+    const signature = hex(await crypto.subtle.sign('HMAC', key, payload))
 
     try {
       const res = await fetch(`${env.GATEWAY_URL}/webhook`, {

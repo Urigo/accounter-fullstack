@@ -1,0 +1,3 @@
+CF_WEBHOOK_SECRET=replace-with-local-secret
+GATEWAY_URL=http://127.0.0.1:3000
+FALLBACK_EMAIL=legacy-listener@example.com
