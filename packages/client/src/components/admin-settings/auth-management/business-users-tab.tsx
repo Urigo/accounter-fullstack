@@ -99,7 +99,7 @@ export function BusinessUsersTab(): ReactElement {
             {users.map((user: BusinessUserRow) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
-                  {user.name ?? <span className="text-muted-foreground">—</span>}
+                  {user.name?.trim() || <span className="text-muted-foreground">—</span>}
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
@@ -108,7 +108,7 @@ export function BusinessUsersTab(): ReactElement {
                 <TableCell className="text-right">
                   <ConfirmationModal
                     onConfirm={() => handleRemove(user.id)}
-                    title={`Remove ${user.name ?? user.email} from this business? They will lose access immediately.`}
+                    title={`Remove ${user.name?.trim() ? `${user.name.trim()} (${user.email})` : user.email} from this business? They will lose access immediately.`}
                   >
                     <Button variant="destructive" size="sm" disabled={removing}>
                       <Trash2 className="size-4" />
