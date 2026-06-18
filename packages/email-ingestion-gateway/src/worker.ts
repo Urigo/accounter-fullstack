@@ -67,9 +67,11 @@ export async function buildGatewayRequest(message: EmailMessageLike, secret: str
       'x-cf-timestamp': String(timestamp),
       'x-cf-signature': signature,
       'x-cf-nonce': nonce,
+      // Routing metadata — the body itself is the raw MIME message.
       'x-cf-recipient': message.to,
       'x-cf-message-id': messageId,
       'x-cf-received-at': new Date().toISOString(),
+      'x-correlation-id': nonce,
     },
   };
 }
