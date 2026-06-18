@@ -23,9 +23,17 @@ const compat = new FlatCompat({
 
 // override @theguild's unicorn version with local
 function replaceUnicornRules(set) {
-  return set?.plugins?.unicorn
-    ? { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } }
-    : set;
+  if (!set?.plugins?.unicorn) {
+    return set;
+  }
+  const next = { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } };
+  // unicorn v66 renamed `no-array-for-each` to `no-for-each`; @theguild/eslint-config still
+  // references the old name, so remap it onto the current rule name to keep the config valid.
+  if (set.rules?.['unicorn/no-array-for-each'] != null) {
+    const { 'unicorn/no-array-for-each': renamed, ...rest } = set.rules;
+    next.rules = { ...rest, 'unicorn/no-for-each': renamed };
+  }
+  return next;
 }
 
 // eslint-plugin-n v18 is ESM-only. Node.js 24 can require() ESM but returns the namespace object
