@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { UserContext } from '@/providers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { ApiKeysTab } from './api-keys-tab.js';
+import { BusinessUsersTab } from './business-users-tab.js';
 import { InvitationsTab } from './invitations-tab.js';
 
 export function AuthManagement(): ReactElement {
@@ -34,7 +35,7 @@ export function AuthManagement(): ReactElement {
           <InvitationsTab />
         </TabsContent>
         <TabsContent value="users">
-          <p className="text-sm text-muted-foreground">Users management coming soon.</p>
+          <BusinessUsersTab />
         </TabsContent>
       </Tabs>
     </div>
