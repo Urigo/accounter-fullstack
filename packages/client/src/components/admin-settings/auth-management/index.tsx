@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.j
 import { UserContext } from '@/providers/index.js';
 import { ROUTES } from '@/router/routes.js';
 import { ApiKeysTab } from './api-keys-tab.js';
+import { InvitationsTab } from './invitations-tab.js';
 
 export function AuthManagement(): ReactElement {
   const { businessId } = useParams<{ businessId: string }>();
@@ -30,7 +31,7 @@ export function AuthManagement(): ReactElement {
           <ApiKeysTab />
         </TabsContent>
         <TabsContent value="invitations">
-          <p className="text-sm text-muted-foreground">Invitations management coming soon.</p>
+          <InvitationsTab />
         </TabsContent>
         <TabsContent value="users">
           <p className="text-sm text-muted-foreground">Users management coming soon.</p>
