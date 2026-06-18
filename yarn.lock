@@ -80,7 +80,7 @@ __metadata:
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:2.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:1.2.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.0"
     "@auth0/auth0-react": "npm:2.18.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
@@ -516,13 +516,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.2.0":
-  version: 1.2.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:1.2.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0":
+  version: 2.0.0
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^1.8.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10c0/5e89dd4b0b21a8f573ee8de9ce63f010d3c8bf69d51cead53cc22e9df749583e89e793595c0317fc6c001613563c24f52d765c0d41e940ec3a1f242842882573
+  checksum: 10c0/6aebd689bceb4f8d998580632d51daa2d5e8d4c288295b51fa4f4f03312aea7cd8ce54010d0797350f7c08d00b56aff4c065e3c85c227b44f9939c8d738cf589
   languageName: node
   linkType: hard
 
@@ -537,14 +537,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:^1.8.0":
-  version: 1.8.1
-  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:1.8.1"
+"@atlaskit/pragmatic-drag-and-drop@npm:^2.0.0":
+  version: 2.0.1
+  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:2.0.1"
   dependencies:
     "@babel/runtime": "npm:^7.0.0"
     bind-event-listener: "npm:^3.0.0"
     raf-schd: "npm:^4.0.3"
-  checksum: 10c0/0103a7b317b4716f370ae50287469c5339f13e6b511efda6946658ab193c8fec7d4359e5e61ba3ecff4cf7466c231bab1c72c1705f3451155b827ef56fb3e054
+  checksum: 10c0/3e1890c34ab0457befbc21fd4119d68eef3b7a73ac5369442072e20e375e1fcfa2cc3a32d5e68f63595902f446aa27eb3111b85c5886e1ebd6308ccada886db6
   languageName: node
   linkType: hard
 
