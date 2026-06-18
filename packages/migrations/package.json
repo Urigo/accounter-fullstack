@@ -12,7 +12,7 @@
     "migration:run": "yarn db:migrator up"
   },
   "devDependencies": {
-    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.1#~/.yarn/patches/@slonik-pg-driver-npm-49.10.1-7bd58c1a0b.patch",
+    "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.7#~/.yarn/patches/@slonik-pg-driver-npm-49.10.7-7bd58c1a0b.patch",
     "@types/pg": "8.20.0",
     "pg-promise": "12.6.2",
     "slonik": "49.10.7",
