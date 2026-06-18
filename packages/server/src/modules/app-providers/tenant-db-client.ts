@@ -3,6 +3,7 @@ import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
 import { AuthContextProvider } from '../auth/providers/auth-context.provider.js';
 import { DBProvider } from './db.provider.js';
@@ -223,24 +224,11 @@ export class TenantAwareDBClient {
 
     const { tenant, user, authType, activeReadScope } = this.authContext ?? {};
 
-    // Write-target: when the request is scoped to one or more businesses via
-    // X-Business-Scope, derive the single write-target as follows:
-    //   - Single scoped business → use it directly.
-    //   - Multiple scoped businesses and primary is among them → use primary.
-    //   - Multiple scoped businesses and primary is NOT among them → use first
-    //     in scope (primary is outside the active scope so writing to it would
-    //     violate the tenant_isolation WITH CHECK policy).
-    //   - No scope → fall back to primary tenant business.
-    const scopedIds = activeReadScope?.businessIds;
-    const primaryBusinessId = tenant?.businessId ?? null;
-    const businessIdValue =
-      scopedIds && scopedIds.length > 0
-        ? scopedIds.length === 1
-          ? scopedIds[0]
-          : primaryBusinessId && scopedIds.includes(primaryBusinessId)
-            ? primaryBusinessId
-            : scopedIds[0]
-        : primaryBusinessId;
+    // Write-target: the single business this request owns / writes to, derived
+    // from the primary tenant business and the active scope. The auth context
+    // already re-points `tenant.businessId` to this value; resolving it here
+    // again keeps the RLS session correct as defense-in-depth.
+    const businessIdValue = resolveWriteTargetBusinessId(tenant?.businessId, activeReadScope);
 
     if (!businessIdValue) {
       throw new Error('Missing businessId in AuthContext');

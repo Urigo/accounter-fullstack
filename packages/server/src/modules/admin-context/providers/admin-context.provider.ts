@@ -2,7 +2,11 @@ import DataLoader from 'dataloader';
 import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
-import { formatCurrency, optionalDateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  formatCurrency,
+  optionalDateToTimelessDateString,
+  resolveWriteTargetBusinessId,
+} from '../../../shared/helpers/index.js';
 import type { AuthContext } from '../../../shared/types/auth.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
@@ -530,20 +534,10 @@ export class AdminContextProvider {
       );
     }
 
-    const scopedBusinessIds = this.authContext.activeReadScope?.businessIds;
-    const primaryOwnerId = this.authContext.tenant.businessId;
-
-    let ownerId = primaryOwnerId;
-    if (scopedBusinessIds && scopedBusinessIds.length > 0) {
-      if (scopedBusinessIds.length === 1) {
-        ownerId = scopedBusinessIds[0];
-      } else {
-        ownerId =
-          primaryOwnerId && scopedBusinessIds.includes(primaryOwnerId)
-            ? primaryOwnerId
-            : scopedBusinessIds[0];
-      }
-    }
+    const ownerId = resolveWriteTargetBusinessId(
+      this.authContext.tenant.businessId,
+      this.authContext.activeReadScope,
+    );
 
     if (!ownerId) {
       throw new Error('AdminContextProvider: ownerId not found in context (currentUser)');

@@ -3,7 +3,11 @@ import { GraphQLError } from 'graphql';
 import { Inject, Injectable, Scope } from 'graphql-modules';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import type { RawAuth } from '../../../plugins/auth-plugin.js';
-import { narrowReadScope, readScopeFromMemberships } from '../../../shared/helpers/auth-scope.js';
+import {
+  narrowReadScope,
+  readScopeFromMemberships,
+  resolveWriteTargetBusinessId,
+} from '../../../shared/helpers/auth-scope.js';
 import { ENVIRONMENT, RAW_AUTH } from '../../../shared/tokens.js';
 import type { AuthContext, BusinessMembership } from '../../../shared/types/auth.js';
 import type { Environment } from '../../../shared/types/index.js';
@@ -208,7 +212,23 @@ export class AuthContextProvider {
       });
     }
 
-    return { ...context, activeReadScope: narrowed };
+    // Re-point the single write-target / owning business to stay consistent with
+    // the narrowed scope. Without this, `tenant.businessId` keeps pointing at the
+    // primary membership even when it falls outside the requested scope, so any
+    // consumer reading `tenant.businessId` directly would operate on the wrong
+    // business. When the primary is still in scope this is a no-op.
+    const writeTargetId = resolveWriteTargetBusinessId(context.tenant.businessId, narrowed);
+    const tenant =
+      writeTargetId && writeTargetId !== context.tenant.businessId
+        ? {
+            ...context.tenant,
+            businessId: writeTargetId,
+            roleId:
+              memberships.find(m => m.businessId === writeTargetId)?.roleId ?? context.tenant.roleId,
+          }
+        : context.tenant;
+
+    return { ...context, tenant, activeReadScope: narrowed };
   }
 
   private async handleDevBypassAuth(): Promise<AuthContext | null> {

@@ -6,6 +6,7 @@ import {
   narrowReadScope,
   readScopeFromMemberships,
   resolveReadScopePrecedence,
+  resolveWriteTargetBusinessId,
   tenantFromMembership,
 } from '../auth-scope.js';
 
@@ -159,5 +160,28 @@ describe('resolveReadScopePrecedence', () => {
     expect(
       resolveReadScopePrecedence({ memberships, argsBusinessIds: ['b-9'] }),
     ).toBeNull();
+  });
+});
+
+describe('resolveWriteTargetBusinessId', () => {
+  it('falls back to the primary business when no scope is present', () => {
+    expect(resolveWriteTargetBusinessId('b-1', undefined)).toBe('b-1');
+    expect(resolveWriteTargetBusinessId('b-1', { businessIds: [] })).toBe('b-1');
+  });
+
+  it('uses the single scoped business directly', () => {
+    expect(resolveWriteTargetBusinessId('b-1', { businessIds: ['b-2'] })).toBe('b-2');
+  });
+
+  it('prefers the primary when it is part of a multi-business scope', () => {
+    expect(resolveWriteTargetBusinessId('b-2', { businessIds: ['b-1', 'b-2'] })).toBe('b-2');
+  });
+
+  it('uses the first scoped business when the primary is outside a multi-business scope', () => {
+    expect(resolveWriteTargetBusinessId('b-9', { businessIds: ['b-1', 'b-2'] })).toBe('b-1');
+  });
+
+  it('returns null when there is neither a primary nor a scope', () => {
+    expect(resolveWriteTargetBusinessId(null, undefined)).toBeNull();
   });
 });
