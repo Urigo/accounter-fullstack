@@ -29,16 +29,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@0no-co/graphqlsp@npm:1.17.2":
-  version: 1.17.2
-  resolution: "@0no-co/graphqlsp@npm:1.17.2"
+"@0no-co/graphqlsp@npm:1.17.3":
+  version: 1.17.3
+  resolution: "@0no-co/graphqlsp@npm:1.17.3"
   dependencies:
     "@gql.tada/internal": "npm:^1.2.0"
     graphql: "npm:^15.5.0 || ^16.0.0 || ^17.0.0"
   peerDependencies:
     graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
     typescript: ^5.0.0 || ^6.0.0
-  checksum: 10c0/4de404dc4ceeec0ba1dd5ebb02eb194bb2d7112a485bc3544f55a861f87a1ad0e0e1ca381ea847b13ae4361e3f68868309a23c516798bfcf72822659f42b87f7
+  checksum: 10c0/fa0f2d74275827e1c8aee36e07aaa0d86138b9f450e3e06e51be05cd507a95c1f7e7f603eaf611f6defdb2634f19acd0c2be16c222eff4802c67916ca77d4d7d
   languageName: node
   linkType: hard
 
@@ -49,7 +49,7 @@ __metadata:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.1#~/.yarn/patches/@slonik-pg-driver-npm-49.10.1-7bd58c1a0b.patch"
     "@types/pg": "npm:8.20.0"
     pg-promise: "npm:12.6.2"
-    slonik: "npm:49.10.1"
+    slonik: "npm:49.10.7"
     tslib: "npm:2.8.1"
     zod: "npm:4.4.3"
   languageName: unknown
@@ -66,7 +66,7 @@ __metadata:
     date-fns: "npm:4.4.0"
     dotenv: "npm:17.4.2"
     dotenv-cli: "npm:11.0.0"
-    fast-xml-parser: "npm:5.9.0"
+    fast-xml-parser: "npm:5.9.3"
     listr2: "npm:10.2.1"
     pg: "npm:8.22.0"
     rimraf: "npm:6.1.3"
@@ -79,7 +79,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:2.0.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:2.0.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.0"
     "@auth0/auth0-react": "npm:2.19.0"
     "@emotion/react": "npm:11.14.0"
@@ -116,7 +116,7 @@ __metadata:
     embla-carousel-react: "npm:8.6.0"
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
-    happy-dom: "npm:20.10.4"
+    happy-dom: "npm:20.10.6"
     html2canvas-pro: "npm:2.0.4"
     iconv-lite: "npm:0.7.2"
     json-bigint-patch: "npm:0.0.9"
@@ -275,7 +275,7 @@ __metadata:
     puppeteer-extra: "npm:3.3.6"
     puppeteer-extra-plugin-stealth: "npm:2.11.2"
     typescript: "npm:6.0.3"
-    uuid: "npm:14.0.0"
+    uuid: "npm:14.0.1"
     zod: "npm:4.4.3"
   languageName: unknown
   linkType: soft
@@ -321,7 +321,7 @@ __metadata:
     "@testing-library/user-event": "npm:14.6.1"
     "@vitejs/plugin-react": "npm:6.0.2"
     date-fns: "npm:4.4.0"
-    fast-xml-parser: "npm:5.9.0"
+    fast-xml-parser: "npm:5.9.3"
     fastify: "npm:5.8.5"
     graphql-request: "npm:7.4.0"
     msw: "npm:2.14.6"
@@ -344,7 +344,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.84"
+    "@ai-sdk/anthropic": "npm:3.0.85"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
@@ -364,10 +364,10 @@ __metadata:
     "@types/basic-auth": "npm:1.1.8"
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
-    "@types/node": "npm:25.9.3"
+    "@types/node": "npm:25.9.4"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.206"
+    ai: "npm:6.0.208"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.12.0"
     basic-auth: "npm:2.0.1"
@@ -394,7 +394,7 @@ __metadata:
     playwright: "npm:1.61.0"
     reflect-metadata: "npm:0.2.2"
     rimraf: "npm:6.1.3"
-    slonik: "npm:49.10.1"
+    slonik: "npm:49.10.7"
     strip-indent: "npm:4.1.1"
     tsc-alias: "npm:1.8.17"
     tsx: "npm:4.22.4"
@@ -427,41 +427,41 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.84":
-  version: 3.0.84
-  resolution: "@ai-sdk/anthropic@npm:3.0.84"
+"@ai-sdk/anthropic@npm:3.0.85":
+  version: 3.0.85
+  resolution: "@ai-sdk/anthropic@npm:3.0.85"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.29"
+    "@ai-sdk/provider-utils": "npm:4.0.30"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/de42d6d2b014587bd42103e9ea6dbf9544a4a4e51de9e9574b1d6e1ee49e53926e0a7b85977e2fd2f012b5a796cfba0f8c4afed31483f62e81b07631b2e997ba
+  checksum: 10c0/fd6569e141965c3e96875af91bf3d708a31c7b00a5343441db1ca5c532b6e12a3d37fb7ae16f48cf826cfeeabdb74cec2508bedd74390cf8edea5e8546dd74c4
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.132":
-  version: 3.0.132
-  resolution: "@ai-sdk/gateway@npm:3.0.132"
+"@ai-sdk/gateway@npm:3.0.133":
+  version: 3.0.133
+  resolution: "@ai-sdk/gateway@npm:3.0.133"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.29"
+    "@ai-sdk/provider-utils": "npm:4.0.30"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ddf4ecb202ddd22c8c34a44e1ea388cbc099d15fbf9413f5a23d65fb652f47c6e0ea3a92af1f28aecdcf8d8e3afc69159d8bef7f1bccded40a4ceafabf13f205
+  checksum: 10c0/a6e2f9d5a5e53c2f31dadaa903973cce8bff79f8efaf65b4daf61c2644fe9487399e8aa2cc63a338bad219f524fa51feeeb211a62a313102699a958fc0bbd0ae
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.29":
-  version: 4.0.29
-  resolution: "@ai-sdk/provider-utils@npm:4.0.29"
+"@ai-sdk/provider-utils@npm:4.0.30":
+  version: 4.0.30
+  resolution: "@ai-sdk/provider-utils@npm:4.0.30"
   dependencies:
     "@ai-sdk/provider": "npm:3.0.10"
     "@standard-schema/spec": "npm:^1.1.0"
     eventsource-parser: "npm:^3.0.8"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/abc27720a8063d18598985525b22d8356eab21cf5ae71d39cf1acc23870e4f4155c1e4a594df6c7cd1459dbb611a91a32bb5b70e8a0c8c5eef5ee3bf6641aa68
+  checksum: 10c0/4195612c0da1a634ca11043cbfed8e328c9177fc7289b533653529458163e944398539e53f1a689c6ffdf0f728e25b6cc9c927cfc2fe95e80ed22ae008a8053d
   languageName: node
   linkType: hard
 
@@ -526,18 +526,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:2.0.0"
-  dependencies:
-    "@babel/runtime": "npm:^7.0.0"
-    bind-event-listener: "npm:^3.0.0"
-    raf-schd: "npm:^4.0.3"
-  checksum: 10c0/407f1a4b63089897ae54cf48540aef00f3e3000312912c1935a5b273224c01f8f4ab924b36741b10845b27324b1641a88e267856cb6558a53a3b1c804cb7151f
-  languageName: node
-  linkType: hard
-
-"@atlaskit/pragmatic-drag-and-drop@npm:^2.0.0":
+"@atlaskit/pragmatic-drag-and-drop@npm:2.0.1, @atlaskit/pragmatic-drag-and-drop@npm:^2.0.0":
   version: 2.0.1
   resolution: "@atlaskit/pragmatic-drag-and-drop@npm:2.0.1"
   dependencies:
@@ -2077,9 +2066,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-codegen/cli@npm:7.1.2":
-  version: 7.1.2
-  resolution: "@graphql-codegen/cli@npm:7.1.2"
+"@graphql-codegen/cli@npm:7.1.3":
+  version: 7.1.3
+  resolution: "@graphql-codegen/cli@npm:7.1.3"
   dependencies:
     "@babel/generator": "npm:^7.18.13"
     "@babel/template": "npm:^7.18.10"
@@ -2128,7 +2117,7 @@ __metadata:
     graphql-codegen: esm/bin.js
     graphql-codegen-cjs: cjs/bin.js
     graphql-codegen-esm: esm/bin.js
-  checksum: 10c0/db050c0bd42cbd0716883d3f1096cd7e524234691aa2674ce9d1c76aea1f8169feed73094e1946531e5ce0acc3d090e064c88ff3d6be67c5da3d46577527cb45
+  checksum: 10c0/117faffe1add1d3fcc519c1d82c34d684fdbca1ad591e857456c7c416d0cb831b9dfa65d0a0781a28013508971f7cbaa8532aa50849fb8c8a541cf84a3dd6a0c
   languageName: node
   linkType: hard
 
@@ -9727,12 +9716,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@slonik/driver@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/driver@npm:49.10.7"
+  dependencies:
+    "@slonik/types": "npm:^49.10.7"
+    "@slonik/utilities": "npm:^49.10.7"
+    roarr: "npm:^7.21.6"
+    serialize-error: "npm:^12.0.0"
+    strict-event-emitter-types: "npm:^2.0.0"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/e3c06fa6f1347110a8cf69e75b7a1ce21c13a1fd13a8e5267b99940d5ae523ab26fa31081bfd0eb0f5e2cc0db646e04671691fb69184dd29623a98e8ae95eca5
+  languageName: node
+  linkType: hard
+
 "@slonik/errors@npm:^49.10.1":
   version: 49.10.1
   resolution: "@slonik/errors@npm:49.10.1"
   dependencies:
     "@slonik/types": "npm:^49.10.1"
   checksum: 10c0/85bf3b10d37887dc3794ce6025b0a6b05f7f9e89781423d320c803a15b1a038ef66d64dbb68f6a74fcea103726117427e3446585d8c77473caf8aafe16ec5d9a
+  languageName: node
+  linkType: hard
+
+"@slonik/errors@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/errors@npm:49.10.7"
+  dependencies:
+    "@slonik/types": "npm:^49.10.7"
+  checksum: 10c0/a81123897d1124644e205bd324a661240c3f0ac3f3fc3d29d29f4e8947e6c7a993ac8a574575081436ad586793a7c8b07637510a6a4802893e1a801e16521307
   languageName: node
   linkType: hard
 
@@ -9752,6 +9765,25 @@ __metadata:
   peerDependencies:
     zod: ^3.25 || ^4
   checksum: 10c0/da41efd1c508ee3d7fbb1539739138e39f89128b13341d1f0e0393676bee248912af0ee0f1752920cdb191c4e6d697a870fb8fb2821fd185ac2c1b794d36402d
+  languageName: node
+  linkType: hard
+
+"@slonik/pg-driver@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/pg-driver@npm:49.10.7"
+  dependencies:
+    "@slonik/driver": "npm:^49.10.7"
+    "@slonik/errors": "npm:^49.10.7"
+    "@slonik/sql-tag": "npm:^49.10.7"
+    "@slonik/types": "npm:^49.10.7"
+    "@slonik/utilities": "npm:^49.10.7"
+    pg: "npm:^8.18.0"
+    pg-query-stream: "npm:^4.12.0"
+    pg-types: "npm:^4.1.0"
+    postgres-array: "npm:^3.0.4"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/b41c209b4541c070db52e18496fb6cd4ad7315ee05d80c568b73062a45d753ea97e228cb6c8fdf9c6b9f551694e98c94650b7276be009ddd9a5cc8f751159626
   languageName: node
   linkType: hard
 
@@ -9788,12 +9820,35 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@slonik/sql-tag@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/sql-tag@npm:49.10.7"
+  dependencies:
+    "@slonik/errors": "npm:^49.10.7"
+    "@slonik/types": "npm:^49.10.7"
+    roarr: "npm:^7.21.6"
+    safe-stable-stringify: "npm:^2.5.0"
+    serialize-error: "npm:^12.0.0"
+    zod: "npm:^4.3.6"
+  checksum: 10c0/789ceffd10f0f1bbb6fc2823a858484830aada4dfade32aa0213ce7e244ec1af648993bdc4665ab6e64de7708fa9ff57d5ad01ec59dafc8c94731e1f477d357f
+  languageName: node
+  linkType: hard
+
 "@slonik/types@npm:^49.10.1":
   version: 49.10.1
   resolution: "@slonik/types@npm:49.10.1"
   peerDependencies:
     zod: ^3.25 || ^4
   checksum: 10c0/26fe7a2568cb599ce60d4d422793d306e75bd7c8cf914cec6087c57bfd0f1cf1ad56d7953901b872d8abe87f2d173044fbd65af95a13bd9ee29e2e9528f14f06
+  languageName: node
+  linkType: hard
+
+"@slonik/types@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/types@npm:49.10.7"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/833f582816d966d81e53ed9fbb9712a99da71899ea838ca780ea4013f570c5cc9fe311d7a7aaed5a86b2636bc47963b61d11cc31493d6c1a3de4e2addef75236
   languageName: node
   linkType: hard
 
@@ -9806,6 +9861,18 @@ __metadata:
   peerDependencies:
     zod: ^3.25 || ^4
   checksum: 10c0/b691e5e6abdfc4c521412149e31a9da2af4d82fdaff0c7d48ffb5fc9e2f0c47cdecf62c539348b9cbfdf2422d83f2d396f7fac01eb05fdc612c935001ad2e655
+  languageName: node
+  linkType: hard
+
+"@slonik/utilities@npm:^49.10.7":
+  version: 49.10.7
+  resolution: "@slonik/utilities@npm:49.10.7"
+  dependencies:
+    "@slonik/errors": "npm:^49.10.7"
+    "@slonik/types": "npm:^49.10.7"
+  peerDependencies:
+    zod: ^3.25 || ^4
+  checksum: 10c0/0f51645ca74c175dd5481a51bf147c3d82009274e375840b6f7f6842a36d6b457908c872215df3f974a9c75f6514f239daec1a4fddf984fa6414f2fecd9bcaeb
   languageName: node
   linkType: hard
 
@@ -10498,12 +10565,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:25.9.3":
-  version: 25.9.3
-  resolution: "@types/node@npm:25.9.3"
+"@types/node@npm:25.9.4":
+  version: 25.9.4
+  resolution: "@types/node@npm:25.9.4"
   dependencies:
     undici-types: "npm:>=7.24.0 <7.24.7"
-  checksum: 10c0/72d3aece9d42c2c641bcd3f3cb2dc2828b4bd384dfcbd910c404b8859a68bd69d50c4769ce7defd4ff5e049768e23e615f09407ea2cbbb5f44b90d75a7c6b8ca
+  checksum: 10c0/4b19670ef5dbefa836a2d4a9ed0b5ac6befbc0844bfdd12833234ff8fa68da1f65e6362d2ef87acf7e7da9d6ff649bf81c454d12e802b7e7fa9246a15c0edcf6
   languageName: node
   linkType: hard
 
@@ -11410,13 +11477,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "accounter-monorepo@workspace:."
   dependencies:
-    "@0no-co/graphqlsp": "npm:1.17.2"
+    "@0no-co/graphqlsp": "npm:1.17.3"
     "@changesets/changelog-github": "npm:0.7.0"
     "@changesets/cli": "npm:2.31.0"
     "@eslint/compat": "npm:2.1.0"
     "@eslint/eslintrc": "npm:3.3.5"
     "@eslint/js": "npm:10.0.1"
-    "@graphql-codegen/cli": "npm:7.1.2"
+    "@graphql-codegen/cli": "npm:7.1.3"
     "@graphql-codegen/client-preset": "npm:6.0.1"
     "@graphql-codegen/graphql-modules-preset": "npm:6.0.1"
     "@graphql-codegen/schema-ast": "npm:6.0.1"
@@ -11431,7 +11498,7 @@ __metadata:
     "@pgtyped/runtime": "npm:2.4.2"
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
-    "@types/node": "npm:25.9.3"
+    "@types/node": "npm:25.9.4"
     "@types/pg": "npm:8.20.0"
     "@typescript-eslint/eslint-plugin": "npm:8.61.1"
     "@typescript-eslint/parser": "npm:8.61.1"
@@ -11454,7 +11521,7 @@ __metadata:
     globals: "npm:17.6.0"
     graphql: "npm:16.14.2"
     husky: "npm:9.1.7"
-    lint-staged: "npm:17.0.7"
+    lint-staged: "npm:17.0.8"
     pg: "npm:8.22.0"
     prettier: "npm:3.8.4"
     prettier-plugin-sql: "npm:0.20.0"
@@ -11509,17 +11576,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.206":
-  version: 6.0.206
-  resolution: "ai@npm:6.0.206"
+"ai@npm:6.0.208":
+  version: 6.0.208
+  resolution: "ai@npm:6.0.208"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.132"
+    "@ai-sdk/gateway": "npm:3.0.133"
     "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.29"
+    "@ai-sdk/provider-utils": "npm:4.0.30"
     "@opentelemetry/api": "npm:^1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/c595d8726b7191437998055bad7a73f5db1bb2cebe85f93e7ced1aace21f5451d4486e928337e254cda491f449f2d5f00cb91303048cafdf850310c019b20f73
+  checksum: 10c0/1f32d2e7dfb40410b3a0e389529e2469dd79519865563d29bd5f12d00fa5c457bad950a57ff3eebff20ccfdf0ab6e3cdf5f5b5a21bd9229ead19fcedfc5ca832
   languageName: node
   linkType: hard
 
@@ -11661,10 +11728,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"anynum@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "anynum@npm:1.0.0"
-  checksum: 10c0/c929fed8f4127cd706312da58ae2aa83a06e62059eef04392fe2bacec003b6f6b7ca5f2719bd09c693b100f185bcf6405419744812f1096cdb53aed4034b9209
+"anynum@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "anynum@npm:1.0.1"
+  checksum: 10c0/cfda92c9215722fc4b15faa33d0eb3d5dfd28fba6cb67c1f50d214feaa7ba6497814a3e110777853585de6d91c8c962a1ae425b637d3598d9f9d8f6f6802e5bb
   languageName: node
   linkType: hard
 
@@ -15828,19 +15895,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-parser@npm:5.9.0":
-  version: 5.9.0
-  resolution: "fast-xml-parser@npm:5.9.0"
+"fast-xml-parser@npm:5.9.3":
+  version: 5.9.3
+  resolution: "fast-xml-parser@npm:5.9.3"
   dependencies:
     "@nodable/entities": "npm:^2.2.0"
     fast-xml-builder: "npm:^1.2.0"
     is-unsafe: "npm:^1.0.1"
     path-expression-matcher: "npm:^1.5.0"
-    strnum: "npm:^2.4.0"
+    strnum: "npm:^2.4.1"
     xml-naming: "npm:^0.1.0"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10c0/95f6f0b9045404d5db1b2e0d6feaa59bd67babbaf14a4588a1b5d758e6e26304cdd2e79b2a819b2720844d51cd07255d5c05f8b6f8ce665ba7a24d494ee6bd86
+  checksum: 10c0/0f4f4b98aec027334be1d4462c6e09649bda8dd8bd1c75f6e985f4000ce4a40ea4540745fa7ac081cd65bf462b0c22fce87da9abc5ede51c9727398c91cacd5f
   languageName: node
   linkType: hard
 
@@ -17012,9 +17079,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:20.10.4":
-  version: 20.10.4
-  resolution: "happy-dom@npm:20.10.4"
+"happy-dom@npm:20.10.6":
+  version: 20.10.6
+  resolution: "happy-dom@npm:20.10.6"
   dependencies:
     "@types/node": "npm:>=20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
@@ -17023,7 +17090,7 @@ __metadata:
     entities: "npm:^7.0.1"
     whatwg-mimetype: "npm:^3.0.0"
     ws: "npm:^8.21.0"
-  checksum: 10c0/cc45b7392e13f8da8069df0206381ad4b531086df2e5dc1b5bcb5e88c6c7df0262154925708e338fed3bb041907ad9bf77a24c437706bb3e9f7753bc1816d652
+  checksum: 10c0/3cf22def886b0876b00bb04b9fbaab6c05c041fbcf0869978b6fba9eddccc45a5fc6dab14e369502be9019da43eda44ad1bee3019029ef71bb0c7db3351f4a42
   languageName: node
   linkType: hard
 
@@ -18942,9 +19009,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:17.0.7":
-  version: 17.0.7
-  resolution: "lint-staged@npm:17.0.7"
+"lint-staged@npm:17.0.8":
+  version: 17.0.8
+  resolution: "lint-staged@npm:17.0.8"
   dependencies:
     listr2: "npm:^10.2.1"
     picomatch: "npm:^4.0.4"
@@ -18956,7 +19023,7 @@ __metadata:
       optional: true
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/c4e7100becb327d817999a231b8d345e6be389c555d9cd8d668797d2670832ad15c4e5085b61895e3fbf937f0fbd6be5c78ca76a4599ed332227f37270ebe8eb
+  checksum: 10c0/8f5692a6777de3e71b4a32a944ac3c756bb3f15a886f54d46d71d0a1694b3e3caf1b2ea207bdb20c9b730661e0aedd68b6c1d1c6ab5d5012be64e9cd820b7c87
   languageName: node
   linkType: hard
 
@@ -23319,6 +23386,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"roarr@npm:^7.21.6":
+  version: 7.21.6
+  resolution: "roarr@npm:7.21.6"
+  dependencies:
+    fast-printf: "npm:^1.6.9"
+    safe-stable-stringify: "npm:^2.4.3"
+    semver-compare: "npm:^1.0.0"
+  checksum: 10c0/7c6848780717629fbb6a98ef1da666e7a477128f6c9b989f84899106a0acbd7f53ae93441860be72d96acebb9f052da8f6842ed9bf93cd0f1d57ce31f7637c56
+  languageName: node
+  linkType: hard
+
 "rolldown@npm:1.0.0-rc.18":
   version: 1.0.0-rc.18
   resolution: "rolldown@npm:1.0.0-rc.18"
@@ -24045,25 +24123,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slonik@npm:49.10.1":
-  version: 49.10.1
-  resolution: "slonik@npm:49.10.1"
+"slonik@npm:49.10.7":
+  version: 49.10.7
+  resolution: "slonik@npm:49.10.7"
   dependencies:
     "@opentelemetry/api": "npm:^1.9.0"
-    "@slonik/driver": "npm:^49.10.1"
-    "@slonik/errors": "npm:^49.10.1"
-    "@slonik/pg-driver": "npm:^49.10.1"
-    "@slonik/sql-tag": "npm:^49.10.1"
-    "@slonik/utilities": "npm:^49.10.1"
+    "@slonik/driver": "npm:^49.10.7"
+    "@slonik/errors": "npm:^49.10.7"
+    "@slonik/pg-driver": "npm:^49.10.7"
+    "@slonik/sql-tag": "npm:^49.10.7"
+    "@slonik/utilities": "npm:^49.10.7"
     "@standard-schema/spec": "npm:^1.0.0"
     iso8601-duration: "npm:^2.1.3"
     p-queue: "npm:^9.3.0"
     postgres-interval: "npm:^4.0.2"
-    roarr: "npm:^7.21.5"
+    roarr: "npm:^7.21.6"
     serialize-error: "npm:^12.0.0"
     strict-event-emitter-types: "npm:^2.0.0"
     zod: "npm:^4.3.6"
-  checksum: 10c0/ec526f076b9e0b84cf2c70535fd5038cf93894d5296487115db6caee5c7fcbacb07b4ba2a87d43c15ffe2f755c1deac73a8bf6cae946ab2f9ba087f3d3c4a6a1
+  checksum: 10c0/08807318beef96614164a0688ccd26b3b8a3478c7d051fb49c7b41d312c9024ff42b2da5d77a865c7c983f339eec946ce4690926ab9df272433f9a5262b85c06
   languageName: node
   linkType: hard
 
@@ -24611,12 +24689,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strnum@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "strnum@npm:2.4.0"
+"strnum@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "strnum@npm:2.4.1"
   dependencies:
-    anynum: "npm:^1.0.0"
-  checksum: 10c0/36ac1ca6f511d8216d9b07934359f78afb158eedee73fb057c77b1cffa160a60cb848b35f219bd2c115b0037e8ec3962f492874ea4b10ef021ab6403dbb10e7e
+    anynum: "npm:^1.0.1"
+  checksum: 10c0/0d6a42bf8a1ad74b0a6c048ecf3bea50757383bcf304877ebe6e62acca5574bc088ce71bfb4de4b89b2ab44c618834c76be5894da04b67c673ff6677788b2638
   languageName: node
   linkType: hard
 
@@ -25869,7 +25947,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:*, uuid@npm:14.0.0":
+"uuid@npm:*":
   version: 14.0.0
   resolution: "uuid@npm:14.0.0"
   bin:
@@ -25884,6 +25962,15 @@ __metadata:
   bin:
     uuid: dist/esm/bin/uuid
   checksum: 10c0/9e3af58eba872ece5a5e76f4773a94fc78a0ef2c2444c38dbe6b42f41dadf76c01850fd783604f27986f6195e6286aef064d45987d401b2a33127b98ddf7c0c5
+  languageName: node
+  linkType: hard
+
+"uuid@npm:14.0.1":
+  version: 14.0.1
+  resolution: "uuid@npm:14.0.1"
+  bin:
+    uuid: dist-node/bin/uuid
+  checksum: 10c0/2d961289097cb68c37d93d1da0b5c3aafc1eb9948a455cca8d0ae53a099b2fe583b8933254a84097f700e6bac2e23033364904df0467c22551d5d9611febcaf6
   languageName: node
   linkType: hard
 
