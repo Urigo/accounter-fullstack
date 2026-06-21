@@ -1,0 +1,36 @@
+{
+  "name": "@accounter/email-ingestion-gateway",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Cloudflare Email to Server ingestion gateway for multi-tenant email document ingestion",
+  "private": true,
+  "engines": {
+    "node": "26.3.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "email-ingestion-gateway:build": "yarn build",
+    "email-ingestion-gateway:build:prod": "yarn generate && yarn build",
+    "email-ingestion-gateway:dev": "yarn dev",
+    "email-ingestion-gateway:start": "yarn start",
+    "email-ingestion-gateway:worker:deploy": "yarn worker:deploy",
+    "email-ingestion-gateway:worker:dev": "yarn worker:dev",
+    "generate": "yarn generate:all",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "worker:deploy": "wrangler deploy",
+    "worker:dev": "wrangler dev"
+  },
+  "dependencies": {
+    "dotenv": "17.4.2",
+    "graphql-request": "7.4.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.2",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "wrangler": "4.68.0"
+  }
+}

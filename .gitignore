@@ -23,3 +23,6 @@ docker/.*
 **/accounter-gmail-service-key.json
 CLAUDE.local.md
 .claude/settings.local.json
+
+**/.wrangler
+packages/email-ingestion-gateway/.dev.vars

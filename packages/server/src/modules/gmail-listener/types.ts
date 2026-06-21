@@ -1,1 +1,1 @@
-export type * from './__generated__/types.js';
+export type * from '../email-ingestion/types.js';
