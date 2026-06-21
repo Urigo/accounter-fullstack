@@ -217,13 +217,14 @@ describe('worker -> gateway -> mocked server integration', () => {
         grantJti: 'grant-jti-001',
         tenantId: 'tenant-001',
         messageId: '<worker-test-001@example.com>',
-        idempotencyKey: '<worker-test-001@example.com>',
         extractedDocuments: [],
       },
     });
 
     const ingestInput = ingestRequest?.body.variables?.input as Record<string, unknown>;
     expect(ingestInput.rawMessageHash).toBe(controlInput.rawMessageHash);
+    // Idempotency is keyed on the content-derived hash, not the sender's Message-ID.
+    expect(ingestInput.idempotencyKey).toBe(controlInput.rawMessageHash);
     expect(ingestInput.correlationId).toBe(controlInput.correlationId);
   });
 

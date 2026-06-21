@@ -28,21 +28,41 @@ const baseInput = {
   rawMessageHash: 'sha256-abc',
 };
 
+function isControlStatement(text: string): boolean {
+  return (
+    text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK' || text.includes('set_config')
+  );
+}
+
 function makeProvider(
   grantRows: typeof baseGrant[] = [baseGrant],
   consumeRows: { id: string }[] = [{ id: 'row-uuid' }],
 ) {
-  const queryFn = vi
-    .fn()
-    // First call: getGrantByJti
-    .mockResolvedValueOnce({ rows: grantRows, rowCount: grantRows.length })
-    // Second call: consumeGrantByJti
-    .mockResolvedValueOnce({ rows: consumeRows, rowCount: consumeRows.length });
+  // validateAndConsumeGrant runs on a pooled client inside a transaction. Serve
+  // BEGIN / SET LOCAL / COMMIT / ROLLBACK transparently and dispense the lookup
+  // then the consume response (in order) for the actual data queries.
+  // `dataQueries` records the data-query SQL so tests can assert how many ran.
+  const responses = [
+    { rows: grantRows, rowCount: grantRows.length },
+    { rows: consumeRows, rowCount: consumeRows.length },
+  ];
+  const dataQueries: string[] = [];
+  const queryFn = vi.fn((text: unknown) => {
+    const sqlText = typeof text === 'string' ? text : '';
+    if (isControlStatement(sqlText)) {
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    }
+    dataQueries.push(sqlText);
+    return Promise.resolve(responses.shift() ?? { rows: [], rowCount: 0 });
+  });
 
-  const pool = { query: queryFn };
+  const release = vi.fn();
+  const connect = vi.fn().mockResolvedValue({ query: queryFn, release });
+  const pool = { query: queryFn, connect };
   return {
     provider: new EmailIngestionControlProvider({ pool } as never),
     queryFn,
+    dataQueries,
   };
 }
 
@@ -131,10 +151,11 @@ describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
   });
 
   it('does not call consume when validation fails', async () => {
-    const { provider, queryFn } = makeProvider([], []);
+    const { provider, dataQueries } = makeProvider([], []);
     await provider.validateAndConsumeGrant(baseInput);
 
-    // only one DB call (the lookup) — no consume attempt
-    expect(queryFn).toHaveBeenCalledTimes(1);
+    // only one data query (the lookup) — no consume attempt (BEGIN/SET LOCAL/
+    // COMMIT are transparent transaction control, not data queries)
+    expect(dataQueries).toHaveLength(1);
   });
 });

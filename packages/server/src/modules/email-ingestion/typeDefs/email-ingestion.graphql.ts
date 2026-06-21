@@ -5,6 +5,11 @@ export default gql`
     businessEmailConfig(email: String!): BusinessEmailConfig
       @requiresAuth
       @requiresRole(role: "gmail_listener")
+
+    " List the email aliases routing incoming mail to a business (defaults to all businesses in scope) "
+    emailIngestionAliases(businessId: UUID): [EmailIngestionAlias!]!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
   }
 
   extend type Mutation {
@@ -14,6 +19,16 @@ export default gql`
       messageId: String
       businessId: UUID
     ): Boolean! @requiresAuth @requiresRole(role: "gmail_listener")
+
+    " Provision a new email alias that routes incoming mail to the given business "
+    createEmailIngestionAlias(input: CreateEmailIngestionAliasInput!): EmailIngestionAliasResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
+
+    " Activate or deactivate an existing email alias owned by a business in scope "
+    setEmailIngestionAliasActive(id: UUID!, isActive: Boolean!): EmailIngestionAliasResult!
+      @requiresAuth
+      @requiresRole(role: "business_owner")
 
     " Request a short-lived ingest control grant for a verified incoming message "
     requestIngestControl(input: IngestControlInput!): IngestControlResult!
@@ -118,4 +133,28 @@ export default gql`
     emailBody: Boolean
     attachments: [EmailAttachmentType!]
   }
+
+  " An alias→business routing entry used to attribute incoming mail to a tenant "
+  type EmailIngestionAlias {
+    id: UUID!
+    " The recipient alias incoming mail is addressed to (matched case-insensitively) "
+    alias: String!
+    " The business that owns mail delivered to this alias "
+    ownerId: UUID!
+    " Whether this alias currently routes mail; only one active alias may exist per address "
+    isActive: Boolean!
+    createdAt: String!
+    updatedAt: String!
+  }
+
+  " Input for provisioning a new email alias "
+  input CreateEmailIngestionAliasInput {
+    " The recipient alias to route from "
+    alias: String!
+    " The business that should own mail delivered to this alias "
+    businessId: UUID!
+  }
+
+  " Result of an email alias mutation: the alias or an error "
+  union EmailIngestionAliasResult = EmailIngestionAlias | CommonError
 `;

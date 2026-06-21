@@ -1,11 +1,17 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config as dotenv } from 'dotenv';
 import zod from 'zod';
+
+// Resolve `.env` relative to this file (package root is one level up from `src/`)
+// so it loads regardless of the process's current working directory.
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 dotenv({
   path:
     process.env.TEST_ENV_FILE && process.env.TEST_ENV_FILE.trim() !== ''
       ? process.env.TEST_ENV_FILE
-      : ['.env', '../../.env'],
+      : [resolve(packageRoot, '.env')],
   debug: process.env.RELEASE ? false : true,
 });
 
@@ -45,7 +51,7 @@ const CloudflareModel = zod.object({
 
 const ServerModel = zod.object({
   /** Base URL of the accounter GraphQL server (e.g. http://localhost:4000) */
-  GATEWAY_SERVER_URL: emptyString(zod.string().url().optional().default('http://localhost:4000')),
+  GATEWAY_SERVER_URL: emptyString(zod.url().optional().default('http://localhost:4000')),
   /** Shared secret sent in X-Gateway-CP-Token header for gateway_control_plane auth */
   GATEWAY_CP_TOKEN: emptyString(zod.string().optional().default('')),
 });

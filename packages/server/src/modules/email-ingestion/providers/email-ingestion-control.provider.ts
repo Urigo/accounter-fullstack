@@ -3,6 +3,7 @@ import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestReasonCode } from '../contracts.js';
+import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
   IGetAliasByAliasQuery,
@@ -123,8 +124,10 @@ export class EmailIngestionControlProvider {
   /**
    * Issue a short-lived, single-use ingest grant for the given tenant and message.
    * Returns the persisted grant together with decision/audit metadata.
-   * Uses raw pool so the INSERT succeeds without an active tenant session;
-   * tenant binding is enforced explicitly via the owner_id parameter.
+   * The INSERT runs under the tenant's RLS context (see {@link withTenantContext}):
+   * the grants table uses FORCE ROW LEVEL SECURITY with a tenant_isolation
+   * WITH CHECK policy, so the raw pool cannot bypass it — the owner_id parameter
+   * and the pinned business context must agree.
    */
   async issueGrant(input: IssueGrantInput): Promise<IssuedGrant> {
     const jti = randomUUID();
@@ -133,9 +136,11 @@ export class EmailIngestionControlProvider {
 
     const { tenantId, messageId, rawMessageHash, expiresAt } = input;
 
-    const rows = await insertIngestGrant.run(
-      { jti, ownerId: tenantId, messageId, rawMessageHash, action: 'ingest', expiresAt },
-      this.dbProvider.pool,
+    const rows = await withTenantContext(this.dbProvider.pool, tenantId, client =>
+      insertIngestGrant.run(
+        { jti, ownerId: tenantId, messageId, rawMessageHash, action: 'ingest', expiresAt },
+        client,
+      ),
     );
 
     const row = rows[0];
@@ -158,56 +163,62 @@ export class EmailIngestionControlProvider {
    * The consume UPDATE (SET consumed_at = NOW() WHERE consumed_at IS NULL) is atomic —
    * if a concurrent request consumed the grant first the UPDATE returns 0 rows and
    * the method returns GRANT_INVALID, preventing double-use.
-   * Uses raw pool for the same reason as resolveAlias: no tenant session is active yet.
+   * Runs under the claimed tenant's RLS context: the grants table uses FORCE ROW
+   * LEVEL SECURITY, so the raw pool cannot read/update it without a pinned
+   * business context. Pinning to input.tenantId means a grant owned by another
+   * tenant is filtered out by the USING policy and surfaces as GRANT_INVALID;
+   * the explicit owner_id check below remains as defense-in-depth.
    */
   async validateAndConsumeGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
-    const rows = await getGrantByJti.run({ jti: input.jti }, this.dbProvider.pool);
+    return withTenantContext(this.dbProvider.pool, input.tenantId, async client => {
+      const rows = await getGrantByJti.run({ jti: input.jti }, client);
 
-    if (rows.length === 0) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (rows.length === 0) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    const grant = rows[0];
+      const grant = rows[0];
 
-    if (grant.consumed_at !== null) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (grant.consumed_at !== null) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    if (grant.expires_at <= new Date()) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (grant.expires_at <= new Date()) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    if (grant.action !== 'ingest') {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (grant.action !== 'ingest') {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    if (grant.owner_id !== input.tenantId) {
-      return { valid: false, reason: IngestReasonCode.TENANT_MISMATCH };
-    }
+      if (grant.owner_id !== input.tenantId) {
+        return { valid: false, reason: IngestReasonCode.TENANT_MISMATCH };
+      }
 
-    if (grant.message_id !== input.messageId) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (grant.message_id !== input.messageId) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    if (grant.raw_message_hash !== input.rawMessageHash) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (grant.raw_message_hash !== input.rawMessageHash) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    // Atomic consume-once: if this returns 0 rows a concurrent request beat us to it.
-    const consumed = await consumeGrantByJti.run({ jti: input.jti }, this.dbProvider.pool);
+      // Atomic consume-once: if this returns 0 rows a concurrent request beat us to it.
+      const consumed = await consumeGrantByJti.run({ jti: input.jti }, client);
 
-    if (consumed.length === 0) {
-      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-    }
+      if (consumed.length === 0) {
+        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+      }
 
-    return {
-      valid: true,
-      grant: {
-        jti: grant.jti,
-        tenantId: grant.owner_id,
-        action: grant.action,
-        expiresAt: grant.expires_at,
-      },
-    };
+      return {
+        valid: true,
+        grant: {
+          jti: grant.jti,
+          tenantId: grant.owner_id,
+          action: grant.action,
+          expiresAt: grant.expires_at,
+        },
+      };
+    });
   }
 }

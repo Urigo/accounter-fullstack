@@ -8,12 +8,33 @@ import { EmailIngestionControlProvider } from '../providers/email-ingestion-cont
 
 type MockQueryResult = { rows: Record<string, unknown>[]; rowCount: number };
 
+function isControlStatement(text: string): boolean {
+  return (
+    text === 'BEGIN' || text === 'COMMIT' || text === 'ROLLBACK' || text.includes('set_config')
+  );
+}
+
 function makeDbProvider(
   queryImpl: (text: string, params?: unknown[]) => MockQueryResult,
 ): DBProvider {
+  // resolveAlias runs on the raw pool; the grant-table ops (issueGrant /
+  // validateAndConsumeGrant) run on a pooled client inside a transaction. One
+  // shared mock backs both pool.query and the connected client.query: control
+  // statements (BEGIN / SET LOCAL / COMMIT / ROLLBACK) are served transparently
+  // and data queries delegate to queryImpl, so every query is recorded in one
+  // place.
+  const query = vi.fn().mockImplementation((text: unknown, params?: unknown[]) => {
+    const sqlText = typeof text === 'string' ? text : '';
+    if (isControlStatement(sqlText)) {
+      return { rows: [], rowCount: 0 };
+    }
+    return queryImpl(sqlText, params);
+  });
+  const release = vi.fn();
   return {
     pool: {
-      query: vi.fn().mockImplementation(queryImpl),
+      query,
+      connect: vi.fn().mockResolvedValue({ query, release }),
     },
   } as unknown as DBProvider;
 }
@@ -140,8 +161,14 @@ describe('EmailIngestionControlProvider.issueGrant', () => {
   it('inserts into the grants table with correct tenant binding', async () => {
     await provider.issueGrant(grantInput);
     const query = mockDb.pool.query as ReturnType<typeof vi.fn>;
-    const [sql, params] = query.mock.calls[0] as [string, unknown[]];
-    expect(sql.toLowerCase()).toMatch(/insert.*email_ingestion_grants/s);
+    // The INSERT runs on the pooled client among BEGIN / SET LOCAL / COMMIT, so
+    // locate it rather than assuming a fixed call index.
+    const insertCall = query.mock.calls.find(
+      ([sql]) =>
+        typeof sql === 'string' && /insert.*email_ingestion_grants/s.test(sql.toLowerCase()),
+    ) as [string, unknown[]] | undefined;
+    expect(insertCall).toBeDefined();
+    const params = insertCall![1];
     expect(params).toContain('tenant-uuid-1');
     expect(params).toContain('msg-abc-123');
   });
