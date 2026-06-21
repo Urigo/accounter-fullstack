@@ -232,7 +232,7 @@ const config: CodegenConfig = {
       },
     },
     'packages/email-ingestion-gateway/src/gql/index.ts': {
-      plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
+      plugins: ['typescript-operations', 'typescript-graphql-request'],
       config: {
         enumType: 'const',
         useTypeImports: true,
