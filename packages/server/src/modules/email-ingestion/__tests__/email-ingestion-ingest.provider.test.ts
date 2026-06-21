@@ -38,6 +38,15 @@ const BASE_INPUT = {
 
 type QueryResponse = { rows: unknown[]; rowCount: number };
 
+function isControlStatement(text: string): boolean {
+  return (
+    text === 'BEGIN' ||
+    text === 'COMMIT' ||
+    text === 'ROLLBACK' ||
+    text.includes('set_config')
+  );
+}
+
 function makeProvider(
   grantResult: Awaited<ReturnType<EmailIngestionControlProvider['validateAndConsumeGrant']>>,
   dbResponses: QueryResponse[],
@@ -45,17 +54,33 @@ function makeProvider(
   const validateAndConsumeGrant = vi.fn().mockResolvedValue(grantResult);
   const controlProvider = { validateAndConsumeGrant } as unknown as EmailIngestionControlProvider;
 
-  const queryFn = vi.fn();
-  for (const resp of dbResponses) {
-    queryFn.mockResolvedValueOnce(resp);
-  }
-  const pool = { query: queryFn };
+  // Tenant-bound work runs inside a transaction on a pooled client. The mock
+  // serves BEGIN / SET LOCAL / COMMIT transparently and dispenses `dbResponses`
+  // (in order) only for the actual data queries. `dataQueries` records the
+  // data-query SQL so tests can assert which queries ran.
+  const responses = [...dbResponses];
+  const dataQueries: string[] = [];
+  const queryFn = vi.fn((text: unknown) => {
+    const sqlText = typeof text === 'string' ? text : '';
+    if (isControlStatement(sqlText)) {
+      return Promise.resolve({ rows: [], rowCount: 0 });
+    }
+    dataQueries.push(sqlText);
+    return Promise.resolve(responses.shift() ?? { rows: [], rowCount: 0 });
+  });
+
+  const release = vi.fn();
+  const connect = vi.fn().mockResolvedValue({ query: queryFn, release });
+  const pool = { query: vi.fn(), connect };
   const dbProvider = { pool } as never;
 
   return {
     provider: new EmailIngestionIngestProvider(dbProvider, controlProvider),
     validateAndConsumeGrant,
     queryFn,
+    connect,
+    release,
+    dataQueries,
   };
 }
 
@@ -159,11 +184,11 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
       id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
       outcome: IngestOutcome.INSERTED, ingest_id: 'prior', audit_id: 'audit', created_at: NOW,
     };
-    const { provider, queryFn } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
+    const { provider, dataQueries } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
 
     await provider.performIngest(BASE_INPUT);
-    // Only one DB call — the idempotency lookup; no dedup lookup
-    expect(queryFn).toHaveBeenCalledTimes(1);
+    // Only one data query — the idempotency lookup; no dedup lookup
+    expect(dataQueries).toHaveLength(1);
   });
 });
 
@@ -263,7 +288,7 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
     });
   });
 
-  it('makes exactly 4 DB calls on happy path (check idem, check dedup, insert idem, insert dedup)', async () => {
+  it('makes exactly 4 data queries on happy path (check idem, check dedup, insert idem, insert dedup)', async () => {
     const idemRow = {
       id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
       outcome: IngestOutcome.INSERTED, ingest_id: 'new-ingest-id', audit_id: 'new-audit-id', created_at: NOW,
@@ -272,7 +297,7 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
       id: 'dedup-row', owner_id: TENANT_ID, fingerprint: 'fp',
       outcome: IngestOutcome.INSERTED, ingest_id: 'new-ingest-id', correlation_id: CORR_ID, created_at: NOW,
     };
-    const { provider, queryFn } = makeProvider(VALID_GRANT, [
+    const { provider, dataQueries } = makeProvider(VALID_GRANT, [
       { rows: [], rowCount: 0 },
       { rows: [], rowCount: 0 },
       { rows: [idemRow], rowCount: 1 },
@@ -281,6 +306,6 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
 
     await provider.performIngest(BASE_INPUT);
 
-    expect(queryFn).toHaveBeenCalledTimes(4);
+    expect(dataQueries).toHaveLength(4);
   });
 });

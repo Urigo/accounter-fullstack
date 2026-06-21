@@ -1,7 +1,6 @@
 import { createModule } from 'graphql-modules';
 import { EmailIngestionAliasProvider } from './providers/email-ingestion-alias.provider.js';
 import { EmailIngestionControlProvider } from './providers/email-ingestion-control.provider.js';
-import { EmailIngestionIdempotencyProvider } from './providers/email-ingestion-idempotency.provider.js';
 import { EmailIngestionIngestProvider } from './providers/email-ingestion-ingest.provider.js';
 import { emailIngestionAliasResolver } from './resolvers/email-ingestion-alias.resolver.js';
 import { emailIngestionControlResolver } from './resolvers/email-ingestion-control.resolver.js';
@@ -24,7 +23,6 @@ export const emailIngestionModule = createModule({
   providers: [
     EmailIngestionAliasProvider,
     EmailIngestionControlProvider,
-    EmailIngestionIdempotencyProvider,
     EmailIngestionIngestProvider,
   ],
 });
