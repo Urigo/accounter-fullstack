@@ -193,7 +193,7 @@ describe('insertEmailDocuments resolver', () => {
     const insertDocuments = vi.fn().mockResolvedValue([]);
     const injector = createMockInjector({
       documentsProvider: {
-        getDocumentByHash: { load: vi.fn().mockResolvedValue(existingDoc) },
+        getDocumentByHash: { load: vi.fn().mockResolvedValue(existingDoc) } as unknown as DocumentsProvider['getDocumentByHash'],
         insertDocuments,
       },
     });

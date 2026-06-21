@@ -14,8 +14,10 @@ export interface LogEntry {
 
 export interface HealthResponse {
   status: 'ok';
+  [key: string]: unknown;
 }
 
 export interface ReadinessResponse {
   ready: true;
+  [key: string]: unknown;
 }

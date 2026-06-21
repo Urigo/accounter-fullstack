@@ -76,7 +76,7 @@ function makeEmailMessage(overrides: Partial<EmailMessageLike> = {}): EmailMessa
   return {
     to: 'invoices@acme.example.com',
     headers: new Headers({ 'message-id': '<worker-test-001@example.com>' }),
-    raw: new Blob([rawMime]).stream(),
+    raw: new Blob([rawMime]).stream() as unknown as ReadableStream,
     forward,
     ...overrides,
   };
