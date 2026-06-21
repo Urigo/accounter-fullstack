@@ -97,6 +97,13 @@ export default [
       ecmaVersion: 5,
       sourceType: 'script',
     },
+
+    // @theguild/eslint-config applies its JS-oriented rules globally (no `files` filter), so they
+    // also run on GraphQL files. unicorn v67's `no-empty-file` has a Program listener that reads
+    // JS-AST-specific properties absent from the GraphQL AST and throws; disable it here.
+    rules: {
+      'unicorn/no-empty-file': 'off',
+    },
   },
   {
     files: [
