@@ -41,6 +41,12 @@ jobs:
         uses: ./.github/actions/setup
         with:
           registryUrl: 'https://registry.npmjs.org'
+          # `yarn run build` (the prepareScript below) already runs `yarn generate`
+          # (GraphQL codegen + PgTyped) on its own. Running codegen here too causes
+          # a redundant second generation pass within the same job, which corrupts
+          # the email-ingestion-gateway's generated gql output.
+          codegen: 'false'
+          pgTyped: 'false'
 
       - name: alpha release
         id: changesets
@@ -66,6 +72,12 @@ jobs:
         uses: ./.github/actions/setup
         with:
           registryUrl: 'https://registry.npmjs.org'
+          # `yarn build` below already runs `yarn generate` (GraphQL codegen + PgTyped)
+          # on its own; running codegen here too causes a redundant second generation
+          # pass within the same job, which corrupts the email-ingestion-gateway's
+          # generated gql output.
+          codegen: 'false'
+          pgTyped: 'false'
 
       - name: Build Packages
         run: yarn build
