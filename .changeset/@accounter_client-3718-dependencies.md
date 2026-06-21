@@ -8,3 +8,4 @@ dependencies updates:
   - Updated dependency [`lucide-react@1.20.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.20.0) (from `1.18.0`, in `dependencies`)
   - Updated dependency [`radix-ui@1.6.0` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.6.0) (from `1.5.0`, in `dependencies`)
   - Updated dependency [`react-router-dom@7.18.0` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.18.0) (from `7.17.0`, in `dependencies`)
+  - Updated dependency [`urql@5.0.3` ↗︎](https://www.npmjs.com/package/urql/v/5.0.3) (from `5.0.2`, in `dependencies`)
