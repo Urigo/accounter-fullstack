@@ -5,6 +5,7 @@ import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
 import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
+import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import { EmailIngestionControlProvider } from './email-ingestion-control.provider.js';
 
 // ---------------------------------------------------------------------------
@@ -214,7 +215,7 @@ export class EmailIngestionIngestProvider {
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
     // 2–5. All tenant-bound work runs under the grant tenant's RLS context.
-    return this.withTenantContext(tenantId, async client => {
+    return withTenantContext(this.dbProvider.pool, tenantId, async client => {
       // 2. Idempotency check — return prior outcome if this key was already processed.
       const idemRows = await checkIdempotencyKey.run({ idempotencyKey, ownerId: tenantId }, client);
       if (idemRows.length > 0) {
@@ -294,37 +295,6 @@ export class EmailIngestionIngestProvider {
         auditId: idemResult.auditId,
       };
     });
-  }
-
-  /**
-   * Run `fn` inside a single transaction whose RLS context is pinned to the
-   * grant-validated tenant. `set_config(..., true)` is transaction-local
-   * (SET LOCAL), so the context is cleared on COMMIT/ROLLBACK and never leaks to
-   * the pooled connection's next user. This is what makes the tenant_isolation
-   * WITH CHECK policies effective on the live ingest writes (the grant tenant —
-   * not the empty control-plane auth session — becomes get_current_business_id()).
-   */
-  private async withTenantContext<T>(
-    tenantId: string,
-    fn: (client: PoolClient) => Promise<T>,
-  ): Promise<T> {
-    const client = await this.dbProvider.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query("SELECT set_config('app.current_business_id', $1, true)", [tenantId]);
-      const result = await fn(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (err) {
-      try {
-        await client.query('ROLLBACK');
-      } catch {
-        // Ignore rollback failures (e.g. the connection is already broken).
-      }
-      throw err;
-    } finally {
-      client.release();
-    }
   }
 
   private async persistIdempotencyAndDedup(args: {
