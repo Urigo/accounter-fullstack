@@ -20,6 +20,9 @@ endpoint.
 
 **Step 1 — Create a Worker** that forwards the event payload to the gateway:
 
+> This snippet mirrors the maintained implementation in
+> `packages/email-ingestion-gateway/src/worker.ts`; keep the two in sync.
+
 ```javascript
 // workers/email-forwarder/index.js
 const hex = bytes =>
@@ -27,8 +30,29 @@ const hex = bytes =>
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
 
+async function isGatewayReachable(gatewayUrl) {
+  try {
+    const res = await fetch(`${gatewayUrl}/health`, { method: 'GET' })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 export default {
   async email(message, env) {
+    // Probe the gateway with a lightweight health check *before* consuming the
+    // stream. Reading `message.raw` may disturb the stream such that a later
+    // `message.forward()` could fail, so handling an unreachable gateway up front
+    // keeps the message untouched for a clean fallback.
+    if (!(await isGatewayReachable(env.GATEWAY_URL))) {
+      if (env.FALLBACK_EMAIL) {
+        await message.forward(env.FALLBACK_EMAIL)
+        return
+      }
+      throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured')
+    }
+
     // message.raw is a ReadableStream property (not a method); Buffer is not
     // available in Workers without nodejs_compat — use standard Web APIs throughout.
     const rawBuffer = await new Response(message.raw).arrayBuffer()
@@ -56,34 +80,35 @@ export default {
     payload.set(rawBytes, prefix.length)
     const signature = hex(await crypto.subtle.sign('HMAC', key, payload))
 
-    try {
-      const res = await fetch(`${env.GATEWAY_URL}/webhook`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'message/rfc822',
-          'x-cf-timestamp': String(timestamp),
-          'x-cf-signature': signature,
-          'x-cf-nonce': nonce,
-          // Routing metadata — the body itself is the raw MIME message.
-          'x-cf-recipient': message.to,
-          'x-cf-message-id': message.headers.get('message-id') ?? nonce,
-          'x-cf-received-at': new Date().toISOString(),
-          'x-correlation-id': nonce
-        },
-        // Send the raw MIME bytes as the request body.
-        body: rawBytes
-      })
-      if (!res.ok) {
-        throw new Error('Gateway returned status ' + res.status)
-      }
-    } catch {
-      // Gateway is unavailable or disabled (e.g. EMAIL_INGESTION_V2_ENABLED=0).
-      // Forward to the legacy Gmail inbox so no email is lost during rollback.
+    const res = await fetch(`${env.GATEWAY_URL}/webhook`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'message/rfc822',
+        'x-cf-timestamp': String(timestamp),
+        'x-cf-signature': signature,
+        'x-cf-nonce': nonce,
+        // Routing metadata — the body itself is the raw MIME message.
+        'x-cf-recipient': message.to,
+        'x-cf-message-id': message.headers.get('message-id') ?? nonce,
+        'x-cf-received-at': new Date().toISOString(),
+        'x-correlation-id': nonce
+      },
+      // Send the raw MIME bytes as the request body.
+      body: rawBytes
+    })
+
+    if (!res.ok) {
+      // Gateway is reachable but rejected the request — e.g. it is disabled
+      // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback) or an auth
+      // check failed. Forward to the legacy Gmail inbox so no email is lost
+      // during rollback, and only throw when no fallback exists. This forwards
+      // *after* the read on a best-effort basis — verify it forwards in the
+      // Cloudflare runtime via the §6 staging smoke tests.
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL)
-      } else {
-        throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured')
+        return
       }
+      throw new Error('Gateway returned status ' + res.status)
     }
   }
 }

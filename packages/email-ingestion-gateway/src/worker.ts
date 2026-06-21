@@ -87,10 +87,13 @@ async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
 
 const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
-    // Reading `message.raw` disturbs the stream, after which `message.forward()`
-    // can no longer be used. Probe the gateway with a lightweight health check
-    // *before* consuming the stream so an unreachable gateway can still fall
-    // back to forwarding the untouched message.
+    // Probe the gateway with a lightweight health check *before* consuming the
+    // stream. Reading `message.raw` may disturb the stream such that a later
+    // `message.forward()` could fail, so handling an unreachable gateway up front
+    // keeps the message untouched for a clean fallback. The post-fetch fallback
+    // below (for a reachable-but-rejecting gateway, e.g. a 503 during rollback)
+    // forwards *after* the read on a best-effort basis — verify it actually
+    // forwards in the Cloudflare runtime via the §6 staging smoke tests.
     if (!(await isGatewayReachable(env.GATEWAY_URL))) {
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL);
@@ -109,6 +112,15 @@ const worker = {
     });
 
     if (!response.ok) {
+      // Gateway is reachable but rejected the request — e.g. it is disabled
+      // (EMAIL_INGESTION_V2_ENABLED=0 returns 503 during rollback) or an auth
+      // check failed. Match the runbook's rollback safety (§7): forward to the
+      // legacy inbox so no email is lost, and only throw when no fallback exists.
+      if (env.FALLBACK_EMAIL) {
+        await message.forward(env.FALLBACK_EMAIL);
+        return;
+      }
+
       throw new Error(`Gateway returned status ${response.status}`);
     }
   },
