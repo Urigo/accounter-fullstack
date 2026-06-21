@@ -24,7 +24,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@atlaskit/pragmatic-drag-and-drop": "2.0.0",
+    "@atlaskit/pragmatic-drag-and-drop": "2.0.1",
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "2.0.0",
     "@auth0/auth0-react": "2.19.0",
     "@emotion/react": "11.14.0",
@@ -86,7 +86,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "autoprefixer": "10.5.0",
-    "happy-dom": "20.10.4",
+    "happy-dom": "20.10.6",
     "tailwindcss": "4.3.1",
     "tailwindcss-animate": "1.0.7",
     "typescript": "6.0.3",
