@@ -55,7 +55,7 @@ describe('EmailIngestionAliasProvider.setAliasActive', () => {
 
     const result = await provider.setAliasActive('alias-uuid-1', false);
 
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE'), ['alias-uuid-1', false]);
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('UPDATE'), [false, 'alias-uuid-1']);
     expect(result).toEqual({ success: true, alias: updated });
   });
 
@@ -86,7 +86,7 @@ describe('EmailIngestionAliasProvider.listAliases', () => {
 
     const result = await provider.listAliases(['tenant-uuid-1', 'tenant-uuid-2']);
 
-    expect(query).toHaveBeenCalledWith(expect.stringContaining('owner_id = ANY($1::uuid[])'), [
+    expect(query).toHaveBeenCalledWith(expect.stringContaining('owner_id = ANY($1)'), [
       ['tenant-uuid-1', 'tenant-uuid-2'],
     ]);
     expect(result).toEqual([row]);
