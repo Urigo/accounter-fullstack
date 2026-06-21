@@ -7,6 +7,86 @@ best practices, untested edge cases, alignment with the plan. **Branch reviewed:
 
 ---
 
+## Re-evaluation — 2026-06-21 (after PRs #3730, #3728, #3735)
+
+Re-ran the review against three follow-up commits:
+
+- `aa7e635d8` (#3730) — gateway ingestion path rewrite + quarantine RLS fix + MIME boundary fix.
+- `9a4d236c4` (#3728) — Cloudflare `worker.ts` added + worker→gateway pipe integration tests.
+- `b333d0070` (#3735) — worker forwards `x-correlation-id`.
+
+**Headline: H1 is resolved.** The biggest structural gap — "the v2 path cannot run a real message
+end-to-end" — no longer holds. The gateway now receives the raw MIME as the request body, computes
+the authoritative content hash itself, runs the live MIME extractor, and forwards real documents to
+ingest; a new Cloudflare `worker.ts` produces exactly that contract. The happy path is now
+`INSERTED`, proven by an end-to-end test that extracts a PDF and asserts the gateway-computed hash.
+
+**H2 was untouched by the gateway-focused commits; H3 has since been resolved on this branch**
+(alias provisioning mutations added — see the status table). So two of the three executive-summary
+gaps (the MIME/extraction one and alias provisioning) are now closed; only the orphaned tenant-aware
+DB hardening (H2) remains. The "incomplete pipeline" verdict softens further to "pipeline runs
+end-to-end and tenants can be onboarded through the app, but the second RLS defense layer on the
+live ingest writes is still not wired."
+
+A **new fix not in the original review** also landed: the quarantine `tenant_isolation` RLS policy
+previously let _every_ tenant read/update/delete orphaned (`tenant_candidate IS NULL`) rows — i.e.
+mail addressed to a not-yet-resolved alias was cross-tenant visible. The policy now scopes to the
+tenant's own business id only; orphaned rows are ops-only via the RLS-bypassing pool. Good catch.
+
+### Updated status
+
+| #      | Finding                                                           | Status after these commits                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **H1** | Live path can never ingest a document (extraction dead code)      | ✅ **Resolved** — webhook computes hash + runs `extractFromMime` ([webhook.ts:142-163](../../packages/email-ingestion-gateway/src/webhook.ts#L142-L163)); raw MIME sent by new [worker.ts](../../packages/email-ingestion-gateway/src/worker.ts); happy path now `INSERTED` with a PDF-extraction e2e test. Plan items 4 & 7 now implemented.                                                                                                                                 |
+| **H2** | S13.6 tenant-aware DB hardening orphaned (RLS not on live writes) | 🔴 **Stands** — `EmailIngestionIdempotencyProvider` still only registered + unit-tested, never called; `performIngest()` still uses `this.dbProvider.pool` (BYPASSRLS). The new quarantine-migration comment now _explicitly_ documents "the gateway ingest path writes via the raw, RLS-bypassing pool", confirming the gap is intentional but the S20 doc/code mismatch remains.                                                                                            |
+| **H3** | No alias provisioning path                                        | ✅ **Resolved (this branch)** — added `createEmailIngestionAlias` / `setEmailIngestionAliasActive` mutations + `emailIngestionAliases` query (`business_owner`-gated), backed by `EmailIngestionAliasProvider`. Writes go through `TenantAwareDBClient` (RLS `tenant_isolation_write` enforced as defense-in-depth) plus a `ScopeProvider.resolveWriteTarget` membership check; the global partial-unique index surfaces cross-tenant alias collisions as a generic conflict. |
+| **M1** | In-memory nonce store only                                        | 🟡 **Stands** — verifier still defaults to `MemoryNonceStore`; `replay_nonces` unused.                                                                                                                                                                                                                                                                                                                                                                                        |
+| **M2** | `idempotencyKey = sender-controlled messageId`                    | 🟡 **Stands, now concretely wired** — `orchestrator.ts:85` still keys on `messageId`; the new worker derives it from `message.headers.get('message-id') ?? nonce`, so the sender-controlled `Message-ID` is now the _real_ live key. Note: the fix is now cheaper — the gateway already computes a trustworthy `rawMessageHash` to key on instead.                                                                                                                            |
+| **M3** | Server feature flags dead                                         | 🟡 **Stands** — parsed in `environment.ts`, read only by tests.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **M4** | No retention/cleanup job                                          | 🟡 **Stands** — no purge job; `corn-jobs` has no email-ingestion refs.                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **M5** | Control errors all map to `UNKNOWN_ALIAS`                         | 🟡 **Stands** — `server-client.ts:172` unchanged.                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **M6** | RLS policy intent easy to misread (alias/nonce tables)            | 🟡 **Stands** for `alias_routing`/`replay_nonces` (still `FOR ALL` + `FOR SELECT USING(TRUE)`). Note: the _quarantine_ table's analogous NULL-row gap was independently fixed (see above).                                                                                                                                                                                                                                                                                    |
+| **L1** | Empty `CF_WEBHOOK_SECRET` outside production = no auth            | 🟢 **Stands** — still `NODE_ENV === 'production'`-only fail.                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **L2** | IP allowlist IPv4-only                                            | 🟢 **Stands.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **L3** | `/readiness` always `ready:true`                                  | 🟢 **Stands** — but partially mitigated operationally: the new worker probes `/health` _before_ consuming `message.raw` and falls back to `message.forward(FALLBACK_EMAIL)` if unreachable.                                                                                                                                                                                                                                                                                   |
+| **L4** | Contracts parity test-enforced only                               | 🟢 **Stands.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **L5** | Logger has no redaction layer                                     | 🟢 **Stands.**                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+### New observations (from the now-live ingestion path)
+
+- **N1 (LOW) — The MIME parser is now a live attack surface.** With extraction wired,
+  `extractFromMime` parses authenticated-but-attacker-influenced content (any party can email a
+  tenant alias; HMAC only proves it came _through_ the Cloudflare worker, not that the content is
+  benign). It is reasonably bounded already — `MAX_RAW_MIME_BYTES` 25 MB, `MAX_ATTACHMENT_COUNT` 10,
+  `MAX_EXTRACTED_BYTES` 20 MB, `MAX_MIME_DEPTH` 10 — and these commits fixed two real parser bugs
+  (multipart boundary-prefix collision dropping attachments; an out-of-bounds read at buffer end).
+  Recommend adding fuzz tests for the parser given it now sits on untrusted input.
+  Verify-before-trust ordering is intact: parsing runs only after `verdict.valid`.
+- **N2 (NOTE) — Worker health-probe TOCTOU.** `worker.ts` health-checks `/health`, then reads
+  `message.raw` (which makes `message.forward()` impossible), then POSTs. If the gateway dies
+  between probe and POST, the message is lost and the worker throws — there is no second fallback.
+  Documented tradeoff, but worth an operational note since email-worker retry semantics are limited.
+- **N3 (NOTE) — Body cap widened 1 MiB → 25 MB.** `MAX_BODY_BYTES` is now `MAX_RAW_MIME_BYTES` (25
+  MB), since the body is the full raw MIME rather than small JSON metadata. Bounded and intentional;
+  just a larger memory envelope per request (buffered in both worker and gateway).
+
+### Net priority order now
+
+1. ~~**H3** — alias provisioning mutation/seed.~~ ✅ Done on this branch (`createEmailIngestionAlias` /
+   `setEmailIngestionAliasActive` / `emailIngestionAliases`).
+2. **H2** — wire live writes through the tenant-aware client _or_ delete the orphaned provider and
+   correct the S20 audit doc (the quarantine migration comment already states the real behavior —
+   align S20 to it). Now the top remaining structural item.
+3. **M2** — re-key idempotency on the now-available authoritative `rawMessageHash` (cheap win).
+4. **M1 / M3 / M4** — persist nonces, wire or drop server flags, add retention jobs.
+5. **M5 / M6 / N1 / L1–L5** — observability accuracy, RLS policy clarity, MIME fuzzing,
+   secret/readiness hardening.
+
+> The sections below are the original S01–S20 review (unchanged) and remain accurate except where
+> the table above supersedes them (H1 & H3 resolved; quarantine RLS NULL-row leak newly fixed).
+
+---
+
 ## Executive summary
 
 The cryptographic perimeter (HMAC authenticity, single-use message-bound grants, timing-safe
