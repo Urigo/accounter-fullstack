@@ -12,123 +12,129 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { EmailListenerConfig } from '../../financial-entities/types.js';
 import type { EmailIngestionModule } from '../types.js';
 
-export const emailIngestionResolvers: EmailIngestionModule.Resolvers = {
-  Query: {
-    businessEmailConfig: async (_, { email }, { injector }) => {
-      const business = await injector.get(BusinessesProvider).getBusinessByEmail(email);
+const businessEmailConfig: EmailIngestionModule.QueryResolvers['businessEmailConfig'] = async (
+  _,
+  { email },
+  { injector },
+) => {
+  const business = await injector.get(BusinessesProvider).getBusinessByEmail(email);
 
-      if (!business) {
-        return null;
+  if (!business) {
+    return null;
+  }
+
+  let listenerConfig: EmailListenerConfig = {};
+  if (business?.suggestion_data) {
+    const { data, success, error } = suggestionDataSchema.safeParse(business.suggestion_data);
+    if (success) {
+      if (data.emailListener) {
+        listenerConfig = data.emailListener;
       }
+    } else {
+      console.error(
+        `Invalid suggestion_data schema for business "${business.name}" [${business.id}]: ${JSON.stringify(error.issues)}`,
+      );
+    }
+  }
 
-      let listenerConfig: EmailListenerConfig = {};
-      if (business?.suggestion_data) {
-        const { data, success, error } = suggestionDataSchema.safeParse(business.suggestion_data);
-        if (success) {
-          if (data.emailListener) {
-            listenerConfig = data.emailListener;
-          }
-        } else {
-          console.error(
-            `Invalid suggestion_data schema for business "${business.name}" [${business.id}]: ${JSON.stringify(error.issues)}`,
+  const listenerConfigRes: Omit<BusinessEmailConfig, 'businessId'> = {
+    internalEmailLinks: listenerConfig.internalEmailLinks,
+    emailBody: listenerConfig.emailBody,
+    attachments: listenerConfig.attachments,
+  };
+
+  return {
+    ...listenerConfigRes,
+    businessId: business.id,
+  };
+};
+
+const insertEmailDocuments: EmailIngestionModule.MutationResolvers['insertEmailDocuments'] = async (
+  _,
+  { documents, userDescription, messageId, businessId },
+  { injector },
+) => {
+  if (documents.length === 0) {
+    return true;
+  }
+
+  try {
+    const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+    const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
+    await Promise.all(
+      documents.map(async doc => {
+        const hash = hashStringToInt(await doc.text());
+
+        const existingDocument = await injector.get(DocumentsProvider).getDocumentByHash.load(hash);
+        if (existingDocument) {
+          console.log(
+            `Document ${'name' in doc ? doc.name : 'unknown'} already exists in the database with id=${existingDocument.id}, skipping upload.`,
           );
+          return;
         }
-      }
 
-      const listenerConfigRes: Omit<BusinessEmailConfig, 'businessId'> = {
-        internalEmailLinks: listenerConfig.internalEmailLinks,
-        emailBody: listenerConfig.emailBody,
-        attachments: listenerConfig.attachments,
-      };
+        const newDocument = await getDocumentFromFile(
+          injector,
+          doc,
+          null,
+          false,
+          businessId ?? undefined,
+          hash,
+        );
+        newDocuments.push({ ...newDocument, remarks: userDescription });
+      }),
+    );
 
-      return {
-        ...listenerConfigRes,
-        businessId: business.id,
-      };
-    },
+    if (newDocuments.length > 0) {
+      await injector.get(TenantAwareDBClient).transaction(async client => {
+        const charge = await injector
+          .get(ChargesProvider)
+          .generateCharge(
+            {
+              ownerId,
+              userDescription,
+            },
+            client,
+          )
+          .catch(e => {
+            throw new Error(`Error generating charge for email id=${messageId}: ${e}`);
+          });
+
+        if (!charge?.id) {
+          throw new Error(`Charge creation failed for email id=${messageId}`);
+        }
+
+        const documentsWithChargeId = newDocuments.map(doc => ({
+          ...doc,
+          chargeId: charge.id,
+        }));
+
+        return await injector
+          .get(DocumentsProvider)
+          .insertDocuments({ documents: documentsWithChargeId }, client);
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to insert email documents:', error);
+    if (error instanceof GraphQLError) {
+      throw error;
+    }
+    throw new GraphQLError(`Failed to insert email documents`, {
+      extensions: {
+        code: 'INTERNAL_SERVER_ERROR',
+      },
+    });
+  }
+};
+
+export const emailIngestionResolvers = {
+  Query: {
+    businessEmailConfig,
   },
   Mutation: {
-    insertEmailDocuments: async (
-      _,
-      { documents, userDescription, messageId, businessId },
-      { injector },
-    ) => {
-      if (documents.length === 0) {
-        return true;
-      }
-
-      try {
-        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-
-        const newDocuments: Array<IInsertDocumentsParams['documents'][number]> = [];
-        await Promise.all(
-          documents.map(async doc => {
-            const hash = hashStringToInt(await doc.text());
-
-            const existingDocument = await injector
-              .get(DocumentsProvider)
-              .getDocumentByHash.load(hash);
-            if (existingDocument) {
-              console.log(
-                `Document ${'name' in doc ? doc.name : 'unknown'} already exists in the database with id=${existingDocument.id}, skipping upload.`,
-              );
-              return;
-            }
-
-            const newDocument = await getDocumentFromFile(
-              injector,
-              doc,
-              null,
-              false,
-              businessId ?? undefined,
-              hash,
-            );
-            newDocuments.push({ ...newDocument, remarks: userDescription });
-          }),
-        );
-
-        if (newDocuments.length > 0) {
-          await injector.get(TenantAwareDBClient).transaction(async client => {
-            const charge = await injector
-              .get(ChargesProvider)
-              .generateCharge(
-                {
-                  ownerId,
-                  userDescription,
-                },
-                client,
-              )
-              .catch(e => {
-                throw new Error(`Error generating charge for email id=${messageId}: ${e}`);
-              });
-
-            if (!charge?.id) {
-              throw new Error(`Charge creation failed for email id=${messageId}`);
-            }
-
-            const documentsWithChargeId = newDocuments.map(doc => ({
-              ...doc,
-              chargeId: charge.id,
-            }));
-
-            return await injector
-              .get(DocumentsProvider)
-              .insertDocuments({ documents: documentsWithChargeId }, client);
-          });
-        }
-
-        return true;
-      } catch (error) {
-        console.error('Failed to insert email documents:', error);
-        if (error instanceof GraphQLError) {
-          throw error;
-        }
-        throw new GraphQLError(`Failed to insert email documents`, {
-          extensions: {
-            code: 'INTERNAL_SERVER_ERROR',
-          },
-        });
-      }
-    },
+    insertEmailDocuments,
   },
 };

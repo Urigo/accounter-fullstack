@@ -34,7 +34,7 @@ async function hmacSha256Hex(secret: string, payload: Uint8Array): Promise<strin
     false,
     ['sign'],
   );
-  const signature = await crypto.subtle.sign('HMAC', key, payload);
+  const signature = await crypto.subtle.sign('HMAC', key, payload as unknown as BufferSource);
   return hex(signature);
 }
 
