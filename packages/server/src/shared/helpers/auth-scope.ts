@@ -1,6 +1,38 @@
 import type { AuthorizedReadScope, BusinessMembership, TenantContext } from '../types/auth.js';
 
 /**
+ * Resolve the single write-target / owning business for a request given the
+ * primary tenant business and the active read scope.
+ *
+ * Precedence:
+ *   - No scope → the primary tenant business.
+ *   - Single scoped business → that business.
+ *   - Multiple scoped businesses, primary among them → the primary (stable).
+ *   - Multiple scoped businesses, primary NOT among them → the first scoped
+ *     business (writing to the primary would violate tenant isolation since it
+ *     is outside the active scope).
+ *
+ * This is the single source of truth for "which business does this request own
+ * / write to"; the auth context re-points `tenant` with it and DB consumers
+ * reuse it rather than re-deriving the rule inline.
+ */
+export function resolveWriteTargetBusinessId(
+  primaryBusinessId: string | null | undefined,
+  activeReadScope: AuthorizedReadScope | null | undefined,
+): string | null {
+  const primary = primaryBusinessId ?? null;
+  const scopedIds = activeReadScope?.businessIds;
+
+  if (!scopedIds || scopedIds.length === 0) {
+    return primary;
+  }
+  if (scopedIds.length === 1) {
+    return scopedIds[0];
+  }
+  return primary && scopedIds.includes(primary) ? primary : scopedIds[0];
+}
+
+/**
  * Adapter helpers bridging the legacy single-business `TenantContext` and the
  * multi-business membership / read-scope types. These let existing code keep
  * compiling while the migration introduces membership-aware auth, before any

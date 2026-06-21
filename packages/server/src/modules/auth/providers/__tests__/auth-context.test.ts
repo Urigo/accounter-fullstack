@@ -245,14 +245,43 @@ describe('AuthContextProvider read-scope resolution', () => {
     expect(result?.activeReadScope).toEqual({ businessIds: ['b-1', 'b-2'] });
   });
 
-  it('narrows read scope to a valid requested subset', async () => {
+  it('narrows read scope to a valid requested subset and re-points the tenant', async () => {
     const result = await makeJwtProvider(membershipRows, {
       kind: 'valid',
       businessIds: ['b-2'],
     }).getAuthContext();
     expect(result?.activeReadScope).toEqual({ businessIds: ['b-2'] });
-    // tenant still reflects the primary membership
+    // tenant re-points to the scoped business so consumers reading
+    // tenant.businessId directly do not operate on the out-of-scope primary
+    expect(result?.tenant.businessId).toBe('b-2');
+    expect(result?.tenant.roleId).toBe('accountant');
+  });
+
+  it('keeps the primary tenant when it remains within a multi-business scope', async () => {
+    const result = await makeJwtProvider(membershipRows, {
+      kind: 'valid',
+      businessIds: ['b-2', 'b-1'],
+    }).getAuthContext();
+    expect(result?.activeReadScope).toEqual({ businessIds: ['b-2', 'b-1'] });
+    // primary (b-1) is still in scope, so the tenant is unchanged
     expect(result?.tenant.businessId).toBe('b-1');
+    expect(result?.tenant.roleId).toBe('owner');
+  });
+
+  it('re-points to the first scoped business when the primary is outside a multi-business scope', async () => {
+    const rows = [
+      { user_id: 'u-1', business_id: 'b-1', role_id: 'owner' },
+      { user_id: 'u-1', business_id: 'b-2', role_id: 'accountant' },
+      { user_id: 'u-1', business_id: 'b-3', role_id: 'employee' },
+    ];
+    const result = await makeJwtProvider(rows, {
+      kind: 'valid',
+      businessIds: ['b-2', 'b-3'],
+    }).getAuthContext();
+    expect(result?.activeReadScope).toEqual({ businessIds: ['b-2', 'b-3'] });
+    // primary (b-1) is out of scope → first scoped business becomes the tenant
+    expect(result?.tenant.businessId).toBe('b-2');
+    expect(result?.tenant.roleId).toBe('accountant');
   });
 
   it('rejects a requested scope outside the user memberships', async () => {
