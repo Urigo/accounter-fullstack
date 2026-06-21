@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeDedupFingerprint } from '../providers/email-ingestion-dedup.js';
+import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
 
 const TENANT_A = 'tenant-uuid-a';
 const TENANT_B = 'tenant-uuid-b';

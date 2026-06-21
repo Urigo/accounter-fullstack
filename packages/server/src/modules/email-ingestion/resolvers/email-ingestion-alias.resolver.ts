@@ -1,12 +1,10 @@
 import { GraphQLError } from 'graphql';
 import type { MutationResolvers, QueryResolvers } from '../../../__generated__/types.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
-import {
-  EmailIngestionAliasProvider,
-  type AliasRow,
-} from '../providers/email-ingestion-alias.provider.js';
+import { EmailIngestionAliasProvider } from '../providers/email-ingestion-alias.provider.js';
+import type { IGetAliasesResult } from '../types.js';
 
-function mapAlias(row: AliasRow) {
+function mapAlias(row: IGetAliasesResult) {
   return {
     __typename: 'EmailIngestionAlias' as const,
     id: row.id,

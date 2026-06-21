@@ -1,21 +1,39 @@
 import { Injectable, Scope } from 'graphql-modules';
+import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import type {
+  IGetAliasesQuery,
+  IGetAliasesResult,
+  IInsertAliasQuery,
+  IUpdateAliasActiveQuery,
+} from '../types.js';
 
 // Postgres unique_violation — raised by the partial-unique index that allows at
 // most one active alias per (case-insensitive) address.
 const PG_UNIQUE_VIOLATION = '23505';
 
-export type AliasRow = {
-  id: string;
-  alias: string;
-  owner_id: string;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-};
+const getAliases = sql<IGetAliasesQuery>`
+  SELECT id, alias, owner_id, is_active, created_at, updated_at
+    FROM accounter_schema.email_ingestion_alias_routing
+  WHERE owner_id = ANY($ownerIds)
+  ORDER BY alias ASC
+`;
+
+const insertAlias = sql<IInsertAliasQuery>`
+  INSERT INTO accounter_schema.email_ingestion_alias_routing (alias, owner_id)
+  VALUES ($alias, $ownerId)
+  RETURNING id, alias, owner_id, is_active, created_at, updated_at
+`;
+
+const updateAliasActive = sql<IUpdateAliasActiveQuery>`
+  UPDATE accounter_schema.email_ingestion_alias_routing
+    SET is_active = $isActive
+  WHERE id = $id
+  RETURNING id, alias, owner_id, is_active, created_at, updated_at
+`;
 
 export type AliasMutationResult =
-  | { success: true; alias: AliasRow }
+  | { success: true; alias: IGetAliasesResult }
   | { success: false; message: string };
 
 function isUniqueViolation(err: unknown): boolean {
@@ -46,12 +64,7 @@ export class EmailIngestionAliasProvider {
 
   async createAlias(alias: string, ownerId: string): Promise<AliasMutationResult> {
     try {
-      const { rows } = await this.db.query<AliasRow>(
-        `INSERT INTO accounter_schema.email_ingestion_alias_routing (alias, owner_id)
-         VALUES ($1, $2)
-         RETURNING id, alias, owner_id, is_active, created_at, updated_at`,
-        [alias, ownerId],
-      );
+      const rows = await insertAlias.run({ alias, ownerId }, this.db);
       return { success: true, alias: rows[0] };
     } catch (err) {
       if (isUniqueViolation(err)) {
@@ -65,13 +78,7 @@ export class EmailIngestionAliasProvider {
 
   async setAliasActive(id: string, isActive: boolean): Promise<AliasMutationResult> {
     try {
-      const { rows } = await this.db.query<AliasRow>(
-        `UPDATE accounter_schema.email_ingestion_alias_routing
-            SET is_active = $2
-          WHERE id = $1
-          RETURNING id, alias, owner_id, is_active, created_at, updated_at`,
-        [id, isActive],
-      );
+      const rows = await updateAliasActive.run({ id, isActive }, this.db);
       if (rows.length === 0) {
         return { success: false, message: 'Alias not found or not authorized' };
       }
@@ -84,17 +91,11 @@ export class EmailIngestionAliasProvider {
     }
   }
 
-  async listAliases(ownerIds: readonly string[]): Promise<AliasRow[]> {
+  async listAliases(ownerIds: readonly string[]): Promise<IGetAliasesResult[]> {
     if (ownerIds.length === 0) {
       return [];
     }
-    const { rows } = await this.db.query<AliasRow>(
-      `SELECT id, alias, owner_id, is_active, created_at, updated_at
-         FROM accounter_schema.email_ingestion_alias_routing
-        WHERE owner_id = ANY($1::uuid[])
-        ORDER BY alias ASC`,
-      [ownerIds],
-    );
+    const rows = await getAliases.run({ ownerIds: [...ownerIds] }, this.db);
     return rows;
   }
 }
