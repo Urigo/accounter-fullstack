@@ -143,13 +143,14 @@ describe('orchestrate — correlationId propagation', () => {
     expect(ingestArg.correlationId).toBe('trace-xyz');
   });
 
-  it('uses messageId as idempotencyKey for ingest', async () => {
+  it('uses the content-derived rawMessageHash as idempotencyKey (not the sender-controlled messageId)', async () => {
     const deps = makeDeps(CONTROL_SUCCESS);
     await orchestrate(BASE_INPUT, deps);
     const ingestArg = (
       deps.serverClient.requestIngest as ReturnType<typeof vi.fn>
     ).mock.calls[0][0];
-    expect(ingestArg.idempotencyKey).toBe(BASE_INPUT.messageId);
+    expect(ingestArg.idempotencyKey).toBe(BASE_INPUT.rawMessageHash);
+    expect(ingestArg.idempotencyKey).not.toBe(BASE_INPUT.messageId);
   });
 });
 

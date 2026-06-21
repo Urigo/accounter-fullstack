@@ -80,9 +80,14 @@ export async function orchestrate(
   );
 
   // ── Step 2: call ingest endpoint with grant + extracted documents ──────────
+  // Key idempotency on the gateway-computed rawMessageHash (content-derived,
+  // authoritative) rather than the sender-controlled Message-ID. Using the
+  // Message-ID would let a party who can email a tenant alias pre-seed an ID so
+  // a later legitimate message collapses to DUPLICATE and is silently dropped
+  // (data-suppression), and would also trip on bulk senders that reuse IDs.
   const ingestInput: IngestInput = {
     grantJti: decision.grant.jti,
-    idempotencyKey: input.messageId,
+    idempotencyKey: input.rawMessageHash,
     tenantId: decision.tenantId,
     messageId: input.messageId,
     rawMessageHash: input.rawMessageHash,
