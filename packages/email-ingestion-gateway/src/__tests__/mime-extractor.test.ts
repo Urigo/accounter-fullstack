@@ -609,4 +609,35 @@ describe('extractFromMime — body capture & issuer candidates', () => {
       expect(result.senderEvidence.issuerCandidates).toEqual([]);
     }
   });
+
+  it('matches issuer candidates across a newline-wrapped From: line', () => {
+    const html = 'From: Real Vendor\r\n<a href="mailto:wrapped@vendor.com">link</a>';
+    const result = extractFromMime(makeHtmlMime(html));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toContain('wrapped@vendor.com');
+    }
+  });
+
+  it('decodes a non-UTF-8 (windows-1255) text body via its declared charset', () => {
+    const header = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=windows-1255',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        '',
+      ].join('\r\n'),
+      'ascii',
+    );
+    // 0xE0 0xE1 0xE2 = אבג in windows-1255
+    const mime = Buffer.concat([header, Buffer.from([0xe0, 0xe1, 0xe2])]);
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.body).toBe('אבג');
+    }
+  });
 });

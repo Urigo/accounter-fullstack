@@ -393,7 +393,17 @@ function parseMimePart(raw: Buffer, depth = 0): ParsedPart {
     const disposition = h(headers, 'content-disposition');
     if (!disposition || !disposition.trim().toLowerCase().startsWith('attachment')) {
       const encoding = h(headers, 'content-transfer-encoding');
-      textParts.push({ mediaType, content: decodeBody(body, encoding).toString('utf8') });
+      const decoded = decodeBody(body, encoding);
+      // Decode using the part's declared charset (e.g. windows-1255 for Hebrew),
+      // falling back to UTF-8 for unknown/unsupported labels.
+      const charset = getParam(contentType, 'charset') ?? 'utf-8';
+      let content: string;
+      try {
+        content = new TextDecoder(charset).decode(decoded);
+      } catch {
+        content = decoded.toString('utf8');
+      }
+      textParts.push({ mediaType, content });
     }
   }
 
@@ -413,24 +423,24 @@ function pickBody(textParts: TextPart[]): string {
   );
 }
 
-// Forwarded emails often carry the real sender as a `From: <a href="mailto:…">`
-// line in the body. Collect those addresses (decoded), in document order, for
-// the server's issuer-selection policy.
-const ISSUER_MAILTO_RE = /From:.*?<a\s+href="mailto:([^"]+)"/i;
+// Forwarded emails often carry the real sender as a `From: … <a href="mailto:…">`
+// span in the body. Collect those addresses (decoded), in document order, for
+// the server's issuer-selection policy. The bounded lazy quantifier keeps the
+// match span small: it tolerates a newline-wrapped `From:` line, avoids matching
+// an unrelated mailto far down a minified single-line body, and bounds regex
+// backtracking on very large bodies.
+const ISSUER_MAILTO_RE = /From:[\s\S]{0,250}?<a\s+href="mailto:([^"]+)"/gi;
 
 function extractIssuerCandidates(body: string): string[] {
   const candidates: string[] = [];
-  for (const rawLine of body.split('\n')) {
-    const match = rawLine.trim().match(ISSUER_MAILTO_RE);
-    if (match?.[1]) {
-      let email = match[1];
-      try {
-        email = decodeURIComponent(email);
-      } catch {
-        // keep the raw value if it is not valid percent-encoding
-      }
-      candidates.push(email);
+  for (const match of body.matchAll(ISSUER_MAILTO_RE)) {
+    let email = match[1];
+    try {
+      email = decodeURIComponent(email);
+    } catch {
+      // keep the raw value if it is not valid percent-encoding
     }
+    candidates.push(email);
   }
   return candidates;
 }
