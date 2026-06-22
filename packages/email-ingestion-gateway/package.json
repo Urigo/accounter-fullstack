@@ -5,7 +5,7 @@
   "description": "Cloudflare Email to Server ingestion gateway for multi-tenant email document ingestion",
   "private": true,
   "engines": {
-    "node": "26.3.0"
+    "node": "26.3.1"
   },
   "scripts": {
     "build": "tsc",
@@ -28,7 +28,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@types/node": "25.9.2",
+    "@types/node": "25.9.4",
     "tsx": "4.22.4",
     "typescript": "6.0.3",
     "wrangler": "4.103.0"

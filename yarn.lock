@@ -140,7 +140,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/email-ingestion-gateway@workspace:packages/email-ingestion-gateway"
   dependencies:
-    "@types/node": "npm:25.9.2"
+    "@types/node": "npm:25.9.4"
     dotenv: "npm:17.4.2"
     graphql-request: "npm:7.4.0"
     tsx: "npm:4.22.4"
@@ -10186,15 +10186,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~8.3.0"
   checksum: 10c0/f36e21634fd8e8ded162ca486508bd8bb229d398a8d5541f6d8c1255968d4464e53327a77f403b216ef98e3b6f6956882eef83e4857d4bc2be9569dd55d37aae
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:25.9.2":
-  version: 25.9.2
-  resolution: "@types/node@npm:25.9.2"
-  dependencies:
-    undici-types: "npm:>=7.24.0 <7.24.7"
-  checksum: 10c0/f14c0d56361febb985eccc45cf0834ee6e2f07c4389a636f3e1a55ebde320077a80bface18c9afd3092f5fa295925502c1a9d55f805efa813f634aa9c941cbac
   languageName: node
   linkType: hard
 
