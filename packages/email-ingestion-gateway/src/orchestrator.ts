@@ -1,6 +1,7 @@
 import { log } from './logger.js';
 import type {
   ControlInput,
+  ControlSenderEvidence,
   IngestDocumentInput,
   IngestInput,
   ServerClient,
@@ -17,6 +18,8 @@ export interface OrchestrateInput {
   correlationId: string;
   receivedAt?: string;
   extractedDocuments: IngestDocumentInput[];
+  /** Sender evidence forwarded to the control endpoint for business recognition. */
+  senderEvidence?: ControlSenderEvidence;
 }
 
 export type OrchestrateResult =
@@ -54,6 +57,7 @@ export async function orchestrate(
     rawMessageHash: input.rawMessageHash,
     receivedAt: input.receivedAt,
     correlationId,
+    senderEvidence: input.senderEvidence,
   };
 
   log('info', 'orchestrate:control:start', { recipientAlias: input.recipientAlias }, correlationId);

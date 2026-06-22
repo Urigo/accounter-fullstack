@@ -245,6 +245,66 @@ describe('POST /webhook — createWebhookHandler', () => {
   });
 
   // -------------------------------------------------------------------------
+  // Sender evidence forwarding (business recognition)
+  // -------------------------------------------------------------------------
+
+  it('forwards extracted senderEvidence to the control endpoint (even with no attachments)', async () => {
+    const requestControl = vi.fn().mockResolvedValue({
+      success: true,
+      decision: {
+        id: 'd1',
+        tenantId: 't1',
+        decisionId: 'dec1',
+        auditId: 'a1',
+        grant: {
+          id: 'g1',
+          jti: 'jti-1',
+          tenantId: 't1',
+          action: 'ingest',
+          expiresAt: '2099-01-01T00:00:00Z',
+        },
+      },
+    });
+    const serverClient = {
+      requestControl,
+      requestIngest: vi.fn().mockResolvedValue({
+        success: true,
+        outcome: 'QUARANTINED',
+        ingestId: null,
+        existingIngestId: null,
+        auditId: 'a2',
+        reasonCode: 'NO_DOCUMENTS',
+      }),
+    };
+    const h = createWebhookHandler({
+      verifier: makeVerifier({ valid: true }),
+      featureFlags: { v2Enabled: true, shadowMode: false },
+      serverClient,
+    });
+    const body = [
+      'From: Forwarder <forwarder@gmail.com>',
+      'To: invoices@acme.example.com',
+      'Reply-To: reply@vendor.com',
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'no attachments here',
+    ].join('\r\n');
+
+    const { res, getStatus } = makeRes();
+    await h(makeReq(body), res);
+
+    expect(getStatus()).toBe(202);
+    expect(requestControl).toHaveBeenCalledOnce();
+    const controlArg = requestControl.mock.calls[0][0] as { senderEvidence?: Record<string, unknown> };
+    expect(controlArg.senderEvidence).toMatchObject({
+      from: 'Forwarder <forwarder@gmail.com>',
+      replyTo: 'reply@vendor.com',
+      issuerCandidates: [],
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Body read errors
   // -------------------------------------------------------------------------
 
