@@ -3,8 +3,8 @@ import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import {
-  type EmailListenerConfig,
   suggestionDataSchema,
+  type EmailListenerConfig,
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
