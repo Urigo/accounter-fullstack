@@ -11142,7 +11142,7 @@ __metadata:
     eslint-plugin-sonarjs: "npm:4.1.0"
     eslint-plugin-unicorn: "npm:65.0.1"
     glob: "npm:13.0.6"
-    globals: "npm:17.6.0"
+    globals: "npm:17.7.0"
     graphql: "npm:16.14.2"
     husky: "npm:9.1.7"
     lint-staged: "npm:17.0.8"
@@ -16268,10 +16268,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globals@npm:17.6.0, globals@npm:^17.4.0, globals@npm:^17.6.0":
-  version: 17.6.0
-  resolution: "globals@npm:17.6.0"
-  checksum: 10c0/cf94fb4329cc5c68cf81018fd68324f413181ee169f0235b0b33b82bc93fe7825a21beea951f83a80e8e4bbdad9c0c80515a145b5fd4b5cb52f2a80db899a93f
+"globals@npm:17.7.0":
+  version: 17.7.0
+  resolution: "globals@npm:17.7.0"
+  checksum: 10c0/e83f791acf537b85fa1632ac48a45432a1999a61acd9f955b5c2145f66d6b5000a7945029874b6184fa2dfac8d33af03885a5a7ffa457866f1bcf0b40d0c1291
   languageName: node
   linkType: hard
 
@@ -16286,6 +16286,13 @@ __metadata:
   version: 15.15.0
   resolution: "globals@npm:15.15.0"
   checksum: 10c0/f9ae80996392ca71316495a39bec88ac43ae3525a438b5626cd9d5ce9d5500d0a98a266409605f8cd7241c7acf57c354a48111ea02a767ba4f374b806d6861fe
+  languageName: node
+  linkType: hard
+
+"globals@npm:^17.4.0, globals@npm:^17.6.0":
+  version: 17.6.0
+  resolution: "globals@npm:17.6.0"
+  checksum: 10c0/cf94fb4329cc5c68cf81018fd68324f413181ee169f0235b0b33b82bc93fe7825a21beea951f83a80e8e4bbdad9c0c80515a145b5fd4b5cb52f2a80db899a93f
   languageName: node
   linkType: hard
 
