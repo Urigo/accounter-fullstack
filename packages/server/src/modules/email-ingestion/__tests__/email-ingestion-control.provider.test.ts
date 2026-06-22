@@ -172,4 +172,116 @@ describe('EmailIngestionControlProvider.issueGrant', () => {
     expect(params).toContain('tenant-uuid-1');
     expect(params).toContain('msg-abc-123');
   });
+
+  it('persists the recognized business_id when provided', async () => {
+    await provider.issueGrant({ ...grantInput, businessId: 'biz-uuid-9' });
+    const query = mockDb.pool.query as ReturnType<typeof vi.fn>;
+    const insertCall = query.mock.calls.find(
+      ([sql]) =>
+        typeof sql === 'string' && /insert.*email_ingestion_grants/s.test(sql.toLowerCase()),
+    ) as [string, unknown[]] | undefined;
+    expect(insertCall).toBeDefined();
+    expect(insertCall![1]).toContain('biz-uuid-9');
+  });
+
+  it('persists null business_id when none was recognized', async () => {
+    await provider.issueGrant(grantInput);
+    const query = mockDb.pool.query as ReturnType<typeof vi.fn>;
+    const insertCall = query.mock.calls.find(
+      ([sql]) =>
+        typeof sql === 'string' && /insert.*email_ingestion_grants/s.test(sql.toLowerCase()),
+    ) as [string, unknown[]] | undefined;
+    expect(insertCall).toBeDefined();
+    expect(insertCall![1]).toContain(null);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// recognizeBusiness
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionControlProvider.recognizeBusiness', () => {
+  it('returns the businessId and emailListener config for a matched business', async () => {
+    const db = makeDbProvider(sql => {
+      if (/from\s+accounter_schema\.businesses/.test(sql.toLowerCase())) {
+        return {
+          rows: [
+            {
+              id: 'biz-1',
+              suggestion_data: {
+                emails: ['vendor@acme.com'],
+                emailListener: {
+                  emailBody: true,
+                  attachments: ['PDF'],
+                  internalEmailLinks: ['https://acme.com/inv'],
+                },
+              },
+            },
+          ],
+          rowCount: 1,
+        };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const provider = new EmailIngestionControlProvider(db);
+    const result = await provider.recognizeBusiness('tenant-1', 'vendor@acme.com');
+
+    expect(result.businessId).toBe('biz-1');
+    expect(result.config).toEqual({
+      emailBody: true,
+      attachments: ['PDF'],
+      internalEmailLinks: ['https://acme.com/inv'],
+    });
+  });
+
+  it('returns null businessId and empty config when no business matches', async () => {
+    const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
+    const provider = new EmailIngestionControlProvider(db);
+    const result = await provider.recognizeBusiness('tenant-1', 'nobody@nowhere.com');
+
+    expect(result.businessId).toBeNull();
+    expect(result.config).toEqual({});
+  });
+
+  it('short-circuits without touching the DB when no issuer email is given', async () => {
+    const query = vi.fn();
+    const connect = vi.fn();
+    const db = { pool: { query, connect } } as unknown as DBProvider;
+    const provider = new EmailIngestionControlProvider(db);
+    const result = await provider.recognizeBusiness('tenant-1', null);
+
+    expect(result).toEqual({ businessId: null, config: {} });
+    expect(query).not.toHaveBeenCalled();
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('returns the businessId but empty config when suggestion_data is invalid', async () => {
+    const db = makeDbProvider(sql => {
+      if (/from\s+accounter_schema\.businesses/.test(sql.toLowerCase())) {
+        return { rows: [{ id: 'biz-2', suggestion_data: { unexpected: 'shape' } }], rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const provider = new EmailIngestionControlProvider(db);
+    const result = await provider.recognizeBusiness('tenant-1', 'vendor@acme.com');
+
+    expect(result.businessId).toBe('biz-2');
+    expect(result.config).toEqual({});
+  });
+
+  it('pins the lookup to the tenant RLS context (set_config with the tenant id)', async () => {
+    const db = makeDbProvider(() => ({
+      rows: [{ id: 'biz-3', suggestion_data: null }],
+      rowCount: 1,
+    }));
+    const provider = new EmailIngestionControlProvider(db);
+    await provider.recognizeBusiness('tenant-xyz', 'vendor@acme.com');
+
+    const query = db.pool.query as ReturnType<typeof vi.fn>;
+    const setConfigCall = query.mock.calls.find(
+      ([sql]) => typeof sql === 'string' && sql.includes('set_config'),
+    ) as [string, unknown[]] | undefined;
+    expect(setConfigCall).toBeDefined();
+    expect(setConfigCall![1]).toContain('tenant-xyz');
+  });
 });

@@ -53,6 +53,22 @@ export default gql`
     receivedAt: String
     " Optional correlation ID for distributed tracing "
     correlationId: String
+    " Sender evidence used to recognize the issuing business (issuer-selection runs server-side) "
+    senderEvidence: SenderEvidenceInput
+  }
+
+  " Candidate sender addresses extracted by the gateway, used for business recognition "
+  input SenderEvidenceInput {
+    " From header address "
+    from: String
+    " Reply-To header address "
+    replyTo: String
+    " X-Original-From / X-Original-Sender address "
+    originalFrom: String
+    " X-Forwarded-To / Envelope-To address "
+    forwardedTo: String
+    " Addresses parsed from `From: <mailto:…>` lines in the body, in document order "
+    issuerCandidates: [String!]
   }
 
   " Short-lived single-use ingest grant "
@@ -71,6 +87,8 @@ export default gql`
     decisionId: String!
     auditId: String!
     grant: IngestGrant!
+    " The recognized issuing business and its email-processing config; null when no business matched "
+    businessEmailConfig: BusinessEmailConfig
   }
 
   " Result of a requestIngestControl mutation: either a decision with a grant or an error "

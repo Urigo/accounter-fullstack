@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import {
+  type EmailListenerConfig,
+  suggestionDataSchema,
+} from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
   IGetAliasByAliasQuery,
   IGetGrantByJtiQuery,
-  IInsertIngestGrantQuery,
 } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -23,11 +26,49 @@ const getAliasByAlias = sql<IGetAliasByAliasQuery>`
    LIMIT 1
 `;
 
-const insertIngestGrant = sql<IInsertIngestGrantQuery>`
+// Inline query type (cf. the ingest provider) so the grant insert does not
+// depend on a regenerated pgtyped type when the business_id column is added.
+interface IInsertGrantQuery {
+  params: {
+    jti: string;
+    ownerId: string;
+    messageId: string;
+    rawMessageHash: string;
+    action: string;
+    expiresAt: Date;
+    businessId: string | null;
+  };
+  result: {
+    id: string;
+    jti: string;
+    owner_id: string;
+    action: string;
+    expires_at: Date;
+    business_id: string | null;
+  };
+}
+
+const insertIngestGrant = sql<IInsertGrantQuery>`
   INSERT INTO accounter_schema.email_ingestion_grants
-    (jti, owner_id, message_id, raw_message_hash, action, expires_at)
-  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt)
-  RETURNING id, jti, owner_id, action, expires_at
+    (jti, owner_id, message_id, raw_message_hash, action, expires_at, business_id)
+  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt, $businessId)
+  RETURNING id, jti, owner_id, action, expires_at, business_id
+`;
+
+interface IGetBusinessByEmailForIngestQuery {
+  params: { email: string };
+  result: { id: string; suggestion_data: unknown };
+}
+
+// Resolve the issuing business by a sender email listed in its
+// suggestion_data.emails. Mirrors BusinessesProvider.getBusinessByEmail, but
+// runs on a tenant-pinned client (the control plane has no auth session), so
+// businesses RLS scopes the match to the resolved tenant.
+const getBusinessByEmail = sql<IGetBusinessByEmailForIngestQuery>`
+  SELECT id, suggestion_data
+    FROM accounter_schema.businesses
+   WHERE suggestion_data->'emails' ? $email::text
+   LIMIT 1
 `;
 
 const getGrantByJti = sql<IGetGrantByJtiQuery>`
@@ -70,6 +111,15 @@ export type IssueGrantInput = {
   rawMessageHash: string;
   expiresAt: Date;
   correlationId?: string;
+  /** Recognized issuing business, bound into the grant for the ingest step. */
+  businessId?: string | null;
+};
+
+export type BusinessRecognitionResult = {
+  /** The recognized issuing business, or null when no business matched. */
+  businessId: string | null;
+  /** The business's email-processing config (empty when unrecognized). */
+  config: EmailListenerConfig;
 };
 
 export type ValidateGrantInput = {
@@ -134,11 +184,19 @@ export class EmailIngestionControlProvider {
     const decisionId = randomUUID();
     const auditId = randomUUID();
 
-    const { tenantId, messageId, rawMessageHash, expiresAt } = input;
+    const { tenantId, messageId, rawMessageHash, expiresAt, businessId } = input;
 
     const rows = await withTenantContext(this.dbProvider.pool, tenantId, client =>
       insertIngestGrant.run(
-        { jti, ownerId: tenantId, messageId, rawMessageHash, action: 'ingest', expiresAt },
+        {
+          jti,
+          ownerId: tenantId,
+          messageId,
+          rawMessageHash,
+          action: 'ingest',
+          expiresAt,
+          businessId: businessId ?? null,
+        },
         client,
       ),
     );
@@ -155,6 +213,46 @@ export class EmailIngestionControlProvider {
       decisionId,
       auditId,
     };
+  }
+
+  /**
+   * Recognize the issuing business behind an incoming email and load its
+   * email-processing config. Runs on a client pinned to the resolved tenant so
+   * the businesses RLS policy scopes the lookup to that tenant; returns a null
+   * businessId (and empty config) when no email evidence is available or no
+   * business matches, in which case the gateway applies default treatment.
+   */
+  async recognizeBusiness(
+    tenantId: string,
+    issuerEmail: string | null,
+  ): Promise<BusinessRecognitionResult> {
+    if (!issuerEmail) {
+      return { businessId: null, config: {} };
+    }
+
+    return withTenantContext(this.dbProvider.pool, tenantId, async client => {
+      const rows = await getBusinessByEmail.run({ email: issuerEmail }, client);
+      if (rows.length === 0) {
+        return { businessId: null, config: {} };
+      }
+
+      const business = rows[0];
+      let config: EmailListenerConfig = {};
+      if (business.suggestion_data) {
+        const parsed = suggestionDataSchema.safeParse(business.suggestion_data);
+        if (parsed.success) {
+          if (parsed.data.emailListener) {
+            config = parsed.data.emailListener;
+          }
+        } else {
+          console.error(
+            `Invalid suggestion_data schema for business [${business.id}]: ${JSON.stringify(parsed.error.issues)}`,
+          );
+        }
+      }
+
+      return { businessId: business.id, config };
+    });
   }
 
   /**
