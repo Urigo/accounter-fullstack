@@ -193,6 +193,22 @@ describe('ServerClient.requestControl — success', () => {
     const body = JSON.parse(opts.body as string) as { variables: { input: ControlInput } };
     expect(body.variables.input.correlationId).toBe('corr-abc');
   });
+
+  it('sends senderEvidence in the request body when provided', async () => {
+    const fetchFn = makeFetch([{ body: CONTROL_SUCCESS_RESPONSE }]);
+    const client = makeClient(fetchFn);
+    await client.requestControl({
+      ...CONTROL_INPUT,
+      senderEvidence: { from: 'forwarder@gmail.com', issuerCandidates: ['real@vendor.com'] },
+    });
+
+    const [, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(opts.body as string) as { variables: { input: ControlInput } };
+    expect(body.variables.input.senderEvidence).toEqual({
+      from: 'forwarder@gmail.com',
+      issuerCandidates: ['real@vendor.com'],
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -21,12 +21,22 @@ export const INGEST_MAX_RETRIES = 1;
 // Domain types (public API)
 // ---------------------------------------------------------------------------
 
+/** Candidate sender addresses for server-side issuer/business recognition. */
+export interface ControlSenderEvidence {
+  from?: string;
+  replyTo?: string;
+  originalFrom?: string;
+  forwardedTo?: string;
+  issuerCandidates?: string[];
+}
+
 export interface ControlInput {
   recipientAlias: string;
   messageId: string;
   rawMessageHash: string;
   receivedAt?: string;
   correlationId?: string;
+  senderEvidence?: ControlSenderEvidence;
 }
 
 export interface GrantData {

@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { generateCorrelationId, log } from './logger.js';
 import { extractFromMime, MAX_RAW_MIME_BYTES } from './mime-extractor.js';
 import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
-import type { IngestDocumentInput } from './server-client.js';
+import type { ControlSenderEvidence, IngestDocumentInput } from './server-client.js';
 import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifier.js';
 
 // Inbound requests carry the raw MIME message as their body, so the cap matches
@@ -143,6 +143,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
     const extraction = extractFromMime(rawBody);
 
     let extractedDocuments: IngestDocumentInput[] = [];
+    let senderEvidence: ControlSenderEvidence | undefined;
     if (extraction.success) {
       extractedDocuments = extraction.documents.map(doc => ({
         hash: doc.sha256,
@@ -150,13 +151,18 @@ export function createWebhookHandler(deps: WebhookDeps) {
         mimeType: doc.mimeType,
         filename: doc.filename,
       }));
+      // Forward sender evidence so the server can recognize the issuing business.
+      // Present even when there are no attachments (the body may still yield a
+      // document during treatment).
+      senderEvidence = extraction.senderEvidence;
     } else {
-      // Extraction failed (no documents, parse error, or oversize). Proceed to
-      // orchestration so the server records an auditable quarantine outcome;
-      // the empty document list drives the NO_DOCUMENTS quarantine path.
+      // Extraction failed (parse error or oversize). Proceed to orchestration so
+      // the server records an auditable quarantine outcome; the empty document
+      // list drives the server-side NO_DOCUMENTS quarantine. No trustworthy
+      // sender evidence is available in this case.
       log(
         'warn',
-        'webhook: MIME extraction yielded no documents',
+        'webhook: MIME extraction failed',
         { reason: extraction.reason },
         effectiveCorrelationId,
       );
@@ -188,6 +194,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
       correlationId: effectiveCorrelationId,
       receivedAt,
       extractedDocuments,
+      senderEvidence,
     };
 
     if (featureFlags.shadowMode) {

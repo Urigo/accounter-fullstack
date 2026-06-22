@@ -355,6 +355,19 @@ describe('orchestrate — end-to-end flow verification', () => {
     expect(ingestArg.extractedDocuments).toEqual(docs);
   });
 
+  it('passes senderEvidence to control for business recognition', async () => {
+    const senderEvidence = {
+      from: 'forwarder@gmail.com',
+      replyTo: 'reply@vendor.com',
+      issuerCandidates: ['real@vendor.com'],
+    };
+    const deps = makeDeps(CONTROL_SUCCESS);
+    await orchestrate({ ...BASE_INPUT, senderEvidence }, deps);
+    const controlArg = (deps.serverClient.requestControl as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(controlArg.senderEvidence).toEqual(senderEvidence);
+  });
+
   it('returns idempotent duplicate outcome on repeated delivery', async () => {
     // Simulates Cloudflare delivering the same email twice.
     // Second delivery with same messageId returns DUPLICATE from server.
