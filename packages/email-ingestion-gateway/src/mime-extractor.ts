@@ -21,15 +21,30 @@ export interface SenderEvidence {
   originalFrom: string | undefined;
   /** X-Forwarded-To or Envelope-To */
   forwardedTo: string | undefined;
+  /**
+   * Addresses parsed from `From: <mailto:…>` links in the (HTML) body, in
+   * document order. The server applies the issuer-selection policy over these
+   * plus the header fields.
+   */
+  issuerCandidates: string[];
 }
 
+// NO_DOCUMENTS is intentionally not an extraction failure: an email with no
+// attachment may still yield a document during gateway treatment (body→PDF,
+// internal-link fetch). Emptiness is decided after treatment, with the server
+// ingest as the final backstop.
 export type ExtractionFailureReason =
-  | typeof IngestReasonCode.NO_DOCUMENTS
   | typeof IngestReasonCode.PARSE_ERROR
   | typeof IngestReasonCode.OVERSIZE_MESSAGE;
 
 export type ExtractionResult =
-  | { success: true; senderEvidence: SenderEvidence; documents: ExtractedDocument[] }
+  | {
+      success: true;
+      senderEvidence: SenderEvidence;
+      /** Decoded email body (HTML preferred, else plain text), for downstream treatment. */
+      body: string;
+      documents: ExtractedDocument[];
+    }
   | { success: false; reason: ExtractionFailureReason };
 
 // ---------------------------------------------------------------------------
@@ -46,7 +61,7 @@ export function extractFromMime(rawMime: Buffer): ExtractionResult {
   }
 
   try {
-    const { headers, documents } = parseMimePart(rawMime);
+    const { headers, documents, textParts } = parseMimePart(rawMime);
 
     if (documents.length > MAX_ATTACHMENT_COUNT) {
       return { success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE };
@@ -57,11 +72,14 @@ export function extractFromMime(rawMime: Buffer): ExtractionResult {
       return { success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE };
     }
 
-    if (documents.length === 0) {
-      return { success: false, reason: IngestReasonCode.NO_DOCUMENTS };
-    }
+    const body = pickBody(textParts);
 
-    return { success: true, senderEvidence: buildSenderEvidence(headers), documents };
+    return {
+      success: true,
+      senderEvidence: buildSenderEvidence(headers, body),
+      body,
+      documents,
+    };
   } catch {
     return { success: false, reason: IngestReasonCode.PARSE_ERROR };
   }
@@ -73,9 +91,16 @@ export function extractFromMime(rawMime: Buffer): ExtractionResult {
 
 type Headers = Map<string, string>;
 
+interface TextPart {
+  mediaType: string;
+  content: string;
+}
+
 interface ParsedPart {
   headers: Headers;
   documents: ExtractedDocument[];
+  /** Inline text/html and text/plain parts, for body extraction. */
+  textParts: TextPart[];
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +363,7 @@ function parseMimePart(raw: Buffer, depth = 0): ParsedPart {
   const mediaType = getMediaType(contentType);
 
   const documents: ExtractedDocument[] = [];
+  const textParts: TextPart[] = [];
 
   if (mediaType.startsWith('multipart/')) {
     const boundary = getParam(contentType, 'boundary');
@@ -347,6 +373,7 @@ function parseMimePart(raw: Buffer, depth = 0): ParsedPart {
     for (const part of subParts) {
       const sub = parseMimePart(part, depth + 1);
       documents.push(...sub.documents);
+      textParts.push(...sub.textParts);
     }
   } else if (isDocumentPart(headers)) {
     const encoding = h(headers, 'content-transfer-encoding');
@@ -361,20 +388,59 @@ function parseMimePart(raw: Buffer, depth = 0): ParsedPart {
       size: content.length,
       sha256,
     });
+  } else if (mediaType === 'text/html' || mediaType === 'text/plain') {
+    // Inline body part — skip text/* sent as a downloadable attachment.
+    const disposition = h(headers, 'content-disposition');
+    if (!disposition || !disposition.trim().toLowerCase().startsWith('attachment')) {
+      const encoding = h(headers, 'content-transfer-encoding');
+      textParts.push({ mediaType, content: decodeBody(body, encoding).toString('utf8') });
+    }
   }
 
-  return { headers, documents };
+  return { headers, documents, textParts };
 }
 
 // ---------------------------------------------------------------------------
 // Sender evidence extraction
 // ---------------------------------------------------------------------------
 
-function buildSenderEvidence(headers: Headers): SenderEvidence {
+/** Prefer the HTML body (richer, carries mailto links); fall back to plain text. */
+function pickBody(textParts: TextPart[]): string {
+  return (
+    textParts.find(p => p.mediaType === 'text/html')?.content ??
+    textParts.find(p => p.mediaType === 'text/plain')?.content ??
+    ''
+  );
+}
+
+// Forwarded emails often carry the real sender as a `From: <a href="mailto:…">`
+// line in the body. Collect those addresses (decoded), in document order, for
+// the server's issuer-selection policy.
+const ISSUER_MAILTO_RE = /From:.*?<a\s+href="mailto:([^"]+)"/i;
+
+function extractIssuerCandidates(body: string): string[] {
+  const candidates: string[] = [];
+  for (const rawLine of body.split('\n')) {
+    const match = rawLine.trim().match(ISSUER_MAILTO_RE);
+    if (match?.[1]) {
+      let email = match[1];
+      try {
+        email = decodeURIComponent(email);
+      } catch {
+        // keep the raw value if it is not valid percent-encoding
+      }
+      candidates.push(email);
+    }
+  }
+  return candidates;
+}
+
+function buildSenderEvidence(headers: Headers, body: string): SenderEvidence {
   return {
     from: h(headers, 'from'),
     replyTo: h(headers, 'reply-to'),
     originalFrom: h(headers, 'x-original-from') ?? h(headers, 'x-original-sender'),
     forwardedTo: h(headers, 'x-forwarded-to') ?? h(headers, 'envelope-to'),
+    issuerCandidates: extractIssuerCandidates(body),
   };
 }
