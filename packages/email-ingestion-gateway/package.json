@@ -16,7 +16,7 @@
     "email-ingestion-gateway:start": "yarn start",
     "email-ingestion-gateway:worker:deploy": "yarn worker:deploy",
     "email-ingestion-gateway:worker:dev": "yarn worker:dev",
-    "generate": "yarn generate:all",
+    "generate": "yarn generate:graphql",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "worker:deploy": "wrangler deploy",
