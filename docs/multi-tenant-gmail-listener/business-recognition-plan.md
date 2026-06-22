@@ -123,7 +123,8 @@ duplicate and adapt). After control returns config, build the final document set
 1. **Attachment filter** — keep attachments whose type is in `config.attachments` (port
    `gmail-service.ts` ~467-483, including the `octet-stream`+`.pdf` normalization).
 2. **`html-to-pdf.ts`** — if `businessId` is null **or** `config.emailBody === true`, render the body
-   → PDF (port `convertHtmlToPdf`). ⚠️ Rendering runtime is an open decision (below).
+   → PDF via **bundled Chromium/Playwright** (port `convertHtmlToPdf`, including the `inline-css`
+   step). Reuse a single shared browser instance across requests to bound memory.
 3. **`link-fetcher.ts`** — some provider emails carry the document only as a **URL in the body**, not
    as an attachment; `config.internalEmailLinks` names which link to follow. This is therefore a
    *post-recognition treatment artifact*, never a MIME-extraction artifact (a hyperlink is not a MIME
@@ -195,20 +196,25 @@ and insert documents (`DocumentsProvider.insertDocuments`) linked to it — mirr
 
 ## Decisions
 
-1. **Bytes transport — RESOLVED → Option B (inline → server).** The gateway base64-encodes each final
-   document into the ingest mutation; the server uploads via the existing `getDocumentFromFile`,
-   reusing the `insertEmailDocuments` path. Chosen for trust-model simplicity — the gateway never
-   touches storage. Payload size is bounded by the existing MIME caps.
+All resolved.
 
-### Still open (resolve before implementation)
-
-2. **HTML→PDF runtime in the gateway:** the `/webhook` path (parse + orchestrate + treatment) runs in
-   the **Node HTTP service** (`index.ts`, `node:http`), not the Cloudflare Worker (`worker.ts` is only
-   the Email forwarder) — so bundled Chromium is viable. Choose bundled Chromium/Playwright
-   (legacy-parity, heavy image) vs. a lighter JS renderer (small footprint, lower fidelity) vs. a
-   separate render service.
-3. **Issuer-candidate division of labor:** gateway extracts raw candidates + server applies the
-   selection policy (recommended) vs. porting the whole `getIssuerEmail` into the gateway.
+1. **Bytes transport → Option B (inline → server).** The gateway base64-encodes each final document
+   into the ingest mutation; the server uploads via the existing `getDocumentFromFile`, reusing the
+   `insertEmailDocuments` path. Chosen for trust-model simplicity — the gateway never touches storage.
+   Payload size is bounded by the existing MIME caps.
+2. **HTML→PDF runtime → bundled Chromium (Playwright) in the gateway.** The `/webhook` path (parse +
+   orchestrate + treatment) runs in the Node HTTP service (`index.ts`, `node:http`), not the
+   Cloudflare Worker (`worker.ts` is only the Email forwarder), so a headless browser is viable.
+   Chosen to match the legacy `convertHtmlToPdf` output for the test-enforced parity requirement —
+   provider invoice emails are CSS-heavy, and a lighter renderer would risk fidelity/parity
+   regressions. Cost: a larger gateway image + render-time CPU/memory; mitigate with a shared browser
+   instance and the existing size caps. (A separate render service was rejected as unnecessary
+   operational overhead.)
+3. **Issuer detection → split: gateway extracts candidates, server selects.** The gateway parses the
+   body for `From: <mailto:…>` candidates and forwards them alongside the header-based sender
+   evidence; the server owns the selection policy (skip-lists, `originalFrom → from → replyTo`
+   fallback) next to the `getBusinessByEmail` lookup it feeds. Keeps business-matching as one
+   DB-aware, testable source of truth; the gateway does only the body parsing it alone can do.
 
 ## Rough effort
 
@@ -217,8 +223,8 @@ Medium-large.
 - Server recognition + persistence (A, D, E): ~2-3 days.
 - Gateway extraction + treatment modules (B, C), incl. a renderer: ~3-4 days.
 - Contracts/codegen + parity/shadow tests + docs: ~2-3 days.
-- Plus the rendering-runtime decision, which can dominate if Chromium is not already available in the
-  gateway image.
+- Plus first-time Chromium/Playwright setup in the gateway image (bundling + the browser binary),
+  which adds image-build and memory overhead.
 
 ## Implementation checklist
 
@@ -229,7 +235,7 @@ Medium-large.
 - [ ] B. Gateway: `orchestrator` passes sender evidence to control
 - [ ] B. Gateway: parse stops emitting `NO_DOCUMENTS`; emptiness decided post-treatment
 - [ ] C. Gateway: attachment filter
-- [ ] C. Gateway: `html-to-pdf` module
+- [ ] C. Gateway: `html-to-pdf` module (bundled Chromium/Playwright, shared browser instance)
 - [ ] C. Gateway: `link-fetcher` module (SSRF-hardened)
 - [ ] D. Implement bytes transport — Option B (inline base64 → server `getDocumentFromFile`)
 - [ ] D. Server: replace ingest `TODO` with charge + document persistence under grant `business_id`
