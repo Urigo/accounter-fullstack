@@ -67,7 +67,7 @@ export default gql`
     originalFrom: String
     " X-Forwarded-To / Envelope-To address "
     forwardedTo: String
-    " Addresses parsed from `From: <mailto:…>` lines in the body, in document order "
+    " Sender addresses parsed from mailto links in the email body, in document order "
     issuerCandidates: [String!]
   }
 
