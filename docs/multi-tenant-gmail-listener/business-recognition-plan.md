@@ -1,7 +1,8 @@
 # Business-Recognition-Driven Treatment in v2 Email Ingestion
 
-> **Status:** Design / not yet implemented. This document is the agreed plan; implementation lands
-> in follow-up commits on the same PR.
+> **Status:** Implemented across Workstreams A–E (PRs #3744, #3745, #3751, #3753, and the contract
+> finalization PR). The only remaining item is deprecating the legacy path, which waits for the
+> production cutover.
 
 ## Background
 
@@ -230,20 +231,23 @@ Medium-large.
 
 ## Implementation checklist
 
-- [ ] A. Server: raw-pool business recognition under tenant RLS in `EmailIngestionControlProvider`
-- [ ] A. Server: port issuer-selection policy (skip-lists + fallback chain)
-- [ ] A. Server: `requestIngestControl` accepts sender evidence, returns config
-- [ ] B. Gateway: `mime-extractor` captures body + `mailto:` candidates; extend sender evidence
-- [ ] B. Gateway: `orchestrator` passes sender evidence to control
-- [ ] B. Gateway: parse stops emitting `NO_DOCUMENTS`; emptiness decided post-treatment
-- [ ] C. Gateway: attachment filter
-- [ ] C. Gateway: `html-to-pdf` module (bundled Chromium/Playwright, shared browser instance)
-- [ ] C. Gateway: `link-fetcher` module (SSRF-hardened)
-- [ ] D. Implement bytes transport — Option B (inline base64 → server `getDocumentFromFile`)
-- [ ] D. Server: replace ingest `TODO` with charge + document persistence under grant `business_id`
-- [ ] E. Migration: `email_ingestion_grants.business_id` (+ test)
-- [ ] E. typeDefs + `yarn generate` (server + gateway gql)
-- [ ] E. Update gateway `server-client` contracts + mutation documents
-- [ ] Parity/shadow tests across both paths
-- [ ] Update `data-flow.md` / `architecture-plan.md`
+- [x] A. Server: raw-pool business recognition under tenant RLS in `EmailIngestionControlProvider`
+- [x] A. Server: port issuer-selection policy (skip-lists + fallback chain)
+- [x] A. Server: `requestIngestControl` accepts sender evidence, returns config
+- [x] B. Gateway: `mime-extractor` captures body + `mailto:` candidates; extend sender evidence
+- [x] B. Gateway: `orchestrator` passes sender evidence to control
+- [x] B. Gateway: parse stops emitting `NO_DOCUMENTS`; emptiness decided post-treatment
+- [x] C. Gateway: attachment filter
+- [x] C. Gateway: `html-to-pdf` module (bundled Chromium/Playwright, shared browser instance)
+- [x] C. Gateway: `link-fetcher` module (SSRF-hardened)
+- [x] D. Implement bytes transport — Option B (inline base64 → server)
+- [x] D. Server: replace ingest `TODO` with charge + document persistence under grant `business_id`
+      (inline tenant-pinned SQL — the auth-coupled `getDocumentFromFile` / `DocumentsProvider` /
+      `ChargesProvider` can't run in the gateway control-plane context)
+- [x] E. Migration: `email_ingestion_grants.business_id` (+ test)
+- [x] E. typeDefs + `yarn generate` (server + gateway gql)
+- [x] E. Update gateway `server-client` contracts + mutation documents
+- [x] Parity/shadow tests across both paths (gateway `treatment.parity.test.ts`; server issuer +
+      ingest provider tests)
+- [x] Update `data-flow.md` / `architecture-plan.md`
 - [ ] Deprecate legacy `businessEmailConfig` / `insertEmailDocuments` after cutover
