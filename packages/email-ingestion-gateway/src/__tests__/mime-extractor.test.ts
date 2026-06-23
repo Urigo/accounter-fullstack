@@ -34,6 +34,23 @@ function makeTextMime(from: string, subject: string, body = 'hello'): Buffer {
   );
 }
 
+/** Build a single text/html MIME message with the given HTML body. */
+function makeHtmlMime(html: string, from = 'forwarder@gmail.com'): Buffer {
+  return Buffer.from(
+    [
+      `From: ${from}`,
+      `To: invoices@example.com`,
+      `Subject: Fwd: Invoice`,
+      `MIME-Version: 1.0`,
+      `Content-Type: text/html; charset=utf-8`,
+      `Content-Transfer-Encoding: 7bit`,
+      ``,
+      html,
+    ].join('\r\n'),
+    'utf8',
+  );
+}
+
 /**
  * Build a multipart/mixed MIME with one base64-encoded attachment.
  * `content` should be the raw bytes of the attachment.
@@ -135,13 +152,10 @@ describe('extractFromMime — OVERSIZE_MESSAGE', () => {
     expect(result).toEqual({ success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE });
   });
 
-  it('does NOT reject a message at exactly 25 MB', () => {
-    // A buffer of exactly MAX size should not trigger the oversize check
-    // (even if it's invalid MIME it will fail differently)
+  it('does NOT reject a message at exactly 25 MB as oversize', () => {
+    // A buffer of exactly MAX size must not trigger the oversize check.
     const exact = Buffer.alloc(MAX_RAW_MIME_BYTES);
     const result = extractFromMime(exact);
-    // Either PARSE_ERROR or NO_DOCUMENTS — not OVERSIZE_MESSAGE
-    expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).not.toBe(IngestReasonCode.OVERSIZE_MESSAGE);
     }
@@ -178,26 +192,25 @@ describe('extractFromMime — PARSE_ERROR', () => {
     const result = extractFromMime(Buffer.alloc(0));
     expect(result).toEqual({ success: false, reason: IngestReasonCode.PARSE_ERROR });
   });
-
-  it('returns PARSE_ERROR for random binary data with no MIME structure', () => {
-    const noise = Buffer.from([0x00, 0x01, 0x02, 0x03]);
-    const result = extractFromMime(noise);
-    expect(result.success).toBe(false);
-  });
 });
 
 // ---------------------------------------------------------------------------
-// NO_DOCUMENTS
+// Attachment-less messages — no longer an extraction failure
 // ---------------------------------------------------------------------------
 
-describe('extractFromMime — NO_DOCUMENTS', () => {
-  it('returns NO_DOCUMENTS for a plain-text-only message', () => {
-    const mime = makeTextMime('sender@example.com', 'Hello');
+describe('extractFromMime — attachment-less messages', () => {
+  it('succeeds with empty documents for a plain-text-only message', () => {
+    const mime = makeTextMime('sender@example.com', 'Hello', 'just some text');
     const result = extractFromMime(mime);
-    expect(result).toEqual({ success: false, reason: IngestReasonCode.NO_DOCUMENTS });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(0);
+      expect(result.body).toContain('just some text');
+      expect(result.senderEvidence.from).toBe('sender@example.com');
+    }
   });
 
-  it('returns NO_DOCUMENTS for multipart/mixed with no document attachments', () => {
+  it('succeeds with empty documents for multipart with no document attachments', () => {
     // Has a text attachment, not a PDF/image
     const mime = makeMultipartMime({
       attachments: [
@@ -205,7 +218,23 @@ describe('extractFromMime — NO_DOCUMENTS', () => {
       ],
     });
     const result = extractFromMime(mime);
-    expect(result).toEqual({ success: false, reason: IngestReasonCode.NO_DOCUMENTS });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(0);
+    }
+  });
+
+  it('tolerates structureless/binary input as an empty message (no documents)', () => {
+    // Post-WS-B the emptiness decision is deferred downstream: input with no
+    // recognizable MIME structure parses as an empty message (no documents,
+    // empty body) and is quarantined later, rather than failing at parse time.
+    // (A genuinely empty buffer is still a PARSE_ERROR — see above.)
+    const result = extractFromMime(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(0);
+      expect(result.body).toBe('');
+    }
   });
 });
 
@@ -417,19 +446,17 @@ describe('extractFromMime — deeply nested multipart', () => {
   }
 
   it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', () => {
-    // Build a message nested deeper than the limit
+    // Build a message nested deeper than the limit. The multipart Content-Type
+    // must lead the top-level header block (no blank line before it), otherwise
+    // it lands in the body and the top level parses as text/plain — never
+    // recursing into the nested structure that the depth guard protects against.
     const nested = buildNestedMultipart(MAX_MIME_DEPTH + 2);
-    const raw = Buffer.from(
-      ['From: attacker@evil.com', '', nested].join('\r\n'),
-      'utf8',
-    );
+    const raw = Buffer.from(['From: attacker@evil.com', nested].join('\r\n'), 'utf8');
     const result = extractFromMime(raw);
-    // Either PARSE_ERROR (throws) or NO_DOCUMENTS (no docs at max depth) — never success
+    // Exceeding the nesting limit throws → PARSE_ERROR (never success).
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect([IngestReasonCode.PARSE_ERROR, IngestReasonCode.NO_DOCUMENTS]).toContain(
-        result.reason,
-      );
+      expect(result.reason).toBe(IngestReasonCode.PARSE_ERROR);
     }
   });
 });
@@ -526,6 +553,98 @@ describe('extractFromMime — boundary collision in body', () => {
       expect(result.documents).toHaveLength(1);
       expect(result.documents[0]?.content).toEqual(pdf);
       expect(result.documents[0]?.filename).toBe('doc.pdf');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Body capture & issuer candidates
+// ---------------------------------------------------------------------------
+
+describe('extractFromMime — body capture & issuer candidates', () => {
+  it('captures the HTML body of a text/html message', () => {
+    const result = extractFromMime(makeHtmlMime('<p>hello body world</p>'));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.body).toContain('hello body world');
+    }
+  });
+
+  it('prefers the HTML body over text/plain in multipart/alternative', () => {
+    const boundary = 'ALT001';
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'MIME-Version: 1.0',
+        `Content-Type: multipart/alternative; boundary="${boundary}"`,
+        '',
+        `--${boundary}`,
+        'Content-Type: text/plain; charset=utf-8',
+        '',
+        'plain version',
+        `--${boundary}`,
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        '<p>html version</p>',
+        `--${boundary}--`,
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.body).toContain('html version');
+      expect(result.body).not.toContain('plain version');
+    }
+  });
+
+  it('extracts (and URL-decodes) issuer mailto candidates from "From:" links in the body', () => {
+    const html =
+      '<div>From: Real Vendor &lt;<a href="mailto:real%40vendor.com">real@vendor.com</a>&gt;</div>';
+    const result = extractFromMime(makeHtmlMime(html));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toContain('real@vendor.com');
+    }
+  });
+
+  it('returns no issuer candidates when the body has no From: mailto link', () => {
+    const result = extractFromMime(makeHtmlMime('<p>no contact links here</p>'));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toEqual([]);
+    }
+  });
+
+  it('matches issuer candidates across a newline-wrapped From: line', () => {
+    const html = 'From: Real Vendor\r\n<a href="mailto:wrapped@vendor.com">link</a>';
+    const result = extractFromMime(makeHtmlMime(html));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toContain('wrapped@vendor.com');
+    }
+  });
+
+  it('decodes a non-UTF-8 (windows-1255) text body via its declared charset', () => {
+    const header = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'MIME-Version: 1.0',
+        'Content-Type: text/plain; charset=windows-1255',
+        'Content-Transfer-Encoding: 8bit',
+        '',
+        '',
+      ].join('\r\n'),
+      'ascii',
+    );
+    // 0xE0 0xE1 0xE2 = אבג in windows-1255
+    const mime = Buffer.concat([header, Buffer.from([0xe0, 0xe1, 0xe2])]);
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.body).toBe('אבג');
     }
   });
 });

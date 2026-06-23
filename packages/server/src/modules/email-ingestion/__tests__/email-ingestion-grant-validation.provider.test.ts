@@ -19,6 +19,7 @@ const baseGrant = {
   action: 'ingest',
   expires_at: FUTURE,
   consumed_at: null as Date | null,
+  business_id: null as string | null,
 };
 
 const baseInput = {
@@ -88,6 +89,14 @@ describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
       valid: true,
       grant: expect.objectContaining({ jti: 'jti-uuid', tenantId: 'tenant-uuid', action: 'ingest' }),
     });
+  });
+
+  it('surfaces the grant business_id onto the validated grant', async () => {
+    const withBusiness = { ...baseGrant, business_id: 'business-uuid-x' };
+    const { provider } = makeProvider([withBusiness], [{ id: 'row-uuid' }]);
+    const result = await provider.validateAndConsumeGrant(baseInput);
+
+    expect(result).toMatchObject({ valid: true, grant: { businessId: 'business-uuid-x' } });
   });
 
   it('returns GRANT_INVALID when jti is not found', async () => {

@@ -2,12 +2,17 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import {
+  suggestionDataSchema,
+  type EmailListenerConfig,
+} from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
   IGetAliasByAliasQuery,
-  IGetGrantByJtiQuery,
+  IGetBusinessByEmailForIngestQuery,
+  IGetGrantByJtiForValidationQuery,
   IInsertIngestGrantQuery,
 } from '../types.js';
 
@@ -25,13 +30,24 @@ const getAliasByAlias = sql<IGetAliasByAliasQuery>`
 
 const insertIngestGrant = sql<IInsertIngestGrantQuery>`
   INSERT INTO accounter_schema.email_ingestion_grants
-    (jti, owner_id, message_id, raw_message_hash, action, expires_at)
-  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt)
-  RETURNING id, jti, owner_id, action, expires_at
+    (jti, owner_id, message_id, raw_message_hash, action, expires_at, business_id)
+  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt, $businessId)
+  RETURNING id, jti, owner_id, action, expires_at, business_id
 `;
 
-const getGrantByJti = sql<IGetGrantByJtiQuery>`
-  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at
+// Resolve the issuing business by a sender email listed in its
+// suggestion_data.emails. Mirrors BusinessesProvider.getBusinessByEmail, but
+// runs on a tenant-pinned client (the control plane has no auth session), so
+// businesses RLS scopes the match to the resolved tenant.
+const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
+  SELECT id, suggestion_data
+    FROM accounter_schema.businesses
+   WHERE suggestion_data->'emails' ? $email::text
+   LIMIT 1
+`;
+
+const getGrantByJtiForValidation = sql<IGetGrantByJtiForValidationQuery>`
+  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at, business_id
     FROM accounter_schema.email_ingestion_grants
    WHERE jti = $jti
    LIMIT 1
@@ -70,6 +86,15 @@ export type IssueGrantInput = {
   rawMessageHash: string;
   expiresAt: Date;
   correlationId?: string;
+  /** Recognized issuing business, bound into the grant for the ingest step. */
+  businessId?: string | null;
+};
+
+export type BusinessRecognitionResult = {
+  /** The recognized issuing business, or null when no business matched. */
+  businessId: string | null;
+  /** The business's email-processing config (empty when unrecognized). */
+  config: EmailListenerConfig;
 };
 
 export type ValidateGrantInput = {
@@ -84,6 +109,8 @@ export type ValidatedGrant = {
   tenantId: string;
   action: string;
   expiresAt: Date;
+  /** Recognized issuing business bound at control time; null when unrecognized. */
+  businessId: string | null;
 };
 
 export type GrantValidationResult =
@@ -134,11 +161,19 @@ export class EmailIngestionControlProvider {
     const decisionId = randomUUID();
     const auditId = randomUUID();
 
-    const { tenantId, messageId, rawMessageHash, expiresAt } = input;
+    const { tenantId, messageId, rawMessageHash, expiresAt, businessId } = input;
 
     const rows = await withTenantContext(this.dbProvider.pool, tenantId, client =>
       insertIngestGrant.run(
-        { jti, ownerId: tenantId, messageId, rawMessageHash, action: 'ingest', expiresAt },
+        {
+          jti,
+          ownerId: tenantId,
+          messageId,
+          rawMessageHash,
+          action: 'ingest',
+          expiresAt,
+          businessId: businessId ?? null,
+        },
         client,
       ),
     );
@@ -158,6 +193,46 @@ export class EmailIngestionControlProvider {
   }
 
   /**
+   * Recognize the issuing business behind an incoming email and load its
+   * email-processing config. Runs on a client pinned to the resolved tenant so
+   * the businesses RLS policy scopes the lookup to that tenant; returns a null
+   * businessId (and empty config) when no email evidence is available or no
+   * business matches, in which case the gateway applies default treatment.
+   */
+  async recognizeBusiness(
+    tenantId: string,
+    issuerEmail: string | null,
+  ): Promise<BusinessRecognitionResult> {
+    if (!issuerEmail) {
+      return { businessId: null, config: {} };
+    }
+
+    return withTenantContext(this.dbProvider.pool, tenantId, async client => {
+      const rows = await getBusinessByEmailForIngest.run({ email: issuerEmail }, client);
+      if (rows.length === 0) {
+        return { businessId: null, config: {} };
+      }
+
+      const business = rows[0];
+      let config: EmailListenerConfig = {};
+      if (business.suggestion_data) {
+        const parsed = suggestionDataSchema.safeParse(business.suggestion_data);
+        if (parsed.success) {
+          if (parsed.data.emailListener) {
+            config = parsed.data.emailListener;
+          }
+        } else {
+          console.error(
+            `Invalid suggestion_data schema for business [${business.id}]: ${JSON.stringify(parsed.error.issues)}`,
+          );
+        }
+      }
+
+      return { businessId: business.id, config };
+    });
+  }
+
+  /**
    * Validate a presented grant against the stored record and atomically consume it.
    * Checks: existence, expiry, consumed state, action scope, tenant binding, and message binding.
    * The consume UPDATE (SET consumed_at = NOW() WHERE consumed_at IS NULL) is atomic —
@@ -171,7 +246,7 @@ export class EmailIngestionControlProvider {
    */
   async validateAndConsumeGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
     return withTenantContext(this.dbProvider.pool, input.tenantId, async client => {
-      const rows = await getGrantByJti.run({ jti: input.jti }, client);
+      const rows = await getGrantByJtiForValidation.run({ jti: input.jti }, client);
 
       if (rows.length === 0) {
         return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
@@ -217,6 +292,7 @@ export class EmailIngestionControlProvider {
           tenantId: grant.owner_id,
           action: grant.action,
           expiresAt: grant.expires_at,
+          businessId: grant.business_id ?? null,
         },
       };
     });

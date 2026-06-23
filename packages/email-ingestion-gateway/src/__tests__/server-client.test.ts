@@ -55,6 +55,7 @@ const CONTROL_SUCCESS_RESPONSE = {
         action: 'ingest',
         expiresAt: '2026-01-01T00:05:00Z',
       },
+      businessEmailConfig: null,
     },
   },
 };
@@ -192,6 +193,58 @@ describe('ServerClient.requestControl — success', () => {
     const [, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
     const body = JSON.parse(opts.body as string) as { variables: { input: ControlInput } };
     expect(body.variables.input.correlationId).toBe('corr-abc');
+  });
+
+  it('returns null businessEmailConfig when control reports no recognized business', async () => {
+    const client = makeClient(makeFetch([{ body: CONTROL_SUCCESS_RESPONSE }]));
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.decision.businessEmailConfig).toBeNull();
+    }
+  });
+
+  it('parses the businessEmailConfig from the control decision', async () => {
+    const response = {
+      data: {
+        requestIngestControl: {
+          ...CONTROL_SUCCESS_RESPONSE.data.requestIngestControl,
+          businessEmailConfig: {
+            businessId: 'biz-1',
+            internalEmailLinks: ['https://vendor.com/invoices'],
+            emailBody: true,
+            attachments: ['PDF'],
+          },
+        },
+      },
+    };
+    const client = makeClient(makeFetch([{ body: response }]));
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.decision.businessEmailConfig).toEqual({
+        businessId: 'biz-1',
+        internalEmailLinks: ['https://vendor.com/invoices'],
+        emailBody: true,
+        attachments: ['PDF'],
+      });
+    }
+  });
+
+  it('sends senderEvidence in the request body when provided', async () => {
+    const fetchFn = makeFetch([{ body: CONTROL_SUCCESS_RESPONSE }]);
+    const client = makeClient(fetchFn);
+    await client.requestControl({
+      ...CONTROL_INPUT,
+      senderEvidence: { from: 'forwarder@gmail.com', issuerCandidates: ['real@vendor.com'] },
+    });
+
+    const [, opts] = (fetchFn as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(opts.body as string) as { variables: { input: ControlInput } };
+    expect(body.variables.input.senderEvidence).toEqual({
+      from: 'forwarder@gmail.com',
+      issuerCandidates: ['real@vendor.com'],
+    });
   });
 });
 

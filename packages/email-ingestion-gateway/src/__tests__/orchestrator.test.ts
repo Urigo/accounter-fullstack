@@ -17,7 +17,8 @@ const BASE_INPUT: OrchestrateInput = {
   rawMessageHash: 'a'.repeat(64),
   correlationId: 'corr-test-001',
   receivedAt: '2026-01-01T12:00:00Z',
-  extractedDocuments: [],
+  body: '',
+  attachments: [],
 };
 
 const GRANT = {
@@ -36,6 +37,7 @@ const CONTROL_SUCCESS: ControlResult = {
     decisionId: 'decision-001',
     auditId: 'audit-control-001',
     grant: GRANT,
+    businessEmailConfig: null,
   },
 };
 
@@ -63,7 +65,9 @@ function makeDeps(
       requestControl: vi.fn().mockResolvedValue(controlResult),
       requestIngest: vi.fn().mockResolvedValue(ingestResult ?? makeIngestSuccess('INSERTED')),
     },
-  };
+    // Default treatment passthrough: forward raw attachments unchanged (no Chromium/network).
+    applyTreatment: vi.fn(async (input: { attachments: unknown[] }) => input.attachments),
+  } as unknown as OrchestratorDeps;
 }
 
 // ---------------------------------------------------------------------------
@@ -346,13 +350,92 @@ describe('orchestrate — end-to-end flow verification', () => {
     expect(controlArg.receivedAt).toBe('2026-06-01T08:00:00Z');
   });
 
-  it('passes extractedDocuments to ingest', async () => {
-    const docs = [{ hash: 'b'.repeat(64), sizeBytes: 1024, mimeType: 'application/pdf' }];
+  it('maps the treated document set to ingest metadata + inline base64 bytes', async () => {
+    const attachments = [
+      {
+        filename: 'inv.pdf',
+        mimeType: 'application/pdf',
+        content: Buffer.from('x'),
+        size: 1024,
+        sha256: 'b'.repeat(64),
+      },
+    ];
     const deps = makeDeps(CONTROL_SUCCESS);
-    await orchestrate({ ...BASE_INPUT, extractedDocuments: docs }, deps);
+    await orchestrate({ ...BASE_INPUT, attachments }, deps);
     const ingestArg = (deps.serverClient.requestIngest as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
-    expect(ingestArg.extractedDocuments).toEqual(docs);
+    expect(ingestArg.extractedDocuments).toEqual([
+      {
+        hash: 'b'.repeat(64),
+        sizeBytes: 1024,
+        mimeType: 'application/pdf',
+        filename: 'inv.pdf',
+        content: Buffer.from('x').toString('base64'),
+      },
+    ]);
+  });
+
+  it('runs treatment with the control config and sends the treated set to ingest', async () => {
+    const treatedDocs = [
+      {
+        filename: 'body.pdf',
+        mimeType: 'application/pdf',
+        content: Buffer.from('p'),
+        size: 10,
+        sha256: 'c'.repeat(64),
+      },
+    ];
+    const applyTreatment = vi.fn().mockResolvedValue(treatedDocs);
+    const controlWithConfig = {
+      success: true,
+      decision: {
+        id: 'dec-001',
+        tenantId: 'tenant-001',
+        decisionId: 'decision-001',
+        auditId: 'audit-control-001',
+        grant: GRANT,
+        businessEmailConfig: {
+          businessId: 'biz-1',
+          internalEmailLinks: null,
+          emailBody: true,
+          attachments: null,
+        },
+      },
+    } as unknown as ControlResult;
+    const deps = { ...makeDeps(controlWithConfig), applyTreatment } as unknown as OrchestratorDeps;
+
+    await orchestrate({ ...BASE_INPUT, body: '<p>hi</p>', attachments: [] }, deps);
+
+    expect(applyTreatment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: '<p>hi</p>',
+        config: expect.objectContaining({ businessId: 'biz-1', emailBody: true }),
+      }),
+    );
+    const ingestArg = (deps.serverClient.requestIngest as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(ingestArg.extractedDocuments).toEqual([
+      {
+        hash: 'c'.repeat(64),
+        sizeBytes: 10,
+        mimeType: 'application/pdf',
+        filename: 'body.pdf',
+        content: Buffer.from('p').toString('base64'),
+      },
+    ]);
+  });
+
+  it('passes senderEvidence to control for business recognition', async () => {
+    const senderEvidence = {
+      from: 'forwarder@gmail.com',
+      replyTo: 'reply@vendor.com',
+      issuerCandidates: ['real@vendor.com'],
+    };
+    const deps = makeDeps(CONTROL_SUCCESS);
+    await orchestrate({ ...BASE_INPUT, senderEvidence }, deps);
+    const controlArg = (deps.serverClient.requestControl as ReturnType<typeof vi.fn>).mock
+      .calls[0][0];
+    expect(controlArg.senderEvidence).toEqual(senderEvidence);
   });
 
   it('returns idempotent duplicate outcome on repeated delivery', async () => {
