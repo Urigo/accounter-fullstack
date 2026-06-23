@@ -35,11 +35,20 @@ to a private Gateway, while keeping tenant resolution and data persistence autho
 1. Cloudflare Email receives inbound mail for tenant aliases (recommended: non-guessable aliases).
 2. Cloudflare forwards each event to a private Gateway endpoint.
 3. Gateway validates authenticity and replay constraints before parsing MIME.
-4. Gateway calls Server control endpoint to resolve tenant and request ingest grant.
-5. Server issues short-lived, message-bound, single-use ingest grant.
-6. Gateway extracts documents and sender evidence, then calls Server ingest endpoint.
+4. Gateway parses MIME (body, attachments, sender evidence) and calls the Server control endpoint to
+   resolve the tenant and recognize the issuing business.
+5. Server issues a short-lived, message-bound, single-use ingest grant with the recognized
+   business_id bound in, and returns that business's treatment config (businessEmailConfig).
+6. Gateway runs treatment (filter attachments, render body to PDF when unrecognized or opted-in,
+   fetch documents behind configured internal links), then calls the Server ingest endpoint with the
+   final document set inlined as base64.
 7. Server validates grant, idempotency, tenant scope, and dedup constraints.
-8. Server writes via existing tenant guardrails and returns auditable outcome.
+8. Server persists the documents and a charge under the grant's business_id (or quarantines an empty
+   set) via existing tenant guardrails, and returns an auditable outcome.
+
+> Business recognition (control) and per-provider treatment (gateway) — attachment filtering,
+> body→PDF rendering, and internal-link fetching — are detailed in
+> [`business-recognition-plan.md`](./business-recognition-plan.md).
 
 ## Trust and Privilege Model
 
@@ -66,12 +75,17 @@ to a private Gateway, while keeping tenant resolution and data persistence autho
 2. Cloudflare forwards recipient alias, headers, and raw payload to Gateway.
 3. Gateway validates authenticity, request age, and nonce replay.
 4. Gateway computes raw_message_hash and creates correlation_id.
-5. Gateway calls Server control endpoint with alias plus message metadata.
-6. Server resolves tenant and policy, emits decision_id, and returns ingest grant.
-7. Gateway parses MIME and extracts candidate documents plus sender evidence.
-8. Gateway calls ingest endpoint with grant, idempotency_key, and extraction payload.
+5. Gateway parses MIME (body, attachments, sender evidence), then calls the Server control endpoint
+   with the alias, message metadata, and sender evidence.
+6. Server resolves the tenant, recognizes the issuing business under tenant RLS, emits decision_id,
+   binds business_id into the grant, and returns the grant plus businessEmailConfig.
+7. Gateway runs treatment driven by businessEmailConfig (attachment filter, body to PDF,
+   internal-link fetch) and decides document emptiness from the result.
+8. Gateway calls the ingest endpoint with the grant, idempotency_key, and the post-treatment
+   documents inlined as base64.
 9. Server validates grant signature, expiry, scope, and single-use jti.
-10. Server enforces idempotency and dedup; inserts or returns duplicate outcome.
+10. Server enforces idempotency and dedup; persists documents + charge under the grant's
+    business_id, or returns a duplicate / NO_DOCUMENTS quarantine outcome.
 11. Server writes audit trail with correlation_id and decision_id.
 12. Gateway applies outcome handling: processed, quarantined, retry, or alert.
 
@@ -79,23 +93,25 @@ to a private Gateway, while keeping tenant resolution and data persistence autho
 
 1. Control endpoint request
    1. recipient_alias
-   2. provider_event_id, message_id, thread_id
-   3. envelope/from/to metadata
-   4. raw_message_hash
-   5. received_at
-   6. correlation_id
+   2. message_id
+   3. raw_message_hash
+   4. received_at
+   5. correlation_id
+   6. sender_evidence (from, reply_to, original_from, forwarded_to, issuer candidates from the body)
+      — drives server-side business recognition
 2. Control endpoint response
    1. tenant_id
    2. decision_id and audit_id
    3. ingest_grant (includes jti, tenant_id, message binding, action scope, expires_at)
-   4. optional policy/profile id
+   4. businessEmailConfig (recognized business_id + emailBody, attachments, internalEmailLinks);
+      null when no business matched
 3. Ingest endpoint request
    1. ingest_grant
-   2. idempotency_key
-   3. extracted_documents (hash, size, mime_type, filename, parse result)
-   4. sender_evidence (alias, from, reply_to, forwarding headers, issuer candidate)
-   5. message_metadata
-   6. correlation_id
+   2. idempotency_key (the raw_message_hash)
+   3. tenant_id, message_id, raw_message_hash
+   4. extracted_documents — the post-treatment set (hash, size, mime_type, filename, inline base64
+      content). No client-settable business_id; the issuing business is read back from the grant.
+   5. correlation_id
 4. Ingest endpoint response
    1. outcome (inserted, duplicate, quarantined, rejected)
    2. ingest_id or existing_ingest_id
