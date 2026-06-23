@@ -17,7 +17,7 @@ import { encodeFilters } from '@/router/routes.js';
 import {
   ChargeFilterType,
   ChargeSortByField,
-  ChargeTypeName,
+  ChargeType,
   type ChargeFilter,
 } from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
@@ -68,18 +68,18 @@ export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilte
   { label: 'Expense', value: ChargeFilterType.Expense },
 ];
 
-const chargeTypeNameOptions: Array<{ label: string; value: ChargeTypeName }> = [
-  { label: 'Bank Deposit', value: ChargeTypeName.BankDepositCharge },
-  { label: 'Business Trip', value: ChargeTypeName.BusinessTripCharge },
-  { label: 'Common', value: ChargeTypeName.CommonCharge },
-  { label: 'Conversion', value: ChargeTypeName.ConversionCharge },
-  { label: 'Credit Card Bank', value: ChargeTypeName.CreditcardBankCharge },
-  { label: 'Dividend', value: ChargeTypeName.DividendCharge },
-  { label: 'Financial', value: ChargeTypeName.FinancialCharge },
-  { label: 'Foreign Securities', value: ChargeTypeName.ForeignSecuritiesCharge },
-  { label: 'Internal Transfer', value: ChargeTypeName.InternalTransferCharge },
-  { label: 'Monthly VAT', value: ChargeTypeName.MonthlyVatCharge },
-  { label: 'Salary', value: ChargeTypeName.SalaryCharge },
+const chargeTypeNameOptions: Array<{ label: string; value: ChargeType }> = [
+  { label: 'Bank Deposit', value: ChargeType.BankDeposit },
+  { label: 'Business Trip', value: ChargeType.BusinessTrip },
+  { label: 'Common', value: ChargeType.Common },
+  { label: 'Conversion', value: ChargeType.Conversion },
+  { label: 'Credit Card Bank', value: ChargeType.CreditcardBank },
+  { label: 'Dividend', value: ChargeType.Dividend },
+  { label: 'Financial', value: ChargeType.Financial },
+  { label: 'Foreign Securities', value: ChargeType.ForeignSecurities },
+  { label: 'Internal Transfer', value: ChargeType.Internal },
+  { label: 'Monthly VAT', value: ChargeType.Vat },
+  { label: 'Salary', value: ChargeType.Payroll },
 ];
 
 function ChargesFiltersForm({
@@ -527,8 +527,8 @@ function ChargesFiltersForm({
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>
-                            Show charges with a transaction missing a business, or a document missing
-                            a creditor / debtor
+                            Show charges with a transaction missing a business, or a document
+                            missing a creditor / debtor
                           </p>
                         </TooltipContent>
                       </Tooltip>

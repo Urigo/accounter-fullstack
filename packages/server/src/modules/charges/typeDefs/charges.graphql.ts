@@ -324,7 +324,7 @@ export default gql`
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
     " Include only charges resolved to one of these concrete types (by __typename) "
-    byChargeTypes: [ChargeTypeName!]
+    byChargeTypes: [ChargeType!]
     " Include only charges tied to one of these business trips "
     byBusinessTrips: [UUID!]
     " Include only charges with a missing counterparty: a transaction without a business, or a document without a creditor / debtor "
@@ -337,21 +337,6 @@ export default gql`
     ALL
     INCOME
     EXPENSE
-  }
-
-  " concrete charge type names, matching the resolved charge __typename "
-  enum ChargeTypeName {
-    BankDepositCharge
-    BusinessTripCharge
-    CommonCharge
-    ConversionCharge
-    CreditcardBankCharge
-    DividendCharge
-    FinancialCharge
-    ForeignSecuritiesCharge
-    InternalTransferCharge
-    MonthlyVatCharge
-    SalaryCharge
   }
 
   " input variables for sorting charges "
