@@ -143,6 +143,7 @@ __metadata:
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:25.9.4"
     dotenv: "npm:17.4.2"
+    graphql: "npm:16.14.2"
     graphql-request: "npm:7.4.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.61.0"
