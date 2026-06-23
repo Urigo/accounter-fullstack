@@ -82,6 +82,8 @@ export interface IngestDocumentInput {
   sizeBytes: number;
   mimeType: string;
   filename?: string;
+  /** Base64-encoded document bytes — Option B inline transport to the server. */
+  content?: string;
 }
 
 export interface IngestInput {

@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
 import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
+import { DocumentType } from '../../../shared/enums.js';
+import { hashStringToInt } from '../../../shared/helpers/index.js';
+import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
 import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
@@ -87,6 +90,35 @@ interface IInsertQuarantineForIngestQuery {
   result: { id: string };
 }
 
+// Document persistence (Workstream D). The gateway control-plane caller has no
+// auth session, so the auth-coupled DocumentsProvider / ChargesProvider /
+// getDocumentFromFile cannot be used here; these inline queries run on the
+// tenant-pinned client (cf. the idempotency/dedup/quarantine inserts above), so
+// the documents/charges `tenant_isolation` RLS WITH CHECK (owner_id =
+// get_current_business_id()) is satisfied by the pinned tenant.
+interface ICheckDocumentByHashForIngestQuery {
+  params: { ownerId: string; fileHash: string };
+  result: { id: string };
+}
+
+interface IInsertChargeForIngestQuery {
+  params: { ownerId: string; userDescription: string; accountantStatus: string };
+  result: { id: string };
+}
+
+interface IInsertDocumentForIngestQuery {
+  params: {
+    ownerId: string;
+    chargeId: string;
+    creditorId: string | null;
+    documentType: string;
+    fileUrl: string;
+    imageUrl: string;
+    fileHash: string;
+  };
+  result: { id: string };
+}
+
 // ---------------------------------------------------------------------------
 // SQL queries
 // ---------------------------------------------------------------------------
@@ -130,6 +162,28 @@ const insertQuarantine = sql<IInsertQuarantineForIngestQuery>`
   RETURNING id
 `;
 
+const checkDocumentByHash = sql<ICheckDocumentByHashForIngestQuery>`
+  SELECT id
+    FROM accounter_schema.documents
+   WHERE owner_id = $ownerId
+     AND file_hash = $fileHash
+   LIMIT 1
+`;
+
+const insertIngestCharge = sql<IInsertChargeForIngestQuery>`
+  INSERT INTO accounter_schema.charges
+    (owner_id, type, accountant_status, user_description, tax_category_id, optional_vat, documents_optional_flag, is_property)
+  VALUES ($ownerId, NULL, $accountantStatus, $userDescription, NULL, FALSE, FALSE, FALSE)
+  RETURNING id
+`;
+
+const insertIngestDocument = sql<IInsertDocumentForIngestQuery>`
+  INSERT INTO accounter_schema.documents
+    (owner_id, charge_id, type, file_url, image_url, file_hash, creditor_id)
+  VALUES ($ownerId, $chargeId, $documentType, $fileUrl, $imageUrl, $fileHash, $creditorId)
+  RETURNING id
+`;
+
 // ---------------------------------------------------------------------------
 // Public input / output types
 // ---------------------------------------------------------------------------
@@ -146,6 +200,8 @@ export type IngestInput = {
     sizeBytes: number;
     mimeType: string;
     filename?: string | null;
+    /** Base64-encoded document bytes (inline transport); omitted = metadata only. */
+    content?: string | null;
   }>;
 };
 
@@ -186,6 +242,7 @@ export class EmailIngestionIngestProvider {
   constructor(
     private dbProvider: DBProvider,
     private controlProvider: EmailIngestionControlProvider,
+    private cloudinaryProvider: CloudinaryProvider,
   ) {}
 
   async performIngest(input: IngestInput): Promise<IngestResult> {
@@ -270,12 +327,18 @@ export class EmailIngestionIngestProvider {
         };
       }
 
-      // 5. Happy path: record the ingest.
-      // TODO: persist extractedDocuments to the documents table and link to a charge.
-      // Document storage is deferred — this step establishes the control flow (grant
-      // validation, idempotency, dedup, quarantine). Full document insertion will be
-      // wired in when DocumentsProvider is integrated into the ingest path.
-      const ingestId = randomUUID();
+      // 5. Happy path: persist the inline document bytes under the recognized
+      // business (bound in the grant), then record the ingest. The created
+      // charge id doubles as the ingest id; when no inline bytes are present
+      // (metadata-only callers) persistence is a no-op and a synthetic id is used.
+      const chargeId = await this.persistDocuments(client, {
+        tenantId,
+        businessId: grantResult.grant.businessId,
+        messageId,
+        documents: extractedDocuments,
+      });
+
+      const ingestId = chargeId ?? randomUUID();
       const auditId = randomUUID();
 
       const idemResult = await this.persistIdempotencyAndDedup({
@@ -295,6 +358,91 @@ export class EmailIngestionIngestProvider {
         auditId: idemResult.auditId,
       };
     });
+  }
+
+  /**
+   * Persist the inline document bytes (Option B transport) under the grant
+   * tenant, attributing them to the recognized issuing business. Mirrors the
+   * legacy `insertEmailDocuments` resolver — Cloudinary upload, per-document
+   * hash dedup skip, one charge owning the new documents — but uses inline,
+   * tenant-pinned SQL because the auth-coupled providers cannot run in the
+   * gateway control-plane context.
+   *
+   * Documents are inserted as UNPROCESSED (classification/OCR happens later via
+   * the normal flow). Metadata-only entries (no inline bytes) are skipped, so a
+   * caller that sends no content is a no-op. Returns the created charge id, or
+   * null when nothing new was persisted.
+   */
+  private async persistDocuments(
+    client: PoolClient,
+    args: {
+      tenantId: string;
+      businessId: string | null;
+      messageId: string;
+      documents: IngestInput['extractedDocuments'];
+    },
+  ): Promise<string | null> {
+    const { tenantId, businessId, messageId, documents } = args;
+
+    type DocWithContent = (typeof documents)[number] & { content: string };
+    const withContent = documents.filter(
+      (doc): doc is DocWithContent => typeof doc.content === 'string' && doc.content.length > 0,
+    );
+    if (withContent.length === 0) {
+      return null;
+    }
+
+    // Dedup + upload first; only documents new to this tenant are uploaded.
+    const uploaded: Array<{ fileUrl: string; imageUrl: string; fileHash: string }> = [];
+    for (const doc of withContent) {
+      const buffer = Buffer.from(doc.content, 'base64');
+      // Match the legacy document hash (hashStringToInt over the file text), so
+      // the dedup skip is consistent with documents inserted via the resolver.
+      const fileHash = hashStringToInt(buffer.toString('utf8')).toString();
+
+      const existing = await checkDocumentByHash.run({ ownerId: tenantId, fileHash }, client);
+      if (existing.length > 0) {
+        continue;
+      }
+
+      const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
+      const { fileUrl, imageUrl } =
+        await this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri);
+      uploaded.push({ fileUrl, imageUrl, fileHash });
+    }
+
+    if (uploaded.length === 0) {
+      return null;
+    }
+
+    const [charge] = await insertIngestCharge.run(
+      {
+        ownerId: tenantId,
+        userDescription: `email-ingestion: ${messageId}`,
+        accountantStatus: 'UNAPPROVED',
+      },
+      client,
+    );
+    const chargeId = charge.id;
+
+    for (const doc of uploaded) {
+      await insertIngestDocument.run(
+        {
+          ownerId: tenantId,
+          chargeId,
+          // The recognized issuing business is the document counterparty
+          // (creditor). Null when no business was recognized.
+          creditorId: businessId,
+          documentType: DocumentType.Unprocessed,
+          fileUrl: doc.fileUrl,
+          imageUrl: doc.imageUrl,
+          fileHash: doc.fileHash,
+        },
+        client,
+      );
+    }
+
+    return chargeId;
   }
 
   private async persistIdempotencyAndDedup(args: {

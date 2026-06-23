@@ -17,10 +17,25 @@ const MSG_ID = 'msg-abc-123';
 const MSG_HASH = 'sha256-abc';
 const CORR_ID = 'corr-001';
 
+const BUSINESS_ID = 'business-uuid-x';
+
 const VALID_GRANT = {
   valid: true as const,
-  grant: { jti: JTI, tenantId: TENANT_ID, action: 'ingest', expiresAt: FUTURE },
+  grant: { jti: JTI, tenantId: TENANT_ID, action: 'ingest', expiresAt: FUTURE, businessId: null },
 };
+
+const VALID_GRANT_WITH_BUSINESS = {
+  valid: true as const,
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
+    businessId: BUSINESS_ID,
+  },
+};
+
+const DOC_CONTENT_B64 = Buffer.from('%PDF-1.4 fake invoice bytes').toString('base64');
 
 const BASE_INPUT = {
   grantJti: JTI,
@@ -54,18 +69,26 @@ function makeProvider(
   const validateAndConsumeGrant = vi.fn().mockResolvedValue(grantResult);
   const controlProvider = { validateAndConsumeGrant } as unknown as EmailIngestionControlProvider;
 
+  const uploadInvoiceToCloudinary = vi
+    .fn()
+    .mockResolvedValue({ fileUrl: 'https://cdn/file.pdf', imageUrl: 'https://cdn/file.jpg' });
+  const cloudinaryProvider = { uploadInvoiceToCloudinary } as never;
+
   // Tenant-bound work runs inside a transaction on a pooled client. The mock
   // serves BEGIN / SET LOCAL / COMMIT transparently and dispenses `dbResponses`
   // (in order) only for the actual data queries. `dataQueries` records the
-  // data-query SQL so tests can assert which queries ran.
+  // data-query SQL (and `dataCalls` the SQL + bound values) so tests can assert
+  // which queries ran and with what parameters.
   const responses = [...dbResponses];
   const dataQueries: string[] = [];
-  const queryFn = vi.fn((text: unknown) => {
+  const dataCalls: Array<{ text: string; values: unknown[] }> = [];
+  const queryFn = vi.fn((text: unknown, values?: unknown) => {
     const sqlText = typeof text === 'string' ? text : '';
     if (isControlStatement(sqlText)) {
       return Promise.resolve({ rows: [], rowCount: 0 });
     }
     dataQueries.push(sqlText);
+    dataCalls.push({ text: sqlText, values: Array.isArray(values) ? values : [] });
     return Promise.resolve(responses.shift() ?? { rows: [], rowCount: 0 });
   });
 
@@ -75,12 +98,14 @@ function makeProvider(
   const dbProvider = { pool } as never;
 
   return {
-    provider: new EmailIngestionIngestProvider(dbProvider, controlProvider),
+    provider: new EmailIngestionIngestProvider(dbProvider, controlProvider, cloudinaryProvider),
     validateAndConsumeGrant,
+    uploadInvoiceToCloudinary,
     queryFn,
     connect,
     release,
     dataQueries,
+    dataCalls,
   };
 }
 
@@ -306,6 +331,115 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
 
     await provider.performIngest(BASE_INPUT);
 
+    expect(dataQueries).toHaveLength(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// performIngest — document persistence (Workstream D, inline bytes)
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionIngestProvider.performIngest — document persistence', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const idemRow = {
+    id: 'idem-row',
+    idempotency_key: IDEM_KEY,
+    owner_id: TENANT_ID,
+    outcome: IngestOutcome.INSERTED,
+    ingest_id: 'charge-1',
+    audit_id: 'audit-1',
+    created_at: NOW,
+  };
+  const dedupRow = {
+    id: 'dedup-row',
+    owner_id: TENANT_ID,
+    fingerprint: 'fp',
+    outcome: IngestOutcome.INSERTED,
+    ingest_id: 'charge-1',
+    correlation_id: CORR_ID,
+    created_at: NOW,
+  };
+  const inputWithContent = {
+    ...BASE_INPUT,
+    extractedDocuments: [
+      {
+        hash: 'doc-hash',
+        sizeBytes: 1024,
+        mimeType: 'application/pdf',
+        filename: 'invoice.pdf',
+        content: DOC_CONTENT_B64,
+      },
+    ],
+  };
+
+  it('uploads, creates a charge, and inserts the document when bytes are present', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_WITH_BUSINESS,
+      [
+        { rows: [], rowCount: 0 }, // idempotency miss
+        { rows: [], rowCount: 0 }, // dedup fingerprint miss
+        { rows: [], rowCount: 0 }, // document-by-hash miss
+        { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
+        { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
+    );
+
+    const result = await provider.performIngest(inputWithContent);
+
+    expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED, ingestId: 'charge-1' });
+    expect(uploadInvoiceToCloudinary).toHaveBeenCalledTimes(1);
+    expect(uploadInvoiceToCloudinary).toHaveBeenCalledWith(
+      expect.stringContaining('data:application/pdf;base64,'),
+    );
+
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(true);
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(docInsert).toBeDefined();
+    // the recognized issuing business is attributed as the document counterparty
+    expect(docInsert?.values).toContain(BUSINESS_ID);
+  });
+
+  it('skips upload and charge creation when the document hash already exists', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_WITH_BUSINESS,
+      [
+        { rows: [], rowCount: 0 }, // idempotency miss
+        { rows: [], rowCount: 0 }, // dedup fingerprint miss
+        { rows: [{ id: 'existing-doc' }], rowCount: 1 }, // document-by-hash HIT
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
+    );
+
+    const result = await provider.performIngest(inputWithContent);
+
+    expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED });
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+  });
+
+  it('does not upload or persist when no inline bytes are present (metadata-only)', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataQueries } = makeProvider(VALID_GRANT, [
+      { rows: [], rowCount: 0 }, // idempotency miss
+      { rows: [], rowCount: 0 }, // dedup miss
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    // BASE_INPUT documents carry no `content` — persistence is a no-op.
+    await provider.performIngest(BASE_INPUT);
+
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
     expect(dataQueries).toHaveLength(4);
   });
 });

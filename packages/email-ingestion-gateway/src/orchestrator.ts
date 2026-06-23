@@ -118,6 +118,9 @@ export async function orchestrate(
     sizeBytes: doc.size,
     mimeType: doc.mimeType,
     filename: doc.filename,
+    // Option B: inline the document bytes (base64) to the server, which uploads
+    // and persists them under the recognized business in the ingest step.
+    content: doc.content.toString('base64'),
   }));
 
   // ── Step 3: call ingest endpoint with grant + extracted documents ──────────

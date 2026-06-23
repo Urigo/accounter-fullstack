@@ -8,11 +8,7 @@ import {
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
-import type {
-  IConsumeGrantByJtiQuery,
-  IGetAliasByAliasQuery,
-  IGetGrantByJtiQuery,
-} from '../types.js';
+import type { IConsumeGrantByJtiQuery, IGetAliasByAliasQuery } from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -71,8 +67,27 @@ const getBusinessByEmail = sql<IGetBusinessByEmailForIngestQuery>`
    LIMIT 1
 `;
 
-const getGrantByJti = sql<IGetGrantByJtiQuery>`
-  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at
+// Inline type (cf. insertIngestGrant) so selecting the business_id column does
+// not depend on a regenerated pgtyped type. business_id is read back here and
+// bound onto the ValidatedGrant so the ingest step can attribute documents to
+// the recognized business without trusting gateway input.
+interface IGetGrantByJtiForValidationQuery {
+  params: { jti: string };
+  result: {
+    id: string;
+    jti: string;
+    owner_id: string;
+    message_id: string;
+    raw_message_hash: string;
+    action: string;
+    expires_at: Date;
+    consumed_at: Date | null;
+    business_id: string | null;
+  };
+}
+
+const getGrantByJti = sql<IGetGrantByJtiForValidationQuery>`
+  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at, business_id
     FROM accounter_schema.email_ingestion_grants
    WHERE jti = $jti
    LIMIT 1
@@ -134,6 +149,8 @@ export type ValidatedGrant = {
   tenantId: string;
   action: string;
   expiresAt: Date;
+  /** Recognized issuing business bound at control time; null when unrecognized. */
+  businessId: string | null;
 };
 
 export type GrantValidationResult =
@@ -315,6 +332,7 @@ export class EmailIngestionControlProvider {
           tenantId: grant.owner_id,
           action: grant.action,
           expiresAt: grant.expires_at,
+          businessId: grant.business_id ?? null,
         },
       };
     });
