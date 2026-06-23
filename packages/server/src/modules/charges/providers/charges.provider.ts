@@ -220,6 +220,9 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
              WHERE t.business_id IS NULL
              OR COALESCE(t.debit_date_override, t.debit_date) IS NULL
            ) > 0 AS invalid_transactions,
+           count(*) FILTER (
+             WHERE t.business_id IS NULL
+           ) > 0 AS missing_counterparty_transactions,
            array_agg(DISTINCT t.currency) AS currency_array,
            string_agg(COALESCE(t.source_description, '') || ' ' || COALESCE(t.source_reference, ''), ' ') AS search_text
     FROM accounter_schema.transactions t
@@ -351,6 +354,17 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
              )
              OR d.type = 'UNPROCESSED'::accounter_schema.document_type
            ) > 0 AS invalid_documents,
+           count(*) FILTER (
+             WHERE d.type = ANY (
+               ARRAY[
+                 'INVOICE'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type,
+                 'RECEIPT'::accounter_schema.document_type,
+                 'CREDIT_INVOICE'::accounter_schema.document_type
+               ]
+             )
+             AND (d.creditor_id IS NULL OR d.debtor_id IS NULL)
+           ) > 0 AS missing_counterparty_documents,
            array_agg(d.currency_code) FILTER (
              WHERE (
                businesses.can_settle_with_receipt = true
@@ -502,6 +516,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       END AS transactions_currency,
       tbc.transactions_count,
       tbc.invalid_transactions,
+      tbc.missing_counterparty_transactions,
+      dbc.missing_counterparty_documents,
       COALESCE(dbc.min_event_date, dbc.min_any_event_date) AS documents_min_date,
       COALESCE(dbc.max_event_date, dbc.max_any_event_date) AS documents_max_date,
       COALESCE(dbc.invoice_event_amount, dbc.receipt_event_amount) AS documents_event_amount,
@@ -571,6 +587,8 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($withoutLedger = FALSE OR COALESCE(ec.ledger_count, 0) = 0)
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
+  AND ($isBusinessTripIds = 0 OR ec.business_trip_id = ANY ($businessTripIds::uuid[]))
+  AND ($withMissingCounterparty = FALSE OR COALESCE(ec.missing_counterparty_transactions, false) = true OR COALESCE(ec.missing_counterparty_documents, false) = true)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END ASC,
   CASE WHEN $asc = false AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END DESC,
@@ -911,7 +929,14 @@ const getSimilarCharges = sql<IGetSimilarChargesQuery>`
 type IGetAdjustedChargesByFiltersParams = Optional<
   Omit<
     IGetChargesByFiltersParams,
-    'isOwnerIds' | 'isBusinessIds' | 'businessIds' | 'isIDs' | 'isTags' | 'tags'
+    | 'isOwnerIds'
+    | 'isBusinessIds'
+    | 'businessIds'
+    | 'isIDs'
+    | 'isTags'
+    | 'tags'
+    | 'isBusinessTripIds'
+    | 'businessTripIds'
   >,
   'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
@@ -919,6 +944,7 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   fromDate?: TimelessDateString | null;
   tags?: readonly string[] | null;
   businessIds?: readonly string[] | null;
+  businessTripIds?: readonly string[] | null;
 };
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -1035,6 +1061,7 @@ export class ChargesProvider {
     const isIDs = !!params?.IDs?.length;
     const isTags = !!params?.tags?.length;
     const isAccountantStatuses = !!params?.accountantStatuses?.length;
+    const isBusinessTripIds = !!params?.businessTripIds?.filter(Boolean).length;
 
     const defaults = {
       asc: false,
@@ -1048,6 +1075,7 @@ export class ChargesProvider {
       isIDs: isIDs ? 1 : 0,
       isTags: isTags ? 1 : 0,
       isAccountantStatuses: isAccountantStatuses ? 1 : 0,
+      isBusinessTripIds: isBusinessTripIds ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
@@ -1055,6 +1083,8 @@ export class ChargesProvider {
       businessIds: isBusinessIds ? (params.businessIds! as string[]) : null,
       IDs: isIDs ? params.IDs! : [null],
       tags: isTags ? (params.tags! as string[]) : null,
+      businessTripIds: isBusinessTripIds ? (params.businessTripIds! as string[]) : null,
+      withMissingCounterparty: params.withMissingCounterparty ?? false,
       chargeType: params.chargeType ?? 'ALL',
       withoutInvoice: params.withoutInvoice ?? false,
       withoutReceipt: params.withoutReceipt ?? false,

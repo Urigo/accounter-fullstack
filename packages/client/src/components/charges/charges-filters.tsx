@@ -14,9 +14,15 @@ import { Filter } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Indicator, MultiSelect, Select, SimpleGrid } from '@mantine/core';
 import { encodeFilters } from '@/router/routes.js';
-import { ChargeFilterType, ChargeSortByField, type ChargeFilter } from '../../gql/graphql.js';
+import {
+  ChargeFilterType,
+  ChargeSortByField,
+  ChargeType,
+  type ChargeFilter,
+} from '../../gql/graphql.js';
 import type { TimelessDateString } from '../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
+import { useGetBusinessTrips } from '../../hooks/use-get-business-trips.js';
 import { useGetFinancialEntities } from '../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -62,6 +68,20 @@ export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilte
   { label: 'Expense', value: ChargeFilterType.Expense },
 ];
 
+const chargeTypeNameOptions: Array<{ label: string; value: ChargeType }> = [
+  { label: 'Bank Deposit', value: ChargeType.BankDeposit },
+  { label: 'Business Trip', value: ChargeType.BusinessTrip },
+  { label: 'Common', value: ChargeType.Common },
+  { label: 'Conversion', value: ChargeType.Conversion },
+  { label: 'Credit Card Bank', value: ChargeType.CreditcardBank },
+  { label: 'Dividend', value: ChargeType.Dividend },
+  { label: 'Financial', value: ChargeType.Financial },
+  { label: 'Foreign Securities', value: ChargeType.ForeignSecurities },
+  { label: 'Internal Transfer', value: ChargeType.Internal },
+  { label: 'Monthly VAT', value: ChargeType.Vat },
+  { label: 'Salary', value: ChargeType.Payroll },
+];
+
 function ChargesFiltersForm({
   filter,
   setFilter,
@@ -88,6 +108,8 @@ function ChargesFiltersForm({
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
   const { selectableTags: tags, fetching: tagsFetching } = useGetTags();
+  const { selectableBusinessTrips: businessTrips, fetching: businessTripsFetching } =
+    useGetBusinessTrips();
 
   const sortByField = watch('sortBy.field');
 
@@ -253,7 +275,7 @@ function ChargesFiltersForm({
               defaultValue={filter.chargesType}
               render={({ field }): ReactElement => (
                 <FormItem className="h-min">
-                  <FormLabel>Charge Type</FormLabel>
+                  <FormLabel>Income / Expense</FormLabel>
                   <FormControl>
                     <Select
                       {...field}
@@ -262,6 +284,51 @@ function ChargesFiltersForm({
                       disabled={financialEntitiesFetching}
                       placeholder="Filter income/expense"
                       maxDropdownHeight={160}
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="byChargeTypes"
+              control={control}
+              defaultValue={filter.byChargeTypes}
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Charge Type</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={chargeTypeNameOptions}
+                      value={field.value ?? []}
+                      placeholder="All charge types"
+                      maxDropdownHeight={160}
+                      searchable
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="byBusinessTrips"
+              control={control}
+              defaultValue={filter.byBusinessTrips}
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Business Trips</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={businessTrips}
+                      value={field.value ?? []}
+                      disabled={businessTripsFetching}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
                       withinPortal
                     />
                   </FormControl>
@@ -437,6 +504,34 @@ function ChargesFiltersForm({
                         defaultChecked={filter.withoutTransactions ?? false}
                         onCheckedChange={field.onChange}
                       />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="withMissingCounterparty"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel>Missing Counterparty</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Switch
+                            defaultChecked={filter.withMissingCounterparty ?? false}
+                            onCheckedChange={field.onChange}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            Show charges with a transaction missing a business, or a document
+                            missing a creditor / debtor
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
                     </FormControl>
                   </FormItem>
                 )}

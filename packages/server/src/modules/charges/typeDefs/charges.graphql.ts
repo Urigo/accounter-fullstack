@@ -323,10 +323,16 @@ export default gql`
     freeText: String
     sortBy: ChargeSortBy
     chargesType: ChargeFilterType
+    " Include only charges resolved to one of these concrete types (by __typename) "
+    byChargeTypes: [ChargeType!]
+    " Include only charges tied to one of these business trips "
+    byBusinessTrips: [UUID!]
+    " Include only charges with a missing counterparty: a transaction without a business, or a document without a creditor / debtor "
+    withMissingCounterparty: Boolean
     accountantStatus: [AccountantStatus!]
   }
 
-  " filter charges by type "
+  " filter charges by income / expense flow "
   enum ChargeFilterType {
     ALL
     INCOME
