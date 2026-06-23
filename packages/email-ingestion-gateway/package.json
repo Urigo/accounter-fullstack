@@ -3,13 +3,38 @@
   "version": "0.0.1",
   "type": "module",
   "description": "Cloudflare Email to Server ingestion gateway for multi-tenant email document ingestion",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/email-ingestion-gateway"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/packages/email-ingestion-gateway#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
   "private": true,
   "engines": {
     "node": "26.3.1"
   },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "email",
+    "ingestion",
+    "gateway",
+    "documents",
+    "accounter"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
+    "docker:build": "docker build -f packages/email-ingestion-gateway/DockerFile -t email-ingestion-gateway .",
+    "docker:run": "docker run -it --rm --env-file ./packages/email-ingestion-gateway/.env email-ingestion-gateway",
     "email-ingestion-gateway:build": "yarn build",
     "email-ingestion-gateway:build:prod": "yarn generate && yarn build",
     "email-ingestion-gateway:dev": "yarn dev",
