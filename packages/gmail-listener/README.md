@@ -1,5 +1,12 @@
 # Gmail Listener
 
+> ⚠️ **Deprecated.** This single-inbox listener is superseded by the multi-tenant v2 pipeline in
+> [`@accounter/email-ingestion-gateway`](../email-ingestion-gateway) (Cloudflare → Gateway →
+> Server). It is kept only for rollback during the cutover and receives no new features. Its server
+> GraphQL surface (`businessEmailConfig`, `insertEmailDocuments`) is `@deprecated` and will be
+> removed once the cutover is complete. New work should target the gateway — see
+> [`docs/multi-tenant-gmail-listener/`](../../docs/multi-tenant-gmail-listener).
+
 A service that watches a Gmail inbox, extracts financial documents from matching emails, and sends
 them to the Accounter server through GraphQL.
 

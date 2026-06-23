@@ -2,7 +2,7 @@
   "name": "@accounter/gmail-listener",
   "version": "0.1.2",
   "type": "module",
-  "description": "A Gmail listener that listens for new emails, extracts financial documents, and sends them to the server",
+  "description": "[DEPRECATED — superseded by @accounter/email-ingestion-gateway] A Gmail listener that listens for new emails, extracts financial documents, and sends them to the server",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Urigo/accounter-fullstack.git",
