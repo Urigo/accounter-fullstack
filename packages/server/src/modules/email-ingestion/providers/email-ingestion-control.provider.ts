@@ -8,7 +8,13 @@ import {
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
-import type { IConsumeGrantByJtiQuery, IGetAliasByAliasQuery } from '../types.js';
+import type {
+  IConsumeGrantByJtiQuery,
+  IGetAliasByAliasQuery,
+  IGetBusinessByEmailForIngestQuery,
+  IGetGrantByJtiForValidationQuery,
+  IInsertIngestGrantQuery,
+} from '../types.js';
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -22,71 +28,25 @@ const getAliasByAlias = sql<IGetAliasByAliasQuery>`
    LIMIT 1
 `;
 
-// Inline query type (cf. the ingest provider) so the grant insert does not
-// depend on a regenerated pgtyped type when the business_id column is added.
-interface IInsertGrantQuery {
-  params: {
-    jti: string;
-    ownerId: string;
-    messageId: string;
-    rawMessageHash: string;
-    action: string;
-    expiresAt: Date;
-    businessId: string | null;
-  };
-  result: {
-    id: string;
-    jti: string;
-    owner_id: string;
-    action: string;
-    expires_at: Date;
-    business_id: string | null;
-  };
-}
-
-const insertIngestGrant = sql<IInsertGrantQuery>`
+const insertIngestGrant = sql<IInsertIngestGrantQuery>`
   INSERT INTO accounter_schema.email_ingestion_grants
     (jti, owner_id, message_id, raw_message_hash, action, expires_at, business_id)
   VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt, $businessId)
   RETURNING id, jti, owner_id, action, expires_at, business_id
 `;
 
-interface IGetBusinessByEmailForIngestQuery {
-  params: { email: string };
-  result: { id: string; suggestion_data: unknown };
-}
-
 // Resolve the issuing business by a sender email listed in its
 // suggestion_data.emails. Mirrors BusinessesProvider.getBusinessByEmail, but
 // runs on a tenant-pinned client (the control plane has no auth session), so
 // businesses RLS scopes the match to the resolved tenant.
-const getBusinessByEmail = sql<IGetBusinessByEmailForIngestQuery>`
+const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
   SELECT id, suggestion_data
     FROM accounter_schema.businesses
    WHERE suggestion_data->'emails' ? $email::text
    LIMIT 1
 `;
 
-// Inline type (cf. insertIngestGrant) so selecting the business_id column does
-// not depend on a regenerated pgtyped type. business_id is read back here and
-// bound onto the ValidatedGrant so the ingest step can attribute documents to
-// the recognized business without trusting gateway input.
-interface IGetGrantByJtiForValidationQuery {
-  params: { jti: string };
-  result: {
-    id: string;
-    jti: string;
-    owner_id: string;
-    message_id: string;
-    raw_message_hash: string;
-    action: string;
-    expires_at: Date;
-    consumed_at: Date | null;
-    business_id: string | null;
-  };
-}
-
-const getGrantByJti = sql<IGetGrantByJtiForValidationQuery>`
+const getGrantByJtiForValidation = sql<IGetGrantByJtiForValidationQuery>`
   SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at, business_id
     FROM accounter_schema.email_ingestion_grants
    WHERE jti = $jti
@@ -248,7 +208,7 @@ export class EmailIngestionControlProvider {
     }
 
     return withTenantContext(this.dbProvider.pool, tenantId, async client => {
-      const rows = await getBusinessByEmail.run({ email: issuerEmail }, client);
+      const rows = await getBusinessByEmailForIngest.run({ email: issuerEmail }, client);
       if (rows.length === 0) {
         return { businessId: null, config: {} };
       }
@@ -286,7 +246,7 @@ export class EmailIngestionControlProvider {
    */
   async validateAndConsumeGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
     return withTenantContext(this.dbProvider.pool, input.tenantId, async client => {
-      const rows = await getGrantByJti.run({ jti: input.jti }, client);
+      const rows = await getGrantByJtiForValidation.run({ jti: input.jti }, client);
 
       if (rows.length === 0) {
         return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
