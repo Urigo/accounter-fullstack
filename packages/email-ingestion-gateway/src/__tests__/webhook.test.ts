@@ -280,6 +280,7 @@ describe('POST /webhook — createWebhookHandler', () => {
       verifier: makeVerifier({ valid: true }),
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: vi.fn().mockResolvedValue([]),
     });
     const body = [
       'From: Forwarder <forwarder@gmail.com>',
@@ -401,6 +402,7 @@ describe('POST /webhook — shadow mode', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: true },
       serverClient,
+      applyTreatment: vi.fn().mockResolvedValue([]),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(), res);
@@ -428,6 +430,7 @@ describe('POST /webhook — shadow mode', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: true },
       serverClient,
+      applyTreatment: vi.fn().mockResolvedValue([]),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(), res);

@@ -109,8 +109,14 @@ const CONTROL_SUCCESS: ControlResult = {
     decisionId: 'decision-001',
     auditId: 'audit-ctrl-001',
     grant: GRANT,
+    businessEmailConfig: null,
   },
 };
+
+// Treatment passthrough: forward raw attachments unchanged so these
+// orchestration-focused tests never launch Chromium / hit the network.
+const passthroughTreatment = () =>
+  vi.fn(async (input: { attachments: unknown[] }) => input.attachments);
 
 function makeServerClient(
   controlResult: ControlResult,
@@ -158,6 +164,7 @@ describe('integration — happy path', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -196,6 +203,7 @@ describe('integration — happy path', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus } = makeRes();
     await handler(makeReq(mime), res);
@@ -228,6 +236,7 @@ describe('integration — happy path', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -248,6 +257,7 @@ describe('integration — happy path', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -268,6 +278,7 @@ describe('integration — invalid auth', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     // Use wrong secret so HMAC check fails
@@ -284,6 +295,7 @@ describe('integration — invalid auth', () => {
       verifier,
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     // First request passes
     const req1 = makeReq(VALID_PAYLOAD);
@@ -329,6 +341,7 @@ describe('integration — unknown alias', () => {
       verifier: makeVerifier(),
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -354,6 +367,7 @@ describe('integration — grant reuse', () => {
       verifier: makeVerifier(),
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);
@@ -381,6 +395,7 @@ describe('integration — cross-tenant insertion prevention', () => {
       verifier: makeVerifier(),
       featureFlags: { v2Enabled: true, shadowMode: false },
       serverClient,
+      applyTreatment: passthroughTreatment(),
     });
     const { res, getStatus, getBody } = makeRes();
     await handler(makeReq(VALID_PAYLOAD), res);

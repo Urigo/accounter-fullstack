@@ -14,6 +14,12 @@ export const REQUEST_INGEST_CONTROL_MUTATION = /* GraphQL */ `
           action
           expiresAt
         }
+        businessEmailConfig {
+          businessId
+          internalEmailLinks
+          emailBody
+          attachments
+        }
       }
       ... on CommonError {
         message
