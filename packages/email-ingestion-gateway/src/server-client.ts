@@ -47,12 +47,23 @@ export interface GrantData {
   expiresAt: string;
 }
 
+/** Per-business email-processing config returned by control (null = unrecognized). */
+export interface BusinessEmailConfig {
+  businessId: string;
+  internalEmailLinks: string[] | null;
+  emailBody: boolean | null;
+  /** Allowed attachment document types (e.g. 'PDF', 'PNG', 'JPEG'); null = keep all. */
+  attachments: string[] | null;
+}
+
 export interface ControlDecision {
   id: string;
   tenantId: string;
   decisionId: string;
   auditId: string;
   grant: GrantData;
+  /** Recognized issuing business + its treatment config; null when unrecognized. */
+  businessEmailConfig: BusinessEmailConfig | null;
 }
 
 export type ControlResult =
@@ -183,7 +194,31 @@ export class ServerClient {
           message: result.message ?? 'Unknown alias',
         };
       }
-      return { success: true, decision: result };
+      const cfg = result.businessEmailConfig;
+      return {
+        success: true,
+        decision: {
+          id: result.id,
+          tenantId: result.tenantId,
+          decisionId: result.decisionId,
+          auditId: result.auditId,
+          grant: {
+            id: result.grant.id,
+            jti: result.grant.jti,
+            tenantId: result.grant.tenantId,
+            action: result.grant.action,
+            expiresAt: result.grant.expiresAt,
+          },
+          businessEmailConfig: cfg
+            ? {
+                businessId: cfg.businessId,
+                internalEmailLinks: cfg.internalEmailLinks ?? null,
+                emailBody: cfg.emailBody ?? null,
+                attachments: cfg.attachments ?? null,
+              }
+            : null,
+        },
+      };
     } catch (err) {
       return {
         success: false,
