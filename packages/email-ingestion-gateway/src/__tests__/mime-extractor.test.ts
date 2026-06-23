@@ -192,12 +192,6 @@ describe('extractFromMime — PARSE_ERROR', () => {
     const result = extractFromMime(Buffer.alloc(0));
     expect(result).toEqual({ success: false, reason: IngestReasonCode.PARSE_ERROR });
   });
-
-  it('returns PARSE_ERROR for random binary data with no MIME structure', () => {
-    const noise = Buffer.from([0x00, 0x01, 0x02, 0x03]);
-    const result = extractFromMime(noise);
-    expect(result.success).toBe(false);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -227,6 +221,19 @@ describe('extractFromMime — attachment-less messages', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(0);
+    }
+  });
+
+  it('tolerates structureless/binary input as an empty message (no documents)', () => {
+    // Post-WS-B the emptiness decision is deferred downstream: input with no
+    // recognizable MIME structure parses as an empty message (no documents,
+    // empty body) and is quarantined later, rather than failing at parse time.
+    // (A genuinely empty buffer is still a PARSE_ERROR — see above.)
+    const result = extractFromMime(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(0);
+      expect(result.body).toBe('');
     }
   });
 });
