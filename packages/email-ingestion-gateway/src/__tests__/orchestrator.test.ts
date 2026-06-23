@@ -350,7 +350,7 @@ describe('orchestrate — end-to-end flow verification', () => {
     expect(controlArg.receivedAt).toBe('2026-06-01T08:00:00Z');
   });
 
-  it('maps the treated document set to ingest metadata', async () => {
+  it('maps the treated document set to ingest metadata + inline base64 bytes', async () => {
     const attachments = [
       {
         filename: 'inv.pdf',
@@ -365,7 +365,13 @@ describe('orchestrate — end-to-end flow verification', () => {
     const ingestArg = (deps.serverClient.requestIngest as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
     expect(ingestArg.extractedDocuments).toEqual([
-      { hash: 'b'.repeat(64), sizeBytes: 1024, mimeType: 'application/pdf', filename: 'inv.pdf' },
+      {
+        hash: 'b'.repeat(64),
+        sizeBytes: 1024,
+        mimeType: 'application/pdf',
+        filename: 'inv.pdf',
+        content: Buffer.from('x').toString('base64'),
+      },
     ]);
   });
 
@@ -409,7 +415,13 @@ describe('orchestrate — end-to-end flow verification', () => {
     const ingestArg = (deps.serverClient.requestIngest as ReturnType<typeof vi.fn>).mock
       .calls[0][0];
     expect(ingestArg.extractedDocuments).toEqual([
-      { hash: 'c'.repeat(64), sizeBytes: 10, mimeType: 'application/pdf', filename: 'body.pdf' },
+      {
+        hash: 'c'.repeat(64),
+        sizeBytes: 10,
+        mimeType: 'application/pdf',
+        filename: 'body.pdf',
+        content: Buffer.from('p').toString('base64'),
+      },
     ]);
   });
 

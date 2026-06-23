@@ -192,12 +192,6 @@ describe('extractFromMime — PARSE_ERROR', () => {
     const result = extractFromMime(Buffer.alloc(0));
     expect(result).toEqual({ success: false, reason: IngestReasonCode.PARSE_ERROR });
   });
-
-  it('returns PARSE_ERROR for random binary data with no MIME structure', () => {
-    const noise = Buffer.from([0x00, 0x01, 0x02, 0x03]);
-    const result = extractFromMime(noise);
-    expect(result.success).toBe(false);
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -227,6 +221,19 @@ describe('extractFromMime — attachment-less messages', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(0);
+    }
+  });
+
+  it('tolerates structureless/binary input as an empty message (no documents)', () => {
+    // Post-WS-B the emptiness decision is deferred downstream: input with no
+    // recognizable MIME structure parses as an empty message (no documents,
+    // empty body) and is quarantined later, rather than failing at parse time.
+    // (A genuinely empty buffer is still a PARSE_ERROR — see above.)
+    const result = extractFromMime(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.documents).toHaveLength(0);
+      expect(result.body).toBe('');
     }
   });
 });
@@ -439,12 +446,12 @@ describe('extractFromMime — deeply nested multipart', () => {
   }
 
   it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', () => {
-    // Build a message nested deeper than the limit
+    // Build a message nested deeper than the limit. The multipart Content-Type
+    // must lead the top-level header block (no blank line before it), otherwise
+    // it lands in the body and the top level parses as text/plain — never
+    // recursing into the nested structure that the depth guard protects against.
     const nested = buildNestedMultipart(MAX_MIME_DEPTH + 2);
-    const raw = Buffer.from(
-      ['From: attacker@evil.com', '', nested].join('\r\n'),
-      'utf8',
-    );
+    const raw = Buffer.from(['From: attacker@evil.com', nested].join('\r\n'), 'utf8');
     const result = extractFromMime(raw);
     // Exceeding the nesting limit throws → PARSE_ERROR (never success).
     expect(result.success).toBe(false);

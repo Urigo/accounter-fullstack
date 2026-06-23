@@ -219,6 +219,7 @@ describe('integration — happy path', () => {
         sizeBytes: pdf.length,
         mimeType: 'application/pdf',
         filename: 'invoice.pdf',
+        content: pdf.toString('base64'),
       },
     ]);
   });

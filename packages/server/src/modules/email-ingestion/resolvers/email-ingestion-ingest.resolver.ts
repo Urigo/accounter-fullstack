@@ -29,6 +29,7 @@ const ingestEmail: EmailIngestionModule.MutationResolvers['ingestEmail'] = async
         sizeBytes: doc.sizeBytes,
         mimeType: doc.mimeType,
         filename: doc.filename ?? undefined,
+        content: doc.content ?? undefined,
       })),
     });
 

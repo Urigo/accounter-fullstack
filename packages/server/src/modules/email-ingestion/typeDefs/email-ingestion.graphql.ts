@@ -142,6 +142,8 @@ export default gql`
     mimeType: String!
     " Optional filename "
     filename: String
+    " Base64-encoded document bytes (inline transport, Option B); omitted = metadata only "
+    content: String
   }
 
   " configuration for business email processing "
