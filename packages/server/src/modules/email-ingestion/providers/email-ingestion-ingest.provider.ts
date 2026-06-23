@@ -205,6 +205,9 @@ export type IngestInput = {
   }>;
 };
 
+/** An uploaded document ready to be inserted (bytes already in Cloudinary). */
+type PreparedDocument = { fileUrl: string; imageUrl: string; fileHash: string };
+
 export type IngestResult =
   | { outcome: typeof IngestOutcome.INSERTED; ingestId: string; auditId: string }
   | {
@@ -271,6 +274,12 @@ export class EmailIngestionIngestProvider {
     const corrId = correlationId ?? randomUUID();
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
+    // Prepare documents (hash dedup read + Cloudinary upload) BEFORE the write
+    // transaction, so the network I/O never holds a pooled connection / open
+    // transaction while uploading. The dedup short-circuits re-deliveries (their
+    // documents already exist) so they don't re-upload.
+    const preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments);
+
     // 2–5. All tenant-bound work runs under the grant tenant's RLS context.
     return withTenantContext(this.dbProvider.pool, tenantId, async client => {
       // 2. Idempotency check — return prior outcome if this key was already processed.
@@ -327,16 +336,20 @@ export class EmailIngestionIngestProvider {
         };
       }
 
-      // 5. Happy path: persist the inline document bytes under the recognized
-      // business (bound in the grant), then record the ingest. The created
-      // charge id doubles as the ingest id; when no inline bytes are present
-      // (metadata-only callers) persistence is a no-op and a synthetic id is used.
-      const chargeId = await this.persistDocuments(client, {
-        tenantId,
-        businessId: grantResult.grant.businessId,
-        messageId,
-        documents: extractedDocuments,
-      });
+      // 5. Happy path: insert the prepared documents (charge + documents) under
+      // the recognized business bound in the grant — no network I/O here, the
+      // bytes were already uploaded outside this transaction — then record the
+      // ingest. The created charge id doubles as the ingest id; with nothing new
+      // to persist (metadata-only, or all duplicates) a synthetic id is used.
+      const chargeId =
+        preparedDocuments.length > 0
+          ? await this.insertPreparedDocuments(client, {
+              tenantId,
+              businessId: grantResult.grant.businessId,
+              messageId,
+              preparedDocuments,
+            })
+          : null;
 
       const ingestId = chargeId ?? randomUUID();
       const auditId = randomUUID();
@@ -361,59 +374,78 @@ export class EmailIngestionIngestProvider {
   }
 
   /**
-   * Persist the inline document bytes (Option B transport) under the grant
-   * tenant, attributing them to the recognized issuing business. Mirrors the
-   * legacy `insertEmailDocuments` resolver — Cloudinary upload, per-document
-   * hash dedup skip, one charge owning the new documents — but uses inline,
-   * tenant-pinned SQL because the auth-coupled providers cannot run in the
-   * gateway control-plane context.
+   * Prepare the inline document bytes (Option B transport) for persistence
+   * WITHOUT holding the write transaction open: dedup new documents by hash (a
+   * short read context) and upload the new ones to Cloudinary in parallel,
+   * outside any transaction. Keeping the network I/O off the main ingest
+   * transaction avoids holding a pooled connection during slow/large uploads.
    *
-   * Documents are inserted as UNPROCESSED (classification/OCR happens later via
-   * the normal flow). Metadata-only entries (no inline bytes) are skipped, so a
-   * caller that sends no content is a no-op. Returns the created charge id, or
-   * null when nothing new was persisted.
+   * The hash matches the legacy `hashStringToInt(file.text())` scheme so the
+   * dedup is consistent with documents inserted via `insertEmailDocuments`;
+   * re-deliveries short-circuit here (their documents already exist) and never
+   * re-upload. Metadata-only entries (no inline bytes) yield an empty result.
    */
-  private async persistDocuments(
-    client: PoolClient,
-    args: {
-      tenantId: string;
-      businessId: string | null;
-      messageId: string;
-      documents: IngestInput['extractedDocuments'];
-    },
-  ): Promise<string | null> {
-    const { tenantId, businessId, messageId, documents } = args;
-
+  private async prepareDocuments(
+    tenantId: string,
+    documents: IngestInput['extractedDocuments'],
+  ): Promise<PreparedDocument[]> {
     type DocWithContent = (typeof documents)[number] & { content: string };
     const withContent = documents.filter(
       (doc): doc is DocWithContent => typeof doc.content === 'string' && doc.content.length > 0,
     );
     if (withContent.length === 0) {
-      return null;
+      return [];
     }
 
-    // Dedup + upload first; only documents new to this tenant are uploaded.
-    const uploaded: Array<{ fileUrl: string; imageUrl: string; fileHash: string }> = [];
-    for (const doc of withContent) {
-      const buffer = Buffer.from(doc.content, 'base64');
-      // Match the legacy document hash (hashStringToInt over the file text), so
-      // the dedup skip is consistent with documents inserted via the resolver.
-      const fileHash = hashStringToInt(buffer.toString('utf8')).toString();
+    const candidates = withContent.map(doc => ({
+      doc,
+      fileHash: hashStringToInt(Buffer.from(doc.content, 'base64').toString('utf8')).toString(),
+    }));
 
-      const existing = await checkDocumentByHash.run({ ownerId: tenantId, fileHash }, client);
-      if (existing.length > 0) {
-        continue;
+    // Find the documents new to this tenant under its RLS context (a short read,
+    // no network I/O held in a long-lived transaction).
+    const newCandidates = await withTenantContext(this.dbProvider.pool, tenantId, async client => {
+      const fresh: typeof candidates = [];
+      for (const candidate of candidates) {
+        const existing = await checkDocumentByHash.run(
+          { ownerId: tenantId, fileHash: candidate.fileHash },
+          client,
+        );
+        if (existing.length === 0) {
+          fresh.push(candidate);
+        }
       }
+      return fresh;
+    });
 
-      const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
-      const { fileUrl, imageUrl } =
-        await this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri);
-      uploaded.push({ fileUrl, imageUrl, fileHash });
-    }
+    // Upload the new documents in parallel, outside any transaction.
+    return Promise.all(
+      newCandidates.map(async ({ doc, fileHash }) => {
+        const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
+        const { fileUrl, imageUrl } =
+          await this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri);
+        return { fileUrl, imageUrl, fileHash };
+      }),
+    );
+  }
 
-    if (uploaded.length === 0) {
-      return null;
-    }
+  /**
+   * Insert already-uploaded documents under the grant tenant, attributing them
+   * to the recognized issuing business as the document counterparty (creditor).
+   * One charge owns the documents; documents land as UNPROCESSED
+   * (classification/OCR happens later via the normal flow). Runs entirely inside
+   * the caller's transaction with no network I/O. Returns the created charge id.
+   */
+  private async insertPreparedDocuments(
+    client: PoolClient,
+    args: {
+      tenantId: string;
+      businessId: string | null;
+      messageId: string;
+      preparedDocuments: PreparedDocument[];
+    },
+  ): Promise<string> {
+    const { tenantId, businessId, messageId, preparedDocuments } = args;
 
     const [charge] = await insertIngestCharge.run(
       {
@@ -425,13 +457,12 @@ export class EmailIngestionIngestProvider {
     );
     const chargeId = charge.id;
 
-    for (const doc of uploaded) {
+    for (const doc of preparedDocuments) {
       await insertIngestDocument.run(
         {
           ownerId: tenantId,
           chargeId,
-          // The recognized issuing business is the document counterparty
-          // (creditor). Null when no business was recognized.
+          // Null when no business was recognized.
           creditorId: businessId,
           documentType: DocumentType.Unprocessed,
           fileUrl: doc.fileUrl,

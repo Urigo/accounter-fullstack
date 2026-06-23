@@ -439,12 +439,12 @@ describe('extractFromMime — deeply nested multipart', () => {
   }
 
   it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', () => {
-    // Build a message nested deeper than the limit
+    // Build a message nested deeper than the limit. The multipart Content-Type
+    // must lead the top-level header block (no blank line before it), otherwise
+    // it lands in the body and the top level parses as text/plain — never
+    // recursing into the nested structure that the depth guard protects against.
     const nested = buildNestedMultipart(MAX_MIME_DEPTH + 2);
-    const raw = Buffer.from(
-      ['From: attacker@evil.com', '', nested].join('\r\n'),
-      'utf8',
-    );
+    const raw = Buffer.from(['From: attacker@evil.com', nested].join('\r\n'), 'utf8');
     const result = extractFromMime(raw);
     // Exceeding the nesting limit throws → PARSE_ERROR (never success).
     expect(result.success).toBe(false);

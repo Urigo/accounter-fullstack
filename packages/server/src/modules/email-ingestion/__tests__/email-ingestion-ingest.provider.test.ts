@@ -383,9 +383,9 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,
       [
+        { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
-        { rows: [], rowCount: 0 }, // document-by-hash miss
         { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
         { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
         { rows: [idemRow], rowCount: 1 }, // idempotency insert
@@ -412,9 +412,9 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,
       [
+        { rows: [{ id: 'existing-doc' }], rowCount: 1 }, // document-by-hash HIT (prepare tx)
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
-        { rows: [{ id: 'existing-doc' }], rowCount: 1 }, // document-by-hash HIT
         { rows: [idemRow], rowCount: 1 }, // idempotency insert
         { rows: [dedupRow], rowCount: 1 }, // dedup insert
       ],
