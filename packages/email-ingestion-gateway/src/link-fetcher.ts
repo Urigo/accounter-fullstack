@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { lookup } from 'node:dns/promises';
 import { renderHtmlToPdf } from './html-to-pdf.js';
 import type { ExtractedDocument } from './mime-extractor.js';
 
@@ -38,17 +39,9 @@ export function getLinkFromBody(body: string, partialUrl: string): string | null
   return null;
 }
 
-/** Block loopback / private / link-local hosts (defense-in-depth against SSRF). */
-export function isBlockedHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
-  if (
-    host === 'localhost' ||
-    host.endsWith('.localhost') ||
-    host.endsWith('.local') ||
-    host.endsWith('.internal')
-  ) {
-    return true;
-  }
+/** Block loopback / private / link-local IP literals (v4, v6, IPv4-mapped v6). */
+export function isBlockedIp(ip: string): boolean {
+  const host = ip.toLowerCase().replace(/^\[|\]$/g, '');
   const v4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (v4) {
     const a = Number(v4[1]);
@@ -64,6 +57,7 @@ export function isBlockedHost(hostname: string): boolean {
       return true;
     }
   }
+  // IPv6 loopback (::1), link-local (fe80::/10), and unique-local (fc00::/7).
   if (
     host === '::1' ||
     host.startsWith('fe80:') ||
@@ -72,7 +66,76 @@ export function isBlockedHost(hostname: string): boolean {
   ) {
     return true;
   }
+  // IPv4-mapped IPv6 (e.g. ::ffff:127.0.0.1) — validate the embedded v4 address.
+  const mapped = host.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+  if (mapped && isBlockedIp(mapped[1])) {
+    return true;
+  }
   return false;
+}
+
+/** Block loopback / private / link-local hosts (defense-in-depth against SSRF). */
+export function isBlockedHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (
+    host === 'localhost' ||
+    host.endsWith('.localhost') ||
+    host.endsWith('.local') ||
+    host.endsWith('.internal')
+  ) {
+    return true;
+  }
+  return isBlockedIp(host);
+}
+
+/**
+ * Resolve a hostname and block when any resolved address is private/loopback.
+ * Defense-in-depth against a public-looking hostname that resolves to an
+ * internal IP (which the static {@link isBlockedHost} string check cannot catch)
+ * — the host/path allowlist in {@link getLinkFromBody} remains the primary SSRF
+ * control. Fails closed: a resolution error is treated as blocked.
+ *
+ * NOTE: this does not pin the connection to the validated address, so a
+ * determined DNS-rebinding attacker could still race the resolution. That
+ * residual is bounded by the exact-host allowlist (the host must equal an
+ * operator-configured vendor host, not an attacker-chosen one).
+ */
+async function resolvesToBlockedAddress(hostname: string): Promise<boolean> {
+  try {
+    const addresses = await lookup(hostname, { all: true });
+    return addresses.length === 0 || addresses.some(({ address }) => isBlockedIp(address));
+  } catch {
+    return true;
+  }
+}
+
+/** Read a response body into a Buffer, aborting once it exceeds `maxBytes`. */
+async function readCappedBody(response: Response, maxBytes: number): Promise<Buffer | null> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return null;
+  }
+  const chunks: Buffer[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      if (value) {
+        total += value.byteLength;
+        if (total > maxBytes) {
+          await reader.cancel().catch(() => {});
+          return null;
+        }
+        chunks.push(Buffer.from(value));
+      }
+    }
+  } catch {
+    return null;
+  }
+  return Buffer.concat(chunks);
 }
 
 /**
@@ -81,8 +144,8 @@ export function isBlockedHost(hostname: string): boolean {
  * the document only as a URL — a post-recognition treatment artifact.
  *
  * SSRF hardening: the host/path allowlist (via {@link getLinkFromBody}), a
- * private/loopback host block, http(s)-only, redirects disabled, a content-type
- * allowlist, and a response size cap.
+ * private/loopback host block plus a resolved-IP check, http(s)-only, redirects
+ * disabled, a content-type allowlist, and a streamed response size cap.
  */
 export async function fetchInternalLinkDocuments(
   body: string,
@@ -103,6 +166,9 @@ export async function fetchInternalLinkDocuments(
     return [];
   }
   if (isBlockedHost(url.hostname)) {
+    return [];
+  }
+  if (await resolvesToBlockedAddress(url.hostname)) {
     return [];
   }
 
@@ -128,8 +194,11 @@ export async function fetchInternalLinkDocuments(
     return [];
   }
 
-  const buf = Buffer.from(await response.arrayBuffer());
-  if (buf.length === 0 || buf.length > MAX_FETCH_BYTES) {
+  // content-length may be absent (chunked) or spoofed, so it is never trusted on
+  // its own — stream the body and abort once the cap is exceeded. This bounds
+  // memory and prevents an OOM DoS from an oversized (or lying) response.
+  const buf = await readCappedBody(response, MAX_FETCH_BYTES);
+  if (!buf || buf.length === 0) {
     return [];
   }
 

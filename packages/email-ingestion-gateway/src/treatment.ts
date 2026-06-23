@@ -59,7 +59,9 @@ export async function applyTreatment(
   const out: ExtractedDocument[] = [];
 
   // 1. Attachment filter — keep all when the business sets no allowlist.
-  const allowed = config?.attachments ?? null;
+  // Normalize to upper-case so the comparison stays robust even though the
+  // EmailAttachmentType enum (PDF/PNG/JPEG) is already upper-case on the wire.
+  const allowed = config?.attachments ? config.attachments.map(a => a.toUpperCase()) : null;
   for (const doc of attachments) {
     if (allowed && !allowed.includes(attachmentType(doc.mimeType) ?? '')) {
       continue;

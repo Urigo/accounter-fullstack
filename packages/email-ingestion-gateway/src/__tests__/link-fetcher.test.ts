@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getLinkFromBody, isBlockedHost } from '../link-fetcher.js';
+import { getLinkFromBody, isBlockedHost, isBlockedIp } from '../link-fetcher.js';
 
 describe('getLinkFromBody', () => {
   it('returns the first href matching the configured host + path prefix', () => {
@@ -61,5 +61,25 @@ describe('isBlockedHost (SSRF defense)', () => {
     expect(isBlockedHost('vendor.com')).toBe(false);
     expect(isBlockedHost('8.8.8.8')).toBe(false);
     expect(isBlockedHost('172.32.0.1')).toBe(false); // outside the 172.16–31 private range
+  });
+});
+
+describe('isBlockedIp (resolved-address check)', () => {
+  it('blocks private / loopback / link-local IPv4 and IPv6', () => {
+    expect(isBlockedIp('127.0.0.1')).toBe(true);
+    expect(isBlockedIp('10.1.2.3')).toBe(true);
+    expect(isBlockedIp('169.254.169.254')).toBe(true); // cloud metadata endpoint
+    expect(isBlockedIp('::1')).toBe(true);
+    expect(isBlockedIp('fd00::1')).toBe(true);
+  });
+
+  it('blocks IPv4-mapped IPv6 forms of private addresses', () => {
+    expect(isBlockedIp('::ffff:127.0.0.1')).toBe(true);
+    expect(isBlockedIp('::ffff:10.0.0.1')).toBe(true);
+  });
+
+  it('allows public addresses', () => {
+    expect(isBlockedIp('8.8.8.8')).toBe(false);
+    expect(isBlockedIp('::ffff:8.8.8.8')).toBe(false);
   });
 });

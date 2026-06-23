@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import inlineCss from 'inline-css';
-import { chromium, type Browser } from 'playwright';
+import { chromium, type Browser, type Page } from 'playwright';
 import type { ExtractedDocument } from './mime-extractor.js';
 
 // A single shared browser instance is reused across renders to bound memory and
@@ -13,15 +13,21 @@ import type { ExtractedDocument } from './mime-extractor.js';
 let browserPromise: Promise<Browser> | null = null;
 
 function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    browserPromise = chromium
-      .launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
-      .catch((err: unknown) => {
-        // Reset so a later render can retry the launch.
+  browserPromise ??= chromium
+    .launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] })
+    .then(browser => {
+      // If the shared browser crashes or is closed, drop the cached promise so
+      // the next render relaunches a fresh instance instead of reusing a dead one.
+      browser.on('disconnected', () => {
         browserPromise = null;
-        throw err;
       });
-  }
+      return browser;
+    })
+    .catch((err: unknown) => {
+      // Reset so a later render can retry the launch.
+      browserPromise = null;
+      throw err;
+    });
   return browserPromise;
 }
 
@@ -33,8 +39,11 @@ function getBrowser(): Promise<Browser> {
 export async function renderHtmlToPdf(rawHtml: string): Promise<ExtractedDocument> {
   const browser = await getBrowser();
   const context = await browser.newContext();
-  const page = await context.newPage();
+  // `page` is created inside the try so that a newPage() failure still runs the
+  // finally and closes the context (otherwise the context would leak).
+  let page: Page | undefined;
   try {
+    page = await context.newPage();
     const html = await inlineCss(rawHtml, { url: '/' });
     await page.setContent(html, { waitUntil: 'networkidle' });
     const pdf = Buffer.from(await page.pdf());
@@ -46,7 +55,9 @@ export async function renderHtmlToPdf(rawHtml: string): Promise<ExtractedDocumen
       sha256: createHash('sha256').update(pdf).digest('hex'),
     };
   } finally {
-    await page.close().catch(() => {});
+    if (page) {
+      await page.close().catch(() => {});
+    }
     await context.close().catch(() => {});
   }
 }
