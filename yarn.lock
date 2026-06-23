@@ -152,9 +152,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/email-ingestion-gateway@workspace:packages/email-ingestion-gateway"
   dependencies:
+    "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:25.9.2"
     dotenv: "npm:17.4.2"
     graphql-request: "npm:7.4.0"
+    inline-css: "npm:4.0.3"
+    playwright: "npm:1.61.0"
     tsx: "npm:4.22.4"
     typescript: "npm:6.0.3"
     wrangler: "npm:4.68.0"

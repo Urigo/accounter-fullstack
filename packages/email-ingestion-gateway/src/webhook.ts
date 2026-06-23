@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { generateCorrelationId, log } from './logger.js';
-import { extractFromMime, MAX_RAW_MIME_BYTES } from './mime-extractor.js';
+import { extractFromMime, MAX_RAW_MIME_BYTES, type ExtractedDocument } from './mime-extractor.js';
 import { orchestrate, type OrchestratorDeps } from './orchestrator.js';
-import type { ControlSenderEvidence, IngestDocumentInput } from './server-client.js';
+import type { ControlSenderEvidence } from './server-client.js';
 import type { AuthenticityInput, CloudflareAuthenticityVerifier } from './verifier.js';
 
 // Inbound requests carry the raw MIME message as their body, so the cap matches
@@ -35,10 +35,12 @@ export interface WebhookDeps {
   verifier: Pick<CloudflareAuthenticityVerifier, 'verify'>;
   featureFlags: { v2Enabled: boolean; shadowMode: boolean };
   serverClient?: OrchestratorDeps['serverClient'];
+  /** Override the gateway treatment step (default: real; tests inject a stub to avoid Chromium). */
+  applyTreatment?: OrchestratorDeps['applyTreatment'];
 }
 
 export function createWebhookHandler(deps: WebhookDeps) {
-  const { verifier, featureFlags, serverClient } = deps;
+  const { verifier, featureFlags, serverClient, applyTreatment } = deps;
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     // 1. Feature-flag gate — reject early if v2 ingestion is not enabled
@@ -142,24 +144,24 @@ export function createWebhookHandler(deps: WebhookDeps) {
     const rawMessageHash = createHash('sha256').update(rawBody).digest('hex');
     const extraction = extractFromMime(rawBody);
 
-    let extractedDocuments: IngestDocumentInput[] = [];
+    // Raw attachments (with bytes) + body are handed to orchestration, which runs
+    // treatment (attachment filter, body→PDF, internal-link fetch) after the
+    // business is recognized, then sends the final document set to ingest.
+    let attachments: ExtractedDocument[] = [];
+    let body = '';
     let senderEvidence: ControlSenderEvidence | undefined;
     if (extraction.success) {
-      extractedDocuments = extraction.documents.map(doc => ({
-        hash: doc.sha256,
-        sizeBytes: doc.size,
-        mimeType: doc.mimeType,
-        filename: doc.filename,
-      }));
+      attachments = extraction.documents;
+      body = extraction.body;
       // Forward sender evidence so the server can recognize the issuing business.
       // Present even when there are no attachments (the body may still yield a
       // document during treatment).
       senderEvidence = extraction.senderEvidence;
     } else {
       // Extraction failed (parse error or oversize). Proceed to orchestration so
-      // the server records an auditable quarantine outcome; the empty document
-      // list drives the server-side NO_DOCUMENTS quarantine. No trustworthy
-      // sender evidence is available in this case.
+      // the server records an auditable quarantine outcome; the empty document set
+      // drives the server-side NO_DOCUMENTS quarantine. No trustworthy sender
+      // evidence is available in this case.
       log(
         'warn',
         'webhook: MIME extraction failed',
@@ -171,7 +173,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
     log(
       'info',
       'webhook accepted',
-      { recipientAlias, messageId, documentCount: extractedDocuments.length },
+      { recipientAlias, messageId, attachmentCount: attachments.length },
       effectiveCorrelationId,
     );
 
@@ -193,8 +195,9 @@ export function createWebhookHandler(deps: WebhookDeps) {
       rawMessageHash,
       correlationId: effectiveCorrelationId,
       receivedAt,
-      extractedDocuments,
       senderEvidence,
+      body,
+      attachments,
     };
 
     if (featureFlags.shadowMode) {
@@ -205,7 +208,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
         correlationId: effectiveCorrelationId,
         shadow: true,
       });
-      orchestrate(orchestrateInput, { serverClient })
+      orchestrate(orchestrateInput, { serverClient, applyTreatment })
         .then(result => {
           if (result.success) {
             log(
@@ -235,7 +238,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
     }
 
     // Production mode: await orchestration and include outcome in response.
-    const result = await orchestrate(orchestrateInput, { serverClient });
+    const result = await orchestrate(orchestrateInput, { serverClient, applyTreatment });
 
     if (result.success) {
       writeJson(res, 202, {

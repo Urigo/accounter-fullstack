@@ -1,4 +1,5 @@
 import { log } from './logger.js';
+import type { ExtractedDocument } from './mime-extractor.js';
 import type {
   ControlInput,
   ControlSenderEvidence,
@@ -6,6 +7,7 @@ import type {
   IngestInput,
   ServerClient,
 } from './server-client.js';
+import { applyTreatment } from './treatment.js';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -17,7 +19,10 @@ export interface OrchestrateInput {
   rawMessageHash: string;
   correlationId: string;
   receivedAt?: string;
-  extractedDocuments: IngestDocumentInput[];
+  /** Decoded email body, consumed by treatment (body→PDF, internal-link fetch). */
+  body: string;
+  /** Raw attachment documents (with bytes) from MIME extraction. */
+  attachments: ExtractedDocument[];
   /** Sender evidence forwarded to the control endpoint for business recognition. */
   senderEvidence?: ControlSenderEvidence;
 }
@@ -36,6 +41,8 @@ export type OrchestrateResult =
 
 export interface OrchestratorDeps {
   serverClient: Pick<ServerClient, 'requestControl' | 'requestIngest'>;
+  /** Override the treatment step (default: real attachment-filter / body→PDF / link-fetch). */
+  applyTreatment?: typeof applyTreatment;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +90,37 @@ export async function orchestrate(
     correlationId,
   );
 
-  // ── Step 2: call ingest endpoint with grant + extracted documents ──────────
+  // ── Step 2: treatment — assemble the final document set from the recognized
+  // business config + body + raw attachments (attachment filter, body→PDF,
+  // internal-link fetch). The document set (and thus emptiness) is decided here,
+  // post-recognition; the server ingest keeps a NO_DOCUMENTS quarantine backstop.
+  const treat = deps.applyTreatment ?? applyTreatment;
+  const finalDocuments = await treat({
+    config: decision.businessEmailConfig,
+    body: input.body,
+    attachments: input.attachments,
+    correlationId,
+  });
+
+  log(
+    'info',
+    'orchestrate:treatment:complete',
+    {
+      tenantId: decision.tenantId,
+      documentCount: finalDocuments.length,
+      businessId: decision.businessEmailConfig?.businessId ?? null,
+    },
+    correlationId,
+  );
+
+  const extractedDocuments: IngestDocumentInput[] = finalDocuments.map(doc => ({
+    hash: doc.sha256,
+    sizeBytes: doc.size,
+    mimeType: doc.mimeType,
+    filename: doc.filename,
+  }));
+
+  // ── Step 3: call ingest endpoint with grant + extracted documents ──────────
   // Key idempotency on the gateway-computed rawMessageHash (content-derived,
   // authoritative) rather than the sender-controlled Message-ID. Using the
   // Message-ID would let a party who can email a tenant alias pre-seed an ID so
@@ -96,7 +133,7 @@ export async function orchestrate(
     messageId: input.messageId,
     rawMessageHash: input.rawMessageHash,
     correlationId,
-    extractedDocuments: input.extractedDocuments,
+    extractedDocuments,
   };
 
   const ingestResult = await serverClient.requestIngest(ingestInput);
