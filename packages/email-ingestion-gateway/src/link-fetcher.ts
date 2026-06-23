@@ -20,9 +20,15 @@ export function getLinkFromBody(body: string, partialUrl: string): string | null
   } catch {
     return null;
   }
-  const re = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/gi;
+  // Match href values in double quotes, single quotes, or unquoted — HTML emails
+  // use all three. The host/path allowlist below remains the SSRF control, so a
+  // broader match only improves coverage of legitimate link formats.
+  const re = /<a\s+(?:[^>]*?\s+)?href=(?:"([^"]*)"|'([^']*)'|([^"'\s>]+))/gi;
   for (const match of body.matchAll(re)) {
-    const urlString = match[1];
+    const urlString = match[1] ?? match[2] ?? match[3];
+    if (!urlString) {
+      continue;
+    }
     try {
       const full = new URL(urlString);
       const prefix = partial.pathname.endsWith('/') ? partial.pathname : `${partial.pathname}/`;

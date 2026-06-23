@@ -38,7 +38,11 @@ function getBrowser(): Promise<Browser> {
  */
 export async function renderHtmlToPdf(rawHtml: string): Promise<ExtractedDocument> {
   const browser = await getBrowser();
-  const context = await browser.newContext();
+  // Email HTML is untrusted and must render statically — disable JavaScript so a
+  // malicious body cannot run scripts in the headless browser (XSS, SSRF, or
+  // local-resource probing). Email clients block JS anyway, so this matches how
+  // the body would render in a real client.
+  const context = await browser.newContext({ javaScriptEnabled: false });
   // `page` is created inside the try so that a newPage() failure still runs the
   // finally and closes the context (otherwise the context would leak).
   let page: Page | undefined;
