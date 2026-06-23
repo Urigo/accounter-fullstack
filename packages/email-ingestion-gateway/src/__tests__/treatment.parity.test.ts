@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import type { ExtractedDocument } from '../mime-extractor.js';
 import type { BusinessEmailConfig } from '../server-client.js';
 import { applyTreatment, type TreatmentDeps } from '../treatment.js';
@@ -34,6 +34,11 @@ import { applyTreatment, type TreatmentDeps } from '../treatment.js';
 
 vi.spyOn(console, 'log').mockImplementation(() => {});
 vi.spyOn(console, 'error').mockImplementation(() => {});
+
+afterAll(() => {
+  // Restore the file-level console spies so they cannot leak into other suites.
+  vi.restoreAllMocks();
+});
 
 function doc(mimeType: string, name: string): ExtractedDocument {
   const content = Buffer.from(name);
