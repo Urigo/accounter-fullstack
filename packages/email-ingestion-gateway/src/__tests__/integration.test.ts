@@ -116,7 +116,7 @@ const CONTROL_SUCCESS: ControlResult = {
 // Treatment passthrough: forward raw attachments unchanged so these
 // orchestration-focused tests never launch Chromium / hit the network.
 const passthroughTreatment = () =>
-  vi.fn(async (input: { attachments: unknown[] }) => input.attachments);
+  vi.fn(async (input: { attachments: ExtractedDocument[] }) => input.attachments);
 
 function makeServerClient(
   controlResult: ControlResult,
@@ -138,6 +138,7 @@ function makeServerClient(
 // Real verifier backed by known secret — used for authenticated requests.
 // Import the real class so that HMAC validation and timestamp checks run.
 import { CloudflareAuthenticityVerifier } from '../verifier.js';
+import { ExtractedDocument } from '../mime-extractor.js';
 
 function makeVerifier() {
   return new CloudflareAuthenticityVerifier({
