@@ -17,21 +17,26 @@ const ingestEmail: EmailIngestionModule.MutationResolvers['ingestEmail'] = async
   const ingestProvider = injector.get(EmailIngestionIngestProvider);
 
   try {
-    const result = await ingestProvider.performIngest({
-      grantJti: input.grantJti,
-      idempotencyKey: input.idempotencyKey,
-      tenantId: input.tenantId,
-      messageId: input.messageId,
-      rawMessageHash: input.rawMessageHash,
-      correlationId: input.correlationId ?? undefined,
-      extractedDocuments: input.extractedDocuments.map(doc => ({
-        hash: doc.hash,
-        sizeBytes: doc.sizeBytes,
-        mimeType: doc.mimeType,
-        filename: doc.filename ?? undefined,
-        content: doc.content ?? undefined,
-      })),
-    });
+    const result = await ingestProvider.performIngest(
+      {
+        grantJti: input.grantJti,
+        idempotencyKey: input.idempotencyKey,
+        tenantId: input.tenantId,
+        messageId: input.messageId,
+        rawMessageHash: input.rawMessageHash,
+        correlationId: input.correlationId ?? undefined,
+        extractedDocuments: input.extractedDocuments.map(doc => ({
+          hash: doc.hash,
+          sizeBytes: doc.sizeBytes,
+          mimeType: doc.mimeType,
+          filename: doc.filename ?? undefined,
+          content: doc.content ?? undefined,
+        })),
+      },
+      // Pass the operation injector so the provider can run OCR (getOcrData →
+      // AnthropicProvider) without injecting an Injector into the singleton.
+      injector,
+    );
 
     const outcome = OUTCOME_MAP[result.outcome];
 

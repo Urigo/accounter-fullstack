@@ -211,6 +211,8 @@ describe('Mutation.ingestEmail', () => {
         rawMessageHash: 'sha256-abc',
         correlationId: 'corr-001',
       }),
+      // the resolver forwards its operation injector so the provider can run OCR
+      injector,
     );
   });
 });
