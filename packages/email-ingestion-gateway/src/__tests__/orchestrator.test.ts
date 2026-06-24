@@ -147,6 +147,25 @@ describe('orchestrate — correlationId propagation', () => {
     expect(ingestArg.correlationId).toBe('trace-xyz');
   });
 
+  it('forwards subject, sender (From), and receivedAt to requestIngest for the charge description', async () => {
+    const deps = makeDeps(CONTROL_SUCCESS);
+    await orchestrate(
+      {
+        ...BASE_INPUT,
+        subject: 'Invoice #42',
+        receivedAt: '2026-06-24T08:30:00Z',
+        senderEvidence: { from: 'billing@vendor.com' },
+      },
+      deps,
+    );
+    const ingestArg = (
+      deps.serverClient.requestIngest as ReturnType<typeof vi.fn>
+    ).mock.calls[0][0];
+    expect(ingestArg.subject).toBe('Invoice #42');
+    expect(ingestArg.sender).toBe('billing@vendor.com');
+    expect(ingestArg.receivedAt).toBe('2026-06-24T08:30:00Z');
+  });
+
   it('uses the content-derived rawMessageHash as idempotencyKey (not the sender-controlled messageId)', async () => {
     const deps = makeDeps(CONTROL_SUCCESS);
     await orchestrate(BASE_INPUT, deps);

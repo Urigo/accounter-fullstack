@@ -110,6 +110,12 @@ export type IngestInput = {
   messageId: string;
   rawMessageHash: string;
   correlationId?: string;
+  /** Email subject header, used to build a human-readable charge description. */
+  subject?: string;
+  /** Sender (From header) address, used in the charge description. */
+  sender?: string;
+  /** ISO-8601 timestamp the message was received, used in the charge description. */
+  receivedAt?: string;
   extractedDocuments: Array<{
     hash: string;
     sizeBytes: number;
@@ -119,6 +125,47 @@ export type IngestInput = {
     content?: string | null;
   }>;
 };
+
+/**
+ * Build the human-readable charge description for an ingested email, mirroring
+ * the legacy gmail-listener phrasing:
+ * `Email documents: <subject> (from: <sender>, <date>)`.
+ *
+ * The v2 gateway pipeline can omit any of subject/sender/receivedAt (parse
+ * failures, missing headers), so each part degrades gracefully: a missing
+ * subject falls back to the message id, and the parenthetical sender/date
+ * details are dropped when neither is available.
+ */
+function buildEmailChargeDescription(args: {
+  messageId: string;
+  subject?: string;
+  sender?: string;
+  receivedAt?: string;
+}): string {
+  const subject = args.subject?.trim() || args.messageId;
+  const sender = args.sender?.trim();
+
+  // Format in UTC (not the server-local `toDateString()`) so the same email
+  // yields the same description across dev/CI/prod. Mirrors the legacy
+  // `toDateString()` shape, e.g. "Wed Jun 24 2026".
+  const receivedDate = args.receivedAt ? new Date(args.receivedAt) : null;
+  const dateStr =
+    receivedDate && !Number.isNaN(receivedDate.getTime())
+      ? receivedDate
+          .toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC',
+          })
+          .replace(/,/g, '')
+      : null;
+
+  const details = [sender ? `from: ${sender}` : null, dateStr].filter(Boolean).join(', ');
+
+  return details ? `Email documents: ${subject} (${details})` : `Email documents: ${subject}`;
+}
 
 export type IngestResult =
   | { outcome: typeof IngestOutcome.INSERTED; ingestId: string; auditId: string }
@@ -168,6 +215,9 @@ export class EmailIngestionIngestProvider {
       messageId,
       rawMessageHash,
       correlationId,
+      subject,
+      sender,
+      receivedAt,
       extractedDocuments,
     } = input;
 
@@ -265,7 +315,14 @@ export class EmailIngestionIngestProvider {
       // to persist (metadata-only, or all duplicates) a synthetic id is used.
       const chargeId =
         preparedDocuments.length > 0
-          ? await this.insertPreparedDocuments(client, { tenantId, messageId, preparedDocuments })
+          ? await this.insertPreparedDocuments(client, {
+              tenantId,
+              messageId,
+              subject,
+              sender,
+              receivedAt,
+              preparedDocuments,
+            })
           : null;
 
       const ingestId = chargeId ?? randomUUID();
@@ -386,14 +443,21 @@ export class EmailIngestionIngestProvider {
    */
   private async insertPreparedDocuments(
     client: PoolClient,
-    args: { tenantId: string; messageId: string; preparedDocuments: PreparedDocument[] },
+    args: {
+      tenantId: string;
+      messageId: string;
+      subject?: string;
+      sender?: string;
+      receivedAt?: string;
+      preparedDocuments: PreparedDocument[];
+    },
   ): Promise<string> {
-    const { tenantId, messageId, preparedDocuments } = args;
+    const { tenantId, messageId, subject, sender, receivedAt, preparedDocuments } = args;
 
     const [charge] = await insertIngestCharge.run(
       {
         ownerId: tenantId,
-        userDescription: `email-ingestion: ${messageId}`,
+        userDescription: buildEmailChargeDescription({ messageId, subject, sender, receivedAt }),
         accountantStatus: 'UNAPPROVED',
       },
       client,
