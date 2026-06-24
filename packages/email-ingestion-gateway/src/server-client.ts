@@ -93,6 +93,12 @@ export interface IngestInput {
   messageId: string;
   rawMessageHash: string;
   correlationId?: string;
+  /** Email subject header, forwarded for the server-side charge description. */
+  subject?: string;
+  /** Sender (From header) address, forwarded for the server-side charge description. */
+  sender?: string;
+  /** ISO-8601 received-at timestamp, forwarded for the server-side charge description. */
+  receivedAt?: string;
   extractedDocuments: IngestDocumentInput[];
 }
 

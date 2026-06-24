@@ -25,6 +25,9 @@ const ingestEmail: EmailIngestionModule.MutationResolvers['ingestEmail'] = async
         messageId: input.messageId,
         rawMessageHash: input.rawMessageHash,
         correlationId: input.correlationId ?? undefined,
+        subject: input.subject ?? undefined,
+        sender: input.sender ?? undefined,
+        receivedAt: input.receivedAt ?? undefined,
         extractedDocuments: input.extractedDocuments.map(doc => ({
           hash: doc.hash,
           sizeBytes: doc.sizeBytes,

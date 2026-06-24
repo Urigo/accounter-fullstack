@@ -426,6 +426,49 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     expect(docInsert?.values).toContain(BUSINESS_ID);
   });
 
+  it('sets a descriptive charge description from subject, sender, and received date', async () => {
+    const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      { rows: [], rowCount: 0 }, // idempotency miss
+      { rows: [], rowCount: 0 }, // dedup fingerprint miss
+      { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
+      { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    await provider.performIngest({
+      ...inputWithContent,
+      subject: 'Invoice #42',
+      sender: 'billing@vendor.com',
+      receivedAt: '2026-06-24T08:30:00.000Z',
+    });
+
+    const chargeInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.charges'));
+    expect(chargeInsert?.values).toContain(
+      `Email documents: Invoice #42 (from: billing@vendor.com, ${new Date(
+        '2026-06-24T08:30:00.000Z',
+      ).toDateString()})`,
+    );
+  });
+
+  it('falls back to the message id when no subject/sender/date is present', async () => {
+    const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      { rows: [], rowCount: 0 }, // idempotency miss
+      { rows: [], rowCount: 0 }, // dedup fingerprint miss
+      { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
+      { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    await provider.performIngest(inputWithContent);
+
+    const chargeInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.charges'));
+    expect(chargeInsert?.values).toContain(`Email documents: ${MSG_ID}`);
+  });
+
   it('skips upload and charge creation when the document hash already exists', async () => {
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,

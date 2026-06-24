@@ -40,6 +40,8 @@ export type ExtractionFailureReason =
 export type ExtractionResult =
   | {
       success: true;
+      /** Subject header, used for the human-readable charge description. */
+      subject: string | undefined;
       senderEvidence: SenderEvidence;
       /** Decoded email body (HTML preferred, else plain text), for downstream treatment. */
       body: string;
@@ -76,6 +78,7 @@ export function extractFromMime(rawMime: Buffer): ExtractionResult {
 
     return {
       success: true,
+      subject: h(headers, 'subject'),
       senderEvidence: buildSenderEvidence(headers, body),
       body,
       documents,

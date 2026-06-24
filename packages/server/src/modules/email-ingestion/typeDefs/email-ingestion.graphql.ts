@@ -128,6 +128,12 @@ export default gql`
     rawMessageHash: String!
     " Optional correlation ID for distributed tracing "
     correlationId: String
+    " Subject header of the email, used to build a human-readable charge description "
+    subject: String
+    " Sender (From header) address, used in the charge description "
+    sender: String
+    " ISO-8601 timestamp the message was received, used in the charge description "
+    receivedAt: String
     " Extracted document metadata from MIME parsing "
     extractedDocuments: [ExtractedDocumentInput!]!
   }

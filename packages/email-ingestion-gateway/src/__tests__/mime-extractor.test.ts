@@ -210,6 +210,15 @@ describe('extractFromMime — attachment-less messages', () => {
     }
   });
 
+  it('extracts the Subject header for the downstream charge description', () => {
+    const mime = makeTextMime('sender@example.com', 'Invoice #42', 'body');
+    const result = extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.subject).toBe('Invoice #42');
+    }
+  });
+
   it('succeeds with empty documents for multipart with no document attachments', () => {
     // Has a text attachment, not a PDF/image
     const mime = makeMultipartMime({

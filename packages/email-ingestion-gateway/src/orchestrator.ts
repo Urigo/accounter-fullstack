@@ -19,6 +19,8 @@ export interface OrchestrateInput {
   rawMessageHash: string;
   correlationId: string;
   receivedAt?: string;
+  /** Subject header, forwarded to ingest for the human-readable charge description. */
+  subject?: string;
   /** Decoded email body, consumed by treatment (body→PDF, internal-link fetch). */
   body: string;
   /** Raw attachment documents (with bytes) from MIME extraction. */
@@ -136,6 +138,11 @@ export async function orchestrate(
     messageId: input.messageId,
     rawMessageHash: input.rawMessageHash,
     correlationId,
+    // Descriptive metadata for the server-side charge description. `sender` is the
+    // From header captured as sender evidence during extraction.
+    subject: input.subject,
+    sender: input.senderEvidence?.from,
+    receivedAt: input.receivedAt,
     extractedDocuments,
   };
 

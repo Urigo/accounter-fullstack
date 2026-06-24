@@ -150,6 +150,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
     let attachments: ExtractedDocument[] = [];
     let body = '';
     let senderEvidence: ControlSenderEvidence | undefined;
+    let subject: string | undefined;
     if (extraction.success) {
       attachments = extraction.documents;
       body = extraction.body;
@@ -157,6 +158,8 @@ export function createWebhookHandler(deps: WebhookDeps) {
       // Present even when there are no attachments (the body may still yield a
       // document during treatment).
       senderEvidence = extraction.senderEvidence;
+      // Subject feeds the human-readable charge description on the server.
+      subject = extraction.subject;
     } else {
       // Extraction failed (parse error or oversize). Proceed to orchestration so
       // the server records an auditable quarantine outcome; the empty document set
@@ -195,6 +198,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
       rawMessageHash,
       correlationId: effectiveCorrelationId,
       receivedAt,
+      subject,
       senderEvidence,
       body,
       attachments,
