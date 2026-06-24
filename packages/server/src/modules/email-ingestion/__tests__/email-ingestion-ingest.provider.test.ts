@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Injector } from 'graphql-modules';
+import { DocumentType } from '../../../shared/enums.js';
+import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { EmailIngestionIngestProvider } from '../providers/email-ingestion-ingest.provider.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
@@ -46,6 +49,14 @@ const BASE_INPUT = {
   correlationId: CORR_ID,
   extractedDocuments: [{ hash: 'doc-hash', sizeBytes: 1024, mimeType: 'application/pdf', filename: 'invoice.pdf' }],
 };
+
+// OCR runs via getOcrData(injector, file, false) → AnthropicProvider.extractInvoiceDetails.
+// A mock operation injector returns a stub Anthropic provider that yields an INVOICE,
+// so figureOutSides attributes the recognized business as the document creditor.
+const extractInvoiceDetails = vi.fn().mockResolvedValue({ type: DocumentType.Invoice });
+const ocrInjector = {
+  get: (token: unknown) => (token === AnthropicProvider ? { extractInvoiceDetails } : undefined),
+} as unknown as Injector;
 
 // ---------------------------------------------------------------------------
 // Mock helper
@@ -128,7 +139,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       [],
     );
 
-    const result = await provider.performIngest(BASE_INPUT);
+    const result = await provider.performIngest(BASE_INPUT, ocrInjector);
     expect(result).toEqual({ outcome: IngestOutcome.REJECTED, reasonCode: IngestReasonCode.GRANT_INVALID });
   });
 
@@ -138,7 +149,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       [],
     );
 
-    const result = await provider.performIngest(BASE_INPUT);
+    const result = await provider.performIngest(BASE_INPUT, ocrInjector);
     expect(result).toEqual({ outcome: IngestOutcome.REJECTED, reasonCode: IngestReasonCode.TENANT_MISMATCH });
   });
 
@@ -148,7 +159,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       [],
     );
 
-    await provider.performIngest(BASE_INPUT);
+    await provider.performIngest(BASE_INPUT, ocrInjector);
     expect(queryFn).not.toHaveBeenCalled();
   });
 
@@ -164,7 +175,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       ],
     );
 
-    await provider.performIngest(BASE_INPUT);
+    await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(validateAndConsumeGrant).toHaveBeenCalledWith({
       jti: JTI,
@@ -195,7 +206,7 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
     };
     const { provider } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
 
-    const result = await provider.performIngest(BASE_INPUT);
+    const result = await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(result).toMatchObject({
       outcome: IngestOutcome.DUPLICATE,
@@ -211,7 +222,7 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
     };
     const { provider, dataQueries } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
 
-    await provider.performIngest(BASE_INPUT);
+    await provider.performIngest(BASE_INPUT, ocrInjector);
     // Only one data query — the idempotency lookup; no dedup lookup
     expect(dataQueries).toHaveLength(1);
   });
@@ -236,7 +247,7 @@ describe('EmailIngestionIngestProvider.performIngest — dedup', () => {
       { rows: [dedupRow], rowCount: 1 }, // dedup hit
     ]);
 
-    const result = await provider.performIngest(BASE_INPUT);
+    const result = await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(result).toMatchObject({
       outcome: IngestOutcome.DUPLICATE,
@@ -271,7 +282,10 @@ describe('EmailIngestionIngestProvider.performIngest — quarantine', () => {
       { rows: [dedupRow], rowCount: 1 },  // dedup insert
     ]);
 
-    const result = await provider.performIngest({ ...BASE_INPUT, extractedDocuments: [] });
+    const result = await provider.performIngest(
+      { ...BASE_INPUT, extractedDocuments: [] },
+      ocrInjector,
+    );
 
     expect(result).toMatchObject({
       outcome: IngestOutcome.QUARANTINED,
@@ -304,7 +318,7 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
       { rows: [dedupRow], rowCount: 1 },// dedup insert
     ]);
 
-    const result = await provider.performIngest(BASE_INPUT);
+    const result = await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(result).toMatchObject({
       outcome: IngestOutcome.INSERTED,
@@ -329,7 +343,7 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
       { rows: [dedupRow], rowCount: 1 },
     ]);
 
-    await provider.performIngest(BASE_INPUT);
+    await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(dataQueries).toHaveLength(4);
   });
@@ -393,18 +407,22 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       ],
     );
 
-    const result = await provider.performIngest(inputWithContent);
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
 
     expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED, ingestId: 'charge-1' });
     expect(uploadInvoiceToCloudinary).toHaveBeenCalledTimes(1);
     expect(uploadInvoiceToCloudinary).toHaveBeenCalledWith(
       expect.stringContaining('data:application/pdf;base64,'),
     );
+    // OCR runs at ingest (matching the legacy path) rather than landing UNPROCESSED.
+    expect(extractInvoiceDetails).toHaveBeenCalled();
 
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(true);
     const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
     expect(docInsert).toBeDefined();
-    // the recognized issuing business is attributed as the document counterparty
+    // the document is classified from OCR (INVOICE), not UNPROCESSED
+    expect(docInsert?.values).toContain(DocumentType.Invoice);
+    // and the recognized issuing business is attributed as the document creditor
     expect(docInsert?.values).toContain(BUSINESS_ID);
   });
 
@@ -420,7 +438,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       ],
     );
 
-    const result = await provider.performIngest(inputWithContent);
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
 
     expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED });
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
@@ -437,7 +455,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     ]);
 
     // BASE_INPUT documents carry no `content` — persistence is a no-op.
-    await provider.performIngest(BASE_INPUT);
+    await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
     expect(dataQueries).toHaveLength(4);

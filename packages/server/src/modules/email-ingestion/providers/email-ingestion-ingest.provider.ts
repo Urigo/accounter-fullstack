@@ -1,11 +1,17 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Scope } from 'graphql-modules';
+import { Injectable, Scope, type Injector } from 'graphql-modules';
 import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import {
+  getDocumentFromUrlsAndOcrData,
+  getOcrData,
+  type OcrData,
+} from '../../documents/helpers/upload.helper.js';
+import type { IInsertDocumentsParams } from '../../documents/types.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
 import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
@@ -16,10 +22,13 @@ import type {
   IInsertDedupFingerprintForIngestQuery,
   IInsertIdempotencyKeyForIngestQuery,
   IInsertIngestChargeQuery,
-  IInsertIngestDocumentQuery,
+  IInsertIngestDocumentFullQuery,
   IInsertQuarantineForIngestQuery,
 } from '../types.js';
 import { EmailIngestionControlProvider } from './email-ingestion-control.provider.js';
+
+/** A single OCR'd document, ready to insert (cf. DocumentsProvider.insertDocuments columns). */
+type PreparedDocument = IInsertDocumentsParams['documents'][number];
 
 // ---------------------------------------------------------------------------
 // SQL queries
@@ -79,10 +88,14 @@ const insertIngestCharge = sql<IInsertIngestChargeQuery>`
   RETURNING id
 `;
 
-const insertIngestDocument = sql<IInsertIngestDocumentQuery>`
+const insertIngestDocumentFull = sql<IInsertIngestDocumentFullQuery>`
   INSERT INTO accounter_schema.documents
-    (owner_id, charge_id, type, file_url, image_url, file_hash, creditor_id)
-  VALUES ($ownerId, $chargeId, $documentType, $fileUrl, $imageUrl, $fileHash, $creditorId)
+    (owner_id, charge_id, type, file_url, image_url, file_hash, serial_number, date,
+     total_amount, currency_code, vat_amount, vat_report_date_override, no_vat_amount,
+     allocation_number, exchange_rate_override, description, remarks, creditor_id, debtor_id)
+  VALUES ($ownerId, $chargeId, $documentType, $fileUrl, $imageUrl, $fileHash, $serialNumber, $date,
+     $amount, $currencyCode, $vat, $vatReportDateOverride, $noVatAmount,
+     $allocationNumber, $exchangeRateOverride, $description, $remarks, $creditorId, $debtorId)
   RETURNING id
 `;
 
@@ -106,9 +119,6 @@ export type IngestInput = {
     content?: string | null;
   }>;
 };
-
-/** An uploaded document ready to be inserted (bytes already in Cloudinary). */
-type PreparedDocument = { fileUrl: string; imageUrl: string; fileHash: string };
 
 export type IngestResult =
   | { outcome: typeof IngestOutcome.INSERTED; ingestId: string; auditId: string }
@@ -150,7 +160,7 @@ export class EmailIngestionIngestProvider {
     private cloudinaryProvider: CloudinaryProvider,
   ) {}
 
-  async performIngest(input: IngestInput): Promise<IngestResult> {
+  async performIngest(input: IngestInput, injector: Injector): Promise<IngestResult> {
     const {
       grantJti,
       idempotencyKey,
@@ -176,11 +186,15 @@ export class EmailIngestionIngestProvider {
     const corrId = correlationId ?? randomUUID();
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
-    // Prepare documents (hash dedup read + Cloudinary upload) BEFORE the write
-    // transaction, so the network I/O never holds a pooled connection / open
-    // transaction while uploading. The dedup short-circuits re-deliveries (their
-    // documents already exist) so they don't re-upload.
-    const preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments);
+    // Prepare documents (hash dedup read + Cloudinary upload + OCR) BEFORE the
+    // write transaction, so the network I/O never holds a pooled connection / open
+    // transaction. The dedup short-circuits re-deliveries (their documents already
+    // exist) so they don't re-upload or re-OCR.
+    const preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments, {
+      injector,
+      businessId: grantResult.grant.businessId,
+      messageId,
+    });
 
     // 2–5. All tenant-bound work runs under the grant tenant's RLS context.
     return withTenantContext(this.dbProvider.pool, tenantId, async client => {
@@ -251,12 +265,7 @@ export class EmailIngestionIngestProvider {
       // to persist (metadata-only, or all duplicates) a synthetic id is used.
       const chargeId =
         preparedDocuments.length > 0
-          ? await this.insertPreparedDocuments(client, {
-              tenantId,
-              businessId: grantResult.grant.businessId,
-              messageId,
-              preparedDocuments,
-            })
+          ? await this.insertPreparedDocuments(client, { tenantId, messageId, preparedDocuments })
           : null;
 
       const ingestId = chargeId ?? randomUUID();
@@ -282,21 +291,27 @@ export class EmailIngestionIngestProvider {
   }
 
   /**
-   * Prepare the inline document bytes (Option B transport) for persistence
-   * WITHOUT holding the write transaction open: dedup new documents by hash (a
-   * short read context) and upload the new ones to Cloudinary in parallel,
-   * outside any transaction. Keeping the network I/O off the main ingest
-   * transaction avoids holding a pooled connection during slow/large uploads.
+   * Prepare documents for persistence WITHOUT holding the write transaction open:
+   * dedup new documents by hash (a short read), then upload to Cloudinary and OCR
+   * (Anthropic) in parallel, outside any transaction. This mirrors the legacy
+   * `getDocumentFromFile` path (Cloudinary upload + `getOcrData` + `figureOutSides`)
+   * so v2 produces the same classified documents as `insertEmailDocuments`, but
+   * owned by the grant tenant (the auth-coupled providers cannot run in the gateway
+   * control-plane context).
    *
-   * The hash matches the legacy `hashStringToInt(file.text())` scheme so the
-   * dedup is consistent with documents inserted via `insertEmailDocuments`;
-   * re-deliveries short-circuit here (their documents already exist) and never
-   * re-upload. Metadata-only entries (no inline bytes) yield an empty result.
+   * The hash matches the legacy `hashStringToInt(file.text())` scheme so the dedup
+   * is consistent across both paths; re-deliveries short-circuit here and never
+   * re-upload or re-OCR. Metadata-only entries (no inline bytes) yield an empty
+   * result. OCR failure is non-fatal — the document falls back to UNPROCESSED
+   * rather than failing the whole ingest.
    */
   private async prepareDocuments(
     tenantId: string,
     documents: IngestInput['extractedDocuments'],
+    opts: { injector: Injector; businessId: string | null; messageId: string },
   ): Promise<PreparedDocument[]> {
+    const { injector, businessId, messageId } = opts;
+
     type DocWithContent = (typeof documents)[number] & { content: string };
     const withContent = documents.filter(
       (doc): doc is DocWithContent => typeof doc.content === 'string' && doc.content.length > 0,
@@ -307,7 +322,7 @@ export class EmailIngestionIngestProvider {
 
     const candidates = withContent.map(doc => ({
       doc,
-      fileHash: hashStringToInt(Buffer.from(doc.content, 'base64').toString('utf8')).toString(),
+      fileHash: hashStringToInt(Buffer.from(doc.content, 'base64').toString('utf8')),
     }));
 
     // Find the documents new to this tenant under its RLS context (a short read,
@@ -316,7 +331,7 @@ export class EmailIngestionIngestProvider {
       const fresh: typeof candidates = [];
       for (const candidate of candidates) {
         const existing = await checkDocumentByHashForIngest.run(
-          { ownerId: tenantId, fileHash: candidate.fileHash },
+          { ownerId: tenantId, fileHash: candidate.fileHash.toString() },
           client,
         );
         if (existing.length === 0) {
@@ -326,34 +341,54 @@ export class EmailIngestionIngestProvider {
       return fresh;
     });
 
-    // Upload the new documents in parallel, outside any transaction.
+    // Upload + OCR the new documents in parallel, outside any transaction.
     return Promise.all(
       newCandidates.map(async ({ doc, fileHash }) => {
+        const file = new File([Buffer.from(doc.content, 'base64')], doc.filename ?? 'document', {
+          type: doc.mimeType,
+        });
         const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
-        const { fileUrl, imageUrl } =
-          await this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri);
-        return { fileUrl, imageUrl, fileHash };
+        const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+          this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
+          // isSensitive=false → run OCR (Anthropic), as the legacy path does.
+          getOcrData(injector, file, false).catch(
+            (): OcrData => ({ documentType: DocumentType.Unprocessed }),
+          ),
+        ]);
+        // The recognized issuing business is the counterparty (null when none).
+        if (businessId) {
+          ocrData.counterpartyId = businessId;
+        }
+        const params = getDocumentFromUrlsAndOcrData(
+          fileUrl,
+          imageUrl,
+          ocrData,
+          tenantId,
+          null,
+          fileHash,
+        );
+        // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
+        // OCR-derived remarks with an email identifier. (There it is the email
+        // description; the v2 ingest payload carries only the message id.) All
+        // other OCR fields — amount, currency, date, serial — are persisted as-is.
+        params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
+          .filter(Boolean)
+          .join('; ');
+        return params;
       }),
     );
   }
 
   /**
-   * Insert already-uploaded documents under the grant tenant, attributing them
-   * to the recognized issuing business as the document counterparty (creditor).
-   * One charge owns the documents; documents land as UNPROCESSED
-   * (classification/OCR happens later via the normal flow). Runs entirely inside
-   * the caller's transaction with no network I/O. Returns the created charge id.
+   * Insert already-prepared (uploaded + OCR'd) documents under one charge, owned
+   * by the grant tenant. Runs entirely inside the caller's transaction with no
+   * network I/O. Returns the created charge id.
    */
   private async insertPreparedDocuments(
     client: PoolClient,
-    args: {
-      tenantId: string;
-      businessId: string | null;
-      messageId: string;
-      preparedDocuments: PreparedDocument[];
-    },
+    args: { tenantId: string; messageId: string; preparedDocuments: PreparedDocument[] },
   ): Promise<string> {
-    const { tenantId, businessId, messageId, preparedDocuments } = args;
+    const { tenantId, messageId, preparedDocuments } = args;
 
     const [charge] = await insertIngestCharge.run(
       {
@@ -366,16 +401,27 @@ export class EmailIngestionIngestProvider {
     const chargeId = charge.id;
 
     for (const doc of preparedDocuments) {
-      await insertIngestDocument.run(
+      await insertIngestDocumentFull.run(
         {
           ownerId: tenantId,
           chargeId,
-          // Null when no business was recognized.
-          creditorId: businessId,
-          documentType: DocumentType.Unprocessed,
-          fileUrl: doc.fileUrl,
-          imageUrl: doc.imageUrl,
-          fileHash: doc.fileHash,
+          documentType: doc.documentType,
+          fileUrl: doc.file ?? null,
+          imageUrl: doc.image ?? null,
+          fileHash: doc.fileHash ?? null,
+          serialNumber: doc.serialNumber ?? null,
+          date: doc.date ?? null,
+          amount: doc.amount ?? null,
+          currencyCode: doc.currencyCode ?? null,
+          vat: doc.vat ?? null,
+          vatReportDateOverride: doc.vatReportDateOverride ?? null,
+          noVatAmount: doc.noVatAmount ?? null,
+          allocationNumber: doc.allocationNumber ?? null,
+          exchangeRateOverride: doc.exchangeRateOverride ?? null,
+          description: doc.description ?? null,
+          remarks: doc.remarks ?? null,
+          creditorId: doc.creditorId ?? null,
+          debtorId: doc.debtorId ?? null,
         },
         client,
       );
