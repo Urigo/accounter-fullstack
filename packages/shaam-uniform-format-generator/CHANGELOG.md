@@ -1,5 +1,38 @@
 # @accounter/shaam-uniform-format-generator
 
+## 0.2.6
+
+### Patch Changes
+
+- [#3440](https://github.com/Urigo/accounter-fullstack/pull/3440)
+  [`1ad8a10`](https://github.com/Urigo/accounter-fullstack/commit/1ad8a10f3dd92b38c04ccea15b90cc7f9dc43887)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.4.2` ↗︎](https://www.npmjs.com/package/zod/v/4.4.2) (from `4.3.6`, in
+    `dependencies`)
+
+- [#3454](https://github.com/Urigo/accounter-fullstack/pull/3454)
+  [`0b654ef`](https://github.com/Urigo/accounter-fullstack/commit/0b654ef08495e1632ccc75942d6a1a3142924d9f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.4.3` ↗︎](https://www.npmjs.com/package/zod/v/4.4.3) (from `4.4.2`, in
+    `dependencies`)
+
+- [#3599](https://github.com/Urigo/accounter-fullstack/pull/3599)
+  [`4405b3a`](https://github.com/Urigo/accounter-fullstack/commit/4405b3abf883827c5580131abdeba32552d82196)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Encoding Support**: Added `iconv-lite`
+  to handle Windows-1255 encoding, ensuring correct processing of legacy SHAAM file formats.
+
+- [#3673](https://github.com/Urigo/accounter-fullstack/pull/3673)
+  [`a1b5a9a`](https://github.com/Urigo/accounter-fullstack/commit/a1b5a9ad9ddfab18cc747e1f6c25d8b599aaf56a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Data Parsing Refactoring**: Centralized
+  the data file parsing logic into a dedicated `parseDataFile` utility, improving code modularity
+  and maintainability.
+  - **Type Safety Improvements**: Introduced `ParsedDataRecords` interface to standardize data
+    record structures and removed redundant manual property mapping.
+  - **Error Handling Enhancements**: Implemented robust error handling for date conversions and
+    record parsing, including better reporting of line numbers and unknown record types.
+  - **Validation Logic Updates**: Renamed validation functions to `performRecordsValidation` and
+    `performCrossFileValidation` for better clarity and intent.
+
 ## 0.2.5
 
 ### Patch Changes

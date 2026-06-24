@@ -1,5 +1,183 @@
 # @accounter/modern-poalim-scraper
 
+## 0.10.6
+
+### Patch Changes
+
+- [#3290](https://github.com/Urigo/accounter-fullstack/pull/3290)
+  [`b4d8625`](https://github.com/Urigo/accounter-fullstack/commit/b4d8625fcdec44818ffc81f363eab652074a2fa6)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.4.1` ↗︎](https://www.npmjs.com/package/inquirer/v/13.4.1) (from
+    `13.3.2`, in `dependencies`)
+
+- [`82f07c2`](https://github.com/Urigo/accounter-fullstack/commit/82f07c25cd88fbcef8d29ef3d32230cfce168caa)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`inquirer@13.4.1` ↗︎](https://www.npmjs.com/package/inquirer/v/13.4.1) (from
+    `13.3.2`, in `dependencies`)
+
+- [#3333](https://github.com/Urigo/accounter-fullstack/pull/3333)
+  [`a5e6d19`](https://github.com/Urigo/accounter-fullstack/commit/a5e6d19bf96173dde9097985a8df0065b9c3e499)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.4.2` ↗︎](https://www.npmjs.com/package/inquirer/v/13.4.2) (from
+    `13.4.1`, in `dependencies`)
+
+- [#3334](https://github.com/Urigo/accounter-fullstack/pull/3334)
+  [`a92aeb2`](https://github.com/Urigo/accounter-fullstack/commit/a92aeb20551558fc2e32d9ac427e47eab52ddb52)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.42.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.42.0)
+    (from `24.40.0`, in `dependencies`)
+
+- [#3377](https://github.com/Urigo/accounter-fullstack/pull/3377)
+  [`f94b2da`](https://github.com/Urigo/accounter-fullstack/commit/f94b2dadb2431f5a386217d716b72c15cff0ddd0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`uuid@14.0.0` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.0) (from
+    `13.0.0`, in `dependencies`)
+
+- [#3387](https://github.com/Urigo/accounter-fullstack/pull/3387)
+  [`46f9fc5`](https://github.com/Urigo/accounter-fullstack/commit/46f9fc5592590a765770592efab440a0374e9bde)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`uuid@14.0.0` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.0) (from
+    `13.0.0`, in `dependencies`)
+
+- [#3388](https://github.com/Urigo/accounter-fullstack/pull/3388)
+  [`ba0531a`](https://github.com/Urigo/accounter-fullstack/commit/ba0531acbe4936cca371e553cfe7120329acec25)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency
+    [`puppeteer-extra@3.3.6` ↗︎](https://www.npmjs.com/package/puppeteer-extra/v/3.3.6) (to
+    `dependencies`)
+  - Added dependency
+    [`puppeteer-extra-plugin-stealth@2.11.2` ↗︎](https://www.npmjs.com/package/puppeteer-extra-plugin-stealth/v/2.11.2)
+    (to `dependencies`)
+
+- [#3440](https://github.com/Urigo/accounter-fullstack/pull/3440)
+  [`1ad8a10`](https://github.com/Urigo/accounter-fullstack/commit/1ad8a10f3dd92b38c04ccea15b90cc7f9dc43887)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.4.2` ↗︎](https://www.npmjs.com/package/zod/v/4.4.2) (from `4.3.6`, in
+    `dependencies`)
+
+- [#3454](https://github.com/Urigo/accounter-fullstack/pull/3454)
+  [`0b654ef`](https://github.com/Urigo/accounter-fullstack/commit/0b654ef08495e1632ccc75942d6a1a3142924d9f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`zod@4.4.3` ↗︎](https://www.npmjs.com/package/zod/v/4.4.3) (from `4.4.2`, in
+    `dependencies`)
+
+- [#3473](https://github.com/Urigo/accounter-fullstack/pull/3473)
+  [`e76cee0`](https://github.com/Urigo/accounter-fullstack/commit/e76cee0916c6a9f6cc445d228642bc3caf767f86)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@24.43.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.43.0)
+    (from `24.42.0`, in `dependencies`)
+
+- [#3517](https://github.com/Urigo/accounter-fullstack/pull/3517)
+  [`771084b`](https://github.com/Urigo/accounter-fullstack/commit/771084ba04be2aa0cf42904ab5591534b60af680)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@13.4.3` ↗︎](https://www.npmjs.com/package/inquirer/v/13.4.3) (from
+    `13.4.2`, in `dependencies`)
+  - Updated dependency [`puppeteer@24.43.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/24.43.1)
+    (from `24.43.0`, in `dependencies`)
+
+- [#3540](https://github.com/Urigo/accounter-fullstack/pull/3540)
+  [`b7634ad`](https://github.com/Urigo/accounter-fullstack/commit/b7634ad71fa879662cbcbc2ccca796016dc3f8e1)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.0.2` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.0.2)
+    (from `24.43.1`, in `dependencies`)
+
+- [#3548](https://github.com/Urigo/accounter-fullstack/pull/3548)
+  [`c6555f5`](https://github.com/Urigo/accounter-fullstack/commit/c6555f5d6a731b05f26ae58a47c485a905e4ec55)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`date-fns@4.2.1` ↗︎](https://www.npmjs.com/package/date-fns/v/4.2.1) (from
+    `4.1.0`, in `dependencies`)
+
+- [#3551](https://github.com/Urigo/accounter-fullstack/pull/3551)
+  [`9d9ce57`](https://github.com/Urigo/accounter-fullstack/commit/9d9ce57f4058c0d66b8c1ea383030a57692fe607)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`date-fns@4.2.1` ↗︎](https://www.npmjs.com/package/date-fns/v/4.2.1) (from
+    `4.1.0`, in `dependencies`)
+
+- [#3553](https://github.com/Urigo/accounter-fullstack/pull/3553)
+  [`ae5aa31`](https://github.com/Urigo/accounter-fullstack/commit/ae5aa311e4beb3d5b9ded7a0c0fadaf00b796e2e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.0.4` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.0.4)
+    (from `25.0.2`, in `dependencies`)
+
+- [#3554](https://github.com/Urigo/accounter-fullstack/pull/3554)
+  [`5d1b2a3`](https://github.com/Urigo/accounter-fullstack/commit/5d1b2a373dd76f12186fff325d57d80bfd286fec)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Added dependency [`node-xlsx@0.24.0` ↗︎](https://www.npmjs.com/package/node-xlsx/v/0.24.0) (to
+    `dependencies`)
+  - Added dependency [`playwright@1.60.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.60.0) (to
+    `dependencies`)
+
+- [#3559](https://github.com/Urigo/accounter-fullstack/pull/3559)
+  [`43b3575`](https://github.com/Urigo/accounter-fullstack/commit/43b3575f981c01e3caafc7170cb30358ed227c3b)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`date-fns@4.3.0` ↗︎](https://www.npmjs.com/package/date-fns/v/4.3.0) (from
+    `4.2.1`, in `dependencies`)
+
+- [#3589](https://github.com/Urigo/accounter-fullstack/pull/3589)
+  [`5d9a79a`](https://github.com/Urigo/accounter-fullstack/commit/5d9a79aab5c5b75cf09c2dcc0df7f76513a05ba9)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@14.0.0` ↗︎](https://www.npmjs.com/package/inquirer/v/14.0.0) (from
+    `13.4.3`, in `dependencies`)
+
+- [#3594](https://github.com/Urigo/accounter-fullstack/pull/3594)
+  [`f7a8d24`](https://github.com/Urigo/accounter-fullstack/commit/f7a8d244660fb59627da16b90ef2263fa8aa7718)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.1.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.1.0)
+    (from `25.0.4`, in `dependencies`)
+
+- [#3603](https://github.com/Urigo/accounter-fullstack/pull/3603)
+  [`cca7787`](https://github.com/Urigo/accounter-fullstack/commit/cca778797ff2252e52bf9dcf0777e2d385ac68d3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`date-fns@4.4.0` ↗︎](https://www.npmjs.com/package/date-fns/v/4.4.0) (from
+    `4.3.0`, in `dependencies`)
+
+- [#3613](https://github.com/Urigo/accounter-fullstack/pull/3613)
+  [`7397aad`](https://github.com/Urigo/accounter-fullstack/commit/7397aad6a9bf7d120218e6a8274a539eb1e76160)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`inquirer@14.0.2` ↗︎](https://www.npmjs.com/package/inquirer/v/14.0.2) (from
+    `14.0.0`, in `dependencies`)
+
+- [#3703](https://github.com/Urigo/accounter-fullstack/pull/3703)
+  [`fb74946`](https://github.com/Urigo/accounter-fullstack/commit/fb7494648b7e0a73d72e802c4dbff791e3583767)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.61.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.61.0)
+    (from `1.60.0`, in `dependencies`)
+
+- [#3720](https://github.com/Urigo/accounter-fullstack/pull/3720)
+  [`452d0ed`](https://github.com/Urigo/accounter-fullstack/commit/452d0ede302ac26f9aad5d76afc53e72d6d99977)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`uuid@14.0.1` ↗︎](https://www.npmjs.com/package/uuid/v/14.0.1) (from
+    `14.0.0`, in `dependencies`)
+
+- [#3749](https://github.com/Urigo/accounter-fullstack/pull/3749)
+  [`64119ef`](https://github.com/Urigo/accounter-fullstack/commit/64119ef336f825399c7cf46bdc33e3f7ae1009dd)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.2.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.0)
+    (from `25.1.0`, in `dependencies`)
+
+- [#3554](https://github.com/Urigo/accounter-fullstack/pull/3554)
+  [`5d1b2a3`](https://github.com/Urigo/accounter-fullstack/commit/5d1b2a373dd76f12186fff325d57d80bfd286fec)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New Scraper Implementation**: Added a
+  comprehensive scraper for Otsar Hahayal, supporting ILS, foreign currency, and credit card
+  transactions.
+  - **Dependency Updates**: Added `playwright` and `node-xlsx` for scraping and parsing, while
+    removing unused `json-schema-to-typescript` tooling.
+
+- [#3627](https://github.com/Urigo/accounter-fullstack/pull/3627)
+  [`4f0c31c`](https://github.com/Urigo/accounter-fullstack/commit/4f0c31c03761d0f915ddbdd5104bcaec0a042dfe)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Updated the scraper runner to pass the
+  `headless` option.
+  - Refactored account identification logic to include `subAccount` in the `accountId` string,
+    ensuring uniqueness.
+  - Updated `useRunSocket` to separate `accountSteps` and `monthSteps` in the task state, improving
+    the reliability of progress tracking.
+  - Refactored the UI to use a new `CollapsibleSection` component for cleaner organization of task
+    steps (Accounts vs. Months).
+  - **Database Migrations:**
+    - Added a new migration to flag fees in Otsar Hahayal transactions (ILS, foreign, and credit
+      card) based on description and name patterns.
+    - Updated the migration runner to include the new fee-flagging migration.
+
 ## 0.10.5
 
 ### Patch Changes
