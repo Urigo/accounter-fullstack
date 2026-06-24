@@ -227,7 +227,7 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
     invoiceAmount,
     invoiceCount,
     documentsAmount,
-    documentsVatAmount: invoiceVatAmount == null ? receiptVatAmount : invoiceVatAmount,
+    documentsVatAmount: invoiceVatAmount ?? receiptVatAmount,
     documentsCount: documents.length,
     documentsCurrency: currencies.length === 1 ? currencies[0] : null,
     invalidDocuments,

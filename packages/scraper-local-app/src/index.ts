@@ -85,8 +85,7 @@ export async function scrape() {
       {
         title: 'Currency Rates',
         skip: () => {
-          const shouldFetchCurrencyRates =
-            config.fetchBankOfIsraelRates == null ? true : config.fetchBankOfIsraelRates;
+          const shouldFetchCurrencyRates = config.fetchBankOfIsraelRates ?? true;
           if (!shouldFetchCurrencyRates) {
             return 'Skipping currency rates';
           }

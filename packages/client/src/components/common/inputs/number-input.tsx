@@ -84,7 +84,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     if (onValueChange) {
       onValueChange(newValue);
     }
-    onChange?.(newValue == null ? undefined : newValue);
+    onChange?.(newValue ?? undefined);
   };
 
   const handleBlur = () => {

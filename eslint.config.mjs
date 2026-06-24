@@ -23,9 +23,18 @@ const compat = new FlatCompat({
 
 // override @theguild's unicorn version with local
 function replaceUnicornRules(set) {
-  return set?.plugins?.unicorn
-    ? { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } }
-    : set;
+  if (!set?.plugins?.unicorn) {
+    return set;
+  }
+  const next = { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } };
+
+  // unicorn v66 renamed `no-array-for-each` to `no-for-each`; @theguild/eslint-config still
+  // references the old name, so remap it onto the current rule name to keep the config valid.
+  if (set.rules?.['unicorn/no-array-for-each'] != null) {
+    const { 'unicorn/no-array-for-each': renamed, ...rest } = set.rules;
+    next.rules = { ...rest, 'unicorn/no-for-each': renamed };
+  }
+  return next;
 }
 
 // eslint-plugin-n v18 is ESM-only. Node.js 24 can require() ESM but returns the namespace object
@@ -33,6 +42,10 @@ function replaceUnicornRules(set) {
 // that lacks a `rules` property. Replace it in-place with the correctly ESM-imported instance.
 function replaceNPlugin(set) {
   return set?.plugins?.n ? { ...set, plugins: { ...set.plugins, n: eslintPluginN } } : set;
+}
+
+function applyPluginReplacements(set) {
+  return replaceNPlugin(replaceUnicornRules(set));
 }
 
 export default [
@@ -55,7 +68,7 @@ export default [
   },
   // @theguild entrypoint currently patches ESLint via @rushstack/eslint-patch,
   // which fails on ESLint 10. Load equivalent base configs directly.
-  ...fixupConfigRules(compat.config(guildBaseConfig)).map(replaceUnicornRules).map(replaceNPlugin),
+  ...fixupConfigRules(compat.config(guildBaseConfig)).map(applyPluginReplacements),
   {
     languageOptions: {
       ecmaVersion: 5,
@@ -88,6 +101,11 @@ export default [
       parser: graphqlPlugin.parser,
       ecmaVersion: 5,
       sourceType: 'script',
+    },
+
+    rules: {
+      // unicorn/no-empty-file accesses node.body.some() which is undefined in the GraphQL AST
+      'unicorn/no-empty-file': 'off',
     },
   },
   {
@@ -230,7 +248,7 @@ export default [
   },
   ...fixupConfigRules(compat.config(guildReactBaseConfig)).map(config => {
     return {
-      ...replaceNPlugin(replaceUnicornRules(config)),
+      ...applyPluginReplacements(config),
       files: ['packages/client/src/**/*.{,c,m}{j,t}s{,x}'],
     };
   }),
@@ -313,13 +331,11 @@ export default [
       'packages/server/src/modules/depreciation/providers/depreciation-categories.provider.ts',
       'packages/server/src/modules/exchange-rates/providers/fiat-exchange.provider.ts',
       'packages/server/src/modules/vat/providers/vat.provider.ts',
-      'packages/server/src/modules/email-ingestion/providers/email-ingestion-control.provider.ts',
       // email-ingestion-ingest.provider.ts uses raw pool intentionally: the ingest endpoint is
       // called with gateway_control_plane auth (empty businessId), so TenantAwareDBClient would
       // throw UNAUTHENTICATED. Tenant isolation is enforced via explicit owner_id parameters.
+      'packages/server/src/modules/email-ingestion/providers/email-ingestion-control.provider.ts',
       'packages/server/src/modules/email-ingestion/providers/email-ingestion-ingest.provider.ts',
-      // NOTE: email-ingestion-idempotency.provider.ts was previously exempt but no longer
-      // accesses DBProvider directly — as of S13.6 it injects TenantAwareDBClient (RLS-enforced).
       // Exempt migrations, scripts, and tests that may need direct DB access for setup, maintenance, or testing purposes
       '**/migrations/**/*.ts',
       '**/scripts/**/*.ts',
