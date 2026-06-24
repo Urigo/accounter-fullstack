@@ -102,6 +102,11 @@ export default [
       ecmaVersion: 5,
       sourceType: 'script',
     },
+
+    rules: {
+      // unicorn/no-empty-file accesses node.body.some() which is undefined in the GraphQL AST
+      'unicorn/no-empty-file': 'off',
+    },
   },
   {
     files: [
