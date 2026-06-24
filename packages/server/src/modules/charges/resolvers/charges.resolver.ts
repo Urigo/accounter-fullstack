@@ -22,7 +22,7 @@ import {
   batchUpdateChargesTags,
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
-import { getChargeType } from '../helpers/charge-type.js';
+import { getChargeType, normalizeDbType } from '../helpers/charge-type.js';
 import {
   getChargeBusinesses,
   getChargeDocumentsMeta,
@@ -143,7 +143,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
       // charge __typename is resolved dynamically, so filter by concrete type post-fetch
       let filteredCharges = charges;
       if (filters?.byChargeTypes?.length) {
-        const wantedTypes = new Set<string>(filters.byChargeTypes);
+        const wantedTypes = new Set<ChargeTypeEnum>(filters.byChargeTypes?.map(normalizeDbType));
         const chargeTypes = await Promise.all(
           charges.map(charge =>
             getChargeType(charge, injector).catch(error => {
