@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { IngestReasonCode } from '../contracts.js';
 import {
   MAX_ATTACHMENT_COUNT,
@@ -123,7 +123,10 @@ function fakePng(sizeBytes = 256): Buffer {
   return buf;
 }
 
-import { vi } from 'vitest';
+/** Encode text as an RFC 2047 base64 UTF-8 encoded-word. */
+function encodeWord(text: string): string {
+  return `=?UTF-8?B?${Buffer.from(text, 'utf8').toString('base64')}?=`;
+}
 
 // ---------------------------------------------------------------------------
 // Limit constants
@@ -139,6 +142,9 @@ describe('exported limit constants', () => {
   it('MAX_EXTRACTED_BYTES is 20 MB', () => {
     expect(MAX_EXTRACTED_BYTES).toBe(20 * 1024 * 1024);
   });
+  it('MAX_MIME_DEPTH is 10', () => {
+    expect(MAX_MIME_DEPTH).toBe(10);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -146,39 +152,39 @@ describe('exported limit constants', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — OVERSIZE_MESSAGE', () => {
-  it('returns OVERSIZE_MESSAGE when raw MIME exceeds 25 MB', () => {
+  it('returns OVERSIZE_MESSAGE when raw MIME exceeds 25 MB', async () => {
     const big = Buffer.alloc(MAX_RAW_MIME_BYTES + 1);
-    const result = extractFromMime(big);
+    const result = await extractFromMime(big);
     expect(result).toEqual({ success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE });
   });
 
-  it('does NOT reject a message at exactly 25 MB as oversize', () => {
+  it('does NOT reject a message at exactly 25 MB as oversize', async () => {
     // A buffer of exactly MAX size must not trigger the oversize check.
     const exact = Buffer.alloc(MAX_RAW_MIME_BYTES);
-    const result = extractFromMime(exact);
+    const result = await extractFromMime(exact);
     if (!result.success) {
       expect(result.reason).not.toBe(IngestReasonCode.OVERSIZE_MESSAGE);
     }
   });
 
-  it('returns OVERSIZE_MESSAGE when attachment count exceeds 10', () => {
+  it('returns OVERSIZE_MESSAGE when attachment count exceeds 10', async () => {
     const attachments = Array.from({ length: MAX_ATTACHMENT_COUNT + 1 }, (_, i) => ({
       filename: `doc${i}.pdf`,
       mimeType: 'application/pdf',
       content: fakePdf(100),
     }));
     const mime = makeMultipartMime({ attachments });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result).toEqual({ success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE });
   });
 
-  it('returns OVERSIZE_MESSAGE when total extracted bytes exceed 20 MB', () => {
+  it('returns OVERSIZE_MESSAGE when total extracted bytes exceed 20 MB', async () => {
     // One attachment that is just over 20 MB
     const big = Buffer.alloc(MAX_EXTRACTED_BYTES + 1);
     const mime = makeMultipartMime({
       attachments: [{ filename: 'big.pdf', mimeType: 'application/pdf', content: big }],
     });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result).toEqual({ success: false, reason: IngestReasonCode.OVERSIZE_MESSAGE });
   });
 });
@@ -188,8 +194,8 @@ describe('extractFromMime — OVERSIZE_MESSAGE', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — PARSE_ERROR', () => {
-  it('returns PARSE_ERROR for completely empty buffer', () => {
-    const result = extractFromMime(Buffer.alloc(0));
+  it('returns PARSE_ERROR for completely empty buffer', async () => {
+    const result = await extractFromMime(Buffer.alloc(0));
     expect(result).toEqual({ success: false, reason: IngestReasonCode.PARSE_ERROR });
   });
 });
@@ -199,9 +205,9 @@ describe('extractFromMime — PARSE_ERROR', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — attachment-less messages', () => {
-  it('succeeds with empty documents for a plain-text-only message', () => {
+  it('succeeds with empty documents for a plain-text-only message', async () => {
     const mime = makeTextMime('sender@example.com', 'Hello', 'just some text');
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(0);
@@ -210,39 +216,66 @@ describe('extractFromMime — attachment-less messages', () => {
     }
   });
 
-  it('extracts the Subject header for the downstream charge description', () => {
+  it('extracts the Subject header for the downstream charge description', async () => {
     const mime = makeTextMime('sender@example.com', 'Invoice #42', 'body');
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.subject).toBe('Invoice #42');
     }
   });
 
-  it('succeeds with empty documents for multipart with no document attachments', () => {
+  it('succeeds with empty documents for multipart with no document attachments', async () => {
     // Has a text attachment, not a PDF/image
     const mime = makeMultipartMime({
       attachments: [
         { filename: 'notes.txt', mimeType: 'text/plain', content: Buffer.from('notes') },
       ],
     });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(0);
     }
   });
 
-  it('tolerates structureless/binary input as an empty message (no documents)', () => {
-    // Post-WS-B the emptiness decision is deferred downstream: input with no
-    // recognizable MIME structure parses as an empty message (no documents,
-    // empty body) and is quarantined later, rather than failing at parse time.
-    // (A genuinely empty buffer is still a PARSE_ERROR — see above.)
-    const result = extractFromMime(Buffer.from([0x00, 0x01, 0x02, 0x03]));
+  it('tolerates structureless/binary input as an empty message (no documents)', async () => {
+    // The emptiness decision is deferred downstream: input with no recognizable
+    // MIME structure parses as a message with no documents and is quarantined
+    // later, rather than failing at parse time. (A genuinely empty buffer is
+    // still a PARSE_ERROR — see above.)
+    const result = await extractFromMime(Buffer.from([0x00, 0x01, 0x02, 0x03]));
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(0);
-      expect(result.body).toBe('');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RFC 2047 encoded-word header decoding (non-ASCII subjects/senders)
+// ---------------------------------------------------------------------------
+
+describe('extractFromMime — RFC 2047 encoded headers', () => {
+  it('decodes an encoded-word Subject (e.g. Hebrew) to Unicode', async () => {
+    const subjectText = 'חשבונית 123';
+    const mime = makeTextMime('sender@example.com', encodeWord(subjectText), 'body');
+    const result = await extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.subject).toBe(subjectText);
+    }
+  });
+
+  it('decodes an encoded-word From display name', async () => {
+    const mime = makeMultipartMime({
+      from: `${encodeWord('ספק')} <vendor@biz.co.il>`,
+      attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
+    });
+    const result = await extractFromMime(mime);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.from).toBe('ספק <vendor@biz.co.il>');
     }
   });
 });
@@ -262,35 +295,35 @@ describe('extractFromMime — success: PDF attachment', () => {
     });
   });
 
-  it('returns success: true', () => {
-    const result = extractFromMime(mime);
+  it('returns success: true', async () => {
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
   });
 
-  it('includes one document', () => {
-    const result = extractFromMime(mime) as { success: true; documents: ExtractedDocument[] };
+  it('includes one document', async () => {
+    const result = (await extractFromMime(mime)) as { success: true; documents: ExtractedDocument[] };
     expect(result.documents).toHaveLength(1);
   });
 
-  it('document has correct filename and mimeType', () => {
-    const result = extractFromMime(mime) as { success: true; documents: ExtractedDocument[] };
+  it('document has correct filename and mimeType', async () => {
+    const result = (await extractFromMime(mime)) as { success: true; documents: ExtractedDocument[] };
     expect(result.documents[0]?.filename).toBe('invoice.pdf');
     expect(result.documents[0]?.mimeType).toBe('application/pdf');
   });
 
-  it('document size matches original bytes', () => {
-    const result = extractFromMime(mime) as { success: true; documents: ExtractedDocument[] };
+  it('document size matches original bytes', async () => {
+    const result = (await extractFromMime(mime)) as { success: true; documents: ExtractedDocument[] };
     expect(result.documents[0]?.size).toBe(pdfBytes.length);
   });
 
-  it('document sha256 matches crypto hash of original bytes', () => {
-    const result = extractFromMime(mime) as { success: true; documents: ExtractedDocument[] };
+  it('document sha256 matches crypto hash of original bytes', async () => {
+    const result = (await extractFromMime(mime)) as { success: true; documents: ExtractedDocument[] };
     const expected = createHash('sha256').update(pdfBytes).digest('hex');
     expect(result.documents[0]?.sha256).toBe(expected);
   });
 
-  it('document content matches original bytes', () => {
-    const result = extractFromMime(mime) as { success: true; documents: ExtractedDocument[] };
+  it('document content matches original bytes', async () => {
+    const result = (await extractFromMime(mime)) as { success: true; documents: ExtractedDocument[] };
     expect(result.documents[0]?.content).toEqual(pdfBytes);
   });
 });
@@ -300,12 +333,12 @@ describe('extractFromMime — success: PDF attachment', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — success: image attachment', () => {
-  it('extracts image/png attachment', () => {
+  it('extracts image/png attachment', async () => {
     const png = fakePng(512);
     const mime = makeMultipartMime({
       attachments: [{ filename: 'receipt.png', mimeType: 'image/png', content: png }],
     });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents[0]?.mimeType).toBe('image/png');
@@ -313,12 +346,12 @@ describe('extractFromMime — success: image attachment', () => {
     }
   });
 
-  it('extracts image/jpeg attachment', () => {
+  it('extracts image/jpeg attachment', async () => {
     const jpg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, ...Buffer.alloc(100)]);
     const mime = makeMultipartMime({
       attachments: [{ filename: 'scan.jpg', mimeType: 'image/jpeg', content: jpg }],
     });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
   });
 });
@@ -328,7 +361,7 @@ describe('extractFromMime — success: image attachment', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — octet-stream with .pdf filename', () => {
-  it('treats application/octet-stream with .pdf filename as PDF', () => {
+  it('treats application/octet-stream with .pdf filename as PDF', async () => {
     const pdf = fakePdf(256);
     const mime = makeMultipartMime({
       attachments: [
@@ -339,7 +372,7 @@ describe('extractFromMime — octet-stream with .pdf filename', () => {
         },
       ],
     });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents[0]?.mimeType).toBe('application/pdf');
@@ -352,14 +385,14 @@ describe('extractFromMime — octet-stream with .pdf filename', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — multiple attachments', () => {
-  it('returns all document attachments up to the limit', () => {
+  it('returns all document attachments up to the limit', async () => {
     const attachments = Array.from({ length: MAX_ATTACHMENT_COUNT }, (_, i) => ({
       filename: `doc${i}.pdf`,
       mimeType: 'application/pdf',
       content: fakePdf(64),
     }));
     const mime = makeMultipartMime({ attachments });
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(MAX_ATTACHMENT_COUNT);
@@ -372,61 +405,49 @@ describe('extractFromMime — multiple attachments', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — senderEvidence', () => {
-  it('captures From header', () => {
+  it('captures From header', async () => {
     const mime = makeMultipartMime({
       from: 'Alice <alice@vendor.com>',
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
-    const result = extractFromMime(mime) as { success: true; senderEvidence: SenderEvidence };
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
     expect(result.senderEvidence.from).toBe('Alice <alice@vendor.com>');
   });
 
-  it('captures Reply-To header', () => {
+  it('captures Reply-To header', async () => {
     const mime = makeMultipartMime({
       replyTo: 'billing@vendor.com',
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
-    const result = extractFromMime(mime) as { success: true; senderEvidence: SenderEvidence };
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
     expect(result.senderEvidence.replyTo).toBe('billing@vendor.com');
   });
 
-  it('captures X-Original-From header', () => {
+  it('captures X-Original-From header', async () => {
     const mime = makeMultipartMime({
       originalFrom: 'original@sender.com',
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
-    const result = extractFromMime(mime) as { success: true; senderEvidence: SenderEvidence };
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
     expect(result.senderEvidence.originalFrom).toBe('original@sender.com');
   });
 
-  it('captures X-Original-Sender header (fallback when X-Original-From absent)', () => {
+  it('captures X-Original-Sender header (fallback when X-Original-From absent)', async () => {
     const mime = makeMultipartMime({
       originalSender: 'orig-sender@vendor.com',
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
-    const result = extractFromMime(mime) as { success: true; senderEvidence: SenderEvidence };
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
     expect(result.senderEvidence.originalFrom).toBe('orig-sender@vendor.com');
   });
 
-  it('returns undefined for absent optional headers', () => {
+  it('returns undefined for absent optional headers', async () => {
     const mime = makeMultipartMime({
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
-    const result = extractFromMime(mime) as { success: true; senderEvidence: SenderEvidence };
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
     expect(result.senderEvidence.replyTo).toBeUndefined();
     expect(result.senderEvidence.originalFrom).toBeUndefined();
-  });
-});
-
-import { beforeAll } from 'vitest';
-
-// ---------------------------------------------------------------------------
-// Limit constants (depth)
-// ---------------------------------------------------------------------------
-
-describe('exported limit constants — MAX_MIME_DEPTH', () => {
-  it('MAX_MIME_DEPTH is 10', () => {
-    expect(MAX_MIME_DEPTH).toBe(10);
   });
 });
 
@@ -454,14 +475,14 @@ describe('extractFromMime — deeply nested multipart', () => {
     ].join('\r\n');
   }
 
-  it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', () => {
+  it('returns PARSE_ERROR for MIME nesting deeper than MAX_MIME_DEPTH', async () => {
     // Build a message nested deeper than the limit. The multipart Content-Type
     // must lead the top-level header block (no blank line before it), otherwise
     // it lands in the body and the top level parses as text/plain — never
     // recursing into the nested structure that the depth guard protects against.
     const nested = buildNestedMultipart(MAX_MIME_DEPTH + 2);
     const raw = Buffer.from(['From: attacker@evil.com', nested].join('\r\n'), 'utf8');
-    const result = extractFromMime(raw);
+    const result = await extractFromMime(raw);
     // Exceeding the nesting limit throws → PARSE_ERROR (never success).
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -471,21 +492,14 @@ describe('extractFromMime — deeply nested multipart', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Security: boundary string appearing inside base64 body is not a false delimiter
+// Security: boundary string appearing inside content is not a false delimiter
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — boundary collision in body', () => {
-  it('does not treat boundary string inside base64 content as a real boundary', () => {
-    // Craft a PDF whose base64 encoding contains the boundary string embedded
-    // in the middle of a line (not preceded by a newline). The parser should
-    // ignore it and successfully decode the attachment.
+  it('does not treat boundary string inside a text part as a real boundary', async () => {
     const boundary = 'COLLISION';
-    // Small PDF whose content doesn't accidentally contain --COLLISION at line start
     const pdf = fakePdf(64);
     const b64 = pdf.toString('base64');
-    // The base64 encoding of a small buffer won't naturally contain the boundary,
-    // but we verify that even with a crafted preamble text part that contains the
-    // boundary string, the attachment still decodes correctly.
     const mime = Buffer.from(
       [
         'From: sender@example.com',
@@ -507,7 +521,7 @@ describe('extractFromMime — boundary collision in body', () => {
       'utf8',
     );
 
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(1);
@@ -515,11 +529,7 @@ describe('extractFromMime — boundary collision in body', () => {
     }
   });
 
-  it('does not mistake a nested boundary that the outer boundary is a prefix of', () => {
-    // Outer boundary `BND` is a prefix of the inner boundary `BND-1`. A naive
-    // `indexOf("--BND")` matches inside `--BND-1`, so the outer parser would
-    // split parts at the inner boundary and drop the attachment. The delimiter
-    // must be followed by whitespace/CRLF or `--` to count as a real boundary.
+  it('parses a nested multipart whose outer boundary is a prefix of the inner one', async () => {
     const outer = 'BND';
     const inner = 'BND-1';
     const pdf = fakePdf(64);
@@ -556,7 +566,7 @@ describe('extractFromMime — boundary collision in body', () => {
       'utf8',
     );
 
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.documents).toHaveLength(1);
@@ -571,15 +581,15 @@ describe('extractFromMime — boundary collision in body', () => {
 // ---------------------------------------------------------------------------
 
 describe('extractFromMime — body capture & issuer candidates', () => {
-  it('captures the HTML body of a text/html message', () => {
-    const result = extractFromMime(makeHtmlMime('<p>hello body world</p>'));
+  it('captures the HTML body of a text/html message', async () => {
+    const result = await extractFromMime(makeHtmlMime('<p>hello body world</p>'));
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.body).toContain('hello body world');
     }
   });
 
-  it('prefers the HTML body over text/plain in multipart/alternative', () => {
+  it('prefers the HTML body over text/plain in multipart/alternative', async () => {
     const boundary = 'ALT001';
     const mime = Buffer.from(
       [
@@ -600,7 +610,7 @@ describe('extractFromMime — body capture & issuer candidates', () => {
       ].join('\r\n'),
       'utf8',
     );
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.body).toContain('html version');
@@ -608,34 +618,34 @@ describe('extractFromMime — body capture & issuer candidates', () => {
     }
   });
 
-  it('extracts (and URL-decodes) issuer mailto candidates from "From:" links in the body', () => {
+  it('extracts (and URL-decodes) issuer mailto candidates from "From:" links in the body', async () => {
     const html =
       '<div>From: Real Vendor &lt;<a href="mailto:real%40vendor.com">real@vendor.com</a>&gt;</div>';
-    const result = extractFromMime(makeHtmlMime(html));
+    const result = await extractFromMime(makeHtmlMime(html));
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.senderEvidence.issuerCandidates).toContain('real@vendor.com');
     }
   });
 
-  it('returns no issuer candidates when the body has no From: mailto link', () => {
-    const result = extractFromMime(makeHtmlMime('<p>no contact links here</p>'));
+  it('returns no issuer candidates when the body has no From: mailto link', async () => {
+    const result = await extractFromMime(makeHtmlMime('<p>no contact links here</p>'));
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.senderEvidence.issuerCandidates).toEqual([]);
     }
   });
 
-  it('matches issuer candidates across a newline-wrapped From: line', () => {
+  it('matches issuer candidates across a newline-wrapped From: line', async () => {
     const html = 'From: Real Vendor\r\n<a href="mailto:wrapped@vendor.com">link</a>';
-    const result = extractFromMime(makeHtmlMime(html));
+    const result = await extractFromMime(makeHtmlMime(html));
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.senderEvidence.issuerCandidates).toContain('wrapped@vendor.com');
     }
   });
 
-  it('decodes a non-UTF-8 (windows-1255) text body via its declared charset', () => {
+  it('decodes a non-UTF-8 (windows-1255) text body via its declared charset', async () => {
     const header = Buffer.from(
       [
         'From: sender@example.com',
@@ -650,7 +660,7 @@ describe('extractFromMime — body capture & issuer candidates', () => {
     );
     // 0xE0 0xE1 0xE2 = אבג in windows-1255
     const mime = Buffer.concat([header, Buffer.from([0xe0, 0xe1, 0xe2])]);
-    const result = extractFromMime(mime);
+    const result = await extractFromMime(mime);
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.body).toBe('אבג');

@@ -142,7 +142,7 @@ export function createWebhookHandler(deps: WebhookDeps) {
     // from the raw MIME body. The gateway — not the upstream worker — owns the
     // hash so the server can trust a value derived from the signed payload.
     const rawMessageHash = createHash('sha256').update(rawBody).digest('hex');
-    const extraction = extractFromMime(rawBody);
+    const extraction = await extractFromMime(rawBody);
 
     // Raw attachments (with bytes) + body are handed to orchestration, which runs
     // treatment (attachment filter, body→PDF, internal-link fetch) after the
