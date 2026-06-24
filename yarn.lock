@@ -105,7 +105,7 @@ __metadata:
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
     happy-dom: "npm:20.10.6"
-    html2canvas-pro: "npm:2.1.1"
+    html2canvas-pro: "npm:2.2.0"
     iconv-lite: "npm:0.7.2"
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.21.0"
@@ -17661,13 +17661,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html2canvas-pro@npm:2.1.1":
-  version: 2.1.1
-  resolution: "html2canvas-pro@npm:2.1.1"
+"html2canvas-pro@npm:2.2.0":
+  version: 2.2.0
+  resolution: "html2canvas-pro@npm:2.2.0"
   dependencies:
     css-line-break: "npm:^2.1.0"
     text-segmentation: "npm:^1.0.3"
-  checksum: 10c0/378e17d7dbdf2d0abfd5b52827453776dd5ab3bdcfca5c97b0b8ab482123c989f8d7480273174af403ebd5b1feba2df90e21d044eef5b80939801c18d0fec3db
+  checksum: 10c0/1bad85aaed1433d5c0e867119f4f6edf1fcee00ca07cb370c7f3c0083a04c9f323ce78f79d7e91e40ca54599aff4edf2525f168ab02523d1e552e1ace4de2403
   languageName: node
   linkType: hard
 
