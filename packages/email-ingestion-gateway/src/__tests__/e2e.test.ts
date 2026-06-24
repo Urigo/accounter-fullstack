@@ -78,21 +78,34 @@ function makeReq(
 function makeRes() {
   let status: number | undefined;
   let body: string | undefined;
+  // Track headersSent dynamically (as real Node does) so an accidental
+  // double-write — e.g. a missing `return` after writeJson — surfaces as a
+  // thrown ERR_HTTP_HEADERS_SENT instead of being silently masked.
+  let headersSent = false;
+  const headers = new Map<string, string>();
   const res = {
     writeHead: vi.fn((code: number) => {
+      if (headersSent) throw new Error('ERR_HTTP_HEADERS_SENT');
       status = code;
+      headersSent = true;
     }),
     end: vi.fn((data: string) => {
+      headersSent = true;
       body = data;
     }),
-    setHeader: vi.fn(),
-    headersSent: false,
-    getHeader: vi.fn(),
+    setHeader: vi.fn((name: string, value: string) => {
+      headers.set(name.toLowerCase(), value);
+    }),
+    get headersSent() {
+      return headersSent;
+    },
+    getHeader: vi.fn((name: string) => headers.get(name.toLowerCase())),
   } as unknown as ServerResponse;
   return {
     res,
     getStatus: () => status,
     getBody: () => (body ? (JSON.parse(body) as Record<string, unknown>) : undefined),
+    getHeaders: () => Object.fromEntries(headers),
   };
 }
 
