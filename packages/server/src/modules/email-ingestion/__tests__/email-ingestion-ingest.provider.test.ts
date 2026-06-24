@@ -437,18 +437,20 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       { rows: [dedupRow], rowCount: 1 }, // dedup insert
     ]);
 
-    await provider.performIngest({
-      ...inputWithContent,
-      subject: 'Invoice #42',
-      sender: 'billing@vendor.com',
-      receivedAt: '2026-06-24T08:30:00.000Z',
-    });
+    await provider.performIngest(
+      {
+        ...inputWithContent,
+        subject: 'Invoice #42',
+        sender: 'billing@vendor.com',
+        receivedAt: '2026-06-24T08:30:00.000Z',
+      },
+      ocrInjector,
+    );
 
     const chargeInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.charges'));
+    // Hardcoded date (UTC) so a timezone-dependent regression is caught.
     expect(chargeInsert?.values).toContain(
-      `Email documents: Invoice #42 (from: billing@vendor.com, ${new Date(
-        '2026-06-24T08:30:00.000Z',
-      ).toDateString()})`,
+      'Email documents: Invoice #42 (from: billing@vendor.com, Wed Jun 24 2026)',
     );
   });
 
@@ -463,7 +465,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       { rows: [dedupRow], rowCount: 1 }, // dedup insert
     ]);
 
-    await provider.performIngest(inputWithContent);
+    await provider.performIngest(inputWithContent, ocrInjector);
 
     const chargeInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.charges'));
     expect(chargeInsert?.values).toContain(`Email documents: ${MSG_ID}`);

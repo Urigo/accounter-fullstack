@@ -145,9 +145,22 @@ function buildEmailChargeDescription(args: {
   const subject = args.subject?.trim() || args.messageId;
   const sender = args.sender?.trim();
 
+  // Format in UTC (not the server-local `toDateString()`) so the same email
+  // yields the same description across dev/CI/prod. Mirrors the legacy
+  // `toDateString()` shape, e.g. "Wed Jun 24 2026".
   const receivedDate = args.receivedAt ? new Date(args.receivedAt) : null;
   const dateStr =
-    receivedDate && !Number.isNaN(receivedDate.getTime()) ? receivedDate.toDateString() : null;
+    receivedDate && !Number.isNaN(receivedDate.getTime())
+      ? receivedDate
+          .toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'UTC',
+          })
+          .replace(/,/g, '')
+      : null;
 
   const details = [sender ? `from: ${sender}` : null, dateStr].filter(Boolean).join(', ');
 

@@ -111,6 +111,7 @@ export async function extractFromMime(rawMime: Buffer): Promise<ExtractionResult
   return {
     success: true,
     subject: email.subject,
+    body,
     senderEvidence: {
       from: formatAddress(email.from),
       replyTo: formatAddress(email.replyTo?.[0]),
