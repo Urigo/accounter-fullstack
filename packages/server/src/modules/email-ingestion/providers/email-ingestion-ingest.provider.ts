@@ -22,40 +22,13 @@ import type {
   IInsertDedupFingerprintForIngestQuery,
   IInsertIdempotencyKeyForIngestQuery,
   IInsertIngestChargeQuery,
+  IInsertIngestDocumentFullQuery,
   IInsertQuarantineForIngestQuery,
 } from '../types.js';
 import { EmailIngestionControlProvider } from './email-ingestion-control.provider.js';
 
 /** A single OCR'd document, ready to insert (cf. DocumentsProvider.insertDocuments columns). */
 type PreparedDocument = IInsertDocumentsParams['documents'][number];
-
-// Inline type for the full document insert (mirrors DocumentsProvider.insertDocuments)
-// so persistence does not depend on a regenerated pgtyped type. The auth-coupled
-// DocumentsProvider cannot run in the gateway control-plane context.
-interface IInsertIngestDocumentFullQuery {
-  params: {
-    ownerId: string;
-    chargeId: string;
-    documentType: string;
-    fileUrl: string | null;
-    imageUrl: string | null;
-    fileHash: string | null;
-    serialNumber: string | null;
-    date: Date | null;
-    amount: number | null;
-    currencyCode: string | null;
-    vat: number | null;
-    vatReportDateOverride: Date | null;
-    noVatAmount: number | null;
-    allocationNumber: string | null;
-    exchangeRateOverride: number | null;
-    description: string | null;
-    remarks: string | null;
-    creditorId: string | null;
-    debtorId: string | null;
-  };
-  result: { id: string };
-}
 
 // ---------------------------------------------------------------------------
 // SQL queries
@@ -398,7 +371,9 @@ export class EmailIngestionIngestProvider {
         // OCR-derived remarks with an email identifier. (There it is the email
         // description; the v2 ingest payload carries only the message id.) All
         // other OCR fields — amount, currency, date, serial — are persisted as-is.
-        params.remarks = `email-ingestion: ${messageId}`;
+        params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
+          .filter(Boolean)
+          .join('; ');
         return params;
       }),
     );
