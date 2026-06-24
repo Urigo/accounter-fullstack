@@ -12,6 +12,7 @@ import graphqlPlugin from '@graphql-eslint/eslint-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 const guildBaseConfig = require('@theguild/eslint-config/base');
 const guildReactBaseConfig = require('@theguild/eslint-config/react-base');
 const compat = new FlatCompat({
@@ -34,10 +35,6 @@ function replaceUnicornRules(set) {
     next.rules = { ...rest, 'unicorn/no-for-each': renamed };
   }
   return next;
-
-  return set?.plugins?.unicorn
-    ? { ...set, plugins: { ...set.plugins, unicorn: eslintPluginUnicorn } }
-    : set;
 }
 
 // eslint-plugin-n v18 is ESM-only. Node.js 24 can require() ESM but returns the namespace object
@@ -104,6 +101,11 @@ export default [
       parser: graphqlPlugin.parser,
       ecmaVersion: 5,
       sourceType: 'script',
+    },
+
+    rules: {
+      // unicorn/no-empty-file accesses node.body.some() which is undefined in the GraphQL AST
+      'unicorn/no-empty-file': 'off',
     },
   },
   {
