@@ -6,10 +6,7 @@ import { TransactionsProvider } from '../../transactions/providers/transactions.
 import type { charge_type, IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
 
-function normalizeDbType(chargeType?: charge_type | null): ChargeTypeEnum | undefined {
-  if (!chargeType) {
-    return undefined;
-  }
+export function normalizeDbType(chargeType: charge_type): ChargeTypeEnum {
   switch (chargeType) {
     case 'COMMON':
       return ChargeTypeEnum.Common;
@@ -38,11 +35,20 @@ function normalizeDbType(chargeType?: charge_type | null): ChargeTypeEnum | unde
   }
 }
 
+export function normalizeOptionalDbType(
+  chargeType?: charge_type | null,
+): ChargeTypeEnum | undefined {
+  if (!chargeType) {
+    return undefined;
+  }
+  return normalizeDbType(chargeType);
+}
+
 export async function getChargeType(
   charge: IGetChargesByIdsResult,
   injector: Injector,
 ): Promise<ChargeTypeEnum> {
-  const type = normalizeDbType(charge.type);
+  const type = normalizeOptionalDbType(charge.type);
   if (type) {
     return type;
   }
