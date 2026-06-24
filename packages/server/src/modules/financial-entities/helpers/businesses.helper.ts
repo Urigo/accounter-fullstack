@@ -18,7 +18,7 @@ function mergeEmailListenerConfig(
     ? Array.from(new Set([...(currentInternalEmailLinks ?? []), ...(newInternalEmailLinks ?? [])]))
     : (newInternalEmailLinks ?? currentInternalEmailLinks);
 
-  const emailBody = newConfig.emailBody == null ? currentConfig.emailBody : newConfig.emailBody;
+  const emailBody = newConfig.emailBody ?? currentConfig.emailBody;
 
   const newAttachments = newConfig.attachments ? [...newConfig.attachments] : undefined;
   const currentAttachments = currentConfig.attachments;

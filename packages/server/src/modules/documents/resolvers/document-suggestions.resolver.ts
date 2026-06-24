@@ -105,6 +105,6 @@ export const documentSuggestionsResolvers: DocumentsModule.Resolvers = {
       suggestion.amount
         ? formatFinancialAmount(suggestion.amount.amount, suggestion.amount.currency)
         : null,
-    isIncome: suggestion => (suggestion.isIncome == null ? null : suggestion.isIncome),
+    isIncome: suggestion => suggestion.isIncome ?? null,
   },
 };

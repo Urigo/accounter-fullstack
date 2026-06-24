@@ -30,7 +30,7 @@ export function ConfirmationModal({
 }: Props): ReactElement {
   const [localOpen, setLocalOpen] = useState(false);
   const setOpen = setExternalOpen ?? setLocalOpen;
-  const open = externalOpen == null ? localOpen : externalOpen;
+  const open = externalOpen ?? localOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
