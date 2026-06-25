@@ -42,7 +42,9 @@ const documentDataSchema = z.object({
   currency: z
     .string()
     .optional()
-    .describe('ISO 4217 currency code. One of: ILS, USD, EUR, GBP, AUD, CAD, ETH, GRT, JPY, SEK, USDC'),
+    .describe(
+      'ISO 4217 currency code. One of: ILS, USD, EUR, GBP, AUD, CAD, ETH, GRT, JPY, SEK, USDC',
+    ),
   vatAmount: z
     .number()
     .optional()
@@ -241,6 +243,12 @@ export class AnthropicProvider {
       ? (draft.currency as Currency)
       : undefined;
 
-    return { ...draft, type: validatedType, currency: validatedCurrency, suggestedIssuer, suggestedRecipient };
+    return {
+      ...draft,
+      type: validatedType,
+      currency: validatedCurrency,
+      suggestedIssuer,
+      suggestedRecipient,
+    };
   }
 }
