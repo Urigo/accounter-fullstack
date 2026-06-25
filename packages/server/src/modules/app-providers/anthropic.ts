@@ -28,7 +28,10 @@ const documentDataSchema = z.object({
     .string()
     .optional()
     .describe('VAT or business registration number of the recipient'),
-  fullAmount: z.number().optional().describe('Total monetary amount including taxes and all charges'),
+  fullAmount: z
+    .number()
+    .optional()
+    .describe('Total monetary amount including taxes and all charges'),
   currency: z.enum(Currency).optional().describe('ISO 4217 currency code'),
   vatAmount: z
     .number()
