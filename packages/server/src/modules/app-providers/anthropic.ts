@@ -17,56 +17,64 @@ import { matchBusiness } from './helpers/business-matcher.helper.js';
 //     validated against the TypeScript enums after the LLM call.
 const documentDataSchema = z.object({
   type: z
+    .enum(DocumentType)
+    .describe('The type of financial document. Return UNPROCESSED if missing.'),
+  issuer: z
     .string()
-    .optional()
     .describe(
-      'The type of financial document. One of: INVOICE, RECEIPT, INVOICE_RECEIPT, CREDIT_INVOICE, PROFORMA, OTHER, UNPROCESSED',
+      'Legal name of the organization that issued the document. Return empty string if missing.',
     ),
-  issuer: z.string().optional().describe('Legal name of the organization that issued the document'),
   recipient: z
     .string()
-    .optional()
-    .describe('Legal name and details of the entity to whom the document is addressed'),
+    .describe(
+      'Legal name and details of the entity to whom the document is addressed. Return empty string if missing.',
+    ),
   issuerVatNumber: z
     .string()
-    .optional()
-    .describe('VAT or business registration number of the issuer (מספר עוסק / ח.פ / מע"מ)'),
+    .describe('VAT or business registration number of the issuer. Return empty string if missing.'),
   recipientVatNumber: z
     .string()
-    .optional()
-    .describe('VAT or business registration number of the recipient'),
+    .describe(
+      'VAT or business registration number of the recipient. Return empty string if missing.',
+    ),
   fullAmount: z
     .number()
-    .optional()
-    .describe('Total monetary amount including taxes and all charges'),
-  currency: z
-    .string()
-    .optional()
+    .nullable()
     .describe(
-      'ISO 4217 currency code. One of: ILS, USD, EUR, GBP, AUD, CAD, ETH, GRT, JPY, SEK, USDC',
+      'Total monetary amount including taxes and all charges. Return NULL (not empty string!) if missing.',
     ),
+  currency: z
+    .enum(Currency)
+    .nullable()
+    .describe('ISO 4217 currency code. Return NULL (not empty string!) if missing.'),
   vatAmount: z
     .number()
-    .optional()
-    .describe('Value Added Tax amount if separately specified on the document'),
+    .nullable()
+    .describe(
+      'Value Added Tax amount if separately specified. Return NULL (not empty string!) if missing.',
+    ),
   date: z
     .string()
-    .optional()
-    .describe('Document issue date in ISO 8601 format (YYYY-MM-DD), e.g. "2024-03-15"'),
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .describe(
+      'Document issue date in ISO 8601 format (YYYY-MM-DD). Return NULL (not empty string!) if missing.',
+    ),
   referenceCode: z
     .string()
-    .optional()
-    .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
+    .describe(
+      'Complete document identifier including any separators (e.g., dashes, slashes). Return empty string if missing.',
+    ),
   allocationNumber: z
     .string()
-    .optional()
+    .length(9)
+    .nullable()
     .describe(
-      'Should be empty if no VAT amount. Unique document 9-digit allocation number (מספר הקצאה). Usually last 9 digits of a longer number. Must be exactly 9 digits.',
+      'Unique document 9-digit allocation number (מספר הקצאה). Sometimes last 9 digits of a longer number. Return NULL (not empty string!) if no VAT amount, if amount is < 5000 ILS, or if missing.',
     ),
   description: z
     .string()
-    .optional()
-    .describe('Additional description or remarks found on the document'),
+    .describe('Additional description or remarks. Return empty string if missing.'),
 });
 
 type DocumentData = z.infer<typeof documentDataSchema>;
