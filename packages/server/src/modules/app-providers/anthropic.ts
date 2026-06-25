@@ -163,6 +163,8 @@ export class AnthropicProvider {
       model: anthropic('claude-sonnet-4-5'),
       output: Output.object({ schema: documentDataSchema }),
       messages: inputMessages,
+    }).catch(err => {
+      throw new Error(`Failed to extract document details: ${err.message}`);
     });
 
     const draft = output;
