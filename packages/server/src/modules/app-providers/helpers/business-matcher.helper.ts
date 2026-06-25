@@ -10,14 +10,15 @@ function normalizeVat(vat: string): string {
   return vat.replace(/[\s-]/g, '');
 }
 
-const LEGAL_SUFFIXES = /\b(בע"מ|בעמ|בע'מ|ltd\.?|inc\.?|llc\.?|corp\.?|limited|incorporated|plc)\b/gi;
+const LEGAL_SUFFIXES =
+  /\b(בע"מ|בעמ|בע'מ|ltd\.?|inc\.?|llc\.?|corp\.?|limited|incorporated|plc)\b/gi;
 const MIN_MATCH_LENGTH = 3;
 
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .replace(LEGAL_SUFFIXES, '')
-    .replace(/[״׳"'.,\-_()\[\]]/g, '')
+    .replace(/[״׳"'.,\-_()[\]]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
