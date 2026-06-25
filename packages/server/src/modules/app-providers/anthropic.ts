@@ -7,14 +7,21 @@ import { Currency, DocumentType } from '../../shared/enums.js';
 import type { BusinessMatchData } from './helpers/business-matcher.helper.js';
 import { matchBusiness } from './helpers/business-matcher.helper.js';
 
-// NOTE: fields are `.optional()` rather than `.nullable().optional()` on purpose.
-// Anthropic structured outputs compile this schema into a constrained-decoding
-// grammar with a complexity budget; every `.nullable()` adds an `anyOf: [..., {type:"null"}]`
-// union branch, and ~9 of them together push the schema over the "Schema is too
-// complex" limit. For extraction, an omitted field is equivalent to a null one,
-// so `.optional()` (field may be absent) conveys the same intent without the union.
+// NOTE: schema is kept as simple as possible to stay under Anthropic's constrained-decoding
+// grammar complexity budget. Two rules:
+//  1. Fields use `.optional()` (not `.nullable().optional()`) — `.nullable()` emits
+//     `anyOf: [..., {type:"null"}]` which counts against the budget.
+//  2. Enum fields (`type`, `currency`) use `z.string()` with valid values listed in
+//     `.describe()` instead of `z.enum()`. Each enum value is a grammar alternative;
+//     18 explicit values across 2 fields pushed the schema over the limit. Values are
+//     validated against the TypeScript enums after the LLM call.
 const documentDataSchema = z.object({
-  type: z.enum(DocumentType).optional().describe('The type of financial document'),
+  type: z
+    .string()
+    .optional()
+    .describe(
+      'The type of financial document. One of: INVOICE, RECEIPT, INVOICE_RECEIPT, CREDIT_INVOICE, PROFORMA, OTHER, UNPROCESSED',
+    ),
   issuer: z.string().optional().describe('Legal name of the organization that issued the document'),
   recipient: z
     .string()
@@ -32,7 +39,10 @@ const documentDataSchema = z.object({
     .number()
     .optional()
     .describe('Total monetary amount including taxes and all charges'),
-  currency: z.enum(Currency).optional().describe('ISO 4217 currency code'),
+  currency: z
+    .string()
+    .optional()
+    .describe('ISO 4217 currency code. One of: ILS, USD, EUR, GBP, AUD, CAD, ETH, GRT, JPY, SEK, USDC'),
   vatAmount: z
     .number()
     .optional()
@@ -59,7 +69,9 @@ const documentDataSchema = z.object({
 
 type DocumentData = z.infer<typeof documentDataSchema>;
 
-export type DocumentDataWithMatches = DocumentData & {
+export type DocumentDataWithMatches = Omit<DocumentData, 'type' | 'currency'> & {
+  type?: DocumentType;
+  currency?: Currency;
   suggestedIssuer: string | null;
   suggestedRecipient: string | null;
 };
@@ -222,6 +234,13 @@ export class AnthropicProvider {
       }
     }
 
-    return { ...draft, suggestedIssuer, suggestedRecipient };
+    const validatedType = (Object.values(DocumentType) as string[]).includes(draft.type ?? '')
+      ? (draft.type as DocumentType)
+      : undefined;
+    const validatedCurrency = (Object.values(Currency) as string[]).includes(draft.currency ?? '')
+      ? (draft.currency as Currency)
+      : undefined;
+
+    return { ...draft, type: validatedType, currency: validatedCurrency, suggestedIssuer, suggestedRecipient };
   }
 }
