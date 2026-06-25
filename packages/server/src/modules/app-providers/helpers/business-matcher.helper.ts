@@ -10,8 +10,16 @@ function normalizeVat(vat: string): string {
   return vat.replace(/[\s-]/g, '');
 }
 
+const LEGAL_SUFFIXES = /\b(בע"מ|בעמ|בע'מ|ltd\.?|inc\.?|llc\.?|corp\.?|limited|incorporated|plc)\b/gi;
+const MIN_MATCH_LENGTH = 3;
+
 function normalizeText(text: string): string {
-  return text.toLowerCase().trim();
+  return text
+    .toLowerCase()
+    .replace(LEGAL_SUFFIXES, '')
+    .replace(/[״׳"'.,\-_()\[\]]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -43,12 +51,14 @@ export function matchBusiness(
 
   if (!extractedName) return null;
   const normalizedName = normalizeText(extractedName);
+  if (normalizedName.length < MIN_MATCH_LENGTH) return null;
 
   // 2. Name exact / substring match
   for (const b of businesses) {
     const names = [b.name, b.hebrew_name].filter((n): n is string => n != null);
     for (const name of names) {
       const normalizedBizName = normalizeText(name);
+      if (normalizedBizName.length < MIN_MATCH_LENGTH) continue;
       if (
         normalizedBizName === normalizedName ||
         normalizedName.includes(normalizedBizName) ||
@@ -67,6 +77,7 @@ export function matchBusiness(
     const phrases = b.suggestion_data?.phrases ?? [];
     for (const phrase of phrases) {
       const normalizedPhrase = normalizeText(phrase);
+      if (normalizedPhrase.length < MIN_MATCH_LENGTH) continue;
       if (normalizedName.includes(normalizedPhrase) || normalizedPhrase.includes(normalizedName)) {
         return b.id;
       }

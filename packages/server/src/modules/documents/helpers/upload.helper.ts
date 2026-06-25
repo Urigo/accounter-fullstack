@@ -198,12 +198,20 @@ function resolveOwnerSideFromUuids(
     if (suggestedIssuer) {
       ocrData.counterpartyId ??= suggestedIssuer;
     }
+  } else if (suggestedIssuer != null && suggestedRecipient != null) {
+    // Both sides matched to non-owner businesses — ambiguous which side the owner is.
+    // Preserve the OCR-derived isOwnerIssuer and use it only to pick counterpartyId.
+    if (ocrData.isOwnerIssuer === true) {
+      ocrData.counterpartyId ??= suggestedRecipient;
+    } else if (ocrData.isOwnerIssuer === false) {
+      ocrData.counterpartyId ??= suggestedIssuer;
+    }
   } else if (suggestedIssuer != null) {
-    // Issuer matched to a non-owner business → owner must be the recipient side
+    // Only issuer matched to a non-owner business → owner must be the recipient side
     ocrData.isOwnerIssuer = false;
     ocrData.counterpartyId ??= suggestedIssuer;
   } else if (suggestedRecipient != null) {
-    // Recipient matched to a non-owner business → owner must be the issuer side
+    // Only recipient matched to a non-owner business → owner must be the issuer side
     ocrData.isOwnerIssuer = true;
     ocrData.counterpartyId ??= suggestedRecipient;
   }

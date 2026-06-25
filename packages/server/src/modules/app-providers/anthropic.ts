@@ -206,15 +206,19 @@ export class AnthropicProvider {
           });
 
           if (matchOutput) {
-            if (suggestedIssuer === null && matchOutput.issuerMatch) {
-              if (businessList.some(b => b.id === matchOutput.issuerMatch)) {
-                suggestedIssuer = matchOutput.issuerMatch;
-              }
+            if (
+              suggestedIssuer === null &&
+              matchOutput.issuerMatch &&
+              businessList.some(b => b.id === matchOutput.issuerMatch)
+            ) {
+              suggestedIssuer = matchOutput.issuerMatch;
             }
-            if (suggestedRecipient === null && matchOutput.recipientMatch) {
-              if (businessList.some(b => b.id === matchOutput.recipientMatch)) {
-                suggestedRecipient = matchOutput.recipientMatch;
-              }
+            if (
+              suggestedRecipient === null &&
+              matchOutput.recipientMatch &&
+              businessList.some(b => b.id === matchOutput.recipientMatch)
+            ) {
+              suggestedRecipient = matchOutput.recipientMatch;
             }
           }
         } catch {
