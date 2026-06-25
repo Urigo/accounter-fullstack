@@ -148,7 +148,7 @@ The signature covers `` `${timestamp}.${rawBody}` ``. Example with `openssl`:
 SECRET=local-secret
 TS=$(date +%s)
 BODY=$(cat fixture.eml)
-SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $2}')
+SIG=$(printf '%s.%s' "$TS" "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
 
 curl -sS http://localhost:3000/webhook \
   -H "Content-Type: message/rfc822" \
