@@ -53,7 +53,9 @@ const BASE_INPUT = {
 // OCR runs via getOcrData(injector, file, false) → AnthropicProvider.extractInvoiceDetails.
 // A mock operation injector returns a stub Anthropic provider that yields an INVOICE,
 // so figureOutSides attributes the recognized business as the document creditor.
-const extractInvoiceDetails = vi.fn().mockResolvedValue({ type: DocumentType.Invoice });
+const extractInvoiceDetails = vi
+  .fn()
+  .mockResolvedValue({ type: DocumentType.Invoice, suggestedIssuer: null, suggestedRecipient: null });
 const ocrInjector = {
   get: (token: unknown) => (token === AnthropicProvider ? { extractInvoiceDetails } : undefined),
 } as unknown as Injector;

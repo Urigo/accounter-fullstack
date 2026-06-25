@@ -4,6 +4,9 @@ import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
+import type { BusinessMatchData } from '../../app-providers/helpers/business-matcher.helper.js';
+import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type { IInsertDocumentsParams } from '../types.js';
 
 const toBase64 = async (file: File | Blob): Promise<string> => {
@@ -37,7 +40,24 @@ export type OcrData = {
   allocationNumber?: string;
   description?: string;
   remarks?: string;
+  suggestedIssuer?: string;
+  suggestedRecipient?: string;
 };
+
+async function fetchBusinessesForMatching(injector: Injector): Promise<BusinessMatchData[]> {
+  try {
+    const rawBusinesses = await injector.get(BusinessesProvider).getAllBusinesses();
+    return rawBusinesses.map(b => ({
+      id: b.id,
+      name: b.name ?? null,
+      hebrew_name: b.hebrew_name ?? null,
+      vat_number: b.vat_number ?? null,
+      suggestion_data: suggestionDataSchema.safeParse(b.suggestion_data).data ?? null,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export async function getOcrData(
   injector: Injector,
@@ -60,22 +80,16 @@ export async function getOcrData(
     };
   }
 
-  const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file);
+  const businesses = await fetchBusinessesForMatching(injector);
+  const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file, businesses);
 
   if (!draft) {
     throw new Error('No data returned from Anthropic OCR');
   }
 
-  let isOwnerIssuer: boolean | undefined = undefined;
-  if (draft.recipient?.toLocaleLowerCase().includes('the guild')) {
-    isOwnerIssuer = false;
-  }
-  if (draft.issuer?.toLocaleLowerCase().includes('the guild')) {
-    isOwnerIssuer = true;
-  }
-
   return {
-    isOwnerIssuer,
+    suggestedIssuer: draft.suggestedIssuer ?? undefined,
+    suggestedRecipient: draft.suggestedRecipient ?? undefined,
     documentType: draft.type ?? DocumentType.Unprocessed,
     serial: draft.referenceCode ?? undefined,
     date: validateDate(draft.date ?? undefined),
@@ -167,6 +181,39 @@ export function getDocumentFromUrlsAndOcrData(
   return newDocument;
 }
 
+function resolveOwnerSideFromUuids(ocrData: OcrData, ownerId: string): void {
+  const { suggestedIssuer, suggestedRecipient } = ocrData;
+  if (suggestedIssuer == null && suggestedRecipient == null) return;
+
+  if (suggestedIssuer === ownerId) {
+    ocrData.isOwnerIssuer = true;
+    if (suggestedRecipient) {
+      ocrData.counterpartyId ??= suggestedRecipient;
+    }
+  } else if (suggestedRecipient === ownerId) {
+    ocrData.isOwnerIssuer = false;
+    if (suggestedIssuer) {
+      ocrData.counterpartyId ??= suggestedIssuer;
+    }
+  } else if (suggestedIssuer != null && suggestedRecipient != null) {
+    // Both sides matched to non-owner businesses — ambiguous which side the owner is.
+    // Preserve the OCR-derived isOwnerIssuer and use it only to pick counterpartyId.
+    if (ocrData.isOwnerIssuer === true) {
+      ocrData.counterpartyId ??= suggestedRecipient;
+    } else if (ocrData.isOwnerIssuer === false) {
+      ocrData.counterpartyId ??= suggestedIssuer;
+    }
+  } else if (suggestedIssuer != null) {
+    // Only issuer matched to a non-owner business → owner must be the recipient side
+    ocrData.isOwnerIssuer = false;
+    ocrData.counterpartyId ??= suggestedIssuer;
+  } else if (suggestedRecipient != null) {
+    // Only recipient matched to a non-owner business → owner must be the issuer side
+    ocrData.isOwnerIssuer = true;
+    ocrData.counterpartyId ??= suggestedRecipient;
+  }
+}
+
 export async function getDocumentFromFile(
   injector: Injector,
   file: File | Blob,
@@ -195,6 +242,9 @@ export async function getDocumentFromFile(
     if (counterPartyId) {
       ocrData.counterpartyId = counterPartyId;
     }
+
+    // Resolve isOwnerIssuer and counterpartyId from UUID matches (primary path).
+    resolveOwnerSideFromUuids(ocrData, ownerId);
 
     return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, fileHash);
   } catch (e) {
