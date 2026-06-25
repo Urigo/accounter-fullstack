@@ -17,9 +17,11 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
   `israeli-vat-scraper`
 - **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
   app-providers)
+- **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
+  pipeline), `gmail-listener` (legacy single-tenant listener)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
   `shaam-uniform-format-generator`
-- **Tools**: `gmail-listener`, `scraper-local-app`
+- **Tools**: `scraper-local-app`
 - **Deprecated**: `old-accounter` (excluded from workspaces)
 
 Package-specific conventions live in `packages/<name>/CLAUDE.md` (loaded on demand when you work in
