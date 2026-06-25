@@ -48,7 +48,7 @@
     "googleapis": "173.0.0",
     "graphql": "16.14.2",
     "inline-css": "4.0.3",
-    "playwright": "1.61.0",
+    "playwright": "1.61.1",
     "zod": "4.4.3"
   },
   "devDependencies": {
