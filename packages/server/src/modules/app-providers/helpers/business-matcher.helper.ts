@@ -23,6 +23,10 @@ function normalizeText(text: string): string {
     .trim();
 }
 
+function isWordMatch(word: string, text: string): boolean {
+  return ` ${text} `.includes(` ${word} `);
+}
+
 /**
  * Attempt to match an extracted name/VAT to a known business.
  *
@@ -54,7 +58,10 @@ export function matchBusiness(
   const normalizedName = normalizeText(extractedName);
   if (normalizedName.length < MIN_MATCH_LENGTH) return null;
 
-  // 2. Name exact / substring match
+  // 2. Name exact / whole-word substring match.
+  // Raw `.includes()` is avoided because it produces false positives for short names:
+  // e.g. "גיל" (3 chars) would match "גילת" via substring. Padding both sides with
+  // spaces restricts matching to whole-word boundaries after normalization.
   for (const b of businesses) {
     const names = [b.name, b.hebrew_name].filter((n): n is string => n != null);
     for (const name of names) {
@@ -62,8 +69,8 @@ export function matchBusiness(
       if (normalizedBizName.length < MIN_MATCH_LENGTH) continue;
       if (
         normalizedBizName === normalizedName ||
-        normalizedName.includes(normalizedBizName) ||
-        normalizedBizName.includes(normalizedName)
+        isWordMatch(normalizedName, normalizedBizName) ||
+        isWordMatch(normalizedBizName, normalizedName)
       ) {
         return b.id;
       }
@@ -79,7 +86,11 @@ export function matchBusiness(
     for (const phrase of phrases) {
       const normalizedPhrase = normalizeText(phrase);
       if (normalizedPhrase.length < MIN_MATCH_LENGTH) continue;
-      if (normalizedName.includes(normalizedPhrase) || normalizedPhrase.includes(normalizedName)) {
+      if (
+        normalizedName === normalizedPhrase ||
+        isWordMatch(normalizedName, normalizedPhrase) ||
+        isWordMatch(normalizedPhrase, normalizedName)
+      ) {
         return b.id;
       }
     }
