@@ -7,57 +7,51 @@ import { Currency, DocumentType } from '../../shared/enums.js';
 import type { BusinessMatchData } from './helpers/business-matcher.helper.js';
 import { matchBusiness } from './helpers/business-matcher.helper.js';
 
+// NOTE: fields are `.optional()` rather than `.nullable().optional()` on purpose.
+// Anthropic structured outputs compile this schema into a constrained-decoding
+// grammar with a complexity budget; every `.nullable()` adds an `anyOf: [..., {type:"null"}]`
+// union branch, and ~9 of them together push the schema over the "Schema is too
+// complex" limit. For extraction, an omitted field is equivalent to a null one,
+// so `.optional()` (field may be absent) conveys the same intent without the union.
 const documentDataSchema = z.object({
-  type: z.enum(DocumentType).nullable().optional().describe('The type of financial document'),
+  type: z.enum(DocumentType).optional().describe('The type of financial document'),
   issuer: z.string().optional().describe('Legal name of the organization that issued the document'),
   recipient: z
     .string()
-    .nullable()
     .optional()
     .describe('Legal name and details of the entity to whom the document is addressed'),
   issuerVatNumber: z
     .string()
-    .nullable()
     .optional()
     .describe('VAT or business registration number of the issuer (מספר עוסק / ח.פ / מע"מ)'),
   recipientVatNumber: z
     .string()
-    .nullable()
     .optional()
     .describe('VAT or business registration number of the recipient'),
-  fullAmount: z
-    .number()
-    .nullable()
-    .optional()
-    .describe('Total monetary amount including taxes and all charges'),
+  fullAmount: z.number().optional().describe('Total monetary amount including taxes and all charges'),
   currency: z.enum(Currency).optional().describe('ISO 4217 currency code'),
   vatAmount: z
     .number()
-    .nullable()
     .optional()
     .describe('Value Added Tax amount if separately specified on the document'),
   date: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .nullable()
     .optional()
     .describe('Document issue date in ISO 8601 format (YYYY-MM-DD)'),
   referenceCode: z
     .string()
-    .nullable()
     .optional()
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
   allocationNumber: z
     .string()
     .length(9)
-    .nullable()
     .optional()
     .describe(
       'Should be empty if no VAT amount. Unique document 9-digits allocation number (מספר הקצאה). Usually last 9 digits of a longer number.',
     ),
   description: z
     .string()
-    .nullable()
     .optional()
     .describe('Additional description or remarks found on the document'),
 });
@@ -143,7 +137,7 @@ export class AnthropicProvider {
 
                         Note that some receipts (e.g. by Stripe) carry the invoice details; pay extra attention not to misclassify them as INVOICE_RECEIPT.
 
-                        Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
+                        Return only a JSON object without any explanation. Omit any field whose value is missing or not present on the document; allocation number is optional.`),
           },
           fileContentBlock,
         ],
