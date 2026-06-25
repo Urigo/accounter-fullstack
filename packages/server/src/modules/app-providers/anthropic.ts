@@ -36,19 +36,17 @@ const documentDataSchema = z.object({
     .describe('Value Added Tax amount if separately specified on the document'),
   date: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
-    .describe('Document issue date in ISO 8601 format (YYYY-MM-DD)'),
+    .describe('Document issue date in ISO 8601 format (YYYY-MM-DD), e.g. "2024-03-15"'),
   referenceCode: z
     .string()
     .optional()
     .describe('Complete document identifier including any separators (e.g., dashes, slashes)'),
   allocationNumber: z
     .string()
-    .length(9)
     .optional()
     .describe(
-      'Should be empty if no VAT amount. Unique document 9-digits allocation number (מספר הקצאה). Usually last 9 digits of a longer number.',
+      'Should be empty if no VAT amount. Unique document 9-digit allocation number (מספר הקצאה). Usually last 9 digits of a longer number. Must be exactly 9 digits.',
     ),
   description: z
     .string()
