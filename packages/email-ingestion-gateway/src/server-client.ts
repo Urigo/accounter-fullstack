@@ -14,7 +14,7 @@ import { INGEST_EMAIL_MUTATION, REQUEST_INGEST_CONTROL_MUTATION } from './graphq
 
 export const CONTROL_TIMEOUT_MS = 3000;
 export const CONTROL_MAX_RETRIES = 2;
-export const INGEST_TIMEOUT_MS = 10_000;
+export const INGEST_TIMEOUT_MS = 30_000;
 export const INGEST_MAX_RETRIES = 1;
 
 // ---------------------------------------------------------------------------
@@ -143,7 +143,8 @@ function isTimeoutError(err: unknown): boolean {
 
 function isRetryable(err: unknown): boolean {
   if (err instanceof ClientError) return (err.response.status ?? 500) >= 500;
-  return true; // network errors (TypeError), timeouts (DOMException) — always retryable
+  if (isTimeoutError(err)) return false; // server may still be processing; retry would burn the grant
+  return true; // network errors (TypeError: fetch failed) — server never received the request
 }
 
 function classifyFinalError(
