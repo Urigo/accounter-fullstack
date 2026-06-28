@@ -3,8 +3,7 @@ import { SortCodesProvider } from '../providers/sort-codes.provider.js';
 import type { SortCodesModule } from '../types.js';
 
 export const commonFinancialEntityFields:
-  | SortCodesModule.LtdFinancialEntityResolvers
-  | SortCodesModule.PersonalFinancialEntityResolvers = {
+  SortCodesModule.LtdFinancialEntityResolvers | SortCodesModule.PersonalFinancialEntityResolvers = {
   sortCode: (DbBusiness, _, { injector }) => {
     if (!DbBusiness.sort_code || !DbBusiness.owner_id) {
       return null;

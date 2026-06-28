@@ -155,14 +155,14 @@ function convertFormDataToUpdateBusinessInput(
   const emailListenerDataExists =
     formData.internalLinks || formData.useMessageBody || formData.attachmentTypes;
   const emailListener:
-    | NonNullable<UpdateBusinessInput['suggestions']>['emailListener']
-    | undefined = emailListenerDataExists
-    ? {
-        internalEmailLinks: formData.internalLinks,
-        emailBody: formData.useMessageBody,
-        attachments: formData.attachmentTypes,
-      }
-    : undefined;
+    NonNullable<UpdateBusinessInput['suggestions']>['emailListener'] | undefined =
+    emailListenerDataExists
+      ? {
+          internalEmailLinks: formData.internalLinks,
+          emailBody: formData.useMessageBody,
+          attachments: formData.attachmentTypes,
+        }
+      : undefined;
 
   const suggestionsDataExists =
     formData.description || formData.tags || formData.phrases || formData.emails || emailListener;

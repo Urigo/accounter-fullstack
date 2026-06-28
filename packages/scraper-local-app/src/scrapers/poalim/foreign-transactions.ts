@@ -27,8 +27,7 @@ import type { ScrapedAccount } from './accounts.js';
 import type { PoalimScraper, PoalimUserContext } from './index.js';
 
 export type ForeignTransaction = (
-  | HapoalimForeignTransactionsPersonal
-  | HapoalimForeignTransactionsBusiness
+  HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness
 )['balancesAndLimitsDataList'][number]['transactions'][number];
 type ForeignCurrency = 'USD' | 'EUR' | 'GBP' | 'CAD' | 'JPY' | 'AUD' | 'SEK';
 export type NormalizedForeignTransaction = ForeignTransaction & {

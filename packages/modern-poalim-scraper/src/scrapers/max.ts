@@ -154,9 +154,7 @@ export type MaxScrapingResult = TransactionsAccount[];
 
 type PossibleLoginResults = {
   [key in LoginResults]?: (
-    | string
-    | RegExp
-    | ((options?: { page?: Page; value?: string }) => Promise<boolean>)
+    string | RegExp | ((options?: { page?: Page; value?: string }) => Promise<boolean>)
   )[];
 };
 

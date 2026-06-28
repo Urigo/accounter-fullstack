@@ -37,8 +37,7 @@ export interface AuthorizedReadScope {
 
 /** A malformed entry in the `X-Business-Scope` request header. */
 export type BusinessScopeParseError =
-  | { code: 'EMPTY_ENTRY' }
-  | { code: 'INVALID_UUID'; value: string };
+  { code: 'EMPTY_ENTRY' } | { code: 'INVALID_UUID'; value: string };
 
 /**
  * Result of parsing the `X-Business-Scope` header.

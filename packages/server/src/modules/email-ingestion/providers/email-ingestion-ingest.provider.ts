@@ -408,9 +408,9 @@ export class EmailIngestionIngestProvider {
         const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
           this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
           // isSensitive=false → run OCR (Anthropic), as the legacy path does.
-          getOcrData(injector, file, false).catch(
-            (): OcrData => ({ documentType: DocumentType.Unprocessed }),
-          ),
+          getOcrData(injector, file, false).catch((): OcrData => ({
+            documentType: DocumentType.Unprocessed,
+          })),
         ]);
         // The recognized issuing business is the counterparty (null when none).
         if (businessId) {

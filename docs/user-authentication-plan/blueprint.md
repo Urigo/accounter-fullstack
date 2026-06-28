@@ -1784,9 +1784,7 @@ migration)
       // Uses DBProvider, gets businessId from plugin context
       const contexts = await getAdminContexts.run(
         {
-          ownerIds: [
-            /* from plugin */
-          ]
+          ownerIds: [/* from plugin */]
         },
         this.dbProvider
       )

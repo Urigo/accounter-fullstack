@@ -2907,9 +2907,7 @@ REQUIREMENTS:
    import { AUTH_CONTEXT_V2 } from './shared/tokens'
 
    export const application = createApplication({
-     modules: [
-       /* existing modules */
-     ],
+     modules: [/* existing modules */],
      providers: [
        DBProvider,
        TenantAwareDBClient,
@@ -3713,9 +3711,7 @@ REQUIREMENTS:
 
    ```typescript
    export const application = createApplication({
-     modules: [
-       /* existing modules */
-     ],
+     modules: [/* existing modules */],
      providers: [
        DBProvider,
        TenantAwareDBClient,
@@ -4085,12 +4081,8 @@ describe('BusinessesProvider (with RLS)', () => {
     const business1 = await createTestBusiness({ name: 'Business A' })
     const business2 = await createTestBusiness({ name: 'Business B' })
 
-    await createTestData(business1.id, {
-      /* data for A */
-    })
-    await createTestData(business2.id, {
-      /* data for B */
-    })
+    await createTestData(business1.id, {/* data for A */})
+    await createTestData(business2.id, {/* data for B */})
 
     // Test: Instantiate provider with business A auth context
     const providerA = createTestProvider(BusinessesProvider, {
@@ -4273,9 +4265,7 @@ REQUIREMENTS:
 import { AdminContextProvider } from './modules/admin-context/providers/admin-context.provider.js'
 
 export const application = createApplication({
-  modules: [
-    /* ... */
-  ],
+  modules: [/* ... */],
   providers: [
     DBProvider,
     TenantAwareDBClient,
@@ -5199,9 +5189,7 @@ REQUIREMENTS:
    ```typescript
    import { authDirectiveTransformer } from './modules/auth/directives/auth-directives.js'
 
-   export const application = createApplication({
-     /* ... */
-   })
+   export const application = createApplication({/* ... */})
 
    // Apply directive transformer after createApplication
    export const transformedSchema = authDirectiveTransformer(application.schema)

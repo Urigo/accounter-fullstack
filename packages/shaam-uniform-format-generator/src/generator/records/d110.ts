@@ -193,8 +193,7 @@ export function parseD110(line: string): D110 {
       .replace(/^0+/, '') || '0';
   pos += 4;
   const baseDocumentType = cleanLine.slice(pos, pos + 3).trim() as
-    | ''
-    | z.infer<typeof DocumentTypeEnum>;
+    '' | z.infer<typeof DocumentTypeEnum>;
   pos += 3;
   const baseDocumentNumber = cleanLine.slice(pos, pos + 20).trim();
   pos += 20;

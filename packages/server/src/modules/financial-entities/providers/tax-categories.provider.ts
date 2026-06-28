@@ -181,8 +181,7 @@ export class TaxCategoriesProvider {
     return businessIds.map(
       businessId =>
         taxCategories.find(tc => tc.business_id === businessId) as unknown as
-          | IGetAllTaxCategoriesResult
-          | undefined, // TODO: temporary type casting, should be fixed later
+          IGetAllTaxCategoriesResult | undefined, // TODO: temporary type casting, should be fixed later
     );
   }
 
