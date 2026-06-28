@@ -1,4 +1,4 @@
-import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
@@ -12,12 +12,6 @@ import {
   getChargeDocumentsMeta,
 } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import {
-  getProductName,
-  getSubscriptionPlanName,
-  normalizeProduct,
-  normalizeSubscriptionPlan,
-} from '../../contracts/helpers/contracts.helper.js';
 import { ContractsProvider } from '../../contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
@@ -31,6 +25,7 @@ import {
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { getDocumentNameFromType } from '../helpers/common.helper.js';
 import {
+  buildContractDocumentDescription,
   convertContractToDraft,
   createRemarks,
   deduceVatTypeFromBusiness,
@@ -445,8 +440,8 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
       const monthStart = dateToTimelessDateString(startOfMonth(today));
       const monthEnd = dateToTimelessDateString(endOfMonth(today));
-      const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
-      const month = format(subMonths(today, 1), 'MMMM');
+
+      const description = buildContractDocumentDescription(contract, issueMonth);
 
       const vatType = await deduceVatTypeFromBusiness(
         injector,
@@ -456,7 +451,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
 
       const draft: ResolversTypes['DocumentDraft'] = {
         remarks: createRemarks(contract),
-        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+        description,
         type: normalizeDocumentType(contract.document_type),
         date: monthStart,
         dueDate: monthEnd,
@@ -468,7 +463,7 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         client,
         income: [
           {
-            description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+            description,
             quantity: 1,
             price: contract.amount,
             currency: contract.currency as Currency,

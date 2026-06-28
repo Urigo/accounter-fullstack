@@ -21,6 +21,7 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
   getProductName,
   getSubscriptionPlanName,
+  normalizeBillingCycle,
   normalizeProduct,
   normalizeSubscriptionPlan,
 } from '../../contracts/helpers/contracts.helper.js';
@@ -296,6 +297,31 @@ export function createRemarks(contract: IGetContractsByIdsResult): string {
   return remarks.join(', ');
 }
 
+/**
+ * Builds the document description for a contract-generated document.
+ *
+ * - Monthly contracts keep the billed month description (e.g. "… - May 2026").
+ * - Annual contracts use the contract's start & end dates (e.g.
+ *   "… January 15th, 2025 → January 14th, 2026").
+ */
+export function buildContractDocumentDescription(
+  contract: IGetContractsByIdsResult,
+  issueMonth: TimelessDateString,
+): string {
+  const productPlanName = `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)}`;
+
+  if (normalizeBillingCycle(contract.billing_cycle) === 'ANNUAL') {
+    const start = format(contract.start_date, 'MMMM do, yyyy');
+    const end = format(contract.end_date, 'MMMM do, yyyy');
+    return `${productPlanName} ${start} → ${end}`;
+  }
+
+  const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
+  const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
+  const month = format(subMonths(today, 1), 'MMMM');
+  return `${productPlanName} - ${month} ${year}`;
+}
+
 export const convertContractToDraft = async (
   injector: Injector,
   contract: IGetContractsByIdsResult,
@@ -325,14 +351,14 @@ export const convertContractToDraft = async (
   const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
   const monthStart = dateToTimelessDateString(startOfMonth(today));
   const monthEnd = dateToTimelessDateString(endOfMonth(today));
-  const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
-  const month = format(subMonths(today, 1), 'MMMM');
+
+  const description = buildContractDocumentDescription(contract, issueMonth);
 
   const vatType = await deduceVatTypeFromBusiness(injector, locality, contract.client_id);
 
   const documentInput: ResolversTypes['DocumentDraft'] = {
     remarks: createRemarks(contract),
-    description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+    description,
     type: normalizeDocumentType(contract.document_type),
     date: monthStart,
     dueDate: monthEnd,
@@ -344,7 +370,7 @@ export const convertContractToDraft = async (
     client,
     income: [
       {
-        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+        description,
         quantity: 1,
         price: contract.amount,
         currency: contract.currency as Currency,
