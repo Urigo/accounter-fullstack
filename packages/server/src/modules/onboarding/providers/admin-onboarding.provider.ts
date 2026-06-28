@@ -38,7 +38,8 @@ export interface BootstrapClientResult {
 }
 
 const setRlsContext = sql<ISetRlsContextQuery>`
-  SELECT set_config('app.current_business_id', $businessId, true);
+  SELECT set_config('app.current_business_id', $businessId, true) as "current_business_id",
+         set_config('app.current_business_scope', ARRAY[$businessId]::text, true) as "current_business_scope";
 `;
 
 const setSelfOwner = sql<ISetSelfOwnerQuery>`
