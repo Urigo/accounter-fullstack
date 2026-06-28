@@ -147,7 +147,7 @@ __metadata:
     graphql-request: "npm:7.4.0"
     inline-css: "npm:4.0.3"
     playwright: "npm:1.61.1"
-    postal-mime: "npm:2.7.4"
+    postal-mime: "npm:2.7.5"
     tsx: "npm:4.22.4"
     typescript: "npm:6.0.3"
     wrangler: "npm:4.105.0"
@@ -351,7 +351,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.86"
+    "@ai-sdk/anthropic": "npm:3.0.87"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
@@ -374,7 +374,7 @@ __metadata:
     "@types/node": "npm:25.9.4"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.209"
+    ai: "npm:6.0.210"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.13.0"
     basic-auth: "npm:2.0.1"
@@ -434,50 +434,50 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.86":
-  version: 3.0.86
-  resolution: "@ai-sdk/anthropic@npm:3.0.86"
+"@ai-sdk/anthropic@npm:3.0.87":
+  version: 3.0.87
+  resolution: "@ai-sdk/anthropic@npm:3.0.87"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.30"
+    "@ai-sdk/provider": "npm:3.0.11"
+    "@ai-sdk/provider-utils": "npm:4.0.31"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/426ffe7264fe0764fdc666850246abfa64861d1ae43ba8bcb849f16c1ec96840daa988806eac24004293adad4a630ad2c6f44a93f5d7f7adb8306fc164a978fd
+  checksum: 10c0/4e19a05326ab651f8e164a772c8860b108f9f9102af444d70304331b229334b616bfcb76af7c52e85f96564396557ca88f95bae612b3cba9803dd1c2e7fa243a
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.134":
-  version: 3.0.134
-  resolution: "@ai-sdk/gateway@npm:3.0.134"
+"@ai-sdk/gateway@npm:3.0.135":
+  version: 3.0.135
+  resolution: "@ai-sdk/gateway@npm:3.0.135"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.30"
+    "@ai-sdk/provider": "npm:3.0.11"
+    "@ai-sdk/provider-utils": "npm:4.0.31"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/9f4ef4d43aab397c96a10d02ccc94a527f5f3b476e05a9f9de8b963d57cd052eb54c1acef2329c4812f8534ac73f5700f5eef73b0725ff67dfae42b0d01272dc
+  checksum: 10c0/1f293c089f4e7ad24c9099a85ccf027e094221ba242000970c52f3e3f9c3c734e271cc8638ae0bbb7cfbdbc31c4e23fbd9c0745e7c66bfab4c1481f85cc155b2
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.30":
-  version: 4.0.30
-  resolution: "@ai-sdk/provider-utils@npm:4.0.30"
+"@ai-sdk/provider-utils@npm:4.0.31":
+  version: 4.0.31
+  resolution: "@ai-sdk/provider-utils@npm:4.0.31"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.10"
+    "@ai-sdk/provider": "npm:3.0.11"
     "@standard-schema/spec": "npm:^1.1.0"
     eventsource-parser: "npm:^3.0.8"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4195612c0da1a634ca11043cbfed8e328c9177fc7289b533653529458163e944398539e53f1a689c6ffdf0f728e25b6cc9c927cfc2fe95e80ed22ae008a8053d
+  checksum: 10c0/777a0cb7ee4071fe468614aec7243682287e35151255f8acc122970a13271e7584701ab936d4c47ecce239137a4ff110f66091bbe481810cae52a521af8aacba
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:3.0.10":
-  version: 3.0.10
-  resolution: "@ai-sdk/provider@npm:3.0.10"
+"@ai-sdk/provider@npm:3.0.11":
+  version: 3.0.11
+  resolution: "@ai-sdk/provider@npm:3.0.11"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/c9b162165c3fd4684e4f7a1c041db3ad75785c841d904bac577006b7b2299d1b465557b1d32e3f59b6d8536a0ef5741b195aad86fc3e0e1d2a39f077062a83c4
+  checksum: 10c0/d436b60503bdd9f48d86ef89da866b553499bd3c2da90aca42940e6640e313095f9b89c6d581f5aedc8f50c8f4db257c8628247da8f892e4e4956ef6772e666e
   languageName: node
   linkType: hard
 
@@ -11829,17 +11829,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.209":
-  version: 6.0.209
-  resolution: "ai@npm:6.0.209"
+"ai@npm:6.0.210":
+  version: 6.0.210
+  resolution: "ai@npm:6.0.210"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.134"
-    "@ai-sdk/provider": "npm:3.0.10"
-    "@ai-sdk/provider-utils": "npm:4.0.30"
+    "@ai-sdk/gateway": "npm:3.0.135"
+    "@ai-sdk/provider": "npm:3.0.11"
+    "@ai-sdk/provider-utils": "npm:4.0.31"
     "@opentelemetry/api": "npm:^1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/b3ed9a57a84ff5d6f2a8177382637cd788f74be61bfc6419d56345a5943b98c5e98c4e1348e2be7cb054292b7b09888e18b813ec407af56e4df2000caecb2ce2
+  checksum: 10c0/8fa0a1f2bc50b5ca5b13ce58dfeff92efa8d96425feeea9e6d717212938330986398c0ff20bbd263c0f912316d40bffe653b617f4062df589b6a204ee795453e
   languageName: node
   linkType: hard
 
@@ -22249,10 +22249,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postal-mime@npm:2.7.4":
-  version: 2.7.4
-  resolution: "postal-mime@npm:2.7.4"
-  checksum: 10c0/836220ef876b8e3ae7236341a4fbff5b8bf6618952a1208966a4e3040c9f51c14572fa695b1863bd445e8d7894536d2eb4e5001f50795c3f7fbfe39c8946ba09
+"postal-mime@npm:2.7.5":
+  version: 2.7.5
+  resolution: "postal-mime@npm:2.7.5"
+  checksum: 10c0/cb258498d67529fed3fa69af98eabf6c53cbc4dd060db0a550af9952e65ffe93046a384765e2ee0269d090564ef2c66a00aec02418036bbf6aa14390d0af1955
   languageName: node
   linkType: hard
 

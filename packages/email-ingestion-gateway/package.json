@@ -53,7 +53,7 @@
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
     "playwright": "1.61.1",
-    "postal-mime": "2.7.4",
+    "postal-mime": "2.7.5",
     "zod": "4.4.3"
   },
   "devDependencies": {
