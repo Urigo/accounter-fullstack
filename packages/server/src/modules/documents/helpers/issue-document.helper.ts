@@ -1,4 +1,4 @@
-import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
@@ -21,13 +21,7 @@ import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import {
-  getProductName,
-  getSubscriptionPlanName,
-  normalizeBillingCycle,
-  normalizeProduct,
-  normalizeSubscriptionPlan,
-} from '../../contracts/helpers/contracts.helper.js';
+import { buildContractDocumentDescription } from '../../contracts/helpers/contracts.helper.js';
 import type { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -300,35 +294,6 @@ export function createRemarks(contract: IGetContractsByIdsResult): string {
   return remarks.join(', ');
 }
 
-/**
- * Builds the document description for a contract-generated document.
- *
- * - Monthly contracts keep the billed month description (e.g. "… - May 2026").
- * - Annual contracts use the contract's start & end dates (e.g.
- *   "… January 15th, 2025 → January 14th, 2026").
- */
-export function buildContractDocumentDescription(
-  contract: IGetContractsByIdsResult,
-  issueMonth: TimelessDateString,
-): string {
-  const productPlanName = `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)}`;
-
-  if (normalizeBillingCycle(contract.billing_cycle) === 'ANNUAL') {
-    const start = format(contract.start_date, 'MMMM do, yyyy');
-    const end = format(contract.end_date, 'MMMM do, yyyy');
-    return `${productPlanName} ${start} → ${end}`;
-  }
-
-  // Parse `issueMonth` as local midnight so the local-time date-fns operations below don't shift
-  // across a timezone boundary. When no issue month is given, bill the previous month.
-  const billedDate = issueMonth
-    ? timelessDateStringToLocalDate(issueMonth)
-    : subMonths(new Date(), 1);
-  const year = billedDate.getFullYear();
-  const month = format(billedDate, 'MMMM');
-  return `${productPlanName} - ${month} ${year}`;
-}
-
 export const convertContractToDraft = async (
   injector: Injector,
   contract: IGetContractsByIdsResult,
@@ -355,9 +320,7 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
   }
 
-  const today = issueMonth
-    ? addMonths(timelessDateStringToLocalDate(issueMonth), 1)
-    : new Date();
+  const today = issueMonth ? addMonths(timelessDateStringToLocalDate(issueMonth), 1) : new Date();
   const monthStart = dateToTimelessDateString(startOfMonth(today));
   const monthEnd = dateToTimelessDateString(endOfMonth(today));
 

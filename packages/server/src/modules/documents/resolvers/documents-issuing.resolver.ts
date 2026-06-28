@@ -15,6 +15,7 @@ import {
   getChargeDocumentsMeta,
 } from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import { buildContractDocumentDescription } from '../../contracts/helpers/contracts.helper.js';
 import { ContractsProvider } from '../../contracts/providers/contracts.provider.js';
 import { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
@@ -28,7 +29,6 @@ import {
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { getDocumentNameFromType } from '../helpers/common.helper.js';
 import {
-  buildContractDocumentDescription,
   convertContractToDraft,
   createRemarks,
   deduceVatTypeFromBusiness,
