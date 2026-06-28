@@ -14,7 +14,7 @@ import { INGEST_EMAIL_MUTATION, REQUEST_INGEST_CONTROL_MUTATION } from './graphq
 
 export const CONTROL_TIMEOUT_MS = 3000;
 export const CONTROL_MAX_RETRIES = 2;
-export const INGEST_TIMEOUT_MS = 10_000;
+export const INGEST_TIMEOUT_MS = 30_000;
 export const INGEST_MAX_RETRIES = 1;
 
 // ---------------------------------------------------------------------------
@@ -141,9 +141,13 @@ function isTimeoutError(err: unknown): boolean {
   return false;
 }
 
-function isRetryable(err: unknown): boolean {
+function isRetryable(err: unknown, retryOnTimeout = true): boolean {
   if (err instanceof ClientError) return (err.response.status ?? 500) >= 500;
-  return true; // network errors (TypeError), timeouts (DOMException) — always retryable
+  // A timeout means the server may still be processing. Safe to retry for control
+  // (no side effect), but NOT for ingest — a retry there would hit an
+  // already-consumed single-use grant and fail with GRANT_INVALID.
+  if (isTimeoutError(err)) return retryOnTimeout;
+  return true; // network errors (TypeError: fetch failed) — server never received the request
 }
 
 function classifyFinalError(
@@ -247,6 +251,7 @@ export class ServerClient {
           }),
         INGEST_MAX_RETRIES,
         100,
+        false, // do not retry ingest on timeout — would burn the single-use grant
       );
       const result = data.ingestEmail;
       if (!result) {
@@ -288,13 +293,14 @@ export class ServerClient {
     fn: () => Promise<T>,
     maxRetries: number,
     baseDelayMs: number,
+    retryOnTimeout = true,
   ): Promise<T> {
     let attempt = 0;
     for (;;) {
       try {
         return await fn();
       } catch (err) {
-        if (attempt >= maxRetries || !isRetryable(err)) throw err;
+        if (attempt >= maxRetries || !isRetryable(err, retryOnTimeout)) throw err;
         await this.sleep(baseDelayMs * Math.pow(2, attempt));
         attempt++;
       }

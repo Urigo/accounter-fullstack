@@ -152,7 +152,7 @@ function makeClient(fetchFn: typeof globalThis.fetch) {
 describe('exported constants', () => {
   it('CONTROL_TIMEOUT_MS is 3000', () => expect(CONTROL_TIMEOUT_MS).toBe(3_000));
   it('CONTROL_MAX_RETRIES is 2', () => expect(CONTROL_MAX_RETRIES).toBe(2));
-  it('INGEST_TIMEOUT_MS is 10000', () => expect(INGEST_TIMEOUT_MS).toBe(10_000));
+  it('INGEST_TIMEOUT_MS is 30000', () => expect(INGEST_TIMEOUT_MS).toBe(30_000));
   it('INGEST_MAX_RETRIES is 1', () => expect(INGEST_MAX_RETRIES).toBe(1));
 });
 
@@ -407,6 +407,15 @@ describe('ServerClient.requestControl — timeout', () => {
       expect(result.reason).toBe(IngestReasonCode.TIMEOUT);
     }
   });
+
+  it('DOES retry control on timeout (no single-use grant to burn)', async () => {
+    const timeoutError = Object.assign(new DOMException('Timeout', 'TimeoutError'));
+    const fetchFn = makeFetch([{ throws: timeoutError }, { body: CONTROL_SUCCESS_RESPONSE }]);
+    const client = makeClient(fetchFn);
+    const result = await client.requestControl(CONTROL_INPUT);
+    expect(result.success).toBe(true);
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2); // 1 + 1 retry
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -527,15 +536,17 @@ describe('ServerClient.requestIngest — retry policy', () => {
     expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(2);
   });
 
-  it('returns TIMEOUT when fetch throws TimeoutError and retry exhausted', async () => {
+  it('returns TIMEOUT and does NOT retry ingest on timeout (would burn the single-use grant)', async () => {
     const timeoutError = Object.assign(new DOMException('Timeout', 'TimeoutError'));
-    const fetchFn = makeFetch([{ throws: timeoutError }, { throws: timeoutError }]);
+    // Second response would succeed — it must never be reached, proving no retry.
+    const fetchFn = makeFetch([{ throws: timeoutError }, { body: INGEST_SUCCESS_RESPONSE }]);
     const client = makeClient(fetchFn);
     const result = await client.requestIngest(INGEST_INPUT);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.reason).toBe(IngestReasonCode.TIMEOUT);
     }
+    expect((fetchFn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1); // no retry on timeout
   });
 });
 

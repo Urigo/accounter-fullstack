@@ -221,6 +221,22 @@ export class EmailIngestionIngestProvider {
       extractedDocuments,
     } = input;
 
+    // 0. Early idempotency short-circuit: if a prior ingest for this key already
+    //    committed, return DUPLICATE before consuming the grant. Prevents gateway
+    //    retries (after a client-side timeout) from burning the grant and getting
+    //    GRANT_INVALID when the first attempt actually succeeded.
+    const earlyIdem = await withTenantContext(this.dbProvider.pool, tenantId, async client =>
+      checkIdempotencyKeyForIngest.run({ idempotencyKey, ownerId: tenantId }, client),
+    );
+    if (earlyIdem.length > 0) {
+      const r = earlyIdem[0];
+      return {
+        outcome: IngestOutcome.DUPLICATE,
+        existingIngestId: r.ingest_id,
+        auditId: r.audit_id ?? '',
+      };
+    }
+
     // 1. Validate and atomically consume the grant (control-plane, pre-tenant).
     const grantResult = await this.controlProvider.validateAndConsumeGrant({
       jti: grantJti,

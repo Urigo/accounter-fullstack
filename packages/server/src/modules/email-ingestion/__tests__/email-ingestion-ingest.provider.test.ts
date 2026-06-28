@@ -53,9 +53,7 @@ const BASE_INPUT = {
 // OCR runs via getOcrData(injector, file, false) → AnthropicProvider.extractInvoiceDetails.
 // A mock operation injector returns a stub Anthropic provider that yields an INVOICE,
 // so figureOutSides attributes the recognized business as the document creditor.
-const extractInvoiceDetails = vi
-  .fn()
-  .mockResolvedValue({ type: DocumentType.Invoice, suggestedIssuer: null, suggestedRecipient: null });
+const extractInvoiceDetails = vi.fn().mockResolvedValue({ type: DocumentType.Invoice });
 const ocrInjector = {
   get: (token: unknown) => (token === AnthropicProvider ? { extractInvoiceDetails } : undefined),
 } as unknown as Injector;
@@ -138,7 +136,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
   it('returns REJECTED with GRANT_INVALID when grant validation fails', async () => {
     const { provider } = makeProvider(
       { valid: false, reason: IngestReasonCode.GRANT_INVALID },
-      [],
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
     );
 
     const result = await provider.performIngest(BASE_INPUT, ocrInjector);
@@ -148,28 +146,30 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
   it('returns REJECTED with TENANT_MISMATCH when grant tenant does not match input', async () => {
     const { provider } = makeProvider(
       { valid: false, reason: IngestReasonCode.TENANT_MISMATCH },
-      [],
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
     );
 
     const result = await provider.performIngest(BASE_INPUT, ocrInjector);
     expect(result).toEqual({ outcome: IngestOutcome.REJECTED, reasonCode: IngestReasonCode.TENANT_MISMATCH });
   });
 
-  it('does not query the DB when grant validation fails', async () => {
-    const { provider, queryFn } = makeProvider(
+  it('does not upload or persist writes when grant validation fails', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       { valid: false, reason: IngestReasonCode.GRANT_INVALID },
-      [],
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
     );
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
-    expect(queryFn).not.toHaveBeenCalled();
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
   });
 
   it('calls validateAndConsumeGrant with the correct grant binding fields', async () => {
     const { provider, validateAndConsumeGrant } = makeProvider(
       VALID_GRANT,
-      // idempotency check (miss) → dedup check (miss) → insert idem → insert dedup
+      // early idem miss → idempotency check (miss) → dedup check (miss) → insert idem → insert dedup
       [
+        { rows: [], rowCount: 0 },
         { rows: [], rowCount: 0 },
         { rows: [], rowCount: 0 },
         { rows: [{ id: 'idem-id', idempotency_key: IDEM_KEY, owner_id: TENANT_ID, outcome: 'inserted', ingest_id: 'ingest-1', audit_id: 'audit-1', created_at: NOW }], rowCount: 1 },
@@ -206,6 +206,8 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
       audit_id: 'prior-audit-id',
       created_at: NOW,
     };
+    // The early idempotency check fires first and finds the row → returns DUPLICATE
+    // before validateAndConsumeGrant is ever called.
     const { provider } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
 
     const result = await provider.performIngest(BASE_INPUT, ocrInjector);
@@ -217,6 +219,29 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
     });
   });
 
+  it('does not consume the grant when idempotency key was seen (early check fires before validateAndConsumeGrant)', async () => {
+    const storedRow = {
+      id: 'idem-row',
+      idempotency_key: IDEM_KEY,
+      owner_id: TENANT_ID,
+      outcome: IngestOutcome.INSERTED,
+      ingest_id: 'prior-ingest-id',
+      audit_id: 'prior-audit-id',
+      created_at: NOW,
+    };
+    const { provider, validateAndConsumeGrant } = makeProvider(
+      VALID_GRANT,
+      [{ rows: [storedRow], rowCount: 1 }], // early idem HIT
+    );
+
+    await provider.performIngest(BASE_INPUT, ocrInjector);
+
+    // The grant was NOT consumed — the early check short-circuited before validateAndConsumeGrant.
+    // This is the fix for the timeout+retry scenario: a retry of a committed ingest returns
+    // DUPLICATE without burning the (now-gone) grant.
+    expect(validateAndConsumeGrant).not.toHaveBeenCalled();
+  });
+
   it('does not check dedup when idempotency key hit returns early', async () => {
     const storedRow = {
       id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
@@ -225,7 +250,7 @@ describe('EmailIngestionIngestProvider.performIngest — idempotency', () => {
     const { provider, dataQueries } = makeProvider(VALID_GRANT, [{ rows: [storedRow], rowCount: 1 }]);
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
-    // Only one data query — the idempotency lookup; no dedup lookup
+    // Only one data query — the early idempotency lookup; no dedup lookup, no grant consumed
     expect(dataQueries).toHaveLength(1);
   });
 });
@@ -245,7 +270,8 @@ describe('EmailIngestionIngestProvider.performIngest — dedup', () => {
       correlation_id: CORR_ID, created_at: NOW,
     };
     const { provider } = makeProvider(VALID_GRANT, [
-      { rows: [], rowCount: 0 },       // idempotency miss
+      { rows: [], rowCount: 0 },       // early idempotency miss
+      { rows: [], rowCount: 0 },       // in-tx idempotency miss
       { rows: [dedupRow], rowCount: 1 }, // dedup hit
     ]);
 
@@ -277,7 +303,8 @@ describe('EmailIngestionIngestProvider.performIngest — quarantine', () => {
       outcome: IngestOutcome.QUARANTINED, ingest_id: null, correlation_id: CORR_ID, created_at: NOW,
     };
     const { provider } = makeProvider(VALID_GRANT, [
-      { rows: [], rowCount: 0 },          // idempotency miss
+      { rows: [], rowCount: 0 },          // early idempotency miss
+      { rows: [], rowCount: 0 },          // in-tx idempotency miss
       { rows: [], rowCount: 0 },          // dedup miss
       { rows: [quarantineRow], rowCount: 1 }, // quarantine insert
       { rows: [idemRow], rowCount: 1 },   // idempotency insert
@@ -314,7 +341,8 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
       outcome: IngestOutcome.INSERTED, ingest_id: 'new-ingest-id', correlation_id: CORR_ID, created_at: NOW,
     };
     const { provider } = makeProvider(VALID_GRANT, [
-      { rows: [], rowCount: 0 },        // idempotency miss
+      { rows: [], rowCount: 0 },        // early idempotency miss
+      { rows: [], rowCount: 0 },        // in-tx idempotency miss
       { rows: [], rowCount: 0 },        // dedup miss
       { rows: [idemRow], rowCount: 1 }, // idempotency insert
       { rows: [dedupRow], rowCount: 1 },// dedup insert
@@ -329,7 +357,7 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
     });
   });
 
-  it('makes exactly 4 data queries on happy path (check idem, check dedup, insert idem, insert dedup)', async () => {
+  it('makes exactly 5 data queries on happy path (early idem + check idem + check dedup + insert idem + insert dedup)', async () => {
     const idemRow = {
       id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
       outcome: IngestOutcome.INSERTED, ingest_id: 'new-ingest-id', audit_id: 'new-audit-id', created_at: NOW,
@@ -341,13 +369,14 @@ describe('EmailIngestionIngestProvider.performIngest — inserted', () => {
     const { provider, dataQueries } = makeProvider(VALID_GRANT, [
       { rows: [], rowCount: 0 },
       { rows: [], rowCount: 0 },
+      { rows: [], rowCount: 0 },
       { rows: [idemRow], rowCount: 1 },
       { rows: [dedupRow], rowCount: 1 },
     ]);
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
-    expect(dataQueries).toHaveLength(4);
+    expect(dataQueries).toHaveLength(5);
   });
 });
 
@@ -399,6 +428,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,
       [
+        { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
@@ -430,6 +460,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
 
   it('sets a descriptive charge description from subject, sender, and received date', async () => {
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
@@ -458,6 +489,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
 
   it('falls back to the message id when no subject/sender/date is present', async () => {
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
@@ -477,6 +509,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,
       [
+        { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [{ id: 'existing-doc' }], rowCount: 1 }, // document-by-hash HIT (prepare tx)
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
@@ -495,6 +528,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
 
   it('does not upload or persist when no inline bytes are present (metadata-only)', async () => {
     const { provider, uploadInvoiceToCloudinary, dataQueries } = makeProvider(VALID_GRANT, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup miss
       { rows: [idemRow], rowCount: 1 }, // idempotency insert
@@ -505,6 +539,6 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
-    expect(dataQueries).toHaveLength(4);
+    expect(dataQueries).toHaveLength(5);
   });
 });
