@@ -126,9 +126,7 @@ if (validationResult.isValid) {
   })
 }
 
-const reportData: ReportData = {
-  /* ... */
-}
+const reportData: ReportData = {/* ... */}
 const dataValidationResult = validateData(reportData)
 
 if (dataValidationResult.isValid) {
@@ -150,9 +148,7 @@ import fs from 'fs'
 import { convertReportToFile, readReportFromFile, ReportData } from '@accounter/shaam6111-generator'
 
 // Browser environment: Create a File object from report data
-const reportData: ReportData = {
-  /* ... */
-}
+const reportData: ReportData = {/* ... */}
 const reportFile = convertReportToFile(reportData, 'SHAAM6111.dat')
 
 // Handle the File object (e.g., in a browser environment)

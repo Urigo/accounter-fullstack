@@ -20,7 +20,7 @@ You can replace markers as work progresses.
 ## Phase 1: Foundation & Setup
 
 - [x] 1. Create directories:
-     `packages/server/src/demo-fixtures/{helpers,use-cases/expenses,use-cases/income,use-cases/equity}`
+      `packages/server/src/demo-fixtures/{helpers,use-cases/expenses,use-cases/income,use-cases/equity}`
 - [x] 2. Implement `types.ts` with all fixture & `UseCaseSpec` interfaces
   - [x] Compile TS after creation (no errors)
 - [x] 3. Add `helpers/deterministic-uuid.ts` (UUID v5 utility)

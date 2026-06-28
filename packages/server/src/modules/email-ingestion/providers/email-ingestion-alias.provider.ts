@@ -33,8 +33,7 @@ const updateAliasActive = sql<IUpdateAliasActiveQuery>`
 `;
 
 export type AliasMutationResult =
-  | { success: true; alias: IGetAliasesResult }
-  | { success: false; message: string };
+  { success: true; alias: IGetAliasesResult } | { success: false; message: string };
 
 function isUniqueViolation(err: unknown): boolean {
   return (

@@ -150,9 +150,7 @@ export async function scrapePoalim(
     for (const account of filteredAccounts) {
       let ils: HapoalimILSTransactions | null = null;
       let foreign:
-        | HapoalimForeignTransactionsPersonal
-        | HapoalimForeignTransactionsBusiness
-        | null = null;
+        HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null = null;
       let swift: DecoratedSwiftTransactions | null = null;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {

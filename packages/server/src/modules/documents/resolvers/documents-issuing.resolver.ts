@@ -143,8 +143,8 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
       }
 
       const income = getIncomeRecordsFromDocuments(
-        openIssuedDocuments.map(
-          doc => greenInvoiceDocuments.find(gd => gd.id === doc.external_id)!,
+        openIssuedDocuments.map(doc =>
+          greenInvoiceDocuments.find(gd => gd.id === doc.external_id)!,
         ),
       );
 

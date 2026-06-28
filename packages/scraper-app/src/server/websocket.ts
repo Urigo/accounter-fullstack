@@ -40,8 +40,7 @@ function send(socket: WebSocket, msg: ServerMessage): void {
 type SourceRef = { id: string; type: SourceType };
 
 type HapoalimForeignTransactions =
-  | HapoalimForeignTransactionsPersonal
-  | HapoalimForeignTransactionsBusiness;
+  HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness;
 
 function collectSourceRefs(vault: Vault): SourceRef[] {
   return [

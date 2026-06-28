@@ -771,9 +771,7 @@ existing auth plugin. Existing plugin remains active until Phase 4 cutover.
 ```typescript
 export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
   return createApplication({
-    modules: [
-      /* ... all modules */
-    ],
+    modules: [/* ... all modules */],
     providers: [
       // ... existing providers
       AuthContextProvider // Simply register the provider class
@@ -1262,9 +1260,7 @@ export class AdminContextProvider {
 // In modules-app.ts, simply register the provider:
 export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
   return createApplication({
-    modules: [
-      /* ... */
-    ],
+    modules: [/* ... */],
     providers: [
       // ... existing providers
       AdminContextProvider // Just register the class - no token needed

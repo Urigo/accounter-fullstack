@@ -106,11 +106,9 @@ export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
     [MapperKind.OBJECT_FIELD]: fieldConfig => {
       const requiresAuthDirective = getDirective(schema, fieldConfig, 'requiresAuth')?.[0];
       const requiresRoleDirective = getDirective(schema, fieldConfig, 'requiresRole')?.[0] as
-        | RoleDirectiveArgs
-        | undefined;
+        RoleDirectiveArgs | undefined;
       const requiresAnyRoleDirective = getDirective(schema, fieldConfig, 'requiresAnyRole')?.[0] as
-        | AnyRoleDirectiveArgs
-        | undefined;
+        AnyRoleDirectiveArgs | undefined;
 
       if (!requiresAuthDirective && !requiresRoleDirective && !requiresAnyRoleDirective) {
         return fieldConfig;
