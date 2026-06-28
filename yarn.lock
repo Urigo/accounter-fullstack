@@ -11769,7 +11769,7 @@ __metadata:
     eslint-plugin-react: "npm:7.37.5"
     eslint-plugin-react-hooks: "npm:7.1.1"
     eslint-plugin-sonarjs: "npm:4.1.0"
-    eslint-plugin-unicorn: "npm:68.0.0"
+    eslint-plugin-unicorn: "npm:69.0.0"
     glob: "npm:13.0.6"
     globals: "npm:17.7.0"
     graphql: "npm:16.14.2"
@@ -15795,9 +15795,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-unicorn@npm:68.0.0":
-  version: 68.0.0
-  resolution: "eslint-plugin-unicorn@npm:68.0.0"
+"eslint-plugin-unicorn@npm:69.0.0":
+  version: 69.0.0
+  resolution: "eslint-plugin-unicorn@npm:69.0.0"
   dependencies:
     "@babel/helper-validator-identifier": "npm:^7.29.7"
     "@eslint-community/eslint-utils": "npm:^4.9.1"
@@ -15817,7 +15817,7 @@ __metadata:
     strip-indent: "npm:^4.1.1"
   peerDependencies:
     eslint: ">=10.4"
-  checksum: 10c0/28c123b71d541d32ed1586e6962a6cdca72c70e776141aef63609fd560d16c2f805ff4ff8dccd8d3a66afc65dbfe3c45a1a9e65ebb9703b2082147fb44a2e35e
+  checksum: 10c0/77727900c29daf3850f354117a3781224b75d002122beb1574a39c5dd718d1285a48b50513e544083712ad0c2755136b5583ccac575a3f076d13e5a66726fa05
   languageName: node
   linkType: hard
 
