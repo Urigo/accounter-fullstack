@@ -152,7 +152,7 @@ function makeClient(fetchFn: typeof globalThis.fetch) {
 describe('exported constants', () => {
   it('CONTROL_TIMEOUT_MS is 3000', () => expect(CONTROL_TIMEOUT_MS).toBe(3_000));
   it('CONTROL_MAX_RETRIES is 2', () => expect(CONTROL_MAX_RETRIES).toBe(2));
-  it('INGEST_TIMEOUT_MS is 10000', () => expect(INGEST_TIMEOUT_MS).toBe(10_000));
+  it('INGEST_TIMEOUT_MS is 30000', () => expect(INGEST_TIMEOUT_MS).toBe(30_000));
   it('INGEST_MAX_RETRIES is 1', () => expect(INGEST_MAX_RETRIES).toBe(1));
 });
 
