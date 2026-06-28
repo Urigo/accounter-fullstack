@@ -136,7 +136,8 @@ export class SortCodesProvider {
 
   public async updateSortCode(params: IUpdateSortCodeParams) {
     this.clearCache();
-    return updateSortCode.run(params, this.db);
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+    return updateSortCode.run(reassureOwnerIdExists(params, ownerId), this.db);
   }
 
   public clearCache() {
