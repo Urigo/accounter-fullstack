@@ -201,6 +201,18 @@ export function dateToTimelessDateString(date: Date): TimelessDateString {
   return format(date, 'yyyy-MM-dd') as TimelessDateString;
 }
 
+/**
+ * Parses a `TimelessDateString` (e.g. "2026-05-01") into a Date at local midnight.
+ *
+ * Use this instead of `new Date(timelessDate)`, which parses the string as UTC midnight and
+ * therefore shifts to the previous day in timezones west of UTC — breaking subsequent local-time
+ * `date-fns` operations (`addMonths`, `format`, `dateToTimelessDateString`, …).
+ */
+export function timelessDateStringToLocalDate(date: TimelessDateString): Date {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 export function optionalDateToTimelessDateString(date?: Date | null): TimelessDateString | null {
   if (!date) {
     return null;

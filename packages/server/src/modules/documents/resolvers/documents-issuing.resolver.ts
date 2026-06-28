@@ -4,7 +4,10 @@ import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
 import type { BillingCycle, ResolversTypes } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  dateToTimelessDateString,
+  timelessDateStringToLocalDate,
+} from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import {
@@ -437,7 +440,9 @@ export const documentsIssuingResolvers: DocumentsModule.Resolvers = {
         );
       }
 
-      const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
+      const today = issueMonth
+        ? addMonths(timelessDateStringToLocalDate(issueMonth), 1)
+        : new Date();
       const monthStart = dateToTimelessDateString(startOfMonth(today));
       const monthEnd = dateToTimelessDateString(endOfMonth(today));
 

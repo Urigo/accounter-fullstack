@@ -13,7 +13,10 @@ import type {
   ResolversTypes,
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  dateToTimelessDateString,
+  timelessDateStringToLocalDate,
+} from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
@@ -316,9 +319,13 @@ export function buildContractDocumentDescription(
     return `${productPlanName} ${start} → ${end}`;
   }
 
-  const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
-  const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
-  const month = format(subMonths(today, 1), 'MMMM');
+  // Parse `issueMonth` as local midnight so the local-time date-fns operations below don't shift
+  // across a timezone boundary. When no issue month is given, bill the previous month.
+  const billedDate = issueMonth
+    ? timelessDateStringToLocalDate(issueMonth)
+    : subMonths(new Date(), 1);
+  const year = billedDate.getFullYear();
+  const month = format(billedDate, 'MMMM');
   return `${productPlanName} - ${month} ${year}`;
 }
 
@@ -348,7 +355,9 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
   }
 
-  const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
+  const today = issueMonth
+    ? addMonths(timelessDateStringToLocalDate(issueMonth), 1)
+    : new Date();
   const monthStart = dateToTimelessDateString(startOfMonth(today));
   const monthEnd = dateToTimelessDateString(endOfMonth(today));
 
