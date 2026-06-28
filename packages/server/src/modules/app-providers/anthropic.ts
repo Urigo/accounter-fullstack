@@ -1,4 +1,4 @@
-import { generateText, Output } from 'ai';
+import { generateText, ModelMessage, Output } from 'ai';
 import { Injectable, Scope } from 'graphql-modules';
 import stripIndent from 'strip-indent';
 import { z } from 'zod';
@@ -122,12 +122,7 @@ export class AnthropicProvider {
 
     const fileData = await this.fileToBase64(fileOrBlob);
 
-    const fileContentBlock =
-      fileType === 'application/pdf'
-        ? ({ type: 'file', data: fileData, mediaType: fileType } as const)
-        : ({ type: 'image', image: fileData, mediaType: fileType } as const);
-
-    const inputMessages = [
+    const inputMessages: Array<ModelMessage> = [
       {
         role: 'user' as const,
         content: [
@@ -145,7 +140,7 @@ export class AnthropicProvider {
 
                         Return only a JSON object without any explanation. Use NULL value for missing values, allocation number is optional.`),
           },
-          fileContentBlock,
+          { type: 'file', data: fileData, mediaType: fileType },
         ],
       },
     ];
