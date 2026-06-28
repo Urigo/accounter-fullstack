@@ -351,7 +351,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:3.0.87"
+    "@ai-sdk/anthropic": "npm:4.0.1"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
@@ -374,7 +374,7 @@ __metadata:
     "@types/node": "npm:25.9.4"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:6.0.210"
+    ai: "npm:7.0.2"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.13.0"
     basic-auth: "npm:2.0.1"
@@ -434,50 +434,65 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:3.0.87":
-  version: 3.0.87
-  resolution: "@ai-sdk/anthropic@npm:3.0.87"
+"@ai-sdk/anthropic@npm:4.0.1":
+  version: 4.0.1
+  resolution: "@ai-sdk/anthropic@npm:4.0.1"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.11"
-    "@ai-sdk/provider-utils": "npm:4.0.31"
+    "@ai-sdk/provider": "npm:4.0.0"
+    "@ai-sdk/provider-utils": "npm:5.0.1"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4e19a05326ab651f8e164a772c8860b108f9f9102af444d70304331b229334b616bfcb76af7c52e85f96564396557ca88f95bae612b3cba9803dd1c2e7fa243a
+  checksum: 10c0/cb9b40919d8b4a5177f862fae91fcc46a00f15f5a2dab04a59908f654989b1f238c7dc83e8588a34ceb3226091ceb7aab87851df465eeb50cfe2b1ffe6c2eb51
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:3.0.135":
-  version: 3.0.135
-  resolution: "@ai-sdk/gateway@npm:3.0.135"
+"@ai-sdk/gateway@npm:4.0.2":
+  version: 4.0.2
+  resolution: "@ai-sdk/gateway@npm:4.0.2"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.11"
-    "@ai-sdk/provider-utils": "npm:4.0.31"
+    "@ai-sdk/provider": "npm:4.0.0"
+    "@ai-sdk/provider-utils": "npm:5.0.0"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1f293c089f4e7ad24c9099a85ccf027e094221ba242000970c52f3e3f9c3c734e271cc8638ae0bbb7cfbdbc31c4e23fbd9c0745e7c66bfab4c1481f85cc155b2
+  checksum: 10c0/05167c5ce37f4a7fcdead85fef09eaa5e2119ede4bd9a74919a0b589b8b21172127cbd04c4e000cc208b2bb315e25cd2fc54d13b8371a798aa7f717ac796be6f
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:4.0.31":
-  version: 4.0.31
-  resolution: "@ai-sdk/provider-utils@npm:4.0.31"
+"@ai-sdk/provider-utils@npm:5.0.0":
+  version: 5.0.0
+  resolution: "@ai-sdk/provider-utils@npm:5.0.0"
   dependencies:
-    "@ai-sdk/provider": "npm:3.0.11"
+    "@ai-sdk/provider": "npm:4.0.0"
     "@standard-schema/spec": "npm:^1.1.0"
+    "@workflow/serde": "npm:4.1.0"
     eventsource-parser: "npm:^3.0.8"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/777a0cb7ee4071fe468614aec7243682287e35151255f8acc122970a13271e7584701ab936d4c47ecce239137a4ff110f66091bbe481810cae52a521af8aacba
+  checksum: 10c0/a21e1f2418be1e85f9177695a63e4dcbb84b3081aff1a26eae3269b7430027cef625e087fc054afb29dc978f1a4b86b960112a18ffd2724892f255fbeb692d4b
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:3.0.11":
-  version: 3.0.11
-  resolution: "@ai-sdk/provider@npm:3.0.11"
+"@ai-sdk/provider-utils@npm:5.0.1":
+  version: 5.0.1
+  resolution: "@ai-sdk/provider-utils@npm:5.0.1"
+  dependencies:
+    "@ai-sdk/provider": "npm:4.0.0"
+    "@standard-schema/spec": "npm:^1.1.0"
+    "@workflow/serde": "npm:4.1.0"
+    eventsource-parser: "npm:^3.0.8"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/313f0159799c6590a89f2603bb744539ea014ced82e22fed7a1c9b7a07b5ea64f188b47a70ed00e51698221f4c2e3cc3141986a903d357a87858453e9ce40e09
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider@npm:4.0.0":
+  version: 4.0.0
+  resolution: "@ai-sdk/provider@npm:4.0.0"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/d436b60503bdd9f48d86ef89da866b553499bd3c2da90aca42940e6640e313095f9b89c6d581f5aedc8f50c8f4db257c8628247da8f892e4e4956ef6772e666e
+  checksum: 10c0/0eb43a0fed32491c7e0d9a7bf86b39be30378cb4633d5376b6b356866bb2326440a92a150340dd673ce227a9c9d8b9328347f8da1f3e377e402c34fe946389d6
   languageName: node
   linkType: hard
 
@@ -11698,6 +11713,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@workflow/serde@npm:4.1.0":
+  version: 4.1.0
+  resolution: "@workflow/serde@npm:4.1.0"
+  checksum: 10c0/8ec68cd9448b486bc8244d1f2b33d64d4af4b0fc18d33417699ce29345b21e4359d880c5ea5d66872def4576c0cddcfa2a63282d1f4d661c455663c075595e81
+  languageName: node
+  linkType: hard
+
 "a-sync-waterfall@npm:^1.0.0":
   version: 1.0.1
   resolution: "a-sync-waterfall@npm:1.0.1"
@@ -11829,17 +11851,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.210":
-  version: 6.0.210
-  resolution: "ai@npm:6.0.210"
+"ai@npm:7.0.2":
+  version: 7.0.2
+  resolution: "ai@npm:7.0.2"
   dependencies:
-    "@ai-sdk/gateway": "npm:3.0.135"
-    "@ai-sdk/provider": "npm:3.0.11"
-    "@ai-sdk/provider-utils": "npm:4.0.31"
-    "@opentelemetry/api": "npm:^1.9.0"
+    "@ai-sdk/gateway": "npm:4.0.2"
+    "@ai-sdk/provider": "npm:4.0.0"
+    "@ai-sdk/provider-utils": "npm:5.0.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/8fa0a1f2bc50b5ca5b13ce58dfeff92efa8d96425feeea9e6d717212938330986398c0ff20bbd263c0f912316d40bffe653b617f4062df589b6a204ee795453e
+  checksum: 10c0/d006d61ebf9562e63011b40912e42501f92842892b1b28283764f259030f40348defd331c6a504aa63ca603f27ef98f8c06ebede1c028071942f2e16f4bbbaf5
   languageName: node
   linkType: hard
 
