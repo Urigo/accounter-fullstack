@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { scrapeIsracard } from '../isracard.js';
 
+// The scrapers delay 2-5s per month to mimic human behavior and avoid bot
+// detection (see PR #3795). Raise the per-test timeout so the default 5s limit
+// does not trip multi-month scrapes.
+vi.setConfig({ testTimeout: 30_000 });
+
 const CREDS = { id: 'src-1', ownerId: '123456789', password: 'pass', last6Digits: '123456' };
 
 const VALID_PAYLOAD = {

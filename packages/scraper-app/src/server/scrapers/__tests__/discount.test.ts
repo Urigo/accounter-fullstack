@@ -2,6 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { PayloadValidationError } from '../../validate-payload.js';
 import { scrapeDiscount } from '../discount.js';
 
+// The scrapers delay 2-5s per month to mimic human behavior and avoid bot
+// detection (see PR #3795). Raise the per-test timeout so the default 5s limit
+// does not trip multi-month scrapes.
+vi.setConfig({ testTimeout: 30_000 });
+
 const CREDS = { id: 'src-1', ID: '123456789', password: 'pass' };
 const DATE_FROM = new Date('2024-01-01');
 const DATE_TO = new Date('2024-01-31');
