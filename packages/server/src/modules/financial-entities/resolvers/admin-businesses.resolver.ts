@@ -108,5 +108,12 @@ export const adminBusinessesResolvers: FinancialEntitiesModule.Resolvers = {
 
       return adminBusiness ?? null;
     },
+    isAdmin: async (parentBusiness, _, { injector }) => {
+      const adminBusiness = await injector
+        .get(AdminBusinessesProvider)
+        .getAdminBusinessByIdLoader.load(parentBusiness.id);
+
+      return !!adminBusiness;
+    },
   },
 };
