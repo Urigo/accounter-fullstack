@@ -529,6 +529,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   LtdFinancialEntity: {
     ...commonFinancialEntityFields,
+    sortCode: DbBusiness => DbBusiness.sort_code,
     country: DbBusiness => DbBusiness.country as CountryCode,
     governmentId: DbBusiness => DbBusiness.vat_number,
     address: DbBusiness => DbBusiness.address ?? DbBusiness.address_hebrew,
