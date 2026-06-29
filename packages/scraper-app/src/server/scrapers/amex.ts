@@ -45,6 +45,9 @@ export async function scrapeAmex(
     const results: MonthlyIsracardPayload[] = [];
 
     for (const month of months) {
+      // delay for 2-5 seconds, so we can avoid being blocked by Amex
+      await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
+
       const monthStr = format(month, 'yyyy-MM');
       emit({ type: 'task-month-fetching', sourceId: creds.id, month: monthStr });
       try {
