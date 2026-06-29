@@ -130,15 +130,20 @@ Create packages/server/src/modules/financial-entities/providers/businesses-usage
 e.g. businesses.provider.ts).
 
 Expose `getUsageByBusinessIds(ids: string[]): Promise<Map<string, {transactions, documents,
-miscExpenses, ledgerRecords}>>`. Implement four grouped COUNT queries (one per source), each keyed by
-business id:
-- transactions: WHERE business_id = ANY($ids) GROUP BY business_id
-- documents: WHERE debtor_id = ANY($ids) OR creditor_id = ANY($ids)
-- misc_expenses: same debtor_id/creditor_id pattern
-- ledger_records: WHERE debit_entity1/debit_entity2/credit_entity1/credit_entity2 = ANY($ids)
+miscExpenses, ledgerRecords}>>`. Implement four COUNT queries (one per source), each keyed by
+business id. Note: for sources where a business id can appear in more than one column, a single
+`... OR ... GROUP BY business_id` cannot attribute the count to the right id — project each
+id-bearing column into a common `business_id` column with `UNION ALL`, then group:
+- transactions: `WHERE business_id = ANY($ids) GROUP BY business_id`
+- documents: `UNION ALL` of debtor_id and creditor_id rows, then `GROUP BY business_id`
+- misc_expenses: same debtor_id/creditor_id `UNION ALL` pattern
+- ledger_records: `UNION ALL` of debit_entity1/2 and credit_entity1/2 rows, then `GROUP BY
+  business_id`
 
-Confirm exact table/column names from the `replaceBusiness` UPDATE statements in
-businesses.provider.ts. Default missing ids to 0. Merge the four results into one map.
+Each `UNION ALL` branch filters `WHERE <column> = ANY($ids)`. Confirm exact table/column names from
+the `replaceBusiness` UPDATE statements in businesses.provider.ts. Default missing ids to 0. Merge
+the four results into one map. (A row touching the same business in two columns is counted once per
+column — acceptable for a usage indicator; note it in a code comment.)
 
 Add an integration test (packages/server, integration project) seeding a business with known
 counts and asserting the map. Run the integration test, build, and lint.
@@ -353,7 +358,7 @@ Finalize the businesses management screen:
 - Loading (Loader2), empty (ui/empty.js), and error (Alert variant="destructive") states.
 - Confirm column-visibility defaults (Core + Main + Extension tags) and that hidden groups don't
   fetch usage until enabled.
-- Update docs/busibesses-page-refactor/plan.md "Verification" if any step diverged.
+- Update docs/businesses-page-refactor/plan.md "Verification" if any step diverged.
 
 Run the full local verification: `yarn generate`, `yarn lint`, `yarn workspace @accounter/server
 build`, `yarn workspace @accounter/client build`, `yarn test` (and `yarn test:integration` for the

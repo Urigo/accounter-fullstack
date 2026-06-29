@@ -73,12 +73,17 @@ extend type Query {
 ```
 
 Add a `BusinessUsageProvider` (`providers/businesses-usage.provider.ts`, `@Injectable()`, inject
-`TenantAwareDBClient`) with a single grouped query per source table, returning counts per id:
+`TenantAwareDBClient`) with one grouped query per source table, returning counts per id. Where a
+business id can appear in multiple columns, project each id-bearing column into a common
+`business_id` via `UNION ALL` before grouping (a single `OR ... GROUP BY business_id` would not
+attribute counts to the correct id):
 
 - `transactions` → `WHERE business_id = ANY($ids) GROUP BY business_id`
-- `documents` → count where `debtor_id = ANY($ids) OR creditor_id = ANY($ids)`
-- `misc_expenses` → count where `debtor_id`/`creditor_id` in ids
-- `ledger_records` → count where any of `debit_entity1/2`, `credit_entity1/2` in ids
+- `documents` → `UNION ALL` of `debtor_id` and `creditor_id` rows (each `WHERE <col> = ANY($ids)`),
+  then `GROUP BY business_id`
+- `misc_expenses` → same `debtor_id`/`creditor_id` `UNION ALL` pattern
+- `ledger_records` → `UNION ALL` of `debit_entity1/2` and `credit_entity1/2` rows, then `GROUP BY
+  business_id`
 
 (Table/column names confirmed by the `replaceBusiness` merge query in `businesses.provider.ts`.)
 Resolver assembles the four maps into `BusinessUsage` rows.
