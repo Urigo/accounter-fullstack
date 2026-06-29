@@ -65,5 +65,7 @@ export default gql`
 
   extend type LtdFinancialEntity {
     clientInfo: Client
+    " whether the business is a client (has a matching clients record) "
+    isClient: Boolean!
   }
 `;

@@ -89,5 +89,7 @@ export default gql`
 
   extend type LtdFinancialEntity {
     adminInfo: AdminBusiness
+    " whether the business is one of the admin/owner managed businesses (has a businesses_admin record) "
+    isAdmin: Boolean!
   }
 `;
