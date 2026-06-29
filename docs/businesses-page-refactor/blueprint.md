@@ -26,18 +26,18 @@ Guiding constraints (from the repo + the task):
 
 ## Pass 1 — High-Level Blueprint
 
-| Phase | Outcome |
-| ----- | ------- |
-| **A. Server: read fields** | `LtdFinancialEntity` exposes `sortCode`, `taxCategory`, `isClient`, owner/admin flag so the table can render categorization + tags. |
-| **B. Server: usage query** | `businessesUsage(ids)` returns transaction/document/misc-expense/ledger counts, batched. |
-| **C. Server: delete mutation** | `deleteBusiness(businessId)` wraps the existing guarded provider. |
-| **D. Server: batch update** | `batchUpdateBusinesses(ids, fields)` reuses extracted single-update logic. |
-| **E. Client: table shell** | New `@tanstack/react-table` screen replaces the card list with Core/Main columns + selection. |
-| **F. Client: column groups + visibility** | Categorization, Extension tags, Suggestion defaults columns + visibility toggle with the right defaults. |
-| **G. Client: usage columns (lazy)** | Opt-in usage columns backed by a paused `businessesUsage` query. |
-| **H. Client: filters & sorting** | Sortable headers + filters incl. "unused only". |
-| **I. Client: actions** | Merge (reuse), per-row delete (guarded by usage), batch-update dialog. |
-| **J. Polish** | Loading/empty/error states, docs, final lint/generate/build. |
+| Phase                                     | Outcome                                                                                                                             |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **A. Server: read fields**                | `LtdFinancialEntity` exposes `sortCode`, `taxCategory`, `isClient`, owner/admin flag so the table can render categorization + tags. |
+| **B. Server: usage query**                | `businessesUsage(ids)` returns transaction/document/misc-expense/ledger counts, batched.                                            |
+| **C. Server: delete mutation**            | `deleteBusiness(businessId)` wraps the existing guarded provider.                                                                   |
+| **D. Server: batch update**               | `batchUpdateBusinesses(ids, fields)` reuses extracted single-update logic.                                                          |
+| **E. Client: table shell**                | New `@tanstack/react-table` screen replaces the card list with Core/Main columns + selection.                                       |
+| **F. Client: column groups + visibility** | Categorization, Extension tags, Suggestion defaults columns + visibility toggle with the right defaults.                            |
+| **G. Client: usage columns (lazy)**       | Opt-in usage columns backed by a paused `businessesUsage` query.                                                                    |
+| **H. Client: filters & sorting**          | Sortable headers + filters incl. "unused only".                                                                                     |
+| **I. Client: actions**                    | Merge (reuse), per-row delete (guarded by usage), batch-update dialog.                                                              |
+| **J. Polish**                             | Loading/empty/error states, docs, final lint/generate/build.                                                                        |
 
 Each phase is independently shippable and leaves `main` green.
 
@@ -51,7 +51,8 @@ Each phase is independently shippable and leaves `main` green.
 - **B1** `BusinessUsageProvider` with the four counts (provider + integration test).
 - **B2** `businessesUsage` typeDef + resolver wiring + test.
 - **C1** `deleteBusiness` typeDef + resolver over existing provider + test.
-- **D1** Extract per-business update into a shared helper (pure refactor, existing tests stay green).
+- **D1** Extract per-business update into a shared helper (pure refactor, existing tests stay
+  green).
 - **D2** `batchUpdateBusinesses` typeDef + resolver calling the helper + test.
 - **E1** Table scaffold: query update + columns file (Core/Main) + table component, replacing the
   card list, no actions yet.

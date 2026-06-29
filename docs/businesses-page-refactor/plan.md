@@ -82,8 +82,8 @@ attribute counts to the correct id):
 - `documents` → `UNION ALL` of `debtor_id` and `creditor_id` rows (each `WHERE <col> = ANY($ids)`),
   then `GROUP BY business_id`
 - `misc_expenses` → same `debtor_id`/`creditor_id` `UNION ALL` pattern
-- `ledger_records` → `UNION ALL` of `debit_entity1/2` and `credit_entity1/2` rows, then `GROUP BY
-  business_id`
+- `ledger_records` → `UNION ALL` of `debit_entity1/2` and `credit_entity1/2` rows, then
+  `GROUP BY business_id`
 
 (Table/column names confirmed by the `replaceBusiness` merge query in `businesses.provider.ts`.)
 Resolver assembles the four maps into `BusinessUsage` rows.
@@ -91,13 +91,14 @@ Resolver assembles the four maps into `BusinessUsage` rows.
 ### 3. `deleteBusiness` mutation
 
 `BusinessesOperationProvider.deleteBusinessById(businessId)` already exists with guards (employee /
-pension fund / trip attendee / dividends) and cleans up `clients`,
-`business_tax_category_match`, etc. Expose it:
+pension fund / trip attendee / dividends) and cleans up `clients`, `business_tax_category_match`,
+etc. Expose it:
 
 ```graphql
 extend type Mutation {
   deleteBusiness(businessId: UUID!): Boolean!
-    @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
 }
 ```
 
@@ -123,14 +124,15 @@ input BatchUpdateBusinessInput {
 }
 extend type Mutation {
   batchUpdateBusinesses(businessIds: [UUID!]!, fields: BatchUpdateBusinessInput!): [Business!]!
-    @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
+    @requiresAuth
+    @requiresAnyRole(roles: ["business_owner", "accountant"])
 }
 ```
 
 Resolver reuses the existing single-business update logic (`BusinessesProvider.updateBusiness`,
-`FinancialEntitiesProvider.updateFinancialEntity`, `TaxCategoriesProvider.updateBusinessTaxCategory`)
-applied per id. Extract the per-business update body of the current `updateBusiness` resolver into a
-shared helper so both mutations call it.
+`FinancialEntitiesProvider.updateFinancialEntity`,
+`TaxCategoriesProvider.updateBusinessTaxCategory`) applied per id. Extract the per-business update
+body of the current `updateBusiness` resolver into a shared helper so both mutations call it.
 
 ---
 
@@ -181,8 +183,8 @@ shared helper so both mutations call it.
 3. Server unit/integration: add a test for `BusinessUsageProvider` counts and the `deleteBusiness`
    guard path (`yarn test` / `yarn test:integration`).
 4. Manual (GraphQL at `:4000/graphql`): run `businessesUsage(ids:[…])`, `batchUpdateBusinesses`,
-   `deleteBusiness` (confirm guard error when the business has transactions); verify
-   `allBusinesses` returns the new fields.
+   `deleteBusiness` (confirm guard error when the business has transactions); verify `allBusinesses`
+   returns the new fields.
 5. Manual UI (`yarn client:dev` + `yarn server:dev`): open `/businesses` — toggle column groups,
    sort/filter, filter "unused only", select rows → merge, batch-update, and delete an unused
    business; confirm toasts and that the table refetches.
