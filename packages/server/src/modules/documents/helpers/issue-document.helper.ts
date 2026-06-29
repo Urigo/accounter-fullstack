@@ -1,4 +1,4 @@
-import { addMonths, endOfMonth, format, startOfMonth, subMonths } from 'date-fns';
+import { addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { GraphQLError } from 'graphql';
 import type { Injector } from 'graphql-modules';
 import type { _DOLLAR_defs_Document } from '@accounter/green-invoice-graphql';
@@ -13,17 +13,15 @@ import type {
   ResolversTypes,
 } from '../../../__generated__/types.js';
 import { Currency, DocumentType } from '../../../shared/enums.js';
-import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import {
+  dateToTimelessDateString,
+  timelessDateStringToLocalDate,
+} from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import type { AdminContext } from '../../admin-context/types.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import {
-  getProductName,
-  getSubscriptionPlanName,
-  normalizeProduct,
-  normalizeSubscriptionPlan,
-} from '../../contracts/helpers/contracts.helper.js';
+import { buildContractDocumentDescription } from '../../contracts/helpers/contracts.helper.js';
 import type { IGetContractsByIdsResult } from '../../contracts/types.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -322,17 +320,17 @@ export const convertContractToDraft = async (
     throw new GraphQLError(`Green invoice match not found for business ID="${contract.client_id}"`);
   }
 
-  const today = issueMonth ? addMonths(new Date(issueMonth), 1) : new Date();
+  const today = issueMonth ? addMonths(timelessDateStringToLocalDate(issueMonth), 1) : new Date();
   const monthStart = dateToTimelessDateString(startOfMonth(today));
   const monthEnd = dateToTimelessDateString(endOfMonth(today));
-  const year = today.getFullYear() + (today.getMonth() === 0 ? -1 : 0);
-  const month = format(subMonths(today, 1), 'MMMM');
+
+  const description = buildContractDocumentDescription(contract, issueMonth);
 
   const vatType = await deduceVatTypeFromBusiness(injector, locality, contract.client_id);
 
   const documentInput: ResolversTypes['DocumentDraft'] = {
     remarks: createRemarks(contract),
-    description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+    description,
     type: normalizeDocumentType(contract.document_type),
     date: monthStart,
     dueDate: monthEnd,
@@ -344,7 +342,7 @@ export const convertContractToDraft = async (
     client,
     income: [
       {
-        description: `${getProductName(normalizeProduct(contract.product ?? '')!)} ${getSubscriptionPlanName(normalizeSubscriptionPlan(contract.plan ?? '')!)} - ${month} ${year}`,
+        description,
         quantity: 1,
         price: contract.amount,
         currency: contract.currency as Currency,
