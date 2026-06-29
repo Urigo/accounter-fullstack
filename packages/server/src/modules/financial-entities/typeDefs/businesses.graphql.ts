@@ -46,7 +46,6 @@ export default gql`
 
     suggestions: Suggestions
 
-    sortCode: Int
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
     isActive: Boolean!
