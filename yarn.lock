@@ -110,7 +110,7 @@ __metadata:
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.21.0"
     next-themes: "npm:0.4.6"
-    pdfjs-dist: "npm:6.0.227"
+    pdfjs-dist: "npm:6.1.200"
     radix-ui: "npm:1.6.0"
     react: "npm:19.2.7"
     react-day-picker: "npm:10.0.1"
@@ -21061,15 +21061,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfjs-dist@npm:6.0.227":
-  version: 6.0.227
-  resolution: "pdfjs-dist@npm:6.0.227"
+"pdfjs-dist@npm:6.1.200":
+  version: 6.1.200
+  resolution: "pdfjs-dist@npm:6.1.200"
   dependencies:
     "@napi-rs/canvas": "npm:^1.0.0"
   dependenciesMeta:
     "@napi-rs/canvas":
       optional: true
-  checksum: 10c0/e364dad374de36e0e746272b05bb01709e164d4e1a90f56915af4af4ae96200dbd6985b5ff8fb25ceabf7699b22d60b0ee862af61723e7aea08771c3ea2f9bc2
+  checksum: 10c0/61d62f25002951dbc186e599f354f8d1dfc100ee5c63eafa0daad7261d70a355b0d883a2b92b92515884c82ef5bc75d0a18385e62d772f0784cddc3506c35e1f
   languageName: node
   linkType: hard
 
