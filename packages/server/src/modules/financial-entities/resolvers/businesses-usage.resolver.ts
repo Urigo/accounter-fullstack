@@ -13,6 +13,7 @@ export const businessesUsageResolvers: FinancialEntitiesModule.Resolvers = {
           ledgerRecords: 0,
         };
         return {
+          id,
           businessId: id,
           totalTransactions: counts.transactions,
           totalDocuments: counts.documents,

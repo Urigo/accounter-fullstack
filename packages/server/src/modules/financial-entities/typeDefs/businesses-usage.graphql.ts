@@ -7,6 +7,8 @@ export default gql`
 
   " usage summary of a business across the system, used to spot unused businesses "
   type BusinessUsage {
+    " same value as businessId; present so the type has a unique identifier "
+    id: UUID!
     businessId: UUID!
     totalTransactions: Int!
     totalDocuments: Int!
