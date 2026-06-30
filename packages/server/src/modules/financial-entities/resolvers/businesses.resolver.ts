@@ -363,12 +363,11 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         await injector.get(BusinessesOperationProvider).deleteBusinessById(businessId);
         return true;
       } catch (e) {
+        console.error(e);
         if (e instanceof GraphQLError) {
           throw e;
         }
-        throw new GraphQLError(
-          e instanceof Error ? e.message : `Failed to delete business ID="${businessId}"`,
-        );
+        throw new GraphQLError(`Failed to delete business ID="${businessId}"`);
       }
     },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
