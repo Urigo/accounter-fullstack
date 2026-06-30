@@ -1,12 +1,17 @@
 import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type RowSelectionState,
+} from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { InsertBusiness } from '../common/index.js';
+import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { businessNodesToRows } from './business-rows.js';
@@ -63,15 +68,25 @@ export const Businesses = (): ReactElement => {
     [data?.allBusinesses?.nodes],
   );
 
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
   const table = useReactTable({
     data: rows,
     columns,
     getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      rowSelection,
+    },
   });
 
   // Footer
   useEffect(() => {
+    const selectedForMerge = table
+      .getSelectedRowModel()
+      .rows.map(row => ({ id: row.original.id, onChange: () => refetch() }));
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters
@@ -81,9 +96,20 @@ export const Businesses = (): ReactElement => {
           setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
+        <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
       </div>,
     );
-  }, [data, activePage, businessName, setFiltersContext, setActivePage, setBusinessName]);
+  }, [
+    data,
+    activePage,
+    businessName,
+    setFiltersContext,
+    setActivePage,
+    setBusinessName,
+    rowSelection,
+    refetch,
+    table,
+  ]);
 
   return (
     <PageLayout
