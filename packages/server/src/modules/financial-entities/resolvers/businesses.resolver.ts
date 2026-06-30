@@ -3,7 +3,6 @@ import type { Resolvers } from '../../../__generated__/types.js';
 import { UUID_REGEX } from '../../../shared/constants.js';
 import type { CountryCode } from '../../../shared/enums.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
-import { updateGreenInvoiceClient } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
 import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provider.js';
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
@@ -12,7 +11,7 @@ import {
   suggestionDataSchema,
 } from '../helpers/business-suggestion-data-schema.helper.js';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
-import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
+import { updateSingleBusiness } from '../helpers/update-business.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
 import { BusinessesOperationProvider } from '../providers/businesses-operation.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
@@ -21,7 +20,6 @@ import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
 import type {
   FinancialEntitiesModule,
   IGetBusinessesByIdsResult,
-  IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
 } from '../types.js';
 import { commonChargeFields, commonFinancialEntityFields } from './common.js';
@@ -76,101 +74,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
   },
   Mutation: {
     updateBusiness: async (_, { businessId, ownerId, fields }, { injector }) => {
-      if (hasFinancialEntitiesCoreProperties(fields)) {
-        await injector.get(FinancialEntitiesProvider).updateFinancialEntity({
-          ...fields,
-          financialEntityId: businessId,
-          irsCode: fields.irsCode ?? null,
-          isActive: fields.isActive ?? null,
-        });
-      }
-
-      let suggestionData: SuggestionData | null = null;
-      if (fields.suggestions) {
-        const currentBusiness = await injector
-          .get(BusinessesProvider)
-          .getBusinessByIdLoader.load(businessId);
-        if (!currentBusiness) {
-          return {
-            __typename: 'CommonError',
-            message: `Business ID="${businessId}" not found`,
-          };
-        }
-        suggestionData = updateSuggestions(fields.suggestions, currentBusiness.suggestion_data);
-      }
-      const adjustedFields: IUpdateBusinessParams = {
-        address: fields.address,
-        city: fields.city,
-        zipCode: fields.zipCode,
-        email: fields.email,
-        exemptDealer: fields.exemptDealer,
-        vatNumber: fields.governmentId,
-        hebrewName: fields.hebrewName,
-        phoneNumber: fields.phoneNumber,
-        website: fields.website,
-        optionalVat: fields.optionalVAT,
-        isReceiptEnough: fields.isReceiptEnough ?? null,
-        isDocumentsOptional: fields.isDocumentsOptional ?? null,
-        country: fields.country,
-        suggestionData,
-        pcn874RecordTypeOverride: fields.pcn874RecordType,
-      };
-
-      let updatedBusiness: IGetBusinessesByIdsResult | undefined;
-
       try {
-        if (Object.values(adjustedFields).some(field => field != null)) {
-          await injector
-            .get(BusinessesProvider)
-            .updateBusiness({ ...adjustedFields, businessId })
-            .catch((e: Error) => {
-              const message = `Error updating business ID="${businessId}"`;
-              console.error(`${message}: ${e}`);
-              if (e instanceof GraphQLError) {
-                throw e;
-              }
-              throw new Error(message);
-            });
-        }
-
-        if (fields.taxCategory) {
-          const texCategoryParams: IUpdateBusinessTaxCategoryParams = {
-            businessId,
-            ownerId,
-            taxCategoryId: fields.taxCategory,
-          };
-          try {
-            await injector.get(TaxCategoriesProvider).insertBusinessTaxCategory(texCategoryParams);
-          } catch (error) {
-            console.error(error);
-            await injector
-              .get(TaxCategoriesProvider)
-              .updateBusinessTaxCategory(texCategoryParams)
-              .catch((e: Error) => {
-                const message = `Error updating tax category for business ID="${businessId}"`;
-                console.error(`${message}: ${e}`);
-                throw new Error(message);
-              });
-          }
-        }
-
-        updatedBusiness = await injector
-          .get(BusinessesProvider)
-          .getBusinessByIdLoader.load(businessId);
-        if (!updatedBusiness) {
-          throw new Error(`Updated business not found`);
-        }
+        return await updateSingleBusiness(injector, businessId, ownerId, fields);
       } catch (e) {
         return {
           __typename: 'CommonError',
           message: `Failed to update business ID="${businessId}": ${(e as Error).message}`,
         };
       }
-
-      // update green invoice client if needed
-      await updateGreenInvoiceClient(businessId, injector, fields);
-
-      return updatedBusiness;
     },
     insertNewBusiness: async (_, { fields }, { injector }) => {
       try {
