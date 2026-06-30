@@ -1,12 +1,7 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import type {
-  IGetDocumentsCountByBusinessIdsQuery,
-  IGetLedgerRecordsCountByBusinessIdsQuery,
-  IGetMiscExpensesCountByBusinessIdsQuery,
-  IGetTransactionsCountByBusinessIdsQuery,
-} from '../types.js';
+import type { IGetUsageCountsByBusinessIdsQuery } from '../types.js';
 
 export type BusinessUsageCounts = {
   transactions: number;
@@ -15,70 +10,67 @@ export type BusinessUsageCounts = {
   ledgerRecords: number;
 };
 
-// Cap the number of ids bound per query. The ledger query references the id array four
-// times, so each chunk binds up to 4 * CHUNK_SIZE parameters — kept well under Postgres'
-// 65,535 parameter limit.
+// Cap the number of ids bound per query. The combined query references the id array nine
+// times (one per UNION ALL branch), so each chunk binds up to 9 * CHUNK_SIZE parameters —
+// kept well under Postgres' 65,535 parameter limit.
 const CHUNK_SIZE = 1000;
 
-const getTransactionsCountByBusinessIds = sql<IGetTransactionsCountByBusinessIdsQuery>`
-  SELECT business_id, COUNT(*) AS count
-  FROM accounter_schema.transactions
-  WHERE business_id IN $$businessIds
-  GROUP BY business_id;`;
+// Maps the `source` discriminator emitted by each UNION ALL branch to its counts key.
+const SOURCE_TO_KEY: Record<string, keyof BusinessUsageCounts> = {
+  transactions: 'transactions',
+  documents: 'documents',
+  misc_expenses: 'miscExpenses',
+  ledger: 'ledgerRecords',
+};
 
-// A business may be referenced as either the debtor or the creditor of a document, so
-// the two columns are unioned into a single business_id projection before grouping. A
-// document that references the same business on both sides is therefore counted twice
-// (once per side); this is acceptable for a usage indicator.
-const getDocumentsCountByBusinessIds = sql<IGetDocumentsCountByBusinessIdsQuery>`
-  SELECT business_id, COUNT(*) AS count
+// A single statement that counts, per business id, how often the business is referenced
+// across each source. Every id-bearing column is projected into a common (business_id,
+// source) shape via UNION ALL so a business that appears in more than one column
+// (documents/misc_expenses debtor+creditor, ledger debit/credit entities) is attributed
+// correctly. A row that references the same business on two columns is counted once per
+// column, which is acceptable for a usage indicator. Combining all sources into one query
+// matters because TenantAwareDBClient serializes queries on a single mutex-guarded
+// connection, so four separate queries would be four sequential transactions.
+const getUsageCountsByBusinessIds = sql<IGetUsageCountsByBusinessIdsQuery>`
+  SELECT business_id, source, COUNT(*) AS count
   FROM (
-    SELECT debtor_id AS business_id
+    SELECT business_id, 'transactions' AS source
+    FROM accounter_schema.transactions
+    WHERE business_id IN $$businessIds
+    UNION ALL
+    SELECT debtor_id AS business_id, 'documents' AS source
     FROM accounter_schema.documents
     WHERE debtor_id IN $$businessIds
     UNION ALL
-    SELECT creditor_id AS business_id
+    SELECT creditor_id AS business_id, 'documents' AS source
     FROM accounter_schema.documents
     WHERE creditor_id IN $$businessIds
-  ) AS documents
-  GROUP BY business_id;`;
-
-// Same debtor/creditor union as documents.
-const getMiscExpensesCountByBusinessIds = sql<IGetMiscExpensesCountByBusinessIdsQuery>`
-  SELECT business_id, COUNT(*) AS count
-  FROM (
-    SELECT debtor_id AS business_id
+    UNION ALL
+    SELECT debtor_id AS business_id, 'misc_expenses' AS source
     FROM accounter_schema.misc_expenses
     WHERE debtor_id IN $$businessIds
     UNION ALL
-    SELECT creditor_id AS business_id
+    SELECT creditor_id AS business_id, 'misc_expenses' AS source
     FROM accounter_schema.misc_expenses
     WHERE creditor_id IN $$businessIds
-  ) AS misc_expenses
-  GROUP BY business_id;`;
-
-// A ledger record can reference a business in any of its four debit/credit entity
-// columns, so all four are unioned before grouping.
-const getLedgerRecordsCountByBusinessIds = sql<IGetLedgerRecordsCountByBusinessIdsQuery>`
-  SELECT business_id, COUNT(*) AS count
-  FROM (
-    SELECT debit_entity1 AS business_id
+    UNION ALL
+    SELECT debit_entity1 AS business_id, 'ledger' AS source
     FROM accounter_schema.ledger_records
     WHERE debit_entity1 IN $$businessIds
     UNION ALL
-    SELECT debit_entity2 AS business_id
+    SELECT debit_entity2 AS business_id, 'ledger' AS source
     FROM accounter_schema.ledger_records
     WHERE debit_entity2 IN $$businessIds
     UNION ALL
-    SELECT credit_entity1 AS business_id
+    SELECT credit_entity1 AS business_id, 'ledger' AS source
     FROM accounter_schema.ledger_records
     WHERE credit_entity1 IN $$businessIds
     UNION ALL
-    SELECT credit_entity2 AS business_id
+    SELECT credit_entity2 AS business_id, 'ledger' AS source
     FROM accounter_schema.ledger_records
     WHERE credit_entity2 IN $$businessIds
-  ) AS ledger_records
-  GROUP BY business_id;`;
+  ) AS usage
+  GROUP BY business_id, source;`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -101,35 +93,21 @@ export class BusinessUsageProvider {
       usage.set(id, { transactions: 0, documents: 0, miscExpenses: 0, ledgerRecords: 0 });
     }
 
-    const apply = (
-      rows: { business_id: string | null; count: string | null }[],
-      key: keyof BusinessUsageCounts,
-    ): void => {
-      for (const row of rows) {
-        if (!row.business_id) {
-          continue;
-        }
-        const counts = usage.get(row.business_id);
-        if (counts) {
-          counts[key] = Number(row.count ?? 0);
-        }
-      }
-    };
-
     // chunk the ids to stay within Postgres' bind-parameter limit (see CHUNK_SIZE)
     for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
       const chunk = uniqueIds.slice(i, i + CHUNK_SIZE);
-      const [transactions, documents, miscExpenses, ledgerRecords] = await Promise.all([
-        getTransactionsCountByBusinessIds.run({ businessIds: chunk }, this.db),
-        getDocumentsCountByBusinessIds.run({ businessIds: chunk }, this.db),
-        getMiscExpensesCountByBusinessIds.run({ businessIds: chunk }, this.db),
-        getLedgerRecordsCountByBusinessIds.run({ businessIds: chunk }, this.db),
-      ]);
+      const rows = await getUsageCountsByBusinessIds.run({ businessIds: chunk }, this.db);
 
-      apply(transactions, 'transactions');
-      apply(documents, 'documents');
-      apply(miscExpenses, 'miscExpenses');
-      apply(ledgerRecords, 'ledgerRecords');
+      for (const row of rows) {
+        if (!row.business_id || !row.source) {
+          continue;
+        }
+        const key = SOURCE_TO_KEY[row.source];
+        const counts = usage.get(row.business_id);
+        if (key && counts) {
+          counts[key] = Number(row.count ?? 0);
+        }
+      }
     }
 
     return usage;
