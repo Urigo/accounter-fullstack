@@ -46,12 +46,20 @@ const insertIngestGrant = sql<IInsertIngestGrantQuery>`
 // businesses RLS scopes the match to the resolved tenant. The match is
 // case-insensitive (email addresses are case-insensitive in practice and
 // neither the stored value nor the sender evidence is normalized upstream).
+// The jsonb_typeof guard keeps jsonb_array_elements_text from throwing on a
+// malformed/legacy record whose `emails` is not a JSON array (a missing key or
+// non-array value simply yields no rows instead of a runtime error).
 const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
   SELECT id, suggestion_data
     FROM accounter_schema.businesses
    WHERE EXISTS (
      SELECT 1
-       FROM jsonb_array_elements_text(suggestion_data->'emails') AS candidate
+       FROM jsonb_array_elements_text(
+         CASE WHEN jsonb_typeof(suggestion_data->'emails') = 'array'
+              THEN suggestion_data->'emails'
+              ELSE '[]'::jsonb
+         END
+       ) AS candidate
       WHERE lower(candidate) = lower($email)
    )
    LIMIT 1
