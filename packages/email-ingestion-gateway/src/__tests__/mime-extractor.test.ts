@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { IngestReasonCode } from '../contracts.js';
 import {
@@ -642,6 +643,60 @@ describe('extractFromMime — body capture & issuer candidates', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.senderEvidence.issuerCandidates).toContain('wrapped@vendor.com');
+    }
+  });
+
+  it('recovers From and Reply-To addresses from a plain-text forwarded block', async () => {
+    // A manually forwarded Cloudflare invoice: the live From is the forwarder,
+    // and the real issuer (the original Reply-To) survives only in the quoted
+    // header block in the body.
+    const forwardedBody = [
+      '---------- Forwarded message ---------',
+      "From: 'Cloudflare' via Account Payables <ap@the-guild.dev>",
+      'Date: Thu, Jun 25, 2026 at 7:07 AM',
+      'Subject: Your invoice is attached',
+      'To: <ap@the-guild.dev>',
+      'Reply-To: Cloudflare <noreply@notify.cloudflare.com>',
+      '',
+      'Your latest Cloudflare invoice is attached.',
+    ].join('\r\n');
+    const result = await extractFromMime(
+      makeTextMime('Gil Gardosh <gil@the-guild.dev>', 'Fwd: Your invoice is attached', forwardedBody),
+    );
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toContain('noreply@notify.cloudflare.com');
+      expect(result.senderEvidence.issuerCandidates).toContain('ap@the-guild.dev');
+      // does not pick up the `To:` recipient
+      expect(result.senderEvidence.issuerCandidates).not.toContain('invoices@example.com');
+    }
+  });
+
+  it('recovers the real issuer from a Gmail HTML forwarded block (mailto anchors)', async () => {
+    const html = [
+      '<div>---------- Forwarded message ---------</div>',
+      '<div>From: <a href="mailto:ap@the-guild.dev">ap@the-guild.dev</a></div>',
+      '<div>Reply-To: <a href="mailto:noreply%40notify.cloudflare.com">Cloudflare</a></div>',
+    ].join('');
+    const result = await extractFromMime(makeHtmlMime(html));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.senderEvidence.issuerCandidates).toContain('noreply@notify.cloudflare.com');
+    }
+  });
+
+  it('extracts the issuer and the PDF from the forwarded-cloudflare.eml fixture', async () => {
+    const raw = readFileSync(new URL('./fixtures/forwarded-cloudflare.eml', import.meta.url));
+    const result = await extractFromMime(raw);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      // the real issuer is recovered from the quoted Reply-To, despite the live
+      // From being the forwarder (gil@the-guild.dev)
+      expect(result.senderEvidence.from).toContain('gil@the-guild.dev');
+      expect(result.senderEvidence.issuerCandidates).toContain('noreply@notify.cloudflare.com');
+      // exactly the one real attachment — the body is not a document at this stage
+      expect(result.documents).toHaveLength(1);
+      expect(result.documents[0].mimeType).toBe('application/pdf');
     }
   });
 

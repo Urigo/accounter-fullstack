@@ -32,7 +32,7 @@ const mockGrant = {
 function makeInjector(overrides: Partial<EmailIngestionControlProvider> = {}): Injector {
   const controlProvider: Partial<EmailIngestionControlProvider> = {
     resolveAlias: vi.fn().mockResolvedValue({ found: true, tenantId: 'tenant-uuid-1' }),
-    recognizeBusiness: vi.fn().mockResolvedValue({ businessId: null, config: {} }),
+    recognizeBusinessFromEvidence: vi.fn().mockResolvedValue({ businessId: null, config: {} }),
     issueGrant: vi.fn().mockResolvedValue(mockGrant),
     ...overrides,
   };
@@ -148,8 +148,8 @@ describe('Mutation.requestIngestControl', () => {
     expect(callArg.messageId).toBe(baseInput.messageId);
   });
 
-  it('selects the issuer from senderEvidence and returns the business config', async () => {
-    const recognizeBusiness = vi.fn().mockResolvedValue({
+  it('recognizes the issuer from senderEvidence and returns the business config', async () => {
+    const recognizeBusinessFromEvidence = vi.fn().mockResolvedValue({
       businessId: 'biz-1',
       config: {
         emailBody: true,
@@ -157,7 +157,7 @@ describe('Mutation.requestIngestControl', () => {
         internalEmailLinks: ['https://acme.com/inv'],
       },
     });
-    const injector = makeInjector({ recognizeBusiness });
+    const injector = makeInjector({ recognizeBusinessFromEvidence });
 
     const result = await resolver(
       {} as never,
@@ -166,7 +166,9 @@ describe('Mutation.requestIngestControl', () => {
       {} as never,
     );
 
-    expect(recognizeBusiness).toHaveBeenCalledWith('tenant-uuid-1', 'vendor@acme.com');
+    expect(recognizeBusinessFromEvidence).toHaveBeenCalledWith('tenant-uuid-1', {
+      from: 'vendor@acme.com',
+    });
     expect(result).toMatchObject({
       businessEmailConfig: {
         businessId: 'biz-1',
@@ -191,8 +193,10 @@ describe('Mutation.requestIngestControl', () => {
 
   it('binds the recognized businessId into the issued grant', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
-    const recognizeBusiness = vi.fn().mockResolvedValue({ businessId: 'biz-7', config: {} });
-    const injector = makeInjector({ issueGrant, recognizeBusiness });
+    const recognizeBusinessFromEvidence = vi
+      .fn()
+      .mockResolvedValue({ businessId: 'biz-7', config: {} });
+    const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
 
     await resolver(
       {} as never,

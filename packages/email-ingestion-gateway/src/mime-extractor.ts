@@ -187,24 +187,44 @@ function headerValue(
   return undefined;
 }
 
-// Forwarded emails often carry the real sender as a `From: … <a href="mailto:…">`
-// span in the body. Collect those addresses (decoded), in document order, for
-// the server's issuer-selection policy. The bounded lazy quantifier keeps the
-// match span small: it tolerates a newline-wrapped `From:` line, avoids matching
-// an unrelated mailto far down a minified single-line body, and bounds regex
-// backtracking on very large bodies.
-const ISSUER_MAILTO_RE = /From:[\s\S]{0,250}?<a\s+href="mailto:([^"]+)"/gi;
+// Forwarded mail carries the real issuer inside a quoted header block — the
+// original `From:` / `Reply-To:` / `Sender:` lines — because a manual Gmail
+// forward rewrites the live `From`, drops the original `Reply-To`, and doesn't
+// set `X-Original-From`. We recover those addresses from the body so the
+// server's issuer-selection policy can still match them. For each header label
+// we take the first address that follows, accepting both a `<a href="mailto:…">`
+// link (group 1, percent-decoded) and a plain/angle-bracketed (`<addr>` or bare
+// `addr`) form (group 2). The bounded lazy quantifier keeps each match span
+// small: it tolerates a newline-wrapped label, avoids reaching an unrelated
+// address far down a minified single-line body, and bounds regex backtracking.
+const ISSUER_EMAIL = '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}';
+const ISSUER_CANDIDATE_RE = new RegExp(
+  `(?:From|Reply-To|Sender):[\\s\\S]{0,250}?(?:href="mailto:([^"?]+)"|(${ISSUER_EMAIL}))`,
+  'gi',
+);
+const MAX_ISSUER_CANDIDATES = 25;
 
 function extractIssuerCandidates(body: string): string[] {
   const candidates: string[] = [];
-  for (const match of body.matchAll(ISSUER_MAILTO_RE)) {
-    let email = match[1];
-    try {
-      email = decodeURIComponent(email);
-    } catch {
-      // keep the raw value if it is not valid percent-encoding
+  const seen = new Set<string>();
+  for (const match of body.matchAll(ISSUER_CANDIDATE_RE)) {
+    let email = match[1] ?? match[2] ?? '';
+    if (match[1]) {
+      try {
+        email = decodeURIComponent(email);
+      } catch {
+        // keep the raw value if it is not valid percent-encoding
+      }
     }
-    candidates.push(email);
+    email = email.trim();
+    const key = email.toLowerCase();
+    if (email && !seen.has(key)) {
+      seen.add(key);
+      candidates.push(email);
+      if (candidates.length >= MAX_ISSUER_CANDIDATES) {
+        break;
+      }
+    }
   }
   return candidates;
 }

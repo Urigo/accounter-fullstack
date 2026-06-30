@@ -1,0 +1,31 @@
+From: "Gil Gardosh" <gil@the-guild.dev>
+To: guild-k61td2@accounter.tax
+Subject: Fwd: Your invoice is attached
+Date: Mon, 29 Jun 2026 09:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="b1_forwarded_cloudflare"
+
+--b1_forwarded_cloudflare
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: 7bit
+
+<div dir="ltr"><br><br><div class="gmail_quote">
+<div>---------- Forwarded message ---------</div>
+<div>From: &#39;Cloudflare&#39; via Account Payables &lt;<a href="mailto:ap@the-guild.dev">ap@the-guild.dev</a>&gt;</div>
+<div>Date: Thu, Jun 25, 2026 at 7:07&#8239;AM</div>
+<div>Subject: Your invoice is attached</div>
+<div>To: &lt;<a href="mailto:ap@the-guild.dev">ap@the-guild.dev</a>&gt;</div>
+<div>Reply-To: Cloudflare &lt;<a href="mailto:noreply@notify.cloudflare.com">noreply@notify.cloudflare.com</a>&gt;</div>
+<br>
+<p>Your latest Cloudflare invoice is attached to this email.</p>
+<p>Invoice ID: IN-69360442 &middot; Due on: June 25, 2026 &middot; Amount: $36.20</p>
+</div></div>
+
+--b1_forwarded_cloudflare
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="cloudflare-invoice.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZz4+ZW5kb2JqCkNsb3VkZmxhcmUgaW52b2ljZSBJTi02OTM2MDQ0MiAkMzYuMjAKJSVFT0YK
+
+--b1_forwarded_cloudflare--
