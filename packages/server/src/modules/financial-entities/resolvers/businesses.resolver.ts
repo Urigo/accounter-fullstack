@@ -14,6 +14,7 @@ import {
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from '../helpers/financial-entities.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
+import { BusinessesOperationProvider } from '../providers/businesses-operation.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -355,6 +356,18 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           throw e;
         }
         throw new GraphQLError(`Failed to merge businesses`);
+      }
+    },
+    deleteBusiness: async (_, { businessId }, { injector }) => {
+      try {
+        await injector.get(BusinessesOperationProvider).deleteBusinessById(businessId);
+        return true;
+      } catch (e) {
+        console.error(e);
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new GraphQLError(`Failed to delete business ID="${businessId}"`);
       }
     },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
