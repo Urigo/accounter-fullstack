@@ -281,6 +281,12 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         throw new GraphQLError(`Failed to delete business ID="${businessId}"`);
       }
     },
+    batchUpdateBusinesses: async (_, { businessIds, fields }, { injector }) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      return Promise.all(
+        businessIds.map(businessId => updateSingleBusiness(injector, businessId, ownerId, fields)),
+      );
+    },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
       const { ownerId, locality } = await injector
         .get(AdminContextProvider)
