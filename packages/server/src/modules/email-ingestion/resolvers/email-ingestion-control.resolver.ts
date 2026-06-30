@@ -1,6 +1,5 @@
 import { GraphQLError } from 'graphql';
 import type { MutationResolvers } from '../../../__generated__/types.js';
-import { selectIssuerEmail } from '../helpers/email-ingestion-issuer.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 const GRANT_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -24,10 +23,11 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
 
     // Recognize the issuing business from sender evidence, then bind it into the
     // grant so the ingest step can attribute documents without trusting input.
-    const issuerEmail = selectIssuerEmail(input.senderEvidence ?? undefined);
-    const { businessId, config } = await control.recognizeBusiness(
+    // Tries every candidate address (incl. quoted forwarded-header addresses) so
+    // manually forwarded mail still resolves to the real issuer.
+    const { businessId, config } = await control.recognizeBusinessFromEvidence(
       aliasResult.tenantId,
-      issuerEmail,
+      input.senderEvidence ?? undefined,
     );
 
     const expiresAt = new Date(Date.now() + GRANT_TTL_MS);

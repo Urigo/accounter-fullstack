@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Scope } from 'graphql-modules';
+import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { DBProvider } from '../../app-providers/db.provider.js';
 import {
@@ -7,6 +8,10 @@ import {
   type EmailListenerConfig,
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
+import {
+  selectIssuerCandidates,
+  type SenderEvidence,
+} from '../helpers/email-ingestion-issuer.helper.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
@@ -38,11 +43,17 @@ const insertIngestGrant = sql<IInsertIngestGrantQuery>`
 // Resolve the issuing business by a sender email listed in its
 // suggestion_data.emails. Mirrors BusinessesProvider.getBusinessByEmail, but
 // runs on a tenant-pinned client (the control plane has no auth session), so
-// businesses RLS scopes the match to the resolved tenant.
+// businesses RLS scopes the match to the resolved tenant. The match is
+// case-insensitive (email addresses are case-insensitive in practice and
+// neither the stored value nor the sender evidence is normalized upstream).
 const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
   SELECT id, suggestion_data
     FROM accounter_schema.businesses
-   WHERE suggestion_data->'emails' ? $email::text
+   WHERE EXISTS (
+     SELECT 1
+       FROM jsonb_array_elements_text(suggestion_data->'emails') AS candidate
+      WHERE lower(candidate) = lower($email)
+   )
    LIMIT 1
 `;
 
@@ -96,6 +107,28 @@ export type BusinessRecognitionResult = {
   /** The business's email-processing config (empty when unrecognized). */
   config: EmailListenerConfig;
 };
+
+/**
+ * Parse a matched business's `suggestion_data.emailListener` config, tolerating
+ * a missing or malformed blob (returns an empty config and logs on schema
+ * mismatch — recognition still succeeds, treatment just falls back to defaults).
+ */
+function parseEmailListenerConfig(business: {
+  id: string;
+  suggestion_data: unknown;
+}): EmailListenerConfig {
+  if (!business.suggestion_data) {
+    return {};
+  }
+  const parsed = suggestionDataSchema.safeParse(business.suggestion_data);
+  if (!parsed.success) {
+    console.error(
+      `Invalid suggestion_data schema for business [${business.id}]: ${JSON.stringify(parsed.error.issues)}`,
+    );
+    return {};
+  }
+  return parsed.data.emailListener ?? {};
+}
 
 export type ValidateGrantInput = {
   jti: string;
@@ -207,29 +240,46 @@ export class EmailIngestionControlProvider {
       return { businessId: null, config: {} };
     }
 
-    return withTenantContext(this.dbProvider.pool, tenantId, async client => {
-      const rows = await getBusinessByEmailForIngest.run({ email: issuerEmail }, client);
-      if (rows.length === 0) {
-        return { businessId: null, config: {} };
-      }
+    return withTenantContext(this.dbProvider.pool, tenantId, client =>
+      this.lookupBusinessByEmails(client, [issuerEmail]),
+    );
+  }
 
-      const business = rows[0];
-      let config: EmailListenerConfig = {};
-      if (business.suggestion_data) {
-        const parsed = suggestionDataSchema.safeParse(business.suggestion_data);
-        if (parsed.success) {
-          if (parsed.data.emailListener) {
-            config = parsed.data.emailListener;
-          }
-        } else {
-          console.error(
-            `Invalid suggestion_data schema for business [${business.id}]: ${JSON.stringify(parsed.error.issues)}`,
-          );
-        }
-      }
+  /**
+   * Recognize the issuing business from the full sender evidence, trying each
+   * candidate address (in {@link selectIssuerCandidates} priority order) until
+   * one matches a business. This is the path the resolver uses: it tolerates
+   * **manually forwarded** mail, where the real issuer is only a quoted-header
+   * address in the body while the live `From`/`Reply-To` belong to the
+   * forwarder. Runs the candidate lookups inside a single tenant-pinned
+   * transaction.
+   */
+  async recognizeBusinessFromEvidence(
+    tenantId: string,
+    evidence: SenderEvidence | null | undefined,
+  ): Promise<BusinessRecognitionResult> {
+    const candidates = selectIssuerCandidates(evidence);
+    if (candidates.length === 0) {
+      return { businessId: null, config: {} };
+    }
 
-      return { businessId: business.id, config };
-    });
+    return withTenantContext(this.dbProvider.pool, tenantId, client =>
+      this.lookupBusinessByEmails(client, candidates),
+    );
+  }
+
+  /** Return the first business whose suggestion_data.emails matches a candidate. */
+  private async lookupBusinessByEmails(
+    client: PoolClient,
+    emails: readonly string[],
+  ): Promise<BusinessRecognitionResult> {
+    for (const email of emails) {
+      const rows = await getBusinessByEmailForIngest.run({ email }, client);
+      if (rows.length > 0) {
+        return { businessId: rows[0].id, config: parseEmailListenerConfig(rows[0]) };
+      }
+    }
+    return { businessId: null, config: {} };
   }
 
   /**

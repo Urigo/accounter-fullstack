@@ -285,3 +285,80 @@ describe('EmailIngestionControlProvider.recognizeBusiness', () => {
     expect(setConfigCall![1]).toContain('tenant-xyz');
   });
 });
+
+// ---------------------------------------------------------------------------
+// recognizeBusinessFromEvidence
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
+  // Mock the businesses lookup to match a single email (case-insensitively),
+  // mirroring the real lower()-based SQL.
+  function dbMatchingEmail(target: string, row: Record<string, unknown>) {
+    return makeDbProvider((sql, params) => {
+      if (/from\s+accounter_schema\.businesses/.test(sql.toLowerCase())) {
+        const email = (params?.[0] as string | undefined)?.toLowerCase();
+        if (email === target.toLowerCase()) {
+          return { rows: [row], rowCount: 1 };
+        }
+      }
+      return { rows: [], rowCount: 0 };
+    });
+  }
+
+  it('recognizes the issuer from a forwarded body candidate when the live From is the forwarder', async () => {
+    const db = dbMatchingEmail('noreply@notify.cloudflare.com', {
+      id: 'cloudflare-biz',
+      suggestion_data: {
+        emails: ['noreply@notify.cloudflare.com'],
+        emailListener: { emailBody: false, attachments: ['PDF'] },
+      },
+    });
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
+      from: 'Gil Gardosh <gil@the-guild.dev>',
+      issuerCandidates: ['ap@the-guild.dev', 'noreply@notify.cloudflare.com'],
+    });
+
+    expect(result.businessId).toBe('cloudflare-biz');
+    expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
+  });
+
+  it('matches case-insensitively', async () => {
+    const db = dbMatchingEmail('vendor@acme.com', {
+      id: 'biz-1',
+      suggestion_data: { emails: ['vendor@acme.com'] },
+    });
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
+      from: 'VENDOR@ACME.COM',
+    });
+
+    expect(result.businessId).toBe('biz-1');
+  });
+
+  it('returns null when no candidate matches a business', async () => {
+    const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
+      from: 'nobody@nowhere.com',
+    });
+
+    expect(result).toEqual({ businessId: null, config: {} });
+  });
+
+  it('short-circuits without touching the DB when there is no usable evidence', async () => {
+    const query = vi.fn();
+    const connect = vi.fn();
+    const db = { pool: { query, connect } } as unknown as DBProvider;
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.recognizeBusinessFromEvidence('tenant-1', undefined);
+
+    expect(result).toEqual({ businessId: null, config: {} });
+    expect(query).not.toHaveBeenCalled();
+    expect(connect).not.toHaveBeenCalled();
+  });
+});

@@ -92,3 +92,64 @@ export function selectIssuerEmail(evidence: SenderEvidence | null | undefined): 
 
   return normalize(evidence.from) ?? null;
 }
+
+/**
+ * Build the ordered, de-duplicated list of issuer emails to try against the
+ * `suggestion_data.emails` lookup, most-likely-real issuer first. Unlike
+ * {@link selectIssuerEmail} (which commits to a single address), this lets the
+ * caller try each candidate until one matches a business — important for
+ * **manually forwarded** mail, where the real issuer survives only as a
+ * quoted-header address in the body and the live `From`/`Reply-To` belong to the
+ * forwarder.
+ *
+ * Order:
+ *   1. body candidates that are not known forwarding providers (the real issuer);
+ *   2. `originalFrom` / `from` when not a known provider;
+ *   3. `replyTo`;
+ *   4. `from` (any, including a provider);
+ *   5. body candidates that ARE known providers (a business may be keyed on a
+ *      forwarder address);
+ *   6. `originalFrom` (any).
+ *
+ * All addresses are bare-extracted and lower-cased so the lookup can match
+ * case-insensitively.
+ */
+export function selectIssuerCandidates(evidence: SenderEvidence | null | undefined): string[] {
+  if (!evidence) {
+    return [];
+  }
+
+  const ordered: string[] = [];
+  const add = (raw: string | null | undefined): void => {
+    const email = normalize(raw);
+    if (email) {
+      ordered.push(email.toLowerCase());
+    }
+  };
+
+  const bodyCandidates = (evidence.issuerCandidates ?? [])
+    .map(candidate => normalize(candidate))
+    .filter((email): email is string => email !== undefined);
+
+  for (const email of bodyCandidates) {
+    if (!isKnownProvider(email)) {
+      add(email);
+    }
+  }
+  for (const header of [evidence.originalFrom, evidence.from]) {
+    const email = normalize(header);
+    if (email && !isKnownProvider(email)) {
+      add(email);
+    }
+  }
+  add(evidence.replyTo);
+  add(evidence.from);
+  for (const email of bodyCandidates) {
+    if (isKnownProvider(email)) {
+      add(email);
+    }
+  }
+  add(evidence.originalFrom);
+
+  return [...new Set(ordered)];
+}
