@@ -35,8 +35,7 @@ export interface SenderEvidence {
 // internal-link fetch). Emptiness is decided after treatment, with the server
 // ingest as the final backstop.
 export type ExtractionFailureReason =
-  | typeof IngestReasonCode.PARSE_ERROR
-  | typeof IngestReasonCode.OVERSIZE_MESSAGE;
+  typeof IngestReasonCode.PARSE_ERROR | typeof IngestReasonCode.OVERSIZE_MESSAGE;
 
 export type ExtractionResult =
   | {
