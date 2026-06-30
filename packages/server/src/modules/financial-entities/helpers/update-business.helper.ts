@@ -102,6 +102,7 @@ export async function updateSingleBusiness(
         throw new Error(message);
       });
     }
+    taxCategoryMatchLoader.clear(businessId);
   }
 
   const updatedBusiness = await injector
