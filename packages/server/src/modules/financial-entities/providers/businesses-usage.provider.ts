@@ -15,6 +15,11 @@ export type BusinessUsageCounts = {
   ledgerRecords: number;
 };
 
+// Cap the number of ids bound per query. The ledger query references the id array four
+// times, so each chunk binds up to 4 * CHUNK_SIZE parameters — kept well under Postgres'
+// 65,535 parameter limit.
+const CHUNK_SIZE = 1000;
+
 const getTransactionsCountByBusinessIds = sql<IGetTransactionsCountByBusinessIdsQuery>`
   SELECT business_id, COUNT(*) AS count
   FROM accounter_schema.transactions
@@ -96,13 +101,6 @@ export class BusinessUsageProvider {
       usage.set(id, { transactions: 0, documents: 0, miscExpenses: 0, ledgerRecords: 0 });
     }
 
-    const [transactions, documents, miscExpenses, ledgerRecords] = await Promise.all([
-      getTransactionsCountByBusinessIds.run({ businessIds: uniqueIds }, this.db),
-      getDocumentsCountByBusinessIds.run({ businessIds: uniqueIds }, this.db),
-      getMiscExpensesCountByBusinessIds.run({ businessIds: uniqueIds }, this.db),
-      getLedgerRecordsCountByBusinessIds.run({ businessIds: uniqueIds }, this.db),
-    ]);
-
     const apply = (
       rows: { business_id: string | null; count: string | null }[],
       key: keyof BusinessUsageCounts,
@@ -118,10 +116,21 @@ export class BusinessUsageProvider {
       }
     };
 
-    apply(transactions, 'transactions');
-    apply(documents, 'documents');
-    apply(miscExpenses, 'miscExpenses');
-    apply(ledgerRecords, 'ledgerRecords');
+    // chunk the ids to stay within Postgres' bind-parameter limit (see CHUNK_SIZE)
+    for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+      const chunk = uniqueIds.slice(i, i + CHUNK_SIZE);
+      const [transactions, documents, miscExpenses, ledgerRecords] = await Promise.all([
+        getTransactionsCountByBusinessIds.run({ businessIds: chunk }, this.db),
+        getDocumentsCountByBusinessIds.run({ businessIds: chunk }, this.db),
+        getMiscExpensesCountByBusinessIds.run({ businessIds: chunk }, this.db),
+        getLedgerRecordsCountByBusinessIds.run({ businessIds: chunk }, this.db),
+      ]);
+
+      apply(transactions, 'transactions');
+      apply(documents, 'documents');
+      apply(miscExpenses, 'miscExpenses');
+      apply(ledgerRecords, 'ledgerRecords');
+    }
 
     return usage;
   }
