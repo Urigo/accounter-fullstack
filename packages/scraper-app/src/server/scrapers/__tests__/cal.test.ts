@@ -2,6 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { PayloadValidationError } from '../../validate-payload.js';
 import { scrapeCal } from '../cal.js';
 
+// The scrapers delay 2-5s per month to mimic human behavior and avoid bot
+// detection (see PR #3795). Run the delay timers immediately so the tests don't
+// actually wait seconds per month.
+vi.spyOn(global, 'setTimeout').mockImplementation((cb: (...args: unknown[]) => void) => {
+  cb();
+  return 0 as unknown as ReturnType<typeof setTimeout>;
+});
+
 const CREDS = { id: 'src-1', username: 'user', password: 'pass', last4Digits: '1234' };
 
 const DATE_FROM = new Date('2024-01-01');
