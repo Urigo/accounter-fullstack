@@ -145,10 +145,10 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       const taxCategory = await injector
         .get(TaxCategoriesProvider)
         .taxCategoryByBusinessIDsLoader.load(parent.id);
-      if (!taxCategory) {
-        throw new GraphQLError(`Tax category for business ID="${parent.id}" not found`);
-      }
-      return taxCategory;
+      // The field is nullable: many businesses (e.g. auto-generated ones) have no
+      // tax category yet, and the management screen lists them all, so return null
+      // rather than throwing when none is matched.
+      return taxCategory ?? null;
     },
   },
 };

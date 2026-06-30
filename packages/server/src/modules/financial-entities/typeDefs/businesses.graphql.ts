@@ -106,6 +106,12 @@ export default gql`
     mergeBusinesses(targetBusinessId: UUID!, businessIdsToMerge: [UUID!]!): Business!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteBusiness(businessId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
+    batchUpdateBusinesses(businessIds: [UUID!]!, fields: BatchUpdateBusinessInput!): [Business!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchGenerateBusinessesOutOfTransactions: [Business!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
@@ -163,6 +169,18 @@ export default gql`
     pcn874RecordType: Pcn874RecordType
     irsCode: Int
     isActive: Boolean
+  }
+
+  " input for batchUpdateBusinesses: the subset of business fields that is safe to apply to many businesses at once "
+  input BatchUpdateBusinessInput {
+    country: CountryCode
+    city: String
+    zipCode: String
+    sortCode: Int
+    taxCategory: UUID
+    irsCode: Int
+    pcn874RecordType: Pcn874RecordType
+    suggestions: SuggestionsInput
   }
 
   " input for business suggestions "

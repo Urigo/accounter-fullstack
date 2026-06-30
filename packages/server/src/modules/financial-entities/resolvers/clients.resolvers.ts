@@ -148,6 +148,11 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
 
       return client || null;
     },
+    isClient: async (business, _, { injector }) => {
+      const client = await injector.get(ClientsProvider).getClientByIdLoader.load(business.id);
+
+      return !!client;
+    },
   },
   UpdateClientResponse: {
     __resolveType: (obj, _context, _info) => {
