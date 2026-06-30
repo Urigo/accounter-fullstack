@@ -2,9 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { scrapeAmex } from '../amex.js';
 
 // The scrapers delay 2-5s per month to mimic human behavior and avoid bot
-// detection (see PR #3795). Raise the per-test timeout so the default 5s limit
-// does not trip multi-month scrapes.
-vi.setConfig({ testTimeout: 30_000 });
+// detection (see PR #3795). Run the delay timers immediately so the tests don't
+// actually wait seconds per month.
+vi.spyOn(global, 'setTimeout').mockImplementation((cb: (...args: unknown[]) => void) => {
+  cb();
+  return 0 as unknown as ReturnType<typeof setTimeout>;
+});
 
 const CREDS = { id: 'src-1', ownerId: '123456789', password: 'pass', last6Digits: '123456' };
 
