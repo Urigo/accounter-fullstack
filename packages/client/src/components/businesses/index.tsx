@@ -1,17 +1,17 @@
-import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'urql';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { ROUTES } from '../../router/routes.js';
-import { BusinessHeader } from '../business/business-header.js';
-import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
+import { InsertBusiness } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { Checkbox } from '../ui/checkbox.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { businessNodesToRows } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
+import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -22,7 +22,15 @@ import { BusinessesFilters } from './businesses-filters.js';
         id
         name
         ... on LtdFinancialEntity {
-          ...BusinessHeader
+          hebrewName
+          governmentId
+          country {
+            code
+          }
+          city
+          zipCode
+          createdAt
+          updatedAt
         }
       }
       pageInfo {
@@ -50,27 +58,17 @@ export const Businesses = (): ReactElement => {
     },
   });
 
-  const navigate = useNavigate();
-  const [mergeSelectedBusinesses, setMergeSelectedBusinesses] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
-
-  const toggleMergeBusiness = useCallback(
-    (businessId: string, onChange: () => void) => {
-      if (mergeSelectedBusinesses.map(selected => selected.id).includes(businessId)) {
-        setMergeSelectedBusinesses(
-          mergeSelectedBusinesses.filter(selected => selected.id !== businessId),
-        );
-      } else {
-        setMergeSelectedBusinesses([...mergeSelectedBusinesses, { id: businessId, onChange }]);
-      }
-    },
-    [mergeSelectedBusinesses],
+  const rows = useMemo(
+    () => businessNodesToRows(data?.allBusinesses?.nodes ?? []),
+    [data?.allBusinesses?.nodes],
   );
 
-  function onResetMerge(): void {
-    setMergeSelectedBusinesses([]);
-  }
+  const table = useReactTable({
+    data: rows,
+    columns,
+    getRowId: row => row.id,
+    getCoreRowModel: getCoreRowModel(),
+  });
 
   // Footer
   useEffect(() => {
@@ -83,25 +81,9 @@ export const Businesses = (): ReactElement => {
           setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
         />
-        <MergeBusinessesButton selected={mergeSelectedBusinesses} resetMerge={onResetMerge} />
       </div>,
     );
-  }, [
-    data,
-    activePage,
-    businessName,
-    setFiltersContext,
-    setActivePage,
-    setBusinessName,
-    mergeSelectedBusinesses,
-  ]);
-
-  const businesses =
-    data?.allBusinesses?.nodes
-      .filter(business => business.__typename === 'LtdFinancialEntity')
-      .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1)) ?? [];
-
-  const selectedIds = new Set(mergeSelectedBusinesses.map(selected => selected.id));
+  }, [data, activePage, businessName, setFiltersContext, setActivePage, setBusinessName]);
 
   return (
     <PageLayout
@@ -118,46 +100,41 @@ export const Businesses = (): ReactElement => {
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
         </div>
       ) : (
-        <div className="space-y-2">
-          {businesses.map(business => (
-            <div
-              key={business.id}
-              className="group relative border rounded-lg hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center gap-3">
-                <div className="pl-4 flex items-center">
-                  <Checkbox
-                    checked={selectedIds.has(business.id)}
-                    onCheckedChange={() => {
-                      toggleMergeBusiness(business.id, () => {});
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 cursor-pointer"
-                    onClick={(e): void => e.stopPropagation()}
-                  />
-                </div>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className="flex-1 cursor-pointer"
-                  onClick={(): void => {
-                    navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
-                      state: { from: ROUTES.BUSINESSES.ALL },
-                    });
-                  }}
-                  onKeyDown={(e): void => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
-                        state: { from: ROUTES.BUSINESSES.ALL },
-                      });
-                    }
-                  }}
-                >
-                  <BusinessHeader data={business} />
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <TableHead key={header.id} colSpan={header.colSpan}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       )}
     </PageLayout>
