@@ -79,23 +79,28 @@ export async function updateSingleBusiness(
   }
 
   if (fields.taxCategory) {
-    const texCategoryParams: IUpdateBusinessTaxCategoryParams = {
+    const taxCategoryParams: IUpdateBusinessTaxCategoryParams = {
       businessId,
       ownerId,
       taxCategoryId: fields.taxCategory,
     };
-    try {
-      await injector.get(TaxCategoriesProvider).insertBusinessTaxCategory(texCategoryParams);
-    } catch (error) {
-      console.error(error);
-      await injector
-        .get(TaxCategoriesProvider)
-        .updateBusinessTaxCategory(texCategoryParams)
-        .catch((e: Error) => {
-          const message = `Error updating tax category for business ID="${businessId}"`;
-          console.error(`${message}: ${e}`);
-          throw new Error(message);
-        });
+    const taxCategoriesProvider = injector.get(TaxCategoriesProvider);
+    const taxCategoryMatchLoader = taxCategoriesProvider.taxCategoryByBusinessIDsLoader;
+    // check whether a match already exists rather than insert-then-catch-update, which
+    // would log false-positive errors and (inside a transaction) abort it on conflict
+    const existingTaxCategory = await taxCategoryMatchLoader.load(businessId);
+    if (existingTaxCategory) {
+      await taxCategoriesProvider.updateBusinessTaxCategory(taxCategoryParams).catch((e: Error) => {
+        const message = `Error updating tax category for business ID="${businessId}"`;
+        console.error(`${message}: ${e}`);
+        throw new Error(message);
+      });
+    } else {
+      await taxCategoriesProvider.insertBusinessTaxCategory(taxCategoryParams).catch((e: Error) => {
+        const message = `Error inserting tax category for business ID="${businessId}"`;
+        console.error(`${message}: ${e}`);
+        throw new Error(message);
+      });
     }
   }
 

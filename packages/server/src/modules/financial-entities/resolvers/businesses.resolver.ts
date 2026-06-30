@@ -283,9 +283,14 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
     batchUpdateBusinesses: async (_, { businessIds, fields }, { injector }) => {
       const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-      return Promise.all(
-        businessIds.map(businessId => updateSingleBusiness(injector, businessId, ownerId, fields)),
-      );
+      // sequential: the external green-invoice sync inside updateSingleBusiness is not behind
+      // the DB mutex, so a concurrent Promise.all would fire those calls in parallel, and a
+      // failure mid-batch should stop rather than leave more partial updates behind
+      const updatedBusinesses: IGetBusinessesByIdsResult[] = [];
+      for (const businessId of businessIds) {
+        updatedBusinesses.push(await updateSingleBusiness(injector, businessId, ownerId, fields));
+      }
+      return updatedBusinesses;
     },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
       const { ownerId, locality } = await injector
