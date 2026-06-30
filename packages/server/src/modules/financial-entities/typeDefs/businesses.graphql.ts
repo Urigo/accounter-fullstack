@@ -106,6 +106,9 @@ export default gql`
     mergeBusinesses(targetBusinessId: UUID!, businessIdsToMerge: [UUID!]!): Business!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    deleteBusiness(businessId: UUID!): Boolean!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchGenerateBusinessesOutOfTransactions: [Business!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
