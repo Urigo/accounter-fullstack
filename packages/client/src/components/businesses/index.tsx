@@ -26,7 +26,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { businessNodesToRows } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
-import { COLUMN_GROUPS, DEFAULT_COLUMN_VISIBILITY, columns } from './columns.js';
+import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
