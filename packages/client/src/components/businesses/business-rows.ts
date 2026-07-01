@@ -27,6 +27,17 @@ export type BusinessRow = {
   suggestionTags: string[];
 };
 
+/** Usage counts merged into table rows once the lazy usage query resolves (null until loaded). */
+export type BusinessUsageCounts = {
+  totalTransactions: number | null;
+  totalDocuments: number | null;
+  totalMiscExpenses: number | null;
+  totalLedgerRecords: number | null;
+};
+
+/** A business table row: the mapped business plus its (optionally loaded) usage counts. */
+export type BusinessTableRow = BusinessRow & BusinessUsageCounts;
+
 /** Minimal shape of an `allBusinesses` node consumed by the table (LtdFinancialEntity fields). */
 type RawBusinessNode = {
   __typename?: string | null;
@@ -85,4 +96,25 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
 /** Human-readable locality from city / zip / country code, skipping the empty parts. */
 export function formatLocality(row: Pick<BusinessRow, 'city' | 'zipCode' | 'countryCode'>): string {
   return [row.city, row.zipCode, row.countryCode].filter(Boolean).join(', ');
+}
+
+/** Merge per-business usage counts (from the lazy usage query) into the table rows by id. */
+export function mergeBusinessUsage(
+  rows: readonly BusinessRow[],
+  usage: readonly ({ businessId: string } & BusinessUsageCounts)[],
+): BusinessTableRow[] {
+  const byId = new Map<string, BusinessUsageCounts>();
+  for (const entry of usage) {
+    byId.set(entry.businessId, entry);
+  }
+  return rows.map(row => {
+    const counts = byId.get(row.id);
+    return {
+      ...row,
+      totalTransactions: counts?.totalTransactions ?? null,
+      totalDocuments: counts?.totalDocuments ?? null,
+      totalMiscExpenses: counts?.totalMiscExpenses ?? null,
+      totalLedgerRecords: counts?.totalLedgerRecords ?? null,
+    };
+  });
 }

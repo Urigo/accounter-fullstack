@@ -1,16 +1,26 @@
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { type ColumnDef, type VisibilityState } from '@tanstack/react-table';
+import { type ColumnDef, type Table, type VisibilityState } from '@tanstack/react-table';
 import { ROUTES } from '../../router/routes.js';
 import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
-import { formatLocality, type BusinessRow } from './business-rows.js';
+import { formatLocality, type BusinessTableRow } from './business-rows.js';
 
 function formatDate(value: Date | null): string {
   return value ? format(value, 'dd/MM/yyyy') : '—';
 }
 
-export const columns: ColumnDef<BusinessRow>[] = [
+/** Usage cells show the count, a spinner while the lazy usage query is in flight, or a dash. */
+function usageCell(value: number | null, table: Table<BusinessTableRow>) {
+  if (value != null) {
+    return value;
+  }
+  const meta = table.options.meta as { usageFetching?: boolean } | undefined;
+  return meta?.usageFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : '—';
+}
+
+export const columns: ColumnDef<BusinessTableRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -135,6 +145,35 @@ export const columns: ColumnDef<BusinessRow>[] = [
         '—'
       ),
   },
+  // Usage (lazy)
+  {
+    accessorKey: 'totalTransactions',
+    header: 'Transactions',
+    cell: ({ row, table }) => usageCell(row.original.totalTransactions, table),
+  },
+  {
+    accessorKey: 'totalDocuments',
+    header: 'Documents',
+    cell: ({ row, table }) => usageCell(row.original.totalDocuments, table),
+  },
+  {
+    accessorKey: 'totalMiscExpenses',
+    header: 'Misc expenses',
+    cell: ({ row, table }) => usageCell(row.original.totalMiscExpenses, table),
+  },
+  {
+    accessorKey: 'totalLedgerRecords',
+    header: 'Ledger records',
+    cell: ({ row, table }) => usageCell(row.original.totalLedgerRecords, table),
+  },
+];
+
+/** Usage column ids — the lazy group that triggers the usage query when enabled. */
+export const USAGE_COLUMN_IDS = [
+  'totalTransactions',
+  'totalDocuments',
+  'totalMiscExpenses',
+  'totalLedgerRecords',
 ];
 
 /** Column groups, used by the column-visibility toggle. */
@@ -173,10 +212,19 @@ export const COLUMN_GROUPS: { label: string; columns: { id: string; label: strin
       { id: 'tags', label: 'Tags' },
     ],
   },
+  {
+    label: 'Usage',
+    columns: [
+      { id: 'totalTransactions', label: 'Transactions' },
+      { id: 'totalDocuments', label: 'Documents' },
+      { id: 'totalMiscExpenses', label: 'Misc expenses' },
+      { id: 'totalLedgerRecords', label: 'Ledger records' },
+    ],
+  },
 ];
 
-// Categorization and Suggestion-defaults columns are hidden by default; Core, Main and
-// Extension tags are shown.
+// Categorization, Suggestion-defaults and Usage columns are hidden by default; Core, Main
+// and Extension tags are shown.
 export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   sortCode: false,
   taxCategory: false,
@@ -184,4 +232,8 @@ export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
   pcn874RecordType: false,
   description: false,
   tags: false,
+  totalTransactions: false,
+  totalDocuments: false,
+  totalMiscExpenses: false,
+  totalLedgerRecords: false,
 };
