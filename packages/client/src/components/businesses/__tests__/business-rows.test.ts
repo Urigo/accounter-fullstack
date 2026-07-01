@@ -1,5 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { businessNodesToRows, formatLocality } from '../business-rows.js';
+import {
+  businessNodesToRows,
+  formatLocality,
+  mergeBusinessUsage,
+  type BusinessRow,
+} from '../business-rows.js';
+
+function makeRow(id: string, name: string): BusinessRow {
+  return {
+    id,
+    name,
+    hebrewName: null,
+    governmentId: null,
+    countryCode: null,
+    city: null,
+    zipCode: null,
+    createdAt: null,
+    updatedAt: null,
+    sortCodeKey: null,
+    taxCategoryName: null,
+    irsCode: null,
+    pcn874RecordType: null,
+    isClient: false,
+    isAdmin: false,
+    isActive: true,
+    suggestionDescription: null,
+    suggestionTags: [],
+  };
+}
 
 describe('businessNodesToRows', () => {
   it('keeps only LtdFinancialEntity nodes and maps core, categorization and tag fields', () => {
@@ -74,6 +102,38 @@ describe('businessNodesToRows', () => {
       isActive: true,
       suggestionDescription: null,
       suggestionTags: [],
+    });
+  });
+});
+
+describe('mergeBusinessUsage', () => {
+  it('merges usage counts into rows by business id and defaults unmatched rows to null', () => {
+    const merged = mergeBusinessUsage(
+      [makeRow('b1', 'Alpha'), makeRow('b2', 'Beta')],
+      [
+        {
+          businessId: 'b1',
+          totalTransactions: 3,
+          totalDocuments: 2,
+          totalMiscExpenses: 1,
+          totalLedgerRecords: 5,
+        },
+      ],
+    );
+
+    expect(merged[0]).toMatchObject({
+      id: 'b1',
+      totalTransactions: 3,
+      totalDocuments: 2,
+      totalMiscExpenses: 1,
+      totalLedgerRecords: 5,
+    });
+    expect(merged[1]).toMatchObject({
+      id: 'b2',
+      totalTransactions: null,
+      totalDocuments: null,
+      totalMiscExpenses: null,
+      totalLedgerRecords: null,
     });
   });
 });

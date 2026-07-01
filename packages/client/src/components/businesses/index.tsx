@@ -8,7 +8,7 @@ import {
   type RowSelectionState,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
+import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
@@ -24,9 +24,9 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { businessNodesToRows } from './business-rows.js';
+import { businessNodesToRows, mergeBusinessUsage } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
-import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY } from './columns.js';
+import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -78,6 +78,20 @@ import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY } from './columns.js'
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query BusinessesUsage($ids: [UUID!]!) {
+    businessesUsage(ids: $ids) {
+      id
+      businessId
+      totalTransactions
+      totalDocuments
+      totalMiscExpenses
+      totalLedgerRecords
+    }
+  }
+`;
+
 export const Businesses = (): ReactElement => {
   const { get } = useUrlQuery();
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
@@ -104,8 +118,22 @@ export const Businesses = (): ReactElement => {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
 
+  // Usage counts are lazy: only fetched once the user enables a usage column.
+  const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
+  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]);
+  const [{ data: usageData, fetching: usageFetching }] = useQuery({
+    query: BusinessesUsageDocument,
+    variables: { ids: businessIds },
+    pause: !usageEnabled || businessIds.length === 0,
+  });
+
+  const tableRows = useMemo(
+    () => mergeBusinessUsage(rows, usageData?.businessesUsage ?? []),
+    [rows, usageData],
+  );
+
   const table = useReactTable({
-    data: rows,
+    data: tableRows,
     columns,
     getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
@@ -116,6 +144,9 @@ export const Businesses = (): ReactElement => {
       rowSelection,
       columnVisibility,
     },
+    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); the usage
+    // columns read `usageFetching` back off table.options.meta with a matching cast.
+    meta: { usageFetching: usageEnabled && usageFetching } as Record<string, unknown>,
   });
 
   // Footer
