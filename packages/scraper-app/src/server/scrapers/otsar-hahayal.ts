@@ -116,7 +116,7 @@ export async function scrapeOtsarHahayal(
         ilsData.push({
           account,
           accountType: ilsResponse.accountType,
-          transactions: ilsResponse.transactions,
+          transactions: ilsResponse.transactions.filter(t => t.bfbSource !== '23'),
         });
       }
     }
