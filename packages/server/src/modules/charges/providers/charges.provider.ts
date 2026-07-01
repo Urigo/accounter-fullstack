@@ -193,19 +193,21 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
                 OR serial_number ILIKE '%' || $freeText || '%')
     )
     UNION
-    -- match transaction amounts (commas stripped so "1,234.56" matches stored "1234.56")
+    -- match transaction amounts. $freeTextNumeric has thousands separators stripped
+    -- so both "1,234.56" and "1234.56" match the plain value stored in the DB.
     SELECT charge_id FROM accounter_schema.transactions
-    WHERE ($freeText::TEXT IS NOT NULL
-           AND (amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
-                OR ABS(amount)::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%')
+    WHERE ($freeTextNumeric::TEXT IS NOT NULL
+           AND (amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+                OR ABS(amount)::TEXT ILIKE '%' || $freeTextNumeric || '%')
     )
     UNION
-    -- match document amounts (total and vat), commas stripped
+    -- match document amounts (total and vat), separators stripped
     SELECT charge_id FROM accounter_schema.documents
-    WHERE ($freeText::TEXT IS NOT NULL
-           AND (total_amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
-                OR ABS(total_amount)::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
-                OR vat_amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%')
+    WHERE ($freeTextNumeric::TEXT IS NOT NULL
+           AND (total_amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+                OR ABS(total_amount)::TEXT ILIKE '%' || $freeTextNumeric || '%'
+                OR vat_amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+                OR ABS(vat_amount)::TEXT ILIKE '%' || $freeTextNumeric || '%')
     )
     UNION
     -- match counterparty business names referenced by the charge's transactions
@@ -214,10 +216,15 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
     WHERE ($freeText::TEXT IS NOT NULL
            AND fe.name ILIKE '%' || $freeText || '%')
     UNION
-    -- match counterparty business names referenced by the charge's documents
+    -- match counterparty business names referenced by the charge's documents (creditor)
     SELECT d.charge_id FROM accounter_schema.documents d
-    JOIN accounter_schema.financial_entities fe
-      ON fe.id = d.creditor_id OR fe.id = d.debtor_id
+    JOIN accounter_schema.financial_entities fe ON fe.id = d.creditor_id
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $freeText || '%')
+    UNION
+    -- match counterparty business names referenced by the charge's documents (debtor)
+    SELECT d.charge_id FROM accounter_schema.documents d
+    JOIN accounter_schema.financial_entities fe ON fe.id = d.debtor_id
     WHERE ($freeText::TEXT IS NOT NULL
            AND fe.name ILIKE '%' || $freeText || '%')
   ),
@@ -965,6 +972,7 @@ type IGetAdjustedChargesByFiltersParams = Optional<
     | 'tags'
     | 'isBusinessTripIds'
     | 'businessTripIds'
+    | 'freeTextNumeric'
   >,
   'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
 > & {
@@ -1121,6 +1129,8 @@ export class ChargesProvider {
       withoutTransactions: params.withoutTransactions ?? false,
       withoutLedger: params.withoutLedger ?? false,
       accountantStatuses: isAccountantStatuses ? params.accountantStatuses! : null,
+      // strip thousands separators so amount searches match the plain value stored in the DB
+      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
     };
     return getChargesByFilters.run(fullParams, this.db) as Promise<IGetChargesByFiltersResult[]>;
   }
