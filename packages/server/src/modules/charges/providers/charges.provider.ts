@@ -180,18 +180,46 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
            OR user_description ILIKE '%' || $freeText || '%'
     )
     UNION
-    SELECT charge_id FROM accounter_schema.transactions 
+    SELECT charge_id FROM accounter_schema.transactions
     WHERE ($freeText::TEXT IS NOT NULL
            AND (source_description ILIKE '%' || $freeText || '%'
                 OR source_reference ILIKE '%' || $freeText || '%')
     )
     UNION
-    SELECT charge_id FROM accounter_schema.documents 
+    SELECT charge_id FROM accounter_schema.documents
     WHERE ($freeText::TEXT IS NOT NULL
            AND (description ILIKE '%' || $freeText || '%'
                 OR remarks ILIKE '%' || $freeText || '%'
                 OR serial_number ILIKE '%' || $freeText || '%')
     )
+    UNION
+    -- match transaction amounts (commas stripped so "1,234.56" matches stored "1234.56")
+    SELECT charge_id FROM accounter_schema.transactions
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND (amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
+                OR ABS(amount)::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%')
+    )
+    UNION
+    -- match document amounts (total and vat), commas stripped
+    SELECT charge_id FROM accounter_schema.documents
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND (total_amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
+                OR ABS(total_amount)::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%'
+                OR vat_amount::TEXT ILIKE '%' || REPLACE($freeText, ',', '') || '%')
+    )
+    UNION
+    -- match counterparty business names referenced by the charge's transactions
+    SELECT t.charge_id FROM accounter_schema.transactions t
+    JOIN accounter_schema.financial_entities fe ON fe.id = t.business_id
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $freeText || '%')
+    UNION
+    -- match counterparty business names referenced by the charge's documents
+    SELECT d.charge_id FROM accounter_schema.documents d
+    JOIN accounter_schema.financial_entities fe
+      ON fe.id = d.creditor_id OR fe.id = d.debtor_id
+    WHERE ($freeText::TEXT IS NOT NULL
+           AND fe.name ILIKE '%' || $freeText || '%')
   ),
   filtered_charges AS MATERIALIZED (
     -- This is our "source of truth" for the rest of the query
