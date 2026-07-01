@@ -4,8 +4,10 @@ import { useQuery } from 'urql';
 import {
   flexRender,
   getCoreRowModel,
+  getSortedRowModel,
   useReactTable,
   type RowSelectionState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
@@ -117,6 +119,7 @@ export const Businesses = (): ReactElement => {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Usage counts are lazy: only fetched once the user enables a usage column.
   const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
@@ -137,12 +140,15 @@ export const Businesses = (): ReactElement => {
     columns,
     getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
+    onSortingChange: setSorting,
     state: {
       rowSelection,
       columnVisibility,
+      sorting,
     },
     // cast: @tanstack's TableMeta interface is empty by default (not augmented here); the usage
     // columns read `usageFetching` back off table.options.meta with a matching cast.
