@@ -25,8 +25,10 @@ type RawBusinessNode = {
   country?: { code?: string | null } | null;
   city?: string | null;
   zipCode?: string | null;
-  createdAt?: Date | null;
-  updatedAt?: Date | null;
+  // DateTime scalars arrive as ISO strings at runtime (no urql scalar exchange), even though
+  // codegen types them as Date; accept both and parse below.
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
 };
 
 /** Keep only company businesses, map them to table rows and sort by name (case-insensitive). */
@@ -41,10 +43,10 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       countryCode: node.country?.code ?? null,
       city: node.city ?? null,
       zipCode: node.zipCode ?? null,
-      createdAt: node.createdAt ?? null,
-      updatedAt: node.updatedAt ?? null,
+      createdAt: node.createdAt ? new Date(node.createdAt) : null,
+      updatedAt: node.updatedAt ? new Date(node.updatedAt) : null,
     }))
-    .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1));
+    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }
 
 /** Human-readable locality from city / zip / country code, skipping the empty parts. */

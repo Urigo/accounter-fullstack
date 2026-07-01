@@ -30,6 +30,7 @@ import { columns } from './columns.js';
           hebrewName
           governmentId
           country {
+            id
             code
           }
           city
@@ -84,9 +85,17 @@ export const Businesses = (): ReactElement => {
 
   // Footer
   useEffect(() => {
+    // MergeBusinessesButton calls onChange once per selected row, so guard to refetch only once
+    let refetched = false;
+    const onMergeChange = (): void => {
+      if (!refetched) {
+        refetched = true;
+        refetch();
+      }
+    };
     const selectedForMerge = table
       .getSelectedRowModel()
-      .rows.map(row => ({ id: row.original.id, onChange: () => refetch() }));
+      .rows.map(row => ({ id: row.original.id, onChange: onMergeChange }));
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters

@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { businessNodesToRows, formatLocality } from '../business-rows.js';
 
 describe('businessNodesToRows', () => {
-  it('keeps only LtdFinancialEntity nodes and maps their fields', () => {
-    const createdAt = new Date('2024-01-02T00:00:00Z');
-    const updatedAt = new Date('2024-03-04T00:00:00Z');
+  it('keeps only LtdFinancialEntity nodes and parses their ISO date fields', () => {
     const rows = businessNodesToRows([
       {
         __typename: 'LtdFinancialEntity',
@@ -15,8 +13,8 @@ describe('businessNodesToRows', () => {
         country: { code: 'ISR' },
         city: 'Tel Aviv',
         zipCode: '6000000',
-        createdAt,
-        updatedAt,
+        createdAt: '2024-01-02T00:00:00Z',
+        updatedAt: '2024-03-04T00:00:00Z',
       },
       { __typename: 'PersonalFinancialEntity', id: 'p1', name: 'A Person' },
     ]);
@@ -30,8 +28,8 @@ describe('businessNodesToRows', () => {
       countryCode: 'ISR',
       city: 'Tel Aviv',
       zipCode: '6000000',
-      createdAt,
-      updatedAt,
+      createdAt: new Date('2024-01-02T00:00:00Z'),
+      updatedAt: new Date('2024-03-04T00:00:00Z'),
     });
   });
 
