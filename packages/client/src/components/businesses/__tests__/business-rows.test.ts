@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { businessNodesToRows, formatLocality } from '../business-rows.js';
 
 describe('businessNodesToRows', () => {
-  it('keeps only LtdFinancialEntity nodes and parses their ISO date fields', () => {
+  it('keeps only LtdFinancialEntity nodes and maps core, categorization and tag fields', () => {
     const rows = businessNodesToRows([
       {
         __typename: 'LtdFinancialEntity',
@@ -15,6 +15,14 @@ describe('businessNodesToRows', () => {
         zipCode: '6000000',
         createdAt: '2024-01-02T00:00:00Z',
         updatedAt: '2024-03-04T00:00:00Z',
+        sortCode: { key: 910, name: 'Income' },
+        taxCategory: { name: 'Revenue' },
+        irsCode: 42,
+        pcn874RecordType: 'S1',
+        isClient: true,
+        isAdmin: false,
+        isActive: true,
+        suggestions: { description: 'note', tags: [{ name: 'travel' }, { name: 'food' }] },
       },
       { __typename: 'PersonalFinancialEntity', id: 'p1', name: 'A Person' },
     ]);
@@ -30,10 +38,19 @@ describe('businessNodesToRows', () => {
       zipCode: '6000000',
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-03-04T00:00:00Z'),
+      sortCodeKey: 910,
+      taxCategoryName: 'Revenue',
+      irsCode: 42,
+      pcn874RecordType: 'S1',
+      isClient: true,
+      isAdmin: false,
+      isActive: true,
+      suggestionDescription: 'note',
+      suggestionTags: ['travel', 'food'],
     });
   });
 
-  it('sorts rows by name case-insensitively and defaults missing fields to null', () => {
+  it('sorts rows by name case-insensitively and defaults missing fields', () => {
     const rows = businessNodesToRows([
       { __typename: 'LtdFinancialEntity', id: 'b2', name: 'zeta' },
       { __typename: 'LtdFinancialEntity', id: 'b1', name: 'Alpha' },
@@ -48,6 +65,15 @@ describe('businessNodesToRows', () => {
       zipCode: null,
       createdAt: null,
       updatedAt: null,
+      sortCodeKey: null,
+      taxCategoryName: null,
+      irsCode: null,
+      pcn874RecordType: null,
+      isClient: false,
+      isAdmin: false,
+      isActive: true,
+      suggestionDescription: null,
+      suggestionTags: [],
     });
   });
 });

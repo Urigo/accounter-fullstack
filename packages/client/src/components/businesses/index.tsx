@@ -1,11 +1,12 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type RowSelectionState,
+  type VisibilityState,
 } from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -13,10 +14,19 @@ import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Button } from '../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { businessNodesToRows } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
-import { columns } from './columns.js';
+import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -37,6 +47,27 @@ import { columns } from './columns.js';
           zipCode
           createdAt
           updatedAt
+          sortCode {
+            id
+            key
+            name
+          }
+          taxCategory {
+            id
+            name
+          }
+          irsCode
+          pcn874RecordType
+          isClient
+          isAdmin
+          isActive
+          suggestions {
+            description
+            tags {
+              id
+              name
+            }
+          }
         }
       }
       pageInfo {
@@ -70,6 +101,8 @@ export const Businesses = (): ReactElement => {
   );
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
 
   const table = useReactTable({
     data: rows,
@@ -78,8 +111,10 @@ export const Businesses = (): ReactElement => {
     getCoreRowModel: getCoreRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
     state: {
       rowSelection,
+      columnVisibility,
     },
   });
 
@@ -127,6 +162,38 @@ export const Businesses = (): ReactElement => {
       headerActions={
         <div className="flex items-center py-4 gap-4">
           <InsertBusiness description="" onAdd={() => refetch()} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {COLUMN_GROUPS.map(group => ({
+                ...group,
+                columns: group.columns.filter(column => table.getColumn(column.id)?.getCanHide()),
+              }))
+                .filter(group => group.columns.length > 0)
+                .map((group, groupIndex) => (
+                  <Fragment key={group.label}>
+                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                    {group.columns.map(column => {
+                      const tableColumn = table.getColumn(column.id);
+                      return tableColumn ? (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={tableColumn.getIsVisible()}
+                          onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
+                        >
+                          {column.label}
+                        </DropdownMenuCheckboxItem>
+                      ) : null;
+                    })}
+                  </Fragment>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     >
