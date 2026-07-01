@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   businessNodesToRows,
+  filterBusinessRows,
   formatLocality,
   mergeBusinessUsage,
   type BusinessRow,
+  type BusinessRowFilters,
+  type BusinessTableRow,
 } from '../business-rows.js';
 
 function makeRow(id: string, name: string): BusinessRow {
@@ -28,6 +31,26 @@ function makeRow(id: string, name: string): BusinessRow {
     suggestionTags: [],
   };
 }
+
+function makeTableRow(overrides: Partial<BusinessTableRow>): BusinessTableRow {
+  return {
+    ...makeRow(overrides.id ?? 'id', overrides.name ?? 'name'),
+    totalTransactions: 0,
+    totalDocuments: 0,
+    totalMiscExpenses: 0,
+    totalLedgerRecords: 0,
+    ...overrides,
+  };
+}
+
+const NO_FILTERS: BusinessRowFilters = {
+  client: false,
+  admin: false,
+  inactive: false,
+  unusedOnly: false,
+  sortCode: '',
+  taxCategory: '',
+};
 
 describe('businessNodesToRows', () => {
   it('keeps only LtdFinancialEntity nodes and maps core, categorization and tag fields', () => {
@@ -135,6 +158,52 @@ describe('mergeBusinessUsage', () => {
       totalMiscExpenses: null,
       totalLedgerRecords: null,
     });
+  });
+});
+
+describe('filterBusinessRows', () => {
+  it('filters by the client flag', () => {
+    const rows = [makeTableRow({ id: 'a', isClient: true }), makeTableRow({ id: 'b' })];
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, client: true }).map(row => row.id)).toEqual([
+      'a',
+    ]);
+  });
+
+  it('filters inactive businesses', () => {
+    const rows = [makeTableRow({ id: 'a', isActive: false }), makeTableRow({ id: 'b' })];
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, inactive: true }).map(row => row.id)).toEqual([
+      'a',
+    ]);
+  });
+
+  it('keeps only rows whose four usage counts are all zero for "unused only"', () => {
+    const rows = [
+      makeTableRow({ id: 'used', totalTransactions: 3 }),
+      makeTableRow({ id: 'unused' }),
+      makeTableRow({
+        id: 'unknown',
+        totalTransactions: null,
+        totalDocuments: null,
+        totalMiscExpenses: null,
+        totalLedgerRecords: null,
+      }),
+    ];
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, unusedOnly: true }).map(row => row.id)).toEqual(
+      ['unused'],
+    );
+  });
+
+  it('filters by sort-code and tax-category substrings', () => {
+    const rows = [
+      makeTableRow({ id: 'a', sortCodeKey: 910, taxCategoryName: 'Income' }),
+      makeTableRow({ id: 'b', sortCodeKey: 200, taxCategoryName: 'Expense' }),
+    ];
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, sortCode: '91' }).map(row => row.id)).toEqual([
+      'a',
+    ]);
+    expect(
+      filterBusinessRows(rows, { ...NO_FILTERS, taxCategory: 'exp' }).map(row => row.id),
+    ).toEqual(['b']);
   });
 });
 

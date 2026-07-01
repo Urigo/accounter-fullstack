@@ -26,7 +26,12 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { businessNodesToRows, mergeBusinessUsage } from './business-rows.js';
+import {
+  businessNodesToRows,
+  filterBusinessRows,
+  mergeBusinessUsage,
+  type BusinessRowFilters,
+} from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 
@@ -120,10 +125,18 @@ export const Businesses = (): ReactElement => {
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [filters, setFilters] = useState<BusinessRowFilters>({
+    client: false,
+    admin: false,
+    inactive: false,
+    unusedOnly: false,
+    sortCode: '',
+    taxCategory: '',
+  });
 
-  // Usage counts are lazy: only fetched once the user enables a usage column.
+  // Usage counts are lazy: fetched once a usage column is enabled or "unused only" is on.
   const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
-  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]);
+  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]) || filters.unusedOnly;
   const [{ data: usageData, fetching: usageFetching }] = useQuery({
     query: BusinessesUsageDocument,
     variables: { ids: businessIds },
@@ -134,9 +147,10 @@ export const Businesses = (): ReactElement => {
     () => mergeBusinessUsage(rows, usageData?.businessesUsage ?? []),
     [rows, usageData],
   );
+  const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
   const table = useReactTable({
-    data: tableRows,
+    data: filteredRows,
     columns,
     getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
@@ -176,6 +190,8 @@ export const Businesses = (): ReactElement => {
           businessName={businessName}
           setBusinessName={setBusinessName}
           totalPages={data?.allBusinesses?.pageInfo.totalPages}
+          filters={filters}
+          setFilters={setFilters}
         />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
       </div>,
@@ -190,6 +206,8 @@ export const Businesses = (): ReactElement => {
     rowSelection,
     refetch,
     table,
+    filters,
+    setFilters,
   ]);
 
   return (
