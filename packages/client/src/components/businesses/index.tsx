@@ -169,27 +169,29 @@ export const Businesses = (): ReactElement => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {COLUMN_GROUPS.map((group, groupIndex) => (
-                <Fragment key={group.label}>
-                  {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
-                  <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                  {group.columns.map(column => {
-                    const tableColumn = table.getColumn(column.id);
-                    if (!tableColumn?.getCanHide()) {
-                      return null;
-                    }
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        checked={tableColumn.getIsVisible()}
-                        onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
-                      >
-                        {column.label}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-                </Fragment>
-              ))}
+              {COLUMN_GROUPS.map(group => ({
+                ...group,
+                columns: group.columns.filter(column => table.getColumn(column.id)?.getCanHide()),
+              }))
+                .filter(group => group.columns.length > 0)
+                .map((group, groupIndex) => (
+                  <Fragment key={group.label}>
+                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                    {group.columns.map(column => {
+                      const tableColumn = table.getColumn(column.id);
+                      return tableColumn ? (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={tableColumn.getIsVisible()}
+                          onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
+                        >
+                          {column.label}
+                        </DropdownMenuCheckboxItem>
+                      ) : null;
+                    })}
+                  </Fragment>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

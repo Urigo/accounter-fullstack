@@ -77,9 +77,7 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       isActive: node.isActive ?? true,
       suggestionDescription: node.suggestions?.description ?? null,
       suggestionTags:
-        node.suggestions?.tags
-          ?.map(tag => tag.name)
-          .filter((name): name is string => Boolean(name)) ?? [],
+        node.suggestions?.tags?.map(tag => tag.name).filter((name): name is string => !!name) ?? [],
     }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }
