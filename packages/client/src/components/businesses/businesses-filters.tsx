@@ -33,6 +33,8 @@ export function BusinessesFilters({
 }: BusinessesFiltersProps): ReactElement {
   const { get, set } = useUrlQuery();
   const [inputBusinessName, setInputBusinessName] = useState(businessName);
+  const [inputSortCode, setInputSortCode] = useState(filters.sortCode);
+  const [inputTaxCategory, setInputTaxCategory] = useState(filters.taxCategory);
 
   // update url on page change
   useEffect(() => {
@@ -51,6 +53,25 @@ export function BusinessesFilters({
       clearTimeout(timeout);
     };
   }, [inputBusinessName, setBusinessName]);
+
+  // debounce the free-text filters so typing doesn't re-filter the whole table on every keystroke
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setFilters(prev => ({ ...prev, sortCode: inputSortCode }));
+    }, 600);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [inputSortCode, setFilters]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setFilters(prev => ({ ...prev, taxCategory: inputTaxCategory }));
+    }, 600);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [inputTaxCategory, setFilters]);
 
   const onInputBusinessNameChange = (input?: string) => {
     setInputBusinessName(input);
@@ -85,14 +106,14 @@ export function BusinessesFilters({
       <Input
         className="w-24"
         placeholder="Sort code"
-        value={filters.sortCode}
-        onChange={event => setFilters(prev => ({ ...prev, sortCode: event.target.value }))}
+        value={inputSortCode}
+        onChange={event => setInputSortCode(event.target.value)}
       />
       <Input
         className="w-40"
         placeholder="Tax category"
-        value={filters.taxCategory}
-        onChange={event => setFilters(prev => ({ ...prev, taxCategory: event.target.value }))}
+        value={inputTaxCategory}
+        onChange={event => setInputTaxCategory(event.target.value)}
       />
     </div>
   );
