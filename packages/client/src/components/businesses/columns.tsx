@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { type ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef, type VisibilityState } from '@tanstack/react-table';
 import { ROUTES } from '../../router/routes.js';
 import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
@@ -136,3 +136,52 @@ export const columns: ColumnDef<BusinessRow>[] = [
       ),
   },
 ];
+
+/** Column groups, used by the column-visibility toggle. */
+export const COLUMN_GROUPS: { label: string; columns: { id: string; label: string }[] }[] = [
+  { label: 'Core', columns: [{ id: 'name', label: 'Name' }] },
+  {
+    label: 'Main',
+    columns: [
+      { id: 'locality', label: 'Locality' },
+      { id: 'governmentId', label: 'VAT number' },
+      { id: 'createdAt', label: 'Created' },
+      { id: 'updatedAt', label: 'Updated' },
+    ],
+  },
+  {
+    label: 'Categorization',
+    columns: [
+      { id: 'sortCode', label: 'Sort code' },
+      { id: 'taxCategory', label: 'Tax category' },
+      { id: 'irsCode', label: 'IRS code' },
+      { id: 'pcn874RecordType', label: 'PCN874 type' },
+    ],
+  },
+  {
+    label: 'Extension tags',
+    columns: [
+      { id: 'isClient', label: 'Client' },
+      { id: 'isAdmin', label: 'Admin' },
+      { id: 'status', label: 'Status' },
+    ],
+  },
+  {
+    label: 'Suggestion defaults',
+    columns: [
+      { id: 'description', label: 'Description' },
+      { id: 'tags', label: 'Tags' },
+    ],
+  },
+];
+
+// Categorization and Suggestion-defaults columns are hidden by default; Core, Main and
+// Extension tags are shown.
+export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+  sortCode: false,
+  taxCategory: false,
+  irsCode: false,
+  pcn874RecordType: false,
+  description: false,
+  tags: false,
+};
