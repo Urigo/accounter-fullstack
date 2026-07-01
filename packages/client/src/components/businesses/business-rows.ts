@@ -105,18 +105,16 @@ export function mergeBusinessUsage(
 ): BusinessTableRow[] {
   const byId = new Map<string, BusinessUsageCounts>();
   for (const entry of usage) {
-    byId.set(entry.businessId, {
-      totalTransactions: entry.totalTransactions,
-      totalDocuments: entry.totalDocuments,
-      totalMiscExpenses: entry.totalMiscExpenses,
-      totalLedgerRecords: entry.totalLedgerRecords,
-    });
+    byId.set(entry.businessId, entry);
   }
-  return rows.map(row => ({
-    ...row,
-    totalTransactions: byId.get(row.id)?.totalTransactions ?? null,
-    totalDocuments: byId.get(row.id)?.totalDocuments ?? null,
-    totalMiscExpenses: byId.get(row.id)?.totalMiscExpenses ?? null,
-    totalLedgerRecords: byId.get(row.id)?.totalLedgerRecords ?? null,
-  }));
+  return rows.map(row => {
+    const counts = byId.get(row.id);
+    return {
+      ...row,
+      totalTransactions: counts?.totalTransactions ?? null,
+      totalDocuments: counts?.totalDocuments ?? null,
+      totalMiscExpenses: counts?.totalMiscExpenses ?? null,
+      totalLedgerRecords: counts?.totalLedgerRecords ?? null,
+    };
+  });
 }
