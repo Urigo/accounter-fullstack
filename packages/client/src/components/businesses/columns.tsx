@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { type ColumnDef } from '@tanstack/react-table';
 import { ROUTES } from '../../router/routes.js';
+import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { formatLocality, type BusinessRow } from './business-rows.js';
 
@@ -69,5 +70,69 @@ export const columns: ColumnDef<BusinessRow>[] = [
     accessorKey: 'updatedAt',
     header: 'Updated',
     cell: ({ row }) => formatDate(row.original.updatedAt),
+  },
+  // Categorization
+  {
+    id: 'sortCode',
+    header: 'Sort code',
+    cell: ({ row }) => row.original.sortCodeKey ?? '—',
+  },
+  {
+    id: 'taxCategory',
+    header: 'Tax category',
+    cell: ({ row }) => row.original.taxCategoryName ?? '—',
+  },
+  {
+    id: 'irsCode',
+    header: 'IRS code',
+    cell: ({ row }) => row.original.irsCode ?? '—',
+  },
+  {
+    id: 'pcn874RecordType',
+    header: 'PCN874 type',
+    cell: ({ row }) => row.original.pcn874RecordType ?? '—',
+  },
+  // Extension tags
+  {
+    id: 'isClient',
+    header: 'Client',
+    cell: ({ row }) => (row.original.isClient ? <Badge variant="outline">Client</Badge> : '—'),
+  },
+  {
+    id: 'isAdmin',
+    header: 'Admin',
+    cell: ({ row }) => (row.original.isAdmin ? <Badge variant="outline">Admin</Badge> : '—'),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    cell: ({ row }) =>
+      row.original.isActive ? (
+        <Badge variant="secondary">Active</Badge>
+      ) : (
+        <Badge variant="destructive">Inactive</Badge>
+      ),
+  },
+  // Suggestion defaults
+  {
+    id: 'description',
+    header: 'Description',
+    cell: ({ row }) => row.original.suggestionDescription ?? '—',
+  },
+  {
+    id: 'tags',
+    header: 'Tags',
+    cell: ({ row }) =>
+      row.original.suggestionTags.length ? (
+        <div className="flex flex-wrap gap-1">
+          {row.original.suggestionTags.map(tag => (
+            <Badge key={tag} variant="outline">
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        '—'
+      ),
   },
 ];

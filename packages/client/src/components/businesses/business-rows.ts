@@ -13,6 +13,18 @@ export type BusinessRow = {
   zipCode: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
+  // categorization
+  sortCodeKey: number | null;
+  taxCategoryName: string | null;
+  irsCode: number | null;
+  pcn874RecordType: string | null;
+  // extension tags
+  isClient: boolean;
+  isAdmin: boolean;
+  isActive: boolean;
+  // suggestion defaults
+  suggestionDescription: string | null;
+  suggestionTags: string[];
 };
 
 /** Minimal shape of an `allBusinesses` node consumed by the table (LtdFinancialEntity fields). */
@@ -29,6 +41,17 @@ type RawBusinessNode = {
   // codegen types them as Date; accept both and parse below.
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
+  sortCode?: { key?: number | null; name?: string | null } | null;
+  taxCategory?: { name?: string | null } | null;
+  irsCode?: number | null;
+  pcn874RecordType?: string | null;
+  isClient?: boolean | null;
+  isAdmin?: boolean | null;
+  isActive?: boolean | null;
+  suggestions?: {
+    description?: string | null;
+    tags?: ReadonlyArray<{ name?: string | null }> | null;
+  } | null;
 };
 
 /** Keep only company businesses, map them to table rows and sort by name (case-insensitive). */
@@ -45,6 +68,18 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       zipCode: node.zipCode ?? null,
       createdAt: node.createdAt ? new Date(node.createdAt) : null,
       updatedAt: node.updatedAt ? new Date(node.updatedAt) : null,
+      sortCodeKey: node.sortCode?.key ?? null,
+      taxCategoryName: node.taxCategory?.name ?? null,
+      irsCode: node.irsCode ?? null,
+      pcn874RecordType: node.pcn874RecordType ?? null,
+      isClient: node.isClient ?? false,
+      isAdmin: node.isAdmin ?? false,
+      isActive: node.isActive ?? true,
+      suggestionDescription: node.suggestions?.description ?? null,
+      suggestionTags:
+        node.suggestions?.tags
+          ?.map(tag => tag.name)
+          .filter((name): name is string => Boolean(name)) ?? [],
     }))
     .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 }

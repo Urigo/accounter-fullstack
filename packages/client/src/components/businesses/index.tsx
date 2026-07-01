@@ -37,6 +37,27 @@ import { columns } from './columns.js';
           zipCode
           createdAt
           updatedAt
+          sortCode {
+            id
+            key
+            name
+          }
+          taxCategory {
+            id
+            name
+          }
+          irsCode
+          pcn874RecordType
+          isClient
+          isAdmin
+          isActive
+          suggestions {
+            description
+            tags {
+              id
+              name
+            }
+          }
         }
       }
       pageInfo {
