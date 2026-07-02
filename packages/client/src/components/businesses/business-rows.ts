@@ -118,3 +118,58 @@ export function mergeBusinessUsage(
     };
   });
 }
+
+/** Client-side filters applied over all business rows. */
+export type BusinessRowFilters = {
+  name: string;
+  client: boolean;
+  admin: boolean;
+  inactive: boolean;
+  unusedOnly: boolean;
+  sortCode: string;
+  taxCategory: string;
+};
+
+/** A row is "unused" only once all four usage counts are known and zero. */
+function isUnused(row: BusinessTableRow): boolean {
+  return (
+    row.totalTransactions === 0 &&
+    row.totalDocuments === 0 &&
+    row.totalMiscExpenses === 0 &&
+    row.totalLedgerRecords === 0
+  );
+}
+
+/** Filter rows by the extension-tag flags, usage and free-text sort-code / tax-category. */
+export function filterBusinessRows(
+  rows: readonly BusinessTableRow[],
+  filters: BusinessRowFilters,
+): BusinessTableRow[] {
+  const name = filters.name.trim().toLowerCase();
+  const sortCode = filters.sortCode.trim();
+  const taxCategory = filters.taxCategory.trim().toLowerCase();
+  return rows.filter(row => {
+    if (name && !`${row.name} ${row.hebrewName ?? ''}`.toLowerCase().includes(name)) {
+      return false;
+    }
+    if (filters.client && !row.isClient) {
+      return false;
+    }
+    if (filters.admin && !row.isAdmin) {
+      return false;
+    }
+    if (filters.inactive && row.isActive) {
+      return false;
+    }
+    if (filters.unusedOnly && !isUnused(row)) {
+      return false;
+    }
+    if (sortCode && !String(row.sortCodeKey ?? '').includes(sortCode)) {
+      return false;
+    }
+    if (taxCategory && !(row.taxCategoryName ?? '').toLowerCase().includes(taxCategory)) {
+      return false;
+    }
+    return true;
+  });
+}

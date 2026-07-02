@@ -1,14 +1,21 @@
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { type ColumnDef, type Table, type VisibilityState } from '@tanstack/react-table';
+import { type ColumnDef, type Row, type Table, type VisibilityState } from '@tanstack/react-table';
 import { ROUTES } from '../../router/routes.js';
+import { DataTableColumnHeader } from '../common/data-table-column-header.js';
 import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { formatLocality, type BusinessTableRow } from './business-rows.js';
 
 function formatDate(value: Date | null): string {
   return value ? format(value, 'dd/MM/yyyy') : '—';
+}
+
+/** Null-safe date sort comparator (missing dates sort first ascending). */
+function sortByDate(field: 'createdAt' | 'updatedAt') {
+  return (a: Row<BusinessTableRow>, b: Row<BusinessTableRow>) =>
+    (a.original[field]?.getTime() ?? 0) - (b.original[field]?.getTime() ?? 0);
 }
 
 /** Usage cells show the count, a spinner while the lazy usage query is in flight, or a dash. */
@@ -44,7 +51,7 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
     cell: ({ row }) => {
       const { id, name, hebrewName } = row.original;
       return (
@@ -63,28 +70,32 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
   },
   {
     id: 'locality',
-    header: 'Locality',
+    accessorFn: row => formatLocality(row),
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Locality" />,
     cell: ({ row }) => formatLocality(row.original) || '—',
   },
   {
     accessorKey: 'governmentId',
-    header: 'VAT number',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="VAT number" />,
     cell: ({ row }) => row.original.governmentId ?? '—',
   },
   {
     accessorKey: 'createdAt',
-    header: 'Created',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
+    sortingFn: sortByDate('createdAt'),
     cell: ({ row }) => formatDate(row.original.createdAt),
   },
   {
     accessorKey: 'updatedAt',
-    header: 'Updated',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
+    sortingFn: sortByDate('updatedAt'),
     cell: ({ row }) => formatDate(row.original.updatedAt),
   },
   // Categorization
   {
     id: 'sortCode',
-    header: 'Sort code',
+    accessorFn: row => row.sortCodeKey,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Sort code" />,
     cell: ({ row }) => row.original.sortCodeKey ?? '—',
   },
   {
@@ -94,7 +105,8 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
   },
   {
     id: 'irsCode',
-    header: 'IRS code',
+    accessorFn: row => row.irsCode,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="IRS code" />,
     cell: ({ row }) => row.original.irsCode ?? '—',
   },
   {
@@ -148,22 +160,22 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
   // Usage (lazy)
   {
     accessorKey: 'totalTransactions',
-    header: 'Transactions',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Transactions" />,
     cell: ({ row, table }) => usageCell(row.original.totalTransactions, table),
   },
   {
     accessorKey: 'totalDocuments',
-    header: 'Documents',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Documents" />,
     cell: ({ row, table }) => usageCell(row.original.totalDocuments, table),
   },
   {
     accessorKey: 'totalMiscExpenses',
-    header: 'Misc expenses',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Misc expenses" />,
     cell: ({ row, table }) => usageCell(row.original.totalMiscExpenses, table),
   },
   {
     accessorKey: 'totalLedgerRecords',
-    header: 'Ledger records',
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ledger records" />,
     cell: ({ row, table }) => usageCell(row.original.totalLedgerRecords, table),
   },
 ];
