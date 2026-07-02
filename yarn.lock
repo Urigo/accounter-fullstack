@@ -69,7 +69,7 @@ __metadata:
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:2.0.1"
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.0"
-    "@auth0/auth0-react": "npm:2.19.0"
+    "@auth0/auth0-react": "npm:2.20.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
     "@hookform/resolvers": "npm:5.4.0"
@@ -559,37 +559,37 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@auth0/auth0-auth-js@npm:1.9.1":
-  version: 1.9.1
-  resolution: "@auth0/auth0-auth-js@npm:1.9.1"
+"@auth0/auth0-auth-js@npm:1.10.0":
+  version: 1.10.0
+  resolution: "@auth0/auth0-auth-js@npm:1.10.0"
   dependencies:
     jose: "npm:^6.0.8"
     openid-client: "npm:^6.8.0"
-  checksum: 10c0/ddb1ea7b7ba8fa42e59526febede97e8a5edf238ee6f992e203d7c351756c35fc2b7904e957dd1ec2b19d6cfa5fccd2f309dc534c2e499012a477ee2025d21a4
+  checksum: 10c0/9c926d0c379cc2ba97aac1cbd2d7e983805d7bdc35cd5669d75476eb02264766c34ce05c426333870ec2b7cc9108b3805b643774d8fbbaf3b2f7e97ffa4ebd67
   languageName: node
   linkType: hard
 
-"@auth0/auth0-react@npm:2.19.0":
-  version: 2.19.0
-  resolution: "@auth0/auth0-react@npm:2.19.0"
+"@auth0/auth0-react@npm:2.20.0":
+  version: 2.20.0
+  resolution: "@auth0/auth0-react@npm:2.20.0"
   dependencies:
-    "@auth0/auth0-spa-js": "npm:^2.21.2"
+    "@auth0/auth0-spa-js": "npm:^2.22.0"
   peerDependencies:
     react: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
     react-dom: ^16.11.0 || ^17 || ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
-  checksum: 10c0/774cf65de9abbef14be5d98d93e2c3a4274f72e8ba69101b2a665f7276931ce21fe7e7b36ffc34cdb6c756aa8b3bd32b407aec39373d3070fe362adc8ce4e77e
+  checksum: 10c0/57f816dac580c44dc41458a258f3b8fdc895afbbe5ad0e65ec3a4829b17bbdf1cf329658bd7fd64d8d186dabf5006a6e65abb6286655f25dbaaf119580cfba86
   languageName: node
   linkType: hard
 
-"@auth0/auth0-spa-js@npm:^2.21.2":
-  version: 2.21.2
-  resolution: "@auth0/auth0-spa-js@npm:2.21.2"
+"@auth0/auth0-spa-js@npm:^2.22.0":
+  version: 2.22.0
+  resolution: "@auth0/auth0-spa-js@npm:2.22.0"
   dependencies:
-    "@auth0/auth0-auth-js": "npm:1.9.1"
+    "@auth0/auth0-auth-js": "npm:1.10.0"
     browser-tabs-lock: "npm:1.3.0"
     dpop: "npm:2.1.1"
     es-cookie: "npm:1.3.2"
-  checksum: 10c0/d6c17d913f823f5f9f659120776c634692ec660dcc00ec28a5bf60c523f6454a76edd8a0ffd1489520f61c70e43092bd3a5d3c370abd754b35aaa5c866db172e
+  checksum: 10c0/7aab9c19e91202c19cb7fea5f03c2f3e3e16b42508ca01a09f31e5521d066adcece0ee9579262652b7cbd2581b1688b5177087a1055df77be4478602917bd8dd
   languageName: node
   linkType: hard
 
