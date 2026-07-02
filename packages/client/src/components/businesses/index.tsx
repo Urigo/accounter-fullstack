@@ -4,15 +4,17 @@ import { useQuery } from 'urql';
 import {
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
   type RowSelectionState,
+  type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
+import { DataTablePagination, InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Button } from '../ui/button.js';
 import {
@@ -24,14 +26,21 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { businessNodesToRows, mergeBusinessUsage } from './business-rows.js';
+import {
+  businessNodesToRows,
+  filterBusinessRows,
+  mergeBusinessUsage,
+  type BusinessRowFilters,
+} from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 
+// Fetch all businesses (no server pagination) so filtering/sorting/pagination are all client-side
+// and apply across the whole set, not just one page. The resolver already loads them all in memory.
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllBusinessesForScreen($page: Int, $limit: Int, $name: String) {
-    allBusinesses(page: $page, limit: $limit, name: $name) {
+  query AllBusinessesForScreen {
+    allBusinesses {
       nodes {
         __typename
         id
@@ -70,10 +79,6 @@ import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } f
           }
         }
       }
-      pageInfo {
-        totalPages
-        totalRecords
-      }
     }
   }
 `;
@@ -93,20 +98,10 @@ import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } f
 `;
 
 export const Businesses = (): ReactElement => {
-  const { get } = useUrlQuery();
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
-  const [businessName, setBusinessName] = useState(
-    get('name') ? (get('name') as string) : undefined,
-  );
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
-    variables: {
-      page: activePage,
-      limit: 100,
-      name: businessName,
-    },
   });
 
   const rows = useMemo(
@@ -117,10 +112,20 @@ export const Businesses = (): ReactElement => {
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] =
     useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [filters, setFilters] = useState<BusinessRowFilters>({
+    name: '',
+    client: false,
+    admin: false,
+    inactive: false,
+    unusedOnly: false,
+    sortCode: '',
+    taxCategory: '',
+  });
 
-  // Usage counts are lazy: only fetched once the user enables a usage column.
+  // Usage counts are lazy: fetched once a usage column is enabled or "unused only" is on.
   const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
-  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]);
+  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]) || filters.unusedOnly;
   const [{ data: usageData, fetching: usageFetching }] = useQuery({
     query: BusinessesUsageDocument,
     variables: { ids: businessIds },
@@ -131,18 +136,26 @@ export const Businesses = (): ReactElement => {
     () => mergeBusinessUsage(rows, usageData?.businessesUsage ?? []),
     [rows, usageData],
   );
+  const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
   const table = useReactTable({
-    data: tableRows,
+    data: filteredRows,
     columns,
     getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: { pageSize: 100 },
+    },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
+    onSortingChange: setSorting,
     state: {
       rowSelection,
       columnVisibility,
+      sorting,
     },
     // cast: @tanstack's TableMeta interface is empty by default (not augmented here); the usage
     // columns read `usageFetching` back off table.options.meta with a matching cast.
@@ -164,31 +177,15 @@ export const Businesses = (): ReactElement => {
       .rows.map(row => ({ id: row.original.id, onChange: onMergeChange }));
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <BusinessesFilters
-          activePage={activePage}
-          setPage={setActivePage}
-          businessName={businessName}
-          setBusinessName={setBusinessName}
-          totalPages={data?.allBusinesses?.pageInfo.totalPages}
-        />
+        <BusinessesFilters filters={filters} setFilters={setFilters} />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
       </div>,
     );
-  }, [
-    data,
-    activePage,
-    businessName,
-    setFiltersContext,
-    setActivePage,
-    setBusinessName,
-    rowSelection,
-    refetch,
-    table,
-  ]);
+  }, [setFiltersContext, rowSelection, refetch, table, filters, setFilters]);
 
   return (
     <PageLayout
-      title={`Businesses (${data?.allBusinesses?.pageInfo.totalRecords ?? ''})`}
+      title={`Businesses (${rows.length})`}
       description="All businesses"
       headerActions={
         <div className="flex items-center py-4 gap-4">
@@ -233,41 +230,44 @@ export const Businesses = (): ReactElement => {
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map(row => (
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
-                    {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DataTablePagination table={table} />
         </div>
       )}
     </PageLayout>
