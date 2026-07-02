@@ -44,6 +44,7 @@ function makeTableRow(overrides: Partial<BusinessTableRow>): BusinessTableRow {
 }
 
 const NO_FILTERS: BusinessRowFilters = {
+  name: '',
   client: false,
   admin: false,
   inactive: false,
@@ -162,6 +163,20 @@ describe('mergeBusinessUsage', () => {
 });
 
 describe('filterBusinessRows', () => {
+  it('filters by name / hebrew name substring (case-insensitive)', () => {
+    const rows = [
+      makeTableRow({ id: 'a', name: 'Acme Ltd', hebrewName: null }),
+      makeTableRow({ id: 'b', name: 'Other', hebrewName: 'אקמה' }),
+      makeTableRow({ id: 'c', name: 'Nope' }),
+    ];
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, name: 'acme' }).map(row => row.id)).toEqual([
+      'a',
+    ]);
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, name: 'אקמה' }).map(row => row.id)).toEqual([
+      'b',
+    ]);
+  });
+
   it('filters by the client flag', () => {
     const rows = [makeTableRow({ id: 'a', isClient: true }), makeTableRow({ id: 'b' })];
     expect(filterBusinessRows(rows, { ...NO_FILTERS, client: true }).map(row => row.id)).toEqual([

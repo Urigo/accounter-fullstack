@@ -119,8 +119,9 @@ export function mergeBusinessUsage(
   });
 }
 
-/** Client-side filters applied over the loaded page of business rows. */
+/** Client-side filters applied over all business rows. */
 export type BusinessRowFilters = {
+  name: string;
   client: boolean;
   admin: boolean;
   inactive: boolean;
@@ -144,9 +145,13 @@ export function filterBusinessRows(
   rows: readonly BusinessTableRow[],
   filters: BusinessRowFilters,
 ): BusinessTableRow[] {
+  const name = filters.name.trim().toLowerCase();
   const sortCode = filters.sortCode.trim();
   const taxCategory = filters.taxCategory.trim().toLowerCase();
   return rows.filter(row => {
+    if (name && !`${row.name} ${row.hebrewName ?? ''}`.toLowerCase().includes(name)) {
+      return false;
+    }
     if (filters.client && !row.isClient) {
       return false;
     }

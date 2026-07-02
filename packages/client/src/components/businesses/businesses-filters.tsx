@@ -1,16 +1,9 @@
 import { useEffect, useState, type Dispatch, type ReactElement, type SetStateAction } from 'react';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
-import { Pagination } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Input } from '../ui/input.js';
 import type { BusinessRowFilters } from './business-rows.js';
 
 interface BusinessesFiltersProps {
-  activePage: number;
-  totalPages?: number;
-  setPage: Dispatch<SetStateAction<number>>;
-  businessName?: string;
-  setBusinessName: Dispatch<SetStateAction<string | undefined>>;
   filters: BusinessRowFilters;
   setFilters: Dispatch<SetStateAction<BusinessRowFilters>>;
 }
@@ -22,39 +15,21 @@ const FLAG_TOGGLES: { key: 'client' | 'admin' | 'inactive' | 'unusedOnly'; label
   { key: 'unusedOnly', label: 'Unused only' },
 ];
 
-export function BusinessesFilters({
-  activePage,
-  setPage,
-  totalPages = 1,
-  businessName,
-  setBusinessName,
-  filters,
-  setFilters,
-}: BusinessesFiltersProps): ReactElement {
-  const { get, set } = useUrlQuery();
-  const [inputBusinessName, setInputBusinessName] = useState(businessName);
+export function BusinessesFilters({ filters, setFilters }: BusinessesFiltersProps): ReactElement {
+  const [inputName, setInputName] = useState(filters.name);
   const [inputSortCode, setInputSortCode] = useState(filters.sortCode);
   const [inputTaxCategory, setInputTaxCategory] = useState(filters.taxCategory);
 
-  // update url on page change
-  useEffect(() => {
-    const newPage = activePage > 0 ? activePage.toFixed(0) : undefined;
-    const oldPage = get('page');
-    if (newPage !== oldPage && newPage !== '0') {
-      set('page', newPage);
-    }
-  }, [activePage, get, set]);
-
+  // debounce the free-text filters so typing doesn't re-filter the whole table on every keystroke
   useEffect(() => {
     const timeout = setTimeout(() => {
-      setBusinessName(inputBusinessName);
+      setFilters(prev => ({ ...prev, name: inputName }));
     }, 600);
     return () => {
       clearTimeout(timeout);
     };
-  }, [inputBusinessName, setBusinessName]);
+  }, [inputName, setFilters]);
 
-  // debounce the free-text filters so typing doesn't re-filter the whole table on every keystroke
   useEffect(() => {
     const timeout = setTimeout(() => {
       setFilters(prev => ({ ...prev, sortCode: inputSortCode }));
@@ -73,25 +48,13 @@ export function BusinessesFilters({
     };
   }, [inputTaxCategory, setFilters]);
 
-  const onInputBusinessNameChange = (input?: string) => {
-    setInputBusinessName(input);
-  };
-
   return (
     <div className="flex flex-row gap-5 items-center">
-      <Pagination
-        className="flex-fit w-fit mx-0"
-        currentPageIndex={activePage}
-        onChange={setPage}
-        totalPages={totalPages}
-      />
       <Input
         className="w-72"
         placeholder="Business Name"
-        defaultValue={businessName ?? undefined}
-        onChange={event =>
-          onInputBusinessNameChange(event.target.value === '' ? undefined : event.target.value)
-        }
+        value={inputName}
+        onChange={event => setInputName(event.target.value)}
       />
       {FLAG_TOGGLES.map(toggle => (
         <Button
