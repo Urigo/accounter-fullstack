@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import { Building2, ChevronDown, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -16,6 +16,7 @@ import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { DataTablePagination, InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
+import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from '../ui/empty.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import {
@@ -102,7 +104,7 @@ import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } f
 export const Businesses = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
 
-  const [{ data, fetching }, refetch] = useQuery({
+  const [{ data, fetching, error }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
   });
 
@@ -246,10 +248,28 @@ export const Businesses = (): ReactElement => {
         </div>
       }
     >
-      {fetching ? (
+      {error ? (
+        <Alert variant="destructive">
+          <AlertTitle>Failed to load businesses</AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      ) : fetching ? (
         <div className="flex flex-row justify-center">
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
         </div>
+      ) : rows.length === 0 ? (
+        <Empty className="py-8 sm:py-12">
+          <EmptyMedia>
+            <Building2 className="size-8 sm:size-10 text-muted-foreground" />
+          </EmptyMedia>
+          <EmptyTitle>No businesses yet</EmptyTitle>
+          <EmptyDescription>
+            Add your first business, or generate businesses from your transactions.
+          </EmptyDescription>
+          <EmptyContent>
+            <InsertBusiness description="" onAdd={() => refetch()} />
+          </EmptyContent>
+        </Empty>
       ) : (
         <div className="space-y-4">
           <div className="overflow-hidden rounded-md border">

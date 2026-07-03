@@ -44,11 +44,14 @@ export function BusinessRowActions({ row, table }: BusinessRowActionsProps): Rea
   // deletion isn't allowed, render the disabled button inside a hoverable span that carries the
   // tooltip, and skip the AlertDialog wrapper entirely (nothing can open it).
   if (!canDelete) {
+    // Usage counts are null until the lazy query loads them. Once loaded, a non-deletable business
+    // is genuinely in use — reflect that rather than telling the user to enable a usage column.
+    const isUsageLoaded = row.totalTransactions !== null;
+    const disabledTitle = isUsageLoaded
+      ? 'This business is in use and cannot be deleted'
+      : 'Only unused businesses can be deleted — enable a usage column to load usage';
     return (
-      <span
-        title="Only unused businesses can be deleted — enable a usage column to load usage"
-        className="inline-block cursor-not-allowed"
-      >
+      <span title={disabledTitle} className="inline-block cursor-not-allowed">
         <Button
           variant="ghost"
           size="icon"
