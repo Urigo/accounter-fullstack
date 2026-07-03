@@ -1,115 +1,248 @@
-import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import { AllBusinessesForScreenDocument } from '../../gql/graphql.js';
-import { useUrlQuery } from '../../hooks/use-url-query.js';
+import {
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+  type RowSelectionState,
+  type SortingState,
+  type VisibilityState,
+} from '@tanstack/react-table';
+import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
 import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { ROUTES } from '../../router/routes.js';
-import { BusinessHeader } from '../business/business-header.js';
-import { InsertBusiness, MergeBusinessesButton } from '../common/index.js';
+import { DataTablePagination, InsertBusiness, MergeBusinessesButton } from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
-import { Checkbox } from '../ui/checkbox.js';
+import { Button } from '../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu.js';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
+import {
+  businessNodesToRows,
+  filterBusinessRows,
+  mergeBusinessUsage,
+  type BusinessRowFilters,
+  type BusinessTableMeta,
+} from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
+import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
 
+// Fetch all businesses (no server pagination) so filtering/sorting/pagination are all client-side
+// and apply across the whole set, not just one page. The resolver already loads them all in memory.
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  query AllBusinessesForScreen($page: Int, $limit: Int, $name: String) {
-    allBusinesses(page: $page, limit: $limit, name: $name) {
+  query AllBusinessesForScreen {
+    allBusinesses {
       nodes {
         __typename
         id
         name
         ... on LtdFinancialEntity {
-          ...BusinessHeader
+          hebrewName
+          governmentId
+          country {
+            id
+            code
+          }
+          city
+          zipCode
+          createdAt
+          updatedAt
+          sortCode {
+            id
+            key
+            name
+          }
+          taxCategory {
+            id
+            name
+          }
+          irsCode
+          pcn874RecordType
+          isClient
+          isAdmin
+          isActive
+          suggestions {
+            description
+            tags {
+              id
+              name
+            }
+          }
         }
-      }
-      pageInfo {
-        totalPages
-        totalRecords
       }
     }
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  query BusinessesUsage($ids: [UUID!]!) {
+    businessesUsage(ids: $ids) {
+      id
+      businessId
+      totalTransactions
+      totalDocuments
+      totalMiscExpenses
+      totalLedgerRecords
+    }
+  }
+`;
+
 export const Businesses = (): ReactElement => {
-  const { get } = useUrlQuery();
-  const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
-  const [businessName, setBusinessName] = useState(
-    get('name') ? (get('name') as string) : undefined,
-  );
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }, refetch] = useQuery({
     query: AllBusinessesForScreenDocument,
-    variables: {
-      page: activePage,
-      limit: 100,
-      name: businessName,
-    },
   });
 
-  const navigate = useNavigate();
-  const [mergeSelectedBusinesses, setMergeSelectedBusinesses] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
-
-  const toggleMergeBusiness = useCallback(
-    (businessId: string, onChange: () => void) => {
-      if (mergeSelectedBusinesses.map(selected => selected.id).includes(businessId)) {
-        setMergeSelectedBusinesses(
-          mergeSelectedBusinesses.filter(selected => selected.id !== businessId),
-        );
-      } else {
-        setMergeSelectedBusinesses([...mergeSelectedBusinesses, { id: businessId, onChange }]);
-      }
-    },
-    [mergeSelectedBusinesses],
+  const rows = useMemo(
+    () => businessNodesToRows(data?.allBusinesses?.nodes ?? []),
+    [data?.allBusinesses?.nodes],
   );
 
-  function onResetMerge(): void {
-    setMergeSelectedBusinesses([]);
-  }
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [columnVisibility, setColumnVisibility] =
+    useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [filters, setFilters] = useState<BusinessRowFilters>({
+    name: '',
+    client: false,
+    admin: false,
+    inactive: false,
+    unusedOnly: false,
+    sortCode: '',
+    taxCategory: '',
+  });
+
+  // Usage counts are lazy: fetched once a usage column is enabled or "unused only" is on.
+  const businessIds = useMemo(() => rows.map(row => row.id), [rows]);
+  const usageEnabled = USAGE_COLUMN_IDS.some(id => columnVisibility[id]) || filters.unusedOnly;
+  const [{ data: usageData, fetching: usageFetching }] = useQuery({
+    query: BusinessesUsageDocument,
+    variables: { ids: businessIds },
+    pause: !usageEnabled || businessIds.length === 0,
+  });
+
+  const tableRows = useMemo(
+    () => mergeBusinessUsage(rows, usageData?.businessesUsage ?? []),
+    [rows, usageData],
+  );
+  const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
+
+  const table = useReactTable({
+    data: filteredRows,
+    columns,
+    getRowId: row => row.id,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: { pageSize: 100 },
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: setColumnVisibility,
+    onSortingChange: setSorting,
+    state: {
+      rowSelection,
+      columnVisibility,
+      sorting,
+    },
+    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); cells read
+    // these handles back off table.options.meta with a matching cast.
+    meta: {
+      usageFetching: usageEnabled && usageFetching,
+      refetchBusinesses: () => refetch(),
+    } as BusinessTableMeta,
+  });
+
+  // Derive selected ids from the stable `filteredRows` (the table's data) and `rowSelection`
+  // (keyed by row id via getRowId), avoiding the unstable `table` object. This stays in sync
+  // when filters or data change, unlike memoizing on `rowSelection` alone.
+  const selectedIds = useMemo(
+    () => filteredRows.filter(row => rowSelection[row.id]).map(row => row.id),
+    [filteredRows, rowSelection],
+  );
 
   // Footer
   useEffect(() => {
+    // MergeBusinessesButton calls onChange once per selected row, so guard to refetch only once
+    let refetched = false;
+    const onMergeChange = (): void => {
+      if (!refetched) {
+        refetched = true;
+        refetch();
+      }
+    };
+    const selectedForMerge = selectedIds.map(id => ({
+      id,
+      onChange: onMergeChange,
+    }));
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <BusinessesFilters
-          activePage={activePage}
-          setPage={setActivePage}
-          businessName={businessName}
-          setBusinessName={setBusinessName}
-          totalPages={data?.allBusinesses?.pageInfo.totalPages}
+        <BusinessesFilters filters={filters} setFilters={setFilters} />
+        <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
+        <BatchUpdateBusinessesDialog
+          businessIds={selectedIds}
+          onDone={() => {
+            refetch();
+            setRowSelection({});
+          }}
         />
-        <MergeBusinessesButton selected={mergeSelectedBusinesses} resetMerge={onResetMerge} />
       </div>,
     );
-  }, [
-    data,
-    activePage,
-    businessName,
-    setFiltersContext,
-    setActivePage,
-    setBusinessName,
-    mergeSelectedBusinesses,
-  ]);
-
-  const businesses =
-    data?.allBusinesses?.nodes
-      .filter(business => business.__typename === 'LtdFinancialEntity')
-      .sort((a, b) => (a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1)) ?? [];
-
-  const selectedIds = new Set(mergeSelectedBusinesses.map(selected => selected.id));
+  }, [setFiltersContext, selectedIds, refetch, filters, setFilters]);
 
   return (
     <PageLayout
-      title={`Businesses (${data?.allBusinesses?.pageInfo.totalRecords ?? ''})`}
+      title={`Businesses (${rows.length})`}
       description="All businesses"
       headerActions={
         <div className="flex items-center py-4 gap-4">
           <InsertBusiness description="" onAdd={() => refetch()} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Columns <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {COLUMN_GROUPS.map(group => ({
+                ...group,
+                columns: group.columns.filter(column => table.getColumn(column.id)?.getCanHide()),
+              }))
+                .filter(group => group.columns.length > 0)
+                .map((group, groupIndex) => (
+                  <Fragment key={group.label}>
+                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                    {group.columns.map(column => {
+                      const tableColumn = table.getColumn(column.id);
+                      return tableColumn ? (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={tableColumn.getIsVisible()}
+                          onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
+                        >
+                          {column.label}
+                        </DropdownMenuCheckboxItem>
+                      ) : null;
+                    })}
+                  </Fragment>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     >
@@ -118,46 +251,44 @@ export const Businesses = (): ReactElement => {
           <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
         </div>
       ) : (
-        <div className="space-y-2">
-          {businesses.map(business => (
-            <div
-              key={business.id}
-              className="group relative border rounded-lg hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-center gap-3">
-                <div className="pl-4 flex items-center">
-                  <Checkbox
-                    checked={selectedIds.has(business.id)}
-                    onCheckedChange={() => {
-                      toggleMergeBusiness(business.id, () => {});
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 cursor-pointer"
-                    onClick={(e): void => e.stopPropagation()}
-                  />
-                </div>
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className="flex-1 cursor-pointer"
-                  onClick={(): void => {
-                    navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
-                      state: { from: ROUTES.BUSINESSES.ALL },
-                    });
-                  }}
-                  onKeyDown={(e): void => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      navigate(ROUTES.BUSINESSES.DETAIL(business.id), {
-                        state: { from: ROUTES.BUSINESSES.ALL },
-                      });
-                    }
-                  }}
-                >
-                  <BusinessHeader data={business} />
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map(headerGroup => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map(header => (
+                      <TableHead key={header.id} colSpan={header.colSpan}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map(row => (
+                    <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                      {row.getVisibleCells().map(cell => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DataTablePagination table={table} />
         </div>
       )}
     </PageLayout>
