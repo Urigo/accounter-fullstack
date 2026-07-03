@@ -6,7 +6,8 @@ import { ROUTES } from '../../router/routes.js';
 import { DataTableColumnHeader } from '../common/data-table-column-header.js';
 import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
-import { formatLocality, type BusinessTableRow } from './business-rows.js';
+import { BusinessRowActions } from './business-row-actions.js';
+import { formatLocality, type BusinessTableMeta, type BusinessTableRow } from './business-rows.js';
 
 function formatDate(value: Date | null): string {
   return value ? format(value, 'dd/MM/yyyy') : '—';
@@ -23,7 +24,7 @@ function usageCell(value: number | null, table: Table<BusinessTableRow>) {
   if (value != null) {
     return value;
   }
-  const meta = table.options.meta as { usageFetching?: boolean } | undefined;
+  const meta = table.options.meta as BusinessTableMeta | undefined;
   return meta?.usageFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : '—';
 }
 
@@ -177,6 +178,12 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
     accessorKey: 'totalLedgerRecords',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Ledger records" />,
     cell: ({ row, table }) => usageCell(row.original.totalLedgerRecords, table),
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    enableSorting: false,
+    cell: ({ row, table }) => <BusinessRowActions row={row.original} table={table} />,
   },
 ];
 

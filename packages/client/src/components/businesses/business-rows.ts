@@ -38,6 +38,22 @@ export type BusinessUsageCounts = {
 /** A business table row: the mapped business plus its (optionally loaded) usage counts. */
 export type BusinessTableRow = BusinessRow & BusinessUsageCounts;
 
+/** Extra handles passed to the table via `table.options.meta` and read by cells. */
+export type BusinessTableMeta = {
+  usageFetching?: boolean;
+  refetchBusinesses?: () => void;
+};
+
+/** True once all four usage counts are known (loaded) and zero — the delete guard. */
+export function isBusinessUnused(row: BusinessUsageCounts): boolean {
+  return (
+    row.totalTransactions === 0 &&
+    row.totalDocuments === 0 &&
+    row.totalMiscExpenses === 0 &&
+    row.totalLedgerRecords === 0
+  );
+}
+
 /** Minimal shape of an `allBusinesses` node consumed by the table (LtdFinancialEntity fields). */
 type RawBusinessNode = {
   __typename?: string | null;
@@ -130,16 +146,6 @@ export type BusinessRowFilters = {
   taxCategory: string;
 };
 
-/** A row is "unused" only once all four usage counts are known and zero. */
-function isUnused(row: BusinessTableRow): boolean {
-  return (
-    row.totalTransactions === 0 &&
-    row.totalDocuments === 0 &&
-    row.totalMiscExpenses === 0 &&
-    row.totalLedgerRecords === 0
-  );
-}
-
 /** Filter rows by the extension-tag flags, usage and free-text sort-code / tax-category. */
 export function filterBusinessRows(
   rows: readonly BusinessTableRow[],
@@ -161,7 +167,7 @@ export function filterBusinessRows(
     if (filters.inactive && row.isActive) {
       return false;
     }
-    if (filters.unusedOnly && !isUnused(row)) {
+    if (filters.unusedOnly && !isBusinessUnused(row)) {
       return false;
     }
     if (sortCode && !String(row.sortCodeKey ?? '').includes(sortCode)) {

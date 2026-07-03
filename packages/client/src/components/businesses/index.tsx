@@ -31,6 +31,7 @@ import {
   filterBusinessRows,
   mergeBusinessUsage,
   type BusinessRowFilters,
+  type BusinessTableMeta,
 } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
@@ -157,9 +158,12 @@ export const Businesses = (): ReactElement => {
       columnVisibility,
       sorting,
     },
-    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); the usage
-    // columns read `usageFetching` back off table.options.meta with a matching cast.
-    meta: { usageFetching: usageEnabled && usageFetching } as Record<string, unknown>,
+    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); cells read
+    // these handles back off table.options.meta with a matching cast.
+    meta: {
+      usageFetching: usageEnabled && usageFetching,
+      refetchBusinesses: () => refetch(),
+    } as BusinessTableMeta,
   });
 
   // Footer
