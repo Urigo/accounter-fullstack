@@ -1,5 +1,5 @@
 import { Fragment, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Building2, ChevronDown, Loader2 } from 'lucide-react';
+import { Building2, ChevronDown } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
@@ -12,9 +12,13 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
-import { cn } from '../../lib/utils.js';
 import { FiltersContext } from '../../providers/filters-context.js';
-import { DataTablePagination, InsertBusiness, MergeBusinessesButton } from '../common/index.js';
+import {
+  DataTablePagination,
+  InsertBusiness,
+  MergeBusinessesButton,
+  TableSkeleton,
+} from '../common/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert.js';
 import { Button } from '../ui/button.js';
@@ -254,8 +258,8 @@ export const Businesses = (): ReactElement => {
           <AlertDescription>{error.message}</AlertDescription>
         </Alert>
       ) : fetching ? (
-        <div className="flex flex-row justify-center">
-          <Loader2 className={cn('h-10 w-10 animate-spin mr-2')} />
+        <div className="rounded-md border p-4">
+          <TableSkeleton columns={8} rows={10} />
         </div>
       ) : rows.length === 0 ? (
         <Empty className="py-8 sm:py-12">
