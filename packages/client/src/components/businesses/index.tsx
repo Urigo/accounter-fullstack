@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import {
   businessNodesToRows,
   filterBusinessRows,
@@ -176,13 +177,23 @@ export const Businesses = (): ReactElement => {
         refetch();
       }
     };
-    const selectedForMerge = table
-      .getSelectedRowModel()
-      .rows.map(row => ({ id: row.original.id, onChange: onMergeChange }));
+    const selectedRows = table.getSelectedRowModel().rows;
+    const selectedForMerge = selectedRows.map(row => ({
+      id: row.original.id,
+      onChange: onMergeChange,
+    }));
+    const selectedIds = selectedRows.map(row => row.original.id);
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters filters={filters} setFilters={setFilters} />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
+        <BatchUpdateBusinessesDialog
+          businessIds={selectedIds}
+          onDone={() => {
+            refetch();
+            setRowSelection({});
+          }}
+        />
       </div>,
     );
   }, [setFiltersContext, rowSelection, refetch, table, filters, setFilters]);
