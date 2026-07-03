@@ -158,8 +158,10 @@ body of the current `updateBusiness` resolver into a shared helper so both mutat
   `components/common/data-table-column-header.tsx`. Base table primitives: `components/ui/table.js`.
 - **Query:** replace the `AllBusinessesForScreen` document in `index.tsx` — add the new fields
   (`sortCode`, `taxCategory`, `isClient`, owner/admin flag, `suggestions { description tags }`) to
-  the `LtdFinancialEntity` selection. The `allBusinesses` query already supports `page/limit/name`;
-  rich filtering/sorting is done client-side over the loaded page (pagination optional per request).
+  the `LtdFinancialEntity` selection. **Divergence (final):** the screen fetches _all_ businesses
+  (query takes no `page/limit/name`) so that sorting/filtering/pagination are all client-side and
+  apply across the whole set, not just one page — the `allBusinesses` resolver already loads them
+  all in memory. Pagination is the shared `DataTablePagination` + `getPaginationRowModel`.
 - **Usage:** second `useQuery` against `businessesUsage(ids: …)`, run with `pause: true` until the
   user enables a usage column; merge counts into rows by id.
 - **Mutations:** wrap each in a `src/hooks/` hook (`useMutation` + `handleCommonErrors` + `sonner`
@@ -188,3 +190,18 @@ body of the current `updateBusiness` resolver into a shared helper so both mutat
 5. Manual UI (`yarn client:dev` + `yarn server:dev`): open `/businesses` — toggle column groups,
    sort/filter, filter "unused only", select rows → merge, batch-update, and delete an unused
    business; confirm toasts and that the table refetches.
+
+## States (Phase J)
+
+The screen renders four states in priority order:
+
+1. **Error** — `Alert variant="destructive"` with the query's `error.message` when the
+   `allBusinesses` query fails.
+2. **Loading** — centered `Loader2` spinner while the query is in flight.
+3. **Empty (no businesses)** — `ui/empty.js` `Empty` block with a `Building2` icon and an
+   `InsertBusiness` call-to-action when the whole set is empty.
+4. **No results (filtered)** — an in-table "No results." row when filters exclude every business but
+   the set is non-empty.
+
+Usage columns stay lazy: the `businessesUsage` query is `pause`d until a usage column is enabled or
+"unused only" is on, so the default table never fetches counts.
