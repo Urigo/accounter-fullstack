@@ -167,12 +167,12 @@ export const Businesses = (): ReactElement => {
     } as BusinessTableMeta,
   });
 
-  // `table` from useReactTable is a fresh object every render, so depend on the stable
-  // `rowSelection` (which is what actually drives the selected ids) instead of `table`.
+  // Derive selected ids from the stable `filteredRows` (the table's data) and `rowSelection`
+  // (keyed by row id via getRowId), avoiding the unstable `table` object. This stays in sync
+  // when filters or data change, unlike memoizing on `rowSelection` alone.
   const selectedIds = useMemo(
-    () => table.getSelectedRowModel().rows.map(row => row.original.id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- table is unstable; rowSelection drives selection
-    [rowSelection],
+    () => filteredRows.filter(row => rowSelection[row.id]).map(row => row.id),
+    [filteredRows, rowSelection],
   );
 
   // Footer
