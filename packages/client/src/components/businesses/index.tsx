@@ -167,6 +167,14 @@ export const Businesses = (): ReactElement => {
     } as BusinessTableMeta,
   });
 
+  // Derive selected ids from the stable `filteredRows` (the table's data) and `rowSelection`
+  // (keyed by row id via getRowId), avoiding the unstable `table` object. This stays in sync
+  // when filters or data change, unlike memoizing on `rowSelection` alone.
+  const selectedIds = useMemo(
+    () => filteredRows.filter(row => rowSelection[row.id]).map(row => row.id),
+    [filteredRows, rowSelection],
+  );
+
   // Footer
   useEffect(() => {
     // MergeBusinessesButton calls onChange once per selected row, so guard to refetch only once
@@ -177,12 +185,10 @@ export const Businesses = (): ReactElement => {
         refetch();
       }
     };
-    const selectedRows = table.getSelectedRowModel().rows;
-    const selectedForMerge = selectedRows.map(row => ({
-      id: row.original.id,
+    const selectedForMerge = selectedIds.map(id => ({
+      id,
       onChange: onMergeChange,
     }));
-    const selectedIds = selectedRows.map(row => row.original.id);
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters filters={filters} setFilters={setFilters} />
@@ -196,7 +202,7 @@ export const Businesses = (): ReactElement => {
         />
       </div>,
     );
-  }, [setFiltersContext, rowSelection, refetch, table, filters, setFilters]);
+  }, [setFiltersContext, selectedIds, refetch, filters, setFilters]);
 
   return (
     <PageLayout

@@ -81,6 +81,15 @@ type RawBusinessNode = {
   } | null;
 };
 
+/** Parse an ISO string / Date into a Date, returning null for missing or malformed values. */
+function parseValidDate(value: string | Date | null | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 /** Keep only company businesses, map them to table rows and sort by name (case-insensitive). */
 export function businessNodesToRows(nodes: readonly RawBusinessNode[]): BusinessRow[] {
   return nodes
@@ -93,8 +102,8 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       countryCode: node.country?.code ?? null,
       city: node.city ?? null,
       zipCode: node.zipCode ?? null,
-      createdAt: node.createdAt ? new Date(node.createdAt) : null,
-      updatedAt: node.updatedAt ? new Date(node.updatedAt) : null,
+      createdAt: parseValidDate(node.createdAt),
+      updatedAt: parseValidDate(node.updatedAt),
       sortCodeKey: node.sortCode?.key ?? null,
       taxCategoryName: node.taxCategory?.name ?? null,
       irsCode: node.irsCode ?? null,
@@ -106,7 +115,7 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       suggestionTags:
         node.suggestions?.tags?.map(tag => tag.name).filter((name): name is string => !!name) ?? [],
     }))
-    .sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 }
 
 /** Human-readable locality from city / zip / country code, skipping the empty parts. */
