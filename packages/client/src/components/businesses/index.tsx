@@ -26,11 +26,13 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import {
   businessNodesToRows,
   filterBusinessRows,
   mergeBusinessUsage,
   type BusinessRowFilters,
+  type BusinessTableMeta,
 } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
@@ -157,9 +159,12 @@ export const Businesses = (): ReactElement => {
       columnVisibility,
       sorting,
     },
-    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); the usage
-    // columns read `usageFetching` back off table.options.meta with a matching cast.
-    meta: { usageFetching: usageEnabled && usageFetching } as Record<string, unknown>,
+    // cast: @tanstack's TableMeta interface is empty by default (not augmented here); cells read
+    // these handles back off table.options.meta with a matching cast.
+    meta: {
+      usageFetching: usageEnabled && usageFetching,
+      refetchBusinesses: () => refetch(),
+    } as BusinessTableMeta,
   });
 
   // Footer
@@ -172,13 +177,23 @@ export const Businesses = (): ReactElement => {
         refetch();
       }
     };
-    const selectedForMerge = table
-      .getSelectedRowModel()
-      .rows.map(row => ({ id: row.original.id, onChange: onMergeChange }));
+    const selectedRows = table.getSelectedRowModel().rows;
+    const selectedForMerge = selectedRows.map(row => ({
+      id: row.original.id,
+      onChange: onMergeChange,
+    }));
+    const selectedIds = selectedRows.map(row => row.original.id);
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
         <BusinessesFilters filters={filters} setFilters={setFilters} />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
+        <BatchUpdateBusinessesDialog
+          businessIds={selectedIds}
+          onDone={() => {
+            refetch();
+            setRowSelection({});
+          }}
+        />
       </div>,
     );
   }, [setFiltersContext, rowSelection, refetch, table, filters, setFilters]);
