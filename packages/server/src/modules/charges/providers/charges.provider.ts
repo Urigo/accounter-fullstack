@@ -210,19 +210,19 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
                 OR ABS(vat_amount)::TEXT ILIKE '%' || $freeTextNumeric || '%')
     )
     UNION
-    -- match counterparty business names referenced by the charge's transactions
+    -- match counterparty business names referenced by the charges transactions
     SELECT t.charge_id FROM accounter_schema.transactions t
     JOIN accounter_schema.financial_entities fe ON fe.id = t.business_id
     WHERE ($freeText::TEXT IS NOT NULL
            AND fe.name ILIKE '%' || $freeText || '%')
     UNION
-    -- match counterparty business names referenced by the charge's documents (creditor)
+    -- match counterparty business names referenced by the charges documents (creditor)
     SELECT d.charge_id FROM accounter_schema.documents d
     JOIN accounter_schema.financial_entities fe ON fe.id = d.creditor_id
     WHERE ($freeText::TEXT IS NOT NULL
            AND fe.name ILIKE '%' || $freeText || '%')
     UNION
-    -- match counterparty business names referenced by the charge's documents (debtor)
+    -- match counterparty business names referenced by the charges documents (debtor)
     SELECT d.charge_id FROM accounter_schema.documents d
     JOIN accounter_schema.financial_entities fe ON fe.id = d.debtor_id
     WHERE ($freeText::TEXT IS NOT NULL
