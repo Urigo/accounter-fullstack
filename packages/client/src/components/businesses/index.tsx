@@ -42,6 +42,7 @@ import {
 } from './business-rows.js';
 import { BusinessesFilters } from './businesses-filters.js';
 import { COLUMN_GROUPS, columns, DEFAULT_COLUMN_VISIBILITY, USAGE_COLUMN_IDS } from './columns.js';
+import { TableScrollContainer } from './table-scroll-container.js';
 
 // Fetch all businesses (no server pagination) so filtering/sorting/pagination are all client-side
 // and apply across the whole set, not just one page. The resolver already loads them all in memory.
@@ -197,7 +198,11 @@ export const Businesses = (): ReactElement => {
     }));
     setFiltersContext(
       <div className="flex flex-row gap-x-5">
-        <BusinessesFilters filters={filters} setFilters={setFilters} />
+        <BusinessesFilters
+          filters={filters}
+          setFilters={setFilters}
+          usageLoading={usageEnabled && usageFetching}
+        />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
         <BatchUpdateBusinessesDialog
           businessIds={selectedIds}
@@ -208,7 +213,7 @@ export const Businesses = (): ReactElement => {
         />
       </div>,
     );
-  }, [setFiltersContext, selectedIds, refetch, filters, setFilters]);
+  }, [setFiltersContext, selectedIds, refetch, filters, setFilters, usageEnabled, usageFetching]);
 
   return (
     <PageLayout
@@ -229,24 +234,44 @@ export const Businesses = (): ReactElement => {
                 columns: group.columns.filter(column => table.getColumn(column.id)?.getCanHide()),
               }))
                 .filter(group => group.columns.length > 0)
-                .map((group, groupIndex) => (
-                  <Fragment key={group.label}>
-                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
-                    <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                    {group.columns.map(column => {
-                      const tableColumn = table.getColumn(column.id);
-                      return tableColumn ? (
-                        <DropdownMenuCheckboxItem
-                          key={column.id}
-                          checked={tableColumn.getIsVisible()}
-                          onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
+                .map((group, groupIndex) => {
+                  const allVisible = group.columns.every(
+                    column => table.getColumn(column.id)?.getIsVisible() ?? false,
+                  );
+                  return (
+                    <Fragment key={group.label}>
+                      {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                      <DropdownMenuLabel className="p-0">
+                        <button
+                          type="button"
+                          className="flex w-full items-center justify-between gap-4 rounded-sm px-2 py-1.5 hover:bg-accent"
+                          onClick={() =>
+                            group.columns.forEach(column =>
+                              table.getColumn(column.id)?.toggleVisibility(!allVisible),
+                            )
+                          }
                         >
-                          {column.label}
-                        </DropdownMenuCheckboxItem>
-                      ) : null;
-                    })}
-                  </Fragment>
-                ))}
+                          {group.label}
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {allVisible ? 'Hide all' : 'Show all'}
+                          </span>
+                        </button>
+                      </DropdownMenuLabel>
+                      {group.columns.map(column => {
+                        const tableColumn = table.getColumn(column.id);
+                        return tableColumn ? (
+                          <DropdownMenuCheckboxItem
+                            key={column.id}
+                            checked={tableColumn.getIsVisible()}
+                            onCheckedChange={value => tableColumn.toggleVisibility(!!value)}
+                          >
+                            {column.label}
+                          </DropdownMenuCheckboxItem>
+                        ) : null;
+                      })}
+                    </Fragment>
+                  );
+                })}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -276,7 +301,7 @@ export const Businesses = (): ReactElement => {
         </Empty>
       ) : (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-md border">
+          <TableScrollContainer className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map(headerGroup => (
@@ -311,7 +336,7 @@ export const Businesses = (): ReactElement => {
                 )}
               </TableBody>
             </Table>
-          </div>
+          </TableScrollContainer>
           <DataTablePagination table={table} />
         </div>
       )}
