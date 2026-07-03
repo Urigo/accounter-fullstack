@@ -260,5 +260,5 @@ export function countryNameByCode(code: string | null | undefined): string | nul
   if (!code) {
     return null;
   }
-  return COUNTRY_NAME_BY_CODE[code] ?? code;
+  return COUNTRY_NAME_BY_CODE[code.toUpperCase()] ?? code;
 }

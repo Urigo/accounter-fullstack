@@ -106,10 +106,8 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
       }
       return (
         <div className="flex flex-col leading-tight">
-          {sortCodeKey != null ? <span className="font-medium">{sortCodeKey}</span> : null}
-          {sortCodeName ? (
-            <span className="text-xs text-muted-foreground">{sortCodeName}</span>
-          ) : null}
+          {sortCodeKey != null && <span className="font-medium">{sortCodeKey}</span>}
+          {sortCodeName && <span className="text-xs text-muted-foreground">{sortCodeName}</span>}
         </div>
       );
     },
