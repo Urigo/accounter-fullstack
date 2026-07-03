@@ -49,6 +49,9 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string; numer
   { key: 'description', label: 'Suggestion description' },
 ];
 
+/** Whole non-negative integers only (no decimals or scientific notation). */
+const INTEGER_PATTERN = /^\d+$/;
+
 /** Build the mutation input from only the fields the user filled in. */
 function buildFields(form: FormState): BatchUpdateBusinessInput {
   const fields: BatchUpdateBusinessInput = {};
@@ -85,9 +88,11 @@ export function BatchUpdateBusinessesDialog({
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
 
   const isFormEmpty = Object.values(form).every(value => !value.trim());
+  // sortCode/irsCode map to GraphQL Int, so only whole non-negative integers are valid — reject
+  // decimals and scientific notation that Number() would otherwise coerce.
   const hasInvalidNumericFields =
-    (form.sortCode.trim() !== '' && Number.isNaN(Number(form.sortCode))) ||
-    (form.irsCode.trim() !== '' && Number.isNaN(Number(form.irsCode)));
+    (form.sortCode.trim() !== '' && !INTEGER_PATTERN.test(form.sortCode.trim())) ||
+    (form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim()));
 
   const onSubmit = async (): Promise<void> => {
     const fields = buildFields(form);
