@@ -26,7 +26,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
+  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
@@ -147,6 +147,7 @@ export const Businesses = (): ReactElement => {
   );
   const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable returns non-memoizable handles by design
   const table = useReactTable({
     data: filteredRows,
     columns,
@@ -241,22 +242,20 @@ export const Businesses = (): ReactElement => {
                   return (
                     <Fragment key={group.label}>
                       {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
-                      <DropdownMenuLabel className="p-0">
-                        <button
-                          type="button"
-                          className="flex w-full items-center justify-between gap-4 rounded-sm px-2 py-1.5 hover:bg-accent"
-                          onClick={() =>
-                            group.columns.forEach(column =>
-                              table.getColumn(column.id)?.toggleVisibility(!allVisible),
-                            )
+                      <DropdownMenuItem
+                        className="flex w-full items-center justify-between gap-4 font-semibold"
+                        onSelect={event => {
+                          event.preventDefault();
+                          for (const column of group.columns) {
+                            table.getColumn(column.id)?.toggleVisibility(!allVisible);
                           }
-                        >
-                          {group.label}
-                          <span className="text-xs font-normal text-muted-foreground">
-                            {allVisible ? 'Hide all' : 'Show all'}
-                          </span>
-                        </button>
-                      </DropdownMenuLabel>
+                        }}
+                      >
+                        {group.label}
+                        <span className="text-xs font-normal text-muted-foreground">
+                          {allVisible ? 'Hide all' : 'Show all'}
+                        </span>
+                      </DropdownMenuItem>
                       {group.columns.map(column => {
                         const tableColumn = table.getColumn(column.id);
                         return tableColumn ? (

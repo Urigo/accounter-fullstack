@@ -18,7 +18,7 @@ export function TableScrollContainer({
   className,
 }: TableScrollContainerProps): ReactElement {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const [{ left, right }, setShadows] = useState({ left: false, right: false });
+  const [shadows, setShadows] = useState({ left: false, right: false });
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
@@ -57,13 +57,13 @@ export function TableScrollContainer({
       <div
         className={cn(
           'pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-black/15 to-transparent transition-opacity dark:from-black/40',
-          left ? 'opacity-100' : 'opacity-0',
+          shadows.left ? 'opacity-100' : 'opacity-0',
         )}
       />
       <div
         className={cn(
           'pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-black/15 to-transparent transition-opacity dark:from-black/40',
-          right ? 'opacity-100' : 'opacity-0',
+          shadows.right ? 'opacity-100' : 'opacity-0',
         )}
       />
     </div>
