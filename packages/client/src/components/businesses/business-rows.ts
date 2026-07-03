@@ -3,6 +3,8 @@
  * business management table. Kept free of React/urql imports so they are easy to unit test.
  */
 
+import { countryNameByCode } from '../../helpers/countries.js';
+
 export type BusinessRow = {
   id: string;
   name: string;
@@ -15,6 +17,7 @@ export type BusinessRow = {
   updatedAt: Date | null;
   // categorization
   sortCodeKey: number | null;
+  sortCodeName: string | null;
   taxCategoryName: string | null;
   irsCode: number | null;
   pcn874RecordType: string | null;
@@ -105,6 +108,7 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
       createdAt: parseValidDate(node.createdAt),
       updatedAt: parseValidDate(node.updatedAt),
       sortCodeKey: node.sortCode?.key ?? null,
+      sortCodeName: node.sortCode?.name ?? null,
       taxCategoryName: node.taxCategory?.name ?? null,
       irsCode: node.irsCode ?? null,
       pcn874RecordType: node.pcn874RecordType ?? null,
@@ -118,9 +122,9 @@ export function businessNodesToRows(nodes: readonly RawBusinessNode[]): Business
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 }
 
-/** Human-readable locality from city / zip / country code, skipping the empty parts. */
-export function formatLocality(row: Pick<BusinessRow, 'city' | 'zipCode' | 'countryCode'>): string {
-  return [row.city, row.zipCode, row.countryCode].filter(Boolean).join(', ');
+/** Locality shown in the table: the country name resolved from the stored country code. */
+export function formatLocality(row: Pick<BusinessRow, 'countryCode'>): string {
+  return countryNameByCode(row.countryCode) ?? '';
 }
 
 /** Merge per-business usage counts (from the lazy usage query) into the table rows by id. */
@@ -161,7 +165,7 @@ export function filterBusinessRows(
   filters: BusinessRowFilters,
 ): BusinessTableRow[] {
   const name = filters.name.trim().toLowerCase();
-  const sortCode = filters.sortCode.trim();
+  const sortCode = filters.sortCode.trim().toLowerCase();
   const taxCategory = filters.taxCategory.trim().toLowerCase();
   return rows.filter(row => {
     if (name && !`${row.name} ${row.hebrewName ?? ''}`.toLowerCase().includes(name)) {
@@ -179,8 +183,12 @@ export function filterBusinessRows(
     if (filters.unusedOnly && !isBusinessUnused(row)) {
       return false;
     }
-    if (sortCode && !String(row.sortCodeKey ?? '').includes(sortCode)) {
-      return false;
+    if (sortCode) {
+      const keyMatch = String(row.sortCodeKey ?? '').includes(sortCode);
+      const nameMatch = (row.sortCodeName ?? '').toLowerCase().includes(sortCode);
+      if (!keyMatch && !nameMatch) {
+        return false;
+      }
     }
     if (taxCategory && !(row.taxCategoryName ?? '').toLowerCase().includes(taxCategory)) {
       return false;

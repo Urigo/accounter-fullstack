@@ -21,6 +21,7 @@ function makeRow(id: string, name: string): BusinessRow {
     createdAt: null,
     updatedAt: null,
     sortCodeKey: null,
+    sortCodeName: null,
     taxCategoryName: null,
     irsCode: null,
     pcn874RecordType: null,
@@ -91,6 +92,7 @@ describe('businessNodesToRows', () => {
       createdAt: new Date('2024-01-02T00:00:00Z'),
       updatedAt: new Date('2024-03-04T00:00:00Z'),
       sortCodeKey: 910,
+      sortCodeName: 'Income',
       taxCategoryName: 'Revenue',
       irsCode: 42,
       pcn874RecordType: 'S1',
@@ -118,6 +120,7 @@ describe('businessNodesToRows', () => {
       createdAt: null,
       updatedAt: null,
       sortCodeKey: null,
+      sortCodeName: null,
       taxCategoryName: null,
       irsCode: null,
       pcn874RecordType: null,
@@ -208,14 +211,24 @@ describe('filterBusinessRows', () => {
     );
   });
 
-  it('filters by sort-code and tax-category substrings', () => {
+  it('filters by sort-code key or name, and by tax-category substrings', () => {
     const rows = [
-      makeTableRow({ id: 'a', sortCodeKey: 910, taxCategoryName: 'Income' }),
-      makeTableRow({ id: 'b', sortCodeKey: 200, taxCategoryName: 'Expense' }),
+      makeTableRow({
+        id: 'a',
+        sortCodeKey: 310,
+        sortCodeName: 'לקוחות חול',
+        taxCategoryName: 'Income',
+      }),
+      makeTableRow({ id: 'b', sortCodeKey: 200, sortCodeName: 'ספקים', taxCategoryName: 'Expense' }),
     ];
-    expect(filterBusinessRows(rows, { ...NO_FILTERS, sortCode: '91' }).map(row => row.id)).toEqual([
+    // by key
+    expect(filterBusinessRows(rows, { ...NO_FILTERS, sortCode: '310' }).map(row => row.id)).toEqual([
       'a',
     ]);
+    // by name (case-insensitive substring)
+    expect(
+      filterBusinessRows(rows, { ...NO_FILTERS, sortCode: 'לקוחות' }).map(row => row.id),
+    ).toEqual(['a']);
     expect(
       filterBusinessRows(rows, { ...NO_FILTERS, taxCategory: 'exp' }).map(row => row.id),
     ).toEqual(['b']);
@@ -223,13 +236,16 @@ describe('filterBusinessRows', () => {
 });
 
 describe('formatLocality', () => {
-  it('joins the present parts and skips the empty ones', () => {
-    expect(formatLocality({ city: 'Tel Aviv', zipCode: null, countryCode: 'ISR' })).toBe(
-      'Tel Aviv, ISR',
-    );
-    expect(formatLocality({ city: 'Tel Aviv', zipCode: '6000000', countryCode: 'ISR' })).toBe(
-      'Tel Aviv, 6000000, ISR',
-    );
-    expect(formatLocality({ city: null, zipCode: null, countryCode: null })).toBe('');
+  it('resolves the country code to its display name', () => {
+    expect(formatLocality({ countryCode: 'ISR' })).toBe('Israel');
+    expect(formatLocality({ countryCode: 'USA' })).toBe('United States of America (the)');
+  });
+
+  it('returns an empty string when there is no country', () => {
+    expect(formatLocality({ countryCode: null })).toBe('');
+  });
+
+  it('falls back to the raw code when it is unknown', () => {
+    expect(formatLocality({ countryCode: 'ZZZ' })).toBe('ZZZ');
   });
 });

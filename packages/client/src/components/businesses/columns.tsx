@@ -10,7 +10,9 @@ import { BusinessRowActions } from './business-row-actions.js';
 import { formatLocality, type BusinessTableMeta, type BusinessTableRow } from './business-rows.js';
 
 function formatDate(value: Date | null): string {
-  return value ? format(value, 'dd/MM/yyyy') : '—';
+  // A failed `new Date(...)` parse yields an Invalid Date (truthy), which makes date-fns `format`
+  // throw a RangeError and crash the row — guard on the timestamp being a real number.
+  return value && !Number.isNaN(value.getTime()) ? format(value, 'dd/MM/yyyy') : '—';
 }
 
 /** Null-safe date sort comparator (missing dates sort first ascending). */
@@ -97,7 +99,18 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
     id: 'sortCode',
     accessorFn: row => row.sortCodeKey,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Sort code" />,
-    cell: ({ row }) => row.original.sortCodeKey ?? '—',
+    cell: ({ row }) => {
+      const { sortCodeKey, sortCodeName } = row.original;
+      if (sortCodeKey == null && !sortCodeName) {
+        return '—';
+      }
+      return (
+        <div className="flex flex-col leading-tight">
+          {sortCodeKey != null && <span className="font-medium">{sortCodeKey}</span>}
+          {sortCodeName && <span className="text-xs text-muted-foreground">{sortCodeName}</span>}
+        </div>
+      );
+    },
   },
   {
     id: 'taxCategory',

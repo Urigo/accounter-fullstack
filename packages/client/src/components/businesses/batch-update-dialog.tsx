@@ -1,6 +1,8 @@
 import { useState, type ReactElement } from 'react';
 import type { BatchUpdateBusinessInput } from '../../gql/graphql.js';
 import { useBatchUpdateBusinesses } from '../../hooks/use-batch-update-businesses.js';
+import { useAllCountries } from '../../hooks/use-get-countries.js';
+import { ComboBox } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -39,8 +41,8 @@ const EMPTY_FORM: FormState = {
   description: '',
 };
 
+// `country` is rendered separately as a searchable ComboBox; the rest are simple inputs.
 const FIELDS: { key: keyof FormState; label: string; placeholder?: string; numeric?: boolean }[] = [
-  { key: 'country', label: 'Country code', placeholder: 'e.g. ISR' },
   { key: 'city', label: 'City' },
   { key: 'zipCode', label: 'Zip code' },
   { key: 'sortCode', label: 'Sort code', numeric: true },
@@ -48,6 +50,9 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string; numer
   { key: 'taxCategory', label: 'Tax category (UUID)' },
   { key: 'description', label: 'Suggestion description' },
 ];
+
+/** Whole non-negative integers only (no decimals or scientific notation). */
+const INTEGER_PATTERN = /^\d+$/;
 
 /** Build the mutation input from only the fields the user filled in. */
 function buildFields(form: FormState): BatchUpdateBusinessInput {
@@ -83,11 +88,14 @@ export function BatchUpdateBusinessesDialog({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
+  const { countries, fetching: fetchingCountries } = useAllCountries();
 
   const isFormEmpty = Object.values(form).every(value => !value.trim());
+  // sortCode/irsCode map to GraphQL Int, so only whole non-negative integers are valid — reject
+  // decimals and scientific notation that Number() would otherwise coerce.
   const hasInvalidNumericFields =
-    (form.sortCode.trim() !== '' && Number.isNaN(Number(form.sortCode))) ||
-    (form.irsCode.trim() !== '' && Number.isNaN(Number(form.irsCode)));
+    (form.sortCode.trim() !== '' && !INTEGER_PATTERN.test(form.sortCode.trim())) ||
+    (form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim()));
 
   const onSubmit = async (): Promise<void> => {
     const fields = buildFields(form);
@@ -117,6 +125,16 @@ export function BatchUpdateBusinessesDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
+          <div className="grid gap-1">
+            <Label>Country</Label>
+            <ComboBox
+              data={countries.map(country => ({ value: country.code, label: country.name }))}
+              value={form.country || null}
+              onChange={value => setForm(prev => ({ ...prev, country: value ?? '' }))}
+              disabled={fetchingCountries}
+              placeholder="Select country"
+            />
+          </div>
           {FIELDS.map(field => (
             <div key={field.key} className="grid gap-1">
               <Label htmlFor={`batch-${field.key}`}>{field.label}</Label>
