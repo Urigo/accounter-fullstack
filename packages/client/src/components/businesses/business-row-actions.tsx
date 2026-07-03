@@ -40,6 +40,27 @@ export function BusinessRowActions({ row, table }: BusinessRowActionsProps): Rea
     }
   };
 
+  // A disabled <button> swallows pointer events, so a native `title` tooltip never shows. When
+  // deletion isn't allowed, render the disabled button inside a hoverable span that carries the
+  // tooltip, and skip the AlertDialog wrapper entirely (nothing can open it).
+  if (!canDelete) {
+    return (
+      <span
+        title="Only unused businesses can be deleted — enable a usage column to load usage"
+        className="inline-block cursor-not-allowed"
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-red-600 hover:text-red-700 pointer-events-none"
+          disabled
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </span>
+    );
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
@@ -47,12 +68,7 @@ export function BusinessRowActions({ row, table }: BusinessRowActionsProps): Rea
           variant="ghost"
           size="icon"
           className="text-red-600 hover:text-red-700"
-          disabled={!canDelete}
-          title={
-            canDelete
-              ? 'Delete business'
-              : 'Only unused businesses can be deleted — enable a usage column to load usage'
-          }
+          title="Delete business"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

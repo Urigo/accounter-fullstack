@@ -84,6 +84,11 @@ export function BatchUpdateBusinessesDialog({
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
 
+  const isFormEmpty = Object.values(form).every(value => !value.trim());
+  const hasInvalidNumericFields =
+    (form.sortCode.trim() !== '' && Number.isNaN(Number(form.sortCode))) ||
+    (form.irsCode.trim() !== '' && Number.isNaN(Number(form.irsCode)));
+
   const onSubmit = async (): Promise<void> => {
     const fields = buildFields(form);
     if (Object.keys(fields).length === 0) {
@@ -129,7 +134,10 @@ export function BatchUpdateBusinessesDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void onSubmit()} disabled={fetching}>
+          <Button
+            onClick={() => void onSubmit()}
+            disabled={fetching || isFormEmpty || hasInvalidNumericFields}
+          >
             Save
           </Button>
         </DialogFooter>
