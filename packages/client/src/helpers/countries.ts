@@ -249,3 +249,16 @@ export enum CountryCode {
   Zimbabwe = 'ZWE',
   'Åland Islands' = 'ALA',
 }
+
+/** Reverse lookup (ISO alpha-3 code → country name), built once from the `CountryCode` enum. */
+const COUNTRY_NAME_BY_CODE: Record<string, string> = Object.fromEntries(
+  Object.entries(CountryCode).map(([name, code]) => [code, name]),
+);
+
+/** Map an ISO alpha-3 country code (e.g. "ISR") to its display name (e.g. "Israel"). */
+export function countryNameByCode(code: string | null | undefined): string | null {
+  if (!code) {
+    return null;
+  }
+  return COUNTRY_NAME_BY_CODE[code] ?? code;
+}

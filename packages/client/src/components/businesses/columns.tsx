@@ -99,7 +99,20 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
     id: 'sortCode',
     accessorFn: row => row.sortCodeKey,
     header: ({ column }) => <DataTableColumnHeader column={column} title="Sort code" />,
-    cell: ({ row }) => row.original.sortCodeKey ?? '—',
+    cell: ({ row }) => {
+      const { sortCodeKey, sortCodeName } = row.original;
+      if (sortCodeKey == null && !sortCodeName) {
+        return '—';
+      }
+      return (
+        <div className="flex flex-col leading-tight">
+          {sortCodeKey != null ? <span className="font-medium">{sortCodeKey}</span> : null}
+          {sortCodeName ? (
+            <span className="text-xs text-muted-foreground">{sortCodeName}</span>
+          ) : null}
+        </div>
+      );
+    },
   },
   {
     id: 'taxCategory',
