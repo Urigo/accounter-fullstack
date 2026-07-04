@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DBProvider } from '../../app-providers/db.provider.js';
+import { emailMatchesPattern } from '../../financial-entities/helpers/email-pattern.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 // ---------------------------------------------------------------------------
@@ -318,6 +319,36 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
       from: 'Gil Gardosh <gil@the-guild.dev>',
       issuerCandidates: ['ap@the-guild.dev', 'noreply@notify.cloudflare.com'],
+    });
+
+    expect(result.businessId).toBe('cloudflare-biz');
+    expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
+  });
+
+  it('recognizes a business via a wildcard suggestion_data email (unique per-invoice sender)', async () => {
+    // The real SQL translates a stored `*@cloudflare.com` pattern into a LIKE
+    // match; the mock mirrors that using the shared in-process matcher so the
+    // wildcard is what actually drives recognition here.
+    const business = {
+      id: 'cloudflare-biz',
+      suggestion_data: {
+        emails: ['*@cloudflare.com'],
+        emailListener: { emailBody: false, attachments: ['PDF'] },
+      },
+    };
+    const db = makeDbProvider((sql, params) => {
+      if (/from\s+accounter_schema\.businesses/.test(sql.toLowerCase())) {
+        const email = params?.[0] as string | undefined;
+        if (email && business.suggestion_data.emails.some(p => emailMatchesPattern(p, email))) {
+          return { rows: [business], rowCount: 1 };
+        }
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const provider = new EmailIngestionControlProvider(db);
+
+    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
+      from: 'qr45uf@cloudflare.com',
     });
 
     expect(result.businessId).toBe('cloudflare-biz');
