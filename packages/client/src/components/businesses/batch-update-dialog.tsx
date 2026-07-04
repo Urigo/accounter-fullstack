@@ -2,7 +2,8 @@ import { useState, type ReactElement } from 'react';
 import type { BatchUpdateBusinessInput } from '../../gql/graphql.js';
 import { useBatchUpdateBusinesses } from '../../hooks/use-batch-update-businesses.js';
 import { useAllCountries } from '../../hooks/use-get-countries.js';
-import { ComboBox } from '../common/index.js';
+import { useGetTags } from '../../hooks/use-get-tags.js';
+import { ComboBox, MultiSelect } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -15,11 +16,23 @@ import {
 } from '../ui/dialog.js';
 import { Input } from '../ui/input.js';
 import { Label } from '../ui/label.js';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select.js';
 
 interface BatchUpdateBusinessesDialogProps {
   businessIds: string[];
   onDone: () => void;
 }
+
+// tri-state for boolean flags: `unset` leaves the flag untouched across the batch.
+type TriState = 'unset' | 'true' | 'false';
+
+// boolean flag keys shared 1:1 with `BatchUpdateBusinessInput`.
+type FlagKey =
+  | 'isActive'
+  | 'isReceiptEnough'
+  | 'isDocumentsOptional'
+  | 'optionalVAT'
+  | 'exemptDealer';
 
 type FormState = {
   country: string;
@@ -29,7 +42,8 @@ type FormState = {
   irsCode: string;
   taxCategory: string;
   description: string;
-};
+  tags: string[];
+} & Record<FlagKey, TriState>;
 
 const EMPTY_FORM: FormState = {
   country: '',
@@ -39,6 +53,12 @@ const EMPTY_FORM: FormState = {
   irsCode: '',
   taxCategory: '',
   description: '',
+  tags: [],
+  isActive: 'unset',
+  isReceiptEnough: 'unset',
+  isDocumentsOptional: 'unset',
+  optionalVAT: 'unset',
+  exemptDealer: 'unset',
 };
 
 // `country` is rendered separately as a searchable ComboBox; the rest are simple inputs.
@@ -49,6 +69,15 @@ const FIELDS: { key: keyof FormState; label: string; placeholder?: string; numer
   { key: 'irsCode', label: 'IRS code', numeric: true },
   { key: 'taxCategory', label: 'Tax category (UUID)' },
   { key: 'description', label: 'Suggestion description' },
+];
+
+// boolean flags rendered as tri-state selects.
+const FLAG_FIELDS: { key: FlagKey; label: string }[] = [
+  { key: 'isActive', label: 'Is active' },
+  { key: 'isReceiptEnough', label: 'Is receipt enough' },
+  { key: 'isDocumentsOptional', label: 'No docs required' },
+  { key: 'optionalVAT', label: 'Is VAT optional' },
+  { key: 'exemptDealer', label: 'Exempt dealer' },
 ];
 
 /** Whole non-negative integers only (no decimals or scientific notation). */
@@ -75,9 +104,24 @@ function buildFields(form: FormState): BatchUpdateBusinessInput {
   if (form.taxCategory.trim()) {
     fields.taxCategory = form.taxCategory.trim();
   }
+
+  const suggestions: NonNullable<BatchUpdateBusinessInput['suggestions']> = {};
   if (form.description.trim()) {
-    fields.suggestions = { description: form.description.trim() };
+    suggestions.description = form.description.trim();
   }
+  if (form.tags.length > 0) {
+    suggestions.tags = form.tags.map(id => ({ id }));
+  }
+  if (Object.keys(suggestions).length > 0) {
+    fields.suggestions = suggestions;
+  }
+
+  for (const { key } of FLAG_FIELDS) {
+    if (form[key] !== 'unset') {
+      fields[key] = form[key] === 'true';
+    }
+  }
+
   return fields;
 }
 
@@ -89,8 +133,10 @@ export function BatchUpdateBusinessesDialog({
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
   const { countries, fetching: fetchingCountries } = useAllCountries();
+  const { selectableTags, fetching: fetchingTags } = useGetTags();
 
-  const isFormEmpty = Object.values(form).every(value => !value.trim());
+  const fields = buildFields(form);
+  const isFormEmpty = Object.keys(fields).length === 0;
   // sortCode/irsCode map to GraphQL Int, so only whole non-negative integers are valid — reject
   // decimals and scientific notation that Number() would otherwise coerce.
   const hasInvalidNumericFields =
@@ -98,7 +144,6 @@ export function BatchUpdateBusinessesDialog({
     (form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim()));
 
   const onSubmit = async (): Promise<void> => {
-    const fields = buildFields(form);
     if (Object.keys(fields).length === 0) {
       return;
     }
@@ -141,10 +186,42 @@ export function BatchUpdateBusinessesDialog({
               <Input
                 id={`batch-${field.key}`}
                 type={field.numeric ? 'number' : 'text'}
-                value={form[field.key]}
+                value={form[field.key] as string}
                 placeholder={field.placeholder}
                 onChange={event => setForm(prev => ({ ...prev, [field.key]: event.target.value }))}
               />
+            </div>
+          ))}
+          <div className="grid gap-1">
+            <Label>Tags</Label>
+            <MultiSelect
+              options={selectableTags}
+              onValueChange={value => setForm(prev => ({ ...prev, tags: value }))}
+              value={form.tags}
+              defaultValue={form.tags}
+              placeholder="Select tags"
+              variant="default"
+              disabled={fetchingTags}
+            />
+          </div>
+          {FLAG_FIELDS.map(flag => (
+            <div key={flag.key} className="grid gap-1">
+              <Label htmlFor={`batch-${flag.key}`}>{flag.label}</Label>
+              <Select
+                value={form[flag.key]}
+                onValueChange={value =>
+                  setForm(prev => ({ ...prev, [flag.key]: value as TriState }))
+                }
+              >
+                <SelectTrigger id={`batch-${flag.key}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unset">No change</SelectItem>
+                  <SelectItem value="true">Yes</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           ))}
         </div>
