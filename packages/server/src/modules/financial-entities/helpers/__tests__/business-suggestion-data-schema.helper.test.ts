@@ -26,6 +26,11 @@ describe('suggestionDataSchema emails', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects an over-broad wildcard domain like "*@*.com"', () => {
+    const result = suggestionDataSchema.safeParse({ emails: ['*@*.com'] });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects strings that are neither an email nor an email-shaped pattern', () => {
     const result = suggestionDataSchema.safeParse({ emails: ['not-an-email'] });
     expect(result.success).toBe(false);

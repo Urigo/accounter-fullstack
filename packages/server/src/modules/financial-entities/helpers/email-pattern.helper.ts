@@ -21,17 +21,29 @@ export function isWildcardEmailPattern(value: string): boolean {
 
 // A wildcard pattern must still be email-shaped: `local@domain.tld`, with `*`
 // allowed anywhere. Requiring an `@` and a dotted domain (each side non-empty)
-// keeps an over-broad pattern such as a bare `*` — which would match every
-// sender — out of the recognition set.
+// keeps a bare `*` — which would match every sender — out of the recognition
+// set.
 const WILDCARD_EMAIL_SHAPE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 /**
  * Validate a wildcard recognition entry. Non-wildcard entries are plain email
  * addresses and are validated elsewhere (the suggestion-data schema); this only
  * covers entries that actually contain a `*`.
+ *
+ * Beyond the email shape, the domain must carry at least one concrete label
+ * (2+ characters, no `*`) before the TLD, so an over-broad pattern such as
+ * `*@*.com` — which would route nearly every sender to a single business — is
+ * rejected while a scoped pattern like `*@cloudflare.com` (or `*@*.cloudflare.com`)
+ * is allowed.
  */
 export function isValidWildcardEmailPattern(value: string): boolean {
-  return isWildcardEmailPattern(value) && WILDCARD_EMAIL_SHAPE.test(value.trim());
+  const trimmed = value.trim();
+  if (!isWildcardEmailPattern(trimmed) || !WILDCARD_EMAIL_SHAPE.test(trimmed)) {
+    return false;
+  }
+  const domain = trimmed.slice(trimmed.indexOf('@') + 1);
+  const labelsBeforeTld = domain.split('.').slice(0, -1);
+  return labelsBeforeTld.some(label => label.length >= 2 && !label.includes('*'));
 }
 
 /**

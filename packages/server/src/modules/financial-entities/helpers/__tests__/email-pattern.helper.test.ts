@@ -27,6 +27,12 @@ describe('isValidWildcardEmailPattern', () => {
     expect(isValidWildcardEmailPattern('foo *@bar.com')).toBe(false); // whitespace
   });
 
+  it('rejects patterns with no concrete domain label before the TLD', () => {
+    expect(isValidWildcardEmailPattern('*@*.com')).toBe(false);
+    expect(isValidWildcardEmailPattern('*@*.*')).toBe(false);
+    expect(isValidWildcardEmailPattern('*@a.com')).toBe(false); // single-char label
+  });
+
   it('rejects plain addresses (they are validated as concrete emails elsewhere)', () => {
     expect(isValidWildcardEmailPattern('vendor@acme.com')).toBe(false);
   });
