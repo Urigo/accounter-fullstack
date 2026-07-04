@@ -197,7 +197,6 @@ export function BatchUpdateBusinessesDialog({
             <MultiSelect
               options={selectableTags}
               onValueChange={value => setForm(prev => ({ ...prev, tags: value }))}
-              value={form.tags}
               defaultValue={form.tags}
               placeholder="Select tags"
               variant="default"
