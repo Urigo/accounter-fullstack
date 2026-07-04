@@ -34,8 +34,12 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
 // Match a business by a recognition email in suggestion_data.emails. A stored
 // entry may be a wildcard pattern (e.g. `*@cloudflare.com`) for suppliers that
 // send from a unique address per invoice: `*` is translated to a LIKE wildcard
-// while the LIKE metacharacters `_`, `%` and `\` are escaped, so a literal entry
-// still matches exactly. Matching is case-insensitive. See
+// while the LIKE metacharacters `%` and `_` are escaped, so a literal entry
+// still matches exactly. Matching is case-insensitive. `#` is used as the LIKE
+// ESCAPE character (and is itself escaped as `##`) instead of the default
+// backslash, so the query text carries no backslashes: pgtyped emits the
+// template verbatim, and a doubled backslash would otherwise reach Postgres as a
+// two-character escape string ("invalid escape string"). See
 // email-pattern.helper.ts for the equivalent in-process matcher; the
 // jsonb_typeof guard keeps jsonb_array_elements_text from throwing on a
 // malformed/legacy record whose `emails` is not a JSON array.
@@ -53,8 +57,8 @@ const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
           END
         ) AS candidate
        WHERE lower($email::text) LIKE
-         replace(replace(replace(replace(lower(candidate), '\\', '\\\\'), '%', '\\%'), '_', '\\_'), '*', '%')
-         ESCAPE '\\'
+         replace(replace(replace(replace(lower(candidate), '#', '##'), '%', '#%'), '_', '#_'), '*', '%')
+         ESCAPE '#'
     )
     LIMIT 1;`;
 
