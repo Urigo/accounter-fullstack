@@ -28,11 +28,7 @@ type TriState = 'unset' | 'true' | 'false';
 
 // boolean flag keys shared 1:1 with `BatchUpdateBusinessInput`.
 type FlagKey =
-  | 'isActive'
-  | 'isReceiptEnough'
-  | 'isDocumentsOptional'
-  | 'optionalVAT'
-  | 'exemptDealer';
+  'isActive' | 'isReceiptEnough' | 'isDocumentsOptional' | 'optionalVAT' | 'exemptDealer';
 
 type FormState = {
   country: string;
