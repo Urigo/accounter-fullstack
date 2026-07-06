@@ -46,6 +46,15 @@ const insertIngestGrant = sql<IInsertIngestGrantQuery>`
 // businesses RLS scopes the match to the resolved tenant. The match is
 // case-insensitive (email addresses are case-insensitive in practice and
 // neither the stored value nor the sender evidence is normalized upstream).
+// A stored candidate may be a wildcard pattern (e.g. `*@cloudflare.com`) for
+// suppliers that send from a unique address per invoice: `*` is translated to a
+// LIKE wildcard while the LIKE metacharacters `%` and `_` in the stored value
+// are escaped, so a literal candidate still matches exactly (see
+// email-pattern.helper.ts for the equivalent in-process matcher). `#` is used as
+// the LIKE ESCAPE character (and is itself escaped as `##`) instead of the
+// default backslash, so the query text carries no backslashes: pgtyped emits the
+// template verbatim, and a doubled backslash would otherwise reach Postgres as a
+// two-character escape string ("invalid escape string").
 // The jsonb_typeof guard keeps jsonb_array_elements_text from throwing on a
 // malformed/legacy record whose `emails` is not a JSON array (a missing key or
 // non-array value simply yields no rows instead of a runtime error).
@@ -60,7 +69,9 @@ const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
               ELSE '[]'::jsonb
          END
        ) AS candidate
-      WHERE lower(candidate) = lower($email)
+      WHERE lower($email) LIKE
+        replace(replace(replace(replace(lower(candidate), '#', '##'), '%', '#%'), '_', '#_'), '*', '%')
+        ESCAPE '#'
    )
    LIMIT 1
 `;

@@ -31,13 +31,35 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
 
+// Match a business by a recognition email in suggestion_data.emails. A stored
+// entry may be a wildcard pattern (e.g. `*@cloudflare.com`) for suppliers that
+// send from a unique address per invoice: `*` is translated to a LIKE wildcard
+// while the LIKE metacharacters `%` and `_` are escaped, so a literal entry
+// still matches exactly. Matching is case-insensitive. `#` is used as the LIKE
+// ESCAPE character (and is itself escaped as `##`) instead of the default
+// backslash, so the query text carries no backslashes: pgtyped emits the
+// template verbatim, and a doubled backslash would otherwise reach Postgres as a
+// two-character escape string ("invalid escape string"). See
+// email-pattern.helper.ts for the equivalent in-process matcher; the
+// jsonb_typeof guard keeps jsonb_array_elements_text from throwing on a
+// malformed/legacy record whose `emails` is not a JSON array.
 const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
     SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id)
-    WHERE
-      suggestion_data->'emails' ? $email::text
+    WHERE EXISTS (
+      SELECT 1
+        FROM jsonb_array_elements_text(
+          CASE WHEN jsonb_typeof(b.suggestion_data->'emails') = 'array'
+               THEN b.suggestion_data->'emails'
+               ELSE '[]'::jsonb
+          END
+        ) AS candidate
+       WHERE lower($email::text) LIKE
+         replace(replace(replace(replace(lower(candidate), '#', '##'), '%', '#%'), '_', '#_'), '*', '%')
+         ESCAPE '#'
+    )
     LIMIT 1;`;
 
 const updateBusiness = sql<IUpdateBusinessQuery>`
