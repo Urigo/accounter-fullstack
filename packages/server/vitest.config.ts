@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import 'reflect-metadata';
 import path from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export default defineConfig({
   plugins: [

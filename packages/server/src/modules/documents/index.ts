@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { DocumentsProvider } from './providers/documents.provider.js';
 import { IssuedDocumentsProvider } from './providers/issued-documents.provider.js';
@@ -11,7 +10,7 @@ import DocumentsIssuing from './typeDefs/documents-issuing.graphql.js';
 import documents from './typeDefs/documents.graphql.js';
 import issuedDocuments from './typeDefs/issued-documents.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const documentsModule = createModule({
   id: 'documents',

@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { CountriesProvider } from './providers/countries.provider.js';
 import { countriesResolvers } from './resolvers/countries.resolver.js';
 import countries from './typeDefs/countries.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const countriesModule = createModule({
   id: 'countries',

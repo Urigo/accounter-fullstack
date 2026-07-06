@@ -1,11 +1,10 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { DepreciationCategoriesProvider } from './providers/depreciation-categories.provider.js';
 import { DepreciationProvider } from './providers/depreciation.provider.js';
 import { depreciationResolvers } from './resolvers/depreciation.resolver.js';
 import depreciation from './typeDefs/depreciation.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const depreciationModule = createModule({
   id: 'depreciation',

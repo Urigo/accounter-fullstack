@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { adminContextResolvers } from './resolvers/admin-context.resolvers.js';
 import adminContext from './typeDefs/admin-context.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const adminContextModule = createModule({
   id: 'adminContext',

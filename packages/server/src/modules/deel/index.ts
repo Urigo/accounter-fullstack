@@ -1,11 +1,10 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { DeelContractsProvider } from './providers/deel-contracts.provider.js';
 import { DeelInvoicesProvider } from './providers/deel-invoices.provider.js';
 import { deelResolvers } from './resolvers/deel.resolvers.js';
 import deel from './typeDefs/deel.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const deelModule = createModule({
   id: 'deel',

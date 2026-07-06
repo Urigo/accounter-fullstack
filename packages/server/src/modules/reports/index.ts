@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { AnnualRevenueReportProvider } from './providers/annual-revenue-report.provider.js';
 import { BalanceReportProvider } from './providers/balance-report.provider.js';
@@ -24,7 +23,7 @@ import uniformFormat from './typeDefs/uniform-format.graphql.js';
 import vatReport from './typeDefs/vat-report.graphql.js';
 import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const reportsModule = createModule({
   id: 'reports',

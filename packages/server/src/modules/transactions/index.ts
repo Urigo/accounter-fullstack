@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { CreditCardTransactionsProvider } from './providers/creditcard-transactions.provider.js';
 import { TransactionsProvider } from './providers/transactions.provider.js';
@@ -9,7 +8,7 @@ import creditcardTransactions from './typeDefs/creditcard-transactions.graphql.j
 import transactionSuggestions from './typeDefs/transaction-suggestions.graphql.js';
 import transactions from './typeDefs/transactions.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const transactionsModule = createModule({
   id: 'transactions',

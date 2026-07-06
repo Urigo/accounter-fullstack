@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { FinancialAccountsTaxCategoriesProvider } from './providers/financial-accounts-tax-categories.provider.js';
 import { FinancialAccountsProvider } from './providers/financial-accounts.provider.js';
@@ -8,7 +7,7 @@ import { financialBankAccountsResolvers } from './resolvers/financial-bank-accou
 import financialAccounts from './typeDefs/financial-accounts.graphql.js';
 import financialBankAccounts from './typeDefs/financial-bank-accounts.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const financialAccountsModule = createModule({
   id: 'financialAccounts',

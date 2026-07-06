@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { DividendsProvider } from './providers/dividends.provider.js';
 import dividends from './typeDefs/dividends.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const dividendsModule = createModule({
   id: 'dividends',

@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { MiscExpensesProvider } from './providers/misc-expenses.provider.js';
 import { miscExpensesLedgerEntriesResolvers } from './resolvers/misc-expenses.resolver.js';
 import miscExpenses from './typeDefs/misc-expenses.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const miscExpensesModule = createModule({
   id: 'miscExpenses',

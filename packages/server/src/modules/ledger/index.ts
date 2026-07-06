@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { BalanceCancellationProvider } from './providers/balance-cancellation.provider.js';
 import { LedgerProvider } from './providers/ledger.provider.js';
@@ -6,7 +5,7 @@ import { UnbalancedBusinessesProvider } from './providers/unbalanced-businesses.
 import { ledgerResolvers } from './resolvers/ledger.resolver.js';
 import ledger from './typeDefs/ledger.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const ledgerModule = createModule({
   id: 'ledger',

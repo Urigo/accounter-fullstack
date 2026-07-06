@@ -1,4 +1,3 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { BankDepositChargesProvider } from './providers/bank-deposit-charges.provider.js';
 import { BankDepositsProvider } from './providers/bank-deposits.provider.js';
@@ -7,7 +6,7 @@ import { bankDepositsResolvers } from './resolvers/bank-deposits.resolver.js';
 import bankDepositCharges from './typeDefs/bank-deposit-charges.graphql.js';
 import bankDeposits from './typeDefs/bank-deposits.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const bankDepositsModule = createModule({
   id: 'bankDeposits',

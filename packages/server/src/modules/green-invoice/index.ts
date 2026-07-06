@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { greenInvoiceResolvers } from './resolvers/green-invoice.resolvers.js';
 import greenInvoice from './typeDefs/green-invoice.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const greenInvoiceModule = createModule({
   id: 'greenInvoice',

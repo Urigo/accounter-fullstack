@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { VatProvider } from './providers/vat.provider.js';
 import vat from './typeDefs/vat.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const vatModule = createModule({
   id: 'vat',

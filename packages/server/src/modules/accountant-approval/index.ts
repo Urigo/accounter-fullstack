@@ -1,10 +1,9 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { AccountantApprovalProvider } from './providers/accountant-approval.provider.js';
 import { accountantApprovalResolvers } from './resolvers/accountant-approval.resolver.js';
 import accountantApproval from './typeDefs/accountant-approval.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const accountantApprovalModule = createModule({
   id: 'accountantApproval',

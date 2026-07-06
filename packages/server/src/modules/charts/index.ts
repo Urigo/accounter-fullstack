@@ -1,9 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { chartsResolvers } from './resolvers/charts.resolver.js';
 import charts from './typeDefs/charts.graphql.js';
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
+const __dirname = import.meta.dirname;
 
 export const chartsModule = createModule({
   id: 'charts',
