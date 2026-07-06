@@ -8,6 +8,7 @@ type EmailMessageLike = {
 export type WorkerEnv = {
   CF_WEBHOOK_SECRET: string;
   GATEWAY_URL: string;
+  EMAIL_FORWARD_DESTINATION: string;
   FALLBACK_EMAIL?: string;
 };
 
@@ -87,6 +88,13 @@ async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
 
 const worker = {
   async email(message: EmailMessageLike, env: WorkerEnv): Promise<void> {
+    try {
+      // First, forward the email
+      await message.forward(env.EMAIL_FORWARD_DESTINATION);
+    } catch (e) {
+      console.error(`Forwarding failed: ${(e as Error).message}`);
+    }
+
     // Probe the gateway with a lightweight health check *before* consuming the
     // stream. Reading `message.raw` may disturb the stream such that a later
     // `message.forward()` could fail, so handling an unreachable gateway up front
