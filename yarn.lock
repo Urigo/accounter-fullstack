@@ -80,7 +80,7 @@ __metadata:
     "@mantine/hooks": "npm:6.0.22"
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.1.2"
-    "@mui/x-charts": "npm:8.29.0"
+    "@mui/x-charts": "npm:8.29.2"
     "@tailwindcss/vite": "npm:4.3.2"
     "@tanstack/react-query": "npm:5.101.2"
     "@tanstack/react-table": "npm:8.21.3"
@@ -95,7 +95,7 @@ __metadata:
     class-variance-authority: "npm:0.7.1"
     clsx: "npm:2.1.1"
     cmdk: "npm:1.1.1"
-    csv-parse: "npm:7.0.0"
+    csv-parse: "npm:7.0.1"
     date-fns: "npm:4.4.0"
     dayjs: "npm:1.11.21"
     decimal.js: "npm:10.6.0"
@@ -129,7 +129,7 @@ __metadata:
     typescript: "npm:6.0.3"
     urql: "npm:5.0.3"
     vaul: "npm:1.1.2"
-    vite: "npm:8.1.2"
+    vite: "npm:8.1.3"
     vite-plugin-node-polyfills: "npm:0.28.0"
     zod: "npm:4.4.3"
     zustand: "npm:5.0.14"
@@ -160,7 +160,7 @@ __metadata:
   resolution: "@accounter/etana-scraper@workspace:packages/etana-scraper"
   dependencies:
     "@whatwg-node/fetch": "npm:0.10.13"
-    csv-parse: "npm:7.0.0"
+    csv-parse: "npm:7.0.1"
     diary: "npm:0.4.5"
     dotenv: "npm:17.4.2"
     pg-promise: "npm:12.7.0"
@@ -336,7 +336,7 @@ __metadata:
     react-dom: "npm:19.2.7"
     tsup: "npm:8.5.1"
     typescript: "npm:6.0.3"
-    vite: "npm:8.1.2"
+    vite: "npm:8.1.3"
     vitest: "npm:4.1.9"
     ws: "npm:8.21.0"
     zod: "npm:4.4.3"
@@ -351,7 +351,7 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:4.0.4"
+    "@ai-sdk/anthropic": "npm:4.0.7"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
@@ -374,7 +374,7 @@ __metadata:
     "@types/node": "npm:25.9.4"
     "@types/pg": "npm:8.20.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:7.0.9"
+    ai: "npm:7.0.14"
     async-mutex: "npm:0.5.0"
     auth0: "npm:5.13.0"
     basic-auth: "npm:2.0.1"
@@ -434,51 +434,51 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@ai-sdk/anthropic@npm:4.0.4":
-  version: 4.0.4
-  resolution: "@ai-sdk/anthropic@npm:4.0.4"
+"@ai-sdk/anthropic@npm:4.0.7":
+  version: 4.0.7
+  resolution: "@ai-sdk/anthropic@npm:4.0.7"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.1"
-    "@ai-sdk/provider-utils": "npm:5.0.2"
+    "@ai-sdk/provider": "npm:4.0.2"
+    "@ai-sdk/provider-utils": "npm:5.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4fc5e6bea1147b6f0011436a24be33abbe8b1690a07650c35365fdffbdff20166496a2da722e2bd97dfd079bff333531745d4085609d5ec78d102e05e8e5a81d
+  checksum: 10c0/3a03defbaab53e623ce34a999965eaa54fc3f016f367e1e49f4adff33c89464ce9398f7627a50920e755f7d35c6ad6ec1f8b8e556f57429b155c046edb4e11af
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.7":
-  version: 4.0.7
-  resolution: "@ai-sdk/gateway@npm:4.0.7"
+"@ai-sdk/gateway@npm:4.0.11":
+  version: 4.0.11
+  resolution: "@ai-sdk/gateway@npm:4.0.11"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.1"
-    "@ai-sdk/provider-utils": "npm:5.0.2"
+    "@ai-sdk/provider": "npm:4.0.2"
+    "@ai-sdk/provider-utils": "npm:5.0.5"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/1f476921f9a95dd60f1eb7944180fd0b29f9867fe97088e66b73546502f229d410c84ba31dd8c31f164048c00a7b038107afb3c4251457589213d651ef72f05e
+  checksum: 10c0/2bc250b14b1b2f267a95d8bb9bbeace378219be4d6986306b603741b3adcad936cc7bc7df90229071d4bdea4ecdb4cc064c614641e2f158c7b914d28c922d5cf
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider-utils@npm:5.0.2":
-  version: 5.0.2
-  resolution: "@ai-sdk/provider-utils@npm:5.0.2"
+"@ai-sdk/provider-utils@npm:5.0.5":
+  version: 5.0.5
+  resolution: "@ai-sdk/provider-utils@npm:5.0.5"
   dependencies:
-    "@ai-sdk/provider": "npm:4.0.1"
+    "@ai-sdk/provider": "npm:4.0.2"
     "@standard-schema/spec": "npm:^1.1.0"
     "@workflow/serde": "npm:4.1.0"
     eventsource-parser: "npm:^3.0.8"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/fa90e50566673f693aee254efb22bd92bb8666a281b97067323511411b42a8f332e41107add4a4fc62fb464854b657506df30547827bd01e1f278acafd4568f9
+  checksum: 10c0/66393759b1b1349dc879a0f9d9bbf01a5554125bd0dd9fc48a20d6625bb28a8e3287a5f1bf5348f2739511012143b1d809be414ed55903823a45d01f9d64671f
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:4.0.1":
-  version: 4.0.1
-  resolution: "@ai-sdk/provider@npm:4.0.1"
+"@ai-sdk/provider@npm:4.0.2":
+  version: 4.0.2
+  resolution: "@ai-sdk/provider@npm:4.0.2"
   dependencies:
     json-schema: "npm:^0.4.0"
-  checksum: 10c0/00584d568e7efd6d3c8cf6a64df26fbe7460134a2820be35e62aa28c95f5ca2a6e53a0b933ce51c55ef15f78cbcf07237cae89004e688ede5bc486541de68ffa
+  checksum: 10c0/c4b6d05c7eeaf740ac7f1a160fefa4eb0a9e6baa4f3c5162cb4d982550ecf2cdcfea18f4ba521c8e10c570c5603495294c6771bf308690935f54cf2ac901d57a
   languageName: node
   linkType: hard
 
@@ -5440,15 +5440,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-charts@npm:8.29.0":
-  version: 8.29.0
-  resolution: "@mui/x-charts@npm:8.29.0"
+"@mui/x-charts@npm:8.29.2":
+  version: 8.29.2
+  resolution: "@mui/x-charts@npm:8.29.2"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
     "@mui/x-charts-vendor": "npm:8.29.0"
     "@mui/x-internal-gestures": "npm:0.5.0"
-    "@mui/x-internals": "npm:8.29.0"
+    "@mui/x-internals": "npm:8.29.2"
     bezier-easing: "npm:^2.1.0"
     clsx: "npm:^2.1.1"
     prop-types: "npm:^15.8.1"
@@ -5466,7 +5466,7 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10c0/2d5050708af72abf2419dde99f91470bd5defb23cd513a839d35be51edc5a71cf7c7eb76ebfb6380675767465e8c511432cb03f364f2a11ae928cca1e0b2afd7
+  checksum: 10c0/09829cc71dc3c61493eeb298ba4ffdd20289ea184c6e56b74c8a851d4b229118b7b30aca8eb7d0477be03f79ffd8c915e0e3ef040939539b9a8c160b06fe3faa
   languageName: node
   linkType: hard
 
@@ -5479,9 +5479,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/x-internals@npm:8.29.0":
-  version: 8.29.0
-  resolution: "@mui/x-internals@npm:8.29.0"
+"@mui/x-internals@npm:8.29.2":
+  version: 8.29.2
+  resolution: "@mui/x-internals@npm:8.29.2"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
@@ -5489,7 +5489,7 @@ __metadata:
     use-sync-external-store: "npm:^1.6.0"
   peerDependencies:
     react: ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10c0/7dd84c45084404426ec46dd20976ba81cceeb84011be900c07c1f02131fa8fb26049b5974577457552c78c24153b57e0b79c85f8eddca8c3a550ea837529eb74
+  checksum: 10c0/2f43fc4305011b3b232e635de28b596ca259fcd641bc4097f686dd6ce4218413bf609d968f7d164f074547d0845eaf9cc4977543fd3ba86cd6fab12fa48c6370
   languageName: node
   linkType: hard
 
@@ -11597,16 +11597,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.9":
-  version: 7.0.9
-  resolution: "ai@npm:7.0.9"
+"ai@npm:7.0.14":
+  version: 7.0.14
+  resolution: "ai@npm:7.0.14"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.7"
-    "@ai-sdk/provider": "npm:4.0.1"
-    "@ai-sdk/provider-utils": "npm:5.0.2"
+    "@ai-sdk/gateway": "npm:4.0.11"
+    "@ai-sdk/provider": "npm:4.0.2"
+    "@ai-sdk/provider-utils": "npm:5.0.5"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ad7600b20233590f642164e1fad2d234d968dbd47ce91426bfa3a9a4f65f23f9b9a4a6af6bcf81849251a190439c28c42925eab1270585a381d5222bc7a718bd
+  checksum: 10c0/654335c7a09da7b58ad4fc6ebde0cbb2a27aa36774ba8b80a3230ce13d2006167da1ba28e144a7ba3ca3c899ca5947a316465b1ddc8616b43845f7251fc4ea79
   languageName: node
   linkType: hard
 
@@ -13647,10 +13647,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csv-parse@npm:7.0.0":
-  version: 7.0.0
-  resolution: "csv-parse@npm:7.0.0"
-  checksum: 10c0/89bf952fcb762d3e8c806041eefc2887b852c837bc0c3c8db57ef9983ffe3925eb5d5675a0e78a032a5b78caa1e0bfb272a5534525780398ff06daa0c730c755
+"csv-parse@npm:7.0.1":
+  version: 7.0.1
+  resolution: "csv-parse@npm:7.0.1"
+  checksum: 10c0/144038951b5c235fece4640461e0a736d97845559c1246e8f37aac0fbde2a645e71819ca5e801286680511a0ab6bfb33ec23fc5c0b4344fb2818b64611dd9700
   languageName: node
   linkType: hard
 
@@ -26139,9 +26139,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:8.1.2":
-  version: 8.1.2
-  resolution: "vite@npm:8.1.2"
+"vite@npm:8.1.3":
+  version: 8.1.3
+  resolution: "vite@npm:8.1.3"
   dependencies:
     fsevents: "npm:~2.3.3"
     lightningcss: "npm:^1.32.0"
@@ -26192,7 +26192,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/b39731dc31250b267ae5ddae81d737deafe2163bd0e1aa04849fb5f7c66b7ff7bcffa50883480b5f9fb47b1596b772021a8f9f671986e57b88d98300710ded77
+  checksum: 10c0/e3c95e95f9c19b36be3c9d1c4de7f57d24d5af71613a221cfa22f1fd1568adebdb640e30ef9a7f2361fbb15478883955c9d8932e4fa5566280dd7a16bffa64f9
   languageName: node
   linkType: hard
 
