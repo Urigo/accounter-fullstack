@@ -166,7 +166,11 @@ export const generateLedgerRecordsForConversion: ResolverFn<
     }
 
     if (!baseEntry || !quoteEntry) {
-      errors.add(`Conversion Charge must include base and quote main transactions`);
+      // only report a missing side when it is genuinely absent; currency-validation
+      // failures above already add specific, more accurate errors
+      if (baseEntries.length === 0 || quoteEntries.length === 0) {
+        errors.add(`Conversion Charge must include base and quote main transactions`);
+      }
     } else {
       // create a ledger record for fee transactions
       for (const transaction of feeTransactions) {
