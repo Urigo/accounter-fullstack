@@ -1,8 +1,9 @@
 import { useContext, useState, type JSX } from 'react';
-import { CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
+import { Banknote, CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCornJobs } from '../../hooks/use-corn-jobs.js';
+import { useFetchDeelDocuments } from '../../hooks/use-fetch-deel-documents.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
 import { ROUTES } from '../../router/routes.js';
@@ -27,6 +28,8 @@ export function UserNav(): JSX.Element | null {
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
   const { executeJobs } = useCornJobs();
+  const { fetching: fetchingDeelDocuments, fetchDocuments: fetchDeelDocuments } =
+    useFetchDeelDocuments();
 
   if (!isAuthenticated || !user) {
     return null;
@@ -140,6 +143,19 @@ export function UserNav(): JSX.Element | null {
             <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
               Add Balance Charge
             </Button>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <Tooltip content="Pull Deel Documents">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7.5"
+                disabled={fetchingDeelDocuments}
+                onClick={() => fetchDeelDocuments()}
+              >
+                <Banknote className="size-5" />
+              </Button>
+            </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
             <Tooltip content="Pull Green Invoice Documents">
