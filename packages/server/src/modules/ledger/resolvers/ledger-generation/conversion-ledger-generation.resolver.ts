@@ -9,7 +9,10 @@ import type { LedgerProto, StrictLedgerProto } from '../../../../shared/types/in
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
-import { conversionFeeCalculator } from '../../helpers/conversion-charge-ledger.helper.js';
+import {
+  aggregateConversionSideEntries,
+  conversionFeeCalculator,
+} from '../../helpers/conversion-charge-ledger.helper.js';
 import {
   isSupplementalFeeTransaction,
   splitFeeTransactions,
@@ -18,7 +21,6 @@ import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.help
 import {
   getFinancialAccountTaxCategoryId,
   getLedgerBalanceInfo,
-  isTransactionsOppositeSign,
   LedgerError,
   ledgerProtoToRecordsConverter,
   updateLedgerBalanceByEntry,
@@ -59,20 +61,8 @@ export const generateLedgerRecordsForConversion: ResolverFn<
       .transactionsByChargeIDLoader.load(chargeId);
     const { mainTransactions, feeTransactions } = splitFeeTransactions(transactions);
 
-    if (mainTransactions.length !== 2) {
-      errors.add(`Conversion Charge must include two main transactions`);
-    }
-
-    try {
-      if (!isTransactionsOppositeSign(mainTransactions)) {
-        errors.add(`Conversion Charge must include two main transactions with opposite sign`);
-      }
-    } catch (e) {
-      if (e instanceof LedgerError) {
-        errors.add(e.message);
-      } else {
-        throw e;
-      }
+    if (mainTransactions.length < 2) {
+      errors.add(`Conversion Charge must include at least two main transactions`);
     }
 
     // for each transaction, create a ledger record
@@ -135,16 +125,48 @@ export const generateLedgerRecordsForConversion: ResolverFn<
 
     await Promise.all(mainTransactionsPromises);
 
+    // group main entries into the two conversion sides by sign
+    const quoteEntries: LedgerProto[] = [];
+    const baseEntries: LedgerProto[] = [];
     for (const entry of mainFinancialAccountLedgerEntries) {
       if (entry.isCreditorCounterparty) {
-        quoteEntry = entry;
+        quoteEntries.push(entry);
       } else {
-        baseEntry = entry;
+        baseEntries.push(entry);
       }
     }
 
+    // validate each side is single-currency and the two sides differ in currency
+    const baseCurrencies = new Set(baseEntries.map(entry => entry.currency));
+    const quoteCurrencies = new Set(quoteEntries.map(entry => entry.currency));
+    if (baseCurrencies.size > 1) {
+      errors.add(`Conversion Charge base transactions must all share the same currency`);
+    }
+    if (quoteCurrencies.size > 1) {
+      errors.add(`Conversion Charge quote transactions must all share the same currency`);
+    }
+    if (
+      baseCurrencies.size === 1 &&
+      quoteCurrencies.size === 1 &&
+      [...baseCurrencies][0] === [...quoteCurrencies][0]
+    ) {
+      errors.add(`Conversion Charge base and quote must use different currencies`);
+    }
+
+    if (
+      baseEntries.length > 0 &&
+      quoteEntries.length > 0 &&
+      baseCurrencies.size === 1 &&
+      quoteCurrencies.size === 1 &&
+      [...baseCurrencies][0] !== [...quoteCurrencies][0]
+    ) {
+      // aggregate each side into a single representative entry for fee & revaluation calculations
+      baseEntry = aggregateConversionSideEntries(baseEntries);
+      quoteEntry = aggregateConversionSideEntries(quoteEntries);
+    }
+
     if (!baseEntry || !quoteEntry) {
-      errors.add(`Conversion Charge must include two main transactions`);
+      errors.add(`Conversion Charge must include base and quote main transactions`);
     } else {
       // create a ledger record for fee transactions
       for (const transaction of feeTransactions) {
