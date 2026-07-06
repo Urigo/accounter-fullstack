@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { IsracardAmexScraperIngestionProvider } from './providers/isracard-amex-scraper-ingestion.provider.js';
 import { OtsarHahayalScraperIngestionProvider } from './providers/otsar-hahayal-scraper-ingestion.provider.js';
@@ -6,7 +7,7 @@ import { ScraperIngestionProvider } from './providers/scraper-ingestion.provider
 import { scraperIngestionResolvers } from './resolvers/scraper-ingestion.resolver.js';
 import scraperIngestion from './typeDefs/scraper-ingestion.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const scraperIngestionModule = createModule({
   id: 'scraperIngestion',

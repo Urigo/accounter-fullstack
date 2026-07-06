@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { EmailIngestionAliasProvider } from './providers/email-ingestion-alias.provider.js';
 import { EmailIngestionControlProvider } from './providers/email-ingestion-control.provider.js';
@@ -8,7 +9,7 @@ import { emailIngestionIngestResolver } from './resolvers/email-ingestion-ingest
 import { emailIngestionResolvers } from './resolvers/email-ingestion.resolver.js';
 import emailIngestion from './typeDefs/email-ingestion.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const emailIngestionModule = createModule({
   id: 'email-ingestion',

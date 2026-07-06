@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { CorporateTaxesProvider } from './providers/corporate-taxes.provider.js';
 import { corporateTaxesResolvers } from './resolvers/corporate-taxes.resolver.js';
 import corporateTaxes from './typeDefs/corporate-taxes.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const corporateTaxesModule = createModule({
   id: 'corporateTaxes',

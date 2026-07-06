@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { ChargesMatcherProvider } from './providers/charges-matcher.provider.js';
 import { chargesMatcherResolvers } from './resolvers/index.js';
 import chargesMatcherTypeDefs from './typeDefs/charges-matcher.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const chargesMatcherModule = createModule({
   id: 'charges-matcher',

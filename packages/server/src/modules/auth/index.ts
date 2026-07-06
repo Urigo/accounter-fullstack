@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { AcceptInvitationsProvider } from './providers/accept-invitations.provider.js';
 import { ApiKeysProvider } from './providers/api-keys.provider.js';
@@ -12,7 +13,7 @@ import { businessUsersResolvers } from './resolvers/business-users.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
 import auth from './typeDefs/auth.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const authModule = createModule({
   id: 'auth',

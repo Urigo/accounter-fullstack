@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { AnnualAuditProvider } from './providers/annual-audit.provider.js';
 import { annualAuditResolvers } from './resolvers/annual-audit.resolver.js';
 import annualAudit from './typeDefs/annual-audit.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const annualAuditModule = createModule({
   id: 'annual-audit',

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 // Example index.ts — module registration file.
 // This is the entry point that wires typeDefs, resolvers, and providers together.
 import { createModule } from 'graphql-modules';
@@ -6,7 +7,7 @@ import { itemsResolvers } from './resolvers/items.resolver.js';
 import itemsTypeDefs from './typeDefs/items.graphql.js';
 
 // __dirname for ESM — required by graphql-modules for module resolution
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const itemsModule = createModule({
   id: 'items', // Unique module ID — used internally by graphql-modules

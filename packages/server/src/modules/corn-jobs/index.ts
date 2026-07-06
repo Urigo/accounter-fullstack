@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { createModule } from 'graphql-modules';
 import { CornJobsProvider } from './providers/corn-jobs.provider.js';
 import { cornJobsResolvers } from './resolvers/corn-jobs.resolver.js';
 import cornJobs from './typeDefs/corn-jobs.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
 export const cornJobsModule = createModule({
   id: 'corn-jobs',
