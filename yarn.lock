@@ -15432,20 +15432,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-json-stringify@npm:^6.0.0":
-  version: 6.4.0
-  resolution: "fast-json-stringify@npm:6.4.0"
-  dependencies:
-    "@fastify/merge-json-schemas": "npm:^0.2.0"
-    ajv: "npm:^8.12.0"
-    ajv-formats: "npm:^3.0.1"
-    fast-uri: "npm:^3.0.0"
-    json-schema-ref-resolver: "npm:^3.0.0"
-    rfdc: "npm:^1.2.0"
-  checksum: 10c0/283c2b7e7d1e40eb58c3b4d2714e76a650e6236d4be27e094408ffbfd8871691ad5a9dca124b3e2598852cd2ce288fd9509ed246ededa863f23eef3808aa6bce
-  languageName: node
-  linkType: hard
-
 "fast-json-stringify@npm:^7.0.0":
   version: 7.0.0
   resolution: "fast-json-stringify@npm:7.0.0"
