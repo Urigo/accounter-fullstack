@@ -30,6 +30,10 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { dirtyFieldMarker, relevantDataPicker, type MakeBoolean } from '@/helpers/index.js';
+import {
+  duplicateEntryError,
+  hasNoDuplicateEntries,
+} from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
@@ -75,8 +79,14 @@ const contactInfoSchema = z.object({
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
-  generalContacts: z.array(z.email()).optional(),
-  billingEmails: z.array(z.email()).optional(),
+  generalContacts: z
+    .array(z.email())
+    .refine(hasNoDuplicateEntries, { message: 'Contacts must be unique' })
+    .optional(),
+  billingEmails: z
+    .array(z.email())
+    .refine(hasNoDuplicateEntries, { message: 'Billing emails must be unique' })
+    .optional(),
 });
 
 type ContactInfoFormValues = z.infer<typeof contactInfoSchema>;
@@ -184,6 +194,12 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
+      const conflict = duplicateEntryError(currentContacts, newContact);
+      if (conflict) {
+        form.setError('generalContacts', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('generalContacts');
       form.setValue('generalContacts', [...currentContacts, newContact.trim()], {
         shouldDirty: true,
       });
@@ -201,6 +217,12 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
 
   const addBillingEmail = (currentEmails: string[]) => {
     if (newBillingEmail.trim()) {
+      const conflict = duplicateEntryError(currentEmails, newBillingEmail);
+      if (conflict) {
+        form.setError('billingEmails', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('billingEmails');
       form.setValue('billingEmails', [...currentEmails, newBillingEmail.trim()], {
         shouldDirty: true,
       });

@@ -44,6 +44,10 @@ import {
   relevantDataPicker,
   type MakeBoolean,
 } from '@/helpers/index.js';
+import {
+  duplicateEntryError,
+  phraseConflictError,
+} from '@/helpers/list-input-validation.js';
 import { useGetSortCodes } from '@/hooks/use-get-sort-codes.js';
 import { useGetTags } from '@/hooks/use-get-tags.js';
 import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
@@ -641,6 +645,12 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
   const addPhrase = () => {
     if (newPhrase.trim()) {
       const currentPhrases = form.getValues('phrases');
+      const conflict = phraseConflictError(currentPhrases, newPhrase);
+      if (conflict) {
+        form.setError('phrases', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('phrases');
       form.setValue('phrases', [...currentPhrases, newPhrase.trim()], { shouldDirty: true });
       setNewPhrase('');
     }
@@ -649,6 +659,12 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
   const addEmail = () => {
     if (newEmail.trim()) {
       const currentEmails = form.getValues('emails');
+      const conflict = duplicateEntryError(currentEmails, newEmail);
+      if (conflict) {
+        form.setError('emails', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('emails');
       form.setValue('emails', [...currentEmails, newEmail.trim()], { shouldDirty: true });
       setNewEmail('');
     }
@@ -775,6 +791,12 @@ function GmailConfigurationSubSection({ form }: SubSectionProps) {
   const addLink = () => {
     if (newLink.trim()) {
       const currentLinks = form.getValues('internalLinks');
+      const conflict = duplicateEntryError(currentLinks, newLink);
+      if (conflict) {
+        form.setError('internalLinks', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('internalLinks');
       form.setValue('internalLinks', [...currentLinks, newLink.trim()], { shouldDirty: true });
       setNewLink('');
     }

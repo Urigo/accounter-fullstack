@@ -31,12 +31,19 @@ import {
 } from '@/components/ui/select.js';
 import { DocumentType } from '@/gql/graphql.js';
 import { getDocumentNameFromType } from '@/helpers/index.js';
+import {
+  duplicateEntryError,
+  hasNoDuplicateEntries,
+} from '@/helpers/list-input-validation.js';
 import { useInsertClient } from '@/hooks/use-insert-client.js';
 import { Badge } from '../ui/badge';
 
 const clientFormSchema = z.object({
   businessId: z.uuid().optional(),
-  emails: z.array(z.email()).optional(),
+  emails: z
+    .array(z.email())
+    .refine(hasNoDuplicateEntries, { message: 'Emails must be unique' })
+    .optional(),
   generatedDocumentType: z.enum(Object.values(DocumentType)),
 });
 
@@ -79,8 +86,14 @@ export function ModifyClientDialog({ businessId, onDone, showTrigger = true }: P
 
   const addEmail = () => {
     if (newEmail.trim()) {
-      const currentEmails = form.getValues('emails');
-      form.setValue('emails', [...(currentEmails ?? []), newEmail.trim()], { shouldDirty: true });
+      const currentEmails = form.getValues('emails') ?? [];
+      const conflict = duplicateEntryError(currentEmails, newEmail);
+      if (conflict) {
+        form.setError('emails', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('emails');
+      form.setValue('emails', [...currentEmails, newEmail.trim()], { shouldDirty: true });
       setNewEmail('');
     }
   };
