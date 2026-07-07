@@ -664,7 +664,7 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addPhrase = () => {
     if (newPhrase.trim()) {
-      const currentPhrases = getValues('transactionPhrases');
+      const currentPhrases = getValues('transactionPhrases') ?? [];
       const conflict = phraseConflictError(currentPhrases, newPhrase);
       if (conflict) {
         form.setError('transactionPhrases', { type: 'manual', message: conflict });
@@ -680,7 +680,7 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addEmail = () => {
     if (newEmail.trim()) {
-      const currentEmails = getValues('emailAddresses');
+      const currentEmails = getValues('emailAddresses') ?? [];
       const conflict = duplicateEntryError(currentEmails, newEmail);
       if (conflict) {
         form.setError('emailAddresses', { type: 'manual', message: conflict });
