@@ -82,7 +82,7 @@ export function UserNav(): JSX.Element | null {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8 items-center flex flex-row justify-center">
@@ -139,21 +139,20 @@ export function UserNav(): JSX.Element | null {
               </DropdownMenuItem>
             </>
           )}
-          <DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Button variant="ghost" onClick={() => setBalanceChargeModalOpen(true)}>
               Add Balance Charge
             </Button>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Tooltip content="Pull Deel Documents">
               <Button
                 variant="ghost"
-                size="icon"
-                className="size-7.5"
                 disabled={fetchingDeelDocuments}
                 onClick={() => fetchDeelDocuments()}
               >
-                <Banknote className="size-5" />
+                <Banknote className="size-4" />
+                <span className="hidden sm:inline">Pull Deel Documents</span>
               </Button>
             </Tooltip>
           </DropdownMenuItem>
