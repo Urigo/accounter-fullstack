@@ -40,6 +40,12 @@ const CONTROL_RESPONSE = {
         action: 'ingest',
         expiresAt: '2026-06-17T12:05:00.000Z',
       },
+      businessEmailConfig: {
+        businessId: 'business-001',
+        internalEmailLinks: null,
+        emailBody: false,
+        attachments: null,
+      },
     },
   },
 };
@@ -185,6 +191,7 @@ describe('worker -> gateway -> mocked server integration', () => {
       CF_WEBHOOK_SECRET: 'worker-shared-secret',
       GATEWAY_URL: gatewayUrl,
       FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
     };
 
     const { default: worker } = await import('../worker.js');
@@ -192,7 +199,8 @@ describe('worker -> gateway -> mocked server integration', () => {
 
     await worker.email(message, workerEnv);
 
-    expect(message.forward).not.toHaveBeenCalled();
+    expect(message.forward).toHaveBeenCalledWith('forward@example.com');
+    expect(message.forward).not.toHaveBeenCalledWith('fallback@example.com');
     expect(capturedRequests).toHaveLength(2);
 
     const [controlRequest, ingestRequest] = capturedRequests;
@@ -236,6 +244,7 @@ describe('worker -> gateway -> mocked server integration', () => {
       CF_WEBHOOK_SECRET: 'worker-shared-secret',
       GATEWAY_URL: 'http://127.0.0.1:9',
       FALLBACK_EMAIL: 'fallback@example.com',
+      EMAIL_FORWARD_DESTINATION: 'forward@example.com',
     });
 
     expect(message.forward).toHaveBeenCalledWith('fallback@example.com');
