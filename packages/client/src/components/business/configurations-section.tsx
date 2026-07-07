@@ -644,7 +644,7 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
 
   const addPhrase = () => {
     if (newPhrase.trim()) {
-      const currentPhrases = form.getValues('phrases');
+      const currentPhrases = form.getValues('phrases') ?? [];
       const conflict = phraseConflictError(currentPhrases, newPhrase);
       if (conflict) {
         form.setError('phrases', { type: 'manual', message: conflict });
@@ -658,7 +658,7 @@ function AutoMatchingConfigurationSubSection({ form }: SubSectionProps) {
 
   const addEmail = () => {
     if (newEmail.trim()) {
-      const currentEmails = form.getValues('emails');
+      const currentEmails = form.getValues('emails') ?? [];
       const conflict = duplicateEntryError(currentEmails, newEmail);
       if (conflict) {
         form.setError('emails', { type: 'manual', message: conflict });
@@ -790,7 +790,7 @@ function GmailConfigurationSubSection({ form }: SubSectionProps) {
 
   const addLink = () => {
     if (newLink.trim()) {
-      const currentLinks = form.getValues('internalLinks');
+      const currentLinks = form.getValues('internalLinks') ?? [];
       const conflict = duplicateEntryError(currentLinks, newLink);
       if (conflict) {
         form.setError('internalLinks', { type: 'manual', message: conflict });
