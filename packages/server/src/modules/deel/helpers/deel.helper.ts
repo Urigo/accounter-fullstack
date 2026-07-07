@@ -24,6 +24,7 @@ import { DeelInvoicesProvider } from '../providers/deel-invoices.provider.js';
 import type {
   IGetEmployeeIDsByContractIdsResult,
   IInsertDeelInvoiceRecordsParams,
+  IUpdateDeelInvoiceRecordsParams,
 } from '../types.js';
 
 const DEEL_BUSINESS_ID = '8d34f668-7233-4ce3-9c9c-82550b0839ff'; // TODO: replace with DB based business id
@@ -138,10 +139,12 @@ export const createDeelInvoiceMatchFromUnmatchedInvoice = (invoice: Invoice): De
   breakdown_bonus: '0.00',
   breakdown_commissions: '0.00',
   breakdown_contract_country: '',
+  breakdown_contract_id: null,
   breakdown_contract_start_date: '',
   breakdown_contract_type: '',
   breakdown_contractor_email: '',
   breakdown_contractor_employee_name: '',
+  breakdown_contractor_pic_url: null,
   breakdown_contractor_unique_identifier: '',
   breakdown_currency: '',
   breakdown_date: '',
@@ -245,6 +248,7 @@ export function convertMatchToDeelInvoiceRecord(
     amount: match.amount,
     approveDate: nullifyEmptyStrings(match.breakdown_approve_date),
     approvers: match.breakdown_approvers,
+    billingType: match.billing_type,
     bonus: match.breakdown_bonus,
     commissions: match.breakdown_commissions,
     contractCountry: nullifyEmptyStrings(match.breakdown_contract_country),
@@ -259,6 +263,7 @@ export function convertMatchToDeelInvoiceRecord(
     deductions: match.breakdown_deductions,
     deelFee: match.deel_fee,
     documentId,
+    documentType: match.document_type,
     dueDate: match.due_date,
     expenses: match.breakdown_expenses,
     frequency: nullifyEmptyStrings(match.breakdown_frequency),
@@ -284,6 +289,40 @@ export function convertMatchToDeelInvoiceRecord(
     work: match.breakdown_work,
     recipientLegalEntityId: match.recipient_legal_entity_id,
   };
+}
+
+export function convertMatchToPartialDeelInvoiceRecord(
+  match: DeelInvoiceMatch,
+): IUpdateDeelInvoiceRecordsParams {
+  const updateParams: IUpdateDeelInvoiceRecordsParams = {
+    id: match.id,
+    adjustment: match.breakdown_adjustment,
+    approveDate: nullifyEmptyStrings(match.breakdown_approve_date),
+    approvers: match.breakdown_approvers,
+    bonus: match.breakdown_bonus,
+    commissions: match.breakdown_commissions,
+    contractCountry: nullifyEmptyStrings(match.breakdown_contract_country),
+    contractId: nullifyFeeInvoices(match.breakdown_contract_type, match.contract_id),
+    contractStartDate: nullifyEmptyStrings(match.breakdown_contract_start_date),
+    contractType: nullifyEmptyStrings(match.breakdown_contract_type),
+    contractorEmail: nullifyEmptyStrings(match.breakdown_contractor_email),
+    contractorEmployeeName: match.breakdown_contractor_employee_name,
+    contractorUniqueIdentifier: nullifyEmptyStrings(match.breakdown_contractor_unique_identifier),
+    deductions: match.breakdown_deductions,
+    expenses: match.breakdown_expenses,
+    frequency: nullifyEmptyStrings(match.breakdown_frequency),
+    generalLedgerAccount: nullifyEmptyStrings(match.breakdown_general_ledger_account),
+    groupId: nullifyEmptyStrings(match.breakdown_group_id),
+    others: match.breakdown_others,
+    overtime: match.breakdown_overtime,
+    paymentCurrency: match.breakdown_payment_currency as Currency,
+    paymentId: match.breakdown_receipt_id,
+    processingFee: match.breakdown_processing_fee,
+    proRata: match.breakdown_pro_rata,
+    totalPaymentCurrency: match.breakdown_total_payment_currency,
+    work: match.breakdown_work,
+  };
+  return updateParams;
 }
 
 export async function getDeelChargeDescription(
@@ -320,8 +359,10 @@ export async function fetchAndFilterInvoices(injector: Injector) {
       ).map(c => c.contract_id),
     );
 
-    const filteredInvoices: Invoice[] = [];
+    const newInvoices: Invoice[] = [];
+    const unmatchedExistingInvoices: Invoice[] = [];
 
+    // validate contract sequentially to prevent Deel API rate limit issues
     for (const invoice of invoices) {
       if (invoice.contract_id && !existingContractIds.has(invoice.contract_id)) {
         const deelContract = await injector
@@ -335,20 +376,32 @@ export async function fetchAndFilterInvoices(injector: Injector) {
           contractor_name: ${deelContract.data.worker?.full_name}
           contract_start_date: ${deelContract.data.start_date}`);
       }
-      const dbInvoice = await injector
-        .get(DeelInvoicesProvider)
-        .getInvoicesByIdLoader.load(invoice.id)
-        .catch(e => {
-          const message = 'Error fetching invoice by ID';
-          console.error(`${message}: ${e}`);
-          throw new Error(message);
-        });
-      if (!dbInvoice) {
-        filteredInvoices.push(invoice);
-      }
     }
 
-    return filteredInvoices;
+    //
+    await Promise.all(
+      invoices.map(async invoice => {
+        const dbInvoice = await injector
+          .get(DeelInvoicesProvider)
+          .getInvoicesByIdLoader.load(invoice.id)
+          .catch(e => {
+            const message = 'Error fetching invoice by ID';
+            console.error(`${message}: ${e}`);
+            throw new Error(message);
+          });
+        if (!dbInvoice) {
+          newInvoices.push(invoice);
+          return;
+        }
+        if (!dbInvoice.payment_id) {
+          unmatchedExistingInvoices.push(invoice);
+          return;
+        }
+        return;
+      }),
+    );
+
+    return { newInvoices, unmatchedExistingInvoices };
   } catch (error) {
     const message = 'Error fetching Deel invoices';
     console.error(`${message}: ${error}`);
@@ -367,8 +420,13 @@ export async function fetchReceipts(injector: Injector) {
   }
 }
 
-export async function fetchPaymentBreakdowns(injector: Injector, receipts: PaymentReceipts[]) {
-  const receiptsBreakDown: Array<PaymentBreakdownRecord & { receipt_id: string }> = [];
+export type DecoratedPaymentBreakdown = PaymentBreakdownRecord & { receipt_id: string };
+
+export async function fetchPaymentBreakdowns(
+  injector: Injector,
+  receipts: PaymentReceipts[],
+): Promise<DecoratedPaymentBreakdown[]> {
+  const receiptsBreakDown: DecoratedPaymentBreakdown[] = [];
 
   for (const receipt of receipts) {
     if (receipt.id) {
@@ -459,7 +517,11 @@ export async function validateContracts(
   );
 }
 
-export async function getChargeMatchesForPayments(injector: Injector, receipts: PaymentReceipts[]) {
+export async function getChargeMatchesForPayments(
+  injector: Injector,
+  receipts: PaymentReceipts[],
+  paymentBreakdowns: DecoratedPaymentBreakdown[],
+) {
   const receiptChargeMap = await injector.get(DeelInvoicesProvider).getReceiptToCharge();
   const invoiceChargeMap = new Map<string, string>();
   const newReceipts: PaymentReceipts[] = [];
@@ -473,20 +535,37 @@ export async function getChargeMatchesForPayments(injector: Injector, receipts: 
     }
   });
 
+  paymentBreakdowns.map(breakdown => {
+    const chargeId = receiptChargeMap.get(breakdown.receipt_id);
+    if (chargeId) {
+      invoiceChargeMap.set(breakdown.invoice_id, chargeId);
+    }
+  });
+
   return { receiptChargeMap, invoiceChargeMap, newReceipts };
 }
 
 export async function matchInvoicesWithPayments(
-  injector: Injector,
   invoices: Invoice[],
-  receipts: PaymentReceipts[],
+  paymentBreakdowns: DecoratedPaymentBreakdown[],
 ) {
   const matches: DeelInvoiceMatch[] = [];
   const unmatched: Invoice[] = [];
 
-  const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
-
   invoices.map(invoice => {
+    const optionalMatches = paymentBreakdowns.filter(receipt => invoice.id === receipt.invoice_id);
+    if (optionalMatches.length < 1) {
+      unmatched.push(invoice);
+      return;
+    }
+    if (optionalMatches.length === 1) {
+      const adjustedBreakdown: Record<string, unknown> = {};
+      Object.entries(optionalMatches[0]).map(([key, value]) => {
+        adjustedBreakdown[`breakdown_${key}`] = value;
+      });
+      matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
+      return;
+    }
     if (
       invoice.status === 'processed' ||
       invoice.total === '0.00' ||
@@ -495,20 +574,53 @@ export async function matchInvoicesWithPayments(
       unmatched.push(invoice);
       return;
     }
-
-    const optionalMatches = paymentBreakdowns.filter(receipt => invoice.id === receipt.invoice_id);
-    if (optionalMatches.length === 1) {
-      const adjustedBreakdown: Record<string, unknown> = {};
-      Object.entries(optionalMatches[0]).map(([key, value]) => {
-        adjustedBreakdown[`breakdown_${key}`] = value;
-      });
-      matches.push({ ...(adjustedBreakdown as PrefixedBreakdown), ...invoice });
-    } else {
-      throw new Error(`No payment match found for invoice ${invoice.id}`);
-    }
+    throw new Error(`Multiple matches found for invoice ${invoice.id}`);
   });
 
   return { matches, unmatched };
+}
+
+export async function updateDeelInvoiceRecord(
+  injector: Injector,
+  match: DeelInvoiceMatch,
+  chargeId: string,
+) {
+  try {
+    const deelInvoice = await injector
+      .get(DeelInvoicesProvider)
+      .getInvoicesByIdLoader.load(match.id);
+    if (!deelInvoice) {
+      throw new Error(`Deel invoice ${match.id} not found in DB`);
+    }
+    if (!deelInvoice.document_id) {
+      throw new Error(`Deel invoice ${match.id} has no associated document_id`);
+    }
+    const documentId = deelInvoice.document_id;
+    await injector
+      .get(DocumentsProvider)
+      .updateDocument({ documentId, chargeId })
+      .catch(error => {
+        const message = 'Error updating Deel invoice document';
+        console.error(`${message}: ${error}`);
+        throw new Error(message, { cause: error });
+      });
+
+    await injector
+      .get(DeelInvoicesProvider)
+      .updateDeelInvoiceRecords(convertMatchToPartialDeelInvoiceRecord(match))
+      .catch(error => {
+        const message = 'Error updating Deel invoice record';
+        console.error(`${message}: ${error}`);
+        throw new Error(message, { cause: error });
+      });
+  } catch (error) {
+    const message = 'Error updating Deel invoice record';
+    console.error(`${message}: ${error}`);
+    if (error instanceof GraphQLError) {
+      throw error;
+    }
+    throw new Error(message, { cause: error });
+  }
 }
 
 export async function insertDeelInvoiceRecord(
@@ -518,11 +630,20 @@ export async function insertDeelInvoiceRecord(
 ) {
   try {
     const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-    const documentId = await uploadDeelInvoice(chargeId, match, injector, ownerId);
+    const documentId = await uploadDeelInvoice(chargeId, match, injector, ownerId).catch(error => {
+      const message = 'Error uploading Deel invoice';
+      console.error(`${message}: ${error}`);
+      throw new Error(message, { cause: error });
+    });
 
     await injector
       .get(DeelInvoicesProvider)
-      .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId));
+      .insertDeelInvoiceRecords(convertMatchToDeelInvoiceRecord(match, documentId))
+      .catch(error => {
+        const message = 'Error inserting Deel invoice record';
+        console.error(`${message}: ${error}`);
+        throw new Error(message, { cause: error });
+      });
   } catch (error) {
     const message = 'Error uploading Deel invoice record';
     console.error(`${message}: ${error}`);

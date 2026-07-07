@@ -8,12 +8,14 @@ import { TransactionsProvider } from '../../transactions/providers/transactions.
 import {
   createDeelInvoiceMatchFromUnmatchedInvoice,
   fetchAndFilterInvoices,
+  fetchPaymentBreakdowns,
   fetchReceipts,
   getChargeMatchesForPayments,
   getContractsFromPaymentBreakdowns,
   getDeelChargeDescription,
   insertDeelInvoiceRecord,
   matchInvoicesWithPayments,
+  updateDeelInvoiceRecord,
   validateContracts,
 } from '../helpers/deel.helper.js';
 import { DeelContractsProvider } from '../providers/deel-contracts.provider.js';
@@ -43,17 +45,20 @@ export const deelResolvers: DeelModule.Resolvers = {
     },
     fetchDeelDocuments: async (_, __, { injector }) => {
       try {
-        const invoices = await fetchAndFilterInvoices(injector);
-        if (invoices.length === 0) {
-          return [];
+        const { newInvoices, unmatchedExistingInvoices } = await fetchAndFilterInvoices(injector);
+        if (newInvoices.length === 0) {
+          // return [];
         }
 
+        const unmatchedExistingInvoicesSet = new Set(unmatchedExistingInvoices.map(i => i.id));
+
+        // NOTE: avoiding fetching receipts and invoices in parallel to avoid hitting Deel API rate limits
         const receipts = await fetchReceipts(injector);
+        const paymentBreakdowns = await fetchPaymentBreakdowns(injector, receipts);
 
         const { matches, unmatched } = await matchInvoicesWithPayments(
-          injector,
-          invoices,
-          receipts,
+          [...newInvoices, ...unmatchedExistingInvoices],
+          paymentBreakdowns,
         );
 
         if (matches.length + unmatched.length <= 0) {
@@ -65,7 +70,7 @@ export const deelResolvers: DeelModule.Resolvers = {
         await validateContracts(contractsInfo, injector);
 
         const { receiptChargeMap, invoiceChargeMap, newReceipts } =
-          await getChargeMatchesForPayments(injector, receipts);
+          await getChargeMatchesForPayments(injector, receipts, paymentBreakdowns);
 
         const updatedChargeIdsSet = new Set<string>();
 
@@ -73,26 +78,28 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         // insert/update unmatched Deel invoice records
         for (const invoice of unmatched) {
-          if (invoiceChargeMap.has(invoice.id)) {
+          let chargeId = invoiceChargeMap.get(invoice.id);
+          if (chargeId) {
             console.log('Found missing match for invoice via invoiceChargeMap:', invoice.id);
+          } else {
+            const charge = await injector.get(ChargesProvider).generateCharge({
+              ownerId,
+              userDescription: `Deel invoice ${invoice.label}`,
+            });
+            updatedChargeIdsSet.add(charge.id);
+            chargeId = charge.id;
           }
 
-          const charge = await injector.get(ChargesProvider).generateCharge({
-            ownerId,
-            userDescription: `Deel invoice ${invoice.label}`,
-          });
-
-          updatedChargeIdsSet.add(charge.id);
-
           const match = createDeelInvoiceMatchFromUnmatchedInvoice(invoice);
-
-          await insertDeelInvoiceRecord(injector, match, charge.id);
+          if (!unmatchedExistingInvoicesSet.has(match.id)) {
+            await insertDeelInvoiceRecord(injector, match, chargeId);
+          }
         }
 
         // insert/update matched Deel invoice records
         for (const match of matches) {
           let chargeId =
-            invoiceChargeMap.get(match.id) ?? receiptChargeMap.get(match.breakdown_receipt_id);
+            receiptChargeMap.get(match.breakdown_receipt_id) ?? invoiceChargeMap.get(match.id);
 
           // if no charge found, create one from receipt
           if (!chargeId) {
@@ -104,6 +111,7 @@ export const deelResolvers: DeelModule.Resolvers = {
                 userDescription: description,
               });
               chargeId = charge.id;
+              receiptChargeMap.set(match.breakdown_receipt_id, chargeId);
 
               // TODO: upload receipt file (currently not available from Deel API)
             }
@@ -115,7 +123,13 @@ export const deelResolvers: DeelModule.Resolvers = {
 
           updatedChargeIdsSet.add(chargeId);
 
-          await insertDeelInvoiceRecord(injector, match, chargeId);
+          if (unmatchedExistingInvoicesSet.has(match.id)) {
+            // update existing invoice record
+            await updateDeelInvoiceRecord(injector, match, chargeId);
+          } else {
+            // insert new invoice record
+            await insertDeelInvoiceRecord(injector, match, chargeId);
+          }
         }
 
         // fetch charges, clean empty ones

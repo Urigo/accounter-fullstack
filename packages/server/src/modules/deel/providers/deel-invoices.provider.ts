@@ -11,6 +11,8 @@ import type {
   IGetReceiptToChargeQuery,
   IInsertDeelInvoiceRecordsParams,
   IInsertDeelInvoiceRecordsQuery,
+  IUpdateDeelInvoiceRecordsParams,
+  IUpdateDeelInvoiceRecordsQuery,
 } from '../types.js';
 
 const getInvoicesByIssueDates = sql<IGetInvoicesByIssueDatesQuery>`
@@ -47,10 +49,12 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         id,
         document_id,
         amount,
+        billing_type,
         contract_id,
         created_at,
         currency,
         deel_fee,
+        document_type,
         due_date,
         is_overdue,
         issued_at,
@@ -90,10 +94,12 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
       VALUES ($id,
         $documentId,
         $amount,
+        $billingType,
         $contractId,
         $createdAt,
         $currency,
         $deelFee,
+        $documentType,
         $dueDate,
         $isOverdue,
         $issuedAt,
@@ -131,6 +137,186 @@ const insertDeelInvoiceRecords = sql<IInsertDeelInvoiceRecordsQuery>`
         $recipientLegalEntityId,
         $ownerId)
       RETURNING *;`;
+
+const updateDeelInvoiceRecords = sql<IUpdateDeelInvoiceRecordsQuery>`
+  UPDATE accounter_schema.deel_invoices
+  SET
+  document_id = COALESCE(
+    $documentId,
+    document_id
+  ),
+  amount = COALESCE(
+    $amount,
+    amount
+  ),
+  billing_type = COALESCE(
+    $billingType,
+    billing_type
+  ),
+  contract_id = COALESCE(
+    $contractId,
+    contract_id
+  ),
+  created_at = COALESCE(
+    $createdAt,
+    created_at
+  ),
+  currency = COALESCE(
+    $currency,
+    currency
+  ),
+  deel_fee = COALESCE(
+    $deelFee,
+    deel_fee
+  ),
+  document_type = COALESCE(
+    $documentType,
+    document_type
+  ),
+  due_date = COALESCE(
+    $dueDate,
+    due_date
+  ),
+  is_overdue = COALESCE(
+    $isOverdue,
+    is_overdue
+  ),
+  issued_at = COALESCE(
+    $issuedAt,
+    issued_at
+  ),
+  label = COALESCE(
+    $label,
+    label
+  ),
+  paid_at = COALESCE(
+    $paidAt,
+    paid_at
+  ),
+  status = COALESCE(
+    $status,
+    status
+  ),
+  total = COALESCE(
+    $total,
+    total
+  ),
+  vat_id = COALESCE(
+    $vatId,
+    vat_id
+  ),
+  vat_percentage = COALESCE(
+    $vatPercentage,
+    vat_percentage
+  ),
+  vat_total = COALESCE(
+    $vatTotal,
+    vat_total
+  ),
+  adjustment = COALESCE(
+    $adjustment,
+    adjustment
+  ),
+  approve_date = COALESCE(
+    $approveDate,
+    approve_date
+  ),
+  approvers = COALESCE(
+    $approvers,
+    approvers
+  ),
+  bonus = COALESCE(
+    $bonus,
+    bonus
+  ),
+  commissions = COALESCE(
+    $commissions,
+    commissions
+  ),
+  contract_country = COALESCE(
+    $contractCountry,
+    contract_country
+  ),
+  contract_start_date = COALESCE(
+    $contractStartDate,
+    contract_start_date
+  ),
+  contract_type = COALESCE(
+    $contractType,
+    contract_type
+  ),
+  contractor_email = COALESCE(
+    $contractorEmail,
+    contractor_email
+  ),
+  contractor_employee_name = COALESCE(
+    $contractorEmployeeName,
+    contractor_employee_name
+  ),
+  contractor_unique_identifier = COALESCE(
+    $contractorUniqueIdentifier,
+    contractor_unique_identifier
+  ),
+  deductions = COALESCE(
+    $deductions,
+    deductions
+  ),
+  expenses = COALESCE(
+    $expenses,
+    expenses
+  ),
+  frequency = COALESCE(
+    $frequency,
+    frequency
+  ),
+  general_ledger_account = COALESCE(
+    $generalLedgerAccount,
+    general_ledger_account
+  ),
+  group_id = COALESCE(
+    $groupId,
+    group_id
+  ),
+  others = COALESCE(
+    $others,
+    others
+  ),
+  overtime = COALESCE(
+    $overtime,
+    overtime
+  ),
+  payment_currency = COALESCE(
+    $paymentCurrency,
+    payment_currency
+  ),
+  pro_rata = COALESCE(
+    $proRata,
+    pro_rata
+  ),
+  processing_fee = COALESCE(
+    $processingFee,
+    processing_fee
+  ),
+  "work" = COALESCE(
+    $work,
+    work
+  ),
+  total_payment_currency = COALESCE(
+    $totalPaymentCurrency,
+    total_payment_currency
+  ),
+  payment_id = COALESCE(
+    $paymentId,
+    payment_id
+  ),
+  recipient_legal_entity_id = COALESCE(
+    $recipientLegalEntityId,
+    recipient_legal_entity_id
+  )
+  WHERE
+    id = $id
+  RETURNING *;
+  `;
 
 @Injectable({
   scope: Scope.Operation,
@@ -211,6 +397,16 @@ export class DeelInvoicesProvider {
       return insertDeelInvoiceRecords.run(reassureOwnerIdExists(params, ownerId), this.db);
     } catch (e) {
       const message = `Error inserting Deel invoice`;
+      console.error(message, e);
+      throw new Error(message, { cause: e });
+    }
+  }
+
+  public async updateDeelInvoiceRecords(params: IUpdateDeelInvoiceRecordsParams) {
+    try {
+      return updateDeelInvoiceRecords.run(params, this.db);
+    } catch (e) {
+      const message = `Error updating Deel invoice`;
       console.error(message, e);
       throw new Error(message, { cause: e });
     }

@@ -6,6 +6,7 @@ const invoiceSchema = z
     amount: z
       .string() // NOTE: by docs, optional
       .describe('Billed amount of the invoice.'),
+    billing_type: z.enum(['FEE', 'WORK', 'RESERVE', 'PREPAID_BILLING']),
     contract_id: z
       .string()
       .nullable() // NOTE: by docs, not nullable
@@ -17,6 +18,7 @@ const invoiceSchema = z
     deel_fee: z
       .literal('0.00') // NOTE: by docs, nullable & optional
       .describe('Fee charged by Deel.'),
+    document_type: z.enum(['INVOICE', 'FUNDING_STATEMENT']),
     due_date: z
       .union([z.literal(''), z.iso.datetime()]) // NOTE: by docs, nullable
       .describe('Date and time when the invoice is due (ISO-8601 format).'), // example: "2022-05-24T09:38:46.235Z",
@@ -163,6 +165,100 @@ export const workerSchema = z
 
 export type DeelWorker = z.infer<typeof workerSchema>;
 
+export const generalFundsUsedSchema = z
+  .object({
+    amount: z
+      .string()
+      .nullable()
+      .describe("Amount deducted from general funds, in the payment currency. '0.00' if not used"),
+    original_amount: z
+      .string()
+      .nullable()
+      .describe(
+        'Amount deducted from general funds, in the original currency it was held in. Null if not used',
+      ),
+    original_currency: z
+      .string()
+      .length(3)
+      .nullable()
+      .describe(
+        'Currency in which the general funds were held, following ISO 4217 (e.g., USD, USDC). Null if not used',
+      ),
+  })
+  .strict();
+
+export const deelGrantedCreditsUsedSchema = z
+  .object({
+    amount: z
+      .string()
+      .nullable()
+      .describe(
+        "Amount deducted from Deel-granted credits, in the payment currency. '0.00' if not used",
+      ),
+    original_amount: z
+      .string()
+      .nullable()
+      .describe(
+        'Amount deducted from Deel-granted credits, in the original currency they were held in. Null if not used',
+      ),
+    original_currency: z
+      .string()
+      .length(3)
+      .nullable()
+      .describe(
+        'Currency in which the Deel-granted credits were held, following ISO 4217 (e.g., USD, USDC). Null if not used',
+      ),
+  })
+  .strict();
+
+export const prepaidBillingCreditsUsedSchema = z
+  .object({
+    amount: z
+      .string()
+      .nullable()
+      .describe(
+        "Amount deducted from prepaid billing credits, in the payment currency. '0.00' if not used",
+      ),
+    original_amount: z
+      .string()
+      .nullable()
+      .describe(
+        'Amount deducted from prepaid billing credits, in the original currency they were held in. Null if not used',
+      ),
+    original_currency: z
+      .string()
+      .length(3)
+      .nullable()
+      .describe(
+        'Currency in which the prepaid billing credits were held, following ISO 4217 (e.g., USD, USDC). Null if not used',
+      ),
+  })
+  .strict();
+
+export const eorEarlyInvoicingFundsUsedSchema = z
+  .object({
+    amount: z
+      .string()
+      .nullable()
+      .describe(
+        "Amount deducted from EOR early invoicing funds, in the payment currency. '0.00' if not used",
+      ),
+    original_amount: z
+      .string()
+      .nullable()
+      .describe(
+        'Amount deducted from EOR early invoicing funds, in the original currency they were held in. Null if not used',
+      ),
+    original_currency: z
+      .string()
+      .length(3)
+      .nullable()
+      .describe(
+        'Currency in which the EOR early invoicing funds were held, following ISO 4217 (e.g., USD, USDC). Null if not used',
+      ),
+  })
+  .strict();
+
 export const paymentReceiptsSchema = z
   .object({
     id: z
@@ -171,6 +267,16 @@ export const paymentReceiptsSchema = z
     created_at: z.iso
       .datetime() // NOTE: by docs, optional
       .describe('Date and time when the payment was created, in ISO-8601 format.'),
+    deel_granted_credits_used: deelGrantedCreditsUsedSchema,
+    eor_early_invoicing_funds_used: eorEarlyInvoicingFundsUsedSchema,
+    general_funds_used: generalFundsUsedSchema,
+    invoices: z.array(
+      z
+        .object({
+          id: z.string().describe('Unique identifier for the invoice.'),
+        })
+        .strict(),
+    ),
     label: z
       .string() // NOTE: by docs, optional
       .describe('A descriptive label for the payment.'),
@@ -182,19 +288,47 @@ export const paymentReceiptsSchema = z
       .string()
       .length(3) // NOTE: by docs, optional
       .describe('Three-letter currency code for the payment, following ISO 4217.'),
-    payment_method: z.object({}).optional().describe('payment_method object'), // TODO: define
-    total: z.string(), // NOTE: by docs, not existing
+    payment_method: z
+      .object({
+        type: z
+          .enum([
+            'ach',
+            'alviere_ach',
+            'adyen_card',
+            'bank_transfer',
+            'bt_card',
+            'bt_pay_pal',
+            'brex',
+            'coinbase',
+            'client_balance',
+            'eor_funding_balance',
+            'fee_credits',
+            'go_cardless',
+            'go_cardless_becs',
+            'mercury_wire',
+            'pay_pal',
+            'stablecoin_transfer',
+            'stripe_ach',
+            'stripe_bacs_debit',
+            'stripe_card',
+            'stripe_sepa_debit',
+            'transferwise',
+          ])
+          .optional(),
+      })
+      .optional()
+      .describe('Payment method details for the transaction'),
+    prepaid_billing_credits_used: prepaidBillingCreditsUsedSchema,
+    total: z.string().describe('Original invoice total before any credits or balance were applied'),
+    total_due: z
+      .string()
+      .describe(
+        "Amount due for the payment after applying any credits or balance. Equals 'total' when no credits were used.",
+      ),
     status: z
       .enum(['paid']) // NOTE: by docs, optional
       .describe("Status of the payment. Either 'paid' or 'processing'."),
     workers: z.array(workerSchema).optional(),
-    invoices: z.array(
-      z
-        .object({
-          id: z.string().describe('Unique identifier for the invoice.'),
-        })
-        .strict(),
-    ),
     timezone: z
       .string()
       .nullable()
@@ -244,12 +378,14 @@ const paymentBreakdownRecordSchema = z
     contract_country: z
       .union([z.literal(''), z.string().length(2)])
       .describe('Country where the contract is associated.'),
+    contract_id: z.null(),
     contract_start_date: z
       .union([z.iso.datetime(), z.literal('')])
       .describe('Start date of the contract.'),
     contract_type: z.string(),
     contractor_email: z.union([z.literal(''), z.email()]).describe("Worker's email address."),
     contractor_employee_name: z.string().describe("Worker's name."),
+    contractor_pic_url: z.null(),
     contractor_unique_identifier: z
       .union([z.literal(''), z.uuid()])
       .describe("Worker's unique identifier as a UUID."),
@@ -258,26 +394,17 @@ const paymentBreakdownRecordSchema = z
     deductions: z.literal('0.00').describe('Deductions from the payment.'),
     expenses: z.string().describe('Expenses related to the payment.'),
     frequency: z
-      .enum(['', 'hourly', 'daily', 'monthly', 'custom'])
+      .enum(['', 'hourly', 'daily', 'weekly', 'biweekly', 'semimonthly', 'monthly', 'custom'])
       .describe('Frequency of payment (e.g., monthly, weekly).'),
     general_ledger_account: z.literal('').describe('General ledger account for the payment.'),
     group_id: z.string(),
     invoice_id: z.string().describe('Invoice number associated with the payment.'),
-    // invoice_number: z
-    //   .string()
-    //   .optional()
-    //   .describe('Invoice number associated with the payment.'),
     others: z.string().describe('Other payment amounts.'),
     overtime: z.literal('0.00').describe('Overtime payment amount.'),
     payment_currency: z.string().describe('Currency in which the payment was made.'),
     payment_date: z.iso.datetime().describe('The date the payment was made.'),
     pro_rata: z.string().describe('Pro-rated payment amount.'),
     processing_fee: z.string().describe('Processing fee applied to the payment.'),
-    // receipt_number: z.string().optional().describe('Receipt number for the payment.'),
-    // team: z
-    //   .string()
-    //   .optional()
-    //   .describe('The name of the team or company associated with the payment.'),
     work: z.string().describe('Amount associated with work payment.'),
     total: z.string().describe('Total payment due for this breakdown item.'),
     total_payment_currency: z.string().describe('Total payment in the payment currency.'),
