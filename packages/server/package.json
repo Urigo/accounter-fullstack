@@ -66,7 +66,7 @@
     "dotenv": "17.4.2",
     "dotenv-cli": "11.0.0",
     "googleapis": "173.0.0",
-    "graphql": "16.14.2",
+    "graphql": "17.0.2",
     "graphql-modules": "3.1.2",
     "graphql-scalars": "1.25.0",
     "graphql-yoga": "5.21.2",
