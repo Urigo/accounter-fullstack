@@ -70,7 +70,7 @@
     "@types/pg": "8.20.0",
     "@typescript-eslint/eslint-plugin": "8.62.1",
     "@typescript-eslint/parser": "8.62.1",
-    "@vitest/coverage-v8": "4.1.9",
+    "@vitest/coverage-v8": "4.1.10",
     "bob-the-bundler": "7.0.1",
     "concurrently": "10.0.3",
     "dotenv": "17.4.2",
@@ -97,7 +97,7 @@
     "tsx": "4.23.0",
     "typescript": "6.0.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.9"
+    "vitest": "4.1.10"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.10.7": "patch:@slonik/pg-driver@npm%3A49.10.7#~/.yarn/patches/@slonik-pg-driver-npm-49.10.7-7bd58c1a0b.patch",
