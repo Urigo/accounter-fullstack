@@ -3,6 +3,7 @@ import type { BatchUpdateBusinessInput } from '../../gql/graphql.js';
 import { useBatchUpdateBusinesses } from '../../hooks/use-batch-update-businesses.js';
 import { useAllCountries } from '../../hooks/use-get-countries.js';
 import { useGetTags } from '../../hooks/use-get-tags.js';
+import { cn } from '../../lib/utils.js';
 import { ComboBox, MultiSelect } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
@@ -58,13 +59,20 @@ const EMPTY_FORM: FormState = {
 };
 
 // `country` is rendered separately as a searchable ComboBox; the rest are simple inputs.
-const FIELDS: { key: keyof FormState; label: string; placeholder?: string; numeric?: boolean }[] = [
+// `fullWidth` fields span both columns on wider screens.
+const FIELDS: {
+  key: keyof FormState;
+  label: string;
+  placeholder?: string;
+  numeric?: boolean;
+  fullWidth?: boolean;
+}[] = [
   { key: 'city', label: 'City' },
   { key: 'zipCode', label: 'Zip code' },
   { key: 'sortCode', label: 'Sort code', numeric: true },
   { key: 'irsCode', label: 'IRS code', numeric: true },
-  { key: 'taxCategory', label: 'Tax category (UUID)' },
-  { key: 'description', label: 'Suggestion description' },
+  { key: 'taxCategory', label: 'Tax category (UUID)', fullWidth: true },
+  { key: 'description', label: 'Suggestion description', fullWidth: true },
 ];
 
 // boolean flags rendered as tri-state selects.
@@ -158,15 +166,15 @@ export function BatchUpdateBusinessesDialog({
           Batch update{businessIds.length ? ` (${businessIds.length})` : ''}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Batch update {businessIds.length} businesses</DialogTitle>
           <DialogDescription>
             Only the fields you fill in are applied to every selected business.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3">
-          <div className="grid gap-1">
+        <div className="-mx-1 grid flex-1 grid-cols-1 gap-3 overflow-y-auto px-1 sm:grid-cols-2">
+          <div className="grid gap-1 sm:col-span-2">
             <Label>Country</Label>
             <ComboBox
               data={countries.map(country => ({ value: country.code, label: country.name }))}
@@ -177,7 +185,7 @@ export function BatchUpdateBusinessesDialog({
             />
           </div>
           {FIELDS.map(field => (
-            <div key={field.key} className="grid gap-1">
+            <div key={field.key} className={cn('grid gap-1', field.fullWidth && 'sm:col-span-2')}>
               <Label htmlFor={`batch-${field.key}`}>{field.label}</Label>
               <Input
                 id={`batch-${field.key}`}
@@ -188,7 +196,7 @@ export function BatchUpdateBusinessesDialog({
               />
             </div>
           ))}
-          <div className="grid gap-1">
+          <div className="grid gap-1 sm:col-span-2">
             <Label>Tags</Label>
             <MultiSelect
               options={selectableTags}
