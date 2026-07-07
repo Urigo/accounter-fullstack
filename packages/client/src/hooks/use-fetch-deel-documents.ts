@@ -31,7 +31,7 @@ export const useFetchDeelDocuments = (): UseFetchDeelDocuments => {
     try {
       const res = await mutate({});
       const data = handleCommonErrors(res, message, NOTIFICATION_ID);
-      if (data) {
+      if (data?.fetchDeelDocuments) {
         toast.success('Success', {
           id: NOTIFICATION_ID,
           description: `Fetched ${data.fetchDeelDocuments.length} Deel charge(s)`,
