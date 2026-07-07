@@ -3,7 +3,7 @@ import path from 'node:path';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import { defaultExclude, defineConfig } from 'vitest/config';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export default defineConfig({
   plugins: [

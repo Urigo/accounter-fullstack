@@ -5,7 +5,7 @@ import { FiatExchangeProvider } from './providers/fiat-exchange.provider.js';
 import { exchangeResolvers } from './resolvers/exchange.resolver.js';
 import exchange from './typeDefs/exchange.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const exchangeRatesModule = createModule({
   id: 'exchangeRates',

@@ -2,7 +2,7 @@ import { createModule } from 'graphql-modules';
 import { chartsResolvers } from './resolvers/charts.resolver.js';
 import charts from './typeDefs/charts.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const chartsModule = createModule({
   id: 'charts',

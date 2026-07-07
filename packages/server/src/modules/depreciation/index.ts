@@ -4,7 +4,7 @@ import { DepreciationProvider } from './providers/depreciation.provider.js';
 import { depreciationResolvers } from './resolvers/depreciation.resolver.js';
 import depreciation from './typeDefs/depreciation.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const depreciationModule = createModule({
   id: 'depreciation',

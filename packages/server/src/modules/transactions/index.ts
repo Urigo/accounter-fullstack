@@ -8,7 +8,7 @@ import creditcardTransactions from './typeDefs/creditcard-transactions.graphql.j
 import transactionSuggestions from './typeDefs/transaction-suggestions.graphql.js';
 import transactions from './typeDefs/transactions.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const transactionsModule = createModule({
   id: 'transactions',

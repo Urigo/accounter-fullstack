@@ -3,7 +3,7 @@ import { CornJobsProvider } from './providers/corn-jobs.provider.js';
 import { cornJobsResolvers } from './resolvers/corn-jobs.resolver.js';
 import cornJobs from './typeDefs/corn-jobs.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const cornJobsModule = createModule({
   id: 'corn-jobs',

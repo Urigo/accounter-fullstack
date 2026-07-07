@@ -3,7 +3,7 @@ import { ProviderCredentialsProvider } from './providers/provider-credentials.pr
 import { providerCredentialsResolvers } from './resolvers/provider-credentials.resolvers.js';
 import providerCredentials from './typeDefs/provider-credentials.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const providerCredentialsModule = createModule({
   id: 'providerCredentials',

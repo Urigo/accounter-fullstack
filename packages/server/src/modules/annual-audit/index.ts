@@ -3,7 +3,7 @@ import { AnnualAuditProvider } from './providers/annual-audit.provider.js';
 import { annualAuditResolvers } from './resolvers/annual-audit.resolver.js';
 import annualAudit from './typeDefs/annual-audit.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const annualAuditModule = createModule({
   id: 'annual-audit',

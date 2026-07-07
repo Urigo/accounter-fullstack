@@ -6,7 +6,7 @@ import { bankDepositsResolvers } from './resolvers/bank-deposits.resolver.js';
 import bankDepositCharges from './typeDefs/bank-deposit-charges.graphql.js';
 import bankDeposits from './typeDefs/bank-deposits.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const bankDepositsModule = createModule({
   id: 'bankDeposits',

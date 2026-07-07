@@ -10,7 +10,7 @@ import DocumentsIssuing from './typeDefs/documents-issuing.graphql.js';
 import documents from './typeDefs/documents.graphql.js';
 import issuedDocuments from './typeDefs/issued-documents.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const documentsModule = createModule({
   id: 'documents',

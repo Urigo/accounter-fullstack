@@ -6,7 +6,7 @@ import common from './typeDefs/common.graphql.js';
 import errors from './typeDefs/errors.graphql.js';
 import userContext from './typeDefs/user-context.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const commonModule = createModule({
   id: 'common',

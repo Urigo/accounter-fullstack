@@ -17,7 +17,7 @@ import businessTripAttendees from './typeDefs/business-trip-attendees.graphql.js
 import businessTripExpenses from './typeDefs/business-trip-expenses.graphql.js';
 import businessTrips from './typeDefs/business-trips.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const businessTripsModule = createModule({
   id: 'businessTrips',

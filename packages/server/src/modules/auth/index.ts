@@ -12,7 +12,7 @@ import { businessUsersResolvers } from './resolvers/business-users.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
 import auth from './typeDefs/auth.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const authModule = createModule({
   id: 'auth',

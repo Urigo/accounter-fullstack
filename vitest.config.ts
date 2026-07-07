@@ -11,7 +11,7 @@ if (nodeMajor >= 24) {
   process.env['NODE_OPTIONS'] = `${process.env['NODE_OPTIONS'] ?? ''} --no-webstorage`.trim();
 }
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export default defineConfig({
   plugins: [tsconfigPaths()],

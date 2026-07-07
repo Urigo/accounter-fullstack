@@ -4,7 +4,7 @@ import { ShaamImportProvider } from './providers/shaam-import.provider.js';
 import { onboardingResolvers } from './resolvers/onboarding.resolver.js';
 import onboarding from './typeDefs/onboarding.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const onboardingModule = createModule({
   id: 'onboarding',

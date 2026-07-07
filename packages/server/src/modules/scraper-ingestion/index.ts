@@ -6,7 +6,7 @@ import { ScraperIngestionProvider } from './providers/scraper-ingestion.provider
 import { scraperIngestionResolvers } from './resolvers/scraper-ingestion.resolver.js';
 import scraperIngestion from './typeDefs/scraper-ingestion.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const scraperIngestionModule = createModule({
   id: 'scraperIngestion',

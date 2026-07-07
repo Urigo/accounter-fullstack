@@ -10,7 +10,7 @@ import chargeValidation from './typeDefs/charge-validation.graphql.js';
 import charges from './typeDefs/charges.graphql.js';
 import financialCharges from './typeDefs/financial-charges.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const chargesModule = createModule({
   id: 'charges',

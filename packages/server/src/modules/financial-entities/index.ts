@@ -22,7 +22,7 @@ import clients from './typeDefs/clients.graphql.js';
 import financialEntities from './typeDefs/financial-entities.graphql.js';
 import taxCategories from './typeDefs/tax-categories.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const financialEntitiesModule = createModule({
   id: 'financialEntities',

@@ -10,7 +10,7 @@ import employees from './typeDefs/employees.graphql.js';
 import funds from './typeDefs/funds.graphql.js';
 import salaries from './typeDefs/salaries.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const salariesModule = createModule({
   id: 'salaries',

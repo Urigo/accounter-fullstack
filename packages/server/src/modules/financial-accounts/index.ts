@@ -7,7 +7,7 @@ import { financialBankAccountsResolvers } from './resolvers/financial-bank-accou
 import financialAccounts from './typeDefs/financial-accounts.graphql.js';
 import financialBankAccounts from './typeDefs/financial-bank-accounts.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const financialAccountsModule = createModule({
   id: 'financialAccounts',

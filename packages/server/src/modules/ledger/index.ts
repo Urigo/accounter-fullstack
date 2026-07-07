@@ -5,7 +5,7 @@ import { UnbalancedBusinessesProvider } from './providers/unbalanced-businesses.
 import { ledgerResolvers } from './resolvers/ledger.resolver.js';
 import ledger from './typeDefs/ledger.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const ledgerModule = createModule({
   id: 'ledger',

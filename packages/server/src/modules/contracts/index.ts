@@ -3,7 +3,7 @@ import { ContractsProvider } from './providers/contracts.provider.js';
 import { contractsResolvers } from './resolvers/contracts.resolver.js';
 import contracts from './typeDefs/contracts.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const contractsModule = createModule({
   id: 'contracts',

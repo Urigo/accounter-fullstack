@@ -8,7 +8,7 @@ import { emailIngestionIngestResolver } from './resolvers/email-ingestion-ingest
 import { emailIngestionResolvers } from './resolvers/email-ingestion.resolver.js';
 import emailIngestion from './typeDefs/email-ingestion.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const emailIngestionModule = createModule({
   id: 'email-ingestion',

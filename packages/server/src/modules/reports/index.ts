@@ -23,7 +23,7 @@ import uniformFormat from './typeDefs/uniform-format.graphql.js';
 import vatReport from './typeDefs/vat-report.graphql.js';
 import yearlyLedger from './typeDefs/yearly-ledger.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const reportsModule = createModule({
   id: 'reports',

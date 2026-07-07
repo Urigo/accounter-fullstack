@@ -3,7 +3,7 @@ import { CountriesProvider } from './providers/countries.provider.js';
 import { countriesResolvers } from './resolvers/countries.resolver.js';
 import countries from './typeDefs/countries.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const countriesModule = createModule({
   id: 'countries',

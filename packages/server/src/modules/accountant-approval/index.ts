@@ -3,7 +3,7 @@ import { AccountantApprovalProvider } from './providers/accountant-approval.prov
 import { accountantApprovalResolvers } from './resolvers/accountant-approval.resolver.js';
 import accountantApproval from './typeDefs/accountant-approval.graphql.js';
 
-const __dirname = new URL('.', import.meta.url).pathname;
+const __dirname = import.meta.dirname;
 
 export const accountantApprovalModule = createModule({
   id: 'accountantApproval',
