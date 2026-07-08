@@ -173,6 +173,8 @@ export type IngestResult =
       outcome: typeof IngestOutcome.DUPLICATE;
       existingIngestId: string | null;
       auditId: string;
+      /** Present only for self-issued skips (SELF_ISSUED); absent for content re-deliveries. */
+      reasonCode?: string;
     }
   | { outcome: typeof IngestOutcome.QUARANTINED; auditId: string; reasonCode: string }
   | { outcome: typeof IngestOutcome.REJECTED; reasonCode: string };
@@ -247,6 +249,22 @@ export class EmailIngestionIngestProvider {
 
     if (!grantResult.valid) {
       return { outcome: IngestOutcome.REJECTED, reasonCode: grantResult.reason };
+    }
+
+    // Self-issued short-circuit: when the recognized issuing business is the
+    // tenant's own business, the email is a confirmation of an invoice the
+    // tenant issued itself (e.g. via Morning/greeninvoice). That document was
+    // already inserted at creation time, so ingesting it would duplicate it —
+    // skip before any upload/OCR/insert. Reported as DUPLICATE (the document
+    // already exists) with a SELF_ISSUED reason. Runs before prepareDocuments so
+    // no Cloudinary upload or OCR is performed for the skipped email.
+    if (grantResult.grant.businessId === tenantId) {
+      return {
+        outcome: IngestOutcome.DUPLICATE,
+        existingIngestId: null,
+        auditId: randomUUID(),
+        reasonCode: IngestReasonCode.SELF_ISSUED,
+      };
     }
 
     const corrId = correlationId ?? randomUUID();

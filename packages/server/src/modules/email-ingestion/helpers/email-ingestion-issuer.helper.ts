@@ -94,6 +94,28 @@ export function selectIssuerEmail(evidence: SenderEvidence | null | undefined): 
 }
 
 /**
+ * Detect a **self-issued** document: an email whose only determinable issuer is
+ * one of the tenant's own invoice-issuing platforms (Morning/Sumit) or its own
+ * forwarding address — i.e. no external counterparty can be identified.
+ *
+ * These are the confirmation emails a tenant receives for invoices *it* issued
+ * through such a platform (e.g. Morning/greeninvoice). The underlying document
+ * was already inserted on the server at creation time, so ingesting the email
+ * would duplicate it. This mirrors the legacy gmail-listener skip, where
+ * `getEmailData` dropped mail whose `From` carried the tenant's own name.
+ *
+ * The check reuses {@link selectIssuerEmail}: it commits to a provider address
+ * only after every non-provider candidate has been ruled out, so a provider
+ * result means the email has no external issuer. Forwarded supplier invoices —
+ * which carry the real issuer as a quoted-header `mailto:` in the body — resolve
+ * to that (non-provider) address and are therefore *not* treated as self-issued.
+ */
+export function isSelfIssuedSenderEvidence(evidence: SenderEvidence | null | undefined): boolean {
+  const issuer = selectIssuerEmail(evidence);
+  return issuer !== null && isKnownProvider(issuer);
+}
+
+/**
  * Build the ordered, de-duplicated list of issuer emails to try against the
  * `suggestion_data.emails` lookup, most-likely-real issuer first. Unlike
  * {@link selectIssuerEmail} (which commits to a single address), this lets the

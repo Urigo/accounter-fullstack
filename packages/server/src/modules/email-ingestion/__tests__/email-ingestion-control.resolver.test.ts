@@ -207,4 +207,35 @@ describe('Mutation.requestIngestControl', () => {
 
     expect(issueGrant.mock.calls[0][0].businessId).toBe('biz-7');
   });
+
+  it('binds the tenant own business and returns no config for a self-issued email', async () => {
+    const issueGrant = vi.fn().mockResolvedValue(mockGrant);
+    // No external business is recognized (only provider addresses), but
+    // self-issued detection binds the tenant as the issuer so ingest skips it.
+    const recognizeBusinessFromEvidence = vi
+      .fn()
+      .mockResolvedValue({ businessId: null, config: {} });
+    const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
+
+    const result = await resolver(
+      {} as never,
+      {
+        input: {
+          ...baseInput,
+          senderEvidence: {
+            from: 'ap@the-guild.dev',
+            replyTo: 'notify@morning.co',
+            originalFrom: 'notify@morning.co',
+          },
+        },
+      },
+      { injector } as never,
+      {} as never,
+    );
+
+    // The tenant's own business is bound as the grant's issuer.
+    expect(issueGrant.mock.calls[0][0].businessId).toBe('tenant-uuid-1');
+    // and no treatment config is returned (the email is skipped at ingest).
+    expect((result as { businessEmailConfig: unknown }).businessEmailConfig).toBeNull();
+  });
 });

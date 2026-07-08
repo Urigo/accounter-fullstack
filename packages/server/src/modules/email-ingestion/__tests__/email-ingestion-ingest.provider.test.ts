@@ -38,6 +38,18 @@ const VALID_GRANT_WITH_BUSINESS = {
   },
 };
 
+// Self-issued: the grant's issuing business is the tenant's own business.
+const VALID_GRANT_SELF_ISSUED = {
+  valid: true as const,
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
+    businessId: TENANT_ID,
+  },
+};
+
 const DOC_CONTENT_B64 = Buffer.from('%PDF-1.4 fake invoice bytes').toString('base64');
 
 const BASE_INPUT = {
@@ -185,6 +197,66 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       messageId: MSG_ID,
       rawMessageHash: MSG_HASH,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// performIngest — self-issued skip
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const inputWithContent = {
+    ...BASE_INPUT,
+    extractedDocuments: [
+      {
+        hash: 'doc-hash',
+        sizeBytes: 1024,
+        mimeType: 'application/pdf',
+        filename: 'invoice.pdf',
+        content: DOC_CONTENT_B64,
+      },
+    ],
+  };
+
+  it('returns DUPLICATE with SELF_ISSUED when the issuer is the tenant own business', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_SELF_ISSUED,
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
+    );
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.DUPLICATE,
+      existingIngestId: null,
+      reasonCode: IngestReasonCode.SELF_ISSUED,
+    });
+    // No document work (upload/OCR run together in prepareDocuments) and no
+    // writes for a self-issued duplicate.
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
+  });
+
+  it('consumes the grant but runs no dedup/insert queries for a self-issued email', async () => {
+    const { provider, validateAndConsumeGrant, dataQueries } = makeProvider(
+      VALID_GRANT_SELF_ISSUED,
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
+    );
+
+    await provider.performIngest(BASE_INPUT, ocrInjector);
+
+    // The grant IS validated/consumed, but only the early idempotency lookup
+    // runs — the self-issued check short-circuits before dedup and any insert.
+    expect(validateAndConsumeGrant).toHaveBeenCalled();
+    expect(dataQueries).toHaveLength(1);
   });
 });
 

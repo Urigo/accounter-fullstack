@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isSelfIssuedSenderEvidence,
   selectIssuerCandidates,
   selectIssuerEmail,
 } from '../helpers/email-ingestion-issuer.helper.js';
@@ -132,5 +133,46 @@ describe('selectIssuerCandidates', () => {
     });
     expect(candidates[0]).toBe('real@vendor.com');
     expect(candidates).toContain('notify@morning.co');
+  });
+});
+
+describe('isSelfIssuedSenderEvidence', () => {
+  it('is false for missing evidence (no issuer can be determined)', () => {
+    expect(isSelfIssuedSenderEvidence(undefined)).toBe(false);
+    expect(isSelfIssuedSenderEvidence(null)).toBe(false);
+    expect(isSelfIssuedSenderEvidence({})).toBe(false);
+  });
+
+  it('is true for a Morning self-issued confirmation (issuer resolves to a provider)', () => {
+    // The new Morning format: a Google-group forwarder rewrites From to the
+    // tenant's own AP address, and the original sender / Reply-To is the Morning
+    // notification address. No external issuer survives → self-issued.
+    expect(
+      isSelfIssuedSenderEvidence({
+        from: 'ap@the-guild.dev',
+        replyTo: 'notify@morning.co',
+        originalFrom: 'notify@morning.co',
+      }),
+    ).toBe(true);
+  });
+
+  it('is true when the only sender info is the tenant own forwarding address', () => {
+    expect(isSelfIssuedSenderEvidence({ from: 'ap@the-guild.dev' })).toBe(true);
+  });
+
+  it('is false for a direct supplier invoice', () => {
+    expect(isSelfIssuedSenderEvidence({ from: 'billing@vendor.com' })).toBe(false);
+  });
+
+  it('is false for a forwarded supplier invoice (real issuer is a body mailto)', () => {
+    // Forwarded mail keeps the live From as the forwarder / provider, but the
+    // quoted header block yields the real issuer as a body candidate.
+    expect(
+      isSelfIssuedSenderEvidence({
+        from: 'ap@the-guild.dev',
+        replyTo: 'notify@morning.co',
+        issuerCandidates: ['billing@vendor.com'],
+      }),
+    ).toBe(false);
   });
 });

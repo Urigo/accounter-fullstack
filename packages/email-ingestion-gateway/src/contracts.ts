@@ -25,6 +25,10 @@ export const IngestReasonCode = {
   OVERSIZE_MESSAGE: 'OVERSIZE_MESSAGE',
   TIMEOUT: 'TIMEOUT',
   TRANSIENT_UPSTREAM: 'TRANSIENT_UPSTREAM',
+  // Self-issued document: a confirmation email for an invoice the tenant issued
+  // itself (e.g. via Morning/greeninvoice). The underlying document already
+  // exists on the server from creation, so the email is skipped as a DUPLICATE.
+  SELF_ISSUED: 'SELF_ISSUED',
 } as const;
 
 export type IngestReasonCode = (typeof IngestReasonCode)[keyof typeof IngestReasonCode];
