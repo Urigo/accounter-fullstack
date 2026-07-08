@@ -8,9 +8,10 @@ import { UserNav } from '../layout/user-nav.js';
 import { UserContext, type UserInfo } from '../../providers/index.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock, executeJobsMock, logoutMock } = vi.hoisted(() => ({
+const { useAuth0Mock, executeJobsMock, fetchDeelDocumentsMock, logoutMock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
   executeJobsMock: vi.fn(),
+  fetchDeelDocumentsMock: vi.fn(),
   logoutMock: vi.fn(),
 }));
 
@@ -20,6 +21,10 @@ vi.mock('@auth0/auth0-react', () => ({
 
 vi.mock('../../hooks/use-corn-jobs.js', () => ({
   useCornJobs: () => ({ executeJobs: executeJobsMock }),
+}));
+
+vi.mock('../../hooks/use-fetch-deel-documents.js', () => ({
+  useFetchDeelDocuments: () => ({ fetching: false, fetchDocuments: fetchDeelDocumentsMock }),
 }));
 
 vi.mock('../common/modals/balance-charge-modal.js', () => ({
