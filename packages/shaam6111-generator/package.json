@@ -54,13 +54,13 @@
     "test:watch": "vitest --watch"
   },
   "dependencies": {
-    "iconv-lite": "0.7.2",
+    "iconv-lite": "0.7.3",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "bob-the-bundler": "7.0.1",
     "eslint": "10.6.0",
-    "vitest": "4.1.9"
+    "vitest": "4.1.10"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
