@@ -70,6 +70,7 @@ export const validateCharge = async (
     case ChargeTypeEnum.Financial:
     case ChargeTypeEnum.BusinessTrip:
     case ChargeTypeEnum.BankDeposit:
+    case ChargeTypeEnum.ForeignSecurities:
       shouldHaveDocuments = false;
   }
   if (isGeneralFees || business?.no_invoices_required === true || charge.documents_optional_flag) {
