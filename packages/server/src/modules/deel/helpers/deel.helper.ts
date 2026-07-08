@@ -555,6 +555,7 @@ export async function matchInvoicesWithPayments(
   invoices.map(invoice => {
     const optionalMatches = paymentBreakdowns.filter(receipt => invoice.id === receipt.invoice_id);
     if (optionalMatches.length < 1) {
+      console.warn(`No payment breakdown match found for invoice ${invoice.id}`);
       unmatched.push(invoice);
       return;
     }
