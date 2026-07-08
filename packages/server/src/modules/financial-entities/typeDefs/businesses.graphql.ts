@@ -181,6 +181,11 @@ export default gql`
     irsCode: Int
     pcn874RecordType: Pcn874RecordType
     suggestions: SuggestionsInput
+    exemptDealer: Boolean
+    optionalVAT: Boolean
+    isReceiptEnough: Boolean
+    isDocumentsOptional: Boolean
+    isActive: Boolean
   }
 
   " input for business suggestions "
