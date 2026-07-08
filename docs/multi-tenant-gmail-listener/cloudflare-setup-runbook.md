@@ -25,10 +25,16 @@ endpoint.
 
 ```javascript
 // workers/email-forwarder/index.js
-const hex = bytes =>
-  Array.from(new Uint8Array(bytes))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
+const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'))
+
+const hex = bytes => {
+  const uint8 = new Uint8Array(bytes)
+  let out = ''
+  for (let i = 0; i < uint8.length; i++) {
+    out += HEX_OCTETS[uint8[i]]
+  }
+  return out
+}
 
 async function isGatewayReachable(gatewayUrl) {
   try {
@@ -41,10 +47,7 @@ async function isGatewayReachable(gatewayUrl) {
 
 export default {
   async email(message, env) {
-    // Probe the gateway with a lightweight health check *before* consuming the
-    // stream. Reading `message.raw` may disturb the stream such that a later
-    // `message.forward()` could fail, so handling an unreachable gateway up front
-    // keeps the message untouched for a clean fallback.
+    // 1. Probe the gateway first (keeps the stream untouched for a clean fallback if it fails)
     if (!(await isGatewayReachable(env.GATEWAY_URL))) {
       if (env.FALLBACK_EMAIL) {
         await message.forward(env.FALLBACK_EMAIL)
@@ -53,11 +56,19 @@ export default {
       throw new Error('Gateway unreachable and FALLBACK_EMAIL is not configured')
     }
 
-    // message.raw is a ReadableStream property (not a method); Buffer is not
-    // available in Workers without nodejs_compat — use standard Web APIs throughout.
+    // 2. Read the raw message into memory
     const rawBuffer = await new Response(message.raw).arrayBuffer()
     const rawBytes = new Uint8Array(rawBuffer)
 
+    // 3. Forward the email
+    try {
+      await message.forward(env.EMAIL_FORWARD_DESTINATION)
+      console.log(`email forwarded to ${env.EMAIL_FORWARD_DESTINATION}`)
+    } catch (e) {
+      console.error(`Forwarding failed: ${e.message}`)
+    }
+
+    // 4. Continue with your webhook logic
     const timestamp = Math.floor(Date.now() / 1000)
     const nonce = crypto.randomUUID()
 
