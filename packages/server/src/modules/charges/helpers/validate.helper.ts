@@ -70,6 +70,7 @@ export const validateCharge = async (
     case ChargeTypeEnum.Financial:
     case ChargeTypeEnum.BusinessTrip:
     case ChargeTypeEnum.BankDeposit:
+    case ChargeTypeEnum.ForeignSecurities:
       shouldHaveDocuments = false;
   }
   if (isGeneralFees || business?.no_invoices_required === true || charge.documents_optional_flag) {
@@ -139,9 +140,11 @@ export const validateCharge = async (
   }
 
   // validate tax category
-  const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
-    chargeType,
-  );
+  const shouldHaveTaxCategory = ![
+    ChargeTypeEnum.Salary,
+    ChargeTypeEnum.InternalTransfer,
+    ChargeTypeEnum.ForeignSecurities,
+  ].includes(chargeType);
   const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
