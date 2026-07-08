@@ -139,9 +139,11 @@ export const validateCharge = async (
   }
 
   // validate tax category
-  const shouldHaveTaxCategory = ![ChargeTypeEnum.Salary, ChargeTypeEnum.InternalTransfer].includes(
-    chargeType,
-  );
+  const shouldHaveTaxCategory = ![
+    ChargeTypeEnum.Salary,
+    ChargeTypeEnum.InternalTransfer,
+    ChargeTypeEnum.ForeignSecurities,
+  ].includes(chargeType);
   const taxCategoryIsFine = !shouldHaveTaxCategory || !!taxCategoryId;
   if (!taxCategoryIsFine) {
     missingInfo.push(MissingChargeInfo.TaxCategory);
