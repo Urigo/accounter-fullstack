@@ -47,6 +47,29 @@ export type RawVatReportRecord = {
   pcn874RecordType?: Pcn874RecordType;
 };
 
+export const MONTHLY_VAT_AMOUNT_TOLERANCE = 0.01;
+
+export function calculateMonthlyVatTotalAmount(
+  incomeRecords: Array<RawVatReportRecord>,
+  expenseRecords: Array<RawVatReportRecord>,
+): number {
+  const incomeVat = incomeRecords.reduce((sum, record) => sum + (record.roundedVATToAdd ?? 0), 0);
+  const expensesVat = expenseRecords.reduce(
+    (sum, record) => sum + (record.roundedVATToAdd ?? 0),
+    0,
+  );
+
+  return incomeVat - expensesVat;
+}
+
+export function isWithinMonthlyVatAmountTolerance(
+  expectedVatAmount: number,
+  transactionsAmount: number,
+  tolerance: number = MONTHLY_VAT_AMOUNT_TOLERANCE,
+): boolean {
+  return Math.abs(Math.abs(expectedVatAmount) - Math.abs(transactionsAmount)) <= tolerance;
+}
+
 export async function adjustTaxRecord(
   rawRecord: VatReportRecordSources,
   injector: Injector,

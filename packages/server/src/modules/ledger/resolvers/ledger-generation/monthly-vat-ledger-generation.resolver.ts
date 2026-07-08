@@ -13,7 +13,7 @@ import type { LedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
-import { RawVatReportRecord } from '../../../reports/helpers/vat-report.helper.js';
+import { type RawVatReportRecord } from '../../../reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '../../../reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';

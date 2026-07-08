@@ -22,6 +22,7 @@ import { calculateTotalAmount, getChargeBusinesses } from '../../helpers/common.
 import { ChargesProvider } from '../../providers/charges.provider.js';
 import type { ChargesModule } from '../../types.js';
 import { missingConversionInfoSuggestions } from './conversion-suggeestions.resolver.js';
+import { missingMonthlyVatInfoSuggestions } from './monthly-vat-suggestions.resolver.js';
 
 export type Suggestion = Awaited<ResolversTypes['ChargeSuggestions']>;
 
@@ -54,6 +55,13 @@ const missingInfoSuggestions: Resolver<
 
     if (chargeType === ChargeTypeEnum.Conversion) {
       return missingConversionInfoSuggestions(DbCharge, _, context, __);
+    }
+
+    if (chargeType === ChargeTypeEnum.MonthlyVat && !DbCharge.user_description?.trim()) {
+      const suggestion = await missingMonthlyVatInfoSuggestions(DbCharge, _, context, __);
+      if (suggestion) {
+        return suggestion;
+      }
     }
 
     const [formattedAmount, { allBusinessIds, mainBusinessId }] = await Promise.all([
