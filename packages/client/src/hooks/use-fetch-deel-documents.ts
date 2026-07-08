@@ -38,6 +38,9 @@ export const useFetchDeelDocuments = (): UseFetchDeelDocuments => {
         });
         return data.fetchDeelDocuments;
       }
+      // handleCommonErrors already surfaced any error toast; dismiss the loading toast so it
+      // doesn't linger as a permanent spinner when there's no data to report success on
+      toast.dismiss(NOTIFICATION_ID);
     } catch (e) {
       console.error(`${message}: ${e}`);
       toast.error('Error', {

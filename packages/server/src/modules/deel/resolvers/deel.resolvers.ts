@@ -77,8 +77,15 @@ export const deelResolvers: DeelModule.Resolvers = {
 
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
-        // insert/update unmatched Deel invoice records
+        // insert unmatched Deel invoice records
         for (const invoice of unmatched) {
+          // an already-recorded invoice that is still unmatched has nothing new to persist — skip
+          // it before generating a charge, which would otherwise be created and immediately cleaned
+          // up as empty
+          if (unmatchedExistingInvoicesSet.has(invoice.id)) {
+            continue;
+          }
+
           let chargeId = invoiceChargeMap.get(invoice.id);
           if (chargeId) {
             console.log('Found missing match for invoice via invoiceChargeMap:', invoice.id);
@@ -95,9 +102,7 @@ export const deelResolvers: DeelModule.Resolvers = {
           updatedChargeIdsSet.add(chargeId);
 
           const match = createDeelInvoiceMatchFromUnmatchedInvoice(invoice);
-          if (!unmatchedExistingInvoicesSet.has(match.id)) {
-            await insertDeelInvoiceRecord(injector, match, chargeId);
-          }
+          await insertDeelInvoiceRecord(injector, match, chargeId);
         }
 
         // insert/update matched Deel invoice records
