@@ -12,10 +12,15 @@ export type WorkerEnv = {
   FALLBACK_EMAIL?: string;
 };
 
+const HEX_OCTETS = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
 function hex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  const uint8 = new Uint8Array(bytes);
+  let out = '';
+  for (let i = 0; i < uint8.length; i++) {
+    out += HEX_OCTETS[uint8[i]];
+  }
+  return out;
 }
 
 async function isGatewayReachable(gatewayUrl: string): Promise<boolean> {
