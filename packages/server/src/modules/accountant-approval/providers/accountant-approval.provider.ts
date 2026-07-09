@@ -1,6 +1,8 @@
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { ChargesAuthorizationProvider } from '../../charges/providers/charges-authorization.provider.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type {
   IDegradeChargeAccountantApprovalQuery,
   IGetChargesApprovalStatusParams,
@@ -29,7 +31,11 @@ const degradeChargeAccountantApproval = sql<IDegradeChargeAccountantApprovalQuer
   global: true,
 })
 export class AccountantApprovalProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  constructor(
+    private db: TenantAwareDBClient,
+    private auth: ChargesAuthorizationProvider,
+    private charges: ChargesProvider,
+  ) {}
 
   public getChargesApprovalStatus(params: IGetChargesApprovalStatusParams) {
     return getChargesApprovalStatus.run(params, this.db);
@@ -41,7 +47,13 @@ export class AccountantApprovalProvider {
    * charge gets flagged for re-approval. Charges in any other status
    * (UNAPPROVED / PENDING) are left untouched.
    */
-  public degradeChargeAccountantApproval(chargeId: string) {
-    return degradeChargeAccountantApproval.run({ chargeId }, this.db);
+  public async degradeChargeAccountantApproval(chargeId: string) {
+    await this.auth.canWriteCharge();
+
+    const [newCharge] = await degradeChargeAccountantApproval.run({ chargeId }, this.db);
+    if (newCharge) {
+      this.charges.getChargeByIdLoader.prime(newCharge.id, newCharge);
+    }
+    return newCharge;
   }
 }
