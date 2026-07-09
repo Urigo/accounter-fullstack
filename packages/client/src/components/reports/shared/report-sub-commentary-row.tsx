@@ -1,8 +1,12 @@
 import { useState, type ReactElement } from 'react';
 import { Table } from '@mantine/core';
-import { ReportSubCommentaryTableFieldsFragmentDoc } from '../../../gql/graphql.js';
+import {
+  ReportSubCommentaryTableFieldsFragmentDoc,
+  type ReportSubCommentaryTableFieldsFragment,
+} from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { ToggleExpansionButton } from '../../common/index.js';
+import { LedgerTable } from '../../ledger-table/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -14,8 +18,42 @@ import { ToggleExpansionButton } from '../../common/index.js';
     amount {
       formatted
     }
+    ledgerRecords {
+      ...LedgerRecordsTableFields
+    }
   }
 `;
+
+type EntityRowProps = {
+  record: ReportSubCommentaryTableFieldsFragment;
+};
+
+const SubCommentaryEntityRow = ({ record }: EntityRowProps): ReactElement => {
+  const [opened, setOpened] = useState(false);
+
+  return (
+    <>
+      <tr>
+        <td>{record.financialEntity.name}</td>
+        <td>{record.amount.formatted}</td>
+        <td>
+          {record.ledgerRecords.length > 0 && (
+            <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />
+          )}
+        </td>
+      </tr>
+      {opened && (
+        <tr>
+          <td colSpan={99}>
+            <div className="ml-8">
+              <LedgerTable ledgerRecordsData={record.ledgerRecords} />
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+};
 
 type Props = {
   dataRow: (extendButton: ReactElement) => ReactElement;
@@ -41,16 +79,14 @@ export const ReportSubCommentaryRow = ({ subCommentaryData, dataRow }: Props): R
                 <tr>
                   <th>Entity</th>
                   <th>Amount</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {records
                   ?.sort((a, b) => a.financialEntity.name.localeCompare(b.financialEntity.name))
                   .map(record => (
-                    <tr key={record.financialEntity.id}>
-                      <td>{record.financialEntity.name}</td>
-                      <td>{record.amount.formatted}</td>
-                    </tr>
+                    <SubCommentaryEntityRow key={record.financialEntity.id} record={record} />
                   ))}
                 <tr>
                   <td colSpan={8} />

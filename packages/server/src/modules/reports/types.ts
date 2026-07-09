@@ -1,4 +1,5 @@
 import type { Shaam6111Data } from '../../__generated__/types.js';
+import type { IGetLedgerRecordsByDatesResult } from '../ledger/types.js';
 
 export type { DateOrString, currency } from './__generated__/balance-report.types.js';
 export type * from './__generated__/types.js';
@@ -21,6 +22,7 @@ export type CommentaryRecordProto = {
 export type CommentarySubRecordProto = {
   financialEntityId: string;
   amount: number;
+  ledgerRecords: IGetLedgerRecordsByDatesResult[];
 };
 
 export type ProfitAndLossReportYearProto = {
