@@ -4,8 +4,11 @@ import stripIndent from 'strip-indent';
 import { z } from 'zod';
 import { anthropic } from '@ai-sdk/anthropic';
 import { Currency, DocumentType } from '../../shared/enums.js';
-import type { BusinessMatchData } from './helpers/business-matcher.helper.js';
-import { matchBusiness } from './helpers/business-matcher.helper.js';
+import type { BusinessMatchData, OwnerMatchInfo } from './helpers/business-matcher.helper.js';
+import {
+  applyForeignCounterpartyVatDefault,
+  matchBusiness,
+} from './helpers/business-matcher.helper.js';
 
 // NOTE: schema is kept as simple as possible to stay under Anthropic's constrained-decoding
 // grammar complexity budget. Two rules:
@@ -131,6 +134,7 @@ export class AnthropicProvider {
   async extractInvoiceDetails(
     fileOrBlob: File | Blob,
     businesses?: BusinessMatchData[],
+    owner?: OwnerMatchInfo,
   ): Promise<DocumentDataWithMatches> {
     const fileType = fileOrBlob.type.toLowerCase();
     if (!isSupportedFileType(fileType)) {
@@ -162,7 +166,10 @@ export class AnthropicProvider {
       },
     ];
 
-    const { output, response } = await generateText({
+    const {
+      output,
+      finalStep: { response },
+    } = await generateText({
       model: anthropic('claude-sonnet-4-5'),
       output: Output.object({ schema: documentDataSchema }),
       messages: inputMessages,
@@ -241,6 +248,14 @@ export class AnthropicProvider {
       }
     }
 
+    const vatAmount = applyForeignCounterpartyVatDefault(
+      draft.vatAmount,
+      owner,
+      suggestedIssuer,
+      suggestedRecipient,
+      businessList,
+    );
+
     const validatedType = (Object.values(DocumentType) as string[]).includes(draft.type ?? '')
       ? (draft.type as DocumentType)
       : undefined;
@@ -250,6 +265,7 @@ export class AnthropicProvider {
 
     return {
       ...draft,
+      vatAmount,
       type: validatedType,
       currency: validatedCurrency,
       suggestedIssuer,

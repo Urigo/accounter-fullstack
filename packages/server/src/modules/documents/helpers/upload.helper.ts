@@ -4,7 +4,10 @@ import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
-import type { BusinessMatchData } from '../../app-providers/helpers/business-matcher.helper.js';
+import type {
+  BusinessMatchData,
+  OwnerMatchInfo,
+} from '../../app-providers/helpers/business-matcher.helper.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import type { IInsertDocumentsParams } from '../types.js';
@@ -44,6 +47,17 @@ export type OcrData = {
   suggestedRecipient?: string;
 };
 
+async function fetchOwnerForMatching(injector: Injector): Promise<OwnerMatchInfo | undefined> {
+  try {
+    const { ownerId, locality } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    return { id: ownerId, locality: locality ?? null };
+  } catch {
+    return undefined;
+  }
+}
+
 async function fetchBusinessesForMatching(injector: Injector): Promise<BusinessMatchData[]> {
   try {
     const rawBusinesses = await injector.get(BusinessesProvider).getAllBusinesses();
@@ -53,6 +67,7 @@ async function fetchBusinessesForMatching(injector: Injector): Promise<BusinessM
       hebrew_name: b.hebrew_name ?? null,
       vat_number: b.vat_number ?? null,
       suggestion_data: suggestionDataSchema.safeParse(b.suggestion_data).data ?? null,
+      locality: b.country ?? null,
     }));
   } catch {
     return [];
@@ -80,8 +95,13 @@ export async function getOcrData(
     };
   }
 
-  const businesses = await fetchBusinessesForMatching(injector);
-  const draft = await injector.get(AnthropicProvider).extractInvoiceDetails(file, businesses);
+  const [businesses, owner] = await Promise.all([
+    fetchBusinessesForMatching(injector),
+    fetchOwnerForMatching(injector),
+  ]);
+  const draft = await injector
+    .get(AnthropicProvider)
+    .extractInvoiceDetails(file, businesses, owner);
 
   if (!draft) {
     throw new Error('No data returned from Anthropic OCR');

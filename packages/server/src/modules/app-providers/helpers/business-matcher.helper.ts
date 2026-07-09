@@ -4,7 +4,77 @@ export type BusinessMatchData = {
   hebrew_name: string | null;
   vat_number: string | null;
   suggestion_data: { phrases?: string[]; priority?: number } | null;
+  locality: string | null;
 };
+
+export type OwnerMatchInfo = {
+  id: string;
+  locality: string | null;
+};
+
+/**
+ * Deduce the counterparty (the matched business that is not the owner) from
+ * the issuer/recipient match results.
+ *
+ * Returns null when neither side matched, when the only match is the owner
+ * itself, or when both sides matched non-owner businesses (ambiguous).
+ */
+function deduceCounterpartyId(
+  ownerId: string,
+  issuerId: string | null,
+  recipientId: string | null,
+): string | null {
+  if (issuerId === ownerId) {
+    return recipientId === ownerId ? null : recipientId;
+  }
+  if (recipientId === ownerId) {
+    return issuerId;
+  }
+  // Neither side is the owner: a single match is the counterparty; two
+  // non-owner matches leave the counterparty ambiguous.
+  if (issuerId && recipientId) {
+    return null;
+  }
+  return issuerId ?? recipientId;
+}
+
+function normalizeLocality(locality: string | null | undefined): string | null {
+  const normalized = locality?.trim().toLowerCase();
+  return normalized || null;
+}
+
+/**
+ * A NULL extracted VAT amount is ambiguous: "not stated" vs "no VAT". When the
+ * counterparty is recognized and located in a different locality than the
+ * owner, the document carries no local VAT — resolve the amount to 0.
+ *
+ * In every other case (VAT already extracted, owner/counterparty unknown,
+ * locality missing or identical) the original value is returned unchanged.
+ */
+export function applyForeignCounterpartyVatDefault(
+  vatAmount: number | null,
+  owner: OwnerMatchInfo | undefined,
+  suggestedIssuer: string | null,
+  suggestedRecipient: string | null,
+  businesses: BusinessMatchData[],
+): number | null {
+  const ownerLocality = owner ? normalizeLocality(owner.locality) : null;
+  if (vatAmount !== null || !owner || !ownerLocality) {
+    return vatAmount;
+  }
+
+  const counterpartyId = deduceCounterpartyId(owner.id, suggestedIssuer, suggestedRecipient);
+  if (!counterpartyId) {
+    return vatAmount;
+  }
+
+  const counterparty = businesses.find(b => b.id === counterpartyId);
+  const counterpartyLocality = normalizeLocality(counterparty?.locality);
+  if (counterpartyLocality && counterpartyLocality !== ownerLocality) {
+    return 0;
+  }
+  return vatAmount;
+}
 
 function normalizeVat(vat: string): string {
   return vat.replace(/[\s-]/g, '');
