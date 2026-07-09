@@ -2,7 +2,7 @@ import { useContext, useState, type JSX } from 'react';
 import { Banknote, CircleCheckBig, FileDown, KeyRound, Shield, User2Icon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
-import { useCornJobs } from '../../hooks/use-corn-jobs.js';
+import { useCronJobs } from '../../hooks/use-cron-jobs.js';
 import { useFetchDeelDocuments } from '../../hooks/use-fetch-deel-documents.js';
 import { UserContext } from '../../providers/index.js';
 import { getBusinessScopeIds, setBusinessScope } from '../../providers/urql.js';
@@ -27,7 +27,7 @@ export function UserNav(): JSX.Element | null {
   const [pullDocumentsOpened, setPullDocumentsOpened] = useState(false);
   const [balanceChargeModalOpen, setBalanceChargeModalOpen] = useState(false);
   const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(getBusinessScopeIds);
-  const { executeJobs } = useCornJobs();
+  const { executeJobs } = useCronJobs();
   const { fetching: fetchingDeelDocuments, fetchDocuments: fetchDeelDocuments } =
     useFetchDeelDocuments();
 
@@ -169,10 +169,10 @@ export function UserNav(): JSX.Element | null {
             </Tooltip>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Tooltip content="Execute corn jobs">
+            <Tooltip content="Execute cron jobs">
               <ConfirmationModal
                 onConfirm={executeJobs}
-                title="Are you sure you want to manually execute corn jobs?"
+                title="Are you sure you want to manually execute cron jobs?"
               >
                 <Button variant="ghost" size="icon" className="size-7.5">
                   <CircleCheckBig className="size-5" />

@@ -88,7 +88,7 @@ where at.id = t.id
   scope: Scope.Operation,
   global: true,
 })
-export class CornJobsProvider {
+export class CronJobsProvider {
   constructor(private db: TenantAwareDBClient) {}
 
   public async getReferenceMergeCandidates(params: IGetReferenceMergeCandidatesParams) {

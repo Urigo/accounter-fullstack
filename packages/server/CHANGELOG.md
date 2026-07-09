@@ -1369,7 +1369,7 @@
   - **Data Seeding and Testing Alignment**: All relevant test factories, fixture definitions, and
     data seeding scripts were updated to explicitly include and correctly handle the `owner_id`
     field, ensuring consistency with the new non-nullable constraint.
-  - **Query Optimization**: Several database queries in various providers (contracts, corn-jobs,
+  - **Query Optimization**: Several database queries in various providers (contracts, cron-jobs,
     documents, reports, transactions) were refactored to directly access the `owner_id` from the
     primary table (e.g., `transactions.owner_id`, `documents.owner_id`) instead of relying on joins
     to the `charges` table, simplifying query logic and improving efficiency.
@@ -1381,7 +1381,7 @@
   [`84f9e20`](https://github.com/Urigo/accounter-fullstack/commit/84f9e203c696c8b76a7cef2128547e8cde7559f0)
   Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Database Provider Migration**: Replaced
   the generic `DBProvider` with `TenantAwareDBClient` across numerous modules, including business
-  trips, corn jobs, and Deel invoices, to facilitate tenant-aware database operations.
+  trips, cron jobs, and Deel invoices, to facilitate tenant-aware database operations.
   - **Tax Category Lookup Simplification**: Refactored tax category lookups to remove the explicit
     `ownerId` parameter, now relying on the `TenantAwareDBClient` to handle tenant context
     implicitly. This involved updates to GraphQL schemas, resolvers, and DataLoader implementations.
@@ -1391,7 +1391,7 @@
   - **VAT Report Logic Update**: Adjusted the logic for determining `isExpense` and `counterpartyId`
     in VAT reporting to correctly use `doc.owner_id` instead of `charge.owner_id`, aligning with the
     new tenant-aware data model.
-  - **Service Scope Change**: Changed the scope of `CornJobsProvider` from `Singleton` to
+  - **Service Scope Change**: Changed the scope of `CronJobsProvider` from `Singleton` to
     `Operation` to ensure proper tenant context isolation for background tasks.
 
 - [#3037](https://github.com/Urigo/accounter-fullstack/pull/3037)

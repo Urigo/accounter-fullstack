@@ -127,7 +127,7 @@ tables, and a now-live MIME parser that should get fuzz coverage.
 - **Detail:** Plan says quarantine retention = 30 days. `grants.expires_at` has an index "for
   expiry-based cleanup" but nothing runs it.
 - **Consequence:** Tables grow unbounded; stated retention policy is not enforced.
-- **Fix:** Add a scheduled cleanup job (the repo already has a `corn-jobs` module to host it).
+- **Fix:** Add a scheduled cleanup job (the repo already has a `cron-jobs` module to host it).
 
 #### M5 — Control errors all map to `UNKNOWN_ALIAS`
 
