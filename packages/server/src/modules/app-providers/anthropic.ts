@@ -162,7 +162,10 @@ export class AnthropicProvider {
       },
     ];
 
-    const { output, response } = await generateText({
+    const {
+      output,
+      finalStep: { response },
+    } = await generateText({
       model: anthropic('claude-sonnet-4-5'),
       output: Output.object({ schema: documentDataSchema }),
       messages: inputMessages,

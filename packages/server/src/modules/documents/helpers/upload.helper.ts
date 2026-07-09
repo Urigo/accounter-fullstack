@@ -53,6 +53,7 @@ async function fetchBusinessesForMatching(injector: Injector): Promise<BusinessM
       hebrew_name: b.hebrew_name ?? null,
       vat_number: b.vat_number ?? null,
       suggestion_data: suggestionDataSchema.safeParse(b.suggestion_data).data ?? null,
+      locality: b.country ?? null,
     }));
   } catch {
     return [];

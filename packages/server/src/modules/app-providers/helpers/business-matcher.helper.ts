@@ -4,6 +4,7 @@ export type BusinessMatchData = {
   hebrew_name: string | null;
   vat_number: string | null;
   suggestion_data: { phrases?: string[]; priority?: number } | null;
+  locality: string | null;
 };
 
 function normalizeVat(vat: string): string {
