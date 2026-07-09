@@ -102,6 +102,31 @@ describe('applyForeignCounterpartyVatDefault', () => {
     ).toBeNull();
   });
 
+  it('treats localities differing only by case/whitespace as equal', () => {
+    const casedOwner: OwnerMatchInfo = { id: OWNER_ID, locality: ' ISRAEL ' };
+    expect(
+      applyForeignCounterpartyVatDefault(null, casedOwner, LOCAL_BIZ_ID, OWNER_ID, businesses),
+    ).toBeNull();
+    expect(
+      applyForeignCounterpartyVatDefault(null, casedOwner, FOREIGN_BIZ_ID, OWNER_ID, businesses),
+    ).toBe(0);
+  });
+
+  it('treats a whitespace-only locality as missing', () => {
+    const blankOwner: OwnerMatchInfo = { id: OWNER_ID, locality: '   ' };
+    expect(
+      applyForeignCounterpartyVatDefault(null, blankOwner, FOREIGN_BIZ_ID, OWNER_ID, businesses),
+    ).toBeNull();
+
+    const blankLocalityBiz = business('00000000-0000-0000-0000-000000000005', '   ');
+    expect(
+      applyForeignCounterpartyVatDefault(null, owner, blankLocalityBiz.id, OWNER_ID, [
+        ...businesses,
+        blankLocalityBiz,
+      ]),
+    ).toBeNull();
+  });
+
   it('keeps NULL when owner info is missing or has no locality', () => {
     expect(
       applyForeignCounterpartyVatDefault(null, undefined, OWNER_ID, FOREIGN_BIZ_ID, businesses),

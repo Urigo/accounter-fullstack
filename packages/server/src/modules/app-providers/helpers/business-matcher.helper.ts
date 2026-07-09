@@ -38,6 +38,11 @@ function deduceCounterpartyId(
   return issuerId ?? recipientId;
 }
 
+function normalizeLocality(locality: string | null | undefined): string | null {
+  const normalized = locality?.trim().toLowerCase();
+  return normalized || null;
+}
+
 /**
  * A NULL extracted VAT amount is ambiguous: "not stated" vs "no VAT". When the
  * counterparty is recognized and located in a different locality than the
@@ -53,7 +58,8 @@ export function applyForeignCounterpartyVatDefault(
   suggestedRecipient: string | null,
   businesses: BusinessMatchData[],
 ): number | null {
-  if (vatAmount !== null || !owner?.locality) {
+  const ownerLocality = owner ? normalizeLocality(owner.locality) : null;
+  if (vatAmount !== null || !owner || !ownerLocality) {
     return vatAmount;
   }
 
@@ -63,7 +69,8 @@ export function applyForeignCounterpartyVatDefault(
   }
 
   const counterparty = businesses.find(b => b.id === counterpartyId);
-  if (counterparty?.locality && counterparty.locality !== owner.locality) {
+  const counterpartyLocality = normalizeLocality(counterparty?.locality);
+  if (counterpartyLocality && counterpartyLocality !== ownerLocality) {
     return 0;
   }
   return vatAmount;
