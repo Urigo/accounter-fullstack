@@ -37,12 +37,12 @@ const SubCommentaryEntityRow = ({ record }: EntityRowProps): ReactElement => {
         <td>{record.financialEntity.name}</td>
         <td>{record.amount.formatted}</td>
         <td>
-          {record.ledgerRecords.length > 0 && (
+          {record.ledgerRecords?.length > 0 && (
             <ToggleExpansionButton toggleExpansion={setOpened} isExpanded={opened} />
           )}
         </td>
       </tr>
-      {opened && (
+      {opened && record.ledgerRecords && (
         <tr>
           <td colSpan={99}>
             <div className="ml-8">
