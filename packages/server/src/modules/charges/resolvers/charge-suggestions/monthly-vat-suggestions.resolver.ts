@@ -32,8 +32,8 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
     }
 
     const reportMonthDate = new Date(
-      transactionDate.getFullYear(),
-      transactionDate.getMonth() - 1,
+      transactionDate.getUTCFullYear(),
+      transactionDate.getUTCMonth() - 1,
       15,
     );
     const monthDate = dateToTimelessDateString(reportMonthDate);
