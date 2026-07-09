@@ -32,9 +32,16 @@ allowing the user to rapidly accept or skip suggestions one-by-one.
   - The match scores should be calculated _on the fly_ to ensure fresh data.
   - **When sorting `BY_DATE`:** Fetch the requested page of unmatched base charges, then calculate
     their matches on the fly.
-  - **When sorting `BY_SCORE`:** Fetch the 300 most recent unmatched base charges that match the
-    filters. Calculate match scores for all 300 on the fly, sort them by top confidence score
+  - **When sorting `BY_SCORE`:** Fetch the 100 most recent unmatched base charges that match the
+    filters. Calculate match scores for all 100 on the fly, sort them by top confidence score
     descending, and paginate _that_ derived list.
+  - **Score-evaluation cap & guardrails:** The `BY_SCORE` evaluation window is deliberately capped
+    at 100 charges to bound request latency, CPU usage, and DB connection pool pressure (each
+    scoring pass loads candidate charges, transactions, and documents). The implementation must
+    batch/reuse data loading across the evaluated charges where possible and run the per-charge
+    scoring with bounded concurrency (not one unbounded parallel burst, nor 100 strictly sequential
+    full passes). If this proves too slow in practice, prefer caching or asynchronous
+    pre-calculation of scores over raising the cap.
 - **Data Contract:** Must return the base charge details (date, exact amount + currency symbol,
   counterparty, description, document `image_url` if applicable, additional nested
   transactions/docs), and an array of `suggestions` ordered by match score.
@@ -56,7 +63,7 @@ allowing the user to rapidly accept or skip suggestions one-by-one.
 - **Filters:** Mode/Type selector, Timeframe picker, Business select.
 - **Sort Toggle:** "Date" vs. "Match Score".
 - **Warning Note:** If "Sort by Score" is selected, dynamically render a text note/alert: _"Note:
-  Score-based sorting currently evaluates only the 300 most recent unmatched charges."_
+  Score-based sorting currently evaluates only the 100 most recent unmatched charges."_
 
 **2. Awaiting Matches Sidebar (Collapsible):**
 
@@ -107,7 +114,7 @@ allowing the user to rapidly accept or skip suggestions one-by-one.
 
 - **Unit Tests for Query Resolution:**
   - Verify `BY_DATE` pagination correctly lazy-loads scores only for the requested page limit.
-  - Verify `BY_SCORE` pagination restricts initial fetch to the capped limit of 300, correctly sorts
+  - Verify `BY_SCORE` pagination restricts initial fetch to the capped limit of 100, correctly sorts
     the highest scoring outputs, and handles pagination cleanly.
 - **Integration Tests for Merging:**
   - Verify the mutation cleanly collapses two charges and properly assigns existing documents and
