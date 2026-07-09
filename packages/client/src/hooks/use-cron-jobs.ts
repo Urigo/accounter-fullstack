@@ -37,12 +37,12 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
 
 const NOTIFICATION_ID = 'mergeChargesByTransactionReference';
 
-type UseCornJobs = {
+type UseCronJobs = {
   fetching: boolean;
   executeJobs: () => Promise<void>;
 };
 
-export const useCornJobs = (): UseCornJobs => {
+export const useCronJobs = (): UseCronJobs => {
   // TODO: add authentication
   // TODO: add local data update method after change
 
