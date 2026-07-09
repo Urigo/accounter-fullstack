@@ -34,7 +34,9 @@ export type ChargeMatchQueueItem = {
 
 function chargeDate(charge: ChargeMatchCardFieldsFragment): string | undefined {
   const raw = charge.minDocumentsDate ?? charge.minEventDate ?? charge.minDebitDate;
-  return raw ? new Date(raw).toLocaleDateString() : undefined;
+  // Date-only strings parse as UTC midnight; format in UTC so users in
+  // negative offsets don't see the previous day
+  return raw ? new Date(raw).toLocaleDateString(undefined, { timeZone: 'UTC' }) : undefined;
 }
 
 function chargeTitle(charge: ChargeMatchCardFieldsFragment): string {
@@ -107,7 +109,7 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
           <Skeleton className="h-96 w-72" />
           <Skeleton className="h-96 flex-1" />
         </div>
-      ) : (
+      ) : error ? null : (
         <div className="flex gap-4">
           <ChargeMatchingSidebar
             items={sidebarItems}

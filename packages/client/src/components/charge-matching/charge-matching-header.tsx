@@ -68,6 +68,7 @@ export const ChargeMatchingHeader = ({ filters, onFiltersChange }: Props): React
             id="charge-matching-from-date"
             type="date"
             className="w-40"
+            max={filters.toDate ?? undefined}
             value={filters.fromDate ?? ''}
             onChange={event =>
               update({ fromDate: (event.target.value as TimelessDateString) || null })
@@ -80,6 +81,7 @@ export const ChargeMatchingHeader = ({ filters, onFiltersChange }: Props): React
             id="charge-matching-to-date"
             type="date"
             className="w-40"
+            min={filters.fromDate ?? undefined}
             value={filters.toDate ?? ''}
             onChange={event =>
               update({ toDate: (event.target.value as TimelessDateString) || null })

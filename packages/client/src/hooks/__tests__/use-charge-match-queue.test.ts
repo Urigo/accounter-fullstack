@@ -156,6 +156,28 @@ describe('useChargeMatchQueue', () => {
     await cleanup();
   });
 
+  it('preserves progress when the item set changes, e.g. a merged charge drops out on refetch', async () => {
+    const { current, rerender, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().skipItem('a');
+    });
+    await act(async () => {
+      current().acceptItemStatus('b', true);
+    });
+    expect(current().activeItem).toEqual({ id: 'c' });
+
+    // Refetch after the merge: charge "b" no longer exists in the queue
+    const refetchedItems: Item[] = [{ id: 'a' }, { id: 'c' }];
+    await rerender(refetchedItems);
+
+    expect(current().statusById).toEqual({ a: 'skipped', c: 'pending' });
+    expect(current().activeItem).toEqual({ id: 'c' });
+    expect(current().isDone).toBe(false);
+
+    await cleanup();
+  });
+
   it('does not reset state when a new array reference holds the same items (parent re-render)', async () => {
     const { current, rerender, cleanup } = await renderQueueHarness(ITEMS);
 
