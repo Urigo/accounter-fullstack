@@ -72,11 +72,13 @@ export class QueueMatchEvaluatorProvider {
   private async evaluateSingleCharge(chargeId: string): Promise<ChargeMatchProto[]> {
     try {
       const { matches } = await this.chargesMatcherProvider.findMatchesForCharge(chargeId);
-      return matches.toSorted((a, b) => b.confidenceScore - a.confidenceScore);
-    } catch {
+      // findMatchesForCharge returns a fresh array, so sorting in place is safe
+      return matches.sort((a, b) => b.confidenceScore - a.confidenceScore);
+    } catch (error) {
       // Evaluation is best-effort: a charge that can't be scored (already
       // matched, missing data, etc.) still shows up in the queue, just with
       // no suggestions.
+      console.error(`Failed to evaluate matches for charge ${chargeId}:`, error);
       return [];
     }
   }
