@@ -35,9 +35,14 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
   const [overrides, setOverrides] = useState<Record<string, ChargeMatchItemStatus>>({});
 
   // Reset session state when the queue itself is replaced (render-phase
-  // adjustment, per React's "storing information from previous renders")
+  // adjustment, per React's "storing information from previous renders").
+  // Items are compared by id rather than reference, so a parent re-render
+  // that rebuilds an identical array doesn't wipe the user's progress
   const [prevItems, setPrevItems] = useState(items);
-  if (items !== prevItems) {
+  const itemsChanged =
+    items.length !== prevItems.length ||
+    items.some((item, index) => item.id !== prevItems[index]?.id);
+  if (itemsChanged) {
     setPrevItems(items);
     setActiveIndex(0);
     setOverrides({});

@@ -155,4 +155,22 @@ describe('useChargeMatchQueue', () => {
 
     await cleanup();
   });
+
+  it('does not reset state when a new array reference holds the same items (parent re-render)', async () => {
+    const { current, rerender, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().skipItem('a');
+    });
+    expect(current().activeIndex).toBe(1);
+
+    const sameItemsNewRef: Item[] = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+    await rerender(sameItemsNewRef);
+
+    expect(current().activeIndex).toBe(1);
+    expect(current().activeItem).toEqual({ id: 'b' });
+    expect(current().statusById.a).toBe('skipped');
+
+    await cleanup();
+  });
 });
