@@ -67,7 +67,7 @@ export function isWithinMonthlyVatAmountTolerance(
   transactionsAmount: number,
   tolerance: number = MONTHLY_VAT_AMOUNT_TOLERANCE,
 ): boolean {
-  return Math.abs(Math.abs(expectedVatAmount) - Math.abs(transactionsAmount)) <= tolerance;
+  return Math.abs(expectedVatAmount + transactionsAmount) <= tolerance;
 }
 
 export async function adjustTaxRecord(

@@ -47,7 +47,8 @@ describe('vat-report helper monthly VAT utilities', () => {
 
   it('compares VAT and transaction totals by absolute value with tolerance', () => {
     expect(isWithinMonthlyVatAmountTolerance(100, -100)).toBe(true);
-    expect(isWithinMonthlyVatAmountTolerance(100, 100.009)).toBe(true);
-    expect(isWithinMonthlyVatAmountTolerance(100, 100.02)).toBe(false);
+    expect(isWithinMonthlyVatAmountTolerance(100, -100.009)).toBe(true);
+    expect(isWithinMonthlyVatAmountTolerance(100, -100.02)).toBe(false);
+    expect(isWithinMonthlyVatAmountTolerance(100, 100)).toBe(false);
   });
 });

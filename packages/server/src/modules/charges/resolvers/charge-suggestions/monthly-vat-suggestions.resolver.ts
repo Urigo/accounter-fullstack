@@ -61,7 +61,8 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
       description: `VAT for ${format(reportMonthDate, 'MM/yyyy')}`,
       tags: [],
     };
-  } catch {
+  } catch (error) {
+    console.error('Error in missingMonthlyVatInfoSuggestions:', error);
     return null;
   }
 };
