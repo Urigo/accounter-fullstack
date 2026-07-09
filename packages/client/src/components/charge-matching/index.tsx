@@ -82,7 +82,7 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
   );
 
   const totalCount = data?.chargesAwaitingMatchQueue.totalCount ?? 0;
-  const { activeItem } = queue;
+  const { activeItem, skipItem, acceptItemStatus } = queue;
 
   // Which suggestion is shown in the comparison view. Null means rank 1; the
   // override is keyed by item id, so advancing the queue naturally falls back
@@ -114,9 +114,9 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
 
   const handleSkip = useCallback(() => {
     if (activeItem) {
-      queue.skipItem(activeItem.id);
+      skipItem(activeItem.id);
     }
-  }, [activeItem, queue]);
+  }, [activeItem, skipItem]);
 
   const handleAccept = useCallback(async () => {
     if (!activeItem || !selectedSuggestion) {
@@ -129,8 +129,8 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
       baseChargeID: activeItem.id,
       chargeIdsToMerge: [selectedSuggestion.chargeId],
     });
-    queue.acceptItemStatus(activeItem.id, !!merged);
-  }, [activeItem, selectedSuggestion, mergeCharges, queue]);
+    acceptItemStatus(activeItem.id, !!merged);
+  }, [activeItem, selectedSuggestion, mergeCharges, acceptItemStatus]);
 
   return (
     <PageLayout
