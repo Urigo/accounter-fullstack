@@ -13,7 +13,11 @@ import type { LedgerProto } from '../../../../shared/types/index.js';
 import { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
 import { getChargeTransactionsMeta } from '../../../charges/helpers/common.helper.js';
 import { ExchangeProvider } from '../../../exchange-rates/providers/exchange.provider.js';
-import { RawVatReportRecord } from '../../../reports/helpers/vat-report.helper.js';
+import {
+  calculateMonthlyVatTotalAmount,
+  isWithinMonthlyVatAmountTolerance,
+  type RawVatReportRecord,
+} from '../../../reports/helpers/vat-report.helper.js';
 import { getVatRecords } from '../../../reports/resolvers/get-vat-records.resolver.js';
 import { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { storeInitialGeneratedRecords } from '../../helpers/ledgrer-storage.helper.js';
@@ -55,22 +59,20 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
     } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
 
     // figure out VAT month
-    const { transactionsMinDebitDate, transactionsMinEventDate } = await getChargeTransactionsMeta(
-      chargeId,
-      injector,
-    );
+    const { transactionsAmount, transactionsMinDebitDate, transactionsMinEventDate } =
+      await getChargeTransactionsMeta(chargeId, injector);
 
     const transactionDate = transactionsMinDebitDate ?? transactionsMinEventDate ?? undefined;
     if (!charge.user_description) {
-      errors.add(
-        `Monthly VAT charge must have description that indicates it's month (ID="${chargeId}")`,
-      );
+      errors.add(`Monthly VAT charge must have description that indicates it's month`);
     }
     const vatDates = charge.user_description
       ? getMonthFromDescription(charge.user_description, transactionDate)
       : null;
     if (!vatDates?.length) {
       errors.add(`Cannot extract charge ID="${chargeId}" VAT month`);
+    } else if (charge.user_description && vatDates.length > 1) {
+      errors.add(`Monthly VAT description must include a single report month`);
     }
 
     // get VAT relevant records
@@ -105,6 +107,35 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       transactionsPromise,
       unbalancedBusinessesPromise,
     ]);
+
+    if (charge.user_description && vatDates?.length === 1) {
+      if (transactionDate == null) {
+        errors.add(`Monthly VAT validation requires at least one transaction date`);
+      } else if (transactionsAmount == null) {
+        errors.add(`Monthly VAT validation requires transactions amount`);
+      } else {
+        const [validationMonth] = vatDates;
+        const vatRecord = vatRecords.find(({ vatDate }) => vatDate === validationMonth);
+
+        if (vatRecord == null) {
+          errors.add(
+            `Monthly VAT validation could not load VAT records for month ${validationMonth}`,
+          );
+        } else {
+          const monthlyVatTotalAmount = calculateMonthlyVatTotalAmount(
+            vatRecord.income as RawVatReportRecord[],
+            vatRecord.expenses as RawVatReportRecord[],
+          );
+
+          if (isWithinMonthlyVatAmountTolerance(monthlyVatTotalAmount, transactionsAmount)) {
+            // Validation passed.
+          } else {
+            const [year, month] = validationMonth.split('-');
+            errors.add(`Monthly VAT amount mismatch for ${month}/${year}`);
+          }
+        }
+      }
+    }
 
     const accountingLedgerEntries: LedgerProto[] = [];
     const financialAccountLedgerEntries: LedgerProto[] = [];
