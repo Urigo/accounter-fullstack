@@ -184,6 +184,7 @@ export default [
               'LedgerBalanceInfo',
               'LedgerBalanceUnbalancedEntity',
               'LedgerValidation',
+              'MergeChargesByTransactionReferencePlan',
               'MergeChargeSuccessfulResult',
               'MergeChargesByTransactionReferenceResult',
               'MergedCharge',
