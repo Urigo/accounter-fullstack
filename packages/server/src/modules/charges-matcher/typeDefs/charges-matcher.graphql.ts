@@ -52,7 +52,7 @@ export default gql`
   type ChargesAwaitingMatchResult {
     " The requested page of unmatched base charges, each with its match suggestions "
     baseCharges: [ChargeWithSuggestions!]!
-    " Total number of unmatched base charges that satisfy the filters "
+    " Total number of unmatched base charges available for pagination. When sorting BY_SCORE, capped at the 100-charge evaluation window "
     totalCount: Int!
   }
 
