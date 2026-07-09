@@ -68,6 +68,12 @@ export const sidelinks: SideLink[] = [
         href: ROUTES.CHARGES.LEDGER_VALIDATION,
         icon: <BookOpenCheck size={18} />,
       },
+      {
+        title: 'Charge Matching',
+        label: '',
+        href: ROUTES.CHARGES.MATCHING,
+        icon: <Puzzle size={18} />,
+      },
     ],
   },
   {
