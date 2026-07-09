@@ -427,13 +427,16 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const chargeIds: string[] = [chargeId];
 
       try {
+        // validate charge and get owner ID
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
+        }
+
         // get all docs
         const documents = await injector
           .get(DocumentsProvider)
           .getDocumentsByChargeIdLoader.load(chargeId);
-        if (!documents) {
-          throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
-        }
         if (documents.length === 0) {
           return [];
         }
@@ -444,11 +447,10 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           return [];
         }
 
-        // for each of the remaining docs, create new charge and migrate the doc to the new charge
-        for (const document of documentsToSpread) {
-          // generate new charge
+        // for each of the remaining docs, create new charge and migrate the doc to the new charge in parallel
+        const spreadPromises = documentsToSpread.map(async document => {
           const newCharge = await injector.get(ChargesProvider).generateCharge({
-            ownerId: document.owner_id,
+            ownerId: document.owner_id ?? charge.owner_id,
             userDescription: 'Document unlinked from charge',
           });
           if (!newCharge) {
@@ -466,8 +468,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             throw new Error(`Document ID="${document.id}" not found`);
           }
 
-          chargeIds.push(newCharge.id);
-        }
+          return newCharge.id;
+        });
+
+        const newChargeIds = await Promise.all(spreadPromises);
+        chargeIds.push(...newChargeIds);
       } catch (e) {
         console.error(`Failed to spread documents for charge ID="${chargeId}":`, e);
         throw new GraphQLError(`Failed to spread documents for charge ID="${chargeId}"`);
