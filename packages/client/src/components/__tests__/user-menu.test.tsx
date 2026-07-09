@@ -19,8 +19,8 @@ vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
 }));
 
-vi.mock('../../hooks/use-corn-jobs.js', () => ({
-  useCornJobs: () => ({ executeJobs: executeJobsMock }),
+vi.mock('../../hooks/use-cron-jobs.js', () => ({
+  useCronJobs: () => ({ executeJobs: executeJobsMock }),
 }));
 
 vi.mock('../../hooks/use-fetch-deel-documents.js', () => ({
