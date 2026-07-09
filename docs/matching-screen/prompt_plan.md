@@ -10,9 +10,10 @@ without massive complexity leaps at any stage.
 2. **On-the-fly Scoring Service:** Create an internal helper/service that takes an array of
    unmatched charges and calculates their matches on the fly (reusing the existing algorithm).
 3. **Query Resolver Implementation:**
-   - Implement the `BY_DATE` path: Fetch `limit` charges, map to the scoring service.
-   - Implement the `BY_SCORE` path: Fetch `300` charges, map to the scoring service, sort by score
-     descending, slice to `limit`.
+   - Implement the `BY_DATE` path: Fetch `limit` charges at the requested `offset`, map to the
+     scoring service.
+   - Implement the `BY_SCORE` path: Fetch `100` charges (the evaluation cap), map to the scoring
+     service, sort by score descending, slice by `limit`/`offset`.
 4. **Merge Validation:** Ensure the existing merge mutation provides the correct responses
    (success/errors) expected by the client.
 
@@ -58,7 +59,7 @@ Target package: `packages/server/src/modules/charges-matcher` (or the appropriat
 
 Task:
 1. Extend the `charges-matcher.graphql.ts` schema to include a new query: `chargesAwaitingMatchQueue`.
-2. It should accept inputs for: `limit` (Int), `offset` (Int), `businessId` (UUID), `fromDate` (String), `toDate` (String), and `sortBy` (Enum: 'BY_DATE' | 'BY_SCORE').
+2. It should accept inputs for: `limit` (Int), `offset` (Int), `businessId` (UUID), `fromDate` (String), `toDate` (String), `mode` (Enum: 'DOC_BASE' | 'TRANSACTION_BASE' — filters the queue by base-charge type), and `sortBy` (Enum: 'BY_DATE' | 'BY_SCORE').
 3. It should return a paginated response type `ChargesAwaitingMatchResult` containing:
    - `baseCharges`: Array of a new type `ChargeWithSuggestions`.
    - `totalCount`: Int.
@@ -94,8 +95,8 @@ Implement the GraphQL resolver for the schema defined in Step 1, using the logic
 
 Instructions:
 1. Write Unit Tests for the resolver isolating the two sorting paths.
-   - Path A (`BY_DATE`): Verify it fetches `limit` unused charges from the DB and passes them to the scoring helper.
-   - Path B (`BY_SCORE`): Verify it forces a DB fetch limit of 300 recent unused charges, passes them to the scoring helper, sorts the entire 300-item array descending by the top suggestion's score, and THEN applies the `limit`/`offset` slice to return the page.
+   - Path A (`BY_DATE`): Verify it fetches `limit` unused charges from the DB at the requested `offset` (i.e., the DB query applies both `limit` and `offset`, so subsequent pages return different rows) and passes them to the scoring helper.
+   - Path B (`BY_SCORE`): Verify it forces a DB fetch limit of 100 recent unused charges (the evaluation cap), passes them to the scoring helper with bounded concurrency, sorts the entire 100-item array descending by the top suggestion's score, and THEN applies the `limit`/`offset` slice to return the page.
 2. Implement the resolver securely, ensuring authentication and authorization (e.g., matching the user's access to the requested `businessId`).
 3. Wire the resolver into the module's provider/index.
 ```
@@ -110,7 +111,7 @@ Task:
 We need to handle the queue state locally before building the UI.
 
 Instructions:
-1. Write a `.graphql` file in the client package defining the `ChargesAwaitingMatchQueue` query and the `MergeCharges` mutation to trigger `graphql-codegen`.
+1. Define the new `ChargesAwaitingMatchQueue` query operation in the client package to trigger `graphql-codegen`. Do NOT define a `MergeCharges` mutation — it already exists in `packages/client/src/hooks/use-merge-charges.ts` (exposed via the `useMergeCharges` hook), and redefining it would cause duplicate-operation errors during codegen. Reuse the existing hook.
 2. Write a Unit Test for a custom React Hook called `useChargeMatchQueue`.
 3. The hook test should assert:
    - It maintains an array of items.
@@ -129,7 +130,9 @@ Task:
 Create the visual shell, the filtering header, and the sidebar utilizing `shadcn/ui` and Tailwind in the React client.
 
 Instructions:
-1. Build `ChargeMatchingHeader`: Includes basic dropdowns/inputs for Business, Date Range, and Mode ("Date" vs "Score"). Include a conditional alert banner if "Score" is selected: "Note: Score-based sorting currently evaluates only the 300 most recent unmatched charges."
+1. Build `ChargeMatchingHeader` with two distinct groups of controls:
+   - Filters: a Mode/Type selector ("Doc Base" vs "Transaction Base"), a Date Range (timeframe) picker, and a Business select.
+   - Sort toggle: "Date" vs "Match Score" (separate from the Mode/Type filter). Include a conditional alert banner if "Match Score" is selected: "Note: Score-based sorting currently evaluates only the 100 most recent unmatched charges."
 2. Build `ChargeMatchingSidebar`: Accepts an array of charges and the state dictionary from our `useChargeMatchQueue` hook. It renders a vertical list. Items show a default icon, a "green check" for matched, and a "ghosted/gray" state for skipped.
 3. Build the main page container `ChargeMatchingReviewScreen` importing the Header, Sidebar, and the GraphQL queries. Wire it so that selecting filters in the Header triggers a refetch of the GraphQL query.
 ```
@@ -163,7 +166,7 @@ Instructions:
 2. In the main Screen component, maintain a local state for `selectedSuggestionOverride`. By default, it's null (meaning use Rank 1). Clicking an item in the Footer updates this override, passing a different suggestion to the right-side `ChargeDetailCard`.
 3. Implement the `handleSkip` function: Call the hook's skip method to advance the queue.
 4. Implement the `handleAccept` function:
-   - Call the `urql` GraphQL mutation to merge the charges.
+   - Call the existing `useMergeCharges` hook (`packages/client/src/hooks/use-merge-charges.ts`) to merge the charges.
    - Await the response.
    - If success: Fire a success Toast, and call the hook's success method to update the sidebar icon and advance the queue.
    - If error: Fire a descriptive error Toast. Do NOT advance the queue.
