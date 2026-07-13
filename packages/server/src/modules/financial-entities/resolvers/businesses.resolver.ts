@@ -7,6 +7,7 @@ import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provide
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
+  normalizeSuggestionListData,
   SuggestionData,
   suggestionDataSchema,
 } from '../helpers/business-suggestion-data-schema.helper.js';
@@ -123,7 +124,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
         }
 
         const suggestions: SuggestionData | undefined = fields.suggestions
-          ? {
+          ? normalizeSuggestionListData({
               tags: fields.suggestions.tags?.map(tag => tag.id),
               phrases: fields.suggestions.phrases?.map(phrase => phrase),
               description: fields.suggestions.description ?? undefined,
@@ -141,7 +142,7 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
                   }
                 : undefined,
               priority: fields.suggestions.priority ?? undefined,
-            }
+            })
           : undefined;
 
         const business = await injector.get(BusinessesProvider).insertBusinessLoader.load({

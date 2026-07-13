@@ -38,6 +38,12 @@ import { Switch } from '@/components/ui/switch.js';
 import { Textarea } from '@/components/ui/textarea.js';
 import { DocumentType } from '@/gql/graphql.js';
 import { pcn874RecordEnum } from '@/helpers/index.js';
+import {
+  duplicateEntryError,
+  hasNoDuplicateEntries,
+  hasNoPhraseOverlap,
+  phraseConflictError,
+} from '@/helpers/list-input-validation.js';
 import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useGetSortCodes } from '@/hooks/use-get-sort-codes.js';
 import { useGetTags } from '@/hooks/use-get-tags.js';
@@ -57,7 +63,9 @@ const businessFormSchema = z
     address: z.string().optional(),
     city: z.string().optional(),
     zipCode: z.string().optional(),
-    generalContacts: z.array(z.email()),
+    generalContacts: z
+      .array(z.email())
+      .refine(hasNoDuplicateEntries, { message: 'Contacts must be unique' }),
     website: z.url().optional().or(z.literal('')),
     phone: z.string().optional(),
     taxCategory: z.string().optional(),
@@ -67,8 +75,14 @@ const businessFormSchema = z
     defaultDescription: z.string().optional(),
     defaultTags: z.array(z.string()),
     isClient: z.boolean().default(false).optional(),
-    transactionPhrases: z.array(z.string()),
-    emailAddresses: z.array(z.email()),
+    transactionPhrases: z
+      .array(z.string())
+      .refine(hasNoPhraseOverlap, {
+        message: 'Phrases must be unique and not overlap one another',
+      }),
+    emailAddresses: z
+      .array(z.email())
+      .refine(hasNoDuplicateEntries, { message: 'Emails must be unique' }),
   })
   .refine(
     data => {
@@ -230,6 +244,12 @@ function ContactInformationSection({ form }: SectionProps) {
 
   const addGeneralContact = (currentContacts: string[]) => {
     if (newContact.trim()) {
+      const conflict = duplicateEntryError(currentContacts, newContact);
+      if (conflict) {
+        form.setError('generalContacts', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('generalContacts');
       setValue('generalContacts', [...currentContacts, newContact.trim()], {
         shouldDirty: true,
       });
@@ -646,7 +666,13 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addPhrase = () => {
     if (newPhrase.trim()) {
-      const currentPhrases = getValues('transactionPhrases');
+      const currentPhrases = getValues('transactionPhrases') ?? [];
+      const conflict = phraseConflictError(currentPhrases, newPhrase);
+      if (conflict) {
+        form.setError('transactionPhrases', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('transactionPhrases');
       form.setValue('transactionPhrases', [...currentPhrases, newPhrase.trim()], {
         shouldDirty: true,
       });
@@ -656,7 +682,13 @@ function AutoMatchingSection({ form }: SectionProps) {
 
   const addEmail = () => {
     if (newEmail.trim()) {
-      const currentEmails = getValues('emailAddresses');
+      const currentEmails = getValues('emailAddresses') ?? [];
+      const conflict = duplicateEntryError(currentEmails, newEmail);
+      if (conflict) {
+        form.setError('emailAddresses', { type: 'manual', message: conflict });
+        return;
+      }
+      form.clearErrors('emailAddresses');
       setValue('emailAddresses', [...currentEmails, newEmail.trim()], { shouldDirty: true });
       setNewEmail('');
     }
