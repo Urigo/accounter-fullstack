@@ -44,7 +44,7 @@
     "@types/uuid": "11.0.0",
     "concurrently": "10.0.3",
     "nodemon": "3.1.14",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
