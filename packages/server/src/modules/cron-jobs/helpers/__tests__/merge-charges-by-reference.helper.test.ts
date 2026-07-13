@@ -196,6 +196,44 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
     expect(result.errors[0]).toContain('charge-target');
   });
 
+  it('consolidates transitive plans into a single merge base', () => {
+    const charges = [
+      buildCharge('charge-a', { created_at: new Date('2026-01-01T00:00:00.000Z') }),
+      buildCharge('charge-b', { created_at: new Date('2026-01-02T00:00:00.000Z') }),
+      buildCharge('charge-c', { created_at: new Date('2026-01-03T00:00:00.000Z') }),
+    ];
+    const candidates = [
+      buildCandidate('tx-a-ref-a', 'charge-a', 'REF-A', '2026-01-01T10:00:00.000Z', {
+        amount: '500.00',
+      }),
+      buildCandidate('tx-b-ref-a', 'charge-b', 'REF-A', '2026-01-01T11:00:00.000Z', {
+        amount: '-10.00',
+        is_fee: true,
+      }),
+      buildCandidate('tx-b-ref-b', 'charge-b', 'REF-B', '2026-01-02T10:00:00.000Z', {
+        amount: '650.00',
+      }),
+      buildCandidate('tx-c-ref-b', 'charge-c', 'REF-B', '2026-01-02T11:00:00.000Z', {
+        amount: '-12.00',
+        is_fee: true,
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([
+      {
+        reference: 'REF-A',
+        baseChargeId: 'charge-a',
+        chargeIdsToMerge: ['charge-b', 'charge-c'],
+      },
+    ]);
+  });
+
   it('does not merge recurring monthly payments with identical details', () => {
     const charges = [
       buildCharge('charge-june', { created_at: new Date('2026-06-01T00:00:00.000Z') }),

@@ -523,53 +523,57 @@ function isPreferredMainChargeCandidate(candidate: ChargeMatchGroup) {
 function consolidateMergePlans(rawPlans: MergeChargePlan[]): BuildMergeChargePlanResult {
   const errors: string[] = [];
   const referenceByBaseChargeId = new Map<string, string>();
-  const targetsByBaseChargeId = new Map<string, Set<string>>();
   const targetToBaseChargeId = new Map<string, string>();
+  const involvedChargeIds = new Set<string>();
 
   for (const plan of rawPlans) {
     const { reference, baseChargeId } = plan;
-    const currentTargets = targetsByBaseChargeId.get(baseChargeId) ?? new Set<string>();
+    involvedChargeIds.add(baseChargeId);
 
-    if (targetToBaseChargeId.has(baseChargeId)) {
-      const currentBase = targetToBaseChargeId.get(baseChargeId);
-      errors.push(
-        `Skipping reference "${reference}": base charge ${baseChargeId} is already a merge target of ${currentBase}`,
-      );
-      continue;
-    }
+    const effectiveBaseChargeId = getUltimateBaseChargeId(baseChargeId, targetToBaseChargeId);
 
     referenceByBaseChargeId.set(
-      baseChargeId,
-      referenceByBaseChargeId.get(baseChargeId) ?? reference,
+      effectiveBaseChargeId,
+      referenceByBaseChargeId.get(effectiveBaseChargeId) ?? reference,
     );
 
     for (const targetChargeId of plan.chargeIdsToMerge) {
-      if (targetChargeId === baseChargeId) {
+      involvedChargeIds.add(targetChargeId);
+
+      if (targetChargeId === effectiveBaseChargeId) {
         continue;
       }
 
-      const assignedBaseChargeId = targetToBaseChargeId.get(targetChargeId);
-      if (assignedBaseChargeId && assignedBaseChargeId !== baseChargeId) {
+      const directAssignedBaseChargeId = targetToBaseChargeId.get(targetChargeId);
+      const assignedRootChargeId = getUltimateBaseChargeId(targetChargeId, targetToBaseChargeId);
+
+      if (directAssignedBaseChargeId && assignedRootChargeId !== effectiveBaseChargeId) {
         errors.push(
-          `Skipping reference "${reference}": charge ${targetChargeId} is already scheduled to merge into ${assignedBaseChargeId}`,
+          `Skipping reference "${reference}": charge ${targetChargeId} is already scheduled to merge into ${assignedRootChargeId}`,
         );
         continue;
       }
 
-      if (targetsByBaseChargeId.has(targetChargeId)) {
-        errors.push(
-          `Skipping reference "${reference}": charge ${targetChargeId} is already selected as a base charge`,
-        );
+      if (assignedRootChargeId === effectiveBaseChargeId) {
         continue;
       }
 
-      currentTargets.add(targetChargeId);
-      targetToBaseChargeId.set(targetChargeId, baseChargeId);
+      targetToBaseChargeId.set(assignedRootChargeId, effectiveBaseChargeId);
+    }
+  }
+
+  const targetsByBaseChargeId = new Map<string, Set<string>>();
+  for (const chargeId of involvedChargeIds) {
+    const resolvedBaseChargeId = getUltimateBaseChargeId(chargeId, targetToBaseChargeId);
+    if (resolvedBaseChargeId === chargeId) {
+      continue;
     }
 
-    if (currentTargets.size > 0) {
-      targetsByBaseChargeId.set(baseChargeId, currentTargets);
+    if (!targetsByBaseChargeId.has(resolvedBaseChargeId)) {
+      targetsByBaseChargeId.set(resolvedBaseChargeId, new Set<string>());
     }
+
+    targetsByBaseChargeId.get(resolvedBaseChargeId)?.add(chargeId);
   }
 
   const plans = Array.from(targetsByBaseChargeId.entries())
@@ -586,4 +590,23 @@ function consolidateMergePlans(rawPlans: MergeChargePlan[]): BuildMergeChargePla
     plans,
     errors,
   };
+}
+
+function getUltimateBaseChargeId(
+  chargeId: string,
+  targetToBaseChargeId: Map<string, string>,
+): string {
+  const traversedChargeIds: string[] = [];
+  let currentChargeId = chargeId;
+
+  while (targetToBaseChargeId.has(currentChargeId)) {
+    traversedChargeIds.push(currentChargeId);
+    currentChargeId = targetToBaseChargeId.get(currentChargeId) ?? currentChargeId;
+  }
+
+  for (const traversedChargeId of traversedChargeIds) {
+    targetToBaseChargeId.set(traversedChargeId, currentChargeId);
+  }
+
+  return currentChargeId;
 }
