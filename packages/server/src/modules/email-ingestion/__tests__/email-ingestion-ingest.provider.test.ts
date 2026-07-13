@@ -38,6 +38,18 @@ const VALID_GRANT_WITH_BUSINESS = {
   },
 };
 
+// Self-issued: the grant's issuing business is the tenant's own business.
+const VALID_GRANT_SELF_ISSUED = {
+  valid: true as const,
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
+    businessId: TENANT_ID,
+  },
+};
+
 const DOC_CONTENT_B64 = Buffer.from('%PDF-1.4 fake invoice bytes').toString('base64');
 
 const BASE_INPUT = {
@@ -185,6 +197,93 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       messageId: MSG_ID,
       rawMessageHash: MSG_HASH,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// performIngest — self-issued skip
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const idemRow = {
+    id: 'idem-row',
+    idempotency_key: IDEM_KEY,
+    owner_id: TENANT_ID,
+    outcome: IngestOutcome.DUPLICATE,
+    ingest_id: null,
+    audit_id: 'audit-self',
+    created_at: NOW,
+  };
+  const dedupRow = {
+    id: 'dedup-row',
+    owner_id: TENANT_ID,
+    fingerprint: 'fp',
+    outcome: IngestOutcome.DUPLICATE,
+    ingest_id: null,
+    correlation_id: CORR_ID,
+    created_at: NOW,
+  };
+  const inputWithContent = {
+    ...BASE_INPUT,
+    extractedDocuments: [
+      {
+        hash: 'doc-hash',
+        sizeBytes: 1024,
+        mimeType: 'application/pdf',
+        filename: 'invoice.pdf',
+        content: DOC_CONTENT_B64,
+      },
+    ],
+  };
+
+  it('returns DUPLICATE with SELF_ISSUED when the issuer is the tenant own business', async () => {
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(VALID_GRANT_SELF_ISSUED, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.DUPLICATE,
+      existingIngestId: null,
+      reasonCode: IngestReasonCode.SELF_ISSUED,
+    });
+    // No document work (upload/OCR run together in prepareDocuments) and no
+    // charge/document rows are written for a self-issued duplicate.
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+  });
+
+  it('persists idempotency + dedup so a retry short-circuits, without dedup lookup or insert queries', async () => {
+    const { provider, validateAndConsumeGrant, dataCalls, dataQueries } = makeProvider(
+      VALID_GRANT_SELF_ISSUED,
+      [
+        { rows: [], rowCount: 0 }, // early idempotency miss
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
+    );
+
+    await provider.performIngest(BASE_INPUT, ocrInjector);
+
+    // The grant IS validated/consumed; the self-issued check then short-circuits
+    // before any dedup lookup, charge or document insert — but still records the
+    // idempotency key + dedup fingerprint so retries return DUPLICATE cleanly.
+    expect(validateAndConsumeGrant).toHaveBeenCalled();
+    expect(dataQueries).toHaveLength(3); // early idem lookup + idem insert + dedup insert
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_idempotency_keys'))).toBe(true);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_dedup_fingerprints'))).toBe(true);
   });
 });
 

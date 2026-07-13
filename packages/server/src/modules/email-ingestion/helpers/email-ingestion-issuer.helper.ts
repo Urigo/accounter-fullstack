@@ -52,6 +52,9 @@ function isKnownProvider(email: string): boolean {
   return INVOICE_ISSUING_PROVIDER_EMAILS.has(email.toLowerCase());
 }
 
+/** Shared empty default so `selectIssuerEmail` allocates no set on the common path. */
+const EMPTY_PROVIDERS: ReadonlySet<string> = new Set();
+
 /**
  * Pick the issuer email used for business recognition, or `null` if none can be
  * determined. Mirrors the legacy precedence:
@@ -61,11 +64,23 @@ function isKnownProvider(email: string): boolean {
  *   2. else the first of `originalFrom` / `from` that is not a known provider;
  *   3. else `replyTo`;
  *   4. else `from`.
+ *
+ * `extraProviders` (lower-cased) lets a caller treat additional addresses as
+ * non-issuer forwarders for this call only — e.g. the tenant's own inbound
+ * alias, which a mailing-list forward rewrites into `From`. It augments, never
+ * replaces, {@link INVOICE_ISSUING_PROVIDER_EMAILS}, and defaults to empty so
+ * existing callers are unaffected.
  */
-export function selectIssuerEmail(evidence: SenderEvidence | null | undefined): string | null {
+export function selectIssuerEmail(
+  evidence: SenderEvidence | null | undefined,
+  extraProviders: ReadonlySet<string> = EMPTY_PROVIDERS,
+): string | null {
   if (!evidence) {
     return null;
   }
+
+  const isProvider = (email: string): boolean =>
+    isKnownProvider(email) || extraProviders.has(email.toLowerCase());
 
   const replyTo = normalize(evidence.replyTo);
 
@@ -74,13 +89,13 @@ export function selectIssuerEmail(evidence: SenderEvidence | null | undefined): 
     if (!email) {
       continue;
     }
-    if (!isKnownProvider(email) || !replyTo) {
+    if (!isProvider(email) || !replyTo) {
       return email;
     }
   }
 
   const sender = [normalize(evidence.originalFrom), normalize(evidence.from)].find(
-    email => email !== undefined && !isKnownProvider(email),
+    email => email !== undefined && !isProvider(email),
   );
   if (sender) {
     return sender;
@@ -91,6 +106,49 @@ export function selectIssuerEmail(evidence: SenderEvidence | null | undefined): 
   }
 
   return normalize(evidence.from) ?? null;
+}
+
+/**
+ * Detect a **self-issued** document: an email whose only determinable issuer is
+ * one of the tenant's own invoice-issuing platforms (Morning/Sumit) or its own
+ * forwarding address — i.e. no external counterparty can be identified.
+ *
+ * These are the confirmation emails a tenant receives for invoices *it* issued
+ * through such a platform (e.g. Morning/greeninvoice). The underlying document
+ * was already inserted on the server at creation time, so ingesting the email
+ * would duplicate it. This mirrors the legacy gmail-listener skip, where
+ * `getEmailData` dropped mail whose `From` carried the tenant's own name.
+ *
+ * The check reuses {@link selectIssuerEmail}: it commits to a provider address
+ * only after every non-provider candidate has been ruled out, so a provider
+ * result means the email has no external issuer. Forwarded supplier invoices —
+ * which carry the real issuer as a quoted-header `mailto:` in the body — resolve
+ * to that (non-provider) address and are therefore *not* treated as self-issued.
+ *
+ * `ownInboundAddresses` are the tenant's own inbound addresses (its recipient
+ * alias/es). A mailing-list forward (e.g. a Google Group) rewrites the live
+ * `From` into that alias, which would otherwise look like an external issuer and
+ * defeat detection. Passing them makes the check tenant-agnostic instead of
+ * relying on the hard-coded {@link INVOICE_ISSUING_PROVIDER_EMAILS} carrying
+ * each tenant's forwarding address.
+ */
+export function isSelfIssuedSenderEvidence(
+  evidence: SenderEvidence | null | undefined,
+  ownInboundAddresses: Iterable<string> = [],
+): boolean {
+  const ownAddresses = new Set<string>();
+  for (const address of ownInboundAddresses) {
+    const email = normalize(address);
+    if (email) {
+      ownAddresses.add(email.toLowerCase());
+    }
+  }
+
+  const issuer = selectIssuerEmail(evidence, ownAddresses);
+  if (issuer === null) {
+    return false;
+  }
+  return isKnownProvider(issuer) || ownAddresses.has(issuer.toLowerCase());
 }
 
 /**
