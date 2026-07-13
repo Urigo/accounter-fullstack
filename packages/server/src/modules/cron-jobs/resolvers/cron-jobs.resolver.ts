@@ -9,7 +9,7 @@ import type { CronJobsModule } from '../types.js';
 
 export const cronJobsResolvers: CronJobsModule.Resolvers = {
   Mutation: {
-    mergeChargesByTransactionReference: async (_, { dryRun }, { injector }) => {
+    mergeChargesByTransactionReference: async (_, { dryRun = true }, { injector }) => {
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         const candidates = await injector.get(CronJobsProvider).getReferenceMergeCandidates({
