@@ -30,9 +30,16 @@ export const ExtendedTransactionsCard = ({
   periodInfo,
   onCloseExtendedTransactions,
 }: ExtendedTransactionsCardProps): ReactElement => {
+  const transactionsMeta = periodInfo?.transactions;
   const transactionIDs = useMemo(() => {
-    return periodInfo?.transactions.map(transaction => transaction.id) || [];
-  }, [periodInfo?.transactions]);
+    if (!transactionsMeta || transactionsMeta.length === 0) {
+      return [];
+    }
+    const spreadList = [...transactionsMeta];
+    return spreadList
+      .sort((a, b) => (Math.abs(a.amount.raw) > Math.abs(b.amount.raw) ? -1 : 1))
+      .map(transaction => transaction.id);
+  }, [transactionsMeta]);
 
   const [{ data, fetching }, refetchTransactions] = useQuery({
     query: BalanceReportExtendedTransactionsDocument,
