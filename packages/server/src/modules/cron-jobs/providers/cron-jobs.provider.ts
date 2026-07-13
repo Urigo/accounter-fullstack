@@ -11,14 +11,40 @@ import type {
 } from '../types.js';
 
 const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
-  SELECT t.*
+  WITH transactions_origin_user_description AS (
+    SELECT 
+      t.id,
+      COALESCE(
+        p_ils.beneficiary_details_data_message_detail
+        , p_foreign.event_details
+        -- Add future description columns here as you expand:
+        -- , oh_ils.description_column
+        -- , discount.tx_details
+      ) AS user_source_description
+    FROM 
+      accounter_schema.transactions t
+    JOIN 
+      accounter_schema.transactions_raw_list trl 
+      ON t.source_id = trl.id
+    LEFT JOIN 
+      accounter_schema.poalim_ils_account_transactions p_ils 
+      ON trl.poalim_ils_id = p_ils.id
+    LEFT JOIN 
+      accounter_schema.poalim_foreign_account_transactions p_foreign
+      ON trl.poalim_foreign_id = p_foreign.id
+    -- Add future LEFT JOINs here:
+    -- LEFT JOIN accounter_schema.otsar_hahayal_ils_account_transactions oh_ils ON trl.otsar_hahayal_ils = oh_ils.id
+    -- LEFT JOIN accounter_schema.bank_discount_transactions discount ON trl.bank_discount_id = discount.id
+  )
+  SELECT t.*, ud.user_source_description AS origin_user_description
   FROM accounter_schema.transactions t
   LEFT JOIN (SELECT COUNT(et.*) AS counter, array_agg(DISTINCT et.charge_id) AS charge_ids, et.source_reference
           FROM accounter_schema.transactions et
           WHERE et.owner_id = $ownerId
           GROUP BY source_reference ) g
       ON g.source_reference = t.source_reference
-
+  LEFT JOIN transactions_origin_user_description ud
+      ON ud.id = t.id
   WHERE t.owner_id = $ownerId
       AND g.counter > 1
       AND array_length(g.charge_ids, 1) > 1
