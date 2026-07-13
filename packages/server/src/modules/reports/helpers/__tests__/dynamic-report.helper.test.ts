@@ -3,6 +3,7 @@ import {
   isLegacyTemplate,
   migrateLegacyTemplate,
   parseTemplate,
+  validateTemplate,
 } from '../dynamic-report.helper.js';
 
 describe('parseTemplate', () => {
@@ -40,6 +41,51 @@ describe('parseTemplate', () => {
       },
     ];
     expect(() => parseTemplate(JSON.stringify(nodes))).toThrow();
+  });
+
+  it('succeeds with a sort-code-branch node carrying a sortCode field', () => {
+    const nodes = [
+      {
+        id: 'sc-branch-1',
+        parent: '0',
+        text: 'Sort Code 100',
+        droppable: true,
+        data: { nodeType: 'sort-code-branch', isOpen: false, sortCode: 100 },
+      },
+    ];
+    const result = parseTemplate(JSON.stringify(nodes));
+    expect(result).toHaveLength(1);
+    expect(result[0].data.nodeType).toBe('sort-code-branch');
+    expect(result[0].data.sortCode).toBe(100);
+  });
+
+  it('succeeds with an explicit sortCode: null', () => {
+    const nodes = [
+      {
+        id: 'synth-1',
+        parent: '0',
+        text: 'Synthetic Category',
+        droppable: true,
+        data: { nodeType: 'synthetic-branch', isOpen: false, sortCode: null },
+      },
+    ];
+    const result = parseTemplate(JSON.stringify(nodes));
+    expect(result[0].data.sortCode).toBeNull();
+  });
+});
+
+describe('validateTemplate', () => {
+  it('does not throw for a sort-code-branch node carrying a sortCode field', () => {
+    const nodes = [
+      {
+        id: 'sc-branch-1',
+        parent: '0',
+        text: 'Sort Code 100',
+        droppable: true,
+        data: { nodeType: 'sort-code-branch', isOpen: false, sortCode: 100 },
+      },
+    ];
+    expect(() => validateTemplate(JSON.stringify(nodes))).not.toThrow();
   });
 });
 

@@ -55,5 +55,6 @@ export default gql`
     nodeType: String!
     isOpen: Boolean!
     hebrewText: String
+    sortCode: Int
   }
 `;
