@@ -175,4 +175,32 @@ describe('isSelfIssuedSenderEvidence', () => {
       }),
     ).toBe(false);
   });
+
+  it("is tenant-agnostic: detects self-issued via the tenant's own inbound alias", () => {
+    // A tenant whose forwarding address is NOT in the hard-coded provider list.
+    const evidence = {
+      from: 'ap@othertenant.com',
+      replyTo: 'notify@morning.co',
+      originalFrom: 'notify@morning.co',
+    };
+    // Without the alias, the rewritten From looks like an external issuer.
+    expect(isSelfIssuedSenderEvidence(evidence)).toBe(false);
+    // Passing the tenant's own inbound alias recovers detection.
+    expect(isSelfIssuedSenderEvidence(evidence, ['ap@othertenant.com'])).toBe(true);
+  });
+
+  it('still prefers a real external issuer over the tenant own inbound alias', () => {
+    // Even with the alias supplied, a forwarded supplier invoice (real issuer in
+    // the body) is not treated as self-issued.
+    expect(
+      isSelfIssuedSenderEvidence(
+        {
+          from: 'ap@othertenant.com',
+          replyTo: 'notify@morning.co',
+          issuerCandidates: ['billing@vendor.com'],
+        },
+        ['ap@othertenant.com'],
+      ),
+    ).toBe(false);
+  });
 });

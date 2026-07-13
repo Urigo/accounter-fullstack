@@ -213,6 +213,24 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     vi.useRealTimers();
   });
 
+  const idemRow = {
+    id: 'idem-row',
+    idempotency_key: IDEM_KEY,
+    owner_id: TENANT_ID,
+    outcome: IngestOutcome.DUPLICATE,
+    ingest_id: null,
+    audit_id: 'audit-self',
+    created_at: NOW,
+  };
+  const dedupRow = {
+    id: 'dedup-row',
+    owner_id: TENANT_ID,
+    fingerprint: 'fp',
+    outcome: IngestOutcome.DUPLICATE,
+    ingest_id: null,
+    correlation_id: CORR_ID,
+    created_at: NOW,
+  };
   const inputWithContent = {
     ...BASE_INPUT,
     extractedDocuments: [
@@ -227,10 +245,11 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
   };
 
   it('returns DUPLICATE with SELF_ISSUED when the issuer is the tenant own business', async () => {
-    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
-      VALID_GRANT_SELF_ISSUED,
-      [{ rows: [], rowCount: 0 }], // early idempotency miss
-    );
+    const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(VALID_GRANT_SELF_ISSUED, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
 
     const result = await provider.performIngest(inputWithContent, ocrInjector);
 
@@ -240,23 +259,31 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
       reasonCode: IngestReasonCode.SELF_ISSUED,
     });
     // No document work (upload/OCR run together in prepareDocuments) and no
-    // writes for a self-issued duplicate.
+    // charge/document rows are written for a self-issued duplicate.
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
-    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
   });
 
-  it('consumes the grant but runs no dedup/insert queries for a self-issued email', async () => {
-    const { provider, validateAndConsumeGrant, dataQueries } = makeProvider(
+  it('persists idempotency + dedup so a retry short-circuits, without dedup lookup or insert queries', async () => {
+    const { provider, validateAndConsumeGrant, dataCalls, dataQueries } = makeProvider(
       VALID_GRANT_SELF_ISSUED,
-      [{ rows: [], rowCount: 0 }], // early idempotency miss
+      [
+        { rows: [], rowCount: 0 }, // early idempotency miss
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
     );
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
-    // The grant IS validated/consumed, but only the early idempotency lookup
-    // runs — the self-issued check short-circuits before dedup and any insert.
+    // The grant IS validated/consumed; the self-issued check then short-circuits
+    // before any dedup lookup, charge or document insert — but still records the
+    // idempotency key + dedup fingerprint so retries return DUPLICATE cleanly.
     expect(validateAndConsumeGrant).toHaveBeenCalled();
-    expect(dataQueries).toHaveLength(1);
+    expect(dataQueries).toHaveLength(3); // early idem lookup + idem insert + dedup insert
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_idempotency_keys'))).toBe(true);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_dedup_fingerprints'))).toBe(true);
   });
 });
 

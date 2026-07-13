@@ -36,8 +36,13 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
     // document already exists on the server from creation, so binding the
     // tenant's own business as the issuer lets the ingest step recognize the
     // duplicate and skip it (see EmailIngestionIngestProvider.performIngest).
-    // Mirrors the legacy gmail-listener self-issued skip.
-    const selfIssued = isSelfIssuedSenderEvidence(input.senderEvidence ?? undefined);
+    // Mirrors the legacy gmail-listener self-issued skip. The recipient alias is
+    // passed as the tenant's own inbound address so a mailing-list forward that
+    // rewrites `From` into that alias is still recognized as self — keeping the
+    // check tenant-agnostic.
+    const selfIssued = isSelfIssuedSenderEvidence(input.senderEvidence ?? undefined, [
+      input.recipientAlias,
+    ]);
     const issuingBusinessId = selfIssued ? aliasResult.tenantId : businessId;
 
     const expiresAt = new Date(Date.now() + GRANT_TTL_MS);

@@ -251,24 +251,40 @@ export class EmailIngestionIngestProvider {
       return { outcome: IngestOutcome.REJECTED, reasonCode: grantResult.reason };
     }
 
+    const corrId = correlationId ?? randomUUID();
+    const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
+
     // Self-issued short-circuit: when the recognized issuing business is the
     // tenant's own business, the email is a confirmation of an invoice the
     // tenant issued itself (e.g. via Morning/greeninvoice). That document was
     // already inserted at creation time, so ingesting it would duplicate it —
     // skip before any upload/OCR/insert. Reported as DUPLICATE (the document
-    // already exists) with a SELF_ISSUED reason. Runs before prepareDocuments so
-    // no Cloudinary upload or OCR is performed for the skipped email.
+    // already exists) with a SELF_ISSUED reason. Persist the idempotency key +
+    // dedup fingerprint (as the QUARANTINE path does) so a gateway retry
+    // short-circuits at the early idempotency check instead of failing grant
+    // validation against the already-consumed grant.
     if (grantResult.grant.businessId === tenantId) {
+      const auditId = randomUUID();
+      await withTenantContext(this.dbProvider.pool, tenantId, client =>
+        this.persistIdempotencyAndDedup({
+          idempotencyKey,
+          tenantId,
+          fingerprint,
+          outcome: IngestOutcome.DUPLICATE,
+          ingestId: null,
+          auditId,
+          correlationId: corrId,
+          client,
+        }),
+      );
+
       return {
         outcome: IngestOutcome.DUPLICATE,
         existingIngestId: null,
-        auditId: randomUUID(),
+        auditId,
         reasonCode: IngestReasonCode.SELF_ISSUED,
       };
     }
-
-    const corrId = correlationId ?? randomUUID();
-    const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
     // Prepare documents (hash dedup read + Cloudinary upload + OCR) BEFORE the
     // write transaction, so the network I/O never holds a pooled connection / open
