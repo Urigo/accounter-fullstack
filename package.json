@@ -9,7 +9,7 @@
       "!packages/old-accounter"
     ]
   },
-  "packageManager": "yarn@4.17.0",
+  "packageManager": "yarn@4.17.1",
   "engines": {
     "node": "26.5.0"
   },
@@ -66,7 +66,7 @@
     "@pgtyped/runtime": "2.4.2",
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
-    "@types/node": "25.9.4",
+    "@types/node": "25.9.5",
     "@types/pg": "8.20.0",
     "@typescript-eslint/eslint-plugin": "8.63.0",
     "@typescript-eslint/parser": "8.63.0",

@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/inline-css": "3.0.4",
-    "@types/node": "25.9.4",
+    "@types/node": "25.9.5",
     "tsx": "4.23.0",
     "typescript": "6.0.3",
     "wrangler": "4.110.0"
