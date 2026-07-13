@@ -152,18 +152,26 @@ export const CorporateTaxRulingComplianceReport = (): ReactElement => {
                   <th />
                   {years.map(year => (
                     <th key={year}>
-                      <Indicator
-                        inline
-                        size={12}
-                        processing={
-                          !yearlyReports.find(report => report.year === year)?.differences
-                        }
+                      <Tooltip
+                        content="Checking for ledger suggested changes"
+                        asChild
                         disabled={!!yearlyReports.find(report => report.year === year)?.differences}
-                        color="orange"
-                        zIndex="auto"
                       >
-                        {year}
-                      </Indicator>
+                        <Indicator
+                          inline
+                          size={12}
+                          processing={
+                            !yearlyReports.find(report => report.year === year)?.differences
+                          }
+                          disabled={
+                            !!yearlyReports.find(report => report.year === year)?.differences
+                          }
+                          color="orange"
+                          zIndex="auto"
+                        >
+                          {year}
+                        </Indicator>
+                      </Tooltip>
                     </th>
                   ))}
                   <th key="sum">Summary</th>
