@@ -58,6 +58,20 @@ describe('parseTemplate', () => {
     expect(result[0].data.nodeType).toBe('sort-code-branch');
     expect(result[0].data.sortCode).toBe(100);
   });
+
+  it('succeeds with an explicit sortCode: null', () => {
+    const nodes = [
+      {
+        id: 'synth-1',
+        parent: '0',
+        text: 'Synthetic Category',
+        droppable: true,
+        data: { nodeType: 'synthetic-branch', isOpen: false, sortCode: null },
+      },
+    ];
+    const result = parseTemplate(JSON.stringify(nodes));
+    expect(result[0].data.sortCode).toBeNull();
+  });
 });
 
 describe('validateTemplate', () => {
