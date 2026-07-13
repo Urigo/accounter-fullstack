@@ -49,7 +49,7 @@ export const AccountantApprovals = (): ReactElement => {
     query: AccountantApprovalsChargesTableDocument,
     variables: {
       filters: filter,
-      page: 1,
+      page: 0,
       limit: 999_999,
     },
   });
