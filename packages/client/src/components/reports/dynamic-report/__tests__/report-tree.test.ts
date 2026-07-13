@@ -109,6 +109,24 @@ describe('buildReportTree', () => {
     });
   });
 
+  describe('sort-code-branch node with UUID id and sortCode from the query', () => {
+    it('data.sortCode is read straight from the template data, not derived from the id', () => {
+      const template: TemplateNode[] = [
+        {
+          id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+          parent: 'report',
+          text: 'Sort Code 42',
+          droppable: true,
+          data: { nodeType: 'sort-code-branch', isOpen: false, sortCode: 42 },
+        },
+      ];
+      const { reportTree } = buildReportTree(template, []);
+      const branch = reportTree.find(n => n.id === 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+      expect(branch).toBeDefined();
+      expect(branch!.data.sortCode).toBe(42);
+    });
+  });
+
   describe('parent: 0 is replaced with REPORT_ROOT', () => {
     it('branch node with parent 0 gets parent = REPORT_ROOT', () => {
       const template: TemplateNode[] = [tmplBranch('br-1', 0)];

@@ -120,6 +120,7 @@ import { buildNodeStats, type CustomData, type FlatNode, type Template } from '.
           nodeType
           isOpen
           hebrewText
+          sortCode
         }
       }
     }

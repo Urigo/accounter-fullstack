@@ -5,6 +5,7 @@ const dynamicReportNodeData = z
     nodeType: z.enum(['synthetic-branch', 'sort-code-branch', 'financial-entity']),
     isOpen: z.boolean(),
     hebrewText: z.string().optional(),
+    sortCode: z.number().optional(),
   })
   .strict();
 
