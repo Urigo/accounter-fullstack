@@ -50,6 +50,9 @@ export default gql`
     closeDocument(id: UUID!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    chargeSpreadDocuments(chargeId: UUID!, documentIdsToKeep: [UUID!]): [Charge!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " All possible document types "

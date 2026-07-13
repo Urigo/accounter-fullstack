@@ -423,6 +423,67 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         throw new GraphQLError(`Failed to close document ID="${id}"`);
       }
     },
+    chargeSpreadDocuments: async (_, { chargeId, documentIdsToKeep }, { injector }) => {
+      const chargeIds: string[] = [chargeId];
+
+      try {
+        // validate charge and get owner ID
+        const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+        if (!charge) {
+          throw new GraphQLError(`Charge ID="${chargeId}" not valid`);
+        }
+
+        // get all docs
+        const documents = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(chargeId);
+        if (documents.length === 0) {
+          return [];
+        }
+
+        // filter out the ones to keep
+        const documentsToSpread = documents.filter(doc => !documentIdsToKeep?.includes(doc.id));
+        if (documentsToSpread.length === 0) {
+          return [];
+        }
+
+        // for each of the remaining docs, create new charge and migrate the doc to the new charge in parallel
+        const spreadPromises = documentsToSpread.map(async document => {
+          const newCharge = await injector.get(ChargesProvider).generateCharge({
+            ownerId: document.owner_id ?? charge.owner_id,
+            userDescription: 'Document unlinked from charge',
+          });
+          if (!newCharge) {
+            throw new GraphQLError(
+              `Failed to generate new charge for document ID="${document.id}"`,
+            );
+          }
+
+          const adjustedFields: IUpdateDocumentParams = {
+            documentId: document.id,
+            chargeId: newCharge.id,
+          };
+          const res = await injector.get(DocumentsProvider).updateDocument({ ...adjustedFields });
+          if (!res || res.length === 0) {
+            throw new Error(`Document ID="${document.id}" not found`);
+          }
+
+          return newCharge.id;
+        });
+
+        const newChargeIds = await Promise.all(spreadPromises);
+        chargeIds.push(...newChargeIds);
+      } catch (e) {
+        console.error(`Failed to spread documents for charge ID="${chargeId}":`, e);
+        throw new GraphQLError(`Failed to spread documents for charge ID="${chargeId}"`);
+      }
+
+      const charges = await injector.get(ChargesProvider).getChargeByIdLoader.loadMany(chargeIds);
+
+      return charges.filter(
+        (charge): charge is IGetChargesByIdsResult => charge !== null && !(charge instanceof Error),
+      );
+    },
   },
   Document: {
     __resolveType: (documentRoot, _context, _info) => {
