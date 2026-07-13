@@ -53,5 +53,7 @@ export default gql`
   type ReportCommentarySubRecord {
     financialEntity: FinancialEntity!
     amount: FinancialAmount!
+    " ledger records formulating the financial entity sum "
+    ledgerRecords: [LedgerRecord!]!
   }
 `;

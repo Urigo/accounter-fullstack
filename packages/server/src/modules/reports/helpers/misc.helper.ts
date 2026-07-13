@@ -1,23 +1,44 @@
 import { CommentaryProto } from '../types.js';
 import { DecoratedLedgerRecord } from './profit-and-loss.helper.js';
 
+type EntityAmountAccumulator = {
+  amount: number;
+  // ledger records are keyed by ID, so a record hitting the same entity on multiple sides is listed once
+  ledgerRecords: Map<string, DecoratedLedgerRecord>;
+};
+
+type AmountsBySortCode = Map<
+  number,
+  { amount: number; records: Map<string, EntityAmountAccumulator> }
+>;
+
 export function updateRecords(
-  amountsByEntity: Map<number, { amount: number; records: Map<string, number> }>,
+  amountsByEntity: AmountsBySortCode,
   amount: number,
   sortCode: number,
   financialEntityId: string,
+  ledgerRecord: DecoratedLedgerRecord,
 ) {
   const currentRecord = amountsByEntity.get(sortCode);
   if (currentRecord) {
     currentRecord.amount += amount;
     const record = currentRecord.records.get(financialEntityId);
     if (record) {
-      currentRecord.records.set(financialEntityId, record + amount);
+      record.amount += amount;
+      record.ledgerRecords.set(ledgerRecord.id, ledgerRecord);
     } else {
-      currentRecord.records.set(financialEntityId, amount);
+      currentRecord.records.set(financialEntityId, {
+        amount,
+        ledgerRecords: new Map([[ledgerRecord.id, ledgerRecord]]),
+      });
     }
   } else {
-    amountsByEntity.set(sortCode, { amount, records: new Map([[financialEntityId, amount]]) });
+    amountsByEntity.set(sortCode, {
+      amount,
+      records: new Map([
+        [financialEntityId, { amount, ledgerRecords: new Map([[ledgerRecord.id, ledgerRecord]]) }],
+      ]),
+    });
   }
 }
 
@@ -72,13 +93,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
 >(unfilteredRecords: DecoratedLedgerRecord[], filteringRules: T): R {
   const commentaryProtos = filteringRules.map(() => ({
     amount: 0,
-    amountsByEntity: new Map<
-      number,
-      {
-        amount: number;
-        records: Map<string, number>;
-      }
-    >(),
+    amountsByEntity: new Map() as AmountsBySortCode,
   }));
   unfilteredRecords.map(record => {
     if (record.credit_entity1) {
@@ -91,6 +106,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
             recordAmount,
             record.credit_entity_sort_code1!,
             record.credit_entity1,
+            record,
           );
           commentaryProtos[i].amount += recordAmount;
         }
@@ -106,6 +122,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
             recordAmount,
             record.credit_entity_sort_code2!,
             record.credit_entity2,
+            record,
           );
           commentaryProtos[i].amount += recordAmount;
         }
@@ -121,6 +138,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
             recordAmount,
             record.debit_entity_sort_code1!,
             record.debit_entity1,
+            record,
           );
           commentaryProtos[i].amount += recordAmount;
         }
@@ -136,6 +154,7 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
             recordAmount,
             record.debit_entity_sort_code2!,
             record.debit_entity2,
+            record,
           );
           commentaryProtos[i].amount += recordAmount;
         }
@@ -148,9 +167,10 @@ export function recordsByFinancialEntityIdAndSortCodeValidations<
     records: Array.from(proto.amountsByEntity.entries()).map(([sortCode, data]) => ({
       sortCode,
       amount: data.amount,
-      records: Array.from(data.records.entries()).map(([financialEntityId, amount]) => ({
+      records: Array.from(data.records.entries()).map(([financialEntityId, entityData]) => ({
         financialEntityId,
-        amount,
+        amount: entityData.amount,
+        ledgerRecords: Array.from(entityData.ledgerRecords.values()),
       })),
     })),
   })) as R;

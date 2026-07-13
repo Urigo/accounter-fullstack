@@ -254,4 +254,5 @@ export const reportCommentarySubRecordMapper: ReportCommentarySubRecordResolvers
       .getVerifiedAdminContext();
     return formatFinancialAmount(parent.amount, defaultLocalCurrency);
   },
+  ledgerRecords: parent => parent.ledgerRecords ?? [],
 };

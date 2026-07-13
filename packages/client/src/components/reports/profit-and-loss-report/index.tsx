@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import { Table } from '@mantine/core';
+import { PrintToPdfButton } from '@/components/common/index.js';
 import { ProfitAndLossReportDocument } from '../../../gql/graphql.js';
 import { dedupeFragments } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -169,7 +170,10 @@ export const ProfitAndLossReport = (): ReactElement => {
   const referenceYearsData = yearlyReports?.reference ?? [];
 
   return (
-    <PageLayout title="Profit and Loss Report">
+    <PageLayout
+      title="Profit and Loss Report"
+      headerActions={<PrintToPdfButton filename={`profit_and_loss_${year}`} />}
+    >
       {fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
