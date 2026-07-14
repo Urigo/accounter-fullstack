@@ -78,7 +78,7 @@ export function DepositReassignDialog({ depositId, chargeId, refetch }: Props): 
               <SelectContent>
                 {openDeposits.map(d => (
                   <SelectItem key={d.id} value={d.id}>
-                    {d.id} ({d.currency})
+                    {d.name} ({d.currency})
                   </SelectItem>
                 ))}
               </SelectContent>
