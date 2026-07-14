@@ -100,7 +100,10 @@ function ContactsSectionFragmentToFormValues(
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
     website: business.website ?? undefined,
-    generalContacts: business.email?.split(',').map(email => email.trim()),
+    generalContacts: business.email
+      ?.split(',')
+      .map(email => email.trim())
+      .filter(email => !!email),
     billingEmails: business.clientInfo?.emails,
   };
 }
