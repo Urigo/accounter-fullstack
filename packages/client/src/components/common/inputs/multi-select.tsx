@@ -243,38 +243,43 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                     );
                   })}
                   {selectedValues.length > maxCount && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge
-                          className={cn(
-                            'bg-transparent text-gray-950 border-gray-950/1 hover:bg-transparent',
-                            isAnimating ? 'animate-bounce' : '',
-                            multiSelectVariants({ variant }),
-                          )}
-                          style={{ animationDuration: `${animation}s` }}
+                    <Badge
+                      className={cn(
+                        'bg-transparent text-gray-950 border-gray-950/1 hover:bg-transparent p-0 gap-0',
+                        isAnimating ? 'animate-bounce' : '',
+                        multiSelectVariants({ variant }),
+                      )}
+                      style={{ animationDuration: `${animation}s` }}
+                    >
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            tabIndex={0}
+                            className="pl-2 pr-1 py-0.5 cursor-help outline-none focus-visible:underline"
+                          >
+                            {`+ ${selectedValues.length - maxCount} more`}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="flex flex-col gap-0.5">
+                          {selectedValues.slice(maxCount).map(value => {
+                            const option = options.find(o => o.value === value);
+                            return <span key={value}>{option?.label ?? value}</span>;
+                          })}
+                        </TooltipContent>
+                      </Tooltip>
+                      {removeButton && (
+                        <Button
+                          className="h-4 w-4 p-0 mr-1"
+                          variant="link"
+                          onClick={event => {
+                            event.stopPropagation();
+                            clearExtraOptions();
+                          }}
                         >
-                          {`+ ${selectedValues.length - maxCount} more`}
-                          {removeButton && (
-                            <Button
-                              className="h-4 w-4 p-0"
-                              variant="link"
-                              onClick={event => {
-                                event.stopPropagation();
-                                clearExtraOptions();
-                              }}
-                            >
-                              <XCircle className="h-4 w-4 cursor-pointer" />
-                            </Button>
-                          )}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent className="flex flex-col gap-0.5">
-                        {selectedValues.slice(maxCount).map(value => {
-                          const option = options.find(o => o.value === value);
-                          return <span key={value}>{option?.label ?? value}</span>;
-                        })}
-                      </TooltipContent>
-                    </Tooltip>
+                          <XCircle className="h-4 w-4 cursor-pointer" />
+                        </Button>
+                      )}
+                    </Badge>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
