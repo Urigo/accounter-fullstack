@@ -51,7 +51,6 @@ ENV NODE_ENV=production
 COPY --chown=pwuser:pwuser --from=builder /app/package.json /app/yarn.lock /app/.yarnrc.yml ./
 COPY --chown=pwuser:pwuser --from=builder /app/.yarn ./.yarn
 COPY --chown=pwuser:pwuser --from=builder /app/node_modules ./node_modules
-RUN mkdir -p packages/email-ingestion-gateway && chown -R pwuser:pwuser /app
 COPY --chown=pwuser:pwuser --from=builder /app/packages/email-ingestion-gateway/package.json ./packages/email-ingestion-gateway/package.json
 COPY --chown=pwuser:pwuser --from=builder /app/packages/email-ingestion-gateway/dist ./packages/email-ingestion-gateway/dist
 
