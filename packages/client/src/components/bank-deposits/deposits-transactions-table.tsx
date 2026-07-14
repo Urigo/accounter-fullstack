@@ -10,6 +10,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import { getFragmentData } from '@/gql/fragment-masking.js';
+import { useStableValue } from '@/hooks/use-stable-value.js';
 import { UserContext } from '@/providers/user-provider.js';
 import {
   Currency,
@@ -69,7 +70,7 @@ export function DepositsTransactionsTable({
     variables: { depositId },
   });
 
-  const tableData: DepositTransactionRowType[] = useMemo(() => {
+  const computedTableData: DepositTransactionRowType[] = useMemo(() => {
     if (!data?.deposit?.metadata.transactions) {
       return [];
     }
@@ -127,6 +128,10 @@ export function DepositsTransactionsTable({
     });
   }, [data?.deposit, userContext]);
 
+  // Keep a stable reference across refetches so the table only re-renders when
+  // the transactions actually changed, avoiding a "blink" on background refetch.
+  const tableData = useStableValue(computedTableData);
+
   const columnsWithActions: ColumnDef<DepositTransactionRowType>[] = useMemo(() => {
     const defaultLocalCurrency =
       (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
@@ -172,7 +177,7 @@ export function DepositsTransactionsTable({
     state: { sorting },
   });
 
-  if (fetching) {
+  if (fetching && !data) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
         <Loader2 className="size-10 animate-spin" />

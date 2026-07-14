@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactElement } from 'react';
+import { Fragment, useMemo, useRef, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import { AllDepositsDocument } from '@/gql/graphql.js';
+import { useStableValue } from '@/hooks/use-stable-value.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -76,7 +77,7 @@ export function DepositsScreen(): ReactElement {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingDeposit, setEditingDeposit] = useState<DepositRow | null>(null);
 
-  const rows: DepositRow[] = useMemo(() => {
+  const computedRows: DepositRow[] = useMemo(() => {
     const deposits = data?.allDeposits ?? [];
     return deposits.map(d => ({
       id: d.id,
@@ -93,6 +94,10 @@ export function DepositsScreen(): ReactElement {
       totalInterestFormatted: d.metadata.totalInterest?.formatted ?? '',
     }));
   }, [data]);
+
+  // Keep a stable reference across refetches so the table (and its expanded
+  // sub-rows) only re-render when the deposits actually changed.
+  const rows = useStableValue(computedRows);
 
   const columnsRef = useRef<ColumnDef<DepositRow>[]>([
     {
@@ -235,7 +240,7 @@ export function DepositsScreen(): ReactElement {
             ))}
           </TableHeader>
           <TableBody>
-            {fetching ? (
+            {fetching && !data ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
                   Loading...
@@ -243,8 +248,8 @@ export function DepositsScreen(): ReactElement {
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
-                <>
-                  <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
+                <Fragment key={row.id}>
+                  <TableRow data-state={row.getIsSelected() && 'selected'}>
                     {row.getVisibleCells().map(cell => (
                       <TableCell key={cell.id}>
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -262,7 +267,7 @@ export function DepositsScreen(): ReactElement {
                       </TableCell>
                     </TableRow>
                   ) : null}
-                </>
+                </Fragment>
               ))
             ) : (
               <TableRow>
