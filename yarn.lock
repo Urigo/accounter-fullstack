@@ -322,7 +322,7 @@ __metadata:
   dependencies:
     "@accounter/modern-poalim-scraper": "workspace:^"
     "@fastify/static": "npm:9.3.0"
-    "@fastify/websocket": "npm:11.2.0"
+    "@fastify/websocket": "npm:11.3.0"
     "@testing-library/dom": "npm:10.4.1"
     "@testing-library/react": "npm:16.3.2"
     "@testing-library/user-event": "npm:14.6.1"
@@ -2003,14 +2003,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fastify/websocket@npm:11.2.0":
-  version: 11.2.0
-  resolution: "@fastify/websocket@npm:11.2.0"
+"@fastify/websocket@npm:11.3.0":
+  version: 11.3.0
+  resolution: "@fastify/websocket@npm:11.3.0"
   dependencies:
     duplexify: "npm:^4.1.3"
-    fastify-plugin: "npm:^5.0.0"
+    fastify-plugin: "npm:^6.0.0"
     ws: "npm:^8.16.0"
-  checksum: 10c0/c0bad9e4d34e69fb08b3899e25e18ca85a7474f94c252126b91b0518a17061158d724cfc5a2467e3183e220a9f10830219058f6e176f876df25f28b3f8b231c9
+  checksum: 10c0/a36367427fce68480781deddf2b5e49058de34418418c97c0c1624df4594da07397fbc9dbe36a3d03ed63a5383f035a6cf8700ef5a252caaa5661db4a0a725f7
   languageName: node
   linkType: hard
 
@@ -15881,13 +15881,6 @@ __metadata:
   bin:
     fxparser: src/cli/cli.js
   checksum: 10c0/ca320dd7c3cf13bc982fc85f147f81ce41e150acea4580ba061f2130a30d627ac85ee25103f514077d747fb9a0444488ff7ff33b44c0130375221f73ce39f991
-  languageName: node
-  linkType: hard
-
-"fastify-plugin@npm:^5.0.0":
-  version: 5.1.0
-  resolution: "fastify-plugin@npm:5.1.0"
-  checksum: 10c0/61b330b8cb03a3581b796d745137499a782934abcf65dbf9a41d07248520cfd220b3ae8b16afeaf81af712e68e1ac24352895132cfeb2b372c66662c0170f365
   languageName: node
   linkType: hard
 
