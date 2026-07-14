@@ -15,6 +15,7 @@ import {
 } from '../../ui/command.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 import { Separator } from '../../ui/separator.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 
 /**
  * Variants for the multi-select component to handle different styles.
@@ -132,6 +133,17 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     const [selectedValues, setSelectedValues] = React.useState<string[]>(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
+    // Snapshot of the selection taken when the popover opens, used to order the
+    // option list (selected first) without reshuffling while the user toggles items.
+    const [orderSnapshot, setOrderSnapshot] = React.useState<string[]>(defaultValue);
+
+    const orderedOptions = React.useMemo(() => {
+      const selected = new Set(orderSnapshot);
+      return [
+        ...options.filter(option => selected.has(option.value)),
+        ...options.filter(option => !selected.has(option.value)),
+      ];
+    }, [options, orderSnapshot]);
 
     const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
       if (event.key === 'Enter') {
@@ -178,7 +190,16 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     };
 
     return (
-      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen} modal={modalPopover}>
+      <Popover
+        open={isPopoverOpen}
+        onOpenChange={open => {
+          if (open) {
+            setOrderSnapshot(selectedValues);
+          }
+          setIsPopoverOpen(open);
+        }}
+        modal={modalPopover}
+      >
         <PopoverTrigger asChild={asChild}>
           <Button
             ref={ref}
@@ -224,16 +245,32 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                   {selectedValues.length > maxCount && (
                     <Badge
                       className={cn(
-                        'bg-transparent text-gray-950 border-gray-950/1 hover:bg-transparent',
+                        'bg-transparent text-gray-950 border-gray-950/1 hover:bg-transparent p-0 gap-0',
                         isAnimating ? 'animate-bounce' : '',
                         multiSelectVariants({ variant }),
                       )}
                       style={{ animationDuration: `${animation}s` }}
                     >
-                      {`+ ${selectedValues.length - maxCount} more`}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className="pl-2 pr-1 py-0.5 cursor-help outline-none focus-visible:underline"
+                          >
+                            {`+ ${selectedValues.length - maxCount} more`}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent className="flex flex-col gap-0.5">
+                          {selectedValues.slice(maxCount).map(value => {
+                            const option = options.find(o => o.value === value);
+                            return <span key={value}>{option?.label ?? value}</span>;
+                          })}
+                        </TooltipContent>
+                      </Tooltip>
                       {removeButton && (
                         <Button
-                          className="h-4 w-4 p-0"
+                          className="h-4 w-4 p-0 mr-1"
                           variant="link"
                           onClick={event => {
                             event.stopPropagation();
@@ -289,7 +326,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                   </div>
                   <span>(Select All)</span>
                 </CommandItem>
-                {options.map(option => {
+                {orderedOptions.map(option => {
                   const isSelected = selectedValues.includes(option.value);
                   return (
                     <CommandItem
