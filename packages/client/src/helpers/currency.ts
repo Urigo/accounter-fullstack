@@ -1,6 +1,17 @@
 import { Currency } from '../gql/graphql.js';
 import { formatStringifyAmount } from './index.js';
 
+export const FIAT_CURRENCIES: Currency[] = [
+  Currency.Ils,
+  Currency.Eur,
+  Currency.Usd,
+  Currency.Gbp,
+  Currency.Cad,
+  Currency.Jpy,
+  Currency.Aud,
+  Currency.Sek,
+] as const;
+
 export type CurrencyFormatter = Pick<Intl.NumberFormat, 'format'>;
 
 export function getCurrencyFormatter(
@@ -18,8 +29,13 @@ export function getCurrencyFormatter(
       style: 'decimal',
     });
     return {
-      format: (value: number): string =>
-        `${currencyCodeToSymbol(currency)} ${decimalFormatter.format(value)}`,
+      format: (value: number): string => {
+        // Place the minus sign before the symbol (e.g. `-USDC 1,234.50`) to
+        // match the standard financial notation used for fiat currencies.
+        const symbol = currencyCodeToSymbol(currency);
+        const formatted = decimalFormatter.format(Math.abs(value));
+        return value < 0 ? `-${symbol} ${formatted}` : `${symbol} ${formatted}`;
+      },
     };
   }
   return new Intl.NumberFormat('en-US', {
@@ -75,17 +91,6 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
   }
   return currencySymbol;
 }
-
-export const FIAT_CURRENCIES: Currency[] = [
-  Currency.Ils,
-  Currency.Eur,
-  Currency.Usd,
-  Currency.Gbp,
-  Currency.Cad,
-  Currency.Jpy,
-  Currency.Aud,
-  Currency.Sek,
-] as const;
 
 export function formatAmountWithCurrency(amount: number, currency: Currency, digits = 2): string {
   return `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(amount, digits)}`;
