@@ -492,7 +492,7 @@ function DefaultSettingsSubSection({
                   ownerId={business.ownerId}
                   value={field.value}
                   onChange={(sortCode, sortCodeObj) => {
-                    field.onChange(sortCode);
+                    field.onChange(sortCode?.toString() ?? '');
                     onSortCodeChangeUpdateIrsCode(sortCodeObj);
                   }}
                   formPart

@@ -48,14 +48,21 @@ export function SortCodeSelect({
     onFetchingChange?.(fetching);
   }, [onFetchingChange, fetching]);
 
-  const options = useMemo(
-    () =>
-      sortCodes.map(sortCode => ({
-        value: sortCode.key.toString(),
-        label: sortCode.name ? `${sortCode.key} - ${sortCode.name}` : sortCode.key.toString(),
-      })),
-    [sortCodes],
-  );
+  const options = useMemo(() => {
+    const list = sortCodes.map(sortCode => ({
+      value: sortCode.key.toString(),
+      label: sortCode.name ? `${sortCode.key} - ${sortCode.name}` : sortCode.key.toString(),
+    }));
+    // Keep the currently selected value visible even while the list is still
+    // loading or if it no longer exists among the fetched sort codes.
+    if (value !== undefined && value !== null) {
+      const stringValue = value.toString();
+      if (!list.some(option => option.value === stringValue)) {
+        list.push({ value: stringValue, label: stringValue });
+      }
+    }
+    return list;
+  }, [sortCodes, value]);
 
   return (
     <ComboBox

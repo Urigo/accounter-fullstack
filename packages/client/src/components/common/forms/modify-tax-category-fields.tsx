@@ -2,11 +2,11 @@ import { type ReactElement } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { dirtyFieldMarker } from '../../../helpers/index.js';
-import { SortCodeSelect } from '../inputs/sort-code-select.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Switch } from '../../ui/switch.js';
 import { NumberInput } from '../index.js';
+import { SortCodeSelect } from '../inputs/sort-code-select.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
