@@ -5,7 +5,7 @@ import { getTableColumns } from '../../helpers/sql.js';
 import type { FilteredColumns } from '../../helpers/types.js';
 import type { MainContext } from '../../index.js';
 import { getMonthTransactions } from './isracard-amex-month.js';
-import { getTableName } from './utils.js';
+import { getTableName, randomDelay } from './utils.js';
 
 export type CreditcardType = 'ISRACARD' | 'AMEX';
 
@@ -62,6 +62,8 @@ export async function getIsracardAmexData(
         };
 
         task.output = 'Scraper Init';
+
+        await randomDelay();
 
         let scraperLogin: typeof ctx.scraper.isracard | typeof ctx.scraper.amex | null;
         switch (type) {
