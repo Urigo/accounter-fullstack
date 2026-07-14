@@ -254,6 +254,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span
+                            role="button"
                             tabIndex={0}
                             className="pl-2 pr-1 py-0.5 cursor-help outline-none focus-visible:underline"
                           >
