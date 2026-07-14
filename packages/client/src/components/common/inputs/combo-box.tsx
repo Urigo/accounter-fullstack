@@ -43,6 +43,13 @@ export function ComboBox({
   error,
 }: ComboBoxProps) {
   const [open, setOpen] = React.useState(false);
+  // When the ComboBox is rendered inside a modal layer (e.g. the vaul Drawer used by
+  // PopUpDrawer), the underlying Radix Dialog traps focus and blocks interaction with any
+  // element portaled to `document.body`. Portaling the popover content into this in-tree
+  // container keeps it inside the dialog, so the search input stays focusable/clickable.
+  // Radix Popper positions with `strategy: "fixed"`, so the container choice does not affect
+  // placement. See https://github.com/emilkowalski/vaul/issues/496
+  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
   const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const selectedOption = useMemo(() => {
@@ -52,7 +59,7 @@ export function ComboBox({
 
   if (isDesktop) {
     return (
-      <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col gap-1 w-full" ref={setContainer}>
         <Popover modal open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild className="w-full min-w-40">
             <Trigger
@@ -63,7 +70,7 @@ export function ComboBox({
               {...triggerProps}
             />
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
+          <PopoverContent className="w-full p-0" align="start" container={container}>
             <OptionsList
               setOpen={setOpen}
               onChange={onChange}
