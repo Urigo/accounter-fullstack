@@ -1,10 +1,43 @@
 import { Currency } from '../gql/graphql.js';
 import { formatStringifyAmount } from './index.js';
 
+export const FIAT_CURRENCIES: Currency[] = [
+  Currency.Ils,
+  Currency.Eur,
+  Currency.Usd,
+  Currency.Gbp,
+  Currency.Cad,
+  Currency.Jpy,
+  Currency.Aud,
+  Currency.Sek,
+] as const;
+
+export type CurrencyFormatter = Pick<Intl.NumberFormat, 'format'>;
+
 export function getCurrencyFormatter(
   currency: Currency,
   options?: Omit<Intl.NumberFormatOptions, 'currency'>,
-): Intl.NumberFormat {
+): CurrencyFormatter {
+  // Crypto currencies (e.g. USDC, ETH, GRT) are not valid ISO 4217 codes, so
+  // `Intl.NumberFormat` with `style: 'currency'` throws a RangeError. Fall back
+  // to decimal formatting and prepend the currency symbol for those.
+  if (!FIAT_CURRENCIES.includes(currency)) {
+    const decimalFormatter = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      ...options,
+      style: 'decimal',
+    });
+    return {
+      format: (value: number): string => {
+        // Place the minus sign before the symbol (e.g. `-USDC 1,234.50`) to
+        // match the standard financial notation used for fiat currencies.
+        const symbol = currencyCodeToSymbol(currency);
+        const formatted = decimalFormatter.format(Math.abs(value));
+        return value < 0 ? `-${symbol} ${formatted}` : `${symbol} ${formatted}`;
+      },
+    };
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     ...options,
@@ -58,17 +91,6 @@ export function currencyCodeToSymbol(currency_code: Currency): string {
   }
   return currencySymbol;
 }
-
-export const FIAT_CURRENCIES: Currency[] = [
-  Currency.Ils,
-  Currency.Eur,
-  Currency.Usd,
-  Currency.Gbp,
-  Currency.Cad,
-  Currency.Jpy,
-  Currency.Aud,
-  Currency.Sek,
-] as const;
 
 export function formatAmountWithCurrency(amount: number, currency: Currency, digits = 2): string {
   return `${currencyCodeToSymbol(currency)} ${formatStringifyAmount(amount, digits)}`;
