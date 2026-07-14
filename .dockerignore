@@ -1,0 +1,19 @@
+# Keep the Docker build context small and prevent host artifacts from
+# overwriting what is installed/built inside the image (e.g. `COPY . .`
+# must not clobber the freshly installed node_modules).
+**/node_modules
+.git
+.github
+**/dist
+**/__generated__
+**/gql
+schema.graphql
+
+# Local env / secrets
+**/.env
+**/.env.*
+!**/.env.template
+
+# Editor / OS noise
+**/.DS_Store
+**/*.log

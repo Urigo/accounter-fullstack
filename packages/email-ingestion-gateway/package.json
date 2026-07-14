@@ -33,8 +33,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "docker:build": "docker build -f packages/email-ingestion-gateway/DockerFile -t email-ingestion-gateway .",
-    "docker:run": "docker run -it --rm --env-file ./packages/email-ingestion-gateway/.env email-ingestion-gateway",
+    "docker:build": "docker build -f Dockerfile -t email-ingestion-gateway ../../",
+    "docker:run": "docker run -it --rm --env-file .env email-ingestion-gateway",
     "email-ingestion-gateway:build": "yarn build",
     "email-ingestion-gateway:build:prod": "yarn generate && yarn build",
     "email-ingestion-gateway:dev": "yarn dev",
