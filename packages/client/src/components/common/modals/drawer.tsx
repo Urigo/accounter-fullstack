@@ -1,5 +1,6 @@
-import type { CSSProperties, ReactElement } from 'react';
+import { useState, type CSSProperties, type ReactElement } from 'react';
 import { X } from 'lucide-react';
+import { PortalContainerContext } from '../../../providers/portal-container.js';
 import { Button } from '../../ui/button.js';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '../../ui/drawer.js';
 
@@ -29,6 +30,10 @@ export const PopUpDrawer = ({
     return;
   },
 }: PopUpDrawerProps): ReactElement => {
+  // Expose the drawer's content element so overlays (popovers, dropdowns) rendered inside can portal
+  // into it instead of `document.body`. The drawer's Radix Dialog is always modal and traps focus,
+  // so body-portaled overlays would otherwise be unusable inside the drawer.
+  const [container, setContainer] = useState<HTMLDivElement | null>(null);
   return (
     <Drawer direction={position} open={opened} onClose={onClose} modal={false}>
       <DrawerContent asChild withOverlay={withOverlay}>
@@ -44,7 +49,11 @@ export const PopUpDrawer = ({
               )}
             </div>
           </DrawerHeader>
-          <div className="mx-auto w-full px-4 pb-4">{children}</div>
+          <div className="mx-auto w-full px-4 pb-4" ref={setContainer}>
+            <PortalContainerContext.Provider value={container}>
+              {children}
+            </PortalContainerContext.Provider>
+          </div>
         </div>
       </DrawerContent>
     </Drawer>
