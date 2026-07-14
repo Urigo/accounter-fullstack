@@ -1,10 +1,27 @@
 import { Currency } from '../gql/graphql.js';
 import { formatStringifyAmount } from './index.js';
 
+export type CurrencyFormatter = Pick<Intl.NumberFormat, 'format'>;
+
 export function getCurrencyFormatter(
   currency: Currency,
   options?: Omit<Intl.NumberFormatOptions, 'currency'>,
-): Intl.NumberFormat {
+): CurrencyFormatter {
+  // Crypto currencies (e.g. USDC, ETH, GRT) are not valid ISO 4217 codes, so
+  // `Intl.NumberFormat` with `style: 'currency'` throws a RangeError. Fall back
+  // to decimal formatting and prepend the currency symbol for those.
+  if (!FIAT_CURRENCIES.includes(currency)) {
+    const decimalFormatter = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      ...options,
+      style: 'decimal',
+    });
+    return {
+      format: (value: number): string =>
+        `${currencyCodeToSymbol(currency)} ${decimalFormatter.format(value)}`,
+    };
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     ...options,
