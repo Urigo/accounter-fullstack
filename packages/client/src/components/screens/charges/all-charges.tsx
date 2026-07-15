@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
+import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
@@ -71,13 +72,24 @@ export const AllCharges = (): ReactElement => {
   // refetch charges on filter change
   useEffect(() => {
     if (filter) {
-      fetchCharges();
+      fetchCharges({ requestPolicy: 'network-only' });
     }
   }, [filter, fetchCharges]);
+
+  // urql returns a fresh `data` object on every (re)fetch. Keep a stable,
+  // deeply-equal reference for the charge nodes so the table and its rows only
+  // re-render when the data actually changed — avoiding the "blink" when a
+  // refetch returns identical results.
+  const chargeNodes = useStableValue(data?.allCharges?.nodes);
 
   function onResetMerge(): void {
     setMergeSelectedCharges([]);
   }
+
+  // Only the page count is consumed from the query result here. Depend on it
+  // directly (instead of the whole `data`/`fetching`) so the filters bar isn't
+  // rebuilt on every background refetch.
+  const totalPages = data?.allCharges?.pageInfo.totalPages;
 
   useEffect(() => {
     setFiltersContext(
@@ -87,7 +99,7 @@ export const AllCharges = (): ReactElement => {
           setFilter={setFilter}
           activePage={activePage}
           setPage={setActivePage}
-          totalPages={data?.allCharges?.pageInfo.totalPages}
+          totalPages={totalPages}
           initiallyOpened={!filter}
         />
         <Tooltip content="Expand all accounts">
@@ -108,8 +120,7 @@ export const AllCharges = (): ReactElement => {
       </div>,
     );
   }, [
-    data,
-    fetching,
+    totalPages,
     filter,
     activePage,
     isAllOpened,
@@ -118,18 +129,17 @@ export const AllCharges = (): ReactElement => {
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
-    initialFilters,
   ]);
 
   return (
     <PageLayout title="All Charges" description="Manage charges">
-      {fetching ? (
+      {fetching && !data ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
-      ) : data?.allCharges.nodes ? (
+      ) : chargeNodes ? (
         <ChargesTable
           toggleMergeCharge={toggleMergeCharge}
           mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-          data={data?.allCharges?.nodes}
+          data={chargeNodes}
           isAllOpened={isAllOpened}
         />
       ) : (
