@@ -18,6 +18,13 @@ jobs:
     name: Lint
     uses: ./.github/workflows/lint.yml
 
+  migration-conflicts:
+    name: Migration conflicts
+    uses: ./.github/workflows/migration-conflict-check.yml
+    with:
+      baseRef: ${{ github.event.pull_request.base.sha }}
+      headRef: ${{ github.event.pull_request.head.sha }}
+
   graphql-breaking-changes:
     name: Hive schema check
     uses: ./.github/workflows/graphql-schema-check.yml

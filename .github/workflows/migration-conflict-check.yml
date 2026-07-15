@@ -1,0 +1,37 @@
+on:
+  workflow_call:
+    inputs:
+      baseRef:
+        description: Base branch ref or sha
+        required: false
+        type: string
+        default: origin/main
+      headRef:
+        description: Head branch ref or sha
+        required: false
+        type: string
+        default: HEAD
+
+jobs:
+  migration-conflict-check:
+    name: Migration conflict check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: setup environment
+        uses: ./.github/actions/setup
+        with:
+          localDB: 'false'
+          codegen: 'false'
+          pgTyped: 'false'
+
+      - name: Check migration conflicts
+        env:
+          MIGRATION_CONFLICT_BASE_REF: ${{ inputs.baseRef }}
+          MIGRATION_CONFLICT_HEAD_REF: ${{ inputs.headRef }}
+        run: node --import ./scripts/register-esm.js ./scripts/check-migration-conflicts.ts
