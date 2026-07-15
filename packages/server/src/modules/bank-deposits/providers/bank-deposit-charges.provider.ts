@@ -297,6 +297,9 @@ export class BankDepositChargesProvider {
           depositId: deposit.id,
           accountId,
           currency,
+          name: deposit.name,
+          openDate: deposit.open_date,
+          closeDate: deposit.close_date,
         });
       }
       if (accountId !== transaction.account_id) {
