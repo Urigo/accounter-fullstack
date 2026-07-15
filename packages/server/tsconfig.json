@@ -5,6 +5,14 @@
     "rootDir": "..",
     "noUnusedLocals": false,
 
+    // `baseUrl` anchors the relative `paths` below (which point at sibling
+    // packages via `../`) so `tsc-alias` rewrites them to the correct output
+    // location. tsc-alias 1.9.1 stopped implicitly defaulting `baseUrl` to
+    // `rootDir`, which previously made this work by accident. Deprecated in
+    // TS 6, hence `ignoreDeprecations` — revisit when migrating off `paths`.
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+
     "paths": {
       "@accounter/green-invoice-graphql": ["../green-invoice-graphql/src/index.js"],
       "@accounter/pcn874-generator": ["../pcn874-generator/src/index.js"],
