@@ -71,10 +71,10 @@ export function UpdateAccountantStatus(props: {
           status: newStatus,
         });
       }
-      if (!result) {
-        setStatus(oldStatus);
-      } else {
+      if (result) {
         onStatusChangeProp?.(newStatus);
+      } else {
+        setStatus(oldStatus);
       }
       onChange?.();
     },
