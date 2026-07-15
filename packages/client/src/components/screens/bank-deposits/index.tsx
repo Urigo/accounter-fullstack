@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState, type ReactElement } from 'react';
+import { Fragment, useCallback, useMemo, useRef, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -76,6 +76,15 @@ export function DepositsScreen(): ReactElement {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'openDate', desc: false }]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingDeposit, setEditingDeposit] = useState<DepositRow | null>(null);
+  const [reassignToken, setReassignToken] = useState(0);
+
+  // A reassign changes both deposits' balances (this list) and moves a
+  // transaction between two deposit tables. Refetch the list and bump the token
+  // so every mounted transaction table re-executes its own query.
+  const handleTransactionReassigned = useCallback(() => {
+    setReassignToken(token => token + 1);
+    refetch({ requestPolicy: 'network-only' });
+  }, [refetch]);
 
   const computedRows: DepositRow[] = useMemo(() => {
     const deposits = data?.allDeposits ?? [];
@@ -262,7 +271,8 @@ export function DepositsScreen(): ReactElement {
                         <DepositsTransactionsTable
                           depositId={row.original.id}
                           enableReassign
-                          refetch={refetch}
+                          refetch={handleTransactionReassigned}
+                          reassignToken={reassignToken}
                         />
                       </TableCell>
                     </TableRow>

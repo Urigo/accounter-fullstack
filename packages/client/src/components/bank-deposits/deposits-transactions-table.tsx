@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
@@ -55,20 +55,39 @@ type Props = {
   depositId: string;
   enableReassign?: boolean;
   refetch?: () => void;
+  /**
+   * Bumped by the parent whenever any transaction is reassigned. Because the
+   * urql client has no cache exchange, mutations don't invalidate queries on
+   * their own; each mounted table re-executes its own transactions query when
+   * this token changes so both the source and the target deposit refresh.
+   */
+  reassignToken?: number;
 };
 
 export function DepositsTransactionsTable({
   depositId,
   enableReassign = false,
   refetch,
+  reassignToken,
 }: Props): ReactElement {
   const { userContext } = useContext(UserContext);
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: false }]);
 
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, reexecuteQuery] = useQuery({
     query: SharedDepositTransactionsDocument,
     variables: { depositId },
   });
+
+  // Re-execute this deposit's transactions query when a reassign happens
+  // elsewhere. Skip the initial render — the query already fetches on mount.
+  const previousReassignToken = useRef(reassignToken);
+  useEffect(() => {
+    if (previousReassignToken.current === reassignToken) {
+      return;
+    }
+    previousReassignToken.current = reassignToken;
+    reexecuteQuery({ requestPolicy: 'network-only' });
+  }, [reassignToken, reexecuteQuery]);
 
   const computedTableData: DepositTransactionRowType[] = useMemo(() => {
     if (!data?.deposit?.metadata.transactions) {
