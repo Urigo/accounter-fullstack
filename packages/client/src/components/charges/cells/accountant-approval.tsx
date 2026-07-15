@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactElement } from 'react';
-import { ChargesTableAccountantApprovalFieldsFragmentDoc } from '../../../gql/graphql.js';
+import {
+  ChargesTableAccountantApprovalFieldsFragmentDoc,
+  type AccountantStatus,
+} from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { UpdateAccountantStatus } from '../../common/index.js';
 
@@ -14,9 +17,10 @@ import { UpdateAccountantStatus } from '../../common/index.js';
 interface Props {
   data: FragmentType<typeof ChargesTableAccountantApprovalFieldsFragmentDoc>;
   onChange: () => void;
+  onStatusChange?: (status: AccountantStatus) => void;
 }
 
-export function AccountantApproval({ data, onChange }: Props): ReactElement {
+export function AccountantApproval({ data, onChange, onStatusChange }: Props): ReactElement {
   const charge = getFragmentData(ChargesTableAccountantApprovalFieldsFragmentDoc, data);
   const [status, setStatus] = useState(charge.accountantApproval);
 
@@ -28,7 +32,12 @@ export function AccountantApproval({ data, onChange }: Props): ReactElement {
 
   return (
     <td>
-      <UpdateAccountantStatus chargeId={charge.id} value={status} onChange={onChange} />
+      <UpdateAccountantStatus
+        chargeId={charge.id}
+        value={status}
+        onChange={onChange}
+        onStatusChange={onStatusChange}
+      />
     </td>
   );
 }

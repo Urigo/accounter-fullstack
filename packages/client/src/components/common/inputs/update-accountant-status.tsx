@@ -42,11 +42,12 @@ const getApprovalStatusConfig = (status: AccountantStatus) => accountantApproval
 
 export function UpdateAccountantStatus(props: {
   onChange?: () => void;
+  onStatusChange?: (status: AccountantStatus) => void;
   chargeId?: string;
   businessTripId?: string;
   value?: AccountantStatus;
 }): ReactNode {
-  const { onChange, value } = props;
+  const { onChange, onStatusChange, value } = props;
   const [status, setStatus] = useState(value ?? AccountantStatus.Unapproved);
   const { updateChargeAccountantApproval } = useUpdateChargeAccountantApproval();
   const { updateBusinessTripAccountantApproval } = useUpdateBusinessTripAccountantApproval();
@@ -72,6 +73,8 @@ export function UpdateAccountantStatus(props: {
       }
       if (!result) {
         setStatus(oldStatus);
+      } else {
+        onStatusChange?.(newStatus);
       }
       onChange?.();
     },
@@ -82,6 +85,7 @@ export function UpdateAccountantStatus(props: {
       updateBusinessTripAccountantApproval,
       status,
       onChange,
+      onStatusChange,
     ],
   );
 
