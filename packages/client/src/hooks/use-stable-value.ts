@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useState } from 'react';
 import equal from 'deep-equal';
 
 /**
@@ -13,9 +13,18 @@ import equal from 'deep-equal';
  * so downstream renders only happen when the data actually changed.
  */
 export function useStableValue<T>(value: T): T {
-  const ref = useRef<T>(value);
-  if (!equal(ref.current, value)) {
-    ref.current = value;
+  const [stable, setStable] = useState<T>(value);
+
+  // Fast path: an identical reference (e.g. an unrelated local state update such
+  // as sorting or expanding a row) skips the potentially expensive deep
+  // comparison. Only when the reference changed — e.g. a urql refetch returned a
+  // fresh object — do we fall back to deep equality, and adopt the new reference
+  // solely when the content genuinely differs. Updating state during render is
+  // React's supported pattern for deriving state from arguments.
+  if (stable !== value && !equal(stable, value)) {
+    setStable(value);
+    return value;
   }
-  return ref.current;
+
+  return stable;
 }
