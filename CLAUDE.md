@@ -73,3 +73,16 @@ yarn seed:admin-context # Seed admin context for server
 
 - Small, focused PRs; squash merge.
 - Always run `yarn lint` and `yarn generate` before committing.
+- **Every PR that touches `packages/**` needs a changeset** or the `require-changeset` CI check fails.
+  Add a `.changeset/<name>.md` (not `@accounter`-prefixed) via `yarn changeset`, formatted as a
+  frontmatter block listing the changed package(s) and bump level followed by a summary:
+
+  ```md
+  ---
+  '@accounter/client': patch
+  ---
+
+  Short description of the change.
+  ```
+
+  Only PRs labeled `dependencies` are exempt.
