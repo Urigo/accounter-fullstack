@@ -9,6 +9,7 @@ import {
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import type { Currency } from '../../../shared/enums.js';
 import { formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { AccountantApprovalProvider } from '../../accountant-approval/providers/accountant-approval.provider.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -330,6 +331,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             }),
         );
         await Promise.all([updatePromise, insertPromise, ...removePromises]);
+
+        await injector.get(AccountantApprovalProvider).degradeChargeAccountantApproval(chargeId);
 
         return {
           records: toUpdate,
