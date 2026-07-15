@@ -71,7 +71,9 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         const formerChargeId = await injector
           .get(TransactionsProvider)
           .transactionByIdLoader.load(transactionId)
-          .then(transaction => transaction?.charge_id ?? undefined)
+          .then(transaction =>
+            transaction instanceof Error ? undefined : (transaction?.charge_id ?? undefined),
+          )
           .catch(() => undefined);
 
         const existingChargePromise = async () => {

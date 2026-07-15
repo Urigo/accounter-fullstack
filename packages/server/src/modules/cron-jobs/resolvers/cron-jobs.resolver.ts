@@ -57,7 +57,12 @@ export const cronJobsResolvers: CronJobsModule.Resolvers = {
         for (const { reference, baseChargeId, chargeIdsToMerge } of plans) {
           try {
             await mergeChargesExecutor(chargeIdsToMerge, baseChargeId, injector);
-            await degradeChargesAccountantApproval(injector, [baseChargeId]);
+            const degradedCharges = await degradeChargesAccountantApproval(injector, [baseChargeId]);
+            const degradedBaseCharge = degradedCharges.get(baseChargeId);
+            if (degradedBaseCharge) {
+              // keep the returned charge in sync with its fresh (PENDING) state
+              chargeById.set(baseChargeId, degradedBaseCharge);
+            }
             mergedBaseChargeIds.add(baseChargeId);
           } catch (error) {
             const message =

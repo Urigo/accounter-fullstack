@@ -57,9 +57,9 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           })),
         });
 
-        await degradeChargesAccountantApproval(injector, [chargeId]);
+        const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
 
-        return charge;
+        return degradedCharges.get(chargeId) ?? charge;
       } catch (e) {
         const message = 'Error inserting misc expense';
         console.error(`${message}: ${e}`);

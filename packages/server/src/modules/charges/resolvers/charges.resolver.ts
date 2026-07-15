@@ -445,7 +445,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         await Promise.all(indirectUpdatesPromises);
 
         if (chargeUpdateRequiresApprovalDegrade(fields)) {
-          await degradeChargesAccountantApproval(injector, [chargeId]);
+          const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
+          return { charge: degradedCharges.get(chargeId) ?? updatedCharge };
         }
 
         return { charge: updatedCharge };
@@ -541,7 +542,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
         await Promise.all(indirectUpdatesPromises);
 
         if (chargeUpdateRequiresApprovalDegrade(fields)) {
-          await degradeChargesAccountantApproval(injector, chargeIds);
+          const degradedCharges = await degradeChargesAccountantApproval(injector, chargeIds);
+          if (degradedCharges.size > 0) {
+            return { charges: charges.map(charge => degradedCharges.get(charge.id) ?? charge) };
+          }
         }
 
         return { charges };
@@ -591,9 +595,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await mergeChargesExecutor(chargeIdsToMerge, baseChargeID, injector);
 
-        await degradeChargesAccountantApproval(injector, [baseChargeID]);
+        const degradedCharges = await degradeChargesAccountantApproval(injector, [baseChargeID]);
 
-        return { charge };
+        return { charge: degradedCharges.get(baseChargeID) ?? charge };
       } catch (e) {
         if (e instanceof GraphQLError) {
           throw e;

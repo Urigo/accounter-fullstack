@@ -332,11 +332,11 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
         await Promise.all([updatePromise, insertPromise, ...removePromises]);
 
-        await degradeChargesAccountantApproval(injector, [chargeId]);
+        const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
 
         return {
           records: toUpdate,
-          charge,
+          charge: degradedCharges.get(chargeId) ?? charge,
           errors: generated.errors,
         };
       } catch (e) {
