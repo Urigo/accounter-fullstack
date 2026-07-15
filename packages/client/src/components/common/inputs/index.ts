@@ -8,6 +8,7 @@ export * from './input.js';
 export * from './multi-select.js';
 export * from './number-input.js';
 export * from './select-with-search.js';
+export * from './sort-code-select.js';
 export * from './string-array-input.js';
 export * from './tag-input.js';
 export * from './update-accountant-status.js';

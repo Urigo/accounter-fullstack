@@ -44,7 +44,6 @@ import {
   relevantDataPicker,
   type MakeBoolean,
 } from '@/helpers/index.js';
-import { useGetSortCodes } from '@/hooks/use-get-sort-codes.js';
 import { useGetTags } from '@/hooks/use-get-tags.js';
 import { useGetTaxCategories } from '@/hooks/use-get-tax-categories.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
@@ -55,6 +54,8 @@ import {
   MultiSelect,
   NumberInput,
   SimilarChargesByBusinessModal,
+  SortCodeSelect,
+  type SortCode as SortCodeOption,
 } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -464,29 +465,16 @@ function DefaultSettingsSubSection({
   business,
 }: SubSectionProps & { business: BusinessConfigurationSectionFragment }) {
   const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
-  const {
-    selectableSortCodes,
-    fetching: fetchingSortCodes,
-    sortCodes,
-  } = useGetSortCodes({ ownerId: business.ownerId });
   const { selectableTags, fetching: fetchingTags } = useGetTags();
 
   // When sort code changes, update IRS code if sort code has a default IRS code
   const onSortCodeChangeUpdateIrsCode = useCallback(
-    (sortCode: string | null) => {
+    (sortCode?: SortCodeOption | null) => {
       if (sortCode) {
-        const sortCodeObj = sortCodes.find(sc => Number(sc.key) === Number(sortCode));
-
-        if (sortCodeObj) {
-          if (sortCodeObj.defaultIrsCode) {
-            form.setValue('irsCode', sortCodeObj.defaultIrsCode, { shouldDirty: true });
-          } else {
-            form.setValue('irsCode', null, { shouldDirty: true });
-          }
-        }
+        form.setValue('irsCode', sortCode.defaultIrsCode ?? null, { shouldDirty: true });
       }
     },
-    [form, sortCodes],
+    [form],
   );
 
   return (
@@ -500,19 +488,15 @@ function DefaultSettingsSubSection({
             <FormItem>
               <FormLabel>Sort Code</FormLabel>
               <FormControl>
-                <ComboBox
-                  onChange={sortCode => {
-                    onSortCodeChangeUpdateIrsCode(sortCode);
-                    field.onChange(sortCode);
-                  }}
-                  data={selectableSortCodes}
+                <SortCodeSelect
+                  ownerId={business.ownerId}
                   value={field.value}
-                  disabled={fetchingSortCodes}
-                  placeholder="Scroll to see all options"
-                  formPart
-                  triggerProps={{
-                    className: dirtyFieldMarker(fieldState),
+                  onChange={(sortCode, sortCodeObj) => {
+                    field.onChange(sortCode?.toString() ?? '');
+                    onSortCodeChangeUpdateIrsCode(sortCodeObj);
                   }}
+                  formPart
+                  triggerClassName={dirtyFieldMarker(fieldState)}
                 />
               </FormControl>
               <FormMessage />

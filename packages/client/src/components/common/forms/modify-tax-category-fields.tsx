@@ -1,13 +1,12 @@
-import { useEffect, type ReactElement } from 'react';
-import { Controller, type UseFormReturn } from 'react-hook-form';
-import { Select } from '@mantine/core';
+import { type ReactElement } from 'react';
+import { type UseFormReturn } from 'react-hook-form';
 import type { InsertTaxCategoryInput, UpdateTaxCategoryInput } from '../../../gql/graphql.js';
 import { dirtyFieldMarker } from '../../../helpers/index.js';
-import { useGetSortCodes } from '../../../hooks/use-get-sort-codes.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Switch } from '../../ui/switch.js';
 import { NumberInput } from '../index.js';
+import { SortCodeSelect } from '../inputs/sort-code-select.js';
 
 type ModalProps<T extends boolean> = {
   isInsert: T;
@@ -26,29 +25,7 @@ export function ModifyTaxCategoryFields({
   isInsert,
   ownerId,
 }: ModalProps<boolean>): ReactElement {
-  const { control, watch, setValue } = formManager;
-
-  // Sort codes array handle
-  const {
-    selectableSortCodes: sortCodes,
-    fetching: fetchingSortCodes,
-    sortCodes: rawSortCodes,
-  } = useGetSortCodes({ ownerId });
-
-  useEffect(() => {
-    setFetching(fetchingSortCodes);
-  }, [setFetching, fetchingSortCodes]);
-
-  // on sort code change, update IRS code
-  const sortCode = watch('sortCode');
-  useEffect(() => {
-    if (sortCode) {
-      const sortCodeObj = rawSortCodes.find(sc => sc.key === sortCode);
-      if (sortCodeObj?.defaultIrsCode) {
-        setValue('irsCode', sortCodeObj.defaultIrsCode, { shouldDirty: true });
-      }
-    }
-  }, [sortCode, rawSortCodes, setValue]);
+  const { control, setValue } = formManager;
 
   return (
     <>
@@ -75,27 +52,31 @@ export function ModifyTaxCategoryFields({
         )}
       />
 
-      <Controller
+      <FormField
         name="sortCode"
         control={control}
-        render={({ field, fieldState }): ReactElement => {
-          return (
-            <Select
-              {...field}
-              onChange={val => {
-                field.onChange(Number(val));
-              }}
-              data={sortCodes}
-              value={field.value?.toString()}
-              disabled={fetchingSortCodes}
-              label="Sort Code"
-              placeholder="Scroll to see all options"
-              maxDropdownHeight={160}
-              searchable
-              className={isInsert ? '' : dirtyFieldMarker(fieldState)}
-            />
-          );
-        }}
+        render={({ field, fieldState }): ReactElement => (
+          <FormItem>
+            <FormLabel>Sort Code</FormLabel>
+            <FormControl>
+              <SortCodeSelect
+                ownerId={ownerId}
+                value={field.value}
+                onChange={(value, sortCode) => {
+                  field.onChange(value);
+                  // on sort code change, update IRS code with its default (if any)
+                  if (sortCode?.defaultIrsCode) {
+                    setValue('irsCode', sortCode.defaultIrsCode, { shouldDirty: true });
+                  }
+                }}
+                onFetchingChange={setFetching}
+                formPart
+                triggerClassName={isInsert ? undefined : dirtyFieldMarker(fieldState)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
 
       <FormField

@@ -1,8 +1,9 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import { Edit, Loader2 } from 'lucide-react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
+import { UserContext } from '@/providers/index.js';
 import {
   TaxCategoryToUpdateDocument,
   type TaxCategoryToUpdateQuery,
@@ -113,6 +114,8 @@ function EditTaxCategoryForm({
   const { handleSubmit } = useFormManager;
   const [fetching, setFetching] = useState(false);
 
+  const { userContext } = useContext(UserContext);
+
   const { updateTaxCategory, fetching: updatingInProcess } = useUpdateTaxCategory();
 
   const onSubmit: SubmitHandler<UpdateTaxCategoryInput> = data => {
@@ -133,7 +136,7 @@ function EditTaxCategoryForm({
             isInsert={false}
             formManager={useFormManager}
             setFetching={setFetching}
-            ownerId={taxCategory.ownerId ?? undefined}
+            ownerId={taxCategory.ownerId ?? userContext?.context.adminBusinessId}
           />
         </div>
 
