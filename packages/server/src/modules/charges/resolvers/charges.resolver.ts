@@ -4,6 +4,7 @@ import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { ChargeSortByField, ChargeTypeEnum } from '../../../shared/enums.js';
 import { errorSimplifier } from '../../../shared/errors.js';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
@@ -52,6 +53,40 @@ async function chargeTypeChecker(
   } catch (error) {
     throw errorSimplifier('Failed to determine charge type', error);
   }
+}
+
+/**
+ * Whether a charge update should degrade the charge's accountant approval
+ * (APPROVED -> PENDING). Tag changes and explicit accountant-approval changes
+ * are intentionally excluded: tags are not accountant-relevant, and an explicit
+ * approval change is the user deliberately setting the status.
+ */
+function chargeUpdateRequiresApprovalDegrade(fields: {
+  accountantApproval?: unknown;
+  type?: unknown;
+  isDecreasedVAT?: unknown;
+  isInvoicePaymentDifferentCurrency?: unknown;
+  userDescription?: unknown;
+  defaultTaxCategoryID?: unknown;
+  optionalVAT?: unknown;
+  optionalDocuments?: unknown;
+  businessTripID?: unknown;
+  yearsOfRelevance?: unknown;
+}): boolean {
+  if (fields.accountantApproval != null) {
+    return false;
+  }
+  return [
+    fields.type,
+    fields.isDecreasedVAT,
+    fields.isInvoicePaymentDifferentCurrency,
+    fields.userDescription,
+    fields.defaultTaxCategoryID,
+    fields.optionalVAT,
+    fields.optionalDocuments,
+    fields.businessTripID,
+    fields.yearsOfRelevance,
+  ].some(value => value !== undefined);
 }
 
 export const chargesResolvers: ChargesModule.Resolvers &
@@ -409,6 +444,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
+        if (chargeUpdateRequiresApprovalDegrade(fields)) {
+          await degradeChargesAccountantApproval(injector, [chargeId]);
+        }
+
         return { charge: updatedCharge };
       } catch (e) {
         let message = 'Error updating charges';
@@ -501,6 +540,10 @@ export const chargesResolvers: ChargesModule.Resolvers &
 
         await Promise.all(indirectUpdatesPromises);
 
+        if (chargeUpdateRequiresApprovalDegrade(fields)) {
+          await degradeChargesAccountantApproval(injector, chargeIds);
+        }
+
         return { charges };
       } catch (e) {
         let message = 'Error updating charges';
@@ -547,6 +590,8 @@ export const chargesResolvers: ChargesModule.Resolvers &
         }
 
         await mergeChargesExecutor(chargeIdsToMerge, baseChargeID, injector);
+
+        await degradeChargesAccountantApproval(injector, [baseChargeID]);
 
         return { charge };
       } catch (e) {

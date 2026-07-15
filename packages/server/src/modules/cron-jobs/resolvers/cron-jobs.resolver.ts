@@ -1,5 +1,5 @@
 import { GraphQLError } from 'graphql';
-import { AccountantApprovalProvider } from '../../accountant-approval/providers/accountant-approval.provider.js';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -57,9 +57,7 @@ export const cronJobsResolvers: CronJobsModule.Resolvers = {
         for (const { reference, baseChargeId, chargeIdsToMerge } of plans) {
           try {
             await mergeChargesExecutor(chargeIdsToMerge, baseChargeId, injector);
-            await injector
-              .get(AccountantApprovalProvider)
-              .degradeChargeAccountantApproval(baseChargeId);
+            await degradeChargesAccountantApproval(injector, [baseChargeId]);
             mergedBaseChargeIds.add(baseChargeId);
           } catch (error) {
             const message =

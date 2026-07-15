@@ -1,5 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { MiscExpensesProvider } from '../providers/misc-expenses.provider.js';
@@ -28,10 +29,11 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
         return await injector
           .get(MiscExpensesProvider)
           .insertExpense({ ...fields, chargeId, ownerId: charge.owner_id })
-          .then(res => {
+          .then(async res => {
             if (!res.length) {
               throw new Error('Error inserting misc expense');
             }
+            await degradeChargesAccountantApproval(injector, [chargeId]);
             return res[0];
           });
       } catch (e) {
@@ -55,6 +57,8 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
           })),
         });
 
+        await degradeChargesAccountantApproval(injector, [chargeId]);
+
         return charge;
       } catch (e) {
         const message = 'Error inserting misc expense';
@@ -64,13 +68,21 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     },
     updateMiscExpense: async (_, { id, fields }, { injector }) => {
       try {
+        // capture the expense's current charge so it too gets re-flagged when
+        // the expense moves to a different charge
+        const formerChargeId = await injector
+          .get(MiscExpensesProvider)
+          .getExpensesByIdLoader.load(id)
+          .then(expense => expense?.charge_id ?? undefined)
+          .catch(() => undefined);
         return await injector
           .get(MiscExpensesProvider)
           .updateExpense({ miscExpenseId: id, ...fields })
-          .then(res => {
+          .then(async res => {
             if (!res.length) {
               throw new Error('Error updating misc expense');
             }
+            await degradeChargesAccountantApproval(injector, [formerChargeId, res[0].charge_id]);
             return res[0];
           });
       } catch (e) {
@@ -81,10 +93,19 @@ export const miscExpensesLedgerEntriesResolvers: MiscExpensesModule.Resolvers = 
     },
     deleteMiscExpense: async (_, { id }, { injector }) => {
       try {
+        // capture the expense's charge before deletion so it can be re-flagged
+        const chargeId = await injector
+          .get(MiscExpensesProvider)
+          .getExpensesByIdLoader.load(id)
+          .then(expense => expense?.charge_id ?? undefined)
+          .catch(() => undefined);
         return await injector
           .get(MiscExpensesProvider)
           .deleteMiscExpense({ id })
-          .then(() => true);
+          .then(async () => {
+            await degradeChargesAccountantApproval(injector, [chargeId]);
+            return true;
+          });
       } catch (e) {
         const message = 'Error deleting misc expense';
         console.error(`${message}: ${e}`);
