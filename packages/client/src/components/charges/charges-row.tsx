@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { Paper } from '@mantine/core';
 import {
+  AccountantStatus,
   ChargeForRowDocument,
   ChargesTableBusinessTripFieldsFragmentDoc,
   ChargesTableEntityFieldsFragmentDoc,
@@ -130,6 +131,12 @@ export const ChargesTableRow = ({
 
   const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
 
+  const onAccountantStatusChange = useCallback((status: AccountantStatus): void => {
+    if (status === AccountantStatus.Approved) {
+      setOpened(false);
+    }
+  }, []);
+
   return (
     <>
       <tr>
@@ -181,7 +188,11 @@ export const ChargesTableRow = ({
         )}
 
         <MoreInfo data={charge} />
-        <AccountantApproval data={charge} onChange={onChange} />
+        <AccountantApproval
+          data={charge}
+          onChange={onChange}
+          onStatusChange={onAccountantStatusChange}
+        />
 
         <td>
           <div className="flex flex-col gap-2">
