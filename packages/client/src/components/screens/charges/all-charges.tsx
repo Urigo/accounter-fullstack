@@ -69,12 +69,12 @@ export const AllCharges = (): ReactElement => {
     pause: true,
   });
 
-  // refetch charges on filter change
+  // refetch charges on filter or page change
   useEffect(() => {
     if (filter) {
       fetchCharges({ requestPolicy: 'network-only' });
     }
-  }, [filter, fetchCharges]);
+  }, [filter, activePage, fetchCharges]);
 
   // urql returns a fresh `data` object on every (re)fetch. Keep a stable,
   // deeply-equal reference for the charge nodes so the table and its rows only
