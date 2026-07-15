@@ -36,7 +36,7 @@ export const ChargeMatches = ({ chargeId, isOpened, onChange }: Props): ReactEle
     <AccordionItem value="charges-matches">
       <AccordionTrigger>Charge Matches</AccordionTrigger>
       <AccordionContent>
-        {fetching ? (
+        {fetching && !data ? (
           <Loader2 className="h-10 w-10 animate-spin" />
         ) : (
           <ChargeMatchesTable

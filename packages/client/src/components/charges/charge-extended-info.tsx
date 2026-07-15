@@ -17,6 +17,7 @@ import {
   type FetchChargeQuery,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
+import { useStableValue } from '../../hooks/use-stable-value.js';
 import {
   BusinessTripSummarizedReport,
   PreviewDocumentModal,
@@ -127,7 +128,7 @@ export function ChargeExtendedInfo({
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, setOpened] = useState(false);
-  const [charge, setCharge] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
+  const [chargeState, setChargeState] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
   const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
@@ -135,15 +136,33 @@ export function ChargeExtendedInfo({
     },
   });
 
+  // Keep a deeply-equal-stable reference so descendants only re-render when the
+  // charge actually changed (urql yields a fresh object on every refetch).
+  const charge = useStableValue(chargeState);
+
   const onExtendedChange = useCallback(() => {
-    refetchExtensionInfo();
+    refetchExtensionInfo({ requestPolicy: 'network-only' });
     onChange();
   }, [refetchExtensionInfo, onChange]);
 
   useEffect(() => {
-    if (data?.charge) {
-      setCharge(data.charge);
+    const incoming = data?.charge;
+    if (!incoming) {
+      return;
     }
+    setChargeState(prev => {
+      // Different charge (or first load): take the incoming data as-is.
+      if (!prev || prev.id !== incoming.id) {
+        return incoming;
+      }
+      // Same charge being refetched: a re-executed `@defer` query delivers its
+      // non-deferred fields first and streams the deferred fragments in later
+      // patches. Merging the incoming payload over the previous charge keeps the
+      // already-loaded sections (`isFragmentReady` checks `field in data`)
+      // rendering their last data until each fresh patch arrives — instead of
+      // every section collapsing to empty and re-expanding ("blinking").
+      return { ...prev, ...incoming } as FetchChargeQuery['charge'];
+    });
   }, [data]);
 
   useEffect(() => {
@@ -264,7 +283,7 @@ export function ChargeExtendedInfo({
 
   return (
     <div className="flex flex-col gap-5">
-      {fetching && (
+      {fetching && !charge && (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
       {isFragmentReady(FetchChargeDocument, ChargesTableErrorsFieldsFragmentDoc, charge) && (
