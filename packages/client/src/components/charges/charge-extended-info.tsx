@@ -17,6 +17,7 @@ import {
   type FetchChargeQuery,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
+import { useStableValue } from '../../hooks/use-stable-value.js';
 import {
   BusinessTripSummarizedReport,
   PreviewDocumentModal,
@@ -127,7 +128,7 @@ export function ChargeExtendedInfo({
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, setOpened] = useState(false);
-  const [charge, setCharge] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
+  const [chargeState, setChargeState] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
   const [{ data, fetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
@@ -135,15 +136,43 @@ export function ChargeExtendedInfo({
     },
   });
 
+  // Keep a deeply-equal-stable reference so descendants only re-render when the
+  // charge actually changed (urql yields a fresh object on every refetch).
+  const charge = useStableValue(chargeState);
+
   const onExtendedChange = useCallback(() => {
-    refetchExtensionInfo();
+    refetchExtensionInfo({ requestPolicy: 'network-only' });
     onChange();
   }, [refetchExtensionInfo, onChange]);
 
   useEffect(() => {
-    if (data?.charge) {
-      setCharge(data.charge);
+    const incoming = data?.charge;
+    if (!incoming) {
+      return;
     }
+    setChargeState(prev => {
+      // Different charge (or first load): take the incoming data as-is.
+      if (!prev || prev.id !== incoming.id) {
+        return incoming;
+      }
+      // Same charge being refetched: a re-executed `@defer` query delivers its
+      // non-deferred fields first and streams the deferred fragments in later
+      // patches. Merging the incoming payload over the previous charge keeps the
+      // already-loaded sections (`isFragmentReady` checks `field in data`)
+      // rendering their last data until each fresh patch arrives — instead of
+      // every section collapsing to empty and re-expanding ("blinking").
+      // A not-yet-arrived deferred field is absent from the payload, so iterating
+      // the present keys naturally retains the previous value; the `undefined`
+      // guard is just belt-and-suspenders. Present values (including a legitimate
+      // `null`) are applied as they arrive.
+      const merged: Record<string, unknown> = { ...prev };
+      for (const [key, value] of Object.entries(incoming)) {
+        if (value !== undefined) {
+          merged[key] = value;
+        }
+      }
+      return merged as FetchChargeQuery['charge'];
+    });
   }, [data]);
 
   useEffect(() => {
@@ -152,12 +181,16 @@ export function ChargeExtendedInfo({
     }
   }, [parentFetching, refetchExtensionInfo]);
 
-  useEffect(() => {
-    if (chargeID !== chargeId) {
-      setChargeId(chargeID);
-      refetchExtensionInfo();
-    }
-  }, [chargeID, chargeId, refetchExtensionInfo]);
+  // Switching to a different charge: sync the query variable and clear the
+  // previous charge so the loader shows (instead of leaking stale details
+  // through the `fetching && !charge` gate) until the new charge's data arrives.
+  // Done during render — React's supported "adjust state on prop change" pattern
+  // — to avoid a painted frame of stale data; urql re-executes the query
+  // automatically when the `chargeId` variable changes.
+  if (chargeID !== chargeId) {
+    setChargeId(chargeID);
+    setChargeState(undefined);
+  }
 
   const chargeType = charge?.__typename;
 
@@ -264,7 +297,7 @@ export function ChargeExtendedInfo({
 
   return (
     <div className="flex flex-col gap-5">
-      {fetching && (
+      {fetching && !charge && (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       )}
       {isFragmentReady(FetchChargeDocument, ChargesTableErrorsFieldsFragmentDoc, charge) && (

@@ -89,7 +89,13 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     [assignChargeToDeposit, chargeId, onChange],
   );
 
-  const isLoading = fetchingDeposit || fetchingRelevant || creatingDeposit || assigningDeposit;
+  // Show the full-section loader only on the initial load — when there's nothing
+  // to render yet. During background refetches and while create/assign mutations
+  // run, keep the current content visible (mutation progress is surfaced via the
+  // inline button states) so the section doesn't blink.
+  const hasContent =
+    !!depositData?.depositByCharge || relevantDeposits.length > 0 || !!conflictError;
+  const isInitialLoading = (fetchingDeposit || fetchingRelevant) && !hasContent;
 
   const createDialogNode = (
     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -121,7 +127,7 @@ export const ChargeBankDeposit = ({ chargeId, onChange }: Props): ReactElement =
     </Dialog>
   );
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return <Loader2 className="h-10 w-10 animate-spin" />;
   }
 
