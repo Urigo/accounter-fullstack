@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table';
 import { TableDocumentsRowFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
+import { useStableValue } from '../../hooks/use-stable-value.js';
 import { EditDocumentModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, type DocumentsTableRowType } from './columns.js';
@@ -27,9 +28,16 @@ export const DocumentsTable = ({
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  // Keep a deeply-equal-stable reference for the incoming documents so the table
+  // only rebuilds its rows when they actually changed — not on every parent
+  // refetch (e.g. after updating a document, the charge query re-runs and yields
+  // a fresh array with identical content), which would otherwise re-render and
+  // "blink" the whole table.
+  const stableDocumentsProps = useStableValue(documentsProps);
+
   const data: DocumentsTableRowType[] = useMemo(
     () =>
-      documentsProps?.map(rawDocument => {
+      stableDocumentsProps?.map(rawDocument => {
         const document = getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument);
         return {
           ...document,
@@ -37,7 +45,7 @@ export const DocumentsTable = ({
           onUpdate: onChange ?? (() => {}),
         };
       }),
-    [documentsProps, onChange],
+    [stableDocumentsProps, onChange],
   );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'file'];
