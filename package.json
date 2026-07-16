@@ -29,6 +29,7 @@
     "lint": "eslint --cache --cache-location node_modules/.cache/.eslintcache .",
     "local:setup": "docker-compose -f ./docker/docker-compose.dev.yml up -d --wait && yarn setup",
     "mesh:artifacts-rename": "yarn node ./scripts/mesh-artifacts-rename.mjs",
+    "migration:check-conflicts": "node --import ./scripts/register-esm.js ./scripts/check-migration-conflicts.ts",
     "pre-commit": "lint-staged",
     "prettier:check": "prettier --cache --check .",
     "prettier:fix": "prettier --cache --write --list-different .",
