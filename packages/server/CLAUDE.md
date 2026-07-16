@@ -32,12 +32,8 @@ tags, transactions, vat, workspace-settings
 - Inject TenantAwareDBClient via constructor for DB access.
 - Use DataLoader pattern for N+1 prevention in field resolvers.
 - Resolvers must never query the DB directly — always go through providers.
-- DataLoader `.load()` return types are **not uniform**: some id-loaders (e.g.
-  `TransactionsProvider.transactionByIdLoader`) are typed `T | Error` because the batch fn returns
-  `Error` for missing keys — `.load()` rejects at runtime but the compiler still sees `T | Error`, so
-  narrow with `instanceof Error` before accessing fields. Others (e.g. `ChargesProvider`
-  `getChargeByIdLoader`, `DocumentsProvider.getDocumentsByIdLoader`) return `T | undefined`. Check the
-  batch function before assuming.
+- DataLoader `.load()` return types vary — some are `T | Error` (narrow with `instanceof Error`),
+  others `T | undefined`. Check the batch fn.
 
 ## Resolver Patterns
 
@@ -49,23 +45,10 @@ tags, transactions, vat, workspace-settings
 
 Modules under `src/modules/auth/` handle authentication and authorization.
 
-## Accountant approval (charge-mutating ops)
+## Accountant approval
 
-An approved charge must be re-flagged for review when its underlying data changes. Any operation that
-mutates a charge's composition — documents, transactions, misc-expenses, ledger regeneration, charge
-updates/merges — must call the shared helper
-`degradeChargesAccountantApproval(injector, chargeIds)`
-(`src/modules/accountant-approval/helpers/degrade-charges.helper.ts`) after the mutation succeeds. It
-degrades `APPROVED → PENDING`, de-dupes ids, ignores empty/`EMPTY_UUID` ids (degrading a
-non-approved/new charge is a no-op), and returns the freshly-degraded charges so the resolver can
-respond with up-to-date status instead of a stale pre-degrade object.
-
-- Exclusions on `updateCharge`/`batchUpdateCharges`: **tag-only** changes and **explicit
-  accountant-approval** changes do not degrade (see `chargeUpdateRequiresApprovalDegrade`).
-- Apply at the **resolver** layer, not in data-access providers: the underlying provider method
-  (`AccountantApprovalProvider.degradeChargeAccountantApproval`) calls `canWriteCharge()`, which
-  requires an authenticated role, so provider-level hooks would break role-less internal/batch flows;
-  it also avoids a DI cycle (the provider already depends on `ChargesProvider`).
+Charge-mutating ops (documents, transactions, misc-expenses, ledger, charge update/merge) must call
+`degradeChargesAccountantApproval` after success — see `.claude/rules/graphql-server.md`.
 
 ## Testing
 
