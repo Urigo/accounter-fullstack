@@ -161,12 +161,13 @@ export function ChargeExtendedInfo({
       // already-loaded sections (`isFragmentReady` checks `field in data`)
       // rendering their last data until each fresh patch arrives — instead of
       // every section collapsing to empty and re-expanding ("blinking").
-      // Skip `undefined` values from the incoming payload: if urql surfaces a
-      // not-yet-arrived deferred field as `undefined`, a plain spread would wipe
-      // the already-loaded data and defeat the merge.
+      // Skip nullish values from the incoming payload: while a deferred fragment
+      // is still in flight urql surfaces its field as `undefined` (absent) or
+      // `null`, and applying either would wipe the already-loaded data and defeat
+      // the merge. The real (non-null) patch replaces it once it arrives.
       const merged: Record<string, unknown> = { ...prev };
       for (const [key, value] of Object.entries(incoming)) {
-        if (value !== undefined) {
+        if (value != null) {
           merged[key] = value;
         }
       }
