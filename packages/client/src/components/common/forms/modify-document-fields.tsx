@@ -39,11 +39,10 @@ export const ModifyDocumentFields = ({
 
   // Financial metadata may already be stored on the document row even when it is currently
   // classified as "Unprocessed"/"Other" (e.g. a document inserted carrying full data but
-  // categorized as "other"). Read it regardless of the current document type so that switching
-  // to a financial type immediately pre-fills the stored values instead of showing empty fields.
-  const processedDoc = document
-    ? (document as Extract<NonNullable<EditDocumentQuery['documentById']>, { date: unknown }>)
-    : undefined;
+  // categorized as "other"). The edit query now selects these fields on every document type, so
+  // read them regardless of the current type to immediately pre-fill the stored values when
+  // switching to a financial type instead of showing empty fields.
+  const processedDoc = document ?? undefined;
 
   const type = watch('documentType');
 

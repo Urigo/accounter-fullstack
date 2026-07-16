@@ -59,7 +59,9 @@ export const commonFinancialDocumentsFields:
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
   date: documentRoot => optionalDateToTimelessDateString(documentRoot.date),
   amount: documentRoot =>
-    formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
+    documentRoot.total_amount == null
+      ? null
+      : formatFinancialAmount(documentRoot.total_amount, documentRoot.currency_code),
   vat: documentRoot =>
     documentRoot.vat_amount == null
       ? null
