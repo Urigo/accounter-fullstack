@@ -97,6 +97,12 @@ export const financialEntitiesResolvers: FinancialEntitiesModule.Resolvers &
   Receipt: {
     ...commonDocumentsFields,
   },
+  Unprocessed: {
+    ...commonDocumentsFields,
+  },
+  OtherDocument: {
+    ...commonDocumentsFields,
+  },
   LedgerRecord: {
     creditAccount1: ledgerCounterparty('CreditAccount1'),
     creditAccount2: ledgerCounterparty('CreditAccount2'),

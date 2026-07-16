@@ -119,6 +119,16 @@ export default gql`
     debtor: FinancialEntity
   }
 
+  extend type Unprocessed {
+    creditor: FinancialEntity
+    debtor: FinancialEntity
+  }
+
+  extend type OtherDocument {
+    creditor: FinancialEntity
+    debtor: FinancialEntity
+  }
+
   extend type LedgerRecord {
     debitAccount1: FinancialEntity
     debitAccount2: FinancialEntity

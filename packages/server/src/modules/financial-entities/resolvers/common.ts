@@ -80,7 +80,10 @@ export const commonTransactionFields:
   },
 };
 
-export const commonDocumentsFields: FinancialEntitiesModule.FinancialDocumentResolvers = {
+export const commonDocumentsFields:
+  | FinancialEntitiesModule.FinancialDocumentResolvers
+  | FinancialEntitiesModule.UnprocessedResolvers
+  | FinancialEntitiesModule.OtherDocumentResolvers = {
   creditor: (documentRoot, _, { injector }) =>
     documentRoot.creditor_id
       ? injector
