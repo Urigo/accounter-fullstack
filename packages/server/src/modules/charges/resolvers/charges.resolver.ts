@@ -65,8 +65,6 @@ function chargeUpdateRequiresApprovalDegrade(fields: {
   accountantApproval?: unknown;
   type?: unknown;
   isDecreasedVAT?: unknown;
-  isInvoicePaymentDifferentCurrency?: unknown;
-  userDescription?: unknown;
   defaultTaxCategoryID?: unknown;
   optionalVAT?: unknown;
   optionalDocuments?: unknown;
@@ -79,8 +77,6 @@ function chargeUpdateRequiresApprovalDegrade(fields: {
   return [
     fields.type,
     fields.isDecreasedVAT,
-    fields.isInvoicePaymentDifferentCurrency,
-    fields.userDescription,
     fields.defaultTaxCategoryID,
     fields.optionalVAT,
     fields.optionalDocuments,
