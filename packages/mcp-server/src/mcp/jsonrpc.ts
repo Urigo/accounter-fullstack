@@ -81,6 +81,12 @@ export function asJsonRpcRequest(value: unknown): JsonRpcRequest | null {
   if (id !== undefined && id !== null && typeof id !== 'string' && typeof id !== 'number') {
     return null;
   }
+  // Per JSON-RPC 2.0, `params` (when present) must be a structured value —
+  // an object or an array — never a primitive.
+  const params = candidate.params;
+  if (params !== undefined && (typeof params !== 'object' || params === null)) {
+    return null;
+  }
   return candidate as unknown as JsonRpcRequest;
 }
 

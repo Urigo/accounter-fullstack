@@ -66,7 +66,9 @@ export function handleRpcRequest(request: JsonRpcRequest): JsonRpcResponse | nul
       if (params.name === SMOKE_TOOL_NAME) {
         return success(id, runSmokeTool(params.arguments));
       }
-      return failure(id, JsonRpcErrorCode.MethodNotFound, `Unknown tool: ${String(params.name)}`);
+      // The `tools/call` method itself is supported; an unrecognized tool name
+      // is an invalid parameter, not an unsupported method.
+      return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${String(params.name)}`);
     }
 
     default:
@@ -107,8 +109,10 @@ function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
     req.on('data', (chunk: Buffer) => {
       size += chunk.length;
       if (size > maxBytes) {
+        // Pause (don't destroy) the stream so the caller can still write the
+        // 413 response before the socket is closed.
+        req.pause();
         reject(new Error('PAYLOAD_TOO_LARGE'));
-        req.destroy();
         return;
       }
       chunks.push(chunk);
@@ -134,7 +138,11 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     raw = await readBody(req, MAX_MCP_BODY_BYTES);
   } catch (error) {
     if (error instanceof Error && error.message === 'PAYLOAD_TOO_LARGE') {
+      // Close the connection cleanly after the 413 is flushed — the request
+      // body was only partially consumed, so the socket cannot be reused.
+      res.setHeader('Connection', 'close');
       sendJson(res, 413, failure(null, JsonRpcErrorCode.InvalidRequest, 'Request body too large'));
+      res.on('finish', () => req.destroy());
       return;
     }
     log('error', 'failed to read MCP request body', { error: String(error) });

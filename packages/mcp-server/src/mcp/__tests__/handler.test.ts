@@ -42,9 +42,9 @@ describe('handleMcpBody — method dispatch', () => {
     expect(res.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
   });
 
-  it('returns MethodNotFound for an unknown tool', () => {
+  it('returns InvalidParams for an unknown tool', () => {
     const res = handleMcpBody(rpc('tools/call', { name: 'nope' })) as JsonRpcErrorResponse;
-    expect(res.error.code).toBe(JsonRpcErrorCode.MethodNotFound);
+    expect(res.error.code).toBe(JsonRpcErrorCode.InvalidParams);
   });
 
   it('returns MethodNotFound for an unsupported method', () => {
@@ -88,10 +88,14 @@ function mockRes() {
   const res = {
     writeHead: vi.fn(() => res),
     end: vi.fn(() => res),
+    setHeader: vi.fn(() => res),
+    on: vi.fn(() => res),
   };
   return res as unknown as ServerResponse & {
     writeHead: ReturnType<typeof vi.fn>;
     end: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    on: ReturnType<typeof vi.fn>;
   };
 }
 

@@ -51,8 +51,14 @@ describe('asJsonRpcRequest', () => {
     ['missing method', { jsonrpc: '2.0', id: 1 }],
     ['non-string method', { jsonrpc: '2.0', method: 42 }],
     ['object id', { jsonrpc: '2.0', id: {}, method: 'ping' }],
+    ['primitive params', { jsonrpc: '2.0', id: 1, method: 'ping', params: 'oops' }],
   ])('rejects %s', (_label, value) => {
     expect(asJsonRpcRequest(value)).toBeNull();
+  });
+
+  it('accepts object and array params', () => {
+    expect(asJsonRpcRequest({ jsonrpc: '2.0', id: 1, method: 'x', params: { a: 1 } })).not.toBeNull();
+    expect(asJsonRpcRequest({ jsonrpc: '2.0', id: 1, method: 'x', params: [1, 2] })).not.toBeNull();
   });
 });
 
