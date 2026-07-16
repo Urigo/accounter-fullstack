@@ -25,10 +25,24 @@ export function log(level: LogLevel, message: string, fields?: Record<string, un
     level,
     message,
   };
-  const line = JSON.stringify(entry);
-  if (level === 'error') {
-    console.error(line);
-  } else {
-    console.log(line);
+  try {
+    const line = JSON.stringify(entry);
+    if (level === 'error') {
+      console.error(line);
+    } else {
+      console.log(line);
+    }
+  } catch (error) {
+    // Never let a non-serializable field (circular ref, BigInt, …) crash the
+    // process — this logger runs inside global error handlers.
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        message: 'failed to serialize log entry',
+        originalMessage: message,
+        error: String(error),
+      }),
+    );
   }
 }

@@ -16,15 +16,25 @@ import { log } from './logger.js';
 
 export const SERVICE_NAME = '@accounter/mcp-server';
 
-/** Resolve the package version at runtime without importing outside `rootDir`. */
+let cachedVersion: string | undefined;
+
+/**
+ * Resolve the package version at runtime without importing outside `rootDir`.
+ * The result is cached: the version cannot change while the process runs, so
+ * we avoid a synchronous disk read on every `/health` request.
+ */
 export function getServiceVersion(): string {
+  if (cachedVersion !== undefined) {
+    return cachedVersion;
+  }
   try {
     const packageJsonPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
     const parsed = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
-    return parsed.version ?? '0.0.0';
+    cachedVersion = parsed.version ?? '0.0.0';
   } catch {
-    return '0.0.0';
+    cachedVersion = '0.0.0';
   }
+  return cachedVersion;
 }
 
 export interface HealthBody {
@@ -120,6 +130,11 @@ export function createShutdownHandler({
       log('info', 'shutdown complete', { signal });
       exit(0);
     });
+
+    // `server.close()` stops accepting new connections but leaves idle
+    // keep-alive sockets open, which can stall shutdown until the grace timer
+    // fires. Close idle connections immediately so shutdown completes promptly.
+    server.closeIdleConnections?.();
   };
 }
 

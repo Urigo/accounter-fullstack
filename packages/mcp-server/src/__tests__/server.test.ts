@@ -115,6 +115,20 @@ describe('createShutdownHandler', () => {
     expect(exit).toHaveBeenCalledWith(0);
   });
 
+  it('closes idle keep-alive connections to avoid stalling shutdown', () => {
+    const exit = vi.fn();
+    const closeIdleConnections = vi.fn();
+    const server = {
+      close: vi.fn((cb: (err?: Error) => void) => cb()),
+      closeIdleConnections,
+    } as unknown as Server;
+
+    const handler = createShutdownHandler({ server, exit, graceMs: 1000 });
+    handler('SIGTERM');
+
+    expect(closeIdleConnections).toHaveBeenCalledTimes(1);
+  });
+
   it('exits 1 when close reports an error', () => {
     const exit = vi.fn();
     const server = {
