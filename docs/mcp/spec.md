@@ -265,7 +265,8 @@ Phase 1 tools must avoid high-sensitivity credential domains.
 
 ## 9.5 Caching
 
-- Allow short-lived in-process cache only for non-sensitive metadata and schema descriptors.
+- Allow short-lived in-process cache (with strict TTL and maximum size limits, for example LRU
+  eviction, to prevent memory exhaustion) only for non-sensitive metadata and schema descriptors.
 - No cross-user cache key collisions.
 - Cache keys must include user and business scope dimensions where relevant.
 
@@ -465,12 +466,20 @@ Define and validate env vars in package config, including:
 - MCP_PUBLIC_BASE_URL
 - MCP_ENABLED
 - MCP_TOOL_ALLOWLIST
-- AUTH0_ISSUER_URL
+- AUTH0_DOMAIN
 - AUTH0_AUDIENCE
-- AUTH0_JWKS_URL
+- AUTH0_ISSUER_URL (optional override; default derived from AUTH0_DOMAIN)
+- AUTH0_JWKS_URL (optional override; default derived from AUTH0_DOMAIN)
 - GRAPHQL_UPSTREAM_URL
 - GRAPHQL_UPSTREAM_TIMEOUT_MS
 - MCP_RATE_LIMIT_CONFIG
+
+Auth0 naming/mapping guidance for monorepo consistency:
+
+- Prefer the existing server-style auth0 shape: AUTH0_DOMAIN + AUTH0_AUDIENCE.
+- Derive issuer as https://<AUTH0_DOMAIN>/ when AUTH0_ISSUER_URL is not set.
+- Derive JWKS URL as https://<AUTH0_DOMAIN>/.well-known/jwks.json when AUTH0_JWKS_URL is not set.
+- If explicit AUTH0_ISSUER_URL or AUTH0_JWKS_URL are provided, treat them as overrides.
 
 Defaults:
 

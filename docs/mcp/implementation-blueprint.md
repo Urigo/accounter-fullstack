@@ -450,7 +450,7 @@ Add bearer token extraction and Auth0 JWT verification.
 
 Requirements:
 - Parse Authorization: Bearer <token> header.
-- Verify token using Auth0 issuer, audience, and JWKS.
+- Verify token using Auth0 issuer, audience, and JWKS (reusing or adapting the existing shared auth utilities and jose setup where possible).
 - Enforce token expiry and signature checks.
 - Return typed auth principal object on success.
 
@@ -538,14 +538,15 @@ Requirements:
 - Implement request function with typed query/mutation wrappers for read-only operations.
 - Add timeout budget and cancellation.
 - Retry only idempotent read failures (bounded attempts, no auth/validation retries).
-- Propagate correlation id to upstream headers.
+- Propagate correlation id and the authenticated user's Authorization bearer token to upstream headers.
 
 Constraints:
 - No generic execute-anything API exposed to tools.
+- Forward Authorization only from authenticated request context, and never log or persist raw token values.
 - Sanitize upstream errors.
 
 Validation:
-- Unit tests for timeout, retry eligibility, and correlation header propagation.
+- Unit tests for timeout, retry eligibility, and upstream header propagation (correlation id and Authorization).
 ```
 
 ## Prompt 13 - Tool 1: charges search/browse (read-only)
