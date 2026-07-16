@@ -67,6 +67,7 @@
     ) {
       totalCount
       baseCharges {
+        id
         baseCharge {
           ...ChargeMatchCardFields
         }
