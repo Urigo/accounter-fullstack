@@ -37,7 +37,27 @@ const OTP_TIMEOUT_MS = 5 * 60 * 1000;
 function describeValidationError(errors: unknown): string {
   if (errors == null) return 'unknown validation error';
   if (typeof errors === 'string') return errors;
-  if (errors instanceof Error) return errors.message;
+  if (errors instanceof Error) {
+    // ZodError carries the individual issues on `.issues`; prefer those over the noisy message.
+    if ('issues' in errors && Array.isArray(errors.issues)) {
+      return describeValidationError(errors.issues);
+    }
+    return errors.message;
+  }
+  if (Array.isArray(errors)) {
+    return errors
+      .map(err => {
+        if (err && typeof err === 'object' && 'message' in err) {
+          const pathStr =
+            'path' in err && Array.isArray(err.path) && err.path.length > 0
+              ? ` at ${err.path.join('.')}`
+              : '';
+          return `${(err as { message: unknown }).message}${pathStr}`;
+        }
+        return String(err);
+      })
+      .join(', ');
+  }
   try {
     return JSON.stringify(errors);
   } catch {
@@ -89,8 +109,11 @@ export async function scrapePoalim(
       throw new Error('Hapoalim login failed: Unknown Error');
     }
 
-    const { data: accounts, isValid: accountsValid, errors: accountsErrors } =
-      await scraper.getAccountsData();
+    const {
+      data: accounts,
+      isValid: accountsValid,
+      errors: accountsErrors,
+    } = await scraper.getAccountsData();
     if (accountsValid === false) {
       throw new Error(
         `Poalim accounts data failed schema validation: ${describeValidationError(accountsErrors)}`,
@@ -184,8 +207,11 @@ export async function scrapePoalim(
       };
 
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'ils' });
-      const { data: ilsData, isValid: ilsValid, errors: ilsErrors } =
-        await scraper.getILSTransactions(accountRef);
+      const {
+        data: ilsData,
+        isValid: ilsValid,
+        errors: ilsErrors,
+      } = await scraper.getILSTransactions(accountRef);
       if (ilsValid === false) {
         throw new Error(
           `Poalim ILS transactions failed schema validation for account ${accountId}: ${describeValidationError(ilsErrors)}`,
@@ -201,8 +227,11 @@ export async function scrapePoalim(
         accountId,
         txnType: 'foreign',
       });
-      const { data: foreignData, isValid: foreignValid, errors: foreignErrors } =
-        await scraper.getForeignTransactions(accountRef, isBusiness);
+      const {
+        data: foreignData,
+        isValid: foreignValid,
+        errors: foreignErrors,
+      } = await scraper.getForeignTransactions(accountRef, isBusiness);
       if (foreignValid === false) {
         throw new Error(
           `Poalim foreign transactions failed schema validation for account ${accountId}: ${describeValidationError(foreignErrors)}`,
@@ -213,8 +242,11 @@ export async function scrapePoalim(
       }
 
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'swift' });
-      const { data: swiftData, isValid: swiftValid, errors: swiftErrors } =
-        await scraper.getForeignSwiftTransactions(accountRef);
+      const {
+        data: swiftData,
+        isValid: swiftValid,
+        errors: swiftErrors,
+      } = await scraper.getForeignSwiftTransactions(accountRef);
       if (swiftValid === false) {
         throw new Error(
           `Poalim SWIFT transactions failed schema validation for account ${accountId}: ${describeValidationError(swiftErrors)}`,
