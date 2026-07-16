@@ -9,7 +9,7 @@ export type UseChargeMatchQueue<TItem extends { id: string }> = {
   activeIndex: number;
   /** The currently viewed base charge, or null once the queue is exhausted */
   activeItem: TItem | null;
-  /** True when the user stepped past the last item */
+  /** True when every item in the queue was matched or skipped */
   isDone: boolean;
   /** Session-only status per item id (no backend persistence) */
   statusById: Record<string, ChargeMatchItemStatus>;
@@ -26,27 +26,15 @@ export type UseChargeMatchQueue<TItem extends { id: string }> = {
  * Local (session-only) state management for the charge matching review queue:
  * tracks the active item and each item's pending/matched/skipped status.
  *
- * State resets whenever a new `items` array arrives (new page or filters).
+ * The active item is derived as the first still-pending item rather than a
+ * stored index, so the user's position and session statuses survive query
+ * refetches — including refetches where the item set changes (e.g. a merged
+ * charge dropping out of the queue, or filters changing the page).
  */
 export function useChargeMatchQueue<TItem extends { id: string }>(
   items: TItem[],
 ): UseChargeMatchQueue<TItem> {
-  const [activeIndex, setActiveIndex] = useState(0);
   const [overrides, setOverrides] = useState<Record<string, ChargeMatchItemStatus>>({});
-
-  // Reset session state when the queue itself is replaced (render-phase
-  // adjustment, per React's "storing information from previous renders").
-  // Items are compared by id rather than reference, so a parent re-render
-  // that rebuilds an identical array doesn't wipe the user's progress
-  const [prevItems, setPrevItems] = useState(items);
-  const itemsChanged =
-    items.length !== prevItems.length ||
-    items.some((item, index) => item.id !== prevItems[index]?.id);
-  if (itemsChanged) {
-    setPrevItems(items);
-    setActiveIndex(0);
-    setOverrides({});
-  }
 
   const statusById = useMemo(() => {
     const statuses: Record<string, ChargeMatchItemStatus> = {};
@@ -56,29 +44,23 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
     return statuses;
   }, [items, overrides]);
 
-  const advance = useCallback(() => {
-    setActiveIndex(index => Math.min(index + 1, items.length));
-  }, [items.length]);
-
-  const skipItem = useCallback(
-    (id: string) => {
-      setOverrides(prev => ({ ...prev, [id]: 'skipped' }));
-      advance();
-    },
-    [advance],
+  const firstPendingIndex = useMemo(
+    () => items.findIndex(item => (overrides[item.id] ?? 'pending') === 'pending'),
+    [items, overrides],
   );
+  const activeIndex = firstPendingIndex === -1 ? items.length : firstPendingIndex;
 
-  const acceptItemStatus = useCallback(
-    (id: string, success: boolean) => {
-      if (!success) {
-        // Merge failed: stay on the same charge so the user can retry or skip
-        return;
-      }
-      setOverrides(prev => ({ ...prev, [id]: 'matched' }));
-      advance();
-    },
-    [advance],
-  );
+  const skipItem = useCallback((id: string) => {
+    setOverrides(prev => ({ ...prev, [id]: 'skipped' }));
+  }, []);
+
+  const acceptItemStatus = useCallback((id: string, success: boolean) => {
+    if (!success) {
+      // Merge failed: stay on the same charge so the user can retry or skip
+      return;
+    }
+    setOverrides(prev => ({ ...prev, [id]: 'matched' }));
+  }, []);
 
   return {
     items,
