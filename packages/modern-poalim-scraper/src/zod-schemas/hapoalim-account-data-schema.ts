@@ -36,22 +36,23 @@ const MymailEntitlementSwitchSchema = z.union([z.literal(0), z.literal(1)]);
 
 export const AccountDataItemSchema = z
   .object({
-    bankNumber: BankNumberSchema,
-    extendedBankNumber: ExtendedBankNumberSchema,
-    branchNumber: BranchNumberSchema,
-    accountNumber: AccountNumberSchema,
-    partyPreferredIndication: PartyPreferredIndicationSchema,
-    partyAccountInvolvementCode: PartyAccountInvolvementCodeSchema,
-    accountDealDate: AccountDealDateSchema,
-    accountUpdateDate: AccountUpdateDateSchema,
-    metegDoarNet: MetegDoarNetSchema,
-    kodHarshaatPeilut: KodHarshaatPeilutSchema,
-    accountClosingReasonCode: AccountClosingReasonCodeSchema,
-    productLabel: ProductLabelSchema,
     accountAgreementOpeningDate: AccountAgreementOpeningDateSchema,
-    serviceAuthorizationDesc: ServiceAuthorizationDescSchema,
+    accountClosingReasonCode: AccountClosingReasonCodeSchema,
+    accountDealDate: AccountDealDateSchema,
+    accountName: z.string(),
+    accountNumber: AccountNumberSchema,
+    accountUpdateDate: AccountUpdateDateSchema,
+    bankNumber: BankNumberSchema,
+    branchNumber: BranchNumberSchema,
     branchTypeCode: BranchTypeCodeSchema,
+    extendedBankNumber: ExtendedBankNumberSchema,
+    kodHarshaatPeilut: KodHarshaatPeilutSchema,
+    metegDoarNet: MetegDoarNetSchema,
     mymailEntitlementSwitch: MymailEntitlementSwitchSchema,
+    partyAccountInvolvementCode: PartyAccountInvolvementCodeSchema,
+    partyPreferredIndication: PartyPreferredIndicationSchema,
+    productLabel: ProductLabelSchema,
+    serviceAuthorizationDesc: ServiceAuthorizationDescSchema,
   })
   .strict();
 
