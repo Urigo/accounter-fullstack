@@ -571,9 +571,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   },
   Unprocessed: {
     ...commonDocumentsFields,
+    ...commonFinancialDocumentsFields,
   },
   OtherDocument: {
     ...commonDocumentsFields,
+    ...commonFinancialDocumentsFields,
   },
   Receipt: {
     ...commonDocumentsFields,

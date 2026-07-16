@@ -10,13 +10,6 @@ import {
   type UpdateDocumentFieldsInput,
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
-import {
-  isDocumentCreditInvoice,
-  isDocumentInvoice,
-  isDocumentInvoiceReceipt,
-  isDocumentProforma,
-  isDocumentReceipt,
-} from '../../../helpers/documents.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
@@ -44,14 +37,11 @@ export const ModifyDocumentFields = ({
   const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
     useGetFinancialEntities();
 
-  const isDocumentProcessed =
-    isDocumentInvoice(document) ||
-    isDocumentReceipt(document) ||
-    isDocumentInvoiceReceipt(document) ||
-    isDocumentProforma(document) ||
-    isDocumentCreditInvoice(document);
-
-  const processedDoc = isDocumentProcessed
+  // Financial metadata may already be stored on the document row even when it is currently
+  // classified as "Unprocessed"/"Other" (e.g. a document inserted carrying full data but
+  // categorized as "other"). Read it regardless of the current document type so that switching
+  // to a financial type immediately pre-fills the stored values instead of showing empty fields.
+  const processedDoc = document
     ? (document as Extract<NonNullable<EditDocumentQuery['documentById']>, { date: unknown }>)
     : undefined;
 

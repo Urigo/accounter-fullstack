@@ -97,6 +97,16 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+
+    " financial metadata that may already be stored on the document even before it is classified as a financial document "
+    vat: FinancialAmount
+    serialNumber: String
+    date: TimelessDate
+    amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
+    noVatAmount: Float
+    allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " processed non-financial document "
@@ -108,6 +118,16 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+
+    " financial metadata that may already be stored on the document even though it is classified as a non-financial document "
+    vat: FinancialAmount
+    serialNumber: String
+    date: TimelessDate
+    amount: FinancialAmount
+    vatReportDateOverride: TimelessDate
+    noVatAmount: Float
+    allocationNumber: String
+    exchangeRateOverride: Float
   }
 
   " represent a financial document "

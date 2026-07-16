@@ -47,6 +47,54 @@ import { ModifyDocumentFields } from './modify-document-fields.js';
         allocationNumber
         exchangeRateOverride
       }
+      ... on Unprocessed {
+        vat {
+          raw
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          currency
+        }
+        debtor {
+          id
+          name
+        }
+        creditor {
+          id
+          name
+        }
+        vatReportDateOverride
+        noVatAmount
+        allocationNumber
+        exchangeRateOverride
+      }
+      ... on OtherDocument {
+        vat {
+          raw
+          currency
+        }
+        serialNumber
+        date
+        amount {
+          raw
+          currency
+        }
+        debtor {
+          id
+          name
+        }
+        creditor {
+          id
+          name
+        }
+        vatReportDateOverride
+        noVatAmount
+        allocationNumber
+        exchangeRateOverride
+      }
     }
   }
 `;

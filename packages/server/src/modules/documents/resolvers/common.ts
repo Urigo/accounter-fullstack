@@ -53,7 +53,9 @@ export const commonFinancialDocumentsFields:
   | DocumentsModule.InvoiceResolvers
   | DocumentsModule.ReceiptResolvers
   | DocumentsModule.InvoiceReceiptResolvers
-  | DocumentsModule.ProformaResolvers = {
+  | DocumentsModule.ProformaResolvers
+  | DocumentsModule.UnprocessedResolvers
+  | DocumentsModule.OtherDocumentResolvers = {
   serialNumber: documentRoot => documentRoot.serial_number ?? '',
   date: documentRoot => optionalDateToTimelessDateString(documentRoot.date),
   amount: documentRoot =>
