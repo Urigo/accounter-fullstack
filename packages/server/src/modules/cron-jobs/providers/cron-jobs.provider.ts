@@ -77,7 +77,7 @@ const getReferenceMergeCandidates = sql<IGetReferenceMergeCandidatesQuery>`
       ON t.id = alias.transaction_id
       OR (
         t.source_origin = 'POALIM'
-        AND t.source_reference = alias.normalized_reference
+        AND LTRIM(t.source_reference, '0') = alias.normalized_reference
         AND t.event_date = alias.alias_event_date
       )
   )
