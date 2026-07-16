@@ -1,11 +1,13 @@
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { ChargesMatcherModule } from '../types.js';
 import { autoMatchChargesResolver } from './auto-match-charges.resolver.js';
+import { chargesAwaitingMatchQueueResolver } from './charges-awaiting-match-queue.resolver.js';
 import { findChargeMatchesResolver } from './find-charge-matches.resolver.js';
 
 export const chargesMatcherResolvers: ChargesMatcherModule.Resolvers = {
   Query: {
     ...findChargeMatchesResolver.Query,
+    ...chargesAwaitingMatchQueueResolver.Query,
   },
   Mutation: {
     ...autoMatchChargesResolver.Mutation,
