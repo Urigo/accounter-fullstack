@@ -7,7 +7,8 @@ the bank deposits fix:
 
 - The loading spinner now only replaces the table on the initial load (`fetching && !data`) instead
   of on every background refetch, so changing filters or pages no longer blanks out the whole table —
-  the current results stay visible until the new data arrives.
+  the current results stay visible until the new data arrives. During those refetches a
+  `LoadingOverlay` dims the table with a spinner so it's still clear the charges are being reloaded.
 - The charge nodes are wrapped in the shared `useStableValue` hook, so the table and its rows keep a
   stable reference and only re-render (and reset per-row state) when the data actually changed.
 - Filter refetches are issued with `{ requestPolicy: 'network-only' }` to make the intent explicit.

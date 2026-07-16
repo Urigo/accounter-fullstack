@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
+import { LoadingOverlay } from '@mantine/core';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -136,12 +137,18 @@ export const AllCharges = (): ReactElement => {
       {fetching && !data ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : chargeNodes ? (
-        <ChargesTable
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
-          data={chargeNodes}
-          isAllOpened={isAllOpened}
-        />
+        // Keep the current table mounted while a filter/page change refetches,
+        // but overlay a spinner so it's clear the charges are being reloaded
+        // (the stale rows stay visible underneath instead of blinking away).
+        <div className="relative">
+          <LoadingOverlay visible={fetching} overlayBlur={1} />
+          <ChargesTable
+            toggleMergeCharge={toggleMergeCharge}
+            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
+            data={chargeNodes}
+            isAllOpened={isAllOpened}
+          />
+        </div>
       ) : (
         <span>Please apply filters</span>
       )}
