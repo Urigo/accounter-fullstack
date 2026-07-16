@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { DocumentType } from '../../../shared/enums.js';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { GoogleDriveProvider } from '../../app-providers/google-drive/google-drive.provider.js';
 import { GreenInvoiceClientProvider } from '../../app-providers/green-invoice-client.js';
@@ -86,6 +87,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
           .get(DocumentsProvider)
           .insertDocuments({ documents: [newDocument] });
 
+        await degradeChargesAccountantApproval(injector, [document?.charge_id, chargeId]);
+
         return { document };
       } catch (e) {
         const message = 'Error uploading document';
@@ -123,6 +126,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const res = await injector
         .get(DocumentsProvider)
         .insertDocuments({ documents: newDocuments });
+
+      await degradeChargesAccountantApproval(injector, [chargeId]);
+
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     batchUploadDocumentsFromGoogleDrive: async (
@@ -180,6 +186,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const res = await injector
         .get(DocumentsProvider)
         .insertDocuments({ documents: newDocuments });
+
+      await degradeChargesAccountantApproval(injector, [chargeId]);
+
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
@@ -187,6 +196,12 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
       try {
         let chargeId: string | undefined = undefined;
+        // capture the document's current charge so it too gets re-flagged when
+        // the document moves to (or is unlinked to) a different charge
+        const formerChargeId = await injector
+          .get(DocumentsProvider)
+          .getDocumentsByIdLoader.load(documentId)
+          .then(document => document?.charge_id ?? undefined);
 
         if (fields.chargeId === EMPTY_UUID) {
           // case unlinked from charge
@@ -280,6 +295,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         await postUpdateActions();
 
+        await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
+
         return {
           document: res[0],
         };
@@ -303,6 +320,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         }
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
+          await degradeChargesAccountantApproval(injector, [document.charge_id]);
           if (document.charge_id) {
             const [charge, transactions, documents] = await Promise.all([
               injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
@@ -372,6 +390,8 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         if (!res || res.length === 0) {
           throw new Error(`Failed to insert ledger record to charge ID='${record.chargeId}'`);
         }
+
+        await degradeChargesAccountantApproval(injector, [res[0]?.charge_id, record.chargeId]);
 
         return { document: res[0] };
       } catch (e) {
@@ -473,6 +493,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         const newChargeIds = await Promise.all(spreadPromises);
         chargeIds.push(...newChargeIds);
+
+        // the original charge lost documents; re-flag it for accountant review
+        await degradeChargesAccountantApproval(injector, [chargeId]);
       } catch (e) {
         console.error(`Failed to spread documents for charge ID="${chargeId}":`, e);
         throw new GraphQLError(`Failed to spread documents for charge ID="${chargeId}"`);

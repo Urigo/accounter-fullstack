@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
@@ -56,6 +57,14 @@ export const cronJobsResolvers: CronJobsModule.Resolvers = {
         for (const { reference, baseChargeId, chargeIdsToMerge } of plans) {
           try {
             await mergeChargesExecutor(chargeIdsToMerge, baseChargeId, injector);
+            const degradedCharges = await degradeChargesAccountantApproval(injector, [
+              baseChargeId,
+            ]);
+            const degradedBaseCharge = degradedCharges.get(baseChargeId);
+            if (degradedBaseCharge) {
+              // keep the returned charge in sync with its fresh (PENDING) state
+              chargeById.set(baseChargeId, degradedBaseCharge);
+            }
             mergedBaseChargeIds.add(baseChargeId);
           } catch (error) {
             const message =

@@ -50,6 +50,12 @@ Each module in `packages/server/src/modules/<name>/` contains:
     constructor(private db: TenantAwareDBClient) {}
   }
   ```
+- DataLoader `.load()` return types are **not uniform** across providers. Some id-loaders (e.g.
+  `TransactionsProvider.transactionByIdLoader`) are typed `T | Error` because the batch fn returns
+  an `Error` for missing keys — `.load()` rejects at runtime, but the compiler still sees
+  `T | Error`, so narrow with `instanceof Error` before reading fields. Others (e.g.
+  `ChargesProvider` `getChargeByIdLoader`, `DocumentsProvider.getDocumentsByIdLoader`) return
+  `T | undefined`. Check the batch function before assuming.
 
 ## GraphQL Schema Naming
 
@@ -73,3 +79,28 @@ union CreateTransactionResult = Transaction | CommonError
 
 Run `yarn generate` after any typeDefs change. Types are generated to `__generated__/types` — never
 hand-write resolver or schema types.
+
+## Accountant Approval (charge-mutating ops)
+
+An `APPROVED` charge must be re-flagged for review when its underlying data changes. Any operation
+that mutates a charge's composition — documents, transactions, misc-expenses, ledger regeneration,
+charge updates/merges — must call the shared helper after the mutation succeeds:
+
+```typescript
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js'
+// ...after the write succeeds:
+const degraded = await degradeChargesAccountantApproval(injector, [chargeId /*, ...*/])
+return { charge: degraded.get(chargeId) ?? charge } // respond with fresh status, not the stale object
+```
+
+- Degrades `APPROVED → PENDING`; de-dupes ids and ignores empty/`EMPTY_UUID` ids (degrading a
+  non-approved or newly-generated charge is a no-op). Pass both the former and new charge when a
+  record moves between charges.
+- Returns a `Map` of the charges actually degraded, carrying their fresh `PENDING` state — use it so
+  the resolver responds with up-to-date status instead of a pre-degrade object.
+- On `updateCharge` / `batchUpdateCharges`, **tag-only** and **explicit accountant-approval**
+  changes must not degrade (see `chargeUpdateRequiresApprovalDegrade`).
+- Apply at the **resolver** layer, not in data-access providers:
+  `AccountantApprovalProvider.degradeChargeAccountantApproval` calls `canWriteCharge()` (requires an
+  authenticated role), so provider-level hooks would break role-less internal/batch flows; it also
+  avoids a DI cycle (the provider already depends on `ChargesProvider`).

@@ -32,6 +32,8 @@ tags, transactions, vat, workspace-settings
 - Inject TenantAwareDBClient via constructor for DB access.
 - Use DataLoader pattern for N+1 prevention in field resolvers.
 - Resolvers must never query the DB directly — always go through providers.
+- DataLoader `.load()` return types vary — some are `T | Error` (narrow with `instanceof Error`),
+  others `T | undefined`. Check the batch fn.
 
 ## Resolver Patterns
 
@@ -42,6 +44,11 @@ tags, transactions, vat, workspace-settings
 ## Auth
 
 Modules under `src/modules/auth/` handle authentication and authorization.
+
+## Accountant approval
+
+Charge-mutating ops (documents, transactions, misc-expenses, ledger, charge update/merge) must call
+`degradeChargesAccountantApproval` after success — see `.claude/rules/graphql-server.md`.
 
 ## Testing
 

@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
 import { formatCurrency } from '../../../shared/helpers/index.js';
+import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
 import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
@@ -64,6 +65,16 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
       try {
         // let charge: ChargesTypes.IGetChargesByIdsResult | undefined;
+
+        // capture the transaction's current charge so it too gets re-flagged
+        // when the transaction moves to (or is unlinked to) a different charge
+        const formerChargeId = await injector
+          .get(TransactionsProvider)
+          .transactionByIdLoader.load(transactionId)
+          .then(transaction =>
+            transaction instanceof Error ? undefined : (transaction?.charge_id ?? undefined),
+          )
+          .catch(() => undefined);
 
         const existingChargePromise = async () => {
           const charge = await injector
@@ -151,6 +162,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
         await postUpdateActions();
 
+        await degradeChargesAccountantApproval(injector, [formerChargeId, chargeId]);
+
         return res[0].id;
       } catch (e) {
         if (e instanceof GraphQLError) {
@@ -168,6 +181,19 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
 
       try {
         const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        // capture the transactions' current charges so they too get re-flagged
+        // when the transactions move to (or are unlinked to) a different charge
+        const formerChargeIds = await injector
+          .get(TransactionsProvider)
+          .transactionByIdLoader.loadMany(transactionIds)
+          .then(res =>
+            res.map(transaction =>
+              transaction instanceof Error ? undefined : transaction?.charge_id,
+            ),
+          )
+          .catch(() => [] as Array<string | null | undefined>);
+
         const existingChargePromise = async () => {
           // verify charge exists
           const charge = await injector
@@ -273,6 +299,8 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         }
 
         await postUpdateActions();
+
+        await degradeChargesAccountantApproval(injector, [...formerChargeIds, chargeId]);
 
         return { transactions: res.map(transaction => transaction.id) };
       } catch (e) {
