@@ -11,6 +11,8 @@
  * package compilable and importable without locking in a runtime framework.
  */
 
+import { fileURLToPath } from 'node:url';
+
 export const PACKAGE_NAME = '@accounter/mcp-server';
 
 /**
@@ -22,7 +24,8 @@ export function main(): void {
 }
 
 // Only auto-run when executed directly (e.g. `node dist/index.js`), never when
-// imported by tests or other modules.
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// imported by tests or other modules. Compare via fileURLToPath so paths with
+// spaces or other special characters (URL-encoded in import.meta.url) match.
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   main();
 }
