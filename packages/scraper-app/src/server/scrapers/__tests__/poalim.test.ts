@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { OtpManager } from '../../otp-manager.js';
-import { PayloadValidationError } from '../../validate-payload.js';
 import { scrapePoalim } from '../poalim.js';
 
 const VALID_ACCOUNTS = [{ bankNumber: 12, branchNumber: 600, accountNumber: 100_000 }];
@@ -145,12 +144,16 @@ describe('scrapePoalim — Unknown Error', () => {
   });
 });
 
-describe('scrapePoalim — invalid payload', () => {
-  it('throws PayloadValidationError when ILS data fails schema validation', async () => {
+describe('scrapePoalim — schema validation failures are surfaced', () => {
+  it('throws (not silently returns empty) when accounts data fails schema validation', async () => {
+    // Regression: the scraper reports isValid:false with data:null on a failed validation.
+    // Previously only `data` was read, so this looked like "no accounts" and the run reported
+    // success with no data. It must now surface as an error instead.
     const scraper = makeScraper({
-      getILSTransactions: vi.fn().mockResolvedValue({
-        data: { transactions: 'not-an-array', retrievalTransactionData: {} },
+      getAccountsData: vi.fn().mockResolvedValue({
+        data: null,
         isValid: false,
+        errors: [{ message: 'expected array, received object' }],
       }),
     });
     const initMock = await getInitMock();
@@ -161,6 +164,80 @@ describe('scrapePoalim — invalid payload', () => {
 
     await expect(
       scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop),
-    ).rejects.toBeInstanceOf(PayloadValidationError);
+    ).rejects.toThrow('accounts data failed schema validation');
+  });
+
+  it('throws when ILS data fails schema validation', async () => {
+    const scraper = makeScraper({
+      getILSTransactions: vi.fn().mockResolvedValue({
+        data: null,
+        isValid: false,
+        errors: [{ message: 'transactions: expected array' }],
+      }),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop),
+    ).rejects.toThrow('ILS transactions failed schema validation');
+  });
+
+  it('throws when foreign data is unreachable / fails schema validation', async () => {
+    const scraper = makeScraper({
+      getForeignTransactions: vi.fn().mockResolvedValue({
+        data: null,
+        isValid: false,
+        errors: 'Data seems unreachable. Is the account active?',
+      }),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop),
+    ).rejects.toThrow('foreign transactions failed schema validation');
+  });
+
+  it('throws when SWIFT data fails schema validation', async () => {
+    const scraper = makeScraper({
+      getForeignSwiftTransactions: vi.fn().mockResolvedValue({
+        data: null,
+        isValid: false,
+        errors: [{ message: 'swiftsList: expected array' }],
+      }),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(
+      scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop),
+    ).rejects.toThrow('SWIFT transactions failed schema validation');
+  });
+
+  it('calls close() when a schema validation error is thrown', async () => {
+    const close = vi.fn().mockResolvedValue(undefined);
+    const scraper = makeScraper({
+      getAccountsData: vi.fn().mockResolvedValue({ data: null, isValid: false, errors: [] }),
+    });
+    const initMock = await getInitMock();
+    initMock.mockResolvedValue({
+      hapoalim: vi.fn().mockResolvedValue(scraper),
+      close,
+    });
+
+    await expect(
+      scrapePoalim(CREDS, new Date(), new Date(), true, new OtpManager(), noop),
+    ).rejects.toThrow();
+    expect(close).toHaveBeenCalledOnce();
   });
 });

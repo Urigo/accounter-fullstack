@@ -27,6 +27,24 @@ export type DecoratedSwiftTransactions = Omit<SwiftTransactions, 'swiftsList'> &
 
 const OTP_TIMEOUT_MS = 5 * 60 * 1000;
 
+/**
+ * The modern-poalim-scraper runs Zod schema validation internally (validateSchema: true) and
+ * returns `{ data, isValid, errors }`. On a validation failure `data` is `null` and `isValid` is
+ * `false`. If we only read `data` we silently treat a failed validation as "no data", which makes a
+ * broken run look successful. This turns the validation error into a readable message so the caller
+ * can surface it to the user.
+ */
+function describeValidationError(errors: unknown): string {
+  if (errors == null) return 'unknown validation error';
+  if (typeof errors === 'string') return errors;
+  if (errors instanceof Error) return errors.message;
+  try {
+    return JSON.stringify(errors);
+  } catch {
+    return String(errors);
+  }
+}
+
 export async function scrapePoalim(
   creds: PoalimCreds,
   dateFrom: Date,
@@ -71,7 +89,13 @@ export async function scrapePoalim(
       throw new Error('Hapoalim login failed: Unknown Error');
     }
 
-    const { data: accounts } = await scraper.getAccountsData();
+    const { data: accounts, isValid: accountsValid, errors: accountsErrors } =
+      await scraper.getAccountsData();
+    if (accountsValid === false) {
+      throw new Error(
+        `Poalim accounts data failed schema validation: ${describeValidationError(accountsErrors)}`,
+      );
+    }
     if (!accounts || accounts.length === 0) {
       return [];
     }
@@ -160,7 +184,13 @@ export async function scrapePoalim(
       };
 
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'ils' });
-      const { data: ilsData } = await scraper.getILSTransactions(accountRef);
+      const { data: ilsData, isValid: ilsValid, errors: ilsErrors } =
+        await scraper.getILSTransactions(accountRef);
+      if (ilsValid === false) {
+        throw new Error(
+          `Poalim ILS transactions failed schema validation for account ${accountId}: ${describeValidationError(ilsErrors)}`,
+        );
+      }
       if (ilsData) {
         ils = validatePayload('poalim-ils', ilsData);
       }
@@ -171,13 +201,25 @@ export async function scrapePoalim(
         accountId,
         txnType: 'foreign',
       });
-      const { data: foreignData } = await scraper.getForeignTransactions(accountRef, isBusiness);
+      const { data: foreignData, isValid: foreignValid, errors: foreignErrors } =
+        await scraper.getForeignTransactions(accountRef, isBusiness);
+      if (foreignValid === false) {
+        throw new Error(
+          `Poalim foreign transactions failed schema validation for account ${accountId}: ${describeValidationError(foreignErrors)}`,
+        );
+      }
       if (foreignData) {
         foreign = validatePayload('poalim-foreign', foreignData);
       }
 
       emit({ type: 'task-account-txns-fetching', sourceId: creds.id, accountId, txnType: 'swift' });
-      const { data: swiftData } = await scraper.getForeignSwiftTransactions(accountRef);
+      const { data: swiftData, isValid: swiftValid, errors: swiftErrors } =
+        await scraper.getForeignSwiftTransactions(accountRef);
+      if (swiftValid === false) {
+        throw new Error(
+          `Poalim SWIFT transactions failed schema validation for account ${accountId}: ${describeValidationError(swiftErrors)}`,
+        );
+      }
       if (swiftData) {
         const validated = validatePayload('poalim-swift', swiftData);
         const decoratedSwiftsList: DecoratedSwiftTransactions['swiftsList'] = [];
