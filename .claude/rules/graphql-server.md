@@ -51,11 +51,11 @@ Each module in `packages/server/src/modules/<name>/` contains:
   }
   ```
 - DataLoader `.load()` return types are **not uniform** across providers. Some id-loaders (e.g.
-  `TransactionsProvider.transactionByIdLoader`) are typed `T | Error` because the batch fn returns an
-  `Error` for missing keys — `.load()` rejects at runtime, but the compiler still sees `T | Error`, so
-  narrow with `instanceof Error` before reading fields. Others (e.g. `ChargesProvider`
-  `getChargeByIdLoader`, `DocumentsProvider.getDocumentsByIdLoader`) return `T | undefined`. Check the
-  batch function before assuming.
+  `TransactionsProvider.transactionByIdLoader`) are typed `T | Error` because the batch fn returns
+  an `Error` for missing keys — `.load()` rejects at runtime, but the compiler still sees
+  `T | Error`, so narrow with `instanceof Error` before reading fields. Others (e.g.
+  `ChargesProvider` `getChargeByIdLoader`, `DocumentsProvider.getDocumentsByIdLoader`) return
+  `T | undefined`. Check the batch function before assuming.
 
 ## GraphQL Schema Naming
 
@@ -98,8 +98,8 @@ return { charge: degraded.get(chargeId) ?? charge } // respond with fresh status
   record moves between charges.
 - Returns a `Map` of the charges actually degraded, carrying their fresh `PENDING` state — use it so
   the resolver responds with up-to-date status instead of a pre-degrade object.
-- On `updateCharge` / `batchUpdateCharges`, **tag-only** and **explicit accountant-approval** changes
-  must not degrade (see `chargeUpdateRequiresApprovalDegrade`).
+- On `updateCharge` / `batchUpdateCharges`, **tag-only** and **explicit accountant-approval**
+  changes must not degrade (see `chargeUpdateRequiresApprovalDegrade`).
 - Apply at the **resolver** layer, not in data-access providers:
   `AccountantApprovalProvider.degradeChargeAccountantApproval` calls `canWriteCharge()` (requires an
   authenticated role), so provider-level hooks would break role-less internal/batch flows; it also
