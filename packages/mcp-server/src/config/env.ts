@@ -157,6 +157,9 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): AppConfig {
         : [resolve(packageRoot, '.env')],
     // Only surface dotenv's own debug noise outside of release builds.
     debug: process.env.RELEASE ? false : undefined,
+    // Populate the caller-provided source (defaults to process.env) rather than
+    // always mutating process.env, so a custom source is honored end to end.
+    processEnv: source,
   });
 
   try {
