@@ -20,7 +20,9 @@ export default gql`
       mode: ChargeMatchQueueMode
       " Ordering of the queue "
       sortBy: ChargeMatchQueueSortBy = BY_DATE
-    ): ChargesAwaitingMatchResult! @requiresAuth
+    ): ChargesAwaitingMatchResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   extend type Mutation {
@@ -56,6 +58,8 @@ export default gql`
 
   " An unmatched base charge together with its scored match suggestions "
   type ChargeWithSuggestions {
+    " UUID of the unmatched base charge "
+    id: ID!
     " The unmatched base charge under review "
     baseCharge: Charge!
     " Match suggestions for the base charge, ordered by confidence score (highest first) "

@@ -158,7 +158,6 @@ export default [
               'ChargesAwaitingMatchResult',
               'ChargeSuggestions',
               'ChargesWithLedgerChangesResult',
-              'ChargeWithSuggestions',
               'CommonError',
               'ConversionRate',
               'DateRange',
