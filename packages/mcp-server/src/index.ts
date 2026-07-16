@@ -5,22 +5,43 @@
  * Accounter capabilities to Claude clients over a remote MCP (Model Context
  * Protocol) endpoint.
  *
- * This is the scaffolding entrypoint (Prompt 01). It intentionally performs no
- * runtime work yet — HTTP transport, OAuth discovery, and the tool registry are
- * added in subsequent, incremental steps. Keeping this a no-op keeps the
- * package compilable and importable without locking in a runtime framework.
+ * This module wires up process-level concerns (top-level error handling) and
+ * starts the HTTP server. The transport, OAuth discovery, and tool registry are
+ * added in subsequent, incremental steps.
  */
 
 import { fileURLToPath } from 'node:url';
+import { log } from './logger.js';
+import { start } from './server.js';
 
 export const PACKAGE_NAME = '@accounter/mcp-server';
 
+export { start } from './server.js';
+
 /**
- * Placeholder startup entrypoint. Later prompts replace this with the HTTP
- * server bootstrap, health route, and MCP transport wiring.
+ * Install last-resort handlers so an unexpected error is logged in structured
+ * form before the process exits, rather than crashing with a bare stack trace.
  */
+export function installProcessErrorHandlers(): void {
+  process.on('uncaughtException', error => {
+    log('error', 'uncaught exception', { error: String(error) });
+    process.exit(1);
+  });
+  process.on('unhandledRejection', reason => {
+    log('error', 'unhandled promise rejection', { reason: String(reason) });
+    process.exit(1);
+  });
+}
+
+/** Startup entrypoint: install error handlers and start the HTTP server. */
 export function main(): void {
-  // No-op for now.
+  installProcessErrorHandlers();
+  try {
+    start();
+  } catch (error) {
+    log('error', 'fatal startup error', { error: String(error) });
+    process.exit(1);
+  }
 }
 
 // Only auto-run when executed directly (e.g. `node dist/index.js`), never when
