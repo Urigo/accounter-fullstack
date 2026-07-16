@@ -269,9 +269,11 @@ __metadata:
   resolution: "@accounter/mcp-server@workspace:packages/mcp-server"
   dependencies:
     "@types/node": "npm:25.9.5"
+    dotenv: "npm:17.4.2"
     tsx: "npm:4.23.1"
     typescript: "npm:6.0.3"
     vitest: "npm:4.1.10"
+    zod: "npm:4.4.3"
   languageName: unknown
   linkType: soft
 
