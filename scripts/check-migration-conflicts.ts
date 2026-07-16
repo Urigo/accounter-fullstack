@@ -18,7 +18,7 @@
  *   --head-ref <git-ref-or-sha>
  */
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 
 const MIGRATIONS_DIR = 'packages/migrations/src/actions';
 
@@ -256,16 +256,25 @@ function readFileAtRef(ref: string, path: string): string {
   return runGit(['show', `${ref}:${path}`]);
 }
 
-function analyzeMigrationsAtRef(args: { ref: string; paths: string[] }): MigrationAnalysis[] {
-  return args.paths.map(path => {
-    const content = readFileAtRef(args.ref, path);
+function analyzeMigrationsFromBasePreferringLocal(args: {
+  ref: string;
+  paths: string[];
+  forceReadFromRefPaths?: Set<string>;
+}): MigrationAnalysis[] {
+  const analysis: MigrationAnalysis[] = [];
 
-    return {
+  for (const path of args.paths) {
+    const shouldReadFromRef = args.forceReadFromRefPaths?.has(path) || !existsSync(path);
+    const content = shouldReadFromRef ? readFileAtRef(args.ref, path) : readFileSync(path, 'utf8');
+
+    analysis.push({
       path,
       refs: extractRefs(content),
       allowReasonsByKey: extractAllowReasonsByKey(content),
-    };
-  });
+    });
+  }
+
+  return analysis;
 }
 
 function refsOverlap(left: Ref, right: Ref): boolean {
@@ -432,6 +441,15 @@ function main() {
   }
 
   const modifiedExistingInPr = prChanges.filter(change => change.status !== 'A');
+  const modifiedExistingMigrationPaths = new Set<string>();
+
+  for (const change of modifiedExistingInPr) {
+    modifiedExistingMigrationPaths.add(change.path);
+    if (change.oldPath) {
+      modifiedExistingMigrationPaths.add(change.oldPath);
+    }
+  }
+
   const prAddedMigrationPaths = prChanges
     .filter(change => change.status === 'A')
     .map(change => change.path)
@@ -465,9 +483,10 @@ function main() {
 
   const prAnalysis = analyzeMigrations(prAddedMigrationPaths);
   const baseAnalysis = analyzeMigrations(baseAddedMigrationPaths);
-  const baseHistoryAnalysis = analyzeMigrationsAtRef({
+  const baseHistoryAnalysis = analyzeMigrationsFromBasePreferringLocal({
     ref: baseRef,
     paths: baseHistoryMigrationPaths,
+    forceReadFromRefPaths: modifiedExistingMigrationPaths,
   });
 
   const prVsBaseConflicts = detectConflicts({
