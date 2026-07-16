@@ -161,7 +161,16 @@ export function ChargeExtendedInfo({
       // already-loaded sections (`isFragmentReady` checks `field in data`)
       // rendering their last data until each fresh patch arrives — instead of
       // every section collapsing to empty and re-expanding ("blinking").
-      return { ...prev, ...incoming } as FetchChargeQuery['charge'];
+      // Skip `undefined` values from the incoming payload: if urql surfaces a
+      // not-yet-arrived deferred field as `undefined`, a plain spread would wipe
+      // the already-loaded data and defeat the merge.
+      const merged: Record<string, unknown> = { ...prev };
+      for (const [key, value] of Object.entries(incoming)) {
+        if (value !== undefined) {
+          merged[key] = value;
+        }
+      }
+      return merged as FetchChargeQuery['charge'];
     });
   }, [data]);
 
@@ -171,12 +180,16 @@ export function ChargeExtendedInfo({
     }
   }, [parentFetching, refetchExtensionInfo]);
 
-  useEffect(() => {
-    if (chargeID !== chargeId) {
-      setChargeId(chargeID);
-      refetchExtensionInfo();
-    }
-  }, [chargeID, chargeId, refetchExtensionInfo]);
+  // Switching to a different charge: sync the query variable and clear the
+  // previous charge so the loader shows (instead of leaking stale details
+  // through the `fetching && !charge` gate) until the new charge's data arrives.
+  // Done during render — React's supported "adjust state on prop change" pattern
+  // — to avoid a painted frame of stale data; urql re-executes the query
+  // automatically when the `chargeId` variable changes.
+  if (chargeID !== chargeId) {
+    setChargeId(chargeID);
+    setChargeState(undefined);
+  }
 
   const chargeType = charge?.__typename;
 
