@@ -22,6 +22,7 @@ export const MATCH_EVALUATION_CONCURRENCY = 5;
  * (highest first)
  */
 export interface ChargeWithSuggestionsProto<TCharge = { id: string }> {
+  id: string;
   baseCharge: TCharge;
   suggestions: ChargeMatchProto[];
 }
@@ -54,6 +55,7 @@ export class QueueMatchEvaluatorProvider {
         const index = nextIndex++;
         const baseCharge = baseCharges[index];
         results[index] = {
+          id: baseCharge.id,
           baseCharge,
           suggestions: await this.evaluateSingleCharge(baseCharge.id),
         };
