@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import equal from 'deep-equal';
 import {
   flexRender,
   getCoreRowModel,
@@ -7,9 +8,11 @@ import {
   type SortingState,
   type VisibilityState,
 } from '@tanstack/react-table';
-import { TableDocumentsRowFieldsFragmentDoc } from '../../gql/graphql.js';
+import {
+  TableDocumentsRowFieldsFragmentDoc,
+  type TableDocumentsRowFieldsFragment,
+} from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { useStableValue } from '../../hooks/use-stable-value.js';
 import { EditDocumentModal } from '../common/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import { columns, type DocumentsTableRowType } from './columns.js';
@@ -28,24 +31,53 @@ export const DocumentsTable = ({
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Keep a deeply-equal-stable reference for the incoming documents so the table
-  // only rebuilds its rows when they actually changed — not on every parent
-  // refetch (e.g. after updating a document, the charge query re-runs and yields
-  // a fresh array with identical content), which would otherwise re-render and
-  // "blink" the whole table.
-  const stableDocumentsProps = useStableValue(documentsProps);
+  const incomingDocuments = useMemo(
+    () =>
+      documentsProps?.map(rawDocument =>
+        getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument),
+      ) ?? [],
+    [documentsProps],
+  );
+
+  // The document row fields are fetched under a `@defer` fragment, so on a
+  // refetch each document streams back id-first and its other fields (amount,
+  // vat, …) arrive in later patches — the not-yet-arrived fields are absent from
+  // the payload. Merge each incoming document's present fields over the version
+  // currently shown (matched by id) so every cell keeps its value until the real
+  // data replaces it, instead of the rows flashing empty while only the id is
+  // present. Present values (including a legitimate `null`) are applied as they
+  // arrive; only absent/`undefined` fields fall back to the previous value. Bail
+  // out when nothing changed so we don't re-render (and "blink") on an identical
+  // refetch.
+  const [documents, setDocuments] = useState<TableDocumentsRowFieldsFragment[]>(incomingDocuments);
+  useEffect(() => {
+    setDocuments(prev => {
+      const prevById = new Map(prev.map(document => [document.id, document]));
+      const next = incomingDocuments.map(document => {
+        const previous = prevById.get(document.id);
+        if (!previous) {
+          return document;
+        }
+        const merged: Record<string, unknown> = { ...previous };
+        for (const [key, value] of Object.entries(document)) {
+          if (value !== undefined) {
+            merged[key] = value;
+          }
+        }
+        return merged as TableDocumentsRowFieldsFragment;
+      });
+      return equal(prev, next) ? prev : next;
+    });
+  }, [incomingDocuments]);
 
   const data: DocumentsTableRowType[] = useMemo(
     () =>
-      stableDocumentsProps?.map(rawDocument => {
-        const document = getFragmentData(TableDocumentsRowFieldsFragmentDoc, rawDocument);
-        return {
-          ...document,
-          editDocument: (): void => setEditDocumentId(document.id),
-          onUpdate: onChange ?? (() => {}),
-        };
-      }),
-    [stableDocumentsProps, onChange],
+      documents.map(document => ({
+        ...document,
+        editDocument: (): void => setEditDocumentId(document.id),
+        onUpdate: onChange ?? (() => {}),
+      })),
+    [documents, onChange],
   );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'file'];
