@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { env } from './config/env.js';
-import { log } from './logger.js';
+import { createRequestContext, elapsedMs, setRequestContext } from './context.js';
+import { completionFields, createRequestLogger, log } from './logger.js';
 import { mcpHttpHandler } from './mcp/handler.js';
 import { getServiceVersion, SERVICE_NAME } from './version.js';
 
@@ -54,18 +55,31 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
 };
 
 export async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  // Only the pathname matters for routing; the host is a placeholder so we never
-  // need to read config here.
-  const url = new URL(req.url ?? '/', 'http://localhost');
+  const context = createRequestContext(req);
+  setRequestContext(req, context);
+  const logger = createRequestLogger(context);
+
+  // Echo the correlation id so callers can tie their logs to ours.
+  res.setHeader('X-Correlation-Id', context.correlationId);
+
+  logger.info('request started');
+  // Log completion (with status + latency) exactly once when the response ends.
+  res.once('finish', () => {
+    logger.info('request completed', completionFields(context, res.statusCode));
+  });
+
   try {
-    const handler = routes[req.method ?? '']?.[url.pathname];
+    const handler = routes[context.method]?.[context.route];
     if (handler) {
       await handler(req, res);
     } else {
       sendJson(res, 404, { error: 'Not found' });
     }
   } catch (error) {
-    log('error', 'unhandled request error', { error: String(error), path: url.pathname });
+    logger.error('request failed', {
+      error: String(error),
+      latencyMs: elapsedMs(context),
+    });
     if (!res.headersSent) {
       sendJson(res, 500, { error: 'Internal server error' });
     }
