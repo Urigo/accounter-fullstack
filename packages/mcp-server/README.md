@@ -15,8 +15,9 @@ Early scaffolding. This package is being built incrementally following the promp
 implementation blueprint. It currently contains the package skeleton, strict environment
 configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
 transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, per-request
-structured logging with request/correlation ids, and the OAuth protected-resource metadata endpoint.
-Token verification, authorization, and production tools are not implemented yet.
+structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint, and
+Auth0 bearer-token verification on the MCP endpoint. Fine-grained authorization and production tools
+are not implemented yet.
 
 ## OAuth discovery
 
@@ -57,12 +58,13 @@ a grace period).
 
 ### MCP endpoint
 
-The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. Requests **must** carry a bearer token
-in the `Authorization` header — a request without one gets a `401` with a `WWW-Authenticate: Bearer`
-header pointing at the protected-resource metadata document (token _validity_ is verified in a later
-step). Supported methods: `initialize`, `ping`, `tools/list`, and `tools/call` (for the internal
-`accounter_smoke_ping` tool). Unknown methods return a deterministic JSON-RPC `-32601` error;
-notifications receive `202 Accepted` with no body.
+The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. Requests **must** carry a valid Auth0
+bearer token in the `Authorization` header. The token is verified (signature via the tenant JWKS,
+plus `issuer`, `audience`, and expiry). A request with no token gets a `401` pointing at the
+protected-resource metadata document; a request with an invalid/expired token gets a `401` with
+`error="invalid_token"`. Supported methods: `initialize`, `ping`, `tools/list`, and `tools/call`
+(for the internal `accounter_smoke_ping` tool). Unknown methods return a deterministic JSON-RPC
+`-32601` error; notifications receive `202 Accepted` with no body.
 
 ```bash
 curl -sX POST http://localhost:3100/mcp -H 'Content-Type: application/json' \

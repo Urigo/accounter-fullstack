@@ -1,6 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { extractBearerToken, setAuthPrincipal, TokenVerificationError } from '../auth/token.js';
+import { verifyAccessToken } from '../auth/verifier.js';
 import { env } from '../config/env.js';
-import { log } from '../logger.js';
+import { getRequestContext } from '../context.js';
+import { createRequestLogger, log } from '../logger.js';
 import { sendUnauthorized } from '../oauth/challenge.js';
 import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
 import { getServiceVersion, SERVICE_NAME } from '../version.js';
@@ -132,29 +135,61 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
 
 /**
  * Whether the request carries a bearer token in the Authorization header.
- * Token *validity* is verified in a later step; here we only detect presence
- * so an unauthenticated call gets the standard 401 challenge (never a
- * JSON-RPC/tool-level error). Query-param tokens are intentionally ignored.
+ * Query-param tokens are intentionally ignored. Kept for callers that only
+ * need presence; the handler itself verifies the token.
  */
 export function hasBearerToken(req: IncomingMessage): boolean {
-  const header = req.headers.authorization;
-  if (typeof header !== 'string') {
-    return false;
-  }
-  const match = /^Bearer[ ]+(.+)$/i.exec(header.trim());
-  return match !== null && match[1].trim().length > 0;
+  return extractBearerToken(req) !== null;
 }
 
 /**
- * HTTP handler for `POST /mcp`. Enforces authentication (presence for now),
- * reads the JSON-RPC body, dispatches it, and writes the response as
- * `application/json`. Notifications get `202 Accepted` with no body.
+ * Authenticate the request: extract and verify the bearer token. On success
+ * returns the principal (and stores it on the request); on failure writes the
+ * appropriate 401 challenge and returns `null`. Never returns a JSON-RPC/tool
+ * error for auth problems, and never logs the token.
  */
-export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!hasBearerToken(req)) {
+async function authenticate(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<Awaited<ReturnType<typeof verifyAccessToken>> | null> {
+  const token = extractBearerToken(req);
+  if (!token) {
     sendUnauthorized(res, {
       resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),
     });
+    return null;
+  }
+
+  try {
+    const principal = await verifyAccessToken(token);
+    setAuthPrincipal(req, principal);
+    return principal;
+  } catch (error) {
+    const reason = error instanceof TokenVerificationError ? error.message : 'verification failed';
+    // Log the reason only — never the token.
+    const context = getRequestContext(req);
+    if (context) {
+      createRequestLogger(context).warn('access token verification failed', { reason });
+    } else {
+      log('warn', 'access token verification failed', { reason });
+    }
+    sendUnauthorized(res, {
+      resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),
+      error: 'invalid_token',
+      errorDescription: 'The access token is invalid or expired',
+    });
+    return null;
+  }
+}
+
+/**
+ * HTTP handler for `POST /mcp`. Authenticates the caller (extract + verify the
+ * bearer token), reads the JSON-RPC body, dispatches it, and writes the
+ * response as `application/json`. Notifications get `202 Accepted` with no body.
+ */
+export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const principal = await authenticate(req, res);
+  if (!principal) {
     return;
   }
 
