@@ -14,7 +14,6 @@ export type MoreInfoProps = {
     ledgerCount: number;
     miscExpensesCount: number;
     invalidLedger?: 'VALID' | 'DIFF' | 'INVALID';
-    isSalary: boolean;
   };
 };
 
