@@ -181,9 +181,9 @@ export async function getDocumentFromUrlsAndOcrData(
   if (ocrData.counterpartyId && ocrData.vat == null) {
     const [business, adminContext] = await Promise.all([
       injector.get(BusinessesProvider).getBusinessByIdLoader.load(ocrData.counterpartyId),
-      injector.get(AdminContextProvider).getVerifiedAdminContext(),
+      injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(adminBusinessId),
     ]);
-    if (business && business.country !== adminContext.locality) {
+    if (business && adminContext && business.country !== adminContext.locality) {
       ocrData.vat = 0;
     }
   }
