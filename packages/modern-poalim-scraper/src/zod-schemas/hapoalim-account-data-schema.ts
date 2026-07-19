@@ -39,7 +39,7 @@ export const AccountDataItemSchema = z
     accountAgreementOpeningDate: AccountAgreementOpeningDateSchema,
     accountClosingReasonCode: AccountClosingReasonCodeSchema,
     accountDealDate: AccountDealDateSchema,
-    accountName: z.string(),
+    accountName: z.string().optional(),
     accountNumber: AccountNumberSchema,
     accountUpdateDate: AccountUpdateDateSchema,
     bankNumber: BankNumberSchema,
