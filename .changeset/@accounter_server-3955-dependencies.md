@@ -1,0 +1,5 @@
+---
+"@accounter/server": patch
+---
+dependencies updates:
+  - Updated dependency [`ai@7.0.29` ↗︎](https://www.npmjs.com/package/ai/v/7.0.29) (from `7.0.28`, in `dependencies`)

@@ -23,7 +23,7 @@
     "date-fns": "4.4.0",
     "dotenv": "17.4.2",
     "dotenv-cli": "11.0.0",
-    "fast-xml-parser": "5.10.0",
+    "fast-xml-parser": "5.10.1",
     "listr2": "10.2.2",
     "pg": "8.22.0"
   },
