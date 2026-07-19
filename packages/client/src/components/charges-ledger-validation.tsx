@@ -134,7 +134,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={onResetMerge} />
       </div>,
     );
   }, [

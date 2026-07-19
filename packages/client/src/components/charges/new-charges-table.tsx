@@ -75,15 +75,15 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
       }
     }
     accountantApproval
-    ... on CreditcardBankCharge @defer {
+    ... on CreditcardBankCharge {
       validCreditCardAmount
     }
-    ... on Charge @defer {
+    ... on Charge {
       validationData {
         missingInfo
       }
     }
-    ... on Charge @defer {
+    ... on Charge {
       missingInfoSuggestions {
         description
         tags {

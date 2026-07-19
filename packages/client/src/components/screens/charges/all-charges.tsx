@@ -50,17 +50,6 @@ export const AllCharges = (): ReactElement => {
   }, [uriFilters]);
   const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
 
-  const toggleMergeCharge = useCallback(
-    (chargeId: string, onChange: () => void) => {
-      if (mergeSelectedCharges.map(selected => selected.id).includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(selected => selected.id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, { id: chargeId, onChange }]);
-      }
-    },
-    [mergeSelectedCharges],
-  );
-
   const [{ data, fetching }, fetchCharges] = useQuery({
     query: AllChargesDocument,
     variables: {

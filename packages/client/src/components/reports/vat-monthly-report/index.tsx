@@ -101,7 +101,7 @@ export const VatMonthlyReport = (): ReactElement => {
               return;
             },
           }))}
-          resetMerge={onResetMerge}
+          resetMergeList={onResetMerge}
         />
       </div>,
     );
