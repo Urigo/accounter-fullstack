@@ -26,6 +26,59 @@ export const DEFAULT_CHARGE_MATCHING_FILTERS: ChargeMatchingFilters = {
   sortBy: ChargeMatchQueueSortBy.ByDate,
 };
 
+const MODE_VALUES = Object.values(ChargeMatchQueueMode);
+const SORT_BY_VALUES = Object.values(ChargeMatchQueueSortBy);
+
+/**
+ * Read the charge-matching filters from URL query params so the selection
+ * survives a page refresh. Unknown or missing values fall back to the defaults.
+ */
+export function parseChargeMatchingFilters(params: URLSearchParams): ChargeMatchingFilters {
+  const modeParam = params.get('mode');
+  const mode = MODE_VALUES.includes(modeParam as ChargeMatchQueueMode)
+    ? (modeParam as ChargeMatchQueueMode)
+    : DEFAULT_CHARGE_MATCHING_FILTERS.mode;
+
+  const sortByParam = params.get('sortBy');
+  const sortBy = SORT_BY_VALUES.includes(sortByParam as ChargeMatchQueueSortBy)
+    ? (sortByParam as ChargeMatchQueueSortBy)
+    : DEFAULT_CHARGE_MATCHING_FILTERS.sortBy;
+
+  return {
+    businessId: params.get('businessId') || null,
+    fromDate: (params.get('fromDate') as TimelessDateString) || null,
+    toDate: (params.get('toDate') as TimelessDateString) || null,
+    mode,
+    sortBy,
+  };
+}
+
+/**
+ * Serialize the filters into a flat query-param map, omitting empty values and
+ * defaults so the URL stays clean when nothing meaningful is selected.
+ */
+export function chargeMatchingFiltersToSearchParams(
+  filters: ChargeMatchingFilters,
+): Record<string, string> {
+  const params: Record<string, string> = {};
+  if (filters.mode) {
+    params.mode = filters.mode;
+  }
+  if (filters.fromDate) {
+    params.fromDate = filters.fromDate;
+  }
+  if (filters.toDate) {
+    params.toDate = filters.toDate;
+  }
+  if (filters.businessId) {
+    params.businessId = filters.businessId;
+  }
+  if (filters.sortBy !== DEFAULT_CHARGE_MATCHING_FILTERS.sortBy) {
+    params.sortBy = filters.sortBy;
+  }
+  return params;
+}
+
 const MODE_ALL = 'ALL';
 
 type Props = {

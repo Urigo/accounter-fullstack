@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Check, SkipForward } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import {
   ChargeMatchCardFieldsFragmentDoc,
@@ -20,8 +21,9 @@ import {
 } from './alternative-suggestions-footer.js';
 import { ChargeDetailCard } from './charge-detail-card.js';
 import {
+  chargeMatchingFiltersToSearchParams,
   ChargeMatchingHeader,
-  DEFAULT_CHARGE_MATCHING_FILTERS,
+  parseChargeMatchingFilters,
   type ChargeMatchingFilters,
 } from './charge-matching-header.js';
 import {
@@ -42,7 +44,20 @@ export type ChargeMatchQueueItem = {
 };
 
 export const ChargeMatchingReviewScreen = (): ReactElement => {
-  const [filters, setFilters] = useState<ChargeMatchingFilters>(DEFAULT_CHARGE_MATCHING_FILTERS);
+  // Filters live in the URL query string so the current selection survives a
+  // page refresh and can be shared via link
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo<ChargeMatchingFilters>(
+    () => parseChargeMatchingFilters(searchParams),
+    [searchParams],
+  );
+  const setFilters = useCallback(
+    (next: ChargeMatchingFilters): void => {
+      // replace: refining filters shouldn't stack history entries per keystroke
+      setSearchParams(chargeMatchingFiltersToSearchParams(next), { replace: true });
+    },
+    [setSearchParams],
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Changing any filter updates the variables, which triggers a refetch
