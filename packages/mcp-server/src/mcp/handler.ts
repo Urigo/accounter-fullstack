@@ -1,5 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { env } from '../config/env.js';
 import { log } from '../logger.js';
+import { sendUnauthorized } from '../oauth/challenge.js';
+import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
 import { getServiceVersion, SERVICE_NAME } from '../version.js';
 import {
   asJsonRpcRequest,
@@ -128,11 +131,33 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
 }
 
 /**
- * HTTP handler for `POST /mcp`. Reads the JSON-RPC body, dispatches it, and
- * writes the response as `application/json`. Notifications get `202 Accepted`
- * with no body.
+ * Whether the request carries a bearer token in the Authorization header.
+ * Token *validity* is verified in a later step; here we only detect presence
+ * so an unauthenticated call gets the standard 401 challenge (never a
+ * JSON-RPC/tool-level error). Query-param tokens are intentionally ignored.
+ */
+export function hasBearerToken(req: IncomingMessage): boolean {
+  const header = req.headers.authorization;
+  if (typeof header !== 'string') {
+    return false;
+  }
+  const match = /^Bearer[ ]+(.+)$/i.exec(header.trim());
+  return match !== null && match[1].trim().length > 0;
+}
+
+/**
+ * HTTP handler for `POST /mcp`. Enforces authentication (presence for now),
+ * reads the JSON-RPC body, dispatches it, and writes the response as
+ * `application/json`. Notifications get `202 Accepted` with no body.
  */
 export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (!hasBearerToken(req)) {
+    sendUnauthorized(res, {
+      resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),
+    });
+    return;
+  }
+
   let raw: string;
   try {
     raw = await readBody(req, MAX_MCP_BODY_BYTES);
