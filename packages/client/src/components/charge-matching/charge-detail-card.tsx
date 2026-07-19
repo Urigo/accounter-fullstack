@@ -25,11 +25,16 @@ function Field({ label, value }: { label: string; value?: string | null }): Reac
 }
 
 export const ChargeDetailCard = ({ charge, confidenceScore, title }: Props): ReactElement => {
-  const documentWithImage = charge.additionalDocuments.find(doc => doc.image);
+  // Defensive fallbacks: keep the card robust even if a relation resolves empty/absent
+  const additionalDocuments = charge.additionalDocuments ?? [];
+  const transactions = charge.transactions ?? [];
+  const miscExpenses = charge.miscExpenses ?? [];
+
+  const documentWithImage = additionalDocuments.find(doc => doc.image);
   const documentTypes = [
-    ...new Set(charge.additionalDocuments.map(doc => doc.documentType).filter(Boolean)),
+    ...new Set(additionalDocuments.map(doc => doc.documentType).filter(Boolean)),
   ].join(', ');
-  const hasExtensions = charge.transactions.length > 0 || charge.miscExpenses.length > 0;
+  const hasExtensions = transactions.length > 0 || miscExpenses.length > 0;
 
   return (
     <Card data-testid="charge-detail-card">
@@ -75,11 +80,11 @@ export const ChargeDetailCard = ({ charge, confidenceScore, title }: Props): Rea
             <AccordionItem value="more-details">
               <AccordionTrigger className="text-sm">More Details</AccordionTrigger>
               <AccordionContent className="flex flex-col gap-3">
-                {charge.transactions.length > 0 && (
+                {transactions.length > 0 && (
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-gray-500">Transactions</span>
                     <ul className="flex flex-col gap-1">
-                      {charge.transactions.map(transaction => (
+                      {transactions.map(transaction => (
                         <li key={transaction.id} className="flex justify-between gap-2 text-sm">
                           <span className="truncate">
                             {transaction.eventDate} · {transaction.sourceDescription}
@@ -92,11 +97,11 @@ export const ChargeDetailCard = ({ charge, confidenceScore, title }: Props): Rea
                     </ul>
                   </div>
                 )}
-                {charge.miscExpenses.length > 0 && (
+                {miscExpenses.length > 0 && (
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-gray-500">Misc Expenses</span>
                     <ul className="flex flex-col gap-1">
-                      {charge.miscExpenses.map(expense => (
+                      {miscExpenses.map(expense => (
                         <li key={expense.id} className="flex justify-between gap-2 text-sm">
                           <span className="truncate">{expense.description ?? 'Misc expense'}</span>
                           <span className="shrink-0 font-medium">{expense.amount.formatted}</span>
