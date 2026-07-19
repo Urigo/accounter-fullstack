@@ -14,9 +14,26 @@ See the design docs:
 Early scaffolding. This package is being built incrementally following the prompt pack in the
 implementation blueprint. It currently contains the package skeleton, strict environment
 configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
-transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, and
-per-request structured logging with request/correlation ids. Authentication, authorization, and
-production tools are not implemented yet.
+transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, per-request
+structured logging with request/correlation ids, and the OAuth protected-resource metadata endpoint.
+Token verification, authorization, and production tools are not implemented yet.
+
+## OAuth discovery
+
+`GET /.well-known/oauth-protected-resource` serves an
+[RFC 9728](https://www.rfc-editor.org/rfc/rfc9728) protected-resource metadata document so Claude
+clients can discover the authorization server:
+
+```json
+{
+  "resource": "<MCP_PUBLIC_BASE_URL>",
+  "authorization_servers": ["<AUTH0_ISSUER_URL>"],
+  "bearer_methods_supported": ["header"]
+}
+```
+
+The document is fully config-driven (no hardcoded URLs). `bearer_methods_supported: ["header"]`
+signals that tokens are accepted only via the `Authorization` header, never query params.
 
 ## Observability
 
