@@ -30,11 +30,6 @@ type Props = {
 };
 
 export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
-  'use no memo';
-  // react-table's row model is mutated in place to thread the per-row refetch
-  // handler onto `row.original.onChange`, which the cells read. Opt out of the
-  // React Compiler for this component so that intentional mutation is allowed.
-
   const [{ data: newData, fetching }, fetchCharge] = useQuery({
     query: RefetchChargeForChargesTableDocument,
     pause: true,
@@ -63,6 +58,10 @@ export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
     }
   }, [newStringified, originalStringified, newData, fetching, updateCharge, row.original]);
 
+  // react-table's row model is mutated in place to thread this row's refetch
+  // handler onto `row.original.onChange`, which the cells read to reload the
+  // charge after an edit.
+  // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onChange = fetchCharge;
 
   return (
