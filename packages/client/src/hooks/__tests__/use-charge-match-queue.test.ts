@@ -137,6 +137,74 @@ describe('useChargeMatchQueue', () => {
     await cleanup();
   });
 
+  it('selectItem pins an upcoming base charge as the active item', async () => {
+    const { current, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().selectItem('c');
+    });
+
+    expect(current().activeIndex).toBe(2);
+    expect(current().activeItem).toEqual({ id: 'c' });
+    // No item has been resolved, so the queue is not done
+    expect(current().isDone).toBe(false);
+
+    await cleanup();
+  });
+
+  it('selectItem can revisit a skipped base charge', async () => {
+    const { current, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().skipItem('a');
+    });
+    expect(current().activeItem).toEqual({ id: 'b' });
+
+    await act(async () => {
+      current().selectItem('a');
+    });
+    expect(current().activeIndex).toBe(0);
+    expect(current().activeItem).toEqual({ id: 'a' });
+    expect(current().statusById.a).toBe('skipped');
+
+    await cleanup();
+  });
+
+  it('resolving a manually selected charge clears the pin and advances to the next pending', async () => {
+    const { current, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().selectItem('c');
+    });
+    expect(current().activeItem).toEqual({ id: 'c' });
+
+    await act(async () => {
+      current().acceptItemStatus('c', true);
+    });
+
+    // Pin cleared: falls back to the first still-pending charge
+    expect(current().statusById.c).toBe('matched');
+    expect(current().activeItem).toEqual({ id: 'a' });
+
+    await cleanup();
+  });
+
+  it('selecting a charge that leaves the queue on refetch falls back to first-pending', async () => {
+    const { current, rerender, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().selectItem('c');
+    });
+    expect(current().activeItem).toEqual({ id: 'c' });
+
+    const refetchedItems: Item[] = [{ id: 'a' }, { id: 'b' }];
+    await rerender(refetchedItems);
+
+    expect(current().activeItem).toEqual({ id: 'a' });
+
+    await cleanup();
+  });
+
   it('resets index and statuses when a new items array arrives (e.g. filters changed)', async () => {
     const { current, rerender, cleanup } = await renderQueueHarness(ITEMS);
 

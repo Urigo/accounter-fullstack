@@ -82,7 +82,7 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
   );
 
   const totalCount = data?.chargesAwaitingMatchQueue.totalCount ?? 0;
-  const { activeItem, skipItem, acceptItemStatus } = queue;
+  const { activeItem, selectItem, skipItem, acceptItemStatus } = queue;
 
   // Which suggestion is shown in the comparison view. Null means rank 1; the
   // override is keyed by item id, so advancing the queue naturally falls back
@@ -159,6 +159,7 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
             activeId={activeItem?.id ?? null}
             collapsed={sidebarCollapsed}
             onToggleCollapsed={() => setSidebarCollapsed(collapsed => !collapsed)}
+            onSelectItem={selectItem}
           />
 
           <div className="flex min-w-0 flex-1 flex-col gap-4">
