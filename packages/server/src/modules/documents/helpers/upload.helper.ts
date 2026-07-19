@@ -161,20 +161,32 @@ function figureOutSides(
   return res;
 }
 
-export function getDocumentFromUrlsAndOcrData(
+export async function getDocumentFromUrlsAndOcrData(
+  injector: Injector,
   fileUrl: string,
   imageUrl: string,
   ocrData: OcrData,
   adminBusinessId: string,
   chargeId?: string | null,
   fileHash?: number,
-): IInsertDocumentsParams['documents'][number] {
+): Promise<IInsertDocumentsParams['documents'][number]> {
   const sides = figureOutSides(
     ocrData.documentType,
     adminBusinessId,
     ocrData.isOwnerIssuer,
     ocrData.counterpartyId,
   );
+
+  // in case of missing VAT, use 0 for foreign counterparties
+  if (ocrData.counterpartyId && ocrData.vat == null) {
+    const [business, adminContext] = await Promise.all([
+      injector.get(BusinessesProvider).getBusinessByIdLoader.load(ocrData.counterpartyId),
+      injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(adminBusinessId),
+    ]);
+    if (business && adminContext && business.country !== adminContext.locality) {
+      ocrData.vat = 0;
+    }
+  }
 
   const newDocument: IInsertDocumentsParams['documents'][number] = {
     ownerId: adminBusinessId,
@@ -266,7 +278,15 @@ export async function getDocumentFromFile(
     // Resolve isOwnerIssuer and counterpartyId from UUID matches (primary path).
     resolveOwnerSideFromUuids(ocrData, ownerId);
 
-    return getDocumentFromUrlsAndOcrData(fileUrl, imageUrl, ocrData, ownerId, chargeId, fileHash);
+    return getDocumentFromUrlsAndOcrData(
+      injector,
+      fileUrl,
+      imageUrl,
+      ocrData,
+      ownerId,
+      chargeId,
+      fileHash,
+    );
   } catch (e) {
     const message = 'Error extracting document data from file';
     console.error(`${message}: ${e}`);

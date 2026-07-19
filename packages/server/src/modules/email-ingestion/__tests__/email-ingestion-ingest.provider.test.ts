@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Injector } from 'graphql-modules';
 import { DocumentType } from '../../../shared/enums.js';
 import { AnthropicProvider } from '../../app-providers/anthropic.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { EmailIngestionIngestProvider } from '../providers/email-ingestion-ingest.provider.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
@@ -66,8 +68,23 @@ const BASE_INPUT = {
 // A mock operation injector returns a stub Anthropic provider that yields an INVOICE,
 // so figureOutSides attributes the recognized business as the document creditor.
 const extractInvoiceDetails = vi.fn().mockResolvedValue({ type: DocumentType.Invoice });
+// getDocumentFromUrlsAndOcrData falls back to VAT-0 for foreign counterparties when the
+// OCR result carries no VAT — it looks up the counterparty business and the admin's own
+// context to compare locality. Neither is under test here, so both loaders resolve to
+// undefined, which short-circuits that fallback and leaves ocrData.vat untouched.
+const businessesProvider = {
+  getBusinessByIdLoader: { load: vi.fn().mockResolvedValue(undefined) },
+};
+const adminContextProvider = {
+  adminContextByOwnerIdLoader: { load: vi.fn().mockResolvedValue(undefined) },
+};
 const ocrInjector = {
-  get: (token: unknown) => (token === AnthropicProvider ? { extractInvoiceDetails } : undefined),
+  get: (token: unknown) => {
+    if (token === AnthropicProvider) return { extractInvoiceDetails };
+    if (token === BusinessesProvider) return businessesProvider;
+    if (token === AdminContextProvider) return adminContextProvider;
+    return undefined;
+  },
 } as unknown as Injector;
 
 // ---------------------------------------------------------------------------
