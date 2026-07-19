@@ -466,7 +466,8 @@ export class EmailIngestionIngestProvider {
         if (businessId) {
           ocrData.counterpartyId = businessId;
         }
-        const params = getDocumentFromUrlsAndOcrData(
+        const params = await getDocumentFromUrlsAndOcrData(
+          injector,
           fileUrl,
           imageUrl,
           ocrData,
