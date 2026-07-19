@@ -67,7 +67,7 @@ export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
   return (
     <>
       <TableRow key={row.id} className="w-fit max-w-full">
-        {fetching ? (
+        {fetching && !row.original ? (
           <TableCell colSpan={row.getVisibleCells().length + 1}>Loading...</TableCell>
         ) : (
           <>
