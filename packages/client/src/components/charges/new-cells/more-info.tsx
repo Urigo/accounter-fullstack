@@ -126,7 +126,9 @@ export const MoreInfo = ({
 
   if (info?.miscExpensesCount) {
     list.push({
-      content: <div className="whitespace-nowrap">Misc Expenses: {info.miscExpensesCount ?? 0}</div>,
+      content: (
+        <div className="whitespace-nowrap">Misc Expenses: {info.miscExpensesCount ?? 0}</div>
+      ),
     });
   }
 
