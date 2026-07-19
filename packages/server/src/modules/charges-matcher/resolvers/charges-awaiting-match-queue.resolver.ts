@@ -3,6 +3,7 @@ import { AdminContextProvider } from '../../admin-context/providers/admin-contex
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import {
   BY_SCORE_EVALUATION_CAP,
+  chargeRequiresMatch,
   matchesQueueMode,
 } from '../helpers/awaiting-match-queue.helper.js';
 import { QueueMatchEvaluatorProvider } from '../providers/queue-match-evaluator.provider.js';
@@ -28,7 +29,9 @@ export const chargesAwaitingMatchQueueResolver: ChargesMatcherModule.Resolvers =
           toDate,
         });
 
-        const queue = charges.filter(charge => matchesQueueMode(charge, mode));
+        const queue = charges.filter(
+          charge => chargeRequiresMatch(charge) && matchesQueueMode(charge, mode),
+        );
 
         const safeLimit = Math.max(0, limit ?? 20);
         const safeOffset = Math.max(0, offset ?? 0);
