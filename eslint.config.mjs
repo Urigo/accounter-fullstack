@@ -155,6 +155,7 @@ export default [
               'ChargeMatch',
               'ChargeMatchesResult',
               'ChargeMetadata',
+              'ChargesAwaitingMatchResult',
               'ChargeSuggestions',
               'ChargesWithLedgerChangesResult',
               'CommonError',

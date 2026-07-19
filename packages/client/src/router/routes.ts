@@ -77,6 +77,7 @@ export const ROUTES = {
       `/charges${getAllChargesParams(filter, page)}`,
     MISSING_INFO: '/charges/missing-info',
     LEDGER_VALIDATION: '/charges/ledger-validation',
+    MATCHING: '/charges/matching',
     DETAIL: (chargeId: string) => `/charges/${chargeId}`,
   },
 

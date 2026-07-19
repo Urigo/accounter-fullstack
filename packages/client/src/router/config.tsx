@@ -30,6 +30,11 @@ const ChargesLedgerValidation = lazy(() =>
     default: m.ChargesLedgerValidation,
   })),
 );
+const ChargeMatchingReviewScreen = lazy(() =>
+  import('../components/charge-matching/index.js').then(m => ({
+    default: m.ChargeMatchingReviewScreen,
+  })),
+);
 
 // Businesses
 const Businesses = lazy(() =>
@@ -294,6 +299,14 @@ export const routes: RouteObject[] = [
                 handle: {
                   title: 'Ledger Validation',
                   breadcrumb: 'Ledger Validation',
+                },
+              },
+              {
+                path: 'matching',
+                element: withSuspense(ChargeMatchingReviewScreen, <PageSkeleton />),
+                handle: {
+                  title: 'Charge Matching',
+                  breadcrumb: 'Matching',
                 },
               },
               {
