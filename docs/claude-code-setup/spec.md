@@ -129,8 +129,9 @@ Brief (not file-by-file) overview of the 18 packages grouped by role:
   app-providers)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
   `shaam-uniform-format-generator`
-- **Tools**: `gmail-listener`, `scraper-local-app`
-- **Deprecated**: `old-accounter` (excluded from workspaces)
+- **Tools**: `gmail-listener`, `scraper-app` (replaces the deprecated `scraper-local-app`)
+- **Deprecated**: `scraper-local-app` (superseded by `scraper-app`), `old-accounter` (excluded from
+  workspaces)
 
 #### 3.4 Build & Test Commands
 
