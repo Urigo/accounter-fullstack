@@ -96,7 +96,7 @@ export function ChargesSection({ businessId }: Props) {
                 refetchCharges({ requestPolicy: 'cache-and-network' });
               },
             }))}
-            resetMerge={onResetMerge}
+            resetMergeList={onResetMerge}
           />
         </div>
       </CardHeader>

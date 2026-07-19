@@ -182,7 +182,10 @@ export const ChargeMatchesTable = ({
   return (
     <div className="max-w-[90vw]">
       <div className="flex items-center py-4 gap-4">
-        <MergeChargesButton selected={mergeSelected} resetMerge={() => setSelectedChargeId(null)} />
+        <MergeChargesButton
+          selected={mergeSelected}
+          resetMergeList={() => setSelectedChargeId(null)}
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild className="ml-auto">
             <Button variant="outline">

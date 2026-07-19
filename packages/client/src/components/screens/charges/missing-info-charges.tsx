@@ -73,7 +73,7 @@ export const MissingInfoCharges = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={onResetMerge} />
       </div>,
     );
   }, [

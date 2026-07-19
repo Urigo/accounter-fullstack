@@ -63,89 +63,72 @@ export const MoreInfo = ({
 
   const ledgerStatus = useMemo(() => info?.invalidLedger, [info?.invalidLedger]);
 
-  const list = useMemo(() => {
-    const items: (
-      | React.ReactNode
-      | {
-          content: React.ReactNode;
-          extraClassName?: string;
-        }
-    )[] = [];
+  const list: (
+    | React.ReactNode
+    | {
+        content: React.ReactNode;
+        extraClassName?: string;
+      }
+  )[] = [];
 
-    if (isTransactionsError || info?.transactionsCount || shouldHaveTransactions) {
-      items.push({
-        extraClassName:
-          info?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
-        content: (
-          <Indicator
-            key="transactions"
-            inline
-            size={12}
-            disabled={!isTransactionsError}
-            color="red"
-            zIndex="auto"
-          >
-            <div className="whitespace-nowrap">Transactions: {info?.transactionsCount ?? 0}</div>
-          </Indicator>
-        ),
-      });
-    }
-
-    items.push({
+  if (isTransactionsError || info?.transactionsCount || shouldHaveTransactions) {
+    list.push({
+      extraClassName:
+        info?.transactionsCount || !shouldHaveTransactions ? undefined : 'bg-yellow-400',
       content: (
         <Indicator
-          key="ledger"
+          key="transactions"
           inline
           size={12}
-          processing={!ledgerStatus}
-          disabled={ledgerStatus === 'VALID'}
-          color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
+          disabled={!isTransactionsError}
+          color="red"
           zIndex="auto"
         >
-          <div className="whitespace-nowrap">Ledger Records: {info?.ledgerCount ?? 0}</div>
+          <div className="whitespace-nowrap">Transactions: {info?.transactionsCount ?? 0}</div>
         </Indicator>
       ),
     });
+  }
 
-    if (isDocumentsError || info?.documentsCount) {
-      items.push({
-        content: (
-          <Indicator
-            key="documents"
-            inline
-            size={12}
-            disabled={!isDocumentsError}
-            color="red"
-            zIndex="auto"
-          >
-            <div className="whitespace-nowrap">Documents: {info?.documentsCount ?? 0}</div>
-          </Indicator>
-        ),
-        extraClassName: !isDocumentsMissing || !shouldHaveDocuments ? undefined : 'bg-yellow-400',
-      });
-    }
+  list.push({
+    content: (
+      <Indicator
+        key="ledger"
+        inline
+        size={12}
+        processing={!ledgerStatus}
+        disabled={ledgerStatus === 'VALID'}
+        color={ledgerStatus === 'DIFF' ? 'orange' : 'red'}
+        zIndex="auto"
+      >
+        <div className="whitespace-nowrap">Ledger Records: {info?.ledgerCount ?? 0}</div>
+      </Indicator>
+    ),
+  });
 
-    if (info?.miscExpensesCount) {
-      items.push({
-        content: (
-          <div className="whitespace-nowrap">Misc Expenses: {info.miscExpensesCount ?? 0}</div>
-        ),
-      });
-    }
+  if (isDocumentsError || info?.documentsCount) {
+    list.push({
+      content: (
+        <Indicator
+          key="documents"
+          inline
+          size={12}
+          disabled={!isDocumentsError}
+          color="red"
+          zIndex="auto"
+        >
+          <div className="whitespace-nowrap">Documents: {info?.documentsCount ?? 0}</div>
+        </Indicator>
+      ),
+      extraClassName: !isDocumentsMissing || !shouldHaveDocuments ? undefined : 'bg-yellow-400',
+    });
+  }
 
-    return items;
-  }, [
-    info?.transactionsCount,
-    info?.ledgerCount,
-    info?.documentsCount,
-    info?.miscExpensesCount,
-    shouldHaveDocuments,
-    shouldHaveTransactions,
-    isTransactionsError,
-    isDocumentsError,
-    isDocumentsMissing,
-    ledgerStatus,
-  ]);
+  if (info?.miscExpensesCount) {
+    list.push({
+      content: <div className="whitespace-nowrap">Misc Expenses: {info.miscExpensesCount ?? 0}</div>,
+    });
+  }
 
   return (
     <DragFile chargeId={chargeId}>
