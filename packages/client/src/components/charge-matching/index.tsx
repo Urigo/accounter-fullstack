@@ -11,6 +11,7 @@ import { useChargeMatchQueue } from '../../hooks/use-charge-match-queue.js';
 import { PageLayout } from '../layout/page-layout.js';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert.js';
 import { Skeleton } from '../ui/skeleton.js';
+import { ChargeDetailCard } from './charge-detail-card.js';
 import {
   ChargeMatchingHeader,
   DEFAULT_CHARGE_MATCHING_FILTERS,
@@ -20,6 +21,7 @@ import {
   ChargeMatchingSidebar,
   type ChargeMatchingSidebarItem,
 } from './charge-matching-sidebar.js';
+import { chargeDate, chargeTitle } from './utils.js';
 
 export const QUEUE_PAGE_SIZE = 20;
 
@@ -31,17 +33,6 @@ export type ChargeMatchQueueItem = {
   baseCharge: ChargeMatchCardFieldsFragment;
   suggestions: QueueEntry['suggestions'];
 };
-
-function chargeDate(charge: ChargeMatchCardFieldsFragment): string | undefined {
-  const raw = charge.minDocumentsDate ?? charge.minEventDate ?? charge.minDebitDate;
-  // Date-only strings parse as UTC midnight; format in UTC so users in
-  // negative offsets don't see the previous day
-  return raw ? new Date(raw).toLocaleDateString(undefined, { timeZone: 'UTC' }) : undefined;
-}
-
-function chargeTitle(charge: ChargeMatchCardFieldsFragment): string {
-  return charge.counterparty?.name ?? charge.userDescription ?? 'Unknown charge';
-}
 
 export const ChargeMatchingReviewScreen = (): ReactElement => {
   const [filters, setFilters] = useState<ChargeMatchingFilters>(DEFAULT_CHARGE_MATCHING_FILTERS);
@@ -124,48 +115,32 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
               Showing {items.length} of {totalCount} charges awaiting match
             </p>
 
-            {/* Split comparison view — detailed cards land in the next step */}
+            {/* Split comparison view: base charge on the left, top suggestion on the right */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <section className="rounded-lg border p-4">
-                <h3 className="mb-2 text-sm font-semibold text-gray-500">Base Charge</h3>
-                {activeItem ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">{chargeTitle(activeItem.baseCharge)}</span>
-                    <span className="text-sm text-gray-500">
-                      {[
-                        chargeDate(activeItem.baseCharge),
-                        activeItem.baseCharge.totalAmount?.formatted,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                  </div>
-                ) : (
+              {activeItem ? (
+                <ChargeDetailCard charge={activeItem.baseCharge} title="Base Charge" />
+              ) : (
+                <section className="rounded-lg border p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-500">Base Charge</h3>
                   <p className="text-sm text-gray-500">
                     {items.length === 0 ? 'No charges awaiting match.' : 'Queue completed 🎉'}
                   </p>
-                )}
-              </section>
-              <section className="rounded-lg border p-4">
-                <h3 className="mb-2 text-sm font-semibold text-gray-500">Suggested Match</h3>
-                {topSuggestionCharge ? (
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">{chargeTitle(topSuggestionCharge)}</span>
-                    <span className="text-sm text-gray-500">
-                      {[chargeDate(topSuggestionCharge), topSuggestionCharge.totalAmount?.formatted]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Confidence: {Math.round((topSuggestion?.confidenceScore ?? 0) * 100)}%
-                    </span>
-                  </div>
-                ) : (
+                </section>
+              )}
+              {topSuggestionCharge ? (
+                <ChargeDetailCard
+                  charge={topSuggestionCharge}
+                  title="Suggested Match"
+                  confidenceScore={topSuggestion?.confidenceScore}
+                />
+              ) : (
+                <section className="rounded-lg border p-4">
+                  <h3 className="mb-2 text-sm font-semibold text-gray-500">Suggested Match</h3>
                   <p className="text-sm text-gray-500">
                     {activeItem ? 'No suggestions for this charge.' : '—'}
                   </p>
-                )}
-              </section>
+                </section>
+              )}
             </div>
           </div>
         </div>
