@@ -64,6 +64,12 @@ export const columns: ColumnDef<ChargeRow>[] = [
     accessorKey: 'amount.value',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
     cell: ({ row }) => (row.original.amount ? <Amount {...row.original.amount} /> : null),
+    // Sort by absolute amount so charges are ordered by magnitude regardless of income/expense sign.
+    sortingFn: (rowA, rowB) => {
+      const a = Math.abs(rowA.original.amount?.value ?? 0);
+      const b = Math.abs(rowB.original.amount?.value ?? 0);
+      return a - b;
+    },
   },
   {
     accessorKey: 'vat.value',
