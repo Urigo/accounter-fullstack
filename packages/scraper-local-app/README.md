@@ -3,8 +3,8 @@
 > ⚠️ **Deprecated.** This CLI scrape runner is superseded by
 > [`@accounter/scraper-app`](../scraper-app) — a local web app (Fastify server + React UI) that
 > scrapes Israeli bank accounts and uploads transactions to your Accounter server. It is kept only
-> for rollback until `scraper-app` is fully in production use, and receives no new features. New work
-> should target `scraper-app` — see its [README](../scraper-app/README.md).
+> for rollback until `scraper-app` is fully in production use, and receives no new features. New
+> work should target `scraper-app` — see its [README](../scraper-app/README.md).
 
 The **Scraper Local App** is a sub-package of the **Accounter Fullstack** mono-repo. It is designed
 to handle data scraping tasks locally, enabling users to extract and process personal

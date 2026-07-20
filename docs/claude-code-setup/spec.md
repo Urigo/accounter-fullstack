@@ -127,9 +127,11 @@ Brief (not file-by-file) overview of the 18 packages grouped by role:
   `israeli-vat-scraper`
 - **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
   app-providers)
+- **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
+  pipeline), `gmail-listener` (legacy single-tenant listener)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
   `shaam-uniform-format-generator`
-- **Tools**: `gmail-listener`, `scraper-app` (replaces the deprecated `scraper-local-app`)
+- **Tools**: `scraper-app` (replaces the deprecated `scraper-local-app`)
 - **Deprecated**: `scraper-local-app` (superseded by `scraper-app`), `old-accounter` (excluded from
   workspaces)
 

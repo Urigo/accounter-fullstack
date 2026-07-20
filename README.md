@@ -63,8 +63,8 @@ different terminals.
 yarn scrape
 ```
 
-> **Note:** `yarn scrape` runs the deprecated `scraper-local-app` CLI, kept only for rollback. Prefer
-> the [`@accounter/scraper-app`](packages/scraper-app/README.md) web app going forward:
+> **Note:** `yarn scrape` runs the deprecated `scraper-local-app` CLI, kept only for rollback.
+> Prefer the [`@accounter/scraper-app`](packages/scraper-app/README.md) web app going forward:
 >
 > ```sh
 > yarn workspace @accounter/scraper-app dev:server
