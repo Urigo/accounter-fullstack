@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { Indicator } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
@@ -21,7 +21,7 @@ export const Counterparty = ({
   type,
   isMissing,
 }: CounterpartyProps): ReactElement => {
-  const isError = useMemo(() => shouldHaveCounterparty(type) && isMissing, [type, isMissing]);
+  const isError = shouldHaveCounterparty(type) && !!isMissing;
   const { name, id } = counterparty ?? { name: 'Missing', id: undefined };
 
   return (
