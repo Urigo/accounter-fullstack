@@ -12,7 +12,7 @@ export type VatProps = {
 
 export const Vat = ({ value, currency, amountValue, missingInfo }: VatProps): ReactElement => {
   const isLocalCurrencyButNoVat = useMemo(
-    () => !value && currency === Currency.Ils,
+    () => value == null && currency === Currency.Ils,
     [value, currency],
   );
   const vatIsNegativeToAmount = useMemo(
