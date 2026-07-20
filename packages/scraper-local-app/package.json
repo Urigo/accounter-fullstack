@@ -2,7 +2,7 @@
   "name": "@accounter-helper/scraper-local-app",
   "version": "0.0.0",
   "type": "module",
-  "description": "App for local scrape execution",
+  "description": "[DEPRECATED — superseded by @accounter/scraper-app] App for local scrape execution",
   "license": "MIT",
   "private": true,
   "scripts": {
