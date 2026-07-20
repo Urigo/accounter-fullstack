@@ -14,6 +14,7 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { isAccountingDocument, isReceipt } from '../../documents/helpers/common.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { chargeRequiresMatch } from '../helpers/awaiting-match-queue.helper.js';
 import { classifyCandidateCharge } from '../helpers/candidate-classifier.helper.js';
 import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
 import {
@@ -115,9 +116,15 @@ export class ChargesMatcherProvider {
       toAnyDate: dateToTimelessDateString(windowEnd),
     });
 
-    // Step 6: Load transactions and documents for all candidate charges,
-    // classifying each into the shape the matching algorithm consumes
-    const candidateChargesWithData = await this.hydrateCandidateCharges(candidateCharges, chargeId);
+    // Step 6: Load transactions and documents for the candidate charges,
+    // classifying each into the shape the matching algorithm consumes. Charge
+    // types that never require a document match (e.g. BANK_DEPOSIT,
+    // CREDITCARD_BANK, VAT) are dropped first — they can't be valid matches and
+    // skipping them avoids loading their transactions/documents.
+    const candidateChargesWithData = await this.hydrateCandidateCharges(
+      candidateCharges.filter(chargeRequiresMatch),
+      chargeId,
+    );
 
     // Step 7: Build source charge object for findMatches
     let sourceChargeData: TransactionCharge | DocumentCharge;
@@ -255,13 +262,18 @@ export class ChargesMatcherProvider {
     windowStart.setMonth(windowStart.getMonth() - 12);
     windowEnd.setMonth(windowEnd.getMonth() + 12);
 
-    // Single candidate-pool query + single hydration/classification for the batch
+    // Single candidate-pool query + single hydration/classification for the batch.
+    // Drop charge types that never require a document match (e.g. BANK_DEPOSIT,
+    // CREDITCARD_BANK, VAT) before hydrating — they can't be valid matches and
+    // skipping them avoids loading their transactions/documents.
     const candidateCharges = await this.chargesProvider.getChargesByFilters({
       ownerIds: [ownerId],
       fromAnyDate: dateToTimelessDateString(windowStart),
       toAnyDate: dateToTimelessDateString(windowEnd),
     });
-    const candidatePool = await this.hydrateCandidateCharges(candidateCharges);
+    const candidatePool = await this.hydrateCandidateCharges(
+      candidateCharges.filter(chargeRequiresMatch),
+    );
 
     // Score sources against the shared pool with bounded concurrency, so a large
     // queue (up to 100 charges for BY_SCORE) can't exhaust the DB pool or spike CPU
