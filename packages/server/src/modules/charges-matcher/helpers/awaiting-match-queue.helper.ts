@@ -1,6 +1,27 @@
+import type { charge_type } from '../../charges/types.js';
 import type { ChargesMatcherModule } from '../types.js';
 
 type ChargeMatchQueueMode = ChargesMatcherModule.ChargeMatchQueueMode;
+
+/**
+ * DB charge types that are expected to hold both documents and transactions,
+ * and therefore require a document ↔ transaction match. Every other type (e.g.
+ * BANK_DEPOSIT, CREDITCARD_BANK, DIVIDEND, FOREIGN_SECURITIES, INTERNAL, VAT,
+ * PAYROLL, CONVERSION, FINANCIAL) never needs an accounting document and is
+ * excluded from the awaiting-match queue. A whitelist keeps new,
+ * non-matchable types out of the queue by default.
+ */
+const MATCHABLE_CHARGE_TYPES = new Set<charge_type>(['COMMON', 'BUSINESS_TRIP']);
+
+/**
+ * Only COMMON and BUSINESS_TRIP charges (or charges with a not-yet-resolved
+ * `null` type, which resolve to either COMMON or BUSINESS_TRIP) are expected to
+ * hold both documents and transactions, so only they belong in the
+ * awaiting-match queue.
+ */
+export function chargeRequiresMatch(charge: { type?: charge_type | null }): boolean {
+  return !charge.type || MATCHABLE_CHARGE_TYPES.has(charge.type);
+}
 
 /**
  * Max number of charges evaluated when sorting the queue BY_SCORE. Scoring is

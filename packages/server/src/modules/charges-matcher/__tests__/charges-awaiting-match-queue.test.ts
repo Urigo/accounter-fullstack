@@ -19,11 +19,18 @@ function makeCharge(
     transactions = 0,
     invoices = 0,
     receipts = 0,
-  }: { transactions?: number; invoices?: number; receipts?: number } = {},
+    type = null,
+  }: {
+    transactions?: number;
+    invoices?: number;
+    receipts?: number;
+    type?: string | null;
+  } = {},
 ) {
   return {
     id,
     owner_id: OWNER_ID,
+    type,
     transactions_count: transactions ? String(transactions) : null,
     invoices_count: invoices ? String(invoices) : null,
     receipts_count: receipts ? String(receipts) : null,
@@ -132,6 +139,51 @@ describe('chargesAwaitingMatchQueue resolver', () => {
 
       expect(result.baseCharges.map(c => c.baseCharge.id)).toEqual(['tx-1', 'doc-1']);
       expect(result.totalCount).toBe(2);
+    });
+
+    it('should exclude base-charges of types that never require a document match', async () => {
+      const nonMatchableTypes = [
+        'BANK_DEPOSIT',
+        'CREDITCARD_BANK',
+        'DIVIDEND',
+        'FOREIGN_SECURITIES',
+        'INTERNAL',
+        'VAT',
+        'PAYROLL',
+        'CONVERSION',
+        'FINANCIAL',
+      ];
+      const { injector } = createTestContext({
+        charges: [
+          ...nonMatchableTypes.map((type, i) => makeCharge(`skip-${i}`, { transactions: 1, type })),
+          txCharge('tx-1'),
+          docCharge('doc-1'),
+        ],
+      });
+
+      const result = await resolve(null, baseArgs, { injector }, null);
+
+      expect(result.baseCharges.map(c => c.baseCharge.id)).toEqual(['tx-1', 'doc-1']);
+      expect(result.totalCount).toBe(2);
+    });
+
+    it('should include COMMON, BUSINESS_TRIP and untyped base-charges', async () => {
+      const { injector } = createTestContext({
+        charges: [
+          makeCharge('common-1', { transactions: 1, type: 'COMMON' }),
+          makeCharge('trip-1', { invoices: 1, type: 'BUSINESS_TRIP' }),
+          txCharge('untyped-1'),
+        ],
+      });
+
+      const result = await resolve(null, baseArgs, { injector }, null);
+
+      expect(result.baseCharges.map(c => c.baseCharge.id)).toEqual([
+        'common-1',
+        'trip-1',
+        'untyped-1',
+      ]);
+      expect(result.totalCount).toBe(3);
     });
 
     it('should treat a transaction charge with invoice-only documents as unmatched', async () => {
