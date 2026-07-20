@@ -60,13 +60,20 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
 
   // Honor a manual selection while it still points at an item in the queue;
   // otherwise fall back to the first-pending item
-  const selectedIndex =
-    selectedId === null ? -1 : items.findIndex(item => item.id === selectedId);
+  const selectedIndex = selectedId === null ? -1 : items.findIndex(item => item.id === selectedId);
   const activeIndex = selectedIndex === -1 ? derivedIndex : selectedIndex;
 
-  const selectItem = useCallback((id: string) => {
-    setSelectedId(id);
-  }, []);
+  const selectItem = useCallback(
+    (id: string) => {
+      // Ignore ids not in the queue, and matched charges (already merged on the
+      // backend, so there is nothing left to review)
+      if (!items.some(item => item.id === id) || (overrides[id] ?? 'pending') === 'matched') {
+        return;
+      }
+      setSelectedId(id);
+    },
+    [items, overrides],
+  );
 
   const skipItem = useCallback((id: string) => {
     setOverrides(prev => ({ ...prev, [id]: 'skipped' }));

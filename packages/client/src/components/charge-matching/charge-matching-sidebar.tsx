@@ -68,12 +68,15 @@ export const ChargeMatchingSidebar = ({
                 <li key={item.id}>
                   <button
                     type="button"
+                    disabled={status === 'matched'}
                     onClick={() => onSelectItem(item.id)}
                     aria-current={item.id === activeId ? 'true' : undefined}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent/60',
+                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
+                      status !== 'matched' && 'hover:bg-accent/60',
                       item.id === activeId && 'bg-accent',
                       status === 'skipped' && 'opacity-50',
+                      status === 'matched' && 'cursor-not-allowed opacity-60',
                     )}
                   >
                     <StatusIcon status={status} />

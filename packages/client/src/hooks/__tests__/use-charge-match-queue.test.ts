@@ -170,6 +170,30 @@ describe('useChargeMatchQueue', () => {
     await cleanup();
   });
 
+  it('selectItem is a no-op for a matched charge or an id not in the queue', async () => {
+    const { current, cleanup } = await renderQueueHarness(ITEMS);
+
+    await act(async () => {
+      current().acceptItemStatus('a', true);
+    });
+    // Active is now the first pending charge 'b'
+    expect(current().activeItem).toEqual({ id: 'b' });
+
+    // Selecting the matched charge is ignored
+    await act(async () => {
+      current().selectItem('a');
+    });
+    expect(current().activeItem).toEqual({ id: 'b' });
+
+    // Selecting an unknown id is ignored
+    await act(async () => {
+      current().selectItem('zzz');
+    });
+    expect(current().activeItem).toEqual({ id: 'b' });
+
+    await cleanup();
+  });
+
   it('resolving a manually selected charge clears the pin and advances to the next pending', async () => {
     const { current, cleanup } = await renderQueueHarness(ITEMS);
 
