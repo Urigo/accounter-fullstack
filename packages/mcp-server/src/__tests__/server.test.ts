@@ -73,10 +73,10 @@ describe('GET /health', () => {
 
 describe('GET /.well-known/oauth-protected-resource', () => {
   it('returns 200 with the config-driven metadata document', async () => {
-    process.env.MCP_PUBLIC_BASE_URL = 'https://mcp.example.com';
-    process.env.AUTH0_ISSUER_URL = 'https://tenant.auth0.com/';
-    process.env.AUTH0_AUDIENCE = 'aud';
-    process.env.GRAPHQL_UPSTREAM_URL = 'http://localhost:4000/graphql';
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
     const { resetEnvCache } = await import('../config/env.js');
     resetEnvCache();
 
@@ -89,6 +89,7 @@ describe('GET /.well-known/oauth-protected-resource', () => {
     expect(body.authorization_servers).toEqual(['https://tenant.auth0.com/']);
     expect(body.bearer_methods_supported).toEqual(['header']);
 
+    vi.unstubAllEnvs();
     resetEnvCache();
   });
 });
