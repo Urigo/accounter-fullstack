@@ -133,10 +133,10 @@ describe('mcpHttpHandler', () => {
   });
 
   it('challenges with 401 + WWW-Authenticate when no bearer token is present', async () => {
-    process.env.MCP_PUBLIC_BASE_URL = 'https://mcp.example.com';
-    process.env.AUTH0_ISSUER_URL = 'https://tenant.auth0.com/';
-    process.env.AUTH0_AUDIENCE = 'aud';
-    process.env.GRAPHQL_UPSTREAM_URL = 'http://localhost:4000/graphql';
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
     const { resetEnvCache } = await import('../../config/env.js');
     resetEnvCache();
 
@@ -148,6 +148,7 @@ describe('mcpHttpHandler', () => {
     expect(wwwAuth?.[1]).toContain(
       'resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"',
     );
+    vi.unstubAllEnvs();
     resetEnvCache();
   });
 });

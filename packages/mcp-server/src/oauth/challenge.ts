@@ -19,14 +19,20 @@ export interface UnauthorizedOptions {
   errorDescription?: string;
 }
 
+/** Escape `"` and `\` so a value is a valid RFC 7235 quoted-string. */
+function quote(value: string): string {
+  return value.replace(/["\\]/g, '\\$&');
+}
+
 /** Build the `WWW-Authenticate` header value for a bearer challenge. */
 export function buildWwwAuthenticateHeader(options: UnauthorizedOptions): string {
-  const params = [`resource_metadata="${options.resourceMetadataUrl}"`];
+  const params = [`resource_metadata="${quote(options.resourceMetadataUrl)}"`];
+  // Per RFC 6750 §3, error_description is only meaningful alongside error.
   if (options.error) {
-    params.push(`error="${options.error}"`);
-  }
-  if (options.errorDescription) {
-    params.push(`error_description="${options.errorDescription}"`);
+    params.push(`error="${quote(options.error)}"`);
+    if (options.errorDescription) {
+      params.push(`error_description="${quote(options.errorDescription)}"`);
+    }
   }
   return `Bearer ${params.join(', ')}`;
 }

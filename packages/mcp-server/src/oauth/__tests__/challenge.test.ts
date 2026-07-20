@@ -22,6 +22,24 @@ describe('buildWwwAuthenticateHeader', () => {
       `Bearer resource_metadata="${RESOURCE_METADATA_URL}", error="invalid_token", error_description="The access token expired"`,
     );
   });
+
+  it('omits error_description when error is absent (RFC 6750 §3)', () => {
+    const header = buildWwwAuthenticateHeader({
+      resourceMetadataUrl: RESOURCE_METADATA_URL,
+      errorDescription: 'orphaned description',
+    });
+    expect(header).toBe(`Bearer resource_metadata="${RESOURCE_METADATA_URL}"`);
+    expect(header).not.toContain('error_description');
+  });
+
+  it('escapes quotes and backslashes in quoted-string values', () => {
+    const header = buildWwwAuthenticateHeader({
+      resourceMetadataUrl: RESOURCE_METADATA_URL,
+      error: 'invalid_token',
+      errorDescription: 'has "quote" and \\ backslash',
+    });
+    expect(header).toContain('error_description="has \\"quote\\" and \\\\ backslash"');
+  });
 });
 
 describe('sendUnauthorized', () => {
