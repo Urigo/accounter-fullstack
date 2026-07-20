@@ -34,12 +34,26 @@ function headerValue(req: IncomingMessage, name: string): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
+/**
+ * Extract the pathname from a request URL, dropping the query string. Falls back
+ * to a manual split if the URL is malformed (so a bad `req.url` can never throw
+ * out of context creation and hang the request).
+ */
+function extractRoute(rawUrl: string | undefined): string {
+  const url = rawUrl ?? '/';
+  try {
+    // Only the pathname is retained; the host is a placeholder and the query
+    // string is dropped so we never log sensitive query params.
+    return new URL(url, 'http://localhost').pathname;
+  } catch {
+    return url.split('?')[0];
+  }
+}
+
 /** Build a fresh {@link RequestContext} from an incoming request. */
 export function createRequestContext(req: IncomingMessage): RequestContext {
   const inboundCorrelationId = headerValue(req, CORRELATION_ID_HEADER)?.trim();
-  // Only the pathname is retained; the host is a placeholder and the query
-  // string is dropped so we never log sensitive query params.
-  const route = new URL(req.url ?? '/', 'http://localhost').pathname;
+  const route = extractRoute(req.url);
   return {
     requestId: generateId(),
     correlationId: inboundCorrelationId || generateId(),

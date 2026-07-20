@@ -63,8 +63,9 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
   res.setHeader('X-Correlation-Id', context.correlationId);
 
   logger.info('request started');
-  // Log completion (with status + latency) exactly once when the response ends.
-  res.once('finish', () => {
+  // Log completion on `close` (not `finish`) so an aborted/prematurely-closed
+  // connection still emits a completion log instead of a silent blind spot.
+  res.once('close', () => {
     logger.info('request completed', completionFields(context, res.statusCode));
   });
 

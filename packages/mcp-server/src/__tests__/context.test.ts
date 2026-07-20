@@ -30,6 +30,13 @@ describe('createRequestContext', () => {
     expect(ctx.route).toBe('/mcp');
   });
 
+  it('does not throw on a malformed URL, falling back to a path split', () => {
+    // `//` cannot be parsed relative to the placeholder host and throws in
+    // `new URL`; context creation must still succeed.
+    const ctx = createRequestContext(req({ url: '//?x=1' }));
+    expect(ctx.route).toBe('//');
+  });
+
   it('measures elapsed time as a non-negative integer', () => {
     const ctx = createRequestContext(req());
     expect(elapsedMs(ctx)).toBeGreaterThanOrEqual(0);
