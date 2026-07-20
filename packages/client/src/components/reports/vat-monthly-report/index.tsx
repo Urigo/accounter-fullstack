@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
+import type { RowSelectionState } from '@tanstack/react-table';
 import {
   ChargeFilterType,
   VatMonthlyReportDocument,
@@ -50,7 +51,10 @@ export const VatMonthlyReport = (): ReactElement => {
           monthDate: format(new Date(), 'yyyy-MM-15') as TimelessDateString,
         },
   );
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
+  // Single selection source of truth, shared by every sub-table so charges picked in one table
+  // participate in cross-table actions (merge, and future ledger/tag actions). Keyed by charge id
+  // to match `NewChargesTable`'s `getRowId`.
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   // auto default admin business if not set
   useEffect(() => {
@@ -74,20 +78,30 @@ export const VatMonthlyReport = (): ReactElement => {
     pause: filter.financialEntityId === '',
   });
 
-  const toggleMergeCharge = useCallback(
-    (chargeId: string) => {
-      if (mergeSelectedCharges.includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(id => id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, chargeId]);
-      }
-    },
-    [mergeSelectedCharges],
+  const selectedChargeIds = useMemo(
+    () => Object.entries(rowSelection).flatMap(([id, selected]) => (selected ? [id] : [])),
+    [rowSelection],
   );
 
-  function onResetMerge(): void {
-    setMergeSelectedCharges([]);
-  }
+  // Legacy `Set`-based selection API still consumed by the income/expenses tables, derived from the
+  // shared `rowSelection` so all sub-tables stay in sync until those tables are migrated too.
+  const mergeSelectedChargesSet = useMemo(() => new Set(selectedChargeIds), [selectedChargeIds]);
+
+  const toggleMergeCharge = useCallback((chargeId: string) => {
+    setRowSelection(old => {
+      const next = { ...old };
+      if (next[chargeId]) {
+        delete next[chargeId];
+      } else {
+        next[chargeId] = true;
+      }
+      return next;
+    });
+  }, []);
+
+  const onResetMerge = useCallback((): void => {
+    setRowSelection({});
+  }, []);
 
   useEffect(() => {
     setFiltersContext(
@@ -95,7 +109,7 @@ export const VatMonthlyReport = (): ReactElement => {
         <PCNGenerator filter={filter} isLoading={fetching} />
         <VatMonthlyReportFilter filter={{ ...filter }} setFilter={setFilter} />
         <MergeChargesButton
-          selected={mergeSelectedCharges.map(id => ({
+          selected={selectedChargeIds.map(id => ({
             id,
             onChange: (): void => {
               return;
@@ -105,12 +119,7 @@ export const VatMonthlyReport = (): ReactElement => {
         />
       </div>,
     );
-  }, [data, filter, fetching, setFiltersContext, mergeSelectedCharges]);
-
-  const mergeSelectedChargesSet = useMemo(
-    () => new Set(mergeSelectedCharges),
-    [mergeSelectedCharges],
-  );
+  }, [filter, fetching, setFiltersContext, setFilter, selectedChargeIds, onResetMerge]);
 
   return (
     <PageLayout
@@ -143,20 +152,20 @@ export const VatMonthlyReport = (): ReactElement => {
 
             <MissingInfoTable
               data={data?.vatReport}
-              toggleMergeCharge={toggleMergeCharge}
-              mergeSelectedCharges={mergeSelectedChargesSet}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
             />
 
             <BusinessTripsTable
               data={data?.vatReport}
-              toggleMergeCharge={toggleMergeCharge}
-              mergeSelectedCharges={mergeSelectedChargesSet}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
             />
 
             <MiscTable
               data={data?.vatReport}
-              toggleMergeCharge={toggleMergeCharge}
-              mergeSelectedCharges={mergeSelectedChargesSet}
+              rowSelection={rowSelection}
+              onRowSelectionChange={setRowSelection}
             />
           </div>
         </div>
