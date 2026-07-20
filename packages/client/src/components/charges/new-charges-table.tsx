@@ -224,12 +224,13 @@ export function convertChargeFragmentToTableRow(
 interface Props {
   data?: FragmentType<typeof ChargeForChargesTableFieldsFragmentDoc>[];
   /**
-   * Optional controlled row-selection state, keyed by charge id. Provide this together with
-   * `onRowSelectionChange` to lift selection out of the table (e.g. to link several tables in a
-   * report and drive cross-table actions). When omitted, the table manages its own selection.
+   * Optional controlled row-selection state, keyed by charge id. Providing this lifts selection
+   * out of the table (e.g. to link several tables in a report and drive cross-table actions).
+   * Pair it with `onRowSelectionChange` for an editable selection; omit the handler for a
+   * read-only selection. When this is omitted entirely, the table manages its own selection.
    */
   rowSelection?: RowSelectionState;
-  /** Selection change handler, required for controlled selection. Receives a charge-id keyed map. */
+  /** Selection change handler for controlled selection. Receives a charge-id keyed map. */
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
 }
 
@@ -242,10 +243,14 @@ export const NewChargesTable = ({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
 
-  // Controlled when a parent supplies both the state and its setter; otherwise self-managed.
-  const isSelectionControlled = controlledRowSelection != null && onRowSelectionChange != null;
+  // Controlled whenever a parent supplies the state; otherwise self-managed. When controlled
+  // without a change handler (e.g. a read-only selection), fall back to a no-op setter so the
+  // passed state is still respected instead of being silently ignored.
+  const isSelectionControlled = controlledRowSelection !== undefined;
   const rowSelection = isSelectionControlled ? controlledRowSelection : internalRowSelection;
-  const setRowSelection = isSelectionControlled ? onRowSelectionChange : setInternalRowSelection;
+  const setRowSelection = isSelectionControlled
+    ? (onRowSelectionChange ?? (() => {}))
+    : setInternalRowSelection;
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
