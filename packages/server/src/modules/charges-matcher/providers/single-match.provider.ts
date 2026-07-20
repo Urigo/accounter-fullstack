@@ -198,45 +198,56 @@ export async function findMatches(
     );
   }
 
-  // Step 8: Score all remaining candidates
-  const scoredCandidates: Array<
-    MatchResult & { _txCharge?: TransactionCharge; _docCharge?: DocumentCharge }
-  > = [];
+  // Step 8: Score all remaining candidates.
+  // Scoring is done in parallel: each `scoreMatch` awaits DataLoader lookups
+  // (client + issued-documents status), so a sequential loop would serialize
+  // those into an N+1. Running them together lets the loaders batch. Ordering
+  // is irrelevant here — results are sorted in Step 9.
+  type ScoredCandidate = MatchResult & {
+    _txCharge?: TransactionCharge;
+    _docCharge?: DocumentCharge;
+  };
 
-  for (const candidate of windowFilteredCandidates) {
-    try {
-      let matchScore: MatchScore;
-      let txCharge: TransactionCharge;
-      let docCharge: DocumentCharge;
+  const scoredResults = await Promise.all(
+    windowFilteredCandidates.map(async (candidate): Promise<ScoredCandidate | null> => {
+      try {
+        let matchScore: MatchScore;
+        let txCharge: TransactionCharge;
+        let docCharge: DocumentCharge;
 
-      if (isSourceTransaction) {
-        txCharge = sourceCharge;
-        docCharge = candidate as DocumentCharge;
-        matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
-      } else {
-        txCharge = candidate as TransactionCharge;
-        docCharge = sourceCharge;
-        matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
+        if (isSourceTransaction) {
+          txCharge = sourceCharge;
+          docCharge = candidate as DocumentCharge;
+          matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
+        } else {
+          txCharge = candidate as TransactionCharge;
+          docCharge = sourceCharge;
+          matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
+        }
+
+        // Calculate date proximity for tie-breaking
+        const dateProximity = calculateDateProximity(txCharge, docCharge);
+
+        return {
+          chargeId: candidate.chargeId,
+          confidenceScore: matchScore.confidenceScore,
+          components: matchScore.components,
+          dateProximity,
+          gentleMode: matchScore.gentleMode === true,
+          _txCharge: txCharge,
+          _docCharge: docCharge,
+        };
+      } catch {
+        // Skip candidates that fail scoring (e.g., mixed currencies, invalid data)
+        // This is expected behavior - not all candidates will be scoreable
+        return null;
       }
+    }),
+  );
 
-      // Calculate date proximity for tie-breaking
-      const dateProximity = calculateDateProximity(txCharge, docCharge);
-
-      scoredCandidates.push({
-        chargeId: candidate.chargeId,
-        confidenceScore: matchScore.confidenceScore,
-        components: matchScore.components,
-        dateProximity,
-        gentleMode: matchScore.gentleMode === true,
-        _txCharge: txCharge,
-        _docCharge: docCharge,
-      });
-    } catch {
-      // Skip candidates that fail scoring (e.g., mixed currencies, invalid data)
-      // This is expected behavior - not all candidates will be scoreable
-      continue;
-    }
-  }
+  const scoredCandidates = scoredResults.filter(
+    (candidate): candidate is ScoredCandidate => candidate !== null,
+  );
 
   // Step 9: Sort by confidence descending, then by date proximity tie-breaker
   scoredCandidates.sort((a, b) => {
