@@ -31,6 +31,14 @@ import { findMatches, type MatchResult } from './single-match.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
 
 /**
+ * Max number of source charges scored concurrently against the shared candidate
+ * pool. Scoring loads client / issued-document status via DataLoaders, so an
+ * unbounded burst (up to 100 charges for the BY_SCORE queue) could exhaust the DB
+ * connection pool or spike CPU; a strictly sequential run would be needlessly slow.
+ */
+export const MATCH_SCORING_CONCURRENCY = 5;
+
+/**
  * Charges Matcher Provider
  *
  * Provides high-level charge matching operations with database integration.
@@ -182,10 +190,10 @@ export class ChargesMatcherProvider {
           }
 
           const [sourceTransactions, sourceDocuments] = await Promise.all([
-            this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId),
+            this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId).then(txs => txs ?? []),
             this.documentsProvider.getDocumentsByChargeIdLoader
               .load(chargeId)
-              .then(docs => docs.filter(doc => isAccountingDocument(doc.type))),
+              .then(docs => (docs ?? []).filter(doc => isAccountingDocument(doc.type))),
           ]);
 
           validateChargeIsUnmatched({
@@ -255,9 +263,12 @@ export class ChargesMatcherProvider {
     });
     const candidatePool = await this.hydrateCandidateCharges(candidateCharges);
 
-    // Score every source against the shared pool
-    await Promise.all(
-      validSources.map(async ({ chargeId, sourceChargeData }) => {
+    // Score sources against the shared pool with bounded concurrency, so a large
+    // queue (up to 100 charges for BY_SCORE) can't exhaust the DB pool or spike CPU
+    let nextSourceIndex = 0;
+    const scoreWorker = async (): Promise<void> => {
+      while (nextSourceIndex < validSources.length) {
+        const { chargeId, sourceChargeData } = validSources[nextSourceIndex++];
         try {
           const candidates = candidatePool.filter(candidate => candidate.chargeId !== chargeId);
           const matches = await findMatches(
@@ -278,7 +289,13 @@ export class ChargesMatcherProvider {
           console.error(`Failed to evaluate matches for charge ${chargeId}:`, error);
           matchesByChargeId.set(chargeId, []);
         }
-      }),
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(MATCH_SCORING_CONCURRENCY, validSources.length) }, () =>
+        scoreWorker(),
+      ),
     );
 
     return matchesByChargeId;
@@ -303,10 +320,12 @@ export class ChargesMatcherProvider {
         }
 
         const [candidateTransactions, candidateDocuments] = await Promise.all([
-          this.transactionsProvider.transactionsByChargeIDLoader.load(candidate.id),
+          this.transactionsProvider.transactionsByChargeIDLoader
+            .load(candidate.id)
+            .then(txs => txs ?? []),
           this.documentsProvider.getDocumentsByChargeIdLoader
             .load(candidate.id)
-            .then(docs => docs.filter(doc => isAccountingDocument(doc.type))),
+            .then(docs => (docs ?? []).filter(doc => isAccountingDocument(doc.type))),
         ]);
 
         return classifyCandidateCharge(candidate.id, candidateTransactions, candidateDocuments);

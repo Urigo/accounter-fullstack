@@ -16,20 +16,24 @@ import type { Document, DocumentCharge, Transaction, TransactionCharge } from '.
  */
 export function classifyCandidateCharge(
   chargeId: string,
-  transactions: Transaction[],
-  accountingDocuments: Document[],
+  transactions: Transaction[] | null | undefined,
+  accountingDocuments: Document[] | null | undefined,
 ): TransactionCharge | DocumentCharge | null {
-  const invoiceDocuments = accountingDocuments.filter(doc => isInvoice(doc.type));
-  const receiptDocuments = accountingDocuments.filter(doc => isReceipt(doc.type));
+  // Defensive: never assume the loaders handed us arrays
+  const txs = transactions ?? [];
+  const docs = accountingDocuments ?? [];
 
-  const hasTxs = transactions.length > 0;
-  const hasDocs = accountingDocuments.length > 0;
+  const invoiceDocuments = docs.filter(doc => isInvoice(doc.type));
+  const receiptDocuments = docs.filter(doc => isReceipt(doc.type));
+
+  const hasTxs = txs.length > 0;
+  const hasDocs = docs.length > 0;
   const hasInvoiceDocs = invoiceDocuments.length > 0;
   const hasReceiptDocs = receiptDocuments.length > 0;
 
   // Transaction-based candidate (mirrors unmatched transaction charge)
   if (hasTxs && !hasReceiptDocs) {
-    return { chargeId, transactions };
+    return { chargeId, transactions: txs };
   }
 
   // Document-based candidate (accounting documents but no transactions)
@@ -40,7 +44,7 @@ export function classifyCandidateCharge(
     if (hasInvoiceDocs) {
       return { chargeId, documents: invoiceDocuments };
     }
-    return { chargeId, documents: accountingDocuments };
+    return { chargeId, documents: docs };
   }
 
   // Matched charges (both sides) and empty charges (neither) are not candidates
