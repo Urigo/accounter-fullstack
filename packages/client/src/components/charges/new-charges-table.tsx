@@ -7,6 +7,8 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnFiltersState,
+  type OnChangeFn,
+  type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
 import {
@@ -221,12 +223,34 @@ export function convertChargeFragmentToTableRow(
 
 interface Props {
   data?: FragmentType<typeof ChargeForChargesTableFieldsFragmentDoc>[];
+  /**
+   * Optional controlled row-selection state, keyed by charge id. Providing this lifts selection
+   * out of the table (e.g. to link several tables in a report and drive cross-table actions).
+   * Pair it with `onRowSelectionChange` for an editable selection; omit the handler for a
+   * read-only selection. When this is omitted entirely, the table manages its own selection.
+   */
+  rowSelection?: RowSelectionState;
+  /** Selection change handler for controlled selection. Receives a charge-id keyed map. */
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
 }
 
-export const NewChargesTable = ({ data }: Props): ReactElement => {
+export const NewChargesTable = ({
+  data,
+  rowSelection: controlledRowSelection,
+  onRowSelectionChange,
+}: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [rowSelection, setRowSelection] = useState<Record<number, boolean>>({});
+  const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+
+  // Controlled whenever a parent supplies the state; otherwise self-managed. When controlled
+  // without a change handler (e.g. a read-only selection), fall back to a no-op setter so the
+  // passed state is still respected instead of being silently ignored.
+  const isSelectionControlled = controlledRowSelection !== undefined;
+  const rowSelection = isSelectionControlled ? controlledRowSelection : internalRowSelection;
+  const setRowSelection = isSelectionControlled
+    ? (onRowSelectionChange ?? (() => {}))
+    : setInternalRowSelection;
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
@@ -256,12 +280,16 @@ export const NewChargesTable = ({ data }: Props): ReactElement => {
   const table = useReactTable({
     data: charges,
     columns,
+    // Key row selection by charge id (not row index) so the selection map is stable across
+    // sorting/filtering and shareable between tables when selection is controlled.
+    getRowId: row => row.id,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
