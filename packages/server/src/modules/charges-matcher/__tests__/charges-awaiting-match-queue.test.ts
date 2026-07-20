@@ -224,16 +224,14 @@ describe('chargesAwaitingMatchQueue resolver', () => {
   });
 
   describe('BY_DATE path', () => {
-    it('should evaluate scores only for the requested page (limit + offset applied before scoring)', async () => {
+    it('should paginate the page and defer scoring (no eager evaluation)', async () => {
       const charges = Array.from({ length: 10 }, (_, i) => txCharge(`charge-${i}`));
       const { injector, evaluateMatchesForCharges } = createTestContext({ charges });
 
       const result = await resolve(null, { ...baseArgs, limit: 3, offset: 4 }, { injector }, null);
 
-      expect(evaluateMatchesForCharges).toHaveBeenCalledTimes(1);
-      expect(
-        (evaluateMatchesForCharges.mock.calls[0][0] as { id: string }[]).map(c => c.id),
-      ).toEqual(['charge-4', 'charge-5', 'charge-6']);
+      // Suggestions are resolved lazily by the field resolver, not up front
+      expect(evaluateMatchesForCharges).not.toHaveBeenCalled();
       expect(result.baseCharges.map(c => c.baseCharge.id)).toEqual([
         'charge-4',
         'charge-5',
@@ -262,7 +260,7 @@ describe('chargesAwaitingMatchQueue resolver', () => {
 
       expect(result.baseCharges).toEqual([]);
       expect(result.totalCount).toBe(1);
-      expect(evaluateMatchesForCharges).toHaveBeenCalledWith([]);
+      expect(evaluateMatchesForCharges).not.toHaveBeenCalled();
     });
   });
 

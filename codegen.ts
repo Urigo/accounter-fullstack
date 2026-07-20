@@ -96,6 +96,7 @@ const config: CodegenConfig = {
           CardFinancialAccount:
             '../modules/financial-accounts/types.js#IGetFinancialAccountsByOwnerIdsResult',
           ChargeMatch: '../modules/charges-matcher/types.js#ChargeMatchProto',
+          ChargeWithSuggestions: '../modules/charges-matcher/types.js#ChargeWithSuggestionsMapper',
           ChargeMetadata: '../modules/charges/types.js#IGetChargesByIdsResult',
           Client: '../modules/financial-entities/types.js#IGetAllClientsResult',
           ClientIntegrations: '../modules/financial-entities/types.js#IGetAllClientsResult',
