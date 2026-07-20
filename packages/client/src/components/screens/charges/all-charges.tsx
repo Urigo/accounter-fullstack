@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
+import type { RowSelectionState } from '@tanstack/react-table';
 import { NewChargesTable } from '@/components/charges/new-charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
@@ -31,9 +32,7 @@ import { Button } from '../../ui/button.js';
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { get } = useUrlQuery();
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const uriFilters = get('chargesFilters');
@@ -74,8 +73,23 @@ export const AllCharges = (): ReactElement => {
   const chargeNodes = useStableValue(data?.allCharges?.nodes);
 
   const resetMergeList = useCallback((): void => {
-    setMergeSelectedCharges([]);
+    setRowSelection({});
   }, []);
+
+  // Derive the merge button's input from the row-selection map. Each selected charge gets an
+  // `onChange` that refetches the list, so the table refreshes once a merge completes.
+  const mergeSelectedCharges = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([id]) => ({
+          id,
+          onChange: (): void => {
+            fetchCharges({ requestPolicy: 'network-only' });
+          },
+        })),
+    [rowSelection, fetchCharges],
+  );
 
   // Only the page count is consumed from the query result here. Depend on it
   // directly (instead of the whole `data`/`fetching`) so the filters bar isn't
@@ -133,7 +147,11 @@ export const AllCharges = (): ReactElement => {
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
-          <NewChargesTable data={chargeNodes} />
+          <NewChargesTable
+            data={chargeNodes}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
+          />
         </div>
       ) : (
         <span>Please apply filters</span>
