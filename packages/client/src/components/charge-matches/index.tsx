@@ -55,7 +55,6 @@ import { columns } from './columns.js';
         id
         name
       }
-      #   ...ChargesTableRowFields
     }
     confidenceScore
   }

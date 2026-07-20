@@ -20,16 +20,16 @@ import {
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import type { ChargeType } from '../../helpers/index.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
+import type { AmountProps } from './cells/amount.js';
+import type { BusinessTripProps } from './cells/business-trip.js';
+import type { CounterpartyProps } from './cells/counterparty.js';
+import { getDateProps, type DateProps } from './cells/date.js';
+import type { DescriptionProps } from './cells/description.js';
+import type { MoreInfoProps } from './cells/more-info.js';
+import type { TagsProps } from './cells/tags.js';
+import type { TaxCategoryProps } from './cells/tax-category.js';
+import type { VatProps } from './cells/vat.js';
 import { columns } from './columns.js';
-import type { AmountProps } from './new-cells/amount.js';
-import type { BusinessTripProps } from './new-cells/business-trip.js';
-import type { CounterpartyProps } from './new-cells/counterparty.js';
-import { getDateProps, type DateProps } from './new-cells/date.js';
-import type { DescriptionProps } from './new-cells/description.js';
-import type { MoreInfoProps } from './new-cells/more-info.js';
-import type { TagsProps } from './new-cells/tags.js';
-import type { TaxCategoryProps } from './new-cells/tax-category.js';
-import type { VatProps } from './new-cells/vat.js';
 import { ChargeRow } from './new-charges-row.js';
 import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './utils.js';
 
