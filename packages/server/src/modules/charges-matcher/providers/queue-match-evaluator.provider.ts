@@ -72,9 +72,7 @@ export class QueueMatchEvaluatorProvider {
     { name: 'suggestionsByChargeIdLoader' },
   );
 
-  private async batchLoadSuggestions(
-    chargeIds: readonly string[],
-  ): Promise<ChargeMatchProto[][]> {
+  private async batchLoadSuggestions(chargeIds: readonly string[]): Promise<ChargeMatchProto[][]> {
     const matchesByChargeId = await this.chargesMatcherProvider.findMatchesForCharges([
       ...chargeIds,
     ]);
