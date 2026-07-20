@@ -9,7 +9,7 @@ import { ChargeActionsMenu } from './charge-actions-menu.js';
 import { Amount } from './new-cells/amount.js';
 import { BusinessTrip } from './new-cells/business-trip.js';
 import { Counterparty } from './new-cells/counterparty.js';
-import { DateCell } from './new-cells/date.js';
+import { DateCell, type DateProps } from './new-cells/date.js';
 import { Description } from './new-cells/description.js';
 import { MoreInfo } from './new-cells/more-info.js';
 import { Tags } from './new-cells/tags.js';
@@ -58,7 +58,7 @@ export const columns: ColumnDef<ChargeRow>[] = [
   {
     accessorKey: 'date',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
-    cell: ({ row }) => <DateCell date={row.getValue<Date>('date')} />,
+    cell: ({ row }) => <DateCell {...row.getValue<DateProps>('date')} />,
   },
   {
     accessorKey: 'amount.value',
