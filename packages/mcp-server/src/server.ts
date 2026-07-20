@@ -1,41 +1,18 @@
-import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { env } from './config/env.js';
 import { log } from './logger.js';
+import { mcpHttpHandler } from './mcp/handler.js';
+import { getServiceVersion, SERVICE_NAME } from './version.js';
 
 /**
  * HTTP server bootstrap for the MCP server.
  *
- * Provides a plain `node:http` server with a `/health` endpoint and graceful
- * shutdown. No MCP protocol logic lives here yet — the MCP transport route is
- * added in a later step. Kept dependency-free (stdlib only) to avoid runtime
- * framework lock-in.
+ * Provides a plain `node:http` server with a `/health` endpoint, the MCP
+ * transport route (`POST /mcp`), and graceful shutdown. Kept dependency-free
+ * (stdlib only) to avoid runtime framework lock-in.
  */
 
-export const SERVICE_NAME = '@accounter/mcp-server';
-
-let cachedVersion: string | undefined;
-
-/**
- * Resolve the package version at runtime without importing outside `rootDir`.
- * The result is cached: the version cannot change while the process runs, so
- * we avoid a synchronous disk read on every `/health` request.
- */
-export function getServiceVersion(): string {
-  if (cachedVersion !== undefined) {
-    return cachedVersion;
-  }
-  try {
-    const packageJsonPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');
-    const parsed = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { version?: string };
-    cachedVersion = parsed.version ?? '0.0.0';
-  } catch {
-    cachedVersion = '0.0.0';
-  }
-  return cachedVersion;
-}
+export { getServiceVersion, SERVICE_NAME } from './version.js';
 
 export interface HealthBody {
   status: 'ok';
@@ -51,6 +28,8 @@ export function sendJson(res: ServerResponse, statusCode: number, body: unknown)
 
 type RouteHandler = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>;
 
+export const MCP_ROUTE_PATH = '/mcp';
+
 export const routes: Record<string, Record<string, RouteHandler>> = {
   GET: {
     '/health': (_req, res) => {
@@ -62,6 +41,15 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
       };
       sendJson(res, 200, body);
     },
+    // Streamable HTTP's optional GET (server-initiated SSE stream) is not
+    // supported in this phase — respond deterministically.
+    [MCP_ROUTE_PATH]: (_req, res) => {
+      res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'POST' });
+      res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+    },
+  },
+  POST: {
+    [MCP_ROUTE_PATH]: mcpHttpHandler,
   },
 };
 

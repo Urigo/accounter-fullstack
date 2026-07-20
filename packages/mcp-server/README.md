@@ -13,8 +13,9 @@ See the design docs:
 
 Early scaffolding. This package is being built incrementally following the prompt pack in the
 implementation blueprint. It currently contains the package skeleton, strict environment
-configuration, and a minimal HTTP server with a `/health` endpoint and graceful shutdown (no MCP
-protocol logic yet).
+configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, and an MCP
+transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool.
+Authentication, authorization, and production tools are not implemented yet.
 
 ## Running locally
 
@@ -27,6 +28,18 @@ curl http://localhost:3100/health
 
 The server handles `SIGINT`/`SIGTERM` by closing connections and exiting cleanly (forcing exit after
 a grace period).
+
+### MCP endpoint
+
+The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. It is currently **auth-agnostic** (the
+OAuth challenge is added in a later step). Supported methods: `initialize`, `ping`, `tools/list`,
+and `tools/call` (for the internal `accounter_smoke_ping` tool). Unknown methods return a
+deterministic JSON-RPC `-32601` error; notifications receive `202 Accepted` with no body.
+
+```bash
+curl -sX POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
 
 ## Configuration
 
