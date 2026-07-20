@@ -21,6 +21,7 @@ import {
 } from './alternative-suggestions-footer.js';
 import { ChargeDetailCard } from './charge-detail-card.js';
 import {
+  CHARGE_MATCHING_FILTER_KEYS,
   chargeMatchingFiltersToSearchParams,
   ChargeMatchingHeader,
   parseChargeMatchingFilters,
@@ -53,8 +54,25 @@ export const ChargeMatchingReviewScreen = (): ReactElement => {
   );
   const setFilters = useCallback(
     (next: ChargeMatchingFilters): void => {
-      // replace: refining filters shouldn't stack history entries per keystroke
-      setSearchParams(chargeMatchingFiltersToSearchParams(next), { replace: true });
+      setSearchParams(
+        prev => {
+          // Merge into the existing params so unrelated query params are
+          // preserved; only our managed keys are set or cleared
+          const merged = new URLSearchParams(prev);
+          const nextParams = chargeMatchingFiltersToSearchParams(next);
+          for (const key of CHARGE_MATCHING_FILTER_KEYS) {
+            const value = nextParams[key];
+            if (value == null) {
+              merged.delete(key);
+            } else {
+              merged.set(key, value);
+            }
+          }
+          return merged;
+        },
+        // replace: refining filters shouldn't stack history entries per keystroke
+        { replace: true },
+      );
     },
     [setSearchParams],
   );

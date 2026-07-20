@@ -26,6 +26,15 @@ export const DEFAULT_CHARGE_MATCHING_FILTERS: ChargeMatchingFilters = {
   sortBy: ChargeMatchQueueSortBy.ByDate,
 };
 
+/** URL query-param keys owned by the charge-matching filters. */
+export const CHARGE_MATCHING_FILTER_KEYS = [
+  'mode',
+  'fromDate',
+  'toDate',
+  'businessId',
+  'sortBy',
+] as const;
+
 const MODE_VALUES = Object.values(ChargeMatchQueueMode);
 const SORT_BY_VALUES = Object.values(ChargeMatchQueueSortBy);
 
