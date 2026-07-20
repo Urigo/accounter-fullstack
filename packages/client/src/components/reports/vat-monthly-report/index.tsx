@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
-import type { RowSelectionState } from '@tanstack/react-table';
 import { useQuery } from 'urql';
+import type { RowSelectionState } from '@tanstack/react-table';
 import {
   ChargeFilterType,
   VatMonthlyReportDocument,
@@ -119,7 +119,7 @@ export const VatMonthlyReport = (): ReactElement => {
         />
       </div>,
     );
-  }, [data, filter, fetching, setFiltersContext, selectedChargeIds, onResetMerge]);
+  }, [filter, fetching, setFiltersContext, setFilter, selectedChargeIds, onResetMerge]);
 
   return (
     <PageLayout
