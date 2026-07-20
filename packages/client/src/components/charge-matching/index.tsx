@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Check, SkipForward } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from 'urql';
 import {
   ChargeMatchCardFieldsFragmentDoc,
@@ -20,8 +21,10 @@ import {
 } from './alternative-suggestions-footer.js';
 import { ChargeDetailCard } from './charge-detail-card.js';
 import {
+  CHARGE_MATCHING_FILTER_KEYS,
+  chargeMatchingFiltersToSearchParams,
   ChargeMatchingHeader,
-  DEFAULT_CHARGE_MATCHING_FILTERS,
+  parseChargeMatchingFilters,
   type ChargeMatchingFilters,
 } from './charge-matching-header.js';
 import {
@@ -42,7 +45,37 @@ export type ChargeMatchQueueItem = {
 };
 
 export const ChargeMatchingReviewScreen = (): ReactElement => {
-  const [filters, setFilters] = useState<ChargeMatchingFilters>(DEFAULT_CHARGE_MATCHING_FILTERS);
+  // Filters live in the URL query string so the current selection survives a
+  // page refresh and can be shared via link
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filters = useMemo<ChargeMatchingFilters>(
+    () => parseChargeMatchingFilters(searchParams),
+    [searchParams],
+  );
+  const setFilters = useCallback(
+    (next: ChargeMatchingFilters): void => {
+      setSearchParams(
+        prev => {
+          // Merge into the existing params so unrelated query params are
+          // preserved; only our managed keys are set or cleared
+          const merged = new URLSearchParams(prev);
+          const nextParams = chargeMatchingFiltersToSearchParams(next);
+          for (const key of CHARGE_MATCHING_FILTER_KEYS) {
+            const value = nextParams[key];
+            if (value == null) {
+              merged.delete(key);
+            } else {
+              merged.set(key, value);
+            }
+          }
+          return merged;
+        },
+        // replace: refining filters shouldn't stack history entries per keystroke
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Changing any filter updates the variables, which triggers a refetch
