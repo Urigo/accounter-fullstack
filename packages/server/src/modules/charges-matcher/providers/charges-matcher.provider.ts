@@ -197,7 +197,9 @@ export class ChargesMatcherProvider {
           }
 
           const [sourceTransactions, sourceDocuments] = await Promise.all([
-            this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId).then(txs => txs ?? []),
+            this.transactionsProvider.transactionsByChargeIDLoader
+              .load(chargeId)
+              .then(txs => txs ?? []),
             this.documentsProvider.getDocumentsByChargeIdLoader
               .load(chargeId)
               .then(docs => (docs ?? []).filter(doc => isAccountingDocument(doc.type))),
