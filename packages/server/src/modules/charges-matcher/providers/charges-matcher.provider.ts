@@ -11,18 +11,17 @@ import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { mergeChargesExecutor } from '../../charges/helpers/merge-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import {
-  isAccountingDocument,
-  isInvoice,
-  isReceipt,
-} from '../../documents/helpers/common.helper.js';
+import { isAccountingDocument, isReceipt } from '../../documents/helpers/common.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import { chargeRequiresMatch } from '../helpers/awaiting-match-queue.helper.js';
+import { classifyCandidateCharge } from '../helpers/candidate-classifier.helper.js';
 import { validateChargeIsUnmatched } from '../helpers/charge-validator.helper.js';
 import {
   ChargeType,
   type AutoMatchChargesResult,
   type ChargeMatchesResult,
+  type ChargeMatchProto,
   type ChargeWithData,
   type DocumentCharge,
   type TransactionCharge,
@@ -31,6 +30,14 @@ import { determineMergeDirection, processChargeForAutoMatch } from './auto-match
 import { aggregateDocuments } from './document-aggregator.js';
 import { findMatches, type MatchResult } from './single-match.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
+
+/**
+ * Max number of source charges scored concurrently against the shared candidate
+ * pool. Scoring loads client / issued-document status via DataLoaders, so an
+ * unbounded burst (up to 100 charges for the BY_SCORE queue) could exhaust the DB
+ * connection pool or spike CPU; a strictly sequential run would be needlessly slow.
+ */
+export const MATCH_SCORING_CONCURRENCY = 5;
 
 /**
  * Charges Matcher Provider
@@ -109,61 +116,14 @@ export class ChargesMatcherProvider {
       toAnyDate: dateToTimelessDateString(windowEnd),
     });
 
-    // Step 6: Load transactions and documents for all candidate charges
-    const candidateChargesWithData: Array<TransactionCharge | DocumentCharge> = [];
-
-    await Promise.all(
-      candidateCharges.map(async candidate => {
-        // Skip the source charge itself
-        if (candidate.id === chargeId) {
-          return;
-        }
-
-        const candidateTransactionsPromise =
-          this.transactionsProvider.transactionsByChargeIDLoader.load(candidate.id);
-        const candidateDocumentsPromise = this.documentsProvider.getDocumentsByChargeIdLoader
-          .load(candidate.id)
-          .then(docs => docs.filter(doc => isAccountingDocument(doc.type)));
-        const [candidateTransactions, candidateDocuments] = await Promise.all([
-          candidateTransactionsPromise,
-          candidateDocumentsPromise,
-        ]);
-
-        const candidateInvoiceDocuments = candidateDocuments.filter(doc => isInvoice(doc.type));
-        const candidateReceiptDocuments = candidateDocuments.filter(doc => isReceipt(doc.type));
-
-        const hasTxs = candidateTransactions && candidateTransactions.length > 0;
-        const hasDocs = candidateDocuments && candidateDocuments.length > 0;
-        const hasInvoiceDocs = candidateInvoiceDocuments && candidateInvoiceDocuments.length > 0;
-        const hasReceiptDocs = candidateReceiptDocuments && candidateReceiptDocuments.length > 0;
-
-        // Only include unmatched charges (not both types)
-        if (hasTxs && !hasReceiptDocs) {
-          candidateChargesWithData.push({
-            chargeId: candidate.id,
-            transactions: candidateTransactions,
-          });
-        }
-        if (hasDocs && !hasTxs) {
-          if (hasReceiptDocs) {
-            candidateChargesWithData.push({
-              chargeId: candidate.id,
-              documents: candidateReceiptDocuments,
-            });
-          } else if (hasInvoiceDocs) {
-            candidateChargesWithData.push({
-              chargeId: candidate.id,
-              documents: candidateInvoiceDocuments,
-            });
-          } else {
-            candidateChargesWithData.push({
-              chargeId: candidate.id,
-              documents: candidateDocuments,
-            });
-          }
-        }
-        // Skip matched charges (have both) and empty charges (have neither)
-      }),
+    // Step 6: Load transactions and documents for the candidate charges,
+    // classifying each into the shape the matching algorithm consumes. Charge
+    // types that never require a document match (e.g. BANK_DEPOSIT,
+    // CREDITCARD_BANK, VAT) are dropped first — they can't be valid matches and
+    // skipping them avoids loading their transactions/documents.
+    const candidateChargesWithData = await this.hydrateCandidateCharges(
+      candidateCharges.filter(chargeRequiresMatch),
+      chargeId,
     );
 
     // Step 7: Build source charge object for findMatches
@@ -199,6 +159,196 @@ export class ChargesMatcherProvider {
         confidenceScore: match.confidenceScore,
       })),
     };
+  }
+
+  /**
+   * Find potential matches for a batch of unmatched charges in a single pass.
+   *
+   * Powers the awaiting-match queue. Instead of re-querying and re-hydrating the
+   * candidate pool once per source charge (a heavy, quadratic pattern), it loads
+   * and classifies the shared candidate pool **once** for the whole batch, then
+   * scores every source charge against that in-memory pool. The per-source date
+   * window is still enforced in-memory by `findMatches`, so results are identical
+   * to calling `findMatchesForCharge` per charge — just far cheaper.
+   *
+   * Best-effort per charge: a source that can't be prepared or scored (already
+   * matched, missing data, etc.) yields an empty match list rather than failing
+   * the whole batch.
+   *
+   * @param chargeIds - Unmatched source charge UUIDs to evaluate
+   * @returns Map from source charge id to its match suggestions (unsorted)
+   */
+  async findMatchesForCharges(chargeIds: string[]): Promise<Map<string, ChargeMatchProto[]>> {
+    const matchesByChargeId = new Map<string, ChargeMatchProto[]>();
+    if (chargeIds.length === 0) {
+      return matchesByChargeId;
+    }
+
+    const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
+
+    // Prepare every source charge (load data, validate, derive reference date).
+    // DataLoaders batch these loads across the whole set.
+    const preparedSources = await Promise.all(
+      chargeIds.map(async chargeId => {
+        try {
+          const sourceCharge = await this.chargesProvider.getChargeByIdLoader.load(chargeId);
+          if (!sourceCharge || sourceCharge instanceof Error) {
+            throw new Error(`Source charge not found: ${chargeId}`);
+          }
+
+          const [sourceTransactions, sourceDocuments] = await Promise.all([
+            this.transactionsProvider.transactionsByChargeIDLoader
+              .load(chargeId)
+              .then(txs => txs ?? []),
+            this.documentsProvider.getDocumentsByChargeIdLoader
+              .load(chargeId)
+              .then(docs => (docs ?? []).filter(doc => isAccountingDocument(doc.type))),
+          ]);
+
+          validateChargeIsUnmatched({
+            ...sourceCharge,
+            transactions: sourceTransactions,
+            documents: sourceDocuments,
+          });
+
+          const hasTransactions = sourceTransactions.length > 0;
+          const referenceDate = hasTransactions
+            ? aggregateTransactions(sourceTransactions).date
+            : aggregateDocuments(sourceDocuments, ownerId).date;
+          const sourceChargeData: TransactionCharge | DocumentCharge = hasTransactions
+            ? { chargeId, transactions: sourceTransactions }
+            : { chargeId, documents: sourceDocuments };
+
+          return { chargeId, referenceDate, sourceChargeData };
+        } catch (error) {
+          // Best-effort: unprepareable sources still appear in the queue, scoreless
+          console.error(`Failed to prepare charge ${chargeId} for matching:`, error);
+          return { chargeId, referenceDate: null, sourceChargeData: null };
+        }
+      }),
+    );
+
+    const validSources = preparedSources.filter(
+      (
+        source,
+      ): source is {
+        chargeId: string;
+        referenceDate: Date;
+        sourceChargeData: TransactionCharge | DocumentCharge;
+      } => source.referenceDate != null && source.sourceChargeData != null,
+    );
+
+    // Sources that failed preparation get an empty result up front
+    for (const source of preparedSources) {
+      if (source.referenceDate == null || source.sourceChargeData == null) {
+        matchesByChargeId.set(source.chargeId, []);
+      }
+    }
+
+    if (validSources.length === 0) {
+      return matchesByChargeId;
+    }
+
+    // Union window covering every source's ±12-month window. A superset of each
+    // per-source window; `findMatches` re-applies the per-source window in-memory.
+    let windowStart = new Date(validSources[0].referenceDate);
+    let windowEnd = new Date(validSources[0].referenceDate);
+    for (const { referenceDate } of validSources) {
+      if (referenceDate < windowStart) {
+        windowStart = new Date(referenceDate);
+      }
+      if (referenceDate > windowEnd) {
+        windowEnd = new Date(referenceDate);
+      }
+    }
+    windowStart.setMonth(windowStart.getMonth() - 12);
+    windowEnd.setMonth(windowEnd.getMonth() + 12);
+
+    // Single candidate-pool query + single hydration/classification for the batch.
+    // Drop charge types that never require a document match (e.g. BANK_DEPOSIT,
+    // CREDITCARD_BANK, VAT) before hydrating — they can't be valid matches and
+    // skipping them avoids loading their transactions/documents.
+    const candidateCharges = await this.chargesProvider.getChargesByFilters({
+      ownerIds: [ownerId],
+      fromAnyDate: dateToTimelessDateString(windowStart),
+      toAnyDate: dateToTimelessDateString(windowEnd),
+    });
+    const candidatePool = await this.hydrateCandidateCharges(
+      candidateCharges.filter(chargeRequiresMatch),
+    );
+
+    // Score sources against the shared pool with bounded concurrency, so a large
+    // queue (up to 100 charges for BY_SCORE) can't exhaust the DB pool or spike CPU
+    let nextSourceIndex = 0;
+    const scoreWorker = async (): Promise<void> => {
+      while (nextSourceIndex < validSources.length) {
+        const { chargeId, sourceChargeData } = validSources[nextSourceIndex++];
+        try {
+          const candidates = candidatePool.filter(candidate => candidate.chargeId !== chargeId);
+          const matches = await findMatches(
+            sourceChargeData,
+            candidates,
+            ownerId,
+            this.context.injector,
+            { maxMatches: 5, dateWindowMonths: 12 },
+          );
+          matchesByChargeId.set(
+            chargeId,
+            matches.map(match => ({
+              chargeId: match.chargeId,
+              confidenceScore: match.confidenceScore,
+            })),
+          );
+        } catch (error) {
+          console.error(`Failed to evaluate matches for charge ${chargeId}:`, error);
+          matchesByChargeId.set(chargeId, []);
+        }
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(MATCH_SCORING_CONCURRENCY, validSources.length) }, () =>
+        scoreWorker(),
+      ),
+    );
+
+    return matchesByChargeId;
+  }
+
+  /**
+   * Load transactions and documents for candidate charges and classify each into
+   * the `TransactionCharge` / `DocumentCharge` shape the matcher consumes. Loads
+   * are batched via DataLoaders; matched/empty charges are dropped.
+   *
+   * @param candidateCharges - Charge rows to hydrate
+   * @param excludeChargeId - Optional charge id to skip (e.g. the source charge)
+   */
+  private async hydrateCandidateCharges(
+    candidateCharges: Array<{ id: string }>,
+    excludeChargeId?: string,
+  ): Promise<Array<TransactionCharge | DocumentCharge>> {
+    const classified = await Promise.all(
+      candidateCharges.map(async candidate => {
+        if (excludeChargeId && candidate.id === excludeChargeId) {
+          return null;
+        }
+
+        const [candidateTransactions, candidateDocuments] = await Promise.all([
+          this.transactionsProvider.transactionsByChargeIDLoader
+            .load(candidate.id)
+            .then(txs => txs ?? []),
+          this.documentsProvider.getDocumentsByChargeIdLoader
+            .load(candidate.id)
+            .then(docs => (docs ?? []).filter(doc => isAccountingDocument(doc.type))),
+        ]);
+
+        return classifyCandidateCharge(candidate.id, candidateTransactions, candidateDocuments);
+      }),
+    );
+
+    return classified.filter(
+      (candidate): candidate is TransactionCharge | DocumentCharge => candidate !== null,
+    );
   }
 
   /**
