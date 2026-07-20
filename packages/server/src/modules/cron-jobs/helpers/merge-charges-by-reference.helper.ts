@@ -117,13 +117,20 @@ function getCandidateReferenceKeys(
     references.add(normalizedSourceReference);
   }
 
-  if (isForeignSecuritiesCandidate(candidate, charge)) {
+  if (isForeignSecuritiesAliasCandidate(candidate, charge)) {
     for (const embeddedReference of getEmbeddedReferenceAliases(candidate)) {
       references.add(embeddedReference);
     }
   }
 
   return references;
+}
+
+function isForeignSecuritiesAliasCandidate(
+  candidate: IGetReferenceMergeCandidatesResult,
+  charge: IGetChargesByIdsResult,
+) {
+  return candidate.source_origin === 'POALIM' && isForeignSecuritiesCandidate(candidate, charge);
 }
 
 function isForeignSecuritiesCandidate(
@@ -139,9 +146,9 @@ function isForeignSecuritiesCandidate(
     return false;
   }
 
-  return (
-    normalizedSourceDescription.includes('fsec') || normalizedSourceDescription.includes('ניע"ז')
-  );
+  const normalizedWithoutQuotes = normalizedSourceDescription.replace(/["'׳״]/g, '');
+
+  return normalizedSourceDescription.includes('fsec') || normalizedWithoutQuotes.includes('ניעז');
 }
 
 function getEmbeddedReferenceAliases(candidate: IGetReferenceMergeCandidatesResult) {
@@ -240,6 +247,17 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
     return false;
   }
 
+  if (isForeignSecuritiesCrossReferencePair(left, right)) {
+    const isSameEventDate = isSameUtcDate(
+      left.transaction.event_date,
+      right.transaction.event_date,
+    );
+
+    if (!isSameEventDate) {
+      return false;
+    }
+  }
+
   const isBothConversion = isConversionCandidate(left) && isConversionCandidate(right);
 
   const leftTransaction = left.transaction;
@@ -297,6 +315,31 @@ function isPotentialMatch(left: CandidateWithCharge, right: CandidateWithCharge)
   }
 
   return true;
+}
+
+function isForeignSecuritiesCrossReferencePair(
+  left: CandidateWithCharge,
+  right: CandidateWithCharge,
+) {
+  const leftTransaction = left.transaction;
+  const rightTransaction = right.transaction;
+
+  if (leftTransaction.source_reference === rightTransaction.source_reference) {
+    return false;
+  }
+
+  return (
+    isForeignSecuritiesAliasCandidate(leftTransaction, left.charge) &&
+    isForeignSecuritiesAliasCandidate(rightTransaction, right.charge)
+  );
+}
+
+function isSameUtcDate(left: Date, right: Date) {
+  return (
+    left.getUTCFullYear() === right.getUTCFullYear() &&
+    left.getUTCMonth() === right.getUTCMonth() &&
+    left.getUTCDate() === right.getUTCDate()
+  );
 }
 
 function isCrossConversionBoundary(left: CandidateWithCharge, right: CandidateWithCharge) {
@@ -459,6 +502,10 @@ function buildClusterMergePlan(
     return null;
   }
 
+  if (hasConflictingMainReferences(chargeMatches)) {
+    return null;
+  }
+
   chargeMatches.sort(compareChargeMatchCandidates);
   const [mainChargeMatch, ...otherChargeMatches] = chargeMatches;
   const chargeIdsToMerge = otherChargeMatches.map(match => match.charge.id);
@@ -489,6 +536,50 @@ function getChargeMatches(cluster: CandidateWithCharge[]): ChargeMatchGroup[] {
   }
 
   return Array.from(matchesByChargeId.values());
+}
+
+function hasConflictingMainReferences(chargeMatches: ChargeMatchGroup[]) {
+  const normalizedMainReferences = chargeMatches
+    .map(match => getNormalizedMainReference(match.transactions))
+    .filter((reference): reference is string => !!reference);
+
+  if (normalizedMainReferences.length <= 1) {
+    return false;
+  }
+
+  return new Set(normalizedMainReferences).size > 1;
+}
+
+function getNormalizedMainReference(transactions: IGetReferenceMergeCandidatesResult[]) {
+  const nonFeeReferences = new Set<string>();
+
+  for (const transaction of transactions) {
+    if (transaction.is_fee) {
+      continue;
+    }
+
+    const sourceReference = transaction.source_reference?.trim();
+    if (!sourceReference) {
+      continue;
+    }
+
+    nonFeeReferences.add(normalizeReferenceForComparison(sourceReference));
+  }
+
+  if (nonFeeReferences.size === 0) {
+    return null;
+  }
+
+  if (nonFeeReferences.size === 1) {
+    return nonFeeReferences.values().next().value ?? null;
+  }
+
+  // Multiple distinct non-fee references inside one charge is ambiguous.
+  return Array.from(nonFeeReferences).sort().join('|');
+}
+
+function normalizeReferenceForComparison(reference: string) {
+  return normalizeNumericReference(reference) ?? reference;
 }
 
 function compareChargeMatchCandidates(left: ChargeMatchGroup, right: ChargeMatchGroup) {

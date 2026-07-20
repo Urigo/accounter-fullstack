@@ -563,11 +563,13 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
         currency: 'ILS',
         amount: '-88.80',
         is_fee: true,
+        source_origin: 'POALIM',
         source_description: 'fsec payment fee',
       }),
       buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07T10:00:00.000Z', {
         currency: 'USD',
         amount: '4521.61',
+        source_origin: 'POALIM',
         source_description: 'securities settlement 0079915674',
       }),
     ];
@@ -601,11 +603,13 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
         currency: 'ILS',
         amount: '-88.80',
         is_fee: true,
+        source_origin: 'POALIM',
         source_description: 'ני"עז עמ קניה FSEC BUY FEE',
       }),
       buildCandidate('tx-securities-main', 'charge-securities-main', '3901767', '2026-07-07T10:00:00.000Z', {
         currency: 'USD',
         amount: '4521.61',
+        source_origin: 'POALIM',
         source_description: 'ניע"ז תשלומים 0079915674',
       }),
     ];
@@ -623,6 +627,201 @@ describe('buildMergeChargesByTransactionReferencePlan', () => {
         chargeIdsToMerge: ['charge-securities-fee'],
       },
     ]);
+  });
+
+  it('merges foreign-securities fee with padded reference alias from main transaction description', () => {
+    const charges = [
+      buildCharge('charge-foreign-main', {
+        created_at: new Date('2026-08-10T00:00:00.000Z'),
+      }),
+      buildCharge('charge-foreign-fee', {
+        created_at: new Date('2026-08-10T00:00:01.000Z'),
+      }),
+    ];
+    const candidates = [
+      buildCandidate('tx-foreign-fee', 'charge-foreign-fee', '12345678', '2026-08-09T10:00:00.000Z', {
+        currency: 'ILS',
+        amount: '-41.20',
+        is_fee: true,
+        source_origin: 'POALIM',
+        source_description: 'ניעז עמ תשלום fsec pymnt fee',
+      }),
+      buildCandidate('tx-foreign-main', 'charge-foreign-main', '7654321', '2026-08-09T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '3120.55',
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז תשלומים 0012345678',
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([
+      {
+        reference: '12345678',
+        baseChargeId: 'charge-foreign-main',
+        chargeIdsToMerge: ['charge-foreign-fee'],
+      },
+    ]);
+  });
+
+  it('merges foreign-securities fee when main transaction contains zero-padded fee reference', () => {
+    const charges = [
+      buildCharge('charge-fsec-main', {
+        created_at: new Date('2026-09-03T00:00:00.000Z'),
+      }),
+      buildCharge('charge-fsec-fee', {
+        created_at: new Date('2026-09-03T00:00:01.000Z'),
+      }),
+    ];
+    const candidates = [
+      buildCandidate('tx-fsec-fee', 'charge-fsec-fee', '88997766', '2026-09-02T10:00:00.000Z', {
+        currency: 'ILS',
+        amount: '-37.45',
+        is_fee: true,
+        source_origin: 'POALIM',
+        source_description: 'ניעז עמ תשלום fsec pymnt fee',
+      }),
+      buildCandidate('tx-fsec-main', 'charge-fsec-main', '2233445', '2026-09-02T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '4270.00',
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז תשלומים 0088997766',
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([
+      {
+        reference: '88997766',
+        baseChargeId: 'charge-fsec-main',
+        chargeIdsToMerge: ['charge-fsec-fee'],
+      },
+    ]);
+  });
+
+  it('does not merge foreign-securities alias pair when source origin is not POALIM', () => {
+    const charges = [
+      buildCharge('charge-origin-main', {
+        created_at: new Date('2026-10-03T00:00:00.000Z'),
+      }),
+      buildCharge('charge-origin-fee', {
+        created_at: new Date('2026-10-03T00:00:01.000Z'),
+      }),
+    ];
+    const candidates = [
+      buildCandidate('tx-origin-fee', 'charge-origin-fee', '90112233', '2026-10-02T10:00:00.000Z', {
+        currency: 'ILS',
+        amount: '-18.00',
+        is_fee: true,
+        source_origin: 'POALIM_ILS',
+        source_description: 'ניעז עמ תשלום fsec pymnt fee',
+      }),
+      buildCandidate('tx-origin-main', 'charge-origin-main', '3322110', '2026-10-02T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '1810.00',
+        source_origin: 'POALIM_ILS',
+        source_description: 'ניע"ז תשלומים 0090112233',
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([]);
+  });
+
+  it('does not merge foreign-securities alias pair across different dates', () => {
+    const charges = [
+      buildCharge('charge-date-main', {
+        created_at: new Date('2026-11-03T00:00:00.000Z'),
+      }),
+      buildCharge('charge-date-fee', {
+        created_at: new Date('2026-11-03T00:00:01.000Z'),
+      }),
+    ];
+    const candidates = [
+      buildCandidate('tx-date-fee', 'charge-date-fee', '77123456', '2026-11-01T10:00:00.000Z', {
+        currency: 'ILS',
+        amount: '-21.00',
+        is_fee: true,
+        source_origin: 'POALIM',
+        source_description: 'ניעז עמ תשלום fsec pymnt fee',
+      }),
+      buildCandidate('tx-date-main', 'charge-date-main', '4411002', '2026-11-03T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '2205.50',
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז תשלומים 0077123456',
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([]);
+  });
+
+  it('does not merge foreign-securities alias pair when non-fee references differ', () => {
+    const charges = [
+      buildCharge('charge-action-a', {
+        created_at: new Date('2026-12-03T00:00:00.000Z'),
+      }),
+      buildCharge('charge-action-b', {
+        created_at: new Date('2026-12-03T00:00:01.000Z'),
+      }),
+    ];
+    const candidates = [
+      buildCandidate('tx-action-a-main', 'charge-action-a', '3900138', '2026-12-02T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '78.55',
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז תשלומים 0077448736',
+      }),
+      buildCandidate('tx-action-a-fee', 'charge-action-a', '77448736', '2026-12-02T10:00:00.000Z', {
+        currency: 'ILS',
+        amount: '-9.10',
+        is_fee: true,
+        source_origin: 'POALIM',
+        source_description: 'ניעז עמ תשלום fsec pymnt fee',
+      }),
+      buildCandidate('tx-action-b-fee', 'charge-action-b', '1501588', '2026-12-02T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '-75.38',
+        is_fee: true,
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז עמ קניה 0077448736',
+      }),
+      buildCandidate('tx-action-b-main', 'charge-action-b', '1501588', '2026-12-02T10:00:00.000Z', {
+        currency: 'USD',
+        amount: '-75379.79',
+        source_origin: 'POALIM',
+        source_description: 'ניע"ז קניה 0077448736',
+      }),
+    ];
+
+    const result = buildMergeChargesByTransactionReferencePlan({
+      candidates,
+      chargeById: buildChargeById(charges),
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.plans).toEqual([]);
   });
 
   it('keeps conversion pair separate and merges transfer with related fees', () => {
