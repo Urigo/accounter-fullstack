@@ -13,6 +13,11 @@ export type UseChargeMatchQueue<TItem extends { id: string }> = {
   isDone: boolean;
   /** Session-only status per item id (no backend persistence) */
   statusById: Record<string, ChargeMatchItemStatus>;
+  /**
+   * Manually pin a base charge as the active item — used to jump to an upcoming
+   * charge or revisit a skipped one. Passing an id not in the queue is a no-op.
+   */
+  selectItem: (id: string) => void;
   /** Flag an item as skipped and advance to the next one */
   skipItem: (id: string) => void;
   /**
@@ -35,6 +40,9 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
   items: TItem[],
 ): UseChargeMatchQueue<TItem> {
   const [overrides, setOverrides] = useState<Record<string, ChargeMatchItemStatus>>({});
+  // A manually pinned base charge takes precedence over the derived first-pending
+  // item, letting the user jump to an upcoming charge or revisit a skipped one.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const statusById = useMemo(() => {
     const statuses: Record<string, ChargeMatchItemStatus> = {};
@@ -48,10 +56,29 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
     () => items.findIndex(item => (overrides[item.id] ?? 'pending') === 'pending'),
     [items, overrides],
   );
-  const activeIndex = firstPendingIndex === -1 ? items.length : firstPendingIndex;
+  const derivedIndex = firstPendingIndex === -1 ? items.length : firstPendingIndex;
+
+  // Honor a manual selection while it still points at an item in the queue;
+  // otherwise fall back to the first-pending item
+  const selectedIndex = selectedId === null ? -1 : items.findIndex(item => item.id === selectedId);
+  const activeIndex = selectedIndex === -1 ? derivedIndex : selectedIndex;
+
+  const selectItem = useCallback(
+    (id: string) => {
+      // Ignore ids not in the queue, and matched charges (already merged on the
+      // backend, so there is nothing left to review)
+      if (!items.some(item => item.id === id) || (overrides[id] ?? 'pending') === 'matched') {
+        return;
+      }
+      setSelectedId(id);
+    },
+    [items, overrides],
+  );
 
   const skipItem = useCallback((id: string) => {
     setOverrides(prev => ({ ...prev, [id]: 'skipped' }));
+    // Drop any manual pin so the queue advances to the next pending charge
+    setSelectedId(null);
   }, []);
 
   const acceptItemStatus = useCallback((id: string, success: boolean) => {
@@ -60,14 +87,17 @@ export function useChargeMatchQueue<TItem extends { id: string }>(
       return;
     }
     setOverrides(prev => ({ ...prev, [id]: 'matched' }));
+    // Drop any manual pin so the queue advances to the next pending charge
+    setSelectedId(null);
   }, []);
 
   return {
     items,
     activeIndex,
     activeItem: items[activeIndex] ?? null,
-    isDone: activeIndex >= items.length,
+    isDone: derivedIndex >= items.length,
     statusById,
+    selectItem,
     skipItem,
     acceptItemStatus,
   };

@@ -18,6 +18,8 @@ type Props = {
   activeId: string | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  /** Pin a base charge as the active item under review */
+  onSelectItem: (id: string) => void;
 };
 
 function StatusIcon({ status }: { status: ChargeMatchItemStatus }): ReactElement {
@@ -37,6 +39,7 @@ export const ChargeMatchingSidebar = ({
   activeId,
   collapsed,
   onToggleCollapsed,
+  onSelectItem,
 }: Props): ReactElement => {
   return (
     <div
@@ -62,21 +65,28 @@ export const ChargeMatchingSidebar = ({
             {items.map(item => {
               const status = statusById[item.id] ?? 'pending';
               return (
-                <li
-                  key={item.id}
-                  className={cn(
-                    'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm',
-                    item.id === activeId && 'bg-accent',
-                    status === 'skipped' && 'opacity-50',
-                  )}
-                >
-                  <StatusIcon status={status} />
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate font-medium">{item.title}</span>
-                    <span className="truncate text-xs text-gray-500">
-                      {[item.subtitle, item.amount].filter(Boolean).join(' · ')}
-                    </span>
-                  </div>
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    disabled={status === 'matched'}
+                    onClick={() => onSelectItem(item.id)}
+                    aria-current={item.id === activeId ? 'true' : undefined}
+                    className={cn(
+                      'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
+                      status !== 'matched' && 'hover:bg-accent/60',
+                      item.id === activeId && 'bg-accent',
+                      status === 'skipped' && 'opacity-50',
+                      status === 'matched' && 'cursor-not-allowed opacity-60',
+                    )}
+                  >
+                    <StatusIcon status={status} />
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate font-medium">{item.title}</span>
+                      <span className="truncate text-xs text-gray-500">
+                        {[item.subtitle, item.amount].filter(Boolean).join(' · ')}
+                      </span>
+                    </div>
+                  </button>
                 </li>
               );
             })}
