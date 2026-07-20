@@ -12,8 +12,21 @@ See the design docs:
 ## Status
 
 Early scaffolding. This package is being built incrementally following the prompt pack in the
-implementation blueprint. It currently contains the package skeleton and strict environment
-configuration (no HTTP/MCP runtime behavior yet).
+implementation blueprint. It currently contains the package skeleton, strict environment
+configuration, and a minimal HTTP server with a `/health` endpoint and graceful shutdown (no MCP
+protocol logic yet).
+
+## Running locally
+
+```bash
+# with required env vars set (see Configuration below):
+yarn workspace @accounter/mcp-server dev
+curl http://localhost:3100/health
+# → {"status":"ok","service":"@accounter/mcp-server","version":"…","uptimeSeconds":…}
+```
+
+The server handles `SIGINT`/`SIGTERM` by closing connections and exiting cleanly (forcing exit after
+a grace period).
 
 ## Configuration
 
