@@ -12,6 +12,11 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { EmailListenerConfig } from '../../financial-entities/types.js';
 import type { EmailIngestionModule } from '../types.js';
 
+/**
+ * @deprecated Legacy gmail-listener path. The v2 email-ingestion flow recognizes the business
+ * server-side in `requestIngestControl` (see `email-ingestion-control.provider.ts`). Do not extend;
+ * scheduled for removal after the gmail-listener cutover.
+ */
 const businessEmailConfig: EmailIngestionModule.QueryResolvers['businessEmailConfig'] = async (
   _,
   { email },
@@ -49,6 +54,11 @@ const businessEmailConfig: EmailIngestionModule.QueryResolvers['businessEmailCon
   };
 };
 
+/**
+ * @deprecated Legacy gmail-listener path. The v2 email-ingestion flow persists documents via the
+ * `ingestEmail` mutation (see `email-ingestion-ingest.provider.ts`). Do not extend; scheduled for
+ * removal after the gmail-listener cutover.
+ */
 const insertEmailDocuments: EmailIngestionModule.MutationResolvers['insertEmailDocuments'] = async (
   _,
   { documents, userDescription, messageId, businessId },

@@ -18,14 +18,15 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
   app-providers)
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
-  pipeline), `gmail-listener` (legacy single-tenant listener)
+  pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
-  `shaam-uniform-format-generator`
+  `shaam-uniform-format-generator` <<<<<<< HEAD
 - **Tools**: `scraper-app` (local scrape web app — Fastify server + React UI; replaces
   `scraper-local-app`)
 - **Deprecated**: `scraper-local-app` (legacy CLI scrape runner; superseded by `scraper-app` — kept
-  only for rollback until `scraper-app` is fully in production use), `old-accounter` (excluded from
-  workspaces)
+  only for rollback until `scraper-app` is fully in production use), `gmail-listener` (legacy
+  single-inbox email listener; superseded by `email-ingestion-gateway` — kept only for rollback
+  during cutover), `old-accounter` (excluded from workspaces)
 
 Package-specific conventions live in `packages/<name>/CLAUDE.md` (loaded on demand when you work in
 that package).

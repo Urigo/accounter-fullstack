@@ -3,6 +3,9 @@ import { gql } from 'graphql-modules';
 export default gql`
   extend type Query {
     businessEmailConfig(email: String!): BusinessEmailConfig
+      @deprecated(
+        reason: "Legacy gmail-listener path, superseded by the v2 email-ingestion flow where requestIngestControl recognizes the business and returns businessEmailConfig. Scheduled for removal after the gmail-listener cutover."
+      )
       @requiresAuth
       @requiresRole(role: "gmail_listener")
 
@@ -18,7 +21,12 @@ export default gql`
       userDescription: String!
       messageId: String
       businessId: UUID
-    ): Boolean! @requiresAuth @requiresRole(role: "gmail_listener")
+    ): Boolean!
+      @deprecated(
+        reason: "Legacy gmail-listener path, superseded by the v2 ingestEmail mutation (gateway → server) which persists documents under the recognized business. Scheduled for removal after the gmail-listener cutover."
+      )
+      @requiresAuth
+      @requiresRole(role: "gmail_listener")
 
     " Provision a new email alias that routes incoming mail to the given business "
     createEmailIngestionAlias(input: CreateEmailIngestionAliasInput!): EmailIngestionAliasResult!

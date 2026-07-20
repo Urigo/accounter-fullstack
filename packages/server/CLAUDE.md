@@ -22,8 +22,10 @@ depreciation, dividends, documents, email-ingestion, exchange-rates, financial-a
 financial-entities, green-invoice, ledger, misc-expenses, priority, reports, salaries, sort-codes,
 tags, transactions, vat, workspace-settings
 
-> `gmail-listener` remains as a backward-compat re-export shim
-> (`gmailListenerModule = emailIngestionModule`) for the legacy listener package. New code must
+> **Deprecated:** `gmail-listener` remains only as a backward-compat re-export shim
+> (`gmailListenerModule = emailIngestionModule`) for the legacy listener package, which is
+> superseded by the v2 `email-ingestion-gateway`. Its GraphQL surface (`businessEmailConfig`,
+> `insertEmailDocuments`) is `@deprecated` and scheduled for removal after cutover. New code must
 > import from `email-ingestion` directly.
 
 ## Provider Patterns
