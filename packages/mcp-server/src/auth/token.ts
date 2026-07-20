@@ -97,10 +97,37 @@ export interface VerifyOptions {
 }
 
 /**
+ * jose error codes that mean the *token itself* is invalid (client error → 401)
+ * as opposed to an infrastructure problem such as a JWKS fetch timeout, which
+ * should surface as a 5xx and must NOT be masked as an auth failure.
+ */
+const TOKEN_VALIDATION_CODES = new Set([
+  'ERR_JWT_EXPIRED',
+  'ERR_JWT_NOT_ACTIVE',
+  'ERR_JWT_CLAIM_VALIDATION_FAILED',
+  'ERR_JWT_INVALID',
+  'ERR_JWS_INVALID',
+  'ERR_JWS_SIGNATURE_VERIFICATION_FAILED',
+  'ERR_JWKS_NO_MATCHING_KEY',
+  'ERR_JWKS_MULTIPLE_MATCHING_KEYS',
+  'ERR_JOSE_ALG_NOT_ALLOWED',
+  'ERR_JOSE_NOT_SUPPORTED',
+]);
+
+function isTokenValidationError(error: unknown): boolean {
+  const code = (error as { code?: unknown })?.code;
+  return typeof code === 'string' && TOKEN_VALIDATION_CODES.has(code);
+}
+
+/**
  * Verify an access token against the given key (a JWKS resolver or a public
- * key), enforcing issuer, audience, signature, and expiry. Throws
- * {@link TokenVerificationError} on any failure. Pure w.r.t. process env, so it
- * is directly unit-testable with a local key.
+ * key), enforcing issuer, audience, signature, and expiry. Pure w.r.t. process
+ * env, so it is directly unit-testable with a local key.
+ *
+ * Throws {@link TokenVerificationError} only when the token itself is invalid
+ * (→ 401). Infrastructure failures (e.g. a JWKS fetch timeout) propagate
+ * unchanged so the caller can surface a 5xx instead of masking an outage as an
+ * authentication failure.
  */
 export async function verifyAccessTokenWithKey(
   token: string,
@@ -120,9 +147,12 @@ export async function verifyAccessTokenWithKey(
     if (error instanceof TokenVerificationError) {
       throw error;
     }
-    // Normalize jose errors to a safe, token-free message.
-    const reason = error instanceof Error ? error.message : 'verification failed';
-    throw new TokenVerificationError(reason);
+    if (isTokenValidationError(error)) {
+      // Normalize to a safe, token-free message.
+      throw new TokenVerificationError(error instanceof Error ? error.message : 'invalid token');
+    }
+    // Infrastructure/unexpected error — let it propagate (becomes a 5xx).
+    throw error;
   }
 }
 

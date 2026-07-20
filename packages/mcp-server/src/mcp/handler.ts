@@ -1,5 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { extractBearerToken, setAuthPrincipal, TokenVerificationError } from '../auth/token.js';
+import {
+  type AuthPrincipal,
+  extractBearerToken,
+  setAuthPrincipal,
+  TokenVerificationError,
+} from '../auth/token.js';
 import { verifyAccessToken } from '../auth/verifier.js';
 import { env } from '../config/env.js';
 import { getRequestContext } from '../context.js';
@@ -151,7 +156,7 @@ export function hasBearerToken(req: IncomingMessage): boolean {
 async function authenticate(
   req: IncomingMessage,
   res: ServerResponse,
-): Promise<Awaited<ReturnType<typeof verifyAccessToken>> | null> {
+): Promise<AuthPrincipal | null> {
   const token = extractBearerToken(req);
   if (!token) {
     sendUnauthorized(res, {
@@ -165,13 +170,20 @@ async function authenticate(
     setAuthPrincipal(req, principal);
     return principal;
   } catch (error) {
-    const reason = error instanceof TokenVerificationError ? error.message : 'verification failed';
+    // Only an invalid token is a 401; infrastructure failures (e.g. a JWKS
+    // outage) propagate so the request surfaces as a 5xx rather than a
+    // misleading auth error.
+    if (!(error instanceof TokenVerificationError)) {
+      throw error;
+    }
     // Log the reason only — never the token.
     const context = getRequestContext(req);
     if (context) {
-      createRequestLogger(context).warn('access token verification failed', { reason });
+      createRequestLogger(context).warn('access token verification failed', {
+        reason: error.message,
+      });
     } else {
-      log('warn', 'access token verification failed', { reason });
+      log('warn', 'access token verification failed', { reason: error.message });
     }
     sendUnauthorized(res, {
       resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),

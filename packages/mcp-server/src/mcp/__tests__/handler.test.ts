@@ -190,6 +190,18 @@ describe('mcpHttpHandler', () => {
     vi.unstubAllEnvs();
     resetEnvCache();
   });
+
+  it('propagates infrastructure errors instead of returning a misleading 401', async () => {
+    // An error without a token-validation code (e.g. a JWKS outage) must bubble
+    // up so the request becomes a 5xx, not a 401.
+    mockVerify.mockRejectedValue(new Error('jwks endpoint unreachable'));
+
+    const res = mockRes();
+    await expect(mcpHttpHandler(mockReq(rpc('tools/list')), res)).rejects.toThrow(
+      'jwks endpoint unreachable',
+    );
+    expect(res.writeHead).not.toHaveBeenCalledWith(401, expect.anything());
+  });
 });
 
 describe('hasBearerToken', () => {

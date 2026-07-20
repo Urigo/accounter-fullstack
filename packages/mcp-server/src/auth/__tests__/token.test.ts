@@ -1,5 +1,5 @@
 import type { IncomingMessage } from 'node:http';
-import { generateKeyPair, type KeyObject, SignJWT } from 'jose';
+import { generateKeyPair, type JWTVerifyGetKey, type KeyObject, SignJWT } from 'jose';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   extractBearerToken,
@@ -120,5 +120,16 @@ describe('verifyAccessTokenWithKey', () => {
     await expect(
       verifyAccessTokenWithKey(token, publicKey, { issuer: ISSUER, audience: AUDIENCE }),
     ).rejects.toBeInstanceOf(TokenVerificationError);
+  });
+
+  it('propagates infrastructure errors (e.g. JWKS timeout) instead of masking them as invalid', async () => {
+    const token = await sign({});
+    const infra = Object.assign(new Error('jwks unreachable'), { code: 'ERR_JWKS_TIMEOUT' });
+    const getKey: JWTVerifyGetKey = () => {
+      throw infra;
+    };
+    await expect(
+      verifyAccessTokenWithKey(token, getKey, { issuer: ISSUER, audience: AUDIENCE }),
+    ).rejects.toBe(infra);
   });
 });
