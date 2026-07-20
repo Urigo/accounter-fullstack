@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { Group, Indicator, Text } from '@mantine/core';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
@@ -19,23 +19,12 @@ export const Tags = ({
   onChange,
 }: TagsProps): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
-  const [tags, setTags] = useState<typeof originalTags>(originalTags);
 
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
 
   const hasAlternative = isMissing && !!suggestedTags?.length;
 
-  useEffect(() => {
-    if (originalTags?.length && !tags.length) {
-      setTags(originalTags);
-    }
-  }, [originalTags, tags.length]);
-
-  useEffect(() => {
-    if (tags.length === 0 && hasAlternative) {
-      setTags(suggestedTags ?? []);
-    }
-  }, [tags.length, suggestedTags, hasAlternative]);
+  const tags = originalTags?.length ? originalTags : hasAlternative ? suggestedTags : [];
 
   const updateTag = useCallback(
     async (tags?: Array<{ id: string }>) => {

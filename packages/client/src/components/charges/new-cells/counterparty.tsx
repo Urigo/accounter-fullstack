@@ -1,8 +1,9 @@
-import { useMemo, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { Indicator } from '@mantine/core';
 import { ROUTES } from '@/router/routes.js';
 import type { ChargeType } from '../../../helpers/index.js';
+import { shouldHaveCounterparty } from '../utils.js';
 
 export type CounterpartyProps = {
   counterparty:
@@ -20,23 +21,7 @@ export const Counterparty = ({
   type,
   isMissing,
 }: CounterpartyProps): ReactElement => {
-  const shouldHaveCounterparty = useMemo((): boolean => {
-    switch (type) {
-      case 'BusinessTripCharge':
-      case 'DividendCharge':
-      case 'ConversionCharge':
-      case 'SalaryCharge':
-      case 'InternalTransferCharge':
-        return false;
-      default:
-        return true;
-    }
-  }, [type]);
-
-  const isError = useMemo(
-    () => shouldHaveCounterparty && isMissing,
-    [shouldHaveCounterparty, isMissing],
-  );
+  const isError = shouldHaveCounterparty(type) && !!isMissing;
   const { name, id } = counterparty ?? { name: 'Missing', id: undefined };
 
   return (
