@@ -7,7 +7,7 @@
 
 import type { Injector } from 'graphql-modules';
 import { isWithinDateWindow } from '../helpers/candidate-filter.helper.js';
-import type { DocumentCharge, MatchScore, TransactionCharge } from '../types.js';
+import type { DocumentCharge, TransactionCharge } from '../types.js';
 import { aggregateDocuments } from './document-aggregator.js';
 import { scoreMatch } from './match-scorer.provider.js';
 import { aggregateTransactions } from './transaction-aggregator.js';
@@ -211,19 +211,13 @@ export async function findMatches(
   const scoredResults = await Promise.all(
     windowFilteredCandidates.map(async (candidate): Promise<ScoredCandidate | null> => {
       try {
-        let matchScore: MatchScore;
-        let txCharge: TransactionCharge;
-        let docCharge: DocumentCharge;
-
-        if (isSourceTransaction) {
-          txCharge = sourceCharge;
-          docCharge = candidate as DocumentCharge;
-          matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
-        } else {
-          txCharge = candidate as TransactionCharge;
-          docCharge = sourceCharge;
-          matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
-        }
+        const txCharge = isSourceTransaction
+          ? (sourceCharge as TransactionCharge)
+          : (candidate as TransactionCharge);
+        const docCharge = isSourceTransaction
+          ? (candidate as DocumentCharge)
+          : (sourceCharge as DocumentCharge);
+        const matchScore = await scoreMatch(txCharge, docCharge, userId, injector);
 
         // Calculate date proximity for tie-breaking
         const dateProximity = calculateDateProximity(txCharge, docCharge);
@@ -237,9 +231,12 @@ export async function findMatches(
           _txCharge: txCharge,
           _docCharge: docCharge,
         };
-      } catch {
-        // Skip candidates that fail scoring (e.g., mixed currencies, invalid data)
-        // This is expected behavior - not all candidates will be scoreable
+      } catch (error) {
+        // Scoring is best-effort: a candidate that can't be scored (mixed
+        // currencies, unaggregatable data, a failed lookup, etc.) is skipped
+        // rather than failing the batch. Log it so genuine system errors (DB /
+        // network) surface instead of silently producing an empty match list.
+        console.error(`Failed to score candidate ${candidate.chargeId}:`, error);
         return null;
       }
     }),
