@@ -264,6 +264,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/mcp-server@workspace:packages/mcp-server":
+  version: 0.0.0-use.local
+  resolution: "@accounter/mcp-server@workspace:packages/mcp-server"
+  dependencies:
+    "@types/node": "npm:25.9.5"
+    tsx: "npm:4.23.1"
+    typescript: "npm:6.0.3"
+    vitest: "npm:4.1.10"
+  languageName: unknown
+  linkType: soft
+
 "@accounter/modern-poalim-scraper@workspace:^, @accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper":
   version: 0.0.0-use.local
   resolution: "@accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper"
