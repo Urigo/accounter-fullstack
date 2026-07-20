@@ -1,0 +1,48 @@
+/* eslint-disable no-console */
+
+/**
+ * Minimal structured logger for the MCP server.
+ *
+ * Emits single-line JSON so logs are machine-parseable in production. This is a
+ * deliberately small foundation; request-context propagation (correlation ids,
+ * per-request child loggers) is layered on in a later step. Secrets and
+ * authorization headers must never be passed as fields.
+ */
+
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+export interface LogEntry {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  [key: string]: unknown;
+}
+
+export function log(level: LogLevel, message: string, fields?: Record<string, unknown>): void {
+  const entry: LogEntry = {
+    ...fields,
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+  };
+  try {
+    const line = JSON.stringify(entry);
+    if (level === 'error') {
+      console.error(line);
+    } else {
+      console.log(line);
+    }
+  } catch (error) {
+    // Never let a non-serializable field (circular ref, BigInt, …) crash the
+    // process — this logger runs inside global error handlers.
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: 'error',
+        message: 'failed to serialize log entry',
+        originalMessage: message,
+        error: String(error),
+      }),
+    );
+  }
+}
