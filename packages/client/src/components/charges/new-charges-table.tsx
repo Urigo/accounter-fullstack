@@ -24,6 +24,7 @@ import { columns } from './columns.js';
 import type { AmountProps } from './new-cells/amount.js';
 import type { BusinessTripProps } from './new-cells/business-trip.js';
 import type { CounterpartyProps } from './new-cells/counterparty.js';
+import { getDateProps, type DateProps } from './new-cells/date.js';
 import type { DescriptionProps } from './new-cells/description.js';
 import type { MoreInfoProps } from './new-cells/more-info.js';
 import type { TagsProps } from './new-cells/tags.js';
@@ -40,6 +41,9 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
     minEventDate
     minDebitDate
     minDocumentsDate
+    maxDebitDate
+    maxEventDate
+    maxDocumentsDate
     totalAmount {
       raw
       currency
@@ -102,7 +106,7 @@ export interface ChargeRow {
   id: string;
   onChange: () => void;
   type: ChargeType;
-  date?: Date;
+  date?: DateProps;
   amount?: AmountProps;
   vat?: Omit<VatProps, 'isError'>;
   counterparty?: CounterpartyProps;
@@ -121,9 +125,14 @@ export function convertChargeFragmentToTableRow(
     id: fragmentData.id,
     onChange: () => {},
     type: fragmentData.__typename as ChargeType,
-    date:
-      (fragmentData.minDebitDate || fragmentData.minEventDate || fragmentData.minDocumentsDate) ??
-      undefined,
+    date: getDateProps({
+      minDebitDate: fragmentData.minDebitDate,
+      minEventDate: fragmentData.minEventDate,
+      minDocumentsDate: fragmentData.minDocumentsDate,
+      maxDebitDate: fragmentData.maxDebitDate,
+      maxEventDate: fragmentData.maxEventDate,
+      maxDocumentsDate: fragmentData.maxDocumentsDate,
+    }),
     amount: fragmentData.totalAmount
       ? {
           value: fragmentData.totalAmount.raw,
