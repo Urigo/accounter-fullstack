@@ -2,9 +2,7 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
   Controller,
-  useFieldArray,
   type ArrayPath,
-  type FieldArray,
   type FieldValues,
   type Path,
   type UseFormReturn,
@@ -12,6 +10,10 @@ import {
 import { useQuery } from 'urql';
 import { NumberInput, Select } from '@mantine/core';
 import { AttendeesByBusinessTripDocument } from '../../../../gql/graphql.js';
+import {
+  useControlledFieldArray,
+  type FieldArrayItem,
+} from '../../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../../ui/button.js';
 
 type Props<T extends FieldValues> = {
@@ -32,21 +34,13 @@ export function AttendeesStayInput<T extends FieldValues>({
   fetchingAttendees = false,
   businessTripId,
 }: Props<T>): ReactElement {
-  const { control, watch, trigger } = formManager;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: attendeesStayPath,
-  });
+  const { control, trigger } = formManager;
+  const { controlledFields, append, remove } = useControlledFieldArray(
+    formManager,
+    attendeesStayPath,
+  );
   const [fetching, setFetching] = useState(fetchingAttendees);
   const [attendees, setAttendees] = useState(attendeesData ?? []);
-
-  const watchFieldArray = watch(attendeesStayPath as Path<T>);
-  const controlledFields = fields.map((field, index) => {
-    return {
-      ...field,
-      ...watchFieldArray[index],
-    };
-  });
 
   useEffect(() => {
     if (attendeesData) {
@@ -169,7 +163,7 @@ export function AttendeesStayInput<T extends FieldValues>({
           size="icon"
           className="size-7.5"
           onClick={(): void => {
-            append({} as FieldArray<T, ArrayPath<T>>);
+            append({} as FieldArrayItem<T>);
             trigger(attendeesStayPath as Path<T>);
           }}
         >

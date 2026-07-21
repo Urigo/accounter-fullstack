@@ -3,15 +3,17 @@ import { format } from 'date-fns';
 import { ListPlus, Trash2 } from 'lucide-react';
 import {
   Controller,
-  useFieldArray,
   type ArrayPath,
-  type FieldArray,
   type FieldValues,
   type Path,
   type UseFormReturn,
 } from 'react-hook-form';
 import { NumberInput } from '@mantine/core';
 import { YearPickerInput } from '@mantine/dates';
+import {
+  useControlledFieldArray,
+  type FieldArrayItem,
+} from '../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../ui/button.js';
 
 type Props<T extends FieldValues> = {
@@ -23,19 +25,11 @@ export function ChargeSpreadInput<T extends FieldValues>({
   formManager,
   chargeSpreadPath,
 }: Props<T>): ReactElement {
-  const { control, watch, trigger } = formManager;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: chargeSpreadPath,
-  });
-
-  const watchFieldArray = watch(chargeSpreadPath as Path<T>);
-  const controlledFields = fields.map((field, index) => {
-    return {
-      ...field,
-      ...watchFieldArray[index],
-    };
-  });
+  const { control, trigger } = formManager;
+  const { controlledFields, append, remove, watchFieldArray } = useControlledFieldArray(
+    formManager,
+    chargeSpreadPath,
+  );
 
   return (
     <div>
@@ -57,7 +51,6 @@ export function ChargeSpreadInput<T extends FieldValues>({
                     return true;
                   },
                 }}
-                // defaultValue={`${new Date().getFullYear()}-01-01` as PathValue<T, Path<T>>}
                 render={({ field: { value, ...field }, fieldState }): ReactElement => {
                   return (
                     <YearPickerInput
@@ -116,7 +109,7 @@ export function ChargeSpreadInput<T extends FieldValues>({
           size="icon"
           className="size-7.5"
           onClick={(): void => {
-            append({ year: `${new Date().getFullYear()}-01-01` } as FieldArray<T, ArrayPath<T>>);
+            append({ year: `${new Date().getFullYear()}-01-01` } as FieldArrayItem<T>);
             trigger(chargeSpreadPath as Path<T>);
           }}
         >
