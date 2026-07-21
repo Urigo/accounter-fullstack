@@ -57,8 +57,11 @@ interface GraphQLResponseBody<TData> {
   errors?: Array<{ message?: unknown }>;
 }
 
-// Leading whitespace + line comments, then the operation keyword.
-const NON_READ_OPERATION_RE = /^(?:\s|#[^\n]*\n?)*(mutation|subscription)\b/i;
+// Reject a `mutation`/`subscription` keyword anywhere in the document, not just
+// at the start — a multi-operation document could otherwise smuggle a mutation
+// past a leading `query` and select it via `operationName`. Our own wrappers only
+// send read queries, so over-rejecting here is a safe default.
+const NON_READ_OPERATION_RE = /\b(mutation|subscription)\b/i;
 
 function assertReadOnly(query: string): void {
   if (NON_READ_OPERATION_RE.test(query)) {
@@ -69,7 +72,9 @@ function assertReadOnly(query: string): void {
 /** Collapse GraphQL error messages into a single business-safe string. */
 function sanitizeGraphQLErrors(errors: Array<{ message?: unknown }>): string {
   const messages = errors
-    .map(error => (typeof error.message === 'string' ? error.message : ''))
+    .map(error =>
+      error && typeof error === 'object' && typeof error.message === 'string' ? error.message : '',
+    )
     .map(message => message.trim())
     .filter(Boolean)
     .slice(0, 3);
@@ -161,8 +166,21 @@ export class UpstreamGraphQLClient {
       );
     }
 
-    const body = (await response.json()) as GraphQLResponseBody<TData>;
-    if (body.errors && body.errors.length > 0) {
+    let body: GraphQLResponseBody<TData>;
+    try {
+      body = (await response.json()) as GraphQLResponseBody<TData>;
+    } catch {
+      // Non-JSON body (e.g. an HTML error page) — sanitize rather than leak.
+      throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned a non-JSON response', false);
+    }
+    if (!body || typeof body !== 'object') {
+      throw new UpstreamError(
+        'UPSTREAM_ERROR',
+        'Upstream returned an invalid response body',
+        false,
+      );
+    }
+    if (Array.isArray(body.errors) && body.errors.length > 0) {
       // GraphQL-level errors are not retried (not transient).
       throw new UpstreamError('UPSTREAM_ERROR', sanitizeGraphQLErrors(body.errors), false);
     }
