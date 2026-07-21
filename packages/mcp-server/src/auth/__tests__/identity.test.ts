@@ -117,9 +117,27 @@ describe('membershipsFromClaims', () => {
     );
     expect(
       membershipsFromClaims(
-        principal({ claims: { sub: 'u', memberships: [null, {}, { roleId: 'x' }, 42] } }),
+        principal({
+          claims: { sub: 'u', memberships: [null, {}, { roleId: 'x' }, 42, ['b1', 'r1']] },
+        }),
       ),
     ).toEqual([]);
+  });
+
+  it('coerces a numeric roleId but never stringifies object/array roles', () => {
+    expect(
+      membershipsFromClaims(
+        principal({
+          claims: {
+            sub: 'u',
+            memberships: [
+              { businessId: 'b1', roleId: 7 },
+              { businessId: 'b2', roleId: { nested: true } },
+            ],
+          },
+        }),
+      ),
+    ).toEqual([M('b1', '7'), M('b2', '')]);
   });
 });
 
