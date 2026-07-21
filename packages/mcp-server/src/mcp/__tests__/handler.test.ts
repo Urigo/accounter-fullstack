@@ -1,14 +1,27 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { TokenVerificationError } from '../../auth/token.js';
+import { verifyAccessToken } from '../../auth/verifier.js';
+import { handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
 import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
-import {
-  handleMcpBody,
-  MCP_PROTOCOL_VERSION,
-  mcpHttpHandler,
-} from '../handler.js';
 import { SMOKE_TOOL_NAME } from '../tools.js';
+
+// The MCP handler verifies bearer tokens via the env-backed verifier, which
+// would otherwise fetch a remote JWKS. Mock it so tests stay hermetic.
+vi.mock('../../auth/verifier.js', () => ({ verifyAccessToken: vi.fn() }));
+const mockVerify = vi.mocked(verifyAccessToken);
+
+const PRINCIPAL = {
+  subject: 'user-1',
+  issuer: 'https://tenant.auth0.com/',
+  audience: 'aud',
+  scopes: [],
+  email: null,
+  expiresAt: undefined,
+  claims: { sub: 'user-1' },
+};
 
 function rpc(method: string, params?: unknown, id: string | number | null = 1) {
   return JSON.stringify({ jsonrpc: '2.0', id, method, ...(params !== undefined && { params }) });
@@ -105,6 +118,12 @@ function mockRes() {
 }
 
 describe('mcpHttpHandler', () => {
+  beforeEach(() => {
+    // A valid bearer token resolves to a principal by default.
+    mockVerify.mockReset();
+    mockVerify.mockResolvedValue(PRINCIPAL);
+  });
+
   it('responds 200 with the JSON-RPC result for a request', async () => {
     const res = mockRes();
     await mcpHttpHandler(mockReq(rpc('tools/list')), res);
@@ -148,8 +167,40 @@ describe('mcpHttpHandler', () => {
     expect(wwwAuth?.[1]).toContain(
       'resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"',
     );
+    expect(mockVerify).not.toHaveBeenCalled();
     vi.unstubAllEnvs();
     resetEnvCache();
+  });
+
+  it('challenges with 401 + error="invalid_token" when the token fails verification', async () => {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../../config/env.js');
+    resetEnvCache();
+    mockVerify.mockRejectedValue(new TokenVerificationError('expired'));
+
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list'), { authorization: 'Bearer bad' }), res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
+    const wwwAuth = res.setHeader.mock.calls.find(([name]) => name === 'WWW-Authenticate');
+    expect(wwwAuth?.[1]).toContain('error="invalid_token"');
+    vi.unstubAllEnvs();
+    resetEnvCache();
+  });
+
+  it('propagates infrastructure errors instead of returning a misleading 401', async () => {
+    // An error without a token-validation code (e.g. a JWKS outage) must bubble
+    // up so the request becomes a 5xx, not a 401.
+    mockVerify.mockRejectedValue(new Error('jwks endpoint unreachable'));
+
+    const res = mockRes();
+    await expect(mcpHttpHandler(mockReq(rpc('tools/list')), res)).rejects.toThrow(
+      'jwks endpoint unreachable',
+    );
+    expect(res.writeHead).not.toHaveBeenCalledWith(401, expect.anything());
   });
 });
 
