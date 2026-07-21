@@ -83,8 +83,12 @@ async function handler(
   assertDateRange(input);
 
   // Policy has already confirmed the requested business is within scope; use the
-  // narrowed scope as the single owner.
+  // narrowed scope as the single owner. Assert defensively — a business-scoped
+  // tool must never reach upstream without a concrete owner.
   const ownerId = context.readScope.businessIds[0];
+  if (!ownerId) {
+    throw new ToolInputError('No authorized business in scope for this report');
+  }
 
   const data = await context.client.query<{ transactionsForBalanceReport: RawBalanceRow[] }>(
     {
@@ -94,7 +98,8 @@ async function handler(
     { correlationId: context.correlationId, authorization: context.authorization },
   );
 
-  const all = data.transactionsForBalanceReport;
+  // Defend against a null/absent list from a nullable upstream field.
+  const all = data.transactionsForBalanceReport ?? [];
   const truncated = all.length > MAX_REPORT_ROWS;
   const rows = all.slice(0, MAX_REPORT_ROWS).map(row => ({
     id: row.id,
