@@ -373,13 +373,7 @@ export const NewChargesTable = ({
               {table.getRowModel().rows?.length ? (
                 table
                   .getRowModel()
-                  .rows.map(row => (
-                    <ChargeRow
-                      key={row.id}
-                      row={row}
-                      updateCharge={updateCharge}
-                    />
-                  ))
+                  .rows.map(row => <ChargeRow key={row.id} row={row} updateCharge={updateCharge} />)
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
