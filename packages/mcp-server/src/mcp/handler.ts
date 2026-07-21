@@ -1,9 +1,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import {
-  type AuthPrincipal,
   extractBearerToken,
   setAuthPrincipal,
   TokenVerificationError,
+  type AuthPrincipal,
 } from '../auth/token.js';
 import { verifyAccessToken } from '../auth/verifier.js';
 import { env } from '../config/env.js';
