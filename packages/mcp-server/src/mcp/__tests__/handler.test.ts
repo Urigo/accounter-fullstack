@@ -80,8 +80,13 @@ describe('handleMcpBody — malformed input', () => {
 // HTTP adapter
 // ---------------------------------------------------------------------------
 
-function mockReq(body: string): IncomingMessage {
-  return Readable.from([Buffer.from(body, 'utf8')]) as unknown as IncomingMessage;
+function mockReq(
+  body: string,
+  headers: Record<string, string> = { authorization: 'Bearer test-token' },
+): IncomingMessage {
+  const stream = Readable.from([Buffer.from(body, 'utf8')]) as unknown as IncomingMessage;
+  stream.headers = headers as IncomingMessage['headers'];
+  return stream;
 }
 
 function mockRes() {
@@ -125,5 +130,40 @@ describe('mcpHttpHandler', () => {
     const huge = `{"jsonrpc":"2.0","id":1,"method":"ping","params":"${'x'.repeat(1_000_001)}"}`;
     await mcpHttpHandler(mockReq(huge), res);
     expect(res.writeHead).toHaveBeenCalledWith(413, { 'Content-Type': 'application/json' });
+  });
+
+  it('challenges with 401 + WWW-Authenticate when no bearer token is present', async () => {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../../config/env.js');
+    resetEnvCache();
+
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list'), {}), res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
+    const wwwAuth = res.setHeader.mock.calls.find(([name]) => name === 'WWW-Authenticate');
+    expect(wwwAuth?.[1]).toContain(
+      'resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource"',
+    );
+    vi.unstubAllEnvs();
+    resetEnvCache();
+  });
+});
+
+describe('hasBearerToken', () => {
+  it('detects a bearer token (case-insensitive)', async () => {
+    const { hasBearerToken } = await import('../handler.js');
+    expect(hasBearerToken(mockReq('', { authorization: 'Bearer abc' }))).toBe(true);
+    expect(hasBearerToken(mockReq('', { authorization: 'bearer abc' }))).toBe(true);
+  });
+
+  it('rejects a missing, empty, or non-bearer header', async () => {
+    const { hasBearerToken } = await import('../handler.js');
+    expect(hasBearerToken(mockReq('', {}))).toBe(false);
+    expect(hasBearerToken(mockReq('', { authorization: 'Bearer ' }))).toBe(false);
+    expect(hasBearerToken(mockReq('', { authorization: 'Basic xyz' }))).toBe(false);
   });
 });

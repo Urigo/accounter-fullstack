@@ -57,13 +57,16 @@ a grace period).
 
 ### MCP endpoint
 
-The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. It is currently **auth-agnostic** (the
-OAuth challenge is added in a later step). Supported methods: `initialize`, `ping`, `tools/list`,
-and `tools/call` (for the internal `accounter_smoke_ping` tool). Unknown methods return a
-deterministic JSON-RPC `-32601` error; notifications receive `202 Accepted` with no body.
+The transport lives at `POST /mcp` and accepts JSON-RPC 2.0. Requests **must** carry a bearer token
+in the `Authorization` header — a request without one gets a `401` with a `WWW-Authenticate: Bearer`
+header pointing at the protected-resource metadata document (token _validity_ is verified in a later
+step). Supported methods: `initialize`, `ping`, `tools/list`, and `tools/call` (for the internal
+`accounter_smoke_ping` tool). Unknown methods return a deterministic JSON-RPC `-32601` error;
+notifications receive `202 Accepted` with no body.
 
 ```bash
 curl -sX POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <token>' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
