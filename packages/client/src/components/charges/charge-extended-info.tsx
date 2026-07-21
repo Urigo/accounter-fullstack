@@ -3,6 +3,7 @@ import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Box, Collapse, Loader } from '@mantine/core';
 import {
+  ChargeExpansionFieldsFragmentDoc,
   ChargeLedgerRecordsTableFieldsFragmentDoc,
   ChargesTableErrorsFieldsFragmentDoc,
   ChargeTableTransactionsFieldsFragmentDoc,
@@ -14,7 +15,7 @@ import {
   TableDocumentsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
-  type FetchChargeQuery,
+  type ChargeExpansionFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
@@ -44,38 +45,46 @@ import { SalariesTable } from './extended-info/salaries-info.js';
 /* GraphQL */ `
   query FetchCharge($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
-      __typename
       id
-      metadata {
-        transactionsCount
-        documentsCount
-        receiptsCount
-        invoicesCount
-        ledgerCount
-        miscExpensesCount
-        isLedgerLocked
-        openDocuments
-      }
-      totalAmount {
-        raw
-      }
-      ...DocumentsGalleryFields @defer
-      ...TableDocumentsFields @defer
-      ...ChargeLedgerRecordsTableFields @defer
-      ...ChargeTableTransactionsFields @defer
-      ...ConversionChargeInfo @defer
-      ...CreditcardBankChargeInfo @defer
-      ...TableSalariesFields @defer
-      ... on BusinessTripCharge {
-        businessTrip {
-          id
-          ...BusinessTripReportFields
-        }
-      }
-      ...ChargesTableErrorsFields @defer
-      ...TableMiscExpensesFields @defer
-      ...ExchangeRatesInfo @defer
+      ...ChargeExpansionFields
     }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargeExpansionFields on Charge {
+    id
+    __typename
+    metadata {
+      transactionsCount
+      documentsCount
+      receiptsCount
+      invoicesCount
+      ledgerCount
+      miscExpensesCount
+      isLedgerLocked
+      openDocuments
+    }
+    totalAmount {
+      raw
+    }
+    ...DocumentsGalleryFields @defer
+    ...TableDocumentsFields @defer
+    ...ChargeLedgerRecordsTableFields @defer
+    ...ChargeTableTransactionsFields @defer
+    ...ConversionChargeInfo @defer
+    ...CreditcardBankChargeInfo @defer
+    ...TableSalariesFields @defer
+    ... on BusinessTripCharge {
+      businessTrip {
+        id
+        ...BusinessTripReportFields
+      }
+    }
+    ...ChargesTableErrorsFields @defer
+    ...TableMiscExpensesFields @defer
+    ...ExchangeRatesInfo @defer
   }
 `;
 
@@ -129,7 +138,9 @@ export function ChargeExtendedInfo({
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, setOpened] = useState(false);
-  const [chargeState, setChargeState] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
+  const [chargeState, setChargeState] = useState<ChargeExpansionFieldsFragment | undefined>(
+    undefined,
+  );
 
   // When the table is in batch-open mode, a single `chargesByIDs` query (the batch loader) hydrates
   // every expanded row. Consume that shared result instead of firing this component's own
@@ -143,7 +154,10 @@ export function ChargeExtendedInfo({
     pause: batch.active,
   });
 
-  const incomingCharge = batch.active ? batch.getCharge(chargeID) : data?.charge;
+  const incomingCharge = getFragmentData(
+    ChargeExpansionFieldsFragmentDoc,
+    batch.active ? batch.getCharge(chargeID) : data?.charge,
+  );
   const fetching = batch.active ? batch.fetching : singleFetching;
 
   // Keep a deeply-equal-stable reference so descendants only re-render when the
@@ -186,7 +200,7 @@ export function ChargeExtendedInfo({
           merged[key] = value;
         }
       }
-      return merged as FetchChargeQuery['charge'];
+      return merged as ChargeExpansionFieldsFragment;
     });
   }, [incomingCharge]);
 

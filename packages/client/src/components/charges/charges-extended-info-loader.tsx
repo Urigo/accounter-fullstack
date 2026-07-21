@@ -14,37 +14,8 @@ import { ChargesExtendedInfoBatchDocument, type FetchChargeQuery } from '../../g
 /* GraphQL */ `
   query ChargesExtendedInfoBatch($chargeIDs: [UUID!]!) {
     chargesByIDs(chargeIDs: $chargeIDs) {
-      __typename
       id
-      metadata {
-        transactionsCount
-        documentsCount
-        receiptsCount
-        invoicesCount
-        ledgerCount
-        miscExpensesCount
-        isLedgerLocked
-        openDocuments
-      }
-      totalAmount {
-        raw
-      }
-      ...DocumentsGalleryFields @defer
-      ...TableDocumentsFields @defer
-      ...ChargeLedgerRecordsTableFields @defer
-      ...ChargeTableTransactionsFields @defer
-      ...ConversionChargeInfo @defer
-      ...CreditcardBankChargeInfo @defer
-      ...TableSalariesFields @defer
-      ... on BusinessTripCharge {
-        businessTrip {
-          id
-          ...BusinessTripReportFields
-        }
-      }
-      ...ChargesTableErrorsFields @defer
-      ...TableMiscExpensesFields @defer
-      ...ExchangeRatesInfo @defer
+      ...ChargeExpansionFields
     }
   }
 `;
