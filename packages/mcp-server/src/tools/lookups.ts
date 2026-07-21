@@ -31,13 +31,11 @@ const limit = z
   .default(MAX_LOOKUP_RESULTS)
   .describe(`Maximum rows to return (capped at ${MAX_LOOKUP_RESULTS}).`);
 
-/** Stable order: by name (case-insensitive), tie-broken by id. */
+/** Stable order: by name (case-insensitive, locale-aware), tie-broken by id. */
 function byNameThenId(a: { name: string; id: string }, b: { name: string; id: string }): number {
-  const an = a.name.toLowerCase();
-  const bn = b.name.toLowerCase();
-  if (an < bn) return -1;
-  if (an > bn) return 1;
-  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+  return (
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id)
+  );
 }
 
 function applyFilterSortCap<T extends { name: string; id: string }>(
@@ -99,7 +97,12 @@ async function listTagsHandler(
   }));
 
   return {
-    content: [{ type: 'text', text: `Found ${total} tag(s)${truncated ? ' (truncated)' : ''}.` }],
+    content: [
+      {
+        type: 'text',
+        text: `Found ${total} ${total === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
+      },
+    ],
     structuredContent: { tags, total, truncated },
   };
 }
@@ -154,21 +157,21 @@ async function listTaxCategoriesHandler(
   const activeFiltered = input.activeOnly
     ? data.taxCategories.filter(category => category.isActive)
     : data.taxCategories;
-  const { rows, total, truncated } = applyFilterSortCap(
-    activeFiltered,
-    input.nameContains,
-    input.limit,
-  );
-  const taxCategories = rows.map(category => ({
-    id: category.id,
-    name: category.name,
-    irsCode: category.irsCode,
-    isActive: category.isActive,
-  }));
+  // `rows` are already `RawTaxCategory` with exactly the fields we expose.
+  const {
+    rows: taxCategories,
+    total,
+    truncated,
+  } = applyFilterSortCap(activeFiltered, input.nameContains, input.limit);
 
   return {
     content: [
-      { type: 'text', text: `Found ${total} tax categor(ies)${truncated ? ' (truncated)' : ''}.` },
+      {
+        type: 'text',
+        text: `Found ${total} tax ${total === 1 ? 'category' : 'categories'}${
+          truncated ? ' (truncated)' : ''
+        }.`,
+      },
     ],
     structuredContent: { taxCategories, total, truncated },
   };
