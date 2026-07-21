@@ -327,13 +327,12 @@ export function ChargeExtendedInfo({
 
   return (
     <div className="flex flex-col gap-5">
-      {fetching && !charge && (
-        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
-      )}
-      {isFragmentReady(FetchChargeDocument, ChargesTableErrorsFieldsFragmentDoc, charge) && (
-        <ChargeErrors data={charge} />
-      )}
-      {charge && (
+      {isFragmentReady(
+        ChargeExpansionFieldsFragmentDoc,
+        ChargesTableErrorsFieldsFragmentDoc,
+        charge,
+      ) && <ChargeErrors data={charge} />}
+      {charge ? (
         <div className="flex flex-row">
           <Accordion
             className="w-full"
@@ -518,8 +517,11 @@ export function ChargeExtendedInfo({
             </Box>
           )}
         </div>
+      ) : fetching ? (
+        <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
+      ) : (
+        <p>Error fetching extended information for this charge</p>
       )}
-      {!fetching && !charge && <p>Error fetching extended information for this charge</p>}
     </div>
   );
 }
