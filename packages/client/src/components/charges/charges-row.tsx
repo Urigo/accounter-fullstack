@@ -39,24 +39,22 @@ export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
   });
 
   const originalStringified = useMemo(() => JSON.stringify(row.original), [row.original]);
-  const newStringified = useMemo(() => {
-    if (newData?.charge) {
-      const newRow = convertChargeFragmentToTableRow(
-        getFragmentData(ChargeForChargesTableFieldsFragmentDoc, newData.charge),
-      );
-      return JSON.stringify(newRow);
-    }
-    return null;
-  }, [newData]);
+  const newRow = useMemo(
+    () =>
+      newData?.charge
+        ? convertChargeFragmentToTableRow(
+            getFragmentData(ChargeForChargesTableFieldsFragmentDoc, newData.charge),
+          )
+        : null,
+    [newData],
+  );
+  const newStringified = useMemo(() => (newRow ? JSON.stringify(newRow) : null), [newRow]);
 
   useEffect(() => {
-    if (newData && newStringified && !fetching && newStringified !== originalStringified) {
-      const newRow = convertChargeFragmentToTableRow(
-        getFragmentData(ChargeForChargesTableFieldsFragmentDoc, newData.charge),
-      );
+    if (newRow && newStringified && !fetching && newStringified !== originalStringified) {
       updateCharge(newRow);
     }
-  }, [newStringified, originalStringified, newData, fetching, updateCharge, row.original]);
+  }, [newRow, newStringified, originalStringified, fetching, updateCharge]);
 
   // react-table's row model is mutated in place to thread this row's refetch
   // handler onto `row.original.onChange`, which the cells read to reload the

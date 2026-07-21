@@ -38,6 +38,10 @@ export const DownloadCSVButton = ({
     try {
       const { fileContent, fileName } = await createFileVariables();
       csvDownload(fileContent, fileName);
+    } catch (error) {
+      // `createFileVariables` is responsible for surfacing user-facing errors (e.g. a toast); catch
+      // here so a rejection just aborts the download instead of becoming an unhandled rejection.
+      console.error('Failed to prepare CSV download', error);
     } finally {
       setLoading(false);
     }
