@@ -1,10 +1,11 @@
-import { useCallback, useContext, useEffect, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
+import type { RowSelectionState } from '@tanstack/react-table';
+import { NewChargesTable } from '@/components/charges/new-charges-table.js';
 import { MissingInfoChargesDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
-import { ChargesTable } from '../../charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
@@ -15,7 +16,7 @@ import { Button } from '../../ui/button.js';
     chargesWithMissingRequiredInfo(page: $page, limit: $limit) {
       nodes {
         id
-        ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
       pageInfo {
         totalPages
@@ -27,24 +28,11 @@ import { Button } from '../../ui/button.js';
 export const MissingInfoCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { get } = useUrlQuery();
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 1);
 
-  const toggleMergeCharge = useCallback(
-    (chargeId: string, onChange: () => void) => {
-      if (mergeSelectedCharges.map(selected => selected.id).includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(selected => selected.id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, { id: chargeId, onChange }]);
-      }
-    },
-    [mergeSelectedCharges],
-  );
-
-  const [{ data, fetching }] = useQuery({
+  const [{ data, fetching }, refetch] = useQuery({
     query: MissingInfoChargesDocument,
     variables: {
       page: activePage,
@@ -52,8 +40,23 @@ export const MissingInfoCharges = (): ReactElement => {
     },
   });
 
+  // Derive the merge button's input from the row-selection map. Each selected charge gets an
+  // `onChange` that refetches the list, so the table refreshes once a merge completes.
+  const mergeSelectedCharges = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([id]) => ({
+          id,
+          onChange: (): void => {
+            refetch({ requestPolicy: 'network-only' });
+          },
+        })),
+    [rowSelection, refetch],
+  );
+
   function onResetMerge(): void {
-    setMergeSelectedCharges([]);
+    setRowSelection({});
   }
 
   useEffect(() => {
@@ -95,11 +98,11 @@ export const MissingInfoCharges = (): ReactElement => {
       {!data?.chargesWithMissingRequiredInfo.nodes || fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <ChargesTable
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
+        <NewChargesTable
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
           data={data?.chargesWithMissingRequiredInfo?.nodes}
-          isAllOpened={isAllOpened}
+          // isAllOpened={isAllOpened}
         />
       )}
     </PageLayout>

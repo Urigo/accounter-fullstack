@@ -1,9 +1,10 @@
 import { useCallback, useContext, useMemo, useState } from 'react';
 import { useQuery } from 'urql';
+import type { RowSelectionState } from '@tanstack/react-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessChargesSectionDocument, ChargeSortByField } from '@/gql/graphql.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { ChargesTable } from '../charges/charges-table';
+import { NewChargesTable } from '../charges/new-charges-table.js';
 import { MergeChargesButton, Pagination } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -12,7 +13,7 @@ import { MergeChargesButton, Pagination } from '../common/index.js';
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
-        ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
       pageInfo {
         totalPages
@@ -28,21 +29,10 @@ interface Props {
 export function ChargesSection({ businessId }: Props) {
   const { userContext } = useContext(UserContext);
   const [activePageIndex, setActivePageIndex] = useState(0);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<Array<string>>([]);
-
-  const toggleMergeCharge = useCallback((chargeId: string) => {
-    setMergeSelectedCharges(prev =>
-      prev.includes(chargeId) ? prev.filter(id => id !== chargeId) : [...prev, chargeId],
-    );
-  }, []);
-
-  const mergeSelectedChargesSet = useMemo(
-    () => new Set(mergeSelectedCharges),
-    [mergeSelectedCharges],
-  );
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const onResetMerge = useCallback((): void => {
-    setMergeSelectedCharges([]);
+    setRowSelection({});
   }, []);
 
   const [{ data, fetching }, refetchCharges] = useQuery({
@@ -62,6 +52,21 @@ export function ChargesSection({ businessId }: Props) {
       limit: 10,
     },
   });
+
+  // Derive the merge button's input from the row-selection map. Each selected charge gets an
+  // `onChange` that refetches the list, so the table refreshes once a merge completes.
+  const mergeSelectedCharges = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([id]) => ({
+          id,
+          onChange: (): void => {
+            refetchCharges({ requestPolicy: 'network-only' });
+          },
+        })),
+    [rowSelection, refetchCharges],
+  );
 
   const totalPages = data?.allCharges?.pageInfo.totalPages ?? 1;
   const charges = useMemo(() => data?.allCharges?.nodes ?? [], [data]);
@@ -89,24 +94,15 @@ export function ChargesSection({ businessId }: Props) {
             />
           )}
 
-          <MergeChargesButton
-            selected={mergeSelectedCharges.map(id => ({
-              id,
-              onChange: (): void => {
-                refetchCharges({ requestPolicy: 'cache-and-network' });
-              },
-            }))}
-            resetMergeList={onResetMerge}
-          />
+          <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={onResetMerge} />
         </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <ChargesTable
+          <NewChargesTable
             data={charges}
-            isAllOpened={false}
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={mergeSelectedChargesSet}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
           />
         </div>
       </CardContent>
