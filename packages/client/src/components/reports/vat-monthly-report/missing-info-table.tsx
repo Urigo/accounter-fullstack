@@ -52,6 +52,7 @@ export const MissingInfoTable = ({
           data={chargesData.missingInfo}
           rowSelection={rowSelection}
           onRowSelectionChange={onRowSelectionChange}
+          showExport
         />
       )}
     </Card>
