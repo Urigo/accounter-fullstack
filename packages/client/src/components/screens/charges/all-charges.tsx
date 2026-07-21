@@ -150,6 +150,7 @@ export const AllCharges = (): ReactElement => {
             data={chargeNodes}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
+            isAllOpened={isAllOpened}
           />
         </div>
       ) : (
