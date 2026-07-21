@@ -26,7 +26,7 @@ const columns: ColumnDef[] = [
   { key: 'Documents Date', valueFn: charge => formatDate(charge.minDocumentsDate) },
   { key: 'Counterparty', valueFn: charge => charge.counterparty?.name ?? '' },
   { key: 'Description', valueFn: charge => charge.userDescription?.trim() ?? '' },
-  { key: 'Tags', valueFn: charge => charge.tags.map(tag => tag.name).join('; ') },
+  { key: 'Tags', valueFn: charge => (charge.tags ?? []).map(tag => tag.name).join('; ') },
   { key: 'Tax Category', valueFn: charge => charge.taxCategory?.name ?? '' },
   {
     key: 'Business Trip',
@@ -88,7 +88,7 @@ function missingInfoColumns(): ColumnDef[] {
 }
 
 function transactionsDetail(charge: ChargeForCsvExportFieldsFragment): string {
-  return charge.transactions
+  return (charge.transactions ?? [])
     .map(rawTransaction => {
       const transaction: TransactionForTransactionsTableFieldsFragment = getFragmentData(
         TransactionForTransactionsTableFieldsFragmentDoc,
@@ -107,7 +107,7 @@ function transactionsDetail(charge: ChargeForCsvExportFieldsFragment): string {
 }
 
 function documentsDetail(charge: ChargeForCsvExportFieldsFragment): string {
-  return charge.additionalDocuments
+  return (charge.additionalDocuments ?? [])
     .map(rawDocument => {
       const document: TableDocumentsRowFieldsFragment = getFragmentData(
         TableDocumentsRowFieldsFragmentDoc,
