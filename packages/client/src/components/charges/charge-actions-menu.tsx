@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, Trash } from 'lucide-react';
 import { Burger, Menu, Modal } from '@mantine/core';
-import type { ChargesTableRowFieldsFragment } from '../../gql/graphql.js';
+import type { ChargeType } from '@/helpers/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
@@ -17,7 +17,7 @@ import { Dialog, DialogContent } from '../ui/dialog.js';
 
 interface ChargeActionsMenuProps {
   chargeId: string;
-  chargeType: ChargesTableRowFieldsFragment['__typename'];
+  chargeType: ChargeType;
   onChange?: () => void;
   isIncome: boolean;
 }

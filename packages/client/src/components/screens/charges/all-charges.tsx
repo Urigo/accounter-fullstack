@@ -2,12 +2,13 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
+import type { RowSelectionState } from '@tanstack/react-table';
+import { ChargesTable } from '@/components/charges/charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
-import { ChargesTable } from '../../charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
@@ -18,7 +19,7 @@ import { Button } from '../../ui/button.js';
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
-        ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
       pageInfo {
         totalPages
@@ -30,9 +31,7 @@ import { Button } from '../../ui/button.js';
 export const AllCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { get } = useUrlQuery();
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const uriFilters = get('chargesFilters');
@@ -48,17 +47,6 @@ export const AllCharges = (): ReactElement => {
     return undefined;
   }, [uriFilters]);
   const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
-
-  const toggleMergeCharge = useCallback(
-    (chargeId: string, onChange: () => void) => {
-      if (mergeSelectedCharges.map(selected => selected.id).includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(selected => selected.id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, { id: chargeId, onChange }]);
-      }
-    },
-    [mergeSelectedCharges],
-  );
 
   const [{ data, fetching }, fetchCharges] = useQuery({
     query: AllChargesDocument,
@@ -83,9 +71,24 @@ export const AllCharges = (): ReactElement => {
   // refetch returns identical results.
   const chargeNodes = useStableValue(data?.allCharges?.nodes);
 
-  function onResetMerge(): void {
-    setMergeSelectedCharges([]);
-  }
+  const resetMergeList = useCallback((): void => {
+    setRowSelection({});
+  }, []);
+
+  // Derive the merge button's input from the row-selection map. Each selected charge gets an
+  // `onChange` that refetches the list, so the table refreshes once a merge completes.
+  const mergeSelectedCharges = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([id]) => ({
+          id,
+          onChange: (): void => {
+            fetchCharges({ requestPolicy: 'network-only' });
+          },
+        })),
+    [rowSelection, fetchCharges],
+  );
 
   // Only the page count is consumed from the query result here. Depend on it
   // directly (instead of the whole `data`/`fetching`) so the filters bar isn't
@@ -117,7 +120,7 @@ export const AllCharges = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={resetMergeList} />
       </div>,
     );
   }, [
@@ -130,6 +133,7 @@ export const AllCharges = (): ReactElement => {
     setFilter,
     setIsAllOpened,
     mergeSelectedCharges,
+    resetMergeList,
   ]);
 
   return (
@@ -143,10 +147,11 @@ export const AllCharges = (): ReactElement => {
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
           <ChargesTable
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
             data={chargeNodes}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
             isAllOpened={isAllOpened}
+            showExport
           />
         </div>
       ) : (

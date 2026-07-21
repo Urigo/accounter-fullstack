@@ -1,8 +1,8 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { ChargeScreenDocument, type ChargeScreenQuery } from '../../../gql/graphql.js';
-import { ChargesTable } from '../../charges/charges-table.js';
+import { ChargesTable } from '@/components/charges/charges-table.js';
+import { ChargeScreenDocument, type ChargeScreenQuery } from '@/gql/graphql.js';
 import { AccounterLoader } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -10,7 +10,7 @@ import { AccounterLoader } from '../../common/index.js';
   query ChargeScreen($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
       id
-      ...ChargesTableFields
+      ...ChargeForChargesTableFields
     }
   }
 `;

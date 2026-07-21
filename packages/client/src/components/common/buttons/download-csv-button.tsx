@@ -1,5 +1,6 @@
-import { useCallback, type ReactElement } from 'react';
-import { FileDown } from 'lucide-react';
+import { useCallback, useState, type ReactElement } from 'react';
+import { FileDown, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils.js';
 import { Button } from '../../ui/button.js';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.js';
 
@@ -28,21 +29,51 @@ export const DownloadCSVButton = ({
   buttonContent,
   label,
 }: Props): ReactElement => {
-  const onClick = useCallback(() => {
-    createFileVariables().then(({ fileContent, fileName }) => {
+  const [loading, setLoading] = useState(false);
+
+  // Preparing the file (e.g. fetching export data) can take a moment. Track a loading state so we
+  // can surface progress and guard against re-clicks while a download is being prepared.
+  const onClick = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { fileContent, fileName } = await createFileVariables();
       csvDownload(fileContent, fileName);
-    });
+    } finally {
+      setLoading(false);
+    }
   }, [createFileVariables]);
+
+  const {
+    className: buttonClassName,
+    disabled: buttonDisabled,
+    ...restButtonProps
+  } = buttonProps ?? {};
 
   return (
     <Tooltip>
       <TooltipTrigger>
-        <Button variant="outline" className="p-2" {...buttonProps} onClick={onClick}>
-          {buttonContent || <FileDown size={20} />}
+        <Button
+          variant="outline"
+          className={cn('relative p-2', buttonClassName)}
+          disabled={loading || buttonDisabled}
+          aria-busy={loading}
+          {...restButtonProps}
+          onClick={onClick}
+        >
+          {/* Keep the original content in place (just hidden) so the button size stays stable, and
+              overlay a centered spinner while preparing the file. */}
+          <span className={loading ? 'invisible' : 'contents'}>
+            {buttonContent || <FileDown size={20} />}
+          </span>
+          {loading && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin" />
+            </span>
+          )}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>{label || 'Download CSV'}</p>
+        <p>{loading ? 'Preparing download…' : label || 'Download CSV'}</p>
       </TooltipContent>
     </Tooltip>
   );

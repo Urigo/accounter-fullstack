@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { PanelTopClose, PanelTopOpen } from 'lucide-react';
+import type { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { Card } from '@/components/ui/card.js';
 import { VatReportMiscTableFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
@@ -11,22 +12,18 @@ import { Button } from '../../ui/button.js';
   fragment VatReportMiscTableFields on VatReportResult {
     differentMonthDoc {
       id
-      ...ChargesTableFields
+      ...ChargeForChargesTableFields
     }
   }
 `;
 
 type Props = {
   data?: FragmentType<typeof VatReportMiscTableFieldsFragmentDoc>;
-  toggleMergeCharge: (chargeId: string) => void;
-  mergeSelectedCharges: Set<string>;
+  rowSelection: RowSelectionState;
+  onRowSelectionChange: OnChangeFn<RowSelectionState>;
 };
 
-export const MiscTable = ({
-  data,
-  toggleMergeCharge,
-  mergeSelectedCharges,
-}: Props): ReactElement => {
+export const MiscTable = ({ data, rowSelection, onRowSelectionChange }: Props): ReactElement => {
   const chargesData = getFragmentData(VatReportMiscTableFieldsFragmentDoc, data);
   const [isOpened, setIsOpened] = useState(true);
 
@@ -49,9 +46,8 @@ export const MiscTable = ({
       {isOpened && chargesData && (
         <ChargesTable
           data={chargesData.differentMonthDoc}
-          isAllOpened={false}
-          toggleMergeCharge={toggleMergeCharge}
-          mergeSelectedCharges={mergeSelectedCharges}
+          rowSelection={rowSelection}
+          onRowSelectionChange={onRowSelectionChange}
         />
       )}
     </Card>

@@ -1,41 +1,28 @@
 import { useMemo, type ReactElement } from 'react';
 import { ThemeIcon } from '@mantine/core';
-import { ChargesTableTypeFieldsFragmentDoc } from '../../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { getChargeTypeIcon, getChargeTypeName } from '../../../helpers/index.js';
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment ChargesTableTypeFields on Charge {
-    __typename
-    id
-  }
-`;
+import { getChargeTypeIcon, getChargeTypeName, type ChargeType } from '../../../helpers/index.js';
+import { Tooltip } from '../../common/index.js';
 
 type Props = {
-  data: FragmentType<typeof ChargesTableTypeFieldsFragmentDoc>;
+  type: ChargeType;
 };
 
-export const TypeCell = ({ data }: Props): ReactElement => {
-  const charge = getFragmentData(ChargesTableTypeFieldsFragmentDoc, data);
-  const { __typename } = charge;
-
+export const TypeCell = ({ type }: Props): ReactElement => {
   const { text, icon } = useMemo(
     (): {
       text: string;
       icon: ReactElement;
     } => ({
-      text: getChargeTypeName(__typename),
-      icon: getChargeTypeIcon(__typename),
+      text: getChargeTypeName(type),
+      icon: getChargeTypeIcon(type),
     }),
-    [__typename],
+    [type],
   );
   return (
-    <td>
-      <div>{text}</div>
+    <Tooltip content={text}>
       <ThemeIcon radius="xl" size="xl">
         {icon}
       </ThemeIcon>
-    </td>
+    </Tooltip>
   );
 };

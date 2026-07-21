@@ -1,67 +1,30 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
 import { Group, Indicator, Text } from '@mantine/core';
-import { ChargesTableTagsFieldsFragmentDoc, MissingChargeInfo } from '../../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, ListCapsule, SimilarChargesByIdModal } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment ChargesTableTagsFields on Charge {
-    id
-    tags {
-      id
-      name
-      namePath
-    }
-    validationData {
-      ... on ValidationData {
-        missingInfo
-      }
-    }
-    missingInfoSuggestions {
-      ... on ChargeSuggestions {
-        tags {
-          id
-          name
-          namePath
-        }
-      }
-    }
-  }
-`;
-
-type Props = {
-  data: FragmentType<typeof ChargesTableTagsFieldsFragmentDoc>;
+export type TagsProps = {
+  chargeId: string;
+  tags: { id: string; name: string; namePath?: string[] }[];
+  suggestedTags: { id: string; name: string; namePath?: string[] }[];
+  isMissing?: boolean;
   onChange: () => void;
 };
 
-export const Tags = ({ data, onChange }: Props): ReactElement => {
-  const {
-    tags: originalTags,
-    id: chargeId,
-    validationData,
-    missingInfoSuggestions,
-  } = getFragmentData(ChargesTableTagsFieldsFragmentDoc, data);
+export const Tags = ({
+  chargeId,
+  tags: originalTags,
+  suggestedTags,
+  isMissing,
+  onChange,
+}: TagsProps): ReactElement => {
   const { updateCharge, fetching } = useUpdateCharge();
-  const [tags, setTags] = useState<typeof originalTags>(originalTags ?? []);
 
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
 
-  const isError = validationData?.missingInfo?.includes(MissingChargeInfo.Tags);
-  const hasAlternative = isError && !!missingInfoSuggestions?.tags?.length;
+  const hasAlternative = isMissing && !!suggestedTags?.length;
 
-  useEffect(() => {
-    if (originalTags?.length && !tags.length) {
-      setTags(originalTags);
-    }
-  }, [originalTags, tags.length]);
-
-  useEffect(() => {
-    if (tags.length === 0 && hasAlternative) {
-      setTags(missingInfoSuggestions?.tags ?? []);
-    }
-  }, [tags.length, hasAlternative, missingInfoSuggestions?.tags]);
+  const tags = originalTags?.length ? originalTags : hasAlternative ? suggestedTags : [];
 
   const updateTag = useCallback(
     async (tags?: Array<{ id: string }>) => {
@@ -71,12 +34,12 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
       });
       setSimilarChargesOpen(true);
     },
-    [chargeId, updateCharge, setSimilarChargesOpen],
+    [chargeId, updateCharge],
   );
 
   return (
-    <td>
-      <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
+    <>
+      <Indicator inline size={12} disabled={!isMissing} color="red" zIndex="auto">
         <ListCapsule
           items={tags.map(t => (
             <Group key={t.id}>
@@ -97,7 +60,7 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
         <ConfirmMiniButton
           onClick={(event): void => {
             event.stopPropagation();
-            updateTag(missingInfoSuggestions!.tags);
+            updateTag(suggestedTags);
           }}
           disabled={fetching}
         />
@@ -105,11 +68,11 @@ export const Tags = ({ data, onChange }: Props): ReactElement => {
 
       <SimilarChargesByIdModal
         chargeId={chargeId}
-        tagIds={missingInfoSuggestions?.tags?.map(t => ({ id: t.id }))}
+        tagIds={suggestedTags?.map(t => ({ id: t.id }))}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
         onClose={onChange}
       />
-    </td>
+    </>
   );
 };
