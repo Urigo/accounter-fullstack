@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -289,11 +289,12 @@ export const NewChargesTable = ({
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
-  // Update a specific charge by its stable id. Matching on id (rather than row index) keeps the
-  // update correct when the table is sorted, filtered, or paginated.
-  const updateCharge = (chargeId: string, updatedCharge: ChargeRow) => {
-    setCharges(old => old.map(row => (row.id === chargeId ? updatedCharge : row)));
-  };
+  // Update a charge by its stable id (carried on the updated row). Matching on id (rather than row
+  // index) keeps the update correct when the table is sorted, filtered, or paginated. Memoized so
+  // the reference stays stable — `ChargeRow` lists it in a `useEffect` dependency array.
+  const updateCharge = useCallback((updatedCharge: ChargeRow) => {
+    setCharges(old => old.map(row => (row.id === updatedCharge.id ? updatedCharge : row)));
+  }, []);
 
   // Update charges when data changes
   useEffect(() => {
@@ -376,7 +377,7 @@ export const NewChargesTable = ({
                     <ChargeRow
                       key={row.id}
                       row={row}
-                      updateCharge={(newCharge: ChargeRow) => updateCharge(row.id, newCharge)}
+                      updateCharge={updateCharge}
                     />
                   ))
               ) : (
