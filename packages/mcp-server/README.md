@@ -16,9 +16,20 @@ implementation blueprint. It currently contains the package skeleton, strict env
 configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
 transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, per-request
 structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint,
-Auth0 bearer-token verification, and identity mapping from a verified token to an internal user +
-business-membership context. Fine-grained authorization and production tools are not implemented
-yet.
+Auth0 bearer-token verification, identity mapping from a verified token to an internal user +
+business-membership context, a curated tool registry with strict input validation, a per-tool
+authorization policy evaluator, and a hardened upstream GraphQL client. Production tools that use
+these building blocks are not implemented yet.
+
+## Upstream GraphQL client
+
+Tool handlers talk to the Accounter GraphQL server through a single hardened client
+(`src/upstream/graphql-client.ts`): a strict per-request **timeout** with cancellation, **bounded
+retries** for idempotent read failures only (network errors, timeouts, and 5xx — never 4xx
+auth/validation errors or GraphQL-level errors), **header propagation** of the correlation id and
+the caller's `Authorization` bearer token, and **sanitized** upstream errors (no stack traces or
+internal details). Phase 1 is read-only: mutations/subscriptions are refused, and there is **no**
+generic "execute anything" surface — tools use typed read-only wrappers via `createReadOperation`.
 
 ## Identity & tenant scope
 
