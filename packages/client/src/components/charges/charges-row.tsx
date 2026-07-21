@@ -1,235 +1,96 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { Paper } from '@mantine/core';
+import { flexRender, type Row } from '@tanstack/react-table';
 import {
-  AccountantStatus,
-  ChargeForRowDocument,
-  ChargesTableBusinessTripFieldsFragmentDoc,
-  ChargesTableEntityFieldsFragmentDoc,
-  ChargesTableRowFieldsFragmentDoc,
-  ChargesTableTagsFieldsFragmentDoc,
-  ChargesTableTaxCategoryFieldsFragmentDoc,
-  type ChargesTableFieldsFragment,
-  type ChargesTableRowFieldsFragment,
-} from '../../gql/graphql.js';
-import { getFragmentData, isFragmentReady } from '../../gql/index.js';
-import { ToggleExpansionButton, ToggleMergeSelected } from '../common/index.js';
-import {
-  AccountantApproval,
-  Amount,
-  BusinessTrip,
-  Counterparty,
-  DateCell,
-  Description,
-  MoreInfo,
-  Tags,
-  TaxCategory,
-  TypeCell,
-  Vat,
-} from './cells/index.js';
-import { ChargeActionsMenu } from './charge-actions-menu.js';
+  ChargeForChargesTableFieldsFragmentDoc,
+  RefetchChargeForChargesTableDocument,
+} from '@/gql/graphql.js';
+import { getFragmentData } from '@/gql/index.js';
+import { Card } from '../ui/card.js';
+import { TableCell, TableRow } from '../ui/table.js';
 import { ChargeExtendedInfo } from './charge-extended-info.js';
+import {
+  convertChargeFragmentToTableRow,
+  type ChargeRow as ChargeRowType,
+} from './charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
-  fragment ChargesTableRowFields on Charge {
-    id
-    __typename
-    metadata {
-      ... on ChargeMetadata @defer {
-        documentsCount
-        ledgerCount
-        transactionsCount
-        miscExpensesCount
-      }
-    }
-    totalAmount {
-      raw
-    }
-    ...ChargesTableAccountantApprovalFields
-    ...ChargesTableAmountFields
-    ...ChargesTableBusinessTripFields @defer
-    ...ChargesTableDateFields
-    ...ChargesTableDescriptionFields
-    ...ChargesTableEntityFields @defer
-    ...ChargesTableMoreInfoFields
-    ...ChargesTableTagsFields @defer
-    ...ChargesTableTaxCategoryFields @defer
-    ...ChargesTableTypeFields
-    ...ChargesTableVatFields
-  }
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  query ChargeForRow($chargeId: UUID!) {
+  query RefetchChargeForChargesTable($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
       id
-      ...ChargesTableRowFields
+      ...ChargeForChargesTableFields
     }
   }
 `;
 
-interface Props {
-  toggleMergeCharge?: (onChange: () => void) => void;
-  isSelectedForMerge: boolean;
-  data: ChargesTableFieldsFragment;
-  isAllOpened: boolean;
-}
+type Props = {
+  updateCharge: (charge: ChargeRowType) => void;
+  row: Row<ChargeRowType>;
+};
 
-export const ChargesTableRow = ({
-  toggleMergeCharge,
-  isSelectedForMerge,
-  data,
-  isAllOpened,
-}: Props): ReactElement => {
-  const [opened, setOpened] = useState(false);
-  const [charge, setCharge] = useState<ChargesTableRowFieldsFragment>(
-    getFragmentData(ChargesTableRowFieldsFragmentDoc, data),
-  );
-
+export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
   const [{ data: newData, fetching }, fetchCharge] = useQuery({
-    query: ChargeForRowDocument,
+    query: RefetchChargeForChargesTableDocument,
     pause: true,
     variables: {
-      chargeId: data.id,
+      chargeId: row.original.id,
     },
   });
 
-  const onChange = fetchCharge;
-
-  useEffect(() => {
-    const updatedCharge = newData?.charge;
-    if (updatedCharge) {
-      setCharge(getFragmentData(ChargesTableRowFieldsFragmentDoc, updatedCharge));
-    }
-  }, [newData]);
-
-  useEffect(() => {
-    setCharge(getFragmentData(ChargesTableRowFieldsFragmentDoc, data));
-  }, [data]);
-
-  useEffect(() => {
-    setOpened(isAllOpened);
-  }, [isAllOpened]);
-
-  const hasExtendedInfo = useMemo(
+  const originalStringified = useMemo(() => JSON.stringify(row.original), [row.original]);
+  const newRow = useMemo(
     () =>
-      !!(
-        charge.metadata?.documentsCount ||
-        charge.metadata?.transactionsCount ||
-        charge.metadata?.ledgerCount ||
-        charge.metadata?.miscExpensesCount
-      ),
-    [
-      charge.metadata?.documentsCount,
-      charge.metadata?.transactionsCount,
-      charge.metadata?.ledgerCount,
-      charge.metadata?.miscExpensesCount,
-    ],
+      newData?.charge
+        ? convertChargeFragmentToTableRow(
+            getFragmentData(ChargeForChargesTableFieldsFragmentDoc, newData.charge),
+          )
+        : null,
+    [newData],
   );
+  const newStringified = useMemo(() => (newRow ? JSON.stringify(newRow) : null), [newRow]);
 
-  const isIncomeCharge = (charge?.totalAmount?.raw ?? 0) > 0;
-
-  const onAccountantStatusChange = useCallback((status: AccountantStatus): void => {
-    if (status === AccountantStatus.Approved) {
-      setOpened(false);
+  useEffect(() => {
+    if (newRow && newStringified && !fetching && newStringified !== originalStringified) {
+      updateCharge(newRow);
     }
-  }, []);
+  }, [newRow, newStringified, originalStringified, fetching, updateCharge]);
+
+  // react-table's row model is mutated in place to thread this row's refetch
+  // handler onto `row.original.onChange`, which the cells read to reload the
+  // charge after an edit.
+  // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
+  row.original.onChange = fetchCharge;
 
   return (
     <>
-      <tr>
-        <TypeCell data={charge} />
-        <DateCell data={charge} />
-        <Amount data={charge} />
-        <Vat data={charge} />
-
-        {isFragmentReady(
-          ChargesTableRowFieldsFragmentDoc,
-          ChargesTableEntityFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <Counterparty data={charge} />
+      <TableRow key={row.id} className="w-fit max-w-full">
+        {fetching && !row.original ? (
+          <TableCell colSpan={row.getVisibleCells().length + 1}>Loading...</TableCell>
         ) : (
-          <td />
+          <>
+            {row.getVisibleCells().map(cell => (
+              <TableCell key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
+            ))}
+          </>
         )}
+      </TableRow>
 
-        <Description data={charge} onChange={onChange} />
-
-        {isFragmentReady(
-          ChargesTableRowFieldsFragmentDoc,
-          ChargesTableTagsFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <Tags data={charge} onChange={onChange} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(
-          ChargesTableRowFieldsFragmentDoc,
-          ChargesTableTaxCategoryFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <TaxCategory data={charge} />
-        ) : (
-          <td />
-        )}
-
-        {isFragmentReady(
-          ChargesTableRowFieldsFragmentDoc,
-          ChargesTableBusinessTripFieldsFragmentDoc,
-          charge,
-        ) ? (
-          <BusinessTrip data={charge} />
-        ) : (
-          <td />
-        )}
-
-        <MoreInfo data={charge} />
-        <AccountantApproval
-          data={charge}
-          onChange={onChange}
-          onStatusChange={onAccountantStatusChange}
-        />
-
-        <td>
-          <div className="flex flex-col gap-2">
-            {toggleMergeCharge && (
-              <ToggleMergeSelected
-                toggleMergeSelected={(): void => toggleMergeCharge(onChange)}
-                mergeSelected={isSelectedForMerge}
+      {/* Charge expansion row */}
+      {row.getIsExpanded() && (
+        <TableRow>
+          <TableCell colSpan={row.getVisibleCells().length}>
+            <Card className="w-full shadow-lg">
+              <ChargeExtendedInfo
+                chargeID={row.original.id}
+                onChange={fetchCharge}
+                fetching={fetching}
               />
-            )}
-          </div>
-        </td>
-        <td>
-          <div className="flex flex-col gap-2">
-            <ChargeActionsMenu
-              chargeId={charge.id}
-              chargeType={charge.__typename}
-              onChange={onChange}
-              isIncome={isIncomeCharge}
-            />
-            {hasExtendedInfo && (
-              <ToggleExpansionButton
-                toggleExpansion={setOpened}
-                isExpanded={opened}
-                onClickAction={() => onChange()}
-              />
-            )}
-          </div>
-        </td>
-      </tr>
-      {hasExtendedInfo && opened && (
-        <tr>
-          <td colSpan={13}>
-            <Paper style={{ width: '100%' }} withBorder shadow="lg">
-              <ChargeExtendedInfo chargeID={charge.id} onChange={onChange} fetching={fetching} />
-            </Paper>
-          </td>
-        </tr>
+            </Card>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );

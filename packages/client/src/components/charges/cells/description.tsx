@@ -1,48 +1,24 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useMemo, useState, type ReactElement } from 'react';
 import { Indicator } from '@mantine/core';
-import {
-  ChargesTableDescriptionFieldsFragmentDoc,
-  MissingChargeInfo,
-} from '../../../gql/graphql.js';
-import { getFragmentData, type FragmentType } from '../../../gql/index.js';
 import { useUpdateCharge } from '../../../hooks/use-update-charge.js';
 import { ConfirmMiniButton, SimilarChargesByIdModal } from '../../common/index.js';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
-/* GraphQL */ `
-  fragment ChargesTableDescriptionFields on Charge {
-    id
-    userDescription
-    validationData {
-      missingInfo
-    }
-    missingInfoSuggestions {
-      description
-    }
-  }
-`;
-
-type Props = {
-  data: FragmentType<typeof ChargesTableDescriptionFieldsFragmentDoc>;
+export type DescriptionProps = {
+  chargeId: string;
+  value?: string;
+  isMissing?: boolean;
+  suggestedDescription?: string;
   onChange: () => void;
 };
 
-export const Description = ({ data, onChange }: Props): ReactElement => {
+export const Description = ({
+  chargeId,
+  value,
+  isMissing,
+  suggestedDescription,
+  onChange,
+}: DescriptionProps): ReactElement => {
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
-  const charge = getFragmentData(ChargesTableDescriptionFieldsFragmentDoc, data);
-  const isError = charge.validationData?.missingInfo?.includes(MissingChargeInfo.Description);
-  const hasAlternative = isError && !!charge.missingInfoSuggestions?.description?.trim().length;
-  const { userDescription, id: chargeId } = charge;
-  const cellText = (() => {
-    if (userDescription && userDescription?.trim() !== '') {
-      return userDescription;
-    }
-    if (charge.missingInfoSuggestions?.description) {
-      return charge.missingInfoSuggestions.description;
-    }
-    return 'Missing';
-  })();
-
   const { updateCharge, fetching } = useUpdateCharge();
 
   const updateUserDescription = useCallback(
@@ -58,19 +34,32 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
     [chargeId, updateCharge],
   );
 
+  const cellText = useMemo(() => {
+    if (value && value !== '') {
+      return value;
+    }
+    if (suggestedDescription) {
+      return suggestedDescription;
+    }
+    return 'Missing';
+  }, [value, suggestedDescription]);
+
+  const hasAlternative = useMemo(
+    () => isMissing && !!suggestedDescription?.length,
+    [isMissing, suggestedDescription],
+  );
+
   return (
-    <td>
-      <div className="flex flex-wrap">
-        <div className="flex flex-col justify-center">
-          <Indicator inline size={12} disabled={!isError} color="red" zIndex="auto">
-            <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
-          </Indicator>
-        </div>
+    <>
+      <div className="flex flex-wrap whitespace-normal">
+        <Indicator inline size={12} disabled={!isMissing} color="red" zIndex="auto">
+          <p className={hasAlternative ? 'bg-yellow-400' : undefined}>{cellText}</p>
+        </Indicator>
         {hasAlternative && (
           <ConfirmMiniButton
             onClick={(event): void => {
               event.stopPropagation();
-              updateUserDescription(charge.missingInfoSuggestions!.description!);
+              updateUserDescription(suggestedDescription);
             }}
             disabled={fetching}
           />
@@ -79,11 +68,11 @@ export const Description = ({ data, onChange }: Props): ReactElement => {
 
       <SimilarChargesByIdModal
         chargeId={chargeId}
-        description={charge.missingInfoSuggestions?.description ?? undefined}
+        description={suggestedDescription ?? undefined}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
         onClose={onChange}
       />
-    </td>
+    </>
   );
 };

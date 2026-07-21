@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useState, type ReactElemen
 import { Check, Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon } from '@mantine/core';
+import type { RowSelectionState } from '@tanstack/react-table';
 import { encodeFilters, ROUTES } from '@/router/routes.js';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
@@ -19,7 +20,7 @@ import { Button } from './ui/button.js';
       progress
       charge {
         id
-        ...ChargesTableFields
+        ...ChargeForChargesTableFields
       }
     }
   }
@@ -44,9 +45,7 @@ export function getLedgerValidationHref(filter?: ChargeFilter | null, page?: num
 export const ChargesLedgerValidation = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [mergeSelectedCharges, setMergeSelectedCharges] = useState<
-    Array<{ id: string; onChange: () => void }>
-  >([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { get } = useUrlQuery();
   const uriFilters = get('chargesFilters');
   const initialFilters = useMemo(() => {
@@ -62,17 +61,6 @@ export const ChargesLedgerValidation = (): ReactElement => {
   }, [uriFilters]);
   const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
 
-  const toggleMergeCharge = useCallback(
-    (chargeId: string, onChange: () => void) => {
-      if (mergeSelectedCharges.map(selected => selected.id).includes(chargeId)) {
-        setMergeSelectedCharges(mergeSelectedCharges.filter(selected => selected.id !== chargeId));
-      } else {
-        setMergeSelectedCharges([...mergeSelectedCharges, { id: chargeId, onChange }]);
-      }
-    },
-    [mergeSelectedCharges],
-  );
-
   const [{ data, fetching }, validateLedger] = useQuery({
     query: ChargesLedgerValidationDocument,
     variables: {
@@ -83,7 +71,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
   });
 
   function onResetMerge(): void {
-    setMergeSelectedCharges([]);
+    setRowSelection({});
   }
 
   const progress = data?.chargesWithLedgerChanges?.length
@@ -102,6 +90,21 @@ export const ChargesLedgerValidation = (): ReactElement => {
       validateLedger();
     }
   }, [filter, validateLedger]);
+
+  // Derive the merge button's input from the row-selection map. Each selected charge gets an
+  // `onChange` that refetches the list, so the table refreshes once a merge completes.
+  const mergeSelectedCharges = useMemo(
+    () =>
+      Object.entries(rowSelection)
+        .filter(([, isSelected]) => isSelected)
+        .map(([id]) => ({
+          id,
+          onChange: (): void => {
+            validateLedger({ requestPolicy: 'network-only' });
+          },
+        })),
+    [rowSelection, validateLedger],
+  );
 
   useEffect(() => {
     setFiltersContext(
@@ -134,7 +137,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMerge={onResetMerge} />
+        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={onResetMerge} />
       </div>,
     );
   }, [
@@ -156,8 +159,8 @@ export const ChargesLedgerValidation = (): ReactElement => {
       ) : (
         <>
           <ChargesTable
-            toggleMergeCharge={toggleMergeCharge}
-            mergeSelectedCharges={new Set(mergeSelectedCharges.map(selected => selected.id))}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
             data={
               data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ??
               []
