@@ -4,7 +4,7 @@ import type { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { Card } from '@/components/ui/card.js';
 import { VatReportBusinessTripsFieldsFragmentDoc } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { NewChargesTable } from '../../charges/new-charges-table.js';
+import { ChargesTable } from '../../charges/charges-table.js';
 import { Button } from '../../ui/button.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -48,7 +48,7 @@ export const BusinessTripsTable = ({
         </h2>
       </div>
       {isOpened && chargesData && (
-        <NewChargesTable
+        <ChargesTable
           data={chargesData.businessTrips}
           rowSelection={rowSelection}
           onRowSelectionChange={onRowSelectionChange}

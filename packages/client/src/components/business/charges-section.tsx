@@ -4,7 +4,7 @@ import type { RowSelectionState } from '@tanstack/react-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessChargesSectionDocument, ChargeSortByField } from '@/gql/graphql.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { NewChargesTable } from '../charges/new-charges-table.js';
+import { ChargesTable } from '../charges/charges-table.js';
 import { MergeChargesButton, Pagination } from '../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -99,7 +99,7 @@ export function ChargesSection({ businessId }: Props) {
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
-          <NewChargesTable
+          <ChargesTable
             data={charges}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}

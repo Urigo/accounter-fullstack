@@ -32,9 +32,9 @@ import type { TagsProps } from './cells/tags.js';
 import type { TaxCategoryProps } from './cells/tax-category.js';
 import type { VatProps } from './cells/vat.js';
 import { BatchChargesExtendedInfoProvider } from './charges-extended-info-loader.js';
+import { ChargeRow } from './charges-row.js';
 import { columns } from './columns.js';
 import { DownloadChargesCsv } from './download-charges-csv.js';
-import { ChargeRow } from './new-charges-row.js';
 import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -259,7 +259,7 @@ interface Props {
   showExport?: boolean;
 }
 
-export const NewChargesTable = ({
+export const ChargesTable = ({
   data,
   rowSelection: controlledRowSelection,
   onRowSelectionChange,
