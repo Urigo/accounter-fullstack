@@ -1,6 +1,6 @@
 {
   "name": "@accounter/scraper-app",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "Scraper app with Fastify server and React UI",
   "repository": {

@@ -1,5 +1,40 @@
 # @accounter/modern-poalim-scraper
 
+## 0.10.7
+
+### Patch Changes
+
+- [#3738](https://github.com/Urigo/accounter-fullstack/pull/3738)
+  [`670f7cc`](https://github.com/Urigo/accounter-fullstack/commit/670f7cc2bd58c04da5dd151e4878382916700a8e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.2.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.0)
+    (from `25.1.0`, in `dependencies`)
+
+- [#3762](https://github.com/Urigo/accounter-fullstack/pull/3762)
+  [`50ca939`](https://github.com/Urigo/accounter-fullstack/commit/50ca939661d9eb5b31e134c54d12015e524fac1c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.2.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.0)
+    (from `25.1.0`, in `dependencies`)
+
+- [#3768](https://github.com/Urigo/accounter-fullstack/pull/3768)
+  [`7a7dc71`](https://github.com/Urigo/accounter-fullstack/commit/7a7dc71ba2dc9a660f150340f2352704d571f367)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.61.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.61.1)
+    (from `1.61.0`, in `dependencies`)
+  - Updated dependency [`puppeteer@25.2.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.1)
+    (from `25.2.0`, in `dependencies`)
+
+- [#3821](https://github.com/Urigo/accounter-fullstack/pull/3821)
+  [`fd69847`](https://github.com/Urigo/accounter-fullstack/commit/fd698477f09c7bbf245bcb011afc359f47521da3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.3.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.3.0)
+    (from `25.2.1`, in `dependencies`)
+
+- [#3950](https://github.com/Urigo/accounter-fullstack/pull/3950)
+  [`c406f51`](https://github.com/Urigo/accounter-fullstack/commit/c406f5151625b26768c3764ee302ef5e1aa80c05)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add `accountName` to
+  `AccountDataItemSchema`wq
+
 ## 0.10.6
 
 ### Patch Changes

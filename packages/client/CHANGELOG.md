@@ -1,5 +1,492 @@
 # @accounter/client
 
+## 0.1.0
+
+### Minor Changes
+
+- [#3851](https://github.com/Urigo/accounter-fullstack/pull/3851)
+  [`a91e4a0`](https://github.com/Urigo/accounter-fullstack/commit/a91e4a0726fed53dda22dfb57b6919411bbeaba3)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add the Charge Matching Review Screen: a
+  guided side-by-side UI for pairing document-based and transaction-based charges and merging them
+  one by one.
+
+  - Server: new `chargesAwaitingMatchQueue` GraphQL query that returns a paginated queue of
+    unmatched base charges with on-the-fly match suggestions, filterable by business, date range and
+    mode (`DOC_BASE`/`TRANSACTION_BASE`) and sortable `BY_DATE` or `BY_SCORE` (score evaluation
+    capped at the 100 most recent unmatched charges).
+  - Client: new `/charges/matching` screen with a filter/sort header, collapsible queue sidebar with
+    per-item pending/matched/skipped status, side-by-side base-vs-suggestion comparison cards,
+    alternative-suggestion switching, and accept (merge) / skip actions.
+
+### Patch Changes
+
+- [#3738](https://github.com/Urigo/accounter-fullstack/pull/3738)
+  [`670f7cc`](https://github.com/Urigo/accounter-fullstack/commit/670f7cc2bd58c04da5dd151e4878382916700a8e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@2.1.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.1.1) (from
+    `2.0.4`, in `dependencies`)
+
+- [#3752](https://github.com/Urigo/accounter-fullstack/pull/3752)
+  [`d8c66d8`](https://github.com/Urigo/accounter-fullstack/commit/d8c66d8d62a2c1d4e66c93a05936ea8d6200b40e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@9.1.2` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.1.2) (from `9.1.1`, in
+    `dependencies`)
+
+- [#3756](https://github.com/Urigo/accounter-fullstack/pull/3756)
+  [`490027a`](https://github.com/Urigo/accounter-fullstack/commit/490027a8b4e38a09cc92f802f0808ac46749a213)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`recharts@3.9.0` ↗︎](https://www.npmjs.com/package/recharts/v/3.9.0) (from
+    `3.8.1`, in `dependencies`)
+
+- [#3762](https://github.com/Urigo/accounter-fullstack/pull/3762)
+  [`50ca939`](https://github.com/Urigo/accounter-fullstack/commit/50ca939661d9eb5b31e134c54d12015e524fac1c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@9.1.2` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.1.2) (from `9.1.1`, in
+    `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@2.1.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.1.1) (from
+    `2.0.4`, in `dependencies`)
+
+- [#3767](https://github.com/Urigo/accounter-fullstack/pull/3767)
+  [`a82d2ac`](https://github.com/Urigo/accounter-fullstack/commit/a82d2ac553d553453b905a1f76e935c944957710)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@2.2.0` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.2.0) (from
+    `2.1.1`, in `dependencies`)
+
+- [#3768](https://github.com/Urigo/accounter-fullstack/pull/3768)
+  [`7a7dc71`](https://github.com/Urigo/accounter-fullstack/commit/7a7dc71ba2dc9a660f150340f2352704d571f367)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.101.1` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.101.1)
+    (from `5.101.0`, in `dependencies`)
+
+- [#3788](https://github.com/Urigo/accounter-fullstack/pull/3788)
+  [`fb88ebd`](https://github.com/Urigo/accounter-fullstack/commit/fb88ebd891a2d5a9a9b0f2f020f951d878898b93)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`pdfjs-dist@6.1.200` ↗︎](https://www.npmjs.com/package/pdfjs-dist/v/6.1.200)
+    (from `6.0.227`, in `dependencies`)
+
+- [#3789](https://github.com/Urigo/accounter-fullstack/pull/3789)
+  [`e26256c`](https://github.com/Urigo/accounter-fullstack/commit/e26256c2e4cd3ba51042446a4617b996d49a9e0c)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@tanstack/react-query@5.101.2` ↗︎](https://www.npmjs.com/package/@tanstack/react-query/v/5.101.2)
+    (from `5.101.1`, in `dependencies`)
+  - Updated dependency
+    [`html2canvas-pro@2.2.1` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.2.1) (from
+    `2.2.0`, in `dependencies`)
+  - Updated dependency [`radix-ui@1.6.1` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.6.1) (from
+    `1.6.0`, in `dependencies`)
+  - Updated dependency
+    [`react-router-dom@7.18.1` ↗︎](https://www.npmjs.com/package/react-router-dom/v/7.18.1) (from
+    `7.18.0`, in `dependencies`)
+  - Updated dependency [`recharts@3.9.1` ↗︎](https://www.npmjs.com/package/recharts/v/3.9.1) (from
+    `3.9.0`, in `dependencies`)
+
+- [#3796](https://github.com/Urigo/accounter-fullstack/pull/3796)
+  [`82f3633`](https://github.com/Urigo/accounter-fullstack/commit/82f3633115db06acd7ec3cbf7aabde918c190594)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@1.22.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.22.0) (from `1.21.0`,
+    in `dependencies`)
+
+- [#3820](https://github.com/Urigo/accounter-fullstack/pull/3820)
+  [`ad67ff7`](https://github.com/Urigo/accounter-fullstack/commit/ad67ff7e50482f14cfd6cc1d5e19b8b725a8f327)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@1.23.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.23.0) (from `1.22.0`,
+    in `dependencies`)
+
+- [#3823](https://github.com/Urigo/accounter-fullstack/pull/3823)
+  [`ae69959`](https://github.com/Urigo/accounter-fullstack/commit/ae69959ae45007553e075c4a6689d5cfbb800e14)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.20.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.20.0) (from
+    `2.19.0`, in `dependencies`)
+
+- [#3831](https://github.com/Urigo/accounter-fullstack/pull/3831)
+  [`79f7a7b`](https://github.com/Urigo/accounter-fullstack/commit/79f7a7bde26b7572f562976b6e737703f7e0fdbb)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@9.2.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.2.0) (from `9.1.2`, in
+    `dependencies`)
+
+- [#3834](https://github.com/Urigo/accounter-fullstack/pull/3834)
+  [`77222b7`](https://github.com/Urigo/accounter-fullstack/commit/77222b7052ffb094db5df5c9065ed93e9dc21bf2)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@mui/x-charts@8.29.2` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/8.29.2) (from `8.29.0`,
+    in `dependencies`)
+  - Updated dependency [`csv-parse@7.0.1` ↗︎](https://www.npmjs.com/package/csv-parse/v/7.0.1) (from
+    `7.0.0`, in `dependencies`)
+
+- [#3836](https://github.com/Urigo/accounter-fullstack/pull/3836)
+  [`059b638`](https://github.com/Urigo/accounter-fullstack/commit/059b638702116701a5a0062a7ac3a58a28eeb004)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@mui/material@9.2.0` ↗︎](https://www.npmjs.com/package/@mui/material/v/9.2.0) (from `9.1.2`, in
+    `dependencies`)
+  - Updated dependency
+    [`@mui/x-charts@8.29.2` ↗︎](https://www.npmjs.com/package/@mui/x-charts/v/8.29.2) (from `8.29.0`,
+    in `dependencies`)
+  - Updated dependency [`csv-parse@7.0.1` ↗︎](https://www.npmjs.com/package/csv-parse/v/7.0.1) (from
+    `7.0.0`, in `dependencies`)
+  - Updated dependency
+    [`react-hook-form@7.81.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.81.0) (from
+    `7.80.0`, in `dependencies`)
+
+- [#3839](https://github.com/Urigo/accounter-fullstack/pull/3839)
+  [`61c5093`](https://github.com/Urigo/accounter-fullstack/commit/61c509329fd5c72ee14ab6875042cfc575fc75df)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`react-hook-form@7.81.0` ↗︎](https://www.npmjs.com/package/react-hook-form/v/7.81.0) (from
+    `7.80.0`, in `dependencies`)
+
+- [#3846](https://github.com/Urigo/accounter-fullstack/pull/3846)
+  [`d382eb2`](https://github.com/Urigo/accounter-fullstack/commit/d382eb20cf27b76ef80d235080bead1ba66b1e77)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@2.2.3` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.2.3) (from
+    `2.2.1`, in `dependencies`)
+  - Updated dependency [`iconv-lite@0.7.3` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.3)
+    (from `0.7.2`, in `dependencies`)
+  - Updated dependency [`radix-ui@1.6.2` ↗︎](https://www.npmjs.com/package/radix-ui/v/1.6.2) (from
+    `1.6.1`, in `dependencies`)
+  - Updated dependency [`recharts@3.9.2` ↗︎](https://www.npmjs.com/package/recharts/v/3.9.2) (from
+    `3.9.1`, in `dependencies`)
+
+- [#3873](https://github.com/Urigo/accounter-fullstack/pull/3873)
+  [`246b1e4`](https://github.com/Urigo/accounter-fullstack/commit/246b1e4d41a6424c4b9f251ff0b8cf36c774ab30)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.21.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.21.0) (from
+    `2.20.0`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@1.24.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.24.0) (from `1.23.0`,
+    in `dependencies`)
+
+- [#3905](https://github.com/Urigo/accounter-fullstack/pull/3905)
+  [`58c6a77`](https://github.com/Urigo/accounter-fullstack/commit/58c6a77fc5ec4592e6474705b39fbf746216a261)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@1.24.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.24.0) (from `1.23.0`,
+    in `dependencies`)
+
+- [#3908](https://github.com/Urigo/accounter-fullstack/pull/3908)
+  [`c26475a`](https://github.com/Urigo/accounter-fullstack/commit/c26475abb02712c7f70fa29d8167acda7816394e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.21.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.21.0) (from
+    `2.20.0`, in `dependencies`)
+
+- [#3913](https://github.com/Urigo/accounter-fullstack/pull/3913)
+  [`6d29a1e`](https://github.com/Urigo/accounter-fullstack/commit/6d29a1ecfc84e1519165e7775aaa90ed3cb4071f)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`html2canvas-pro@2.2.4` ↗︎](https://www.npmjs.com/package/html2canvas-pro/v/2.2.4) (from
+    `2.2.3`, in `dependencies`)
+
+- [#3956](https://github.com/Urigo/accounter-fullstack/pull/3956)
+  [`7253a34`](https://github.com/Urigo/accounter-fullstack/commit/7253a34f8cdb183774b3b2befb59b86655101d48)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.22.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.22.0) (from
+    `2.21.0`, in `dependencies`)
+
+- [#3957](https://github.com/Urigo/accounter-fullstack/pull/3957)
+  [`e8f8f41`](https://github.com/Urigo/accounter-fullstack/commit/e8f8f41325fa6e73835c6eec40619e6ec338332d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`lucide-react@1.25.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.25.0) (from `1.24.0`,
+    in `dependencies`)
+
+- [#3964](https://github.com/Urigo/accounter-fullstack/pull/3964)
+  [`49cd281`](https://github.com/Urigo/accounter-fullstack/commit/49cd281e9aa63832cd1eda409472d6074ad83ba4)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@auth0/auth0-react@2.22.0` ↗︎](https://www.npmjs.com/package/@auth0/auth0-react/v/2.22.0) (from
+    `2.21.0`, in `dependencies`)
+  - Updated dependency
+    [`lucide-react@1.25.0` ↗︎](https://www.npmjs.com/package/lucide-react/v/1.25.0) (from `1.24.0`,
+    in `dependencies`)
+
+- [#3930](https://github.com/Urigo/accounter-fullstack/pull/3930)
+  [`06bc329`](https://github.com/Urigo/accounter-fullstack/commit/06bc329d5004555ecee18f6e46dc3b7a3bda6665)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix a crash in the transactions balance
+  report when a period's per-currency breakdown includes a crypto currency. Crypto currencies
+  (`USDC`, `ETH`, `GRT`) are not valid ISO 4217 codes, so `getCurrencyFormatter` threw
+  `RangeError: Invalid currency code` when building an `Intl.NumberFormat` with `style: 'currency'`.
+  The formatter now falls back to decimal formatting with the currency symbol as a prefix for
+  non-fiat currencies (placing the minus sign before the symbol for negatives, matching fiat
+  notation), leaving fiat currency formatting unchanged.
+
+- [#3932](https://github.com/Urigo/accounter-fullstack/pull/3932)
+  [`7a637a5`](https://github.com/Urigo/accounter-fullstack/commit/7a637a58914d8c7c47bba8749a82078779a00755)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix the Bank Deposits screen "blinking"
+  when reassigning a transaction, without losing the update.
+
+  Previously, reassigning a transaction refetched `AllDeposits`, and the loading gate replaced the
+  whole table on every refetch — unmounting and remounting the expanded transaction sub-tables,
+  which is what actually refreshed their data (the urql client has no cache exchange, so mutations
+  don't invalidate queries). This caused a jarring full-screen blink.
+
+  Now the loading gates only replace the table on the initial load (`fetching && !data`), and
+  derived rows are wrapped in a new `useStableValue` hook so the view updates only when data
+  actually changes. To keep the data correct without the remount, a reassign bumps a token that
+  every mounted deposit transaction table observes and re-executes its own query for — so the
+  reassigned row leaves the source deposit and appears under the target deposit, and both deposits'
+  balances refresh, with no blink.
+
+- [#3937](https://github.com/Urigo/accounter-fullstack/pull/3937)
+  [`5232f8e`](https://github.com/Urigo/accounter-fullstack/commit/5232f8e1620b6ae09fb0763b2810cf147305577e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Reduce the "blinking" in the charge
+  extended-info panel (and its sub-components) when something is updated via `onExtendedChange`.
+  Applying the same insights as the bank-deposits and charges-table fixes:
+
+  - `charge-extended-info.tsx`: the top loader now only shows on the initial load
+    (`fetching && !charge`) instead of on every refetch. The `@defer` `FetchCharge` query is
+    re-executed with `network-only`, and its result is merged over the previously loaded charge — a
+    re-executed deferred query delivers its non-deferred fields first and streams the deferred
+    fragments in later patches, so merging keeps the already-loaded accordion sections rendering
+    their last data until each fresh patch arrives, instead of every section collapsing and
+    re-expanding. The rendered charge is also wrapped in `useStableValue` so descendants re-render
+    only on real changes.
+  - `extended-info/charge-matches.tsx`: gate the loader on `fetching && !data` so the matches table
+    stays visible during background refetches.
+  - `extended-info/bank-deposit.tsx`: show the full-section loader only on the initial load; during
+    background refetches and create/assign mutations the current content stays visible (mutation
+    progress is already surfaced via the inline button states).
+
+- [#3978](https://github.com/Urigo/accounter-fullstack/pull/3978)
+  [`3d59810`](https://github.com/Urigo/accounter-fullstack/commit/3d59810880c5e60d06074b2b71c401808cb736c7)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Charge Matching screen: allow selecting a
+  base charge from the queue sidebar. Clicking an entry pins that charge as the active item under
+  review, so you can jump ahead to an upcoming base charge or revisit one you skipped instead of
+  only ever seeing the first pending charge. Already-matched entries are disabled since they are
+  merged on the backend.
+
+- [#3977](https://github.com/Urigo/accounter-fullstack/pull/3977)
+  [`7f0196d`](https://github.com/Urigo/accounter-fullstack/commit/7f0196d291b0ff1971c437ebb9deb6bf9c58212c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Persist the Charge Matching screen filters
+  (mode, from/to dates, business and sort-by) in the URL query string, so the current selection
+  survives a page refresh and can be shared via link. Filter updates are merged into the existing
+  query params, preserving any unrelated params already in the URL.
+
+- [#3940](https://github.com/Urigo/accounter-fullstack/pull/3940)
+  [`18bda6a`](https://github.com/Urigo/accounter-fullstack/commit/18bda6a2905c3c87fb9a4574a0c5cb85abb1fb2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Collapse an expanded charge row
+  automatically when its accountant approval status is set to `APPROVED` from the charges table.
+
+- [#3937](https://github.com/Urigo/accounter-fullstack/pull/3937)
+  [`5232f8e`](https://github.com/Urigo/accounter-fullstack/commit/5232f8e1620b6ae09fb0763b2810cf147305577e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Reduce the "blinking" on the All Charges
+  screen when data is refetched. Applying the same insights as the bank deposits fix:
+
+  - The loading spinner now only replaces the table on the initial load (`fetching && !data`)
+    instead of on every background refetch, so changing filters or pages no longer blanks out the
+    whole table — the current results stay visible until the new data arrives. During those
+    refetches a `LoadingOverlay` dims the table with a spinner so it's still clear the charges are
+    being reloaded.
+  - The charge nodes are wrapped in the shared `useStableValue` hook, so the table and its rows keep
+    a stable reference and only re-render (and reset per-row state) when the data actually changed.
+  - Filter refetches are issued with `{ requestPolicy: 'network-only' }` to make the intent
+    explicit.
+  - The filters-bar effect now depends only on the page count it actually consumes, instead of the
+    whole query result and `fetching`, so it isn't rebuilt on every refetch.
+
+  Per-charge edits were already scoped to their own row query and are unaffected.
+
+- [#3863](https://github.com/Urigo/accounter-fullstack/pull/3863)
+  [`35b1125`](https://github.com/Urigo/accounter-fullstack/commit/35b112532514b1447d615826943d192ed8a0d19f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add a "Pull Deel Documents" button to the
+  user nav menu, next to "Add Balance Charge", that triggers the `fetchDeelDocuments` mutation on
+  demand.
+
+  Also improves the underlying Deel invoice fetch/matching logic:
+
+  - Distinguishes newly-seen invoices from previously-fetched invoices that are still unmatched, so
+    a later run can pick up a payment match for an invoice it already recorded (via a new
+    `updateDeelInvoiceRecords` update path) instead of only ever inserting.
+  - Reuses an already-matched charge for a given receipt when creating charges from payment
+    breakdowns, avoiding duplicate charges for invoices that share a receipt.
+  - Extends the Deel invoice schema/table with `billing_type` and `document_type`, and refines
+    several payment-receipt and payment-breakdown Zod schemas to match the Deel API more closely.
+
+- [#3931](https://github.com/Urigo/accounter-fullstack/pull/3931)
+  [`3cf9ff4`](https://github.com/Urigo/accounter-fullstack/commit/3cf9ff4854f33178de6979dbfc557389cf352572)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Show the deposit name instead of its ID in
+  the Reassign Transaction dialog's target deposit selection. The currency is now rendered
+  conditionally so no empty parentheses appear when a deposit has no currency.
+
+- [#3948](https://github.com/Urigo/accounter-fullstack/pull/3948)
+  [`f933c8c`](https://github.com/Urigo/accounter-fullstack/commit/f933c8cdc8a9dc5378ebb24d332af11079835c1b)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Pre-fill financial fields when switching an
+  "other"/"unprocessed" document to a financial type in the edit-document modal.
+
+  A document can be inserted carrying full financial data (date, amount, VAT, serial number,
+  debtor/creditor, etc.) while still categorized as `OTHER`/`UNPROCESSED`. Previously, editing such
+  a document and switching its type to a financial one (e.g. invoice) showed all extended attribute
+  fields empty — the stored values only appeared after saving and reopening the modal, once the
+  document re-resolved as a `FinancialDocument`.
+
+  The financial fields were only exposed on the `FinancialDocument` GraphQL types, so the edit query
+  could never fetch the already-stored values for `Unprocessed`/`OtherDocument`. These fields
+  (`vat`, `serialNumber`, `date`, `amount`, `vatReportDateOverride`, `noVatAmount`,
+  `allocationNumber`, `exchangeRateOverride`, `debtor`, `creditor`) are now exposed on the
+  `Unprocessed` and `OtherDocument` types and fetched by the client, and the edit form reads its
+  financial defaults from the document regardless of its current type — so switching to a financial
+  type immediately pre-fills the stored values.
+
+- [#3937](https://github.com/Urigo/accounter-fullstack/pull/3937)
+  [`5232f8e`](https://github.com/Urigo/accounter-fullstack/commit/5232f8e1620b6ae09fb0763b2810cf147305577e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Stop the documents table (reused under the
+  charge extended-info panel) from "blinking" when a document is updated. The document row fields
+  are fetched under a `@defer` fragment, so on a refetch each document streams back id-first and its
+  other fields (amount, vat, …) arrive in later patches — which briefly rendered the rows with empty
+  cells before the data refilled. The table now merges each incoming document's present fields over
+  the version currently shown (matched by id), so every cell keeps its current value until the real
+  data replaces it, and bails out of re-rendering when nothing changed.
+
+- [#3896](https://github.com/Urigo/accounter-fullstack/pull/3896)
+  [`36f8d49`](https://github.com/Urigo/accounter-fullstack/commit/36f8d49c1fff95afea466a23b33eba7c0db004a8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **GraphQL schema**:
+  `ReportCommentarySubRecord` gains a `ledgerRecords: [LedgerRecord!]!` field, so the details are
+  delegated to the client. This applies to both the Profit & Loss and Tax reports, which share these
+  commentary types.
+  - **Client**: `ReportSubCommentaryRow` gains a per-entity `ToggleExpansionButton` that expands
+    into the existing `LedgerTable` component (no ledger diff view in this report).
+
+- [#3924](https://github.com/Urigo/accounter-fullstack/pull/3924)
+  [`54d27de`](https://github.com/Urigo/accounter-fullstack/commit/54d27ded68bed447769851bf490a16fc97e864cb)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix empty `generalContacts` handling for
+  businesses. When inserting a business without any general contacts, an empty string was stored as
+  the business email, which later parsed into `['']` (an invalid email) and triggered a validation
+  error when editing the business. The insert modal now stores `undefined` instead of an empty
+  string, and the edit form filters out empty entries when parsing the stored email.
+
+- [#4003](https://github.com/Urigo/accounter-fullstack/pull/4003)
+  [`b2010b7`](https://github.com/Urigo/accounter-fullstack/commit/b2010b78275bb38e882b91ad935acdc734db6a2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix a spurious "Error fetching extended
+  information for this charge" flash in the charge expansion panel. The rendered `charge` is
+  committed to state in an effect one render after `fetching` flips to `false` and the fetched data
+  arrives, so the error gate briefly saw `!fetching && !charge` as true. The error is now also gated
+  on `incomingCharge` (the synchronous derivation of the fetched data), suppressing the flash during
+  that one-render gap while still surfacing genuine "no data" errors.
+
+- [#3925](https://github.com/Urigo/accounter-fullstack/pull/3925)
+  [`547e405`](https://github.com/Urigo/accounter-fullstack/commit/547e40567b02e0e16a7f6d3cfdbf12fe5ae819b6)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix ComboBox search input being unclickable
+  inside PopUpDrawer (e.g. the Creditor/Debtor selects in the Edit Document modal). The drawer's
+  underlying Radix Dialog is always modal and traps focus, so the popover — portaled to
+  `document.body` — could not be focused. PopUpDrawer now exposes its content element via a
+  portal-container context, and ComboBox portals its popover into it when present while keeping the
+  default `document.body` portaling everywhere else.
+
+- [#4003](https://github.com/Urigo/accounter-fullstack/pull/4003)
+  [`b2010b7`](https://github.com/Urigo/accounter-fullstack/commit/b2010b78275bb38e882b91ad935acdc734db6a2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add optional CSV export to the new charges
+  table. When enabled, a download button on the All Charges and VAT report missing-info screens
+  exports the currently loaded charges to CSV via a dedicated `ChargeForCsvExportFields` fragment
+  and `convertChargesToCsv` serializer. The shared `DownloadCSVButton` now tracks a loading state,
+  disables itself and shows a spinner while the export file is being prepared, so slow exports can
+  no longer be re-triggered mid-download.
+
+- [#4003](https://github.com/Urigo/accounter-fullstack/pull/4003)
+  [`b2010b7`](https://github.com/Urigo/accounter-fullstack/commit/b2010b78275bb38e882b91ad935acdc734db6a2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix whole-table "expand all" in the new
+  charges table and load the expanded rows efficiently.
+
+  - `new-charges-table.tsx`: the table now accepts an `isAllOpened` prop and drives tanstack-table's
+    `expanded` state from it (`true` expands every row, `{}` collapses them). Previously the
+    toolbar's expand-all button toggled local `isAllOpened` state that was never passed to the
+    table, so nothing happened; per-charge expansion via the row button was unaffected.
+  - New `charges-extended-info-loader.tsx`: a `BatchChargesExtendedInfoProvider` that, while
+    expand-all is active, hydrates every expanded row's extended info with a single `chargesByIDs`
+    query instead of one `FetchCharge` query per row (which was 100 queries for a full 100-row
+    page). Its selection set mirrors `FetchCharge`, including the same deferred fragments, so a
+    batched charge is interchangeable with a single-charge result.
+  - `charge-extended-info.tsx`: consumes the batch loader when it's active (pausing its own
+    per-charge query and delegating refetch-on-change to the batch); otherwise behaves exactly as
+    before.
+  - Wired `isAllOpened` through the all-charges, missing-info-charges and single-charge screens.
+
+- [#4003](https://github.com/Urigo/accounter-fullstack/pull/4003)
+  [`b2010b7`](https://github.com/Urigo/accounter-fullstack/commit/b2010b78275bb38e882b91ad935acdc734db6a2e)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Introduce a new TanStack-Table-based
+  charges table (`NewChargesTable`) on the All Charges screen, rendering charge rows from a single
+  `ChargeForChargesTableFields` fragment split into dedicated cell components (amount, counterparty,
+  description, tags, tax category, VAT, business trip, more-info, type). The new table is mounted
+  under the existing `LoadingOverlay` + stable `chargeNodes` gating so background refetches no
+  longer blink the view.
+
+- [#3927](https://github.com/Urigo/accounter-fullstack/pull/3927)
+  [`485dae7`](https://github.com/Urigo/accounter-fullstack/commit/485dae7f363133e7c794bb2a6ae50fe50fef2b9f)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Migrate the tax category sort code selector
+  from Mantine to a reusable shadcn-based `SortCodeSelect`. Each option now shows both the sort code
+  key and its name (e.g. `100 - Cash`), and the selector is extracted into a general component
+  (`components/common/inputs/sort-code-select.tsx`) so it can be reused across forms — it is now
+  also used in the business configurations section.
+
+- [#3923](https://github.com/Urigo/accounter-fullstack/pull/3923)
+  [`9ee7ab8`](https://github.com/Urigo/accounter-fullstack/commit/9ee7ab89299fe08b12a5ac639dc84dfd25a390c7)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Improve `MultiSelect` readability for large
+  selections (closes [#3891](https://github.com/urigo/accounter-fullstack/issues/3891)). The
+  collapsed "+N more" badge now shows the hidden selected labels in a tooltip on hover/focus, and
+  the dropdown lists checked items at the top when opened (order is snapshotted on open so it does
+  not reshuffle while toggling).
+
+- [#3827](https://github.com/Urigo/accounter-fullstack/pull/3827)
+  [`6aad15e`](https://github.com/Urigo/accounter-fullstack/commit/6aad15e71959061590c91cfd9793b41147cb7640)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Refactored the `/businesses` screen to use
+  a robust `@tanstack/react-table` implementation, replacing the previous card list view. This
+  upgrade introduces advanced data management capabilities including grouping, lazy-loading,
+  sorting, client-side filtering, and batch operations.
+
+  - **Data Table Migration**: Replaced the `BusinessHeader` card list with a comprehensive data
+    table featuring grouped columns: Core, Main, Categorization, Extension tags, and Suggestion
+    defaults. Added a "Columns" dropdown to toggle column visibility.
+  - **Row Selection & Batch Actions**: Implemented row selection to enable merging businesses and a
+    new batch update dialog for bulk-editing shared fields (country, city, zip, sort/IRS codes, tax
+    category, and suggestion descriptions).
+  - **Lazy-Loaded Usage Tracking**: Introduced a "Usage" column group tracking transactions,
+    documents, expenses, and ledger records. To optimize performance, the `BusinessesUsage` query is
+    lazy-loaded and only un-pauses when a usage column is rendered or the "unused only" filter is
+    active.
+  - **Advanced Filtering & Sorting**: Added sortable headers with custom null-safe comparators.
+    Implemented robust client-side filtering, including toggles for client/admin/inactive flags,
+    free-text code filters, and an "unused only" view.
+  - **Guarded Deletion**: Added a per-row delete action that mirrors the server's hard-delete guard;
+    the delete button remains strictly disabled unless the business is completely unused across all
+    metrics.
+  - **Architecture & Testing**: Extracted pure, dependency-free row mapping, usage merging, and
+    filtering logic into a dedicated, unit-tested `business-rows.ts` module.
+
+- [#3836](https://github.com/Urigo/accounter-fullstack/pull/3836)
+  [`059b638`](https://github.com/Urigo/accounter-fullstack/commit/059b638702116701a5a0062a7ac3a58a28eeb004)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - Extend `batch-update-dialog.tsx`:
+  - **Tags** — a `MultiSelect` (via `useGetTags`), merged with the existing description into a
+    single `suggestions` input.
+  - **Flags** — `isActive`, `isReceiptEnough`, `isDocumentsOptional` (No docs required),
+    `optionalVAT` (Is VAT optional) and `exemptDealer` as tri-state selects (**No change / Yes /
+    No**). A flag is only sent when the user explicitly picks Yes/No, preserving the "only fields
+    you fill in are applied" semantics of batch update.
+  - `isFormEmpty` is now derived from the built mutation input so the new controls correctly
+    enable/disable the Save button.
+
+- [#3914](https://github.com/Urigo/accounter-fullstack/pull/3914)
+  [`35a6c4d`](https://github.com/Urigo/accounter-fullstack/commit/35a6c4de58fbaea67d466b53403c232270328557)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **Schema updates**: Added `sortCode: Int`
+  field to the `DynamicReportNodeData` GraphQL type and Zod validation schema
+  - **GraphQL query**: Updated the dynamic report query to fetch the `sortCode` field from template
+    data
+  - **Tests**: Added comprehensive test coverage for parsing and validating sort-code-branch nodes
+    with sortCode fields, plus a test verifying sortCode is read from template data (not derived
+    from UUID IDs)
+
 ## 0.0.12
 
 ### Patch Changes
