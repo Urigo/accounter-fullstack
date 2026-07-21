@@ -8,7 +8,7 @@ import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graph
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { ChargesFilters } from './charges/charges-filters.js';
-import { NewChargesTable } from './charges/new-charges-table.js';
+import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';
 import { Button } from './ui/button.js';
@@ -158,14 +158,14 @@ export const ChargesLedgerValidation = (): ReactElement => {
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
         <>
-          <NewChargesTable
+          <ChargesTable
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             data={
               data?.chargesWithLedgerChanges.filter(res => !!res.charge).map(res => res.charge!) ??
               []
             }
-            // isAllOpened={isAllOpened}
+            isAllOpened={isAllOpened}
           />
           <div className="flex flex-row justify-center my-2">
             {progress > 0 && progress < 100 && <Loader />}

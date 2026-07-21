@@ -1,7 +1,7 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { NewChargesTable } from '@/components/charges/new-charges-table.js';
+import { ChargesTable } from '@/components/charges/charges-table.js';
 import { ChargeScreenDocument, type ChargeScreenQuery } from '@/gql/graphql.js';
 import { AccounterLoader } from '../../common/index.js';
 
@@ -58,6 +58,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   return isLoading ? (
     <AccounterLoader />
   ) : (
-    <NewChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened />
+    <ChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened />
   );
 };

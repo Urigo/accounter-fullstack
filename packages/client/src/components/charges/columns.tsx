@@ -19,7 +19,7 @@ import {
   Vat,
 } from './cells/index.js';
 import { ChargeActionsMenu } from './charge-actions-menu.js';
-import type { ChargeRow } from './new-charges-table.js';
+import type { ChargeRow } from './charges-table.js';
 
 export const columns: ColumnDef<ChargeRow>[] = [
   {

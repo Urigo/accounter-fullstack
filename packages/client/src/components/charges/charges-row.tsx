@@ -7,12 +7,12 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData } from '@/gql/index.js';
 import { Card } from '../ui/card.js';
-import { TableCell, TableRow } from '../ui/table.jsx';
+import { TableCell, TableRow } from '../ui/table.js';
 import { ChargeExtendedInfo } from './charge-extended-info.js';
 import {
   convertChargeFragmentToTableRow,
   type ChargeRow as ChargeRowType,
-} from './new-charges-table.js';
+} from './charges-table.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `

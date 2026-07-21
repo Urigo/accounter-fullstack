@@ -3,7 +3,7 @@ import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { NewChargesTable } from '@/components/charges/new-charges-table.js';
+import { ChargesTable } from '@/components/charges/charges-table.js';
 import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
@@ -146,7 +146,7 @@ export const AllCharges = (): ReactElement => {
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
-          <NewChargesTable
+          <ChargesTable
             data={chargeNodes}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
