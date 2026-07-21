@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Box, Collapse, Loader } from '@mantine/core';
@@ -31,6 +31,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.js';
 import { ChargeTransactionsTable } from './charge-transactions-table.js';
+import { BatchChargesExtendedInfoContext } from './charges-extended-info-loader.js';
 import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
 import { ChargeMatches } from './extended-info/charge-matches.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
@@ -129,24 +130,38 @@ export function ChargeExtendedInfo({
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, setOpened] = useState(false);
   const [chargeState, setChargeState] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
-  const [{ data, fetching }, refetchExtensionInfo] = useQuery({
+
+  // When the table is in batch-open mode, a single `chargesByIDs` query (the batch loader) hydrates
+  // every expanded row. Consume that shared result instead of firing this component's own
+  // `FetchCharge` query — which is paused while the loader is active.
+  const batch = useContext(BatchChargesExtendedInfoContext);
+  const [{ data, fetching: singleFetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
       chargeId,
     },
+    pause: batch.active,
   });
+
+  const incomingCharge = batch.active ? batch.getCharge(chargeID) : data?.charge;
+  const fetching = batch.active ? batch.fetching : singleFetching;
 
   // Keep a deeply-equal-stable reference so descendants only re-render when the
   // charge actually changed (urql yields a fresh object on every refetch).
   const charge = useStableValue(chargeState);
 
   const onExtendedChange = useCallback(() => {
-    refetchExtensionInfo({ requestPolicy: 'network-only' });
+    if (batch.active) {
+      // A batched charge was mutated: refetch the whole batch so every row stays consistent.
+      batch.refetch();
+    } else {
+      refetchExtensionInfo({ requestPolicy: 'network-only' });
+    }
     onChange();
-  }, [refetchExtensionInfo, onChange]);
+  }, [batch, refetchExtensionInfo, onChange]);
 
   useEffect(() => {
-    const incoming = data?.charge;
+    const incoming = incomingCharge;
     if (!incoming) {
       return;
     }
@@ -173,13 +188,14 @@ export function ChargeExtendedInfo({
       }
       return merged as FetchChargeQuery['charge'];
     });
-  }, [data]);
+  }, [incomingCharge]);
 
   useEffect(() => {
-    if (parentFetching) {
+    // The batch loader owns refetching while it's active; only nudge the single-charge query here.
+    if (parentFetching && !batch.active) {
       refetchExtensionInfo();
     }
-  }, [parentFetching, refetchExtensionInfo]);
+  }, [parentFetching, refetchExtensionInfo, batch.active]);
 
   // Switching to a different charge: sync the query variable and clear the
   // previous charge so the loader shows (instead of leaking stale details

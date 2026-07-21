@@ -60,7 +60,7 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   ) : (
     <NewChargesTable
       data={chargeData?.charge ? [chargeData.charge] : []}
-      // isAllOpened
+      isAllOpened
     />
   );
 };
