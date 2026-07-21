@@ -65,6 +65,17 @@ describe('UpstreamGraphQLClient.query — read-only guard', () => {
       client(fetchImpl as unknown as typeof fetch).query({ query: 'subscription S { x }' }, ctx),
     ).rejects.toBeInstanceOf(UpstreamError);
   });
+
+  it('refuses a mutation smuggled after a leading query (multi-operation)', async () => {
+    const fetchImpl = vi.fn();
+    await expect(
+      client(fetchImpl as unknown as typeof fetch).query(
+        { query: 'query Q { x } mutation M { deleteCharge }', operationName: 'M' },
+        ctx,
+      ),
+    ).rejects.toBeInstanceOf(UpstreamError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
 });
 
 describe('UpstreamGraphQLClient.query — timeout & retries', () => {
@@ -133,6 +144,31 @@ describe('UpstreamGraphQLClient.query — GraphQL errors', () => {
     await expect(
       client(fetchImpl as unknown as typeof fetch).query({ query: 'query { x }' }, ctx),
     ).rejects.toMatchObject({ message: 'Upstream returned no data' });
+  });
+
+  it('sanitizes a non-JSON response instead of leaking the parse error', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw new SyntaxError('Unexpected token < in JSON');
+          },
+        }) as unknown as Response,
+    );
+    await expect(
+      client(fetchImpl as unknown as typeof fetch).query({ query: 'query { x }' }, ctx),
+    ).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', message: 'Upstream returned a non-JSON response' });
+  });
+
+  it('tolerates null entries in the errors array', async () => {
+    const fetchImpl = vi.fn(async () =>
+      jsonResponse({ errors: [null, { message: 'Access denied' }] }),
+    );
+    await expect(
+      client(fetchImpl as unknown as typeof fetch).query({ query: 'query { x }' }, ctx),
+    ).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', retryable: false });
   });
 });
 
