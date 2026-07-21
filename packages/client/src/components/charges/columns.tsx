@@ -5,17 +5,20 @@ import type { ChargeType } from '@/helpers/index.js';
 import { DataTableColumnHeader, Tooltip, UpdateAccountantStatus } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
+import type { DateProps } from './cells/date.js';
+import {
+  Amount,
+  BusinessTrip,
+  Counterparty,
+  DateCell,
+  Description,
+  MoreInfo,
+  Tags,
+  TaxCategory,
+  TypeCell,
+  Vat,
+} from './cells/index.js';
 import { ChargeActionsMenu } from './charge-actions-menu.js';
-import { Amount } from './new-cells/amount.js';
-import { BusinessTrip } from './new-cells/business-trip.js';
-import { Counterparty } from './new-cells/counterparty.js';
-import { DateCell, type DateProps } from './new-cells/date.js';
-import { Description } from './new-cells/description.js';
-import { MoreInfo } from './new-cells/more-info.js';
-import { Tags } from './new-cells/tags.js';
-import { TaxCategory } from './new-cells/tax-category.js';
-import { TypeCell } from './new-cells/type.js';
-import { Vat } from './new-cells/vat.js';
 import type { ChargeRow } from './new-charges-table.js';
 
 export const columns: ColumnDef<ChargeRow>[] = [

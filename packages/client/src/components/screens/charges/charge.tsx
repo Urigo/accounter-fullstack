@@ -1,8 +1,8 @@
 import { useEffect, type ReactElement } from 'react';
 import { useLoaderData, useParams } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { ChargeScreenDocument, type ChargeScreenQuery } from '../../../gql/graphql.js';
-import { ChargesTable } from '../../charges/charges-table.js';
+import { NewChargesTable } from '@/components/charges/new-charges-table.js';
+import { ChargeScreenDocument, type ChargeScreenQuery } from '@/gql/graphql.js';
 import { AccounterLoader } from '../../common/index.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -10,7 +10,7 @@ import { AccounterLoader } from '../../common/index.js';
   query ChargeScreen($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
       id
-      ...ChargesTableFields
+      ...ChargeForChargesTableFields
     }
   }
 `;
@@ -58,6 +58,9 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   return isLoading ? (
     <AccounterLoader />
   ) : (
-    <ChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened />
+    <NewChargesTable
+      data={chargeData?.charge ? [chargeData.charge] : []}
+      // isAllOpened
+    />
   );
 };

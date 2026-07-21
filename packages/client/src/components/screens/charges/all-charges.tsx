@@ -19,7 +19,6 @@ import { Button } from '../../ui/button.js';
     allCharges(page: $page, limit: $limit, filters: $filters) {
       nodes {
         id
-        ...ChargesTableFields
         ...ChargeForChargesTableFields
       }
       pageInfo {
