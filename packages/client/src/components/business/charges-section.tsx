@@ -94,15 +94,7 @@ export function ChargesSection({ businessId }: Props) {
             />
           )}
 
-          <MergeChargesButton
-            selected={mergeSelectedCharges.map(charge => ({
-              id: charge.id,
-              onChange: (): void => {
-                refetchCharges({ requestPolicy: 'cache-and-network' });
-              },
-            }))}
-            resetMergeList={onResetMerge}
-          />
+          <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={onResetMerge} />
         </div>
       </CardHeader>
       <CardContent>

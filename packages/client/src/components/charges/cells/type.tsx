@@ -1,7 +1,7 @@
 import { useMemo, type ReactElement } from 'react';
 import { ThemeIcon } from '@mantine/core';
 import { getChargeTypeIcon, getChargeTypeName, type ChargeType } from '../../../helpers/index.js';
-import { Tooltip } from '../../common/tooltip.jsx';
+import { Tooltip } from '../../common/index.js';
 
 type Props = {
   type: ChargeType;
