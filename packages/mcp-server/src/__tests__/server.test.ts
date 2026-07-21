@@ -22,10 +22,14 @@ function mockRes(): ServerResponse & {
     writeHead: vi.fn(),
     end: vi.fn(),
     setHeader: vi.fn(),
+    once: vi.fn(),
+    statusCode: 200,
     headersSent: false,
   } as unknown as ServerResponse & {
     writeHead: ReturnType<typeof vi.fn>;
     end: ReturnType<typeof vi.fn>;
+    setHeader: ReturnType<typeof vi.fn>;
+    once: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -72,6 +76,23 @@ describe('requestHandler routing', () => {
     await requestHandler(mockReq({ method: 'GET', url: '/nope' }), res);
     expect(res.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
     expect(res.end).toHaveBeenCalledWith('{"error":"Not found"}');
+  });
+
+  it('sets an X-Correlation-Id response header', async () => {
+    const res = mockRes();
+    await requestHandler(mockReq({ method: 'GET', url: '/health' }), res);
+    const call = res.setHeader.mock.calls.find(([name]) => name === 'X-Correlation-Id');
+    expect(call).toBeDefined();
+    expect(typeof call?.[1]).toBe('string');
+  });
+
+  it('reuses an inbound correlation id', async () => {
+    const res = mockRes();
+    await requestHandler(
+      mockReq({ method: 'GET', url: '/health', headers: { 'x-correlation-id': 'trace-123' } }),
+      res,
+    );
+    expect(res.setHeader).toHaveBeenCalledWith('X-Correlation-Id', 'trace-123');
   });
 
   it('returns 404 for unsupported methods on a known path', async () => {
