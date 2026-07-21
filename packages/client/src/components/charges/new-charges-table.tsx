@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -289,17 +289,12 @@ export const NewChargesTable = ({
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
-  // Function to update a specific cell value
-  const updateCharge = (chargeIndex: number, updatedCharge: ChargeRow) => {
-    setCharges(old =>
-      old.map((row, index) => {
-        if (index === chargeIndex) {
-          return updatedCharge;
-        }
-        return row;
-      }),
-    );
-  };
+  // Update a charge by its stable id (carried on the updated row). Matching on id (rather than row
+  // index) keeps the update correct when the table is sorted, filtered, or paginated. Memoized so
+  // the reference stays stable — `ChargeRow` lists it in a `useEffect` dependency array.
+  const updateCharge = useCallback((updatedCharge: ChargeRow) => {
+    setCharges(old => old.map(row => (row.id === updatedCharge.id ? updatedCharge : row)));
+  }, []);
 
   // Update charges when data changes
   useEffect(() => {
@@ -378,13 +373,7 @@ export const NewChargesTable = ({
               {table.getRowModel().rows?.length ? (
                 table
                   .getRowModel()
-                  .rows.map(row => (
-                    <ChargeRow
-                      key={row.id}
-                      row={row}
-                      updateCharge={(newCharge: ChargeRow) => updateCharge(row.index, newCharge)}
-                    />
-                  ))
+                  .rows.map(row => <ChargeRow key={row.id} row={row} updateCharge={updateCharge} />)
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
