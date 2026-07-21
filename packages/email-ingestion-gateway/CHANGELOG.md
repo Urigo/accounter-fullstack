@@ -1,5 +1,36 @@
 # @accounter/email-ingestion-gateway
 
+## 0.1.1
+
+### Patch Changes
+
+- [#3926](https://github.com/Urigo/accounter-fullstack/pull/3926)
+  [`295fa80`](https://github.com/Urigo/accounter-fullstack/commit/295fa805843094115b58f291be309b86351ac96d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Refine the email-ingestion-gateway
+  container build. Rename `DockerFile` to `Dockerfile`, fix the `docker:build`/`docker:run`
+  workspace scripts to use the correct build context (`../../`) and paths, copy only workspace
+  manifests before `yarn install` for better layer caching, run the production stage as the non-root
+  `pwuser` from the Playwright base image (copying artifacts with `--chown` instead of a costly
+  recursive `chown -R /app`), and add a root `.dockerignore` so the repo-root build context stays
+  small and host `node_modules` don't clobber the installed dependencies.
+
+- [#3762](https://github.com/Urigo/accounter-fullstack/pull/3762)
+  [`50ca939`](https://github.com/Urigo/accounter-fullstack/commit/50ca939661d9eb5b31e134c54d12015e524fac1c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Gateway: parse incoming MIME with
+  `postal-mime` (as recommended by Cloudflare's email-handler docs) instead of the hand-rolled
+  parser. This decodes RFC 2047 encoded-word headers, so non-ASCII subjects and sender display names
+  (e.g. Hebrew `=?UTF-8?B?…?=`) are no longer stored as raw encoded strings — fixing the email
+  charge description that reads them. `extractFromMime` keeps the same public contract
+  (document-type filtering, size/count limits, nesting-depth guard, and the `From: <mailto:…>`
+  issuer-candidate heuristic) and now also forwards the email subject to the server for the charge
+  description.
+
+- [#3873](https://github.com/Urigo/accounter-fullstack/pull/3873)
+  [`246b1e4`](https://github.com/Urigo/accounter-fullstack/commit/246b1e4d41a6424c4b9f251ff0b8cf36c774ab30)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New `IngestReasonCode.SELF_ISSUED`**
+  constant in both `contracts.ts` files (server and gateway): Distinguishes self-issued skips from
+  content re-deliveries in duplicate outcomes.
+
 ## 0.1.0
 
 ### Minor Changes

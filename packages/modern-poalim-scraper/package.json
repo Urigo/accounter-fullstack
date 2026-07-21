@@ -1,6 +1,6 @@
 {
   "name": "@accounter/modern-poalim-scraper",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "type": "module",
   "description": "Modern scraper for Israeli banks (Hapoalim, Isracard, Max)",
   "repository": {
