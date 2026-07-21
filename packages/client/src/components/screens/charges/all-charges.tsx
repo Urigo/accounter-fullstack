@@ -151,6 +151,7 @@ export const AllCharges = (): ReactElement => {
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             isAllOpened={isAllOpened}
+            showExport
           />
         </div>
       ) : (
