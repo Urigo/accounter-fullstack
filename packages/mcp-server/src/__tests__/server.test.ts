@@ -1,5 +1,6 @@
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { PROTECTED_RESOURCE_METADATA_PATH } from '../oauth/metadata.js';
 
 // Silence structured log output during server tests.
 vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -67,6 +68,29 @@ describe('GET /health', () => {
 
   it('is registered under GET routes', () => {
     expect(typeof routes.GET['/health']).toBe('function');
+  });
+});
+
+describe('GET /.well-known/oauth-protected-resource', () => {
+  it('returns 200 with the config-driven metadata document', async () => {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../config/env.js');
+    resetEnvCache();
+
+    const res = mockRes();
+    await requestHandler(mockReq({ method: 'GET', url: PROTECTED_RESOURCE_METADATA_PATH }), res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
+    const body = JSON.parse(res.end.mock.calls.at(-1)?.[0] as string);
+    expect(body.resource).toBe('https://mcp.example.com');
+    expect(body.authorization_servers).toEqual(['https://tenant.auth0.com/']);
+    expect(body.bearer_methods_supported).toEqual(['header']);
+
+    vi.unstubAllEnvs();
+    resetEnvCache();
   });
 });
 
