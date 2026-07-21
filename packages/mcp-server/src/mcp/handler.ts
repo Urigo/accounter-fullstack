@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { resolveAuthContext, setAuthContext } from '../auth/identity.js';
 import {
   extractBearerToken,
   setAuthPrincipal,
@@ -168,6 +169,10 @@ async function authenticate(
   try {
     const principal = await verifyAccessToken(token);
     setAuthPrincipal(req, principal);
+    // Map the verified identity to internal user + business membership context.
+    // An empty membership set is a valid user with no access; per-tool policy
+    // (a later step) decides what that permits.
+    setAuthContext(req, await resolveAuthContext(principal));
     return principal;
   } catch (error) {
     // Only an invalid token is a 401; infrastructure failures (e.g. a JWKS
