@@ -127,6 +127,14 @@ describe('searchChargesTool — invalid filters', () => {
     expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
 
+  it('rejects a single impossible date that still matches the format', async () => {
+    const client = clientReturning(oneCharge);
+    // Passes the regex but is an impossible calendar date; only fromDate given.
+    const result = await run(client, authContext(['b1']), { fromDate: '2026-13-01' });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { message: string }).message).toBe('Invalid fromDate');
+  });
+
   it('rejects an inverted date range', async () => {
     const client = clientReturning(oneCharge);
     const result = await run(client, authContext(['b1']), {
