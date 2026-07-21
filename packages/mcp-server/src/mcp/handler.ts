@@ -1,5 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { resolveAuthContext, setAuthContext } from '../auth/identity.js';
+import {
+  getAuthContext,
+  resolveAuthContext,
+  setAuthContext,
+  type McpAuthContext,
+} from '../auth/identity.js';
 import {
   extractBearerToken,
   setAuthPrincipal,
@@ -12,6 +17,9 @@ import { getRequestContext } from '../context.js';
 import { createRequestLogger, log } from '../logger.js';
 import { sendUnauthorized } from '../oauth/challenge.js';
 import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
+import { executeRegisteredTool } from '../tools/execute.js';
+import { toolRegistry } from '../tools/registry-instance.js';
+import { getUpstreamClient } from '../upstream/default-client.js';
 import { getServiceVersion, SERVICE_NAME } from '../version.js';
 import {
   asJsonRpcRequest,
@@ -88,30 +96,104 @@ export function handleRpcRequest(request: JsonRpcRequest): JsonRpcResponse | nul
   }
 }
 
-/**
- * Process a raw (already string-decoded) request body into a JSON-RPC response.
- * Returns `null` for notifications. Never throws for malformed input — it maps
- * to the appropriate JSON-RPC error instead.
- */
-export function handleMcpBody(raw: string): JsonRpcResponse | null {
+/** Parse a raw body into a JSON-RPC request or a terminal error response. */
+function parseMcpBody(raw: string): { request: JsonRpcRequest } | { response: JsonRpcResponse } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return failure(null, JsonRpcErrorCode.ParseError, 'Parse error: body is not valid JSON');
+    return {
+      response: failure(null, JsonRpcErrorCode.ParseError, 'Parse error: body is not valid JSON'),
+    };
   }
 
   // JSON-RPC batching is not supported by MCP 2025-06-18.
   if (Array.isArray(parsed)) {
-    return failure(null, JsonRpcErrorCode.InvalidRequest, 'Batch requests are not supported');
+    return {
+      response: failure(null, JsonRpcErrorCode.InvalidRequest, 'Batch requests are not supported'),
+    };
   }
 
   const request = asJsonRpcRequest(parsed);
   if (!request) {
-    return failure(null, JsonRpcErrorCode.InvalidRequest, 'Invalid JSON-RPC 2.0 request');
+    return {
+      response: failure(null, JsonRpcErrorCode.InvalidRequest, 'Invalid JSON-RPC 2.0 request'),
+    };
+  }
+  return { request };
+}
+
+/**
+ * Process a raw (already string-decoded) request body into a JSON-RPC response.
+ * Returns `null` for notifications. Never throws for malformed input — it maps
+ * to the appropriate JSON-RPC error instead. Synchronous path: does not execute
+ * registry tools (see {@link dispatchMcpBody}).
+ */
+export function handleMcpBody(raw: string): JsonRpcResponse | null {
+  const parsed = parseMcpBody(raw);
+  return 'response' in parsed ? parsed.response : handleRpcRequest(parsed.request);
+}
+
+/** Per-request context for the authenticated tool-dispatch path. */
+export interface McpDispatchContext {
+  auth: McpAuthContext;
+  correlationId: string;
+  /** Caller's Authorization header value, forwarded upstream (never logged). */
+  authorization?: string;
+}
+
+/**
+ * Async dispatch used by the HTTP handler. Handles `tools/list` (curated
+ * registry + the smoke tool) and `tools/call` for registered tools (validation
+ * → policy → execution), delegating everything else to {@link handleRpcRequest}.
+ */
+export async function dispatchMcpRequest(
+  request: JsonRpcRequest,
+  context: McpDispatchContext,
+): Promise<JsonRpcResponse | null> {
+  if (isNotification(request)) {
+    return null;
+  }
+  const id = request.id ?? null;
+
+  if (request.method === 'tools/list') {
+    return success(id, { tools: [...listedTools, ...toolRegistry.describe()] });
+  }
+
+  if (request.method === 'tools/call') {
+    const params = (request.params ?? {}) as { name?: unknown; arguments?: unknown };
+    const name = typeof params.name === 'string' ? params.name : '';
+    if (name === SMOKE_TOOL_NAME) {
+      return success(id, runSmokeTool(params.arguments));
+    }
+    const tool = toolRegistry.get(name);
+    if (!tool) {
+      return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${name}`);
+    }
+    const result = await executeRegisteredTool({
+      tool,
+      rawArgs: params.arguments,
+      auth: context.auth,
+      correlationId: context.correlationId,
+      authorization: context.authorization,
+      client: getUpstreamClient(),
+    });
+    return success(id, result);
   }
 
   return handleRpcRequest(request);
+}
+
+/** Parse + async-dispatch a raw body. Returns `null` for notifications. */
+export async function dispatchMcpBody(
+  raw: string,
+  context: McpDispatchContext,
+): Promise<JsonRpcResponse | null> {
+  const parsed = parseMcpBody(raw);
+  if ('response' in parsed) {
+    return parsed.response;
+  }
+  return dispatchMcpRequest(parsed.request, context);
 }
 
 function readBody(req: IncomingMessage, maxBytes: number): Promise<string> {
@@ -227,7 +309,20 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     return;
   }
 
-  const response = handleMcpBody(raw);
+  const auth = getAuthContext(req);
+  if (!auth) {
+    // Should be set by authenticate(); treat an unexpected miss as internal.
+    log('error', 'authenticated request is missing its auth context');
+    sendJson(res, 500, failure(null, JsonRpcErrorCode.InternalError, 'Internal server error'));
+    return;
+  }
+
+  const response = await dispatchMcpBody(raw, {
+    auth,
+    correlationId: getRequestContext(req)?.correlationId ?? '',
+    authorization:
+      typeof req.headers.authorization === 'string' ? req.headers.authorization : undefined,
+  });
 
   if (response === null) {
     // Notification: acknowledge without a JSON-RPC response body.

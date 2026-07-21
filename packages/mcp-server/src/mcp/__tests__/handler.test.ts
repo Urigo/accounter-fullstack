@@ -1,9 +1,10 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildAuthContext } from '../../auth/identity.js';
 import { TokenVerificationError } from '../../auth/token.js';
 import { verifyAccessToken } from '../../auth/verifier.js';
-import { handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
+import { dispatchMcpRequest, handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
 import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
 import { SMOKE_TOOL_NAME } from '../tools.js';
@@ -201,6 +202,39 @@ describe('mcpHttpHandler', () => {
       'jwks endpoint unreachable',
     );
     expect(res.writeHead).not.toHaveBeenCalledWith(401, expect.anything());
+  });
+});
+
+describe('dispatchMcpRequest — registry integration', () => {
+  const auth = buildAuthContext(
+    {
+      subject: 'user-1',
+      issuer: 'https://tenant.auth0.com/',
+      audience: 'aud',
+      scopes: [],
+      email: null,
+      expiresAt: undefined,
+      claims: { sub: 'user-1' },
+    },
+    [],
+  );
+
+  it('lists the smoke tool alongside the registered production tools', async () => {
+    const response = (await dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      { auth, correlationId: 'c' },
+    )) as JsonRpcSuccess;
+    const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
+    expect(names).toContain(SMOKE_TOOL_NAME);
+    expect(names).toContain('accounter_search_charges');
+  });
+
+  it('returns InvalidParams for an unknown tool name', async () => {
+    const response = (await dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'nope' } },
+      { auth, correlationId: 'c' },
+    )) as JsonRpcErrorResponse;
+    expect(response.error.code).toBe(JsonRpcErrorCode.InvalidParams);
   });
 });
 
