@@ -13,9 +13,18 @@ See the design docs:
 
 Early scaffolding. This package is being built incrementally following the prompt pack in the
 implementation blueprint. It currently contains the package skeleton, strict environment
-configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, and an MCP
-transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool.
-Authentication, authorization, and production tools are not implemented yet.
+configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
+transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, and
+per-request structured logging with request/correlation ids. Authentication, authorization, and
+production tools are not implemented yet.
+
+## Observability
+
+Every request is assigned a `requestId` and a `correlationId` (the latter inherited from an inbound
+`X-Correlation-Id` header when present, otherwise generated). The correlation id is echoed back on
+the response. Structured JSON logs are emitted at request start and completion, carrying
+`requestId`, `correlationId`, `method`, `route`, and — on completion — `status` and `latencyMs`.
+Secrets and authorization headers are never logged.
 
 ## Running locally
 
