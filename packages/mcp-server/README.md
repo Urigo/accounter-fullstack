@@ -37,6 +37,9 @@ payload (spec §10.2): `VALIDATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERRO
   Deterministically sorted (name, then id) and size-capped (≤ 500).
 - **`accounter_list_tax_categories`** — list tax categories (id, name, IRS code, active flag),
   optionally filtered by name or active status. Same deterministic sort + cap.
+- **`accounter_balance_report`** — read-only balance report (transactions) for one of your
+  businesses over a bounded date range (≤ 366 days). Requires `business_owner`/`accountant` role;
+  rows are capped at 500 with a `truncated` flag.
 
 ## Upstream GraphQL client
 
