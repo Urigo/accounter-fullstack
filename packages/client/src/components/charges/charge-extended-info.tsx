@@ -271,31 +271,31 @@ export function ChargeExtendedInfo({
   }, [hasMiscExpenses]);
 
   const galleryIsReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     DocumentsGalleryFieldsFragmentDoc,
     charge,
   );
 
   const docsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     TableDocumentsFieldsFragmentDoc,
     charge,
   );
 
   const ledgerRecordsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     ChargeLedgerRecordsTableFieldsFragmentDoc,
     charge,
   );
 
   const transactionsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     ChargeTableTransactionsFieldsFragmentDoc,
     charge,
   );
 
   const miscExpensesAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     TableMiscExpensesFieldsFragmentDoc,
     charge,
   );
@@ -303,25 +303,29 @@ export function ChargeExtendedInfo({
   const conversionIsReady = useMemo(() => {
     return (
       chargeType === 'ConversionCharge' &&
-      isFragmentReady(FetchChargeDocument, ConversionChargeInfoFragmentDoc, charge)
+      isFragmentReady(ChargeExpansionFieldsFragmentDoc, ConversionChargeInfoFragmentDoc, charge)
     );
   }, [charge, chargeType]);
 
   const exchangeRatesAreReady = useMemo(() => {
     return (
       chargeType === 'FinancialCharge' &&
-      isFragmentReady(FetchChargeDocument, ExchangeRatesInfoFragmentDoc, charge)
+      isFragmentReady(ChargeExpansionFieldsFragmentDoc, ExchangeRatesInfoFragmentDoc, charge)
     );
   }, [charge, chargeType]);
 
   const salariesAreReady =
     chargeType === 'SalaryCharge' &&
-    isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
+    isFragmentReady(ChargeExpansionFieldsFragmentDoc, TableSalariesFieldsFragmentDoc, charge);
 
   const creditcardTransactionsAreReady = useMemo(
     () =>
       chargeType === 'CreditcardBankCharge' &&
-      isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge),
+      isFragmentReady(
+        ChargeExpansionFieldsFragmentDoc,
+        CreditcardBankChargeInfoFragmentDoc,
+        charge,
+      ),
     [charge, chargeType],
   );
 
