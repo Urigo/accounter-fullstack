@@ -271,31 +271,31 @@ export function ChargeExtendedInfo({
   }, [hasMiscExpenses]);
 
   const galleryIsReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     DocumentsGalleryFieldsFragmentDoc,
     charge,
   );
 
   const docsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     TableDocumentsFieldsFragmentDoc,
     charge,
   );
 
   const ledgerRecordsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     ChargeLedgerRecordsTableFieldsFragmentDoc,
     charge,
   );
 
   const transactionsAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     ChargeTableTransactionsFieldsFragmentDoc,
     charge,
   );
 
   const miscExpensesAreReady = isFragmentReady(
-    FetchChargeDocument,
+    ChargeExpansionFieldsFragmentDoc,
     TableMiscExpensesFieldsFragmentDoc,
     charge,
   );
@@ -303,25 +303,29 @@ export function ChargeExtendedInfo({
   const conversionIsReady = useMemo(() => {
     return (
       chargeType === 'ConversionCharge' &&
-      isFragmentReady(FetchChargeDocument, ConversionChargeInfoFragmentDoc, charge)
+      isFragmentReady(ChargeExpansionFieldsFragmentDoc, ConversionChargeInfoFragmentDoc, charge)
     );
   }, [charge, chargeType]);
 
   const exchangeRatesAreReady = useMemo(() => {
     return (
       chargeType === 'FinancialCharge' &&
-      isFragmentReady(FetchChargeDocument, ExchangeRatesInfoFragmentDoc, charge)
+      isFragmentReady(ChargeExpansionFieldsFragmentDoc, ExchangeRatesInfoFragmentDoc, charge)
     );
   }, [charge, chargeType]);
 
   const salariesAreReady =
     chargeType === 'SalaryCharge' &&
-    isFragmentReady(FetchChargeDocument, TableSalariesFieldsFragmentDoc, charge);
+    isFragmentReady(ChargeExpansionFieldsFragmentDoc, TableSalariesFieldsFragmentDoc, charge);
 
   const creditcardTransactionsAreReady = useMemo(
     () =>
       chargeType === 'CreditcardBankCharge' &&
-      isFragmentReady(FetchChargeDocument, CreditcardBankChargeInfoFragmentDoc, charge),
+      isFragmentReady(
+        ChargeExpansionFieldsFragmentDoc,
+        CreditcardBankChargeInfoFragmentDoc,
+        charge,
+      ),
     [charge, chargeType],
   );
 
@@ -520,7 +524,14 @@ export function ChargeExtendedInfo({
       ) : fetching ? (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       ) : (
-        <p>Error fetching extended information for this charge</p>
+        <>
+          {/* `charge` is derived from `chargeState`, which is committed in an effect one render after
+          `fetching` flips to false and `data`/`incomingCharge` become available. Also gating on
+          `incomingCharge` (the synchronous derivation of the fetched data) suppresses the spurious
+          error during that one-render gap; a genuine "no data" result leaves `incomingCharge`
+          undefined, so real errors still surface. */}
+          {!incomingCharge && <p>Error fetching extended information for this charge</p>}
+        </>
       )}
     </div>
   );

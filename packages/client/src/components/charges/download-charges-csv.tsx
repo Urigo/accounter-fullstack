@@ -1,5 +1,6 @@
 import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 import { useClient } from 'urql';
 import {
   ChargesForCsvExportDocument,
@@ -112,9 +113,15 @@ export const DownloadChargesCsv = ({ chargeIds, businessName }: Props): ReactEle
     if (chargeIds.length === 0) {
       return { fileContent: '', fileName };
     }
-    const { data } = await client
+    const { data, error } = await client
       .query(ChargesForCsvExportDocument, { chargeIDs: chargeIds })
       .toPromise();
+    // On a network/GraphQL error `data` is undefined; without this guard we'd silently download a
+    // header-only CSV. Surface the failure and abort so no misleading empty file is produced.
+    if (error) {
+      toast.error('Error', { description: 'Failed to fetch charges for CSV export' });
+      throw error;
+    }
     const charges = (data?.chargesByIDs ?? []) as ChargeForCsvExportFieldsFragment[];
     return { fileContent: convertChargesToCsv(charges), fileName };
   }, [client, chargeIds, businessName]);
