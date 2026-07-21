@@ -115,7 +115,8 @@ export type MembershipSource = (
 ) => readonly BusinessMembership[] | Promise<readonly BusinessMembership[]>;
 
 function coerceMembership(entry: unknown): BusinessMembership | null {
-  if (!entry || typeof entry !== 'object') {
+  // Arrays are objects too; exclude them and any non-object claim entries.
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
     return null;
   }
   const record = entry as Record<string, unknown>;
@@ -123,8 +124,15 @@ function coerceMembership(entry: unknown): BusinessMembership | null {
   if (typeof businessId !== 'string' || businessId.length === 0) {
     return null;
   }
-  const roleId = record.roleId ?? record.role_id ?? '';
-  return { businessId, roleId: typeof roleId === 'string' ? roleId : String(roleId) };
+  // Only accept a string or number role; never stringify arbitrary objects.
+  const rawRoleId = record.roleId ?? record.role_id;
+  const roleId =
+    typeof rawRoleId === 'string'
+      ? rawRoleId
+      : typeof rawRoleId === 'number'
+        ? String(rawRoleId)
+        : '';
+  return { businessId, roleId };
 }
 
 /** De-duplicate memberships by business id (first occurrence wins). */
