@@ -32,8 +32,12 @@ function clientReturning(data: unknown) {
   });
 }
 
-const runTool = (tool: typeof listTagsTool, client: UpstreamGraphQLClient, auth: McpAuthContext, rawArgs: unknown) =>
-  executeRegisteredTool({ tool, rawArgs, auth, correlationId: 'c', client, authorization: 'Bearer t' });
+const runTool = (
+  tool: typeof listTagsTool | typeof listTaxCategoriesTool,
+  client: UpstreamGraphQLClient,
+  auth: McpAuthContext,
+  rawArgs: unknown,
+) => executeRegisteredTool({ tool, rawArgs, auth, correlationId: 'c', client, authorization: 'Bearer t' });
 
 describe('listTagsTool', () => {
   const client = () =>
@@ -93,8 +97,10 @@ describe('listTaxCategoriesTool', () => {
     const rows = (result.structuredContent as {
       taxCategories: Array<{ name: string; irsCode: number | null; isActive: boolean }>;
     }).taxCategories;
-    expect(rows.map(r => r.name)).toEqual(['Assets', 'Income']);
-    expect(rows[1]).toEqual({ id: '1', name: 'Income', irsCode: 100, isActive: true });
+    expect(rows).toEqual([
+      { id: '2', name: 'Assets', irsCode: null, isActive: false },
+      { id: '1', name: 'Income', irsCode: 100, isActive: true },
+    ]);
   });
 
   it('filters to active categories when activeOnly is set', async () => {
