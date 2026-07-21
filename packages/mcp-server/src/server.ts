@@ -3,6 +3,10 @@ import { env } from './config/env.js';
 import { createRequestContext, elapsedMs, setRequestContext } from './context.js';
 import { completionFields, createRequestLogger, log } from './logger.js';
 import { mcpHttpHandler } from './mcp/handler.js';
+import {
+  buildProtectedResourceMetadata,
+  PROTECTED_RESOURCE_METADATA_PATH,
+} from './oauth/metadata.js';
 import { getServiceVersion, SERVICE_NAME } from './version.js';
 
 /**
@@ -40,6 +44,15 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
         version: getServiceVersion(),
         uptimeSeconds: Math.round(process.uptime()),
       };
+      sendJson(res, 200, body);
+    },
+    // OAuth 2.0 Protected Resource Metadata (RFC 9728) — lets Claude clients
+    // discover the Auth0 authorization server for this resource.
+    [PROTECTED_RESOURCE_METADATA_PATH]: (_req, res) => {
+      const body = buildProtectedResourceMetadata({
+        resource: env.server.publicBaseUrl,
+        authorizationServers: [env.auth0.issuerUrl],
+      });
       sendJson(res, 200, body);
     },
     // Streamable HTTP's optional GET (server-initiated SSE stream) is not
