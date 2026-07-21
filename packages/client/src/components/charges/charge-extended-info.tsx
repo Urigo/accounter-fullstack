@@ -524,7 +524,14 @@ export function ChargeExtendedInfo({
       ) : fetching ? (
         <Loader className="flex self-center my-5" color="dark" size="xl" variant="dots" />
       ) : (
-        <p>Error fetching extended information for this charge</p>
+        <>
+          {/* `charge` is derived from `chargeState`, which is committed in an effect one render after
+          `fetching` flips to false and `data`/`incomingCharge` become available. Also gating on
+          `incomingCharge` (the synchronous derivation of the fetched data) suppresses the spurious
+          error during that one-render gap; a genuine "no data" result leaves `incomingCharge`
+          undefined, so real errors still surface. */}
+          {!incomingCharge && <p>Error fetching extended information for this charge</p>}
+        </>
       )}
     </div>
   );
