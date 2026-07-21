@@ -289,16 +289,10 @@ export const NewChargesTable = ({
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
-  // Function to update a specific cell value
-  const updateCharge = (chargeIndex: number, updatedCharge: ChargeRow) => {
-    setCharges(old =>
-      old.map((row, index) => {
-        if (index === chargeIndex) {
-          return updatedCharge;
-        }
-        return row;
-      }),
-    );
+  // Update a specific charge by its stable id. Matching on id (rather than row index) keeps the
+  // update correct when the table is sorted, filtered, or paginated.
+  const updateCharge = (chargeId: string, updatedCharge: ChargeRow) => {
+    setCharges(old => old.map(row => (row.id === chargeId ? updatedCharge : row)));
   };
 
   // Update charges when data changes
@@ -382,7 +376,7 @@ export const NewChargesTable = ({
                     <ChargeRow
                       key={row.id}
                       row={row}
-                      updateCharge={(newCharge: ChargeRow) => updateCharge(row.index, newCharge)}
+                      updateCharge={(newCharge: ChargeRow) => updateCharge(row.id, newCharge)}
                     />
                   ))
               ) : (
