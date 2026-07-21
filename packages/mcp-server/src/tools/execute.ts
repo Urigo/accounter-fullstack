@@ -68,13 +68,20 @@ export function toolErrorResult(details: ToolErrorDetails): ToolResult {
   };
 }
 
-/** Optional per-tool convention: an input field carrying scope narrowing. */
+/**
+ * Optional per-tool convention: input fields carrying scope narrowing. Either a
+ * `businessIds` array or a singular `businessId` string is honored.
+ */
 function requestedBusinessIds(input: unknown): string[] | undefined {
-  if (input && typeof input === 'object') {
-    const value = (input as { businessIds?: unknown }).businessIds;
-    if (Array.isArray(value) && value.every(id => typeof id === 'string')) {
-      return value as string[];
-    }
+  if (!input || typeof input !== 'object') {
+    return undefined;
+  }
+  const record = input as { businessIds?: unknown; businessId?: unknown };
+  if (Array.isArray(record.businessIds) && record.businessIds.every(id => typeof id === 'string')) {
+    return record.businessIds as string[];
+  }
+  if (typeof record.businessId === 'string') {
+    return [record.businessId];
   }
   return undefined;
 }
