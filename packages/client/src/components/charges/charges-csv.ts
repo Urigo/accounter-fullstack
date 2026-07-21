@@ -149,7 +149,13 @@ export function escapeCsvField(value: string): string {
 }
 
 function formatDate(date?: string | Date | null): string {
-  return date ? format(new Date(date), 'yyyy-MM-dd') : '';
+  if (!date) {
+    return '';
+  }
+  // Guard against malformed values: `format` throws `RangeError: Invalid time value` on an Invalid
+  // Date, which would abort the whole CSV export.
+  const parsedDate = new Date(date);
+  return Number.isNaN(parsedDate.getTime()) ? '' : format(parsedDate, 'yyyy-MM-dd');
 }
 
 function formatNumber(value?: number | null): string {
