@@ -2,7 +2,7 @@ import { useContext, useEffect, useMemo, useState, type ReactElement } from 'rea
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import type { RowSelectionState } from '@tanstack/react-table';
-import { NewChargesTable } from '@/components/charges/new-charges-table.js';
+import { ChargesTable } from '@/components/charges/charges-table.js';
 import { MissingInfoChargesDocument } from '../../../gql/graphql.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -98,7 +98,7 @@ export const MissingInfoCharges = (): ReactElement => {
       {!data?.chargesWithMissingRequiredInfo.nodes || fetching ? (
         <Loader2 className="h-10 w-10 animate-spin mr-2 self-center" />
       ) : (
-        <NewChargesTable
+        <ChargesTable
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
           data={data?.chargesWithMissingRequiredInfo?.nodes}
