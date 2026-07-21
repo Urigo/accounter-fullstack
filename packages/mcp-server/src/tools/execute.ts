@@ -1,4 +1,5 @@
 import type { McpAuthContext } from '../auth/identity.js';
+import { log } from '../logger.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 import { evaluateToolPolicy } from './policy.js';
@@ -147,6 +148,15 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
         retryable: error.retryable,
       });
     }
+    // Unexpected failure — log it (with the tool + correlation id) so the
+    // observability gap doesn't hide production bugs; the caller only sees a
+    // generic message.
+    log('error', 'unexpected error during tool execution', {
+      tool: tool.name,
+      correlationId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return toolErrorResult({
       code: 'INTERNAL_ERROR',
       message: 'Tool execution failed',

@@ -91,21 +91,25 @@ export interface NormalizedCharge {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Reject an inverted or too-wide date range before hitting the upstream. */
+/** Reject an invalid, inverted, or too-wide date range before hitting upstream. */
 function assertDateRange(input: SearchChargesInput): void {
-  if (!input.fromDate || !input.toDate) {
-    return;
+  // Validate each supplied date even when only one is present — a value can
+  // match the format regex yet be an impossible calendar date (e.g. 2026-02-31).
+  const from = input.fromDate ? Date.parse(input.fromDate) : undefined;
+  const to = input.toDate ? Date.parse(input.toDate) : undefined;
+  if (from !== undefined && Number.isNaN(from)) {
+    throw new ToolInputError('Invalid fromDate');
   }
-  const from = Date.parse(input.fromDate);
-  const to = Date.parse(input.toDate);
-  if (Number.isNaN(from) || Number.isNaN(to)) {
-    throw new ToolInputError('Invalid fromDate/toDate');
+  if (to !== undefined && Number.isNaN(to)) {
+    throw new ToolInputError('Invalid toDate');
   }
-  if (from > to) {
-    throw new ToolInputError('fromDate must be on or before toDate');
-  }
-  if ((to - from) / DAY_MS > MAX_DATE_RANGE_DAYS) {
-    throw new ToolInputError(`Date range must not exceed ${MAX_DATE_RANGE_DAYS} days`);
+  if (from !== undefined && to !== undefined) {
+    if (from > to) {
+      throw new ToolInputError('fromDate must be on or before toDate');
+    }
+    if (Math.round((to - from) / DAY_MS) > MAX_DATE_RANGE_DAYS) {
+      throw new ToolInputError(`Date range must not exceed ${MAX_DATE_RANGE_DAYS} days`);
+    }
   }
 }
 
