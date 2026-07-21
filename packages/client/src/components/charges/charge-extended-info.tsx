@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Image } from 'lucide-react';
 import { useQuery } from 'urql';
 import { Box, Collapse, Loader } from '@mantine/core';
 import {
+  ChargeExpansionFieldsFragmentDoc,
   ChargeLedgerRecordsTableFieldsFragmentDoc,
   ChargesTableErrorsFieldsFragmentDoc,
   ChargeTableTransactionsFieldsFragmentDoc,
@@ -14,7 +15,7 @@ import {
   TableDocumentsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
-  type FetchChargeQuery,
+  type ChargeExpansionFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, isFragmentReady, type FragmentType } from '../../gql/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
@@ -31,6 +32,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { Button } from '../ui/button.js';
 import { ChargeErrors } from './charge-errors.js';
 import { ChargeTransactionsTable } from './charge-transactions-table.js';
+import { BatchChargesExtendedInfoContext } from './charges-extended-info-loader.js';
 import { ChargeBankDeposit } from './extended-info/bank-deposit.js';
 import { ChargeMatches } from './extended-info/charge-matches.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
@@ -43,38 +45,46 @@ import { SalariesTable } from './extended-info/salaries-info.js';
 /* GraphQL */ `
   query FetchCharge($chargeId: UUID!) {
     charge(chargeId: $chargeId) {
-      __typename
       id
-      metadata {
-        transactionsCount
-        documentsCount
-        receiptsCount
-        invoicesCount
-        ledgerCount
-        miscExpensesCount
-        isLedgerLocked
-        openDocuments
-      }
-      totalAmount {
-        raw
-      }
-      ...DocumentsGalleryFields @defer
-      ...TableDocumentsFields @defer
-      ...ChargeLedgerRecordsTableFields @defer
-      ...ChargeTableTransactionsFields @defer
-      ...ConversionChargeInfo @defer
-      ...CreditcardBankChargeInfo @defer
-      ...TableSalariesFields @defer
-      ... on BusinessTripCharge {
-        businessTrip {
-          id
-          ...BusinessTripReportFields
-        }
-      }
-      ...ChargesTableErrorsFields @defer
-      ...TableMiscExpensesFields @defer
-      ...ExchangeRatesInfo @defer
+      ...ChargeExpansionFields
     }
+  }
+`;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargeExpansionFields on Charge {
+    id
+    __typename
+    metadata {
+      transactionsCount
+      documentsCount
+      receiptsCount
+      invoicesCount
+      ledgerCount
+      miscExpensesCount
+      isLedgerLocked
+      openDocuments
+    }
+    totalAmount {
+      raw
+    }
+    ...DocumentsGalleryFields @defer
+    ...TableDocumentsFields @defer
+    ...ChargeLedgerRecordsTableFields @defer
+    ...ChargeTableTransactionsFields @defer
+    ...ConversionChargeInfo @defer
+    ...CreditcardBankChargeInfo @defer
+    ...TableSalariesFields @defer
+    ... on BusinessTripCharge {
+      businessTrip {
+        id
+        ...BusinessTripReportFields
+      }
+    }
+    ...ChargesTableErrorsFields @defer
+    ...TableMiscExpensesFields @defer
+    ...ExchangeRatesInfo @defer
   }
 `;
 
@@ -128,25 +138,44 @@ export function ChargeExtendedInfo({
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
   const [chargeId, setChargeId] = useState<string>(chargeID);
   const [opened, setOpened] = useState(false);
-  const [chargeState, setChargeState] = useState<FetchChargeQuery['charge'] | undefined>(undefined);
-  const [{ data, fetching }, refetchExtensionInfo] = useQuery({
+  const [chargeState, setChargeState] = useState<ChargeExpansionFieldsFragment | undefined>(
+    undefined,
+  );
+
+  // When the table is in batch-open mode, a single `chargesByIDs` query (the batch loader) hydrates
+  // every expanded row. Consume that shared result instead of firing this component's own
+  // `FetchCharge` query — which is paused while the loader is active.
+  const batch = useContext(BatchChargesExtendedInfoContext);
+  const [{ data, fetching: singleFetching }, refetchExtensionInfo] = useQuery({
     query: FetchChargeDocument,
     variables: {
       chargeId,
     },
+    pause: batch.active,
   });
+
+  const incomingCharge = getFragmentData(
+    ChargeExpansionFieldsFragmentDoc,
+    batch.active ? batch.getCharge(chargeID) : data?.charge,
+  );
+  const fetching = batch.active ? batch.fetching : singleFetching;
 
   // Keep a deeply-equal-stable reference so descendants only re-render when the
   // charge actually changed (urql yields a fresh object on every refetch).
   const charge = useStableValue(chargeState);
 
   const onExtendedChange = useCallback(() => {
-    refetchExtensionInfo({ requestPolicy: 'network-only' });
+    if (batch.active) {
+      // A batched charge was mutated: refetch the whole batch so every row stays consistent.
+      batch.refetch();
+    } else {
+      refetchExtensionInfo({ requestPolicy: 'network-only' });
+    }
     onChange();
-  }, [refetchExtensionInfo, onChange]);
+  }, [batch, refetchExtensionInfo, onChange]);
 
   useEffect(() => {
-    const incoming = data?.charge;
+    const incoming = incomingCharge;
     if (!incoming) {
       return;
     }
@@ -171,15 +200,16 @@ export function ChargeExtendedInfo({
           merged[key] = value;
         }
       }
-      return merged as FetchChargeQuery['charge'];
+      return merged as ChargeExpansionFieldsFragment;
     });
-  }, [data]);
+  }, [incomingCharge]);
 
   useEffect(() => {
-    if (parentFetching) {
+    // The batch loader owns refetching while it's active; only nudge the single-charge query here.
+    if (parentFetching && !batch.active) {
       refetchExtensionInfo();
     }
-  }, [parentFetching, refetchExtensionInfo]);
+  }, [parentFetching, refetchExtensionInfo, batch.active]);
 
   // Switching to a different charge: sync the query variable and clear the
   // previous charge so the loader shows (instead of leaking stale details

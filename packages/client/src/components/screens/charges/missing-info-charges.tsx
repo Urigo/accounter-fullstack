@@ -102,7 +102,7 @@ export const MissingInfoCharges = (): ReactElement => {
           rowSelection={rowSelection}
           onRowSelectionChange={setRowSelection}
           data={data?.chargesWithMissingRequiredInfo?.nodes}
-          // isAllOpened={isAllOpened}
+          isAllOpened={isAllOpened}
         />
       )}
     </PageLayout>

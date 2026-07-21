@@ -1,12 +1,14 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnFiltersState,
+  type ExpandedState,
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
@@ -29,6 +31,7 @@ import type { MoreInfoProps } from './cells/more-info.js';
 import type { TagsProps } from './cells/tags.js';
 import type { TaxCategoryProps } from './cells/tax-category.js';
 import type { VatProps } from './cells/vat.js';
+import { BatchChargesExtendedInfoProvider } from './charges-extended-info-loader.js';
 import { columns } from './columns.js';
 import { ChargeRow } from './new-charges-row.js';
 import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './utils.js';
@@ -241,16 +244,31 @@ interface Props {
   rowSelection?: RowSelectionState;
   /** Selection change handler for controlled selection. Receives a charge-id keyed map. */
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  /**
+   * When true, every charge in the table is expanded (batch-open / expand-all). Toggling it also
+   * activates a single batched loader so the expanded rows are hydrated by one `chargesByIDs`
+   * query instead of one `FetchCharge` query per row.
+   */
+  isAllOpened?: boolean;
 }
 
 export const NewChargesTable = ({
   data,
   rowSelection: controlledRowSelection,
   onRowSelectionChange,
+  isAllOpened = false,
 }: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+  const [expanded, setExpanded] = useState<ExpandedState>({});
+
+  // Drive the whole-table expansion from the `isAllOpened` flag. `expanded === true` is
+  // tanstack-table's "all rows expanded" sentinel; `{}` collapses everything. Setting it here
+  // (rather than only in `initialState`) keeps toggling the button responsive after mount.
+  useEffect(() => {
+    setExpanded(isAllOpened ? true : {});
+  }, [isAllOpened]);
 
   // Controlled whenever a parent supplies the state; otherwise self-managed. When controlled
   // without a change handler (e.g. a read-only selection), fall back to a no-op setter so the
@@ -298,12 +316,15 @@ export const NewChargesTable = ({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    onExpandedChange: setExpanded,
+    getExpandedRowModel: getExpandedRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       rowSelection,
+      expanded,
     },
     initialState: {
       pagination: {
@@ -313,43 +334,49 @@ export const NewChargesTable = ({
     },
   });
 
+  // Ids of every charge in the table, fed to the batch loader so expand-all hydrates them all in a
+  // single query.
+  const chargeIds = useMemo(() => charges.map(charge => charge.id), [charges]);
+
   return (
-    <div className="overflow-hidden rounded-md border w-auto max-w-fit [&>div]:w-auto [&>div]:max-w-fit">
-      <Table className="w-auto max-w-fit">
-        <TableHeader>
-          {table.getHeaderGroups().map(headerGroup => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map(header => (
-                <TableHead key={header.id} colSpan={header.colSpan}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-              <TableHead />
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody className="w-auto max-w-fit">
-          {table.getRowModel().rows?.length ? (
-            table
-              .getRowModel()
-              .rows.map(row => (
-                <ChargeRow
-                  key={row.id}
-                  row={row}
-                  updateCharge={(newCharge: ChargeRow) => updateCharge(row.index, newCharge)}
-                />
-              ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
+      <div className="overflow-hidden rounded-md border w-auto max-w-fit [&>div]:w-auto [&>div]:max-w-fit">
+        <Table className="w-auto max-w-fit">
+          <TableHeader>
+            {table.getHeaderGroups().map(headerGroup => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map(header => (
+                  <TableHead key={header.id} colSpan={header.colSpan}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </TableHead>
+                ))}
+                <TableHead />
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody className="w-auto max-w-fit">
+            {table.getRowModel().rows?.length ? (
+              table
+                .getRowModel()
+                .rows.map(row => (
+                  <ChargeRow
+                    key={row.id}
+                    row={row}
+                    updateCharge={(newCharge: ChargeRow) => updateCharge(row.index, newCharge)}
+                  />
+                ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </BatchChargesExtendedInfoProvider>
   );
 };
