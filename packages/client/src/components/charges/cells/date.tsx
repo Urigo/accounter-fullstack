@@ -9,12 +9,14 @@ export function getDateProps({
   maxEventDate,
   maxDocumentsDate,
 }: {
-  minDebitDate: Date | null;
-  minEventDate: Date | null;
-  minDocumentsDate: Date | null;
-  maxDebitDate: Date | null;
-  maxEventDate: Date | null;
-  maxDocumentsDate: Date | null;
+  // GraphQL DateTime scalars are typed as `Date` by codegen but arrive as ISO strings at runtime,
+  // so accept both and normalize to `Date` below.
+  minDebitDate: string | Date | null;
+  minEventDate: string | Date | null;
+  minDocumentsDate: string | Date | null;
+  maxDebitDate: string | Date | null;
+  maxEventDate: string | Date | null;
+  maxDocumentsDate: string | Date | null;
 }): DateProps | undefined {
   if (!minDocumentsDate && !minEventDate && !minDebitDate) {
     return undefined;
@@ -28,8 +30,10 @@ export function getDateProps({
   const mostMinDate = minTimestamps.length > 0 ? new Date(Math.min(...minTimestamps)) : undefined;
   const mostMaxDate = maxTimestamps.length > 0 ? new Date(Math.max(...maxTimestamps)) : undefined;
 
+  const displayDate = minDocumentsDate || minEventDate || minDebitDate;
+
   return {
-    date: minDocumentsDate || minEventDate || minDebitDate || undefined,
+    date: displayDate ? new Date(displayDate) : undefined,
     mostMinDate,
     mostMaxDate,
   };
