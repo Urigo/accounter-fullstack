@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ToolInputError } from './execute.js';
+import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
@@ -165,19 +166,19 @@ async function handler(
     page: pageInfo.currentPage ?? input.page,
     pageSize: pageInfo.pageSize ?? input.pageSize,
     totalPages: pageInfo.totalPages,
-    totalRecords: pageInfo.totalRecords,
     hasNextPage: (pageInfo.currentPage ?? input.page) < pageInfo.totalPages,
   };
 
-  const summary =
-    charges.length === 0
-      ? 'No charges matched the given filters.'
-      : `Found ${pagination.totalRecords} charge(s); showing page ${pagination.page} of ${pagination.totalPages} (${charges.length} on this page).`;
-
-  return {
-    content: [{ type: 'text', text: summary }],
-    structuredContent: { charges, pagination },
-  };
+  return shapeListResult({
+    items: charges,
+    itemsKey: 'charges',
+    total: pageInfo.totalRecords,
+    extra: { pagination },
+    summarize: (shown, total) =>
+      total === 0
+        ? 'No charges matched the given filters.'
+        : `Found ${total} charge(s); showing ${shown} on page ${pagination.page} of ${pagination.totalPages}.`,
+  });
 }
 
 export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {

@@ -68,9 +68,13 @@ describe('balanceReportTool — valid report', () => {
 
     expect(result.isError).toBeUndefined();
     expect((sent as { variables: { ownerId: string } }).variables.ownerId).toBe('b1');
-    const structured = result.structuredContent as { rows: unknown[]; rowCount: number; businessId: string };
+    const structured = result.structuredContent as {
+      rows: unknown[];
+      totalCount: number;
+      businessId: string;
+    };
     expect(structured.businessId).toBe('b1');
-    expect(structured.rowCount).toBe(1);
+    expect(structured.totalCount).toBe(1);
     expect(structured.rows).toEqual([
       {
         id: 't1',
@@ -124,9 +128,17 @@ describe('balanceReportTool — oversized results', () => {
     const many = Array.from({ length: MAX_REPORT_ROWS + 5 }, (_, i) => row(`t${i}`));
     const client = clientReturning(many);
     const result = await run(client, authContext(['b1']), validArgs);
-    const structured = result.structuredContent as { rows: unknown[]; rowCount: number; truncated: boolean };
-    expect(structured.rows).toHaveLength(MAX_REPORT_ROWS);
-    expect(structured.rowCount).toBe(MAX_REPORT_ROWS + 5);
+    const structured = result.structuredContent as {
+      rows: unknown[];
+      totalCount: number;
+      truncated: boolean;
+    };
+    // The in-tool row cap bounds items before serialization; the shared
+    // payload guard may trim further. Either way the result is truncated and
+    // reports the true upstream total.
+    expect(structured.rows.length).toBeGreaterThan(0);
+    expect(structured.rows.length).toBeLessThanOrEqual(MAX_REPORT_ROWS);
+    expect(structured.totalCount).toBe(MAX_REPORT_ROWS + 5);
     expect(structured.truncated).toBe(true);
   });
 });

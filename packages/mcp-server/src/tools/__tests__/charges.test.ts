@@ -66,7 +66,9 @@ describe('searchChargesTool — successful read', () => {
     expect(result.isError).toBeUndefined();
     const structured = result.structuredContent as {
       charges: Array<{ id: string; amount: { value: number } | null }>;
-      pagination: { totalRecords: number; hasNextPage: boolean };
+      pagination: { hasNextPage: boolean };
+      totalCount: number;
+      truncated: boolean;
     };
     expect(structured.charges).toEqual([
       {
@@ -76,7 +78,8 @@ describe('searchChargesTool — successful read', () => {
         date: '2026-01-05',
       },
     ]);
-    expect(structured.pagination.totalRecords).toBe(1);
+    expect(structured.totalCount).toBe(1);
+    expect(structured.truncated).toBe(false);
     expect(structured.pagination.hasNextPage).toBe(false);
   });
 

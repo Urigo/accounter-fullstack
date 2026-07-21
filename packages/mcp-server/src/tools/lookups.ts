@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
@@ -38,19 +39,17 @@ function byNameThenId(a: { name: string; id: string }, b: { name: string; id: st
   );
 }
 
-function applyFilterSortCap<T extends { name: string; id: string }>(
+function filterSortCap<T extends { name: string; id: string }>(
   rows: T[],
   search: string | undefined,
   max: number,
-): { rows: T[]; total: number; truncated: boolean } {
+): { rows: T[]; total: number } {
   const needle = search?.toLowerCase();
   const filtered = needle ? rows.filter(row => row.name.toLowerCase().includes(needle)) : rows;
   const sorted = [...filtered].sort(byNameThenId);
-  return {
-    rows: sorted.slice(0, max),
-    total: filtered.length,
-    truncated: filtered.length > max,
-  };
+  // `total` is the full match count; the byte-guard/continuation is applied by
+  // shapeListResult against this total.
+  return { rows: sorted.slice(0, max), total: filtered.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -85,26 +84,20 @@ async function listTagsHandler(
     { correlationId: context.correlationId, authorization: context.authorization },
   );
 
-  const { rows, total, truncated } = applyFilterSortCap(
-    data.allTags,
-    input.nameContains,
-    input.limit,
-  );
+  const { rows, total } = filterSortCap(data.allTags, input.nameContains, input.limit);
   const tags = rows.map(tag => ({
     id: tag.id,
     name: tag.name,
     namePath: tag.namePath ?? [tag.name],
   }));
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Found ${total} ${total === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
-      },
-    ],
-    structuredContent: { tags, total, truncated },
-  };
+  return shapeListResult({
+    items: tags,
+    itemsKey: 'tags',
+    total,
+    summarize: (_shown, count, truncated) =>
+      `Found ${count} ${count === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
+  });
 }
 
 export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
@@ -158,23 +151,21 @@ async function listTaxCategoriesHandler(
     ? data.taxCategories.filter(category => category.isActive)
     : data.taxCategories;
   // `rows` are already `RawTaxCategory` with exactly the fields we expose.
-  const {
-    rows: taxCategories,
-    total,
-    truncated,
-  } = applyFilterSortCap(activeFiltered, input.nameContains, input.limit);
+  const { rows: taxCategories, total } = filterSortCap(
+    activeFiltered,
+    input.nameContains,
+    input.limit,
+  );
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Found ${total} tax ${total === 1 ? 'category' : 'categories'}${
-          truncated ? ' (truncated)' : ''
-        }.`,
-      },
-    ],
-    structuredContent: { taxCategories, total, truncated },
-  };
+  return shapeListResult({
+    items: taxCategories,
+    itemsKey: 'taxCategories',
+    total,
+    summarize: (_shown, count, truncated) =>
+      `Found ${count} tax ${count === 1 ? 'category' : 'categories'}${
+        truncated ? ' (truncated)' : ''
+      }.`,
+  });
 }
 
 export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput> = {
