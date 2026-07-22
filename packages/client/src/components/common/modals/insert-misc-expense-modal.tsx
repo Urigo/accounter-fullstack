@@ -47,7 +47,7 @@ export const InsertMiscExpenseModal = ({
 
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: MiscExpenseTransactionFieldsDocument,
-    pause: !transactionId,
+    pause: !dialogOpen || !transactionId,
     variables: {
       transactionId,
     },
