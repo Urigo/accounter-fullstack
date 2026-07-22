@@ -3,9 +3,12 @@ import { generateKeyPair, type JWTVerifyGetKey, type KeyObject, SignJWT } from '
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   extractBearerToken,
+  getAuthPrincipal,
+  setAuthPrincipal,
   toPrincipal,
   TokenVerificationError,
   verifyAccessTokenWithKey,
+  type AuthPrincipal,
 } from '../token.js';
 
 const ISSUER = 'https://tenant.auth0.com/';
@@ -131,5 +134,55 @@ describe('verifyAccessTokenWithKey', () => {
     await expect(
       verifyAccessTokenWithKey(token, getKey, { issuer: ISSUER, audience: AUDIENCE }),
     ).rejects.toBe(infra);
+  });
+
+  it('accepts a valid token verified through a key-resolver function', async () => {
+    const token = await sign({});
+    const getKey: JWTVerifyGetKey = async () => publicKey;
+    const principal = await verifyAccessTokenWithKey(token, getKey, {
+      issuer: ISSUER,
+      audience: AUDIENCE,
+    });
+    expect(principal.subject).toBe('user-1');
+  });
+
+  it('rejects a signature-valid token that is missing the subject claim', async () => {
+    // Signed correctly (so jwtVerify passes) but carries no `sub` — toPrincipal
+    // must reject it, and the error surfaces as a TokenVerificationError.
+    const token = await new SignJWT({ scope: 'read:charges' })
+      .setProtectedHeader({ alg: 'RS256' })
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setExpirationTime('2h')
+      .sign(privateKey);
+    await expect(
+      verifyAccessTokenWithKey(token, publicKey, { issuer: ISSUER, audience: AUDIENCE }),
+    ).rejects.toBeInstanceOf(TokenVerificationError);
+  });
+});
+
+describe('setAuthPrincipal / getAuthPrincipal', () => {
+  const principal: AuthPrincipal = {
+    subject: 'user-1',
+    issuer: ISSUER,
+    audience: AUDIENCE,
+    scopes: [],
+    email: null,
+    expiresAt: undefined,
+    claims: { sub: 'user-1' },
+  };
+
+  it('round-trips a principal stored on a request', () => {
+    const request = req();
+    expect(getAuthPrincipal(request)).toBeUndefined();
+    setAuthPrincipal(request, principal);
+    expect(getAuthPrincipal(request)).toBe(principal);
+  });
+
+  it('keeps principals isolated per request', () => {
+    const a = req();
+    const b = req();
+    setAuthPrincipal(a, principal);
+    expect(getAuthPrincipal(b)).toBeUndefined();
   });
 });

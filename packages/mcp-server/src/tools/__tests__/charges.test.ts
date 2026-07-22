@@ -148,6 +148,23 @@ describe('searchChargesTool — invalid filters', () => {
     expect((result.structuredContent as { message: string }).message).toMatch(/on or before/);
   });
 
+  it('rejects a single impossible toDate that still matches the format', async () => {
+    const client = clientReturning(oneCharge);
+    const result = await run(client, authContext(['b1']), { toDate: '2026-13-01' });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { message: string }).message).toBe('Invalid toDate');
+  });
+
+  it('rejects a date range wider than the cap', async () => {
+    const client = clientReturning(oneCharge);
+    const result = await run(client, authContext(['b1']), {
+      fromDate: '2024-01-01',
+      toDate: '2026-01-01',
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { message: string }).message).toMatch(/must not exceed/);
+  });
+
   it('rejects a page size above the cap', async () => {
     const client = clientReturning(oneCharge);
     const result = await run(client, authContext(['b1']), { pageSize: 500 });
