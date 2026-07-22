@@ -89,6 +89,9 @@ export function createLedgerTestContext(options: {
   } as AuthContextProvider;
 
   const tenantAwareDB = new TenantAwareDBClient(dbProvider, authContextProvider);
+  // No request lifecycle here to dispose the client, so fall back to
+  // commit-and-release after every operation to avoid leaking pool connections.
+  tenantAwareDB.autoRelease = true;
 
   // Create AdminContextProvider for providers that need it
   const adminContextProvider = new AdminContextProvider(authContextProvider, tenantAwareDB);

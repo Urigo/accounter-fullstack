@@ -65,16 +65,73 @@ describe('TenantAwareDBClient', () => {
         .toThrow('Auth context not available. TenantAwareDBClient requires active authentication.');
     });
 
-    it('should start a transaction if none exists', async () => {
+    it('should open a request-scoped session and keep it open for reads', async () => {
       vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
 
       await tenantDBClient.query('SELECT 1');
 
-      // Check transaction flow
+      // Session flow: BEGIN + RLS, then the query — no COMMIT/release until dispose
       expect(mockPool.connect).toHaveBeenCalled();
       expect(mockPoolClient.query).toHaveBeenCalledWith('BEGIN');
       expect(mockPoolClient.query).toHaveBeenCalledWith(expect.stringContaining("set_config('app.current_business_id', $1, true)"), expect.anything());
       expect(mockPoolClient.query).toHaveBeenCalledWith('SELECT 1', undefined);
+      expect(mockPoolClient.query).not.toHaveBeenCalledWith('COMMIT');
+      expect(mockPoolClient.release).not.toHaveBeenCalled();
+
+      await tenantDBClient.dispose();
+
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
+      expect(mockPoolClient.release).toHaveBeenCalled();
+    });
+
+    it('should reuse the open session across sequential read queries', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+
+      await tenantDBClient.query('SELECT 1');
+      await tenantDBClient.query('SELECT 2');
+
+      expect(mockPool.connect).toHaveBeenCalledTimes(1);
+      const beginCalls = vi.mocked(mockPoolClient.query).mock.calls.filter(call => call[0] === 'BEGIN');
+      expect(beginCalls).toHaveLength(1);
+    });
+
+    it('should commit a data-modifying query immediately and reopen the session on the next query', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+
+      await tenantDBClient.query('UPDATE accounter_schema.charges SET user_description = $1', ['x']);
+
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
+
+      await tenantDBClient.query('SELECT 1');
+
+      const beginCalls = vi.mocked(mockPoolClient.query).mock.calls.filter(call => call[0] === 'BEGIN');
+      expect(beginCalls).toHaveLength(2);
+      // The pooled connection itself is reused across sessions
+      expect(mockPool.connect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should roll back a failed query and recover with a fresh session', async () => {
+      const failure = new Error('bad query');
+      vi.mocked(mockPoolClient.query).mockImplementation(((text: string) =>
+        text === 'SELECT broken'
+          ? Promise.reject(failure)
+          : Promise.resolve({ rows: [] })) as any);
+
+      await expect(tenantDBClient.query('SELECT broken')).rejects.toThrow(failure);
+      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
+
+      await tenantDBClient.query('SELECT 1');
+
+      const beginCalls = vi.mocked(mockPoolClient.query).mock.calls.filter(call => call[0] === 'BEGIN');
+      expect(beginCalls).toHaveLength(2);
+    });
+
+    it('should commit and release after every query in autoRelease mode', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      tenantDBClient.autoRelease = true;
+
+      await tenantDBClient.query('SELECT 1');
+
       expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
       expect(mockPoolClient.release).toHaveBeenCalled();
     });
@@ -92,6 +149,8 @@ describe('TenantAwareDBClient', () => {
       expect(mockPoolClient.query).toHaveBeenCalledWith('BEGIN');
       // SELECT called inside transaction
       expect(mockPoolClient.query).toHaveBeenCalledWith('SELECT 1', undefined);
+      // outermost transaction scope commits promptly
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
     });
   });
 
@@ -139,25 +198,19 @@ describe('TenantAwareDBClient', () => {
       })).rejects.toThrow(error);
 
       expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
-      expect(mockPoolClient.release).toHaveBeenCalled();
+      // The pooled connection is retained for the rest of the request
+      expect(mockPoolClient.release).not.toHaveBeenCalled();
     });
   });
 
   describe('dispose', () => {
-    it('should rollback and release active client', async () => {
-      // Start a transaction but don't finish it (simulate interruption by catching reference?)
-      // Hard to simulate "mid-flight" without modifying state directly or using a hanging promise?
-      // We can just call transaction and rely on internal state if we mock connect/query?
-      // Alternatively, we can inspect private state or simulate a hanging transaction?
-      // Easier: Manually set activeClient via `any` cast for testing dispose logic if needed,
-      // or start a transaction that awaits a signal?
-      
-      // Let's manually set state for testing dispose specifically
-      (tenantDBClient as any).activeClient = mockPoolClient;
-      
+    it('should commit the open session and release the client', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      await tenantDBClient.query('SELECT 1');
+
       await tenantDBClient.dispose();
 
-      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
       expect(mockPoolClient.release).toHaveBeenCalled();
       expect((tenantDBClient as any).activeClient).toBeNull();
     });
@@ -187,7 +240,8 @@ describe('TenantAwareDBClient', () => {
     });
 
     it('should be idempotent', async () => {
-      (tenantDBClient as any).activeClient = mockPoolClient;
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      await tenantDBClient.query('SELECT 1');
 
       await tenantDBClient.dispose();
       await tenantDBClient.dispose();
@@ -195,15 +249,16 @@ describe('TenantAwareDBClient', () => {
       expect(mockPoolClient.release).toHaveBeenCalledTimes(1);
     });
 
-    it('should release client even if rollback fails', async () => {
-      const rollbackError = new Error('Rollback failed');
-      vi.mocked(mockPoolClient.query).mockRejectedValueOnce(rollbackError);
-      (tenantDBClient as any).activeClient = mockPoolClient;
+    it('should destroy the client if the final commit fails', async () => {
+      const commitError = new Error('Commit failed');
+      vi.mocked(mockPoolClient.query).mockImplementation(((text: string) =>
+        text === 'COMMIT' ? Promise.reject(commitError) : Promise.resolve({ rows: [] })) as any);
+      await tenantDBClient.query('SELECT 1');
 
       await tenantDBClient.dispose();
 
-      expect(mockPoolClient.query).toHaveBeenCalledWith('ROLLBACK');
-      expect(mockPoolClient.release).toHaveBeenCalled();
+      // The connection state is unknown after a failed COMMIT — destroy it
+      expect(mockPoolClient.release).toHaveBeenCalledWith(true);
       expect((tenantDBClient as any).activeClient).toBeNull();
     });
 
@@ -220,24 +275,25 @@ describe('TenantAwareDBClient', () => {
       const release = await (tenantDBClient as any).mutex.acquire();
       
       const disposePromise = tenantDBClient.dispose();
-      
+
       // Advance timers by 5000ms + buffer (must handle async promise resolution)
       await vi.advanceTimersByTimeAsync(6000);
-      
+
       await disposePromise;
-      
-      // Cleanup
-      release();
-      vi.useRealTimers();
-      
-      // Assertions
-      // 1. Client should NOT be released because we return early to avoid destroying
-      //    an actively-used connection (prevents race condition)
+
+      // Assertions (before releasing the mutex — cleanup is deferred until the
+      // in-flight operation frees it, so releasing first would race them)
+      // 1. Client should NOT be released yet to avoid destroying an
+      //    actively-used connection (prevents race condition)
       expect(mockPoolClient.release).not.toHaveBeenCalled();
-      // 2. activeClient should still be set (cleanup deferred to transaction's finally block)
+      // 2. activeClient should still be set (cleanup deferred until mutex frees)
       expect((tenantDBClient as any).activeClient).toBe(mockPoolClient);
       // 3. isDisposed SHOULD be true to prevent further usage of this instance
       expect((tenantDBClient as any).isDisposed).toBe(true);
+
+      // Cleanup: releasing the mutex lets the deferred cleanup run
+      release();
+      vi.useRealTimers();
     });
   });
 

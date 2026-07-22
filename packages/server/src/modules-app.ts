@@ -57,6 +57,7 @@ declare global {
     interface GlobalContext {
       env: Environment;
       rawAuth: RawAuth;
+      dbClientsToDispose?: { dispose: () => Promise<void> }[];
     }
   }
 }
