@@ -138,6 +138,9 @@ export class ShaamImportProvider {
             country,
             suggestions: null,
             pcn874RecordTypeOverride: null,
+            bankAccountBankNumber: null,
+            bankAccountBranchNumber: null,
+            bankAccountAccountNumber: null,
           };
           await this.businessProvider.insertBusiness(business, client);
 

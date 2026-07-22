@@ -62,6 +62,9 @@ export async function updateSingleBusiness(
     country: fields.country,
     suggestionData,
     pcn874RecordTypeOverride: fields.pcn874RecordType,
+    bankAccountBankNumber: fields.bankAccount?.bankNumber ?? null,
+    bankAccountBranchNumber: fields.bankAccount?.branchNumber ?? null,
+    bankAccountAccountNumber: fields.bankAccount?.accountNumber ?? null,
   };
 
   if (Object.values(adjustedFields).some(field => field != null)) {
