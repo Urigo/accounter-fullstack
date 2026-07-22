@@ -110,7 +110,8 @@ process (labels never carry PII — only tool names, outcome classes, and error 
 - **`requestsTotal`** — request counter keyed by `"<tool>|<outcome>"`, where outcome is `success` or
   one of the taxonomy-derived error classes (`validation_error`, `authentication_error`,
   `authorization_error`, `rate_limited`, `upstream_error`, `timeout_error`, `internal_error`).
-- **`latencyMs`** — a cumulative latency histogram (buckets in ms plus `+Inf`, with `count`/`sum`).
+- **`latencyMs`** — a latency histogram with per-bucket (non-cumulative) counts in ms plus an
+  `+Inf` overflow bucket, alongside running `count`/`sum` totals.
 - **`authFailuresTotal`** — auth failure counter keyed by reason (`missing_token`, `invalid_token`).
 - **`upstreamErrorsTotal`** — upstream failure counter keyed by category.
 - **`rateLimitedTotal`** — total rate-limited requests.

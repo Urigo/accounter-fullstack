@@ -43,7 +43,11 @@ export function outcomeForCode(code: McpErrorCode): RequestOutcome {
 export const LATENCY_BUCKETS_MS = [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000] as const;
 
 interface Histogram {
-  /** Cumulative counts per bucket, plus a final +Inf bucket. */
+  /**
+   * Per-bucket counts (non-cumulative): each entry counts observations that
+   * fell into that single bucket, plus a final `+Inf` overflow bucket. The
+   * running total is tracked separately in `count`.
+   */
   buckets: number[];
   count: number;
   sum: number;
