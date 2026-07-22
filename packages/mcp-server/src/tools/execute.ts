@@ -6,6 +6,7 @@ import {
   toToolErrorResult,
 } from '../errors/taxonomy.js';
 import { log } from '../logger.js';
+import { rateLimitKey, type RateLimiter } from '../rate-limit/limiter.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 import { evaluateToolPolicy } from './policy.js';
 import {
@@ -53,6 +54,8 @@ export interface ExecuteToolParams {
   correlationId: string;
   client: UpstreamGraphQLClient;
   authorization?: string;
+  /** Optional rate limiter; when provided, enforced before the handler runs. */
+  limiter?: RateLimiter;
 }
 
 /**
@@ -60,7 +63,7 @@ export interface ExecuteToolParams {
  * {@link ToolResult} — success or a taxonomy-tagged error result.
  */
 export async function executeRegisteredTool(params: ExecuteToolParams): Promise<ToolResult> {
-  const { tool, rawArgs, auth, correlationId, client, authorization } = params;
+  const { tool, rawArgs, auth, correlationId, client, authorization, limiter } = params;
 
   // 1. Strict input validation (unknown fields rejected).
   const validation = validateToolInput(tool, rawArgs);
@@ -85,7 +88,30 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
     );
   }
 
-  // 3. Execute the handler.
+  // 3. Rate limit (before any expensive upstream call), keyed by
+  // identity + business scope + tool.
+  if (limiter) {
+    const outcome = limiter.check(
+      rateLimitKey({
+        userId: auth.userId,
+        toolName: tool.name,
+        businessIds: decision.readScope.businessIds,
+      }),
+    );
+    if (!outcome.allowed) {
+      const retryAfterSeconds = Math.ceil(outcome.retryAfterMs / 1000);
+      return toToolErrorResult(
+        errorPayload(
+          'RATE_LIMIT_ERROR',
+          `Rate limit exceeded. Retry in ${retryAfterSeconds}s.`,
+          correlationId,
+          { retryAfterMs: outcome.retryAfterMs },
+        ),
+      );
+    }
+  }
+
+  // 4. Execute the handler.
   const context: ToolExecutionContext = {
     auth,
     readScope: decision.readScope,
