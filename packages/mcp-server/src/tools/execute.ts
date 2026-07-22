@@ -6,7 +6,7 @@ import {
   toToolErrorResult,
 } from '../errors/taxonomy.js';
 import { log } from '../logger.js';
-import { rateLimitKey, type RateLimiter } from '../rate-limit/limiter.js';
+import { rateLimitKey, type RateLimiterLike } from '../rate-limit/limiter.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 import { evaluateToolPolicy } from './policy.js';
 import {
@@ -55,7 +55,7 @@ export interface ExecuteToolParams {
   client: UpstreamGraphQLClient;
   authorization?: string;
   /** Optional rate limiter; when provided, enforced before the handler runs. */
-  limiter?: RateLimiter;
+  limiter?: RateLimiterLike;
 }
 
 /**

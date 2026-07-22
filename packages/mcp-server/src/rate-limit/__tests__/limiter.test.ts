@@ -79,4 +79,11 @@ describe('parseRateLimitConfig', () => {
     expect(parseRateLimitConfig('not json')).toEqual(DEFAULT_RATE_LIMIT);
     expect(parseRateLimitConfig('{"windowMs":-5,"max":0}')).toEqual(DEFAULT_RATE_LIMIT);
   });
+
+  it('does not let a fractional max collapse to 0 (which would block everything)', () => {
+    // Math.floor(0.5) === 0; must fall back to the default rather than max: 0.
+    expect(parseRateLimitConfig('{"max":0.5}').max).toBe(DEFAULT_RATE_LIMIT.max);
+    // A value >= 1 is floored normally.
+    expect(parseRateLimitConfig('{"max":5.9}').max).toBe(5);
+  });
 });
