@@ -1,0 +1,52 @@
+{
+  "name": "@accounter/mcp-server",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Remote MCP (Model Context Protocol) server exposing a curated, read-only subset of Accounter capabilities to Claude clients",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Urigo/accounter-fullstack.git",
+    "directory": "packages/mcp-server"
+  },
+  "homepage": "https://github.com/Urigo/accounter-fullstack/tree/main/packages/mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/Urigo/accounter-fullstack/issues"
+  },
+  "author": "Gil Gardosh <gilgardosh@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": "26.5.0"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "connector",
+    "accounter"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "17.4.2",
+    "jose": "6.2.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.5",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}
