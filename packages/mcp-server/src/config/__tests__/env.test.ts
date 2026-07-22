@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { EnvValidationError, parseEnv } from '../env.js';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { EnvValidationError, loadEnv, parseEnv } from '../env.js';
 
 const validEnv: NodeJS.ProcessEnv = {
   MCP_PUBLIC_BASE_URL: 'https://mcp.example.com',
@@ -109,5 +111,44 @@ describe('parseEnv — invalid configuration', () => {
     // whitespace is a non-empty string at the schema level; emptiness is only
     // enforced against the literal empty string.
     expect(() => parseEnv({ ...validEnv, AUTH0_AUDIENCE: '' })).toThrow(EnvValidationError);
+  });
+});
+
+describe('loadEnv — fail-fast startup', () => {
+  // Point dotenv at a nonexistent file so no real .env leaks into the source.
+  const missingEnvFile = resolve(tmpdir(), 'accounter-mcp-nonexistent.env');
+  const originalTestEnvFile = process.env.TEST_ENV_FILE;
+
+  afterEach(() => {
+    if (originalTestEnvFile === undefined) {
+      delete process.env.TEST_ENV_FILE;
+    } else {
+      process.env.TEST_ENV_FILE = originalTestEnvFile;
+    }
+    vi.restoreAllMocks();
+  });
+
+  it('reports the invalid variables and exits the process', () => {
+    process.env.TEST_ENV_FILE = missingEnvFile;
+    const exit = vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+      throw new Error(`process.exit:${code}`);
+    }) as never);
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    expect(() => loadEnv({})).toThrow('process.exit:1');
+    expect(exit).toHaveBeenCalledWith(1);
+    expect(String(errorLog.mock.calls[0]?.[0])).toContain('Invalid environment variables');
+  });
+
+  it('returns a validated config for a valid source without exiting', () => {
+    process.env.TEST_ENV_FILE = missingEnvFile;
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => {
+      throw new Error('process.exit called unexpectedly');
+    }) as never);
+
+    const config = loadEnv({ ...validEnv });
+    expect(config.server.port).toBe(3100);
+    expect(config.upstream.graphqlUrl).toBe('http://localhost:4000/graphql');
+    expect(exit).not.toHaveBeenCalled();
   });
 });
