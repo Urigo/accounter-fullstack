@@ -15,14 +15,18 @@ query → `COMMIT` (4–5 round trips each) and serializes top-level queries thr
   lazily on the first query of a GraphQL request (RLS variables set once), reuse it for all
   subsequent queries in the request, keep the existing SAVEPOINT nesting for explicit
   `transaction()` scopes.
-- `packages/server/src/plugins/db-cleanup-plugin.ts` — commit/release the request-scoped client at
-  request end (success → `COMMIT`, error → `ROLLBACK`).
+- `packages/server/src/plugins/db-cleanup-plugin.ts` — dispose the request-scoped client at request
+  end (including after any `@defer`/`@stream` tail): `dispose()` commits any open read session and
+  releases the connection. Error handling happens mid-request, not here — a failed statement rolls
+  the session back immediately, and data-modifying work is committed as soon as it succeeds.
 
 **Care points**: mutation semantics (explicit `transaction()` calls must still get savepoint
 isolation), long-lived `@defer` streams (client held until stream end), disposal on aborted
 requests.
 
-**Expected**: collapses 4–5 round trips per logical query to ~1; removes serialization for reads.
+**Expected**: collapses 4–5 round trips per logical query to ~1 (BEGIN + RLS `set_config` run once
+per request instead of per query). Queries remain serialized through the mutex — the request shares
+a single pooled connection — so the win is fewer round trips per query, not parallel execution.
 Biggest single win.
 
 ## Step 2 — Parent-aware field resolvers + loader priming (fixes F2, F5)
@@ -50,8 +54,8 @@ change, no behavior change.
 
 **Change**:
 
-- `charges.resolver.ts` `ChargeMetadata.invalidLedger` — short-circuit charges with no
-  transactions, documents, and ledger records (skip full ledger generation).
+- `charges.resolver.ts` `ChargeMetadata.invalidLedger` — short-circuit charges with no transactions,
+  documents, and ledger records (skip full ledger generation).
 - `packages/server/src/modules/charges/helpers/charge-type.ts` — per-request memoization of
   `getChargeType` by charge id (request-scoped Map), deduplicating the up-to-10 `__isTypeOf` probes
   per charge and repeat calls in validation/suggestions.
@@ -80,14 +84,14 @@ run `yarn generate`. First paint stops waiting on per-row suggestion computation
 
 **Change**:
 
-- `packages/server/src/telemetry/builder.ts` — append `/v1/traces` when the configured OTLP
-  endpoint has no path.
+- `packages/server/src/telemetry/builder.ts` — append `/v1/traces` when the configured OTLP endpoint
+  has no path.
 - `.env.template` — correct the example endpoint (`4317` gRPC → proper HTTP URL).
 
 ## Verification (every step)
 
 1. `yarn lint`, `yarn generate`, `yarn test` (server unit tests; integration where DB available).
-2. Re-run the AllCharges page with the identical filter/page used for the baseline; capture a
-   Jaeger trace; record total duration + span count in a results table appended to `findings.md`.
+2. Re-run the AllCharges page with the identical filter/page used for the baseline; capture a Jaeger
+   trace; record total duration + span count in a results table appended to `findings.md`.
 3. Sanity-check UI: rows render, counts/dates/amounts match pre-change values, deferred
    `invalidLedger` badge still arrives.

@@ -81,13 +81,14 @@ export class TenantAwareDBClient {
   private authContextInitialized = false;
 
   /**
-   * Legacy per-operation mode: commit and release the connection after every
-   * top-level query/transaction (the pre-request-scoped behavior). For direct
-   * constructions outside the GraphQL request lifecycle (test harnesses,
-   * scripts) where nothing calls dispose() — without it the held connection
-   * would leak from the pool and block pool.end().
+   * Per-operation mode: commit and release the connection after every
+   * top-level query/transaction (the pre-request-scoped behavior). Defaults to
+   * true for direct constructions outside the GraphQL request lifecycle (no
+   * CONTEXT injection — test harnesses, scripts) where nothing calls
+   * dispose(): a held connection would otherwise leak from the pool, keep
+   * table locks, and block pool.end().
    */
-  public autoRelease = false;
+  public autoRelease: boolean;
 
   constructor(
     private dbProvider: DBProvider,
@@ -97,10 +98,13 @@ export class TenantAwareDBClient {
     // Register for end-of-request disposal (commit + release of the
     // request-scoped connection). dbCleanupPlugin drains this list once the
     // response — including any @defer/@stream tail — is fully sent. Absent
-    // context (direct construction), the owner must call dispose() or set
-    // autoRelease.
+    // context (direct construction), fall back to commit-and-release per
+    // operation since nothing would ever call dispose().
     if (context) {
       (context.dbClientsToDispose ??= []).push(this);
+      this.autoRelease = false;
+    } else {
+      this.autoRelease = true;
     }
   }
 

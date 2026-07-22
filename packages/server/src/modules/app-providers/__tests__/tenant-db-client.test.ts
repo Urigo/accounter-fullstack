@@ -10,6 +10,7 @@ describe('TenantAwareDBClient', () => {
   let mockPool: Pool;
   let mockDBProvider: DBProvider;
   let mockAuthContext: AuthContext;
+  let mockContext: GraphQLModules.GlobalContext;
   let tenantDBClient: TenantAwareDBClient;
 
   beforeEach(() => {
@@ -53,7 +54,10 @@ describe('TenantAwareDBClient', () => {
 
     const authContextProvider = {getAuthContext: () => Promise.resolve(mockAuthContext)} as AuthContextProvider;
 
-    tenantDBClient = new TenantAwareDBClient(mockDBProvider, authContextProvider);
+    // Request-scoped mode requires a GraphQL context (dbCleanupPlugin disposes
+    // the client at request end); without one the client auto-releases.
+    mockContext = {} as GraphQLModules.GlobalContext;
+    tenantDBClient = new TenantAwareDBClient(mockDBProvider, authContextProvider, mockContext);
   });
 
   describe('query', () => {
@@ -134,6 +138,28 @@ describe('TenantAwareDBClient', () => {
 
       expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
       expect(mockPoolClient.release).toHaveBeenCalled();
+    });
+
+    it('should default to autoRelease when constructed without a GraphQL context', async () => {
+      vi.mocked(mockPoolClient.query).mockResolvedValue({ rows: [] } as any);
+      const authContextProvider = {
+        getAuthContext: () => Promise.resolve(mockAuthContext),
+      } as AuthContextProvider;
+      const directClient = new TenantAwareDBClient(mockDBProvider, authContextProvider);
+
+      expect(directClient.autoRelease).toBe(true);
+
+      // Nothing calls dispose() outside the request lifecycle — the connection
+      // must be committed and released after each query.
+      await directClient.query('SELECT 1');
+
+      expect(mockPoolClient.query).toHaveBeenCalledWith('COMMIT');
+      expect(mockPoolClient.release).toHaveBeenCalled();
+    });
+
+    it('should register for disposal and stay request-scoped when a context is provided', () => {
+      expect(tenantDBClient.autoRelease).toBe(false);
+      expect(mockContext.dbClientsToDispose).toContain(tenantDBClient);
     });
 
     it('should reuse existing transaction', async () => {

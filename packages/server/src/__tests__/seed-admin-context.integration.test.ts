@@ -119,6 +119,12 @@ describe('seedAdminCore integration', () => {
 
   it('should be idempotent (safe to call multiple times)', async () => {
     await db.withTransaction(async client => {
+      // Snapshot isolation: parallel suites commit writes/deletes to
+      // financial_entities mid-test under READ COMMITTED, shifting the global
+      // count between the two reads below. REPEATABLE READ pins both counts to
+      // one snapshot while this transaction's own seed writes stay visible.
+      await client.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+
       // Call seed twice in same transaction
       await seedAdminCore(client);
 

@@ -58,9 +58,9 @@ waterfall is strictly sequential.
 Trace math: 23.95s − 1.72s (main query) − 0.5s (initial pool connect) ≈ 21.7s ÷ 74ms ≈ **~290
 sequential round trips** for ~90 logical queries.
 
-> **Caveat**: locally the server talks to a remote DB (~74ms RTT). In production (co-located,
-> ~1ms RTT) the same request is likely ~2–4s. The local setup amplifies the structural problem
-> ~50×, making the query-count pathology visible.
+> **Caveat**: locally the server talks to a remote DB (~74ms RTT). In production (co-located, ~1ms
+> RTT) the same request is likely ~2–4s. The local setup amplifies the structural problem ~50×,
+> making the query-count pathology visible.
 
 ### F2. Field resolvers discard the enriched SQL columns
 
@@ -71,9 +71,9 @@ DataLoaders:
 
 - `minEventDate` / `minDebitDate` / `maxEventDate` / `maxDebitDate` / `minDocumentsDate` /
   `maxDocumentsDate` / `vat` / `totalAmount`
-  (`packages/server/src/modules/charges/resolvers/common.ts`) call
-  `getChargeTransactionsMeta` / `getChargeDocumentsMeta` / `calculateTotalAmount`, which load **all
-  transaction and document rows** per charge and re-aggregate in JS
+  (`packages/server/src/modules/charges/resolvers/common.ts`) call `getChargeTransactionsMeta` /
+  `getChargeDocumentsMeta` / `calculateTotalAmount`, which load **all transaction and document
+  rows** per charge and re-aggregate in JS
   (`packages/server/src/modules/charges/helpers/common.helper.ts`).
 - `metadata.*Count` fields (`charges.resolver.ts:728-850`) load full
   transactions/documents/ledger/misc-expense row sets just to call `.length`.
@@ -113,31 +113,30 @@ runs for every charge missing tags/description — repeating `calculateTotalAmou
 
 ### F7. `__isTypeOf` chain re-runs `getChargeType`
 
-Charge `__typename` resolution runs up to 10 sequential `__isTypeOf` checks per charge, each
-calling `getChargeType` (cheap when `charge.type` is set; a loader cascade when null). No
-per-request memoization.
+Charge `__typename` resolution runs up to 10 sequential `__isTypeOf` checks per charge, each calling
+`getChargeType` (cheap when `charge.type` is set; a loader cascade when null). No per-request
+memoization.
 
 ### F8. Telemetry exporter URL bug (found while setting up profiling)
 
 `packages/server/src/telemetry/builder.ts:94` passes `env.otel.exporterEndpoint` directly as `url`
-to `OTLPTraceExporter`. With an explicit `url` the exporter does **not** append `/v1/traces`, so
-the template value (`http://localhost:4317`, also the wrong gRPC port for an HTTP exporter)
-silently exports nothing. Workaround used: set
-`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces`. `.env.template` and/or the builder
-should be fixed.
+to `OTLPTraceExporter`. With an explicit `url` the exporter does **not** append `/v1/traces`, so the
+template value (`http://localhost:4317`, also the wrong gRPC port for an HTTP exporter) silently
+exports nothing. Workaround used: set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces`.
+`.env.template` and/or the builder should be fixed.
 
 ## Jaeger trace summary (baseline)
 
-| Metric                       | Value                                        |
-| ---------------------------- | -------------------------------------------- |
-| Total duration               | 23.95s                                       |
-| Total spans                  | 366                                          |
-| Initial `pg-pool.connect`    | 501ms (TLS handshake; later checkouts ~1ms)  |
-| Main `WITH` query            | 1.72s (~7% of total)                         |
-| Typical query span           | ~74ms (uniform — network RTT bound)          |
-| Per-logical-query round trips| 4–5 (`BEGIN`, RLS `SET`, query, `COMMIT`)    |
-| Estimated sequential RTs     | ~290                                         |
-| Concurrency                  | None — queries strictly serialized           |
+| Metric                        | Value                                       |
+| ----------------------------- | ------------------------------------------- |
+| Total duration                | 23.95s                                      |
+| Total spans                   | 366                                         |
+| Initial `pg-pool.connect`     | 501ms (TLS handshake; later checkouts ~1ms) |
+| Main `WITH` query             | 1.72s (~7% of total)                        |
+| Typical query span            | ~74ms (uniform — network RTT bound)         |
+| Per-logical-query round trips | 4–5 (`BEGIN`, RLS `SET`, query, `COMMIT`)   |
+| Estimated sequential RTs      | ~290                                        |
+| Concurrency                   | None — queries strictly serialized          |
 
 Profiling setup: Jaeger all-in-one (OTLP HTTP :4318), `OTEL_ENABLED=1`,
 `OTEL_TRACES_SAMPLER=parentbased_always_on`. Traces appear under service `accounter-server`.
