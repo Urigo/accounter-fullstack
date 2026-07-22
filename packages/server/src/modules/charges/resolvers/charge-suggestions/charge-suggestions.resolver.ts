@@ -65,8 +65,8 @@ const missingInfoSuggestions: Resolver<
     }
 
     const [formattedAmount, { allBusinessIds, mainBusinessId }] = await Promise.all([
-      calculateTotalAmount(DbCharge.id, injector, defaultLocalCurrency),
-      getChargeBusinesses(DbCharge.id, injector),
+      calculateTotalAmount(DbCharge, injector, defaultLocalCurrency),
+      getChargeBusinesses(DbCharge, injector),
     ]);
 
     const chargeAmount = formattedAmount?.raw ?? 0;

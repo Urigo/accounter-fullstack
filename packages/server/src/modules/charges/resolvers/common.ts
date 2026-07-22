@@ -17,7 +17,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   vat: async (dbCharge, _, { injector }) => {
     try {
       const { documentsVatAmount, documentsCurrency } = await getChargeDocumentsMeta(
-        dbCharge.id,
+        dbCharge,
         injector,
       );
       return documentsVatAmount != null && documentsCurrency
@@ -31,7 +31,7 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
     const { defaultLocalCurrency } = await injector
       .get(AdminContextProvider)
       .getVerifiedAdminContext();
-    return calculateTotalAmount(dbCharge.id, injector, defaultLocalCurrency).catch(error => {
+    return calculateTotalAmount(dbCharge, injector, defaultLocalCurrency).catch(error => {
       throw errorSimplifier('Failed to fetch total amount', error);
     });
   },
@@ -49,37 +49,37 @@ export const commonChargeFields: ChargesModule.ChargeResolvers = {
   isInvoicePaymentDifferentCurrency: DbCharge => DbCharge.invoice_payment_currency_diff,
   userDescription: DbCharge => DbCharge.user_description,
   minEventDate: async (DbCharge, _, { injector }) =>
-    getChargeTransactionsMeta(DbCharge.id, injector)
+    getChargeTransactionsMeta(DbCharge, injector)
       .then(({ transactionsMinEventDate }) => transactionsMinEventDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch charge transactions meta', error);
       }),
   minDebitDate: async (DbCharge, _, { injector }) =>
-    getChargeTransactionsMeta(DbCharge.id, injector)
+    getChargeTransactionsMeta(DbCharge, injector)
       .then(({ transactionsMinDebitDate }) => transactionsMinDebitDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch min debit date', error);
       }),
   minDocumentsDate: async (DbCharge, _, { injector }) =>
-    getChargeDocumentsMeta(DbCharge.id, injector)
+    getChargeDocumentsMeta(DbCharge, injector)
       .then(docsMeta => docsMeta.documentsMinDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch min documents date', error);
       }),
   maxEventDate: async (DbCharge, _, { injector }) =>
-    getChargeTransactionsMeta(DbCharge.id, injector)
+    getChargeTransactionsMeta(DbCharge, injector)
       .then(({ transactionsMaxEventDate }) => transactionsMaxEventDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch charge transactions meta', error);
       }),
   maxDebitDate: async (DbCharge, _, { injector }) =>
-    getChargeTransactionsMeta(DbCharge.id, injector)
+    getChargeTransactionsMeta(DbCharge, injector)
       .then(({ transactionsMaxDebitDate }) => transactionsMaxDebitDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch max debit date', error);
       }),
   maxDocumentsDate: async (DbCharge, _, { injector }) =>
-    getChargeDocumentsMeta(DbCharge.id, injector)
+    getChargeDocumentsMeta(DbCharge, injector)
       .then(docsMeta => docsMeta.documentsMaxDate)
       .catch(error => {
         throw errorSimplifier('Failed to fetch max documents date', error);

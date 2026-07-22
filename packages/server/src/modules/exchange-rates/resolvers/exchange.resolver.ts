@@ -83,9 +83,9 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
     exchangeRates: async (DbCharge, _, { injector }) => {
       const [{ transactionsMinDebitDate }, { ledgerMinInvoiceDate }, { documentsMinDate }] =
         await Promise.all([
-          getChargeTransactionsMeta(DbCharge.id, injector),
-          getChargeLedgerMeta(DbCharge.id, injector),
-          getChargeDocumentsMeta(DbCharge.id, injector),
+          getChargeTransactionsMeta(DbCharge, injector),
+          getChargeLedgerMeta(DbCharge, injector),
+          getChargeDocumentsMeta(DbCharge, injector),
         ]);
 
       const ratesDate = transactionsMinDebitDate || documentsMinDate || ledgerMinInvoiceDate;

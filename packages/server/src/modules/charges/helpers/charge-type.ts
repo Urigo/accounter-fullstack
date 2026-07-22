@@ -54,7 +54,7 @@ export async function getChargeType(
   }
 
   const [{ allBusinessIds, mainBusinessId }, businessTrip, transactions] = await Promise.all([
-    getChargeBusinesses(charge.id, injector),
+    getChargeBusinesses(charge, injector),
     injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
     injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
   ]);

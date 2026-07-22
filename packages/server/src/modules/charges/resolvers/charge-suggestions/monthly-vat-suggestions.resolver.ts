@@ -18,7 +18,7 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
 > = async (DbCharge, _, { injector }) => {
   try {
     const { transactionsAmount, transactionsMinDebitDate, transactionsMinEventDate } =
-      await getChargeTransactionsMeta(DbCharge.id, injector);
+      await getChargeTransactionsMeta(DbCharge, injector);
 
     if (transactionsAmount == null) {
       return null;
