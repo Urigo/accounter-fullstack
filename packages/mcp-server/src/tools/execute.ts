@@ -4,8 +4,11 @@ import {
   isInternalError,
   toErrorPayload,
   toToolErrorResult,
+  type McpErrorCode,
 } from '../errors/taxonomy.js';
 import { log } from '../logger.js';
+import { outcomeForCode, type Metrics, type RequestOutcome } from '../observability/metrics.js';
+import { withSpan } from '../observability/tracing.js';
 import { rateLimitKey, type RateLimiterLike } from '../rate-limit/limiter.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 import { evaluateToolPolicy } from './policy.js';
@@ -56,13 +59,59 @@ export interface ExecuteToolParams {
   authorization?: string;
   /** Optional rate limiter; when provided, enforced before the handler runs. */
   limiter?: RateLimiterLike;
+  /** Optional metrics registry; when provided, records outcome + latency. */
+  metrics?: Metrics;
+}
+
+/** The error taxonomy codes that map to a known request outcome. */
+const KNOWN_ERROR_CODES = new Set<string>([
+  'VALIDATION_ERROR',
+  'AUTHENTICATION_ERROR',
+  'AUTHORIZATION_ERROR',
+  'UPSTREAM_ERROR',
+  'TIMEOUT_ERROR',
+  'RATE_LIMIT_ERROR',
+  'INTERNAL_ERROR',
+]);
+
+/** Derive the metrics outcome label from a finished tool result. */
+function outcomeOf(result: ToolResult): RequestOutcome {
+  if (!result.isError) {
+    return 'success';
+  }
+  const code = (result.structuredContent as { code?: string } | undefined)?.code;
+  // Guard against a handler returning `isError` with a non-taxonomy code: fall
+  // back to `internal_error` rather than recording a `<tool>|undefined` key.
+  return code && KNOWN_ERROR_CODES.has(code)
+    ? outcomeForCode(code as McpErrorCode)
+    : 'internal_error';
 }
 
 /**
  * Validate, authorize, and execute a registered tool. Always resolves to a
- * {@link ToolResult} — success or a taxonomy-tagged error result.
+ * {@link ToolResult} — success or a taxonomy-tagged error result. Records
+ * request outcome, latency, and error-category metrics when a registry is
+ * provided.
  */
 export async function executeRegisteredTool(params: ExecuteToolParams): Promise<ToolResult> {
+  const { metrics } = params;
+  const start = performance.now();
+  const result = await runTool(params);
+
+  if (metrics) {
+    const outcome = outcomeOf(result);
+    metrics.recordRequest(params.tool.name, outcome, Math.round(performance.now() - start));
+    if (outcome === 'rate_limited') {
+      metrics.recordRateLimited();
+    } else if (outcome === 'upstream_error' || outcome === 'timeout_error') {
+      metrics.recordUpstreamError(outcome);
+    }
+  }
+
+  return result;
+}
+
+async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
   const { tool, rawArgs, auth, correlationId, client, authorization, limiter } = params;
 
   // 1. Strict input validation (unknown fields rejected).
@@ -120,7 +169,10 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
     authorization,
   };
   try {
-    return await tool.handler(input, context);
+    // Span covers the handler + its upstream calls for tracing.
+    return await withSpan(`tool:${tool.name}`, correlationId, async () =>
+      tool.handler(input, context),
+    );
   } catch (error) {
     // Log unexpected (unmapped) failures so bugs aren't hidden; the caller only
     // ever sees the generic, sanitized INTERNAL_ERROR message.

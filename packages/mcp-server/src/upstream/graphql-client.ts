@@ -13,6 +13,8 @@
  * - Upstream errors are sanitized (no stack traces / internal SQL details).
  */
 
+import { withSpan } from '../observability/tracing.js';
+
 export type UpstreamErrorCode = 'UPSTREAM_ERROR' | 'TIMEOUT_ERROR';
 
 /** Sanitized upstream failure. Carries no stack traces or internal details. */
@@ -102,19 +104,23 @@ export class UpstreamGraphQLClient {
   async query<TData>(request: GraphQLRequest, context: UpstreamRequestContext): Promise<TData> {
     assertReadOnly(request.query);
 
-    let attempt = 0;
-    // Total tries = 1 + maxRetries; only retryable failures loop.
-    for (;;) {
-      try {
-        return await this.executeOnce<TData>(request, context);
-      } catch (error) {
-        const isRetryable = error instanceof UpstreamError && error.retryable;
-        if (!isRetryable || attempt >= this.maxRetries) {
-          throw error;
+    // Span covers all retry attempts; the correlation id also propagates to the
+    // upstream server via the X-Correlation-Id header on each attempt.
+    return withSpan('upstream:graphql', context.correlationId, async () => {
+      let attempt = 0;
+      // Total tries = 1 + maxRetries; only retryable failures loop.
+      for (;;) {
+        try {
+          return await this.executeOnce<TData>(request, context);
+        } catch (error) {
+          const isRetryable = error instanceof UpstreamError && error.retryable;
+          if (!isRetryable || attempt >= this.maxRetries) {
+            throw error;
+          }
+          attempt += 1;
         }
-        attempt += 1;
       }
-    }
+    });
   }
 
   private async executeOnce<TData>(

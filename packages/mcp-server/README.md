@@ -20,7 +20,9 @@ Auth0 bearer-token verification, identity mapping from a verified token to an in
 business-membership context, a curated tool registry with strict input validation, a per-tool
 authorization policy evaluator, and a hardened upstream GraphQL client. The first production tool
 (read-only charges search) is wired into `tools/list` / `tools/call` and enforces input validation,
-authorization policy, and business-scope narrowing before execution.
+authorization policy, and business-scope narrowing before execution. Operational telemetry
+(request/outcome counters, a latency histogram, auth-failure counters, and tracing spans) is
+recorded per process and exposed at `GET /metrics`.
 
 ## Tools
 
@@ -95,9 +97,38 @@ signals that tokens are accepted only via the `Authorization` header, never quer
 
 Every request is assigned a `requestId` and a `correlationId` (the latter inherited from an inbound
 `X-Correlation-Id` header when present, otherwise generated). The correlation id is echoed back on
-the response. Structured JSON logs are emitted at request start and completion, carrying
-`requestId`, `correlationId`, `method`, `route`, and — on completion — `status` and `latencyMs`.
-Secrets and authorization headers are never logged.
+the response and propagated upstream via the `X-Correlation-Id` header on every GraphQL call.
+Structured JSON logs are emitted at request start and completion, carrying `requestId`,
+`correlationId`, `method`, `route`, and — on completion — `status` and `latencyMs`. Secrets and
+authorization headers are never logged.
+
+### Metrics
+
+An in-memory metrics registry (`src/observability/metrics.ts`) records operational telemetry per
+process (labels never carry PII — only tool names, outcome classes, and error categories):
+
+- **`requestsTotal`** — request counter keyed by `"<tool>|<outcome>"`, where outcome is `success` or
+  one of the taxonomy-derived error classes (`validation_error`, `authentication_error`,
+  `authorization_error`, `rate_limited`, `upstream_error`, `timeout_error`, `internal_error`).
+- **`latencyMs`** — a latency histogram with per-bucket (non-cumulative) counts in ms plus an
+  `+Inf` overflow bucket, alongside running `count`/`sum` totals.
+- **`authFailuresTotal`** — auth failure counter keyed by reason (`missing_token`, `invalid_token`).
+- **`upstreamErrorsTotal`** — upstream failure counter keyed by category.
+- **`rateLimitedTotal`** — total rate-limited requests.
+
+A snapshot is exposed at `GET /metrics`:
+
+```bash
+curl http://localhost:3100/metrics
+```
+
+### Tracing spans
+
+Lightweight tracing spans (`src/observability/tracing.ts`) wrap the key units of work — token
+verification (`auth:verify`), tool execution (`tool:<name>`), and each upstream GraphQL call
+(`upstream:graphql`) — emitting structured `span start`/`span end` debug logs carrying the
+correlation id and span duration. The implementation is deliberately dependency-free so it can be
+swapped for OpenTelemetry later without touching call sites.
 
 ## Running locally
 
