@@ -57,6 +57,46 @@ async function chargeTypeChecker(
 }
 
 /**
+ * Whether a charge holds no transactions, documents, ledger records or misc
+ * expenses. Counts only: enriched rows (from `getChargesByFilters`) carry the
+ * aggregates, and otherwise the per-charge loaders are read for their length
+ * alone — the meta helpers would additionally re-derive amounts, dates and
+ * validation flags this check has no use for.
+ */
+async function isChargeEmpty(charge: IGetChargesByIdsResult, injector: Injector): Promise<boolean> {
+  const isEnriched = isEnrichedFilteredCharge(charge);
+
+  const [transactionsCount, documentsCount, ledgerCount, miscExpensesCount] = await Promise.all([
+    isEnriched
+      ? Number(charge.transactions_count ?? 0)
+      : injector
+          .get(TransactionsProvider)
+          .transactionsByChargeIDLoader.load(charge.id)
+          .then(transactions => transactions.length),
+    isEnriched
+      ? Number(charge.documents_count ?? 0)
+      : injector
+          .get(DocumentsProvider)
+          .getDocumentsByChargeIdLoader.load(charge.id)
+          .then(documents => documents.length),
+    isEnriched
+      ? Number(charge.ledger_count ?? 0)
+      : injector
+          .get(LedgerProvider)
+          .getLedgerRecordsByChargesIdLoader.load(charge.id)
+          .then(records => records.length),
+    injector
+      .get(MiscExpensesProvider)
+      .getExpensesByChargeIdLoader.load(charge.id)
+      .then(expenses => expenses.length),
+  ]);
+
+  return (
+    transactionsCount === 0 && documentsCount === 0 && ledgerCount === 0 && miscExpensesCount === 0
+  );
+}
+
+/**
  * Whether a charge update should degrade the charge's accountant approval
  * (APPROVED -> PENDING). Tag changes and explicit accountant-approval changes
  * are intentionally excluded: tags are not accountant-relevant, and an explicit
@@ -811,6 +851,20 @@ export const chargesResolvers: ChargesModule.Resolvers &
       try {
         const { ledgerLock } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
         if (await isChargeLocked(DbCharge, injector, ledgerLock)) {
+          return 'VALID';
+        }
+
+        // An empty common-type charge (no transactions, documents, ledger
+        // records or misc expenses) generates an empty, error-free ledger that
+        // trivially matches the empty stored ledger — skip the expensive
+        // generation. Scoped to common-type charges: specialized types may
+        // legitimately report errors on missing data.
+        const chargeType = await getChargeType(DbCharge, injector);
+        if (
+          (chargeType === ChargeTypeEnum.Common ||
+            chargeType === ChargeTypeEnum.CreditcardBankCharge) &&
+          (await isChargeEmpty(DbCharge, injector))
+        ) {
           return 'VALID';
         }
 
