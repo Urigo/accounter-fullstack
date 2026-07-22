@@ -23,10 +23,22 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
+/**
+ * Minimal structural limiter contract. Callers depend on this rather than the
+ * concrete {@link RateLimiter} class so an alternative implementation (e.g. a
+ * shared/Redis-backed limiter) can be swapped in without signature changes.
+ */
+export interface RateLimiterLike {
+  check(key: string): RateLimitResult;
+}
+
 interface Bucket {
   count: number;
   resetAt: number;
 }
+
+/** How many `check` calls between opportunistic sweeps of expired buckets. */
+const SWEEP_EVERY = 1000;
 
 /** Build a limiter key scoped to identity + business scope + tool. */
 export function rateLimitKey(params: {
@@ -38,11 +50,12 @@ export function rateLimitKey(params: {
   return `${params.userId}|${scope}|${params.toolName}`;
 }
 
-export class RateLimiter {
+export class RateLimiter implements RateLimiterLike {
   private readonly buckets = new Map<string, Bucket>();
   private readonly windowMs: number;
   private readonly max: number;
   private readonly now: () => number;
+  private checksSinceSweep = 0;
 
   constructor(config: RateLimitConfig = DEFAULT_RATE_LIMIT, now: () => number = Date.now) {
     this.windowMs = config.windowMs;
@@ -56,6 +69,7 @@ export class RateLimiter {
    */
   check(key: string): RateLimitResult {
     const now = this.now();
+    this.maybeSweep(now);
     let bucket = this.buckets.get(key);
     if (!bucket || now >= bucket.resetAt) {
       bucket = { count: 0, resetAt: now + this.windowMs };
@@ -80,9 +94,29 @@ export class RateLimiter {
     };
   }
 
+  /**
+   * Periodically drop buckets whose window has already elapsed so the map does
+   * not grow without bound in a long-lived process with many distinct keys.
+   * Runs at most once per {@link SWEEP_EVERY} checks to keep `check` O(1)
+   * amortized.
+   */
+  private maybeSweep(now: number): void {
+    this.checksSinceSweep += 1;
+    if (this.checksSinceSweep < SWEEP_EVERY) {
+      return;
+    }
+    this.checksSinceSweep = 0;
+    for (const [key, bucket] of this.buckets) {
+      if (now >= bucket.resetAt) {
+        this.buckets.delete(key);
+      }
+    }
+  }
+
   /** Test/ops helper: drop all counters. */
   reset(): void {
     this.buckets.clear();
+    this.checksSinceSweep = 0;
   }
 }
 
@@ -100,10 +134,14 @@ export function parseRateLimitConfig(raw: string | undefined): RateLimitConfig {
       typeof parsed.windowMs === 'number' && Number.isFinite(parsed.windowMs) && parsed.windowMs > 0
         ? parsed.windowMs
         : DEFAULT_RATE_LIMIT.windowMs;
-    const max =
-      typeof parsed.max === 'number' && Number.isFinite(parsed.max) && parsed.max > 0
+    // Floor before the positivity check so a fractional value in (0, 1) — e.g.
+    // `{ "max": 0.5 }` — falls back to the default instead of becoming `max: 0`,
+    // which would rate-limit every request.
+    const flooredMax =
+      typeof parsed.max === 'number' && Number.isFinite(parsed.max)
         ? Math.floor(parsed.max)
-        : DEFAULT_RATE_LIMIT.max;
+        : Number.NaN;
+    const max = flooredMax >= 1 ? flooredMax : DEFAULT_RATE_LIMIT.max;
     return { windowMs, max };
   } catch {
     return DEFAULT_RATE_LIMIT;
