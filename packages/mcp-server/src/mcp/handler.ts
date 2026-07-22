@@ -17,6 +17,8 @@ import { getRequestContext } from '../context.js';
 import { createRequestLogger, log } from '../logger.js';
 import { sendUnauthorized } from '../oauth/challenge.js';
 import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
+import { getMetrics } from '../observability/metrics.js';
+import { withSpan } from '../observability/tracing.js';
 import { getRateLimiter } from '../rate-limit/default-limiter.js';
 import { executeRegisteredTool } from '../tools/execute.js';
 import { toolRegistry } from '../tools/registry-instance.js';
@@ -179,6 +181,7 @@ export async function dispatchMcpRequest(
       authorization: context.authorization,
       client: getUpstreamClient(),
       limiter: getRateLimiter(),
+      metrics: getMetrics(),
     });
     return success(id, result);
   }
@@ -242,8 +245,10 @@ async function authenticate(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<AuthPrincipal | null> {
+  const correlationId = getRequestContext(req)?.correlationId ?? '';
   const token = extractBearerToken(req);
   if (!token) {
+    getMetrics().recordAuthFailure('missing_token');
     sendUnauthorized(res, {
       resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),
     });
@@ -251,7 +256,7 @@ async function authenticate(
   }
 
   try {
-    const principal = await verifyAccessToken(token);
+    const principal = await withSpan('auth:verify', correlationId, () => verifyAccessToken(token));
     setAuthPrincipal(req, principal);
     // Map the verified identity to internal user + business membership context.
     // An empty membership set is a valid user with no access; per-tool policy
@@ -265,6 +270,7 @@ async function authenticate(
     if (!(error instanceof TokenVerificationError)) {
       throw error;
     }
+    getMetrics().recordAuthFailure('invalid_token');
     // Log the reason only — never the token.
     const context = getRequestContext(req);
     if (context) {
