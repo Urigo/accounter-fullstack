@@ -1,6 +1,11 @@
 import type { McpAuthContext } from '../auth/identity.js';
+import {
+  errorPayload,
+  isInternalError,
+  toErrorPayload,
+  toToolErrorResult,
+} from '../errors/taxonomy.js';
 import { log } from '../logger.js';
-import { UpstreamError } from '../upstream/graphql-client.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 import { evaluateToolPolicy } from './policy.js';
 import {
@@ -8,65 +13,20 @@ import {
   type ToolDefinition,
   type ToolExecutionContext,
   type ToolResult,
-  type ToolValidationIssue,
 } from './registry.js';
 
 /**
- * Curated tool execution: input validation → authorization policy → handler,
- * with deterministic error mapping to the spec's error taxonomy (§10.2).
+ * Curated tool execution: input validation → authorization policy → handler.
  *
- * Tool-execution failures are returned as an MCP tool result with `isError`
- * and a structured `{ code, message, correlationId, retryable? }` payload (the
- * unified error mapper in a later step formalizes this shape) rather than as
- * protocol-level JSON-RPC errors, so the model can read them.
+ * Every failure is normalized through the unified error taxonomy
+ * ({@link toErrorPayload}) and returned as an MCP tool result with `isError`
+ * and a structured `{ code, message, correlationId, retryable }` payload rather
+ * than as a protocol-level JSON-RPC error, so the model can read it.
  */
 
-/** Machine error codes surfaced to tool callers (spec §10.2). */
-export type ToolErrorCode =
-  | 'VALIDATION_ERROR'
-  | 'AUTHORIZATION_ERROR'
-  | 'UPSTREAM_ERROR'
-  | 'TIMEOUT_ERROR'
-  | 'INTERNAL_ERROR';
-
-/**
- * A domain-validation failure a handler can throw (e.g. cross-field bounds not
- * expressible in the input schema). Mapped to a VALIDATION_ERROR result.
- */
-export class ToolInputError extends Error {
-  public readonly code = 'VALIDATION_ERROR';
-
-  constructor(
-    message: string,
-    public readonly issues?: ToolValidationIssue[],
-  ) {
-    super(message);
-    this.name = 'ToolInputError';
-  }
-}
-
-interface ToolErrorDetails {
-  code: ToolErrorCode;
-  message: string;
-  correlationId: string;
-  retryable?: boolean;
-  issues?: ToolValidationIssue[];
-}
-
-/** Build an MCP tool-result error carrying the taxonomy fields. */
-export function toolErrorResult(details: ToolErrorDetails): ToolResult {
-  return {
-    content: [{ type: 'text', text: `${details.code}: ${details.message}` }],
-    isError: true,
-    structuredContent: {
-      code: details.code,
-      message: details.message,
-      correlationId: details.correlationId,
-      ...(details.retryable !== undefined && { retryable: details.retryable }),
-      ...(details.issues && details.issues.length > 0 && { issues: details.issues }),
-    },
-  };
-}
+// Re-exported so tool handlers can import the domain-validation error alongside
+// the executor; the canonical definition lives in the error taxonomy.
+export { ToolInputError } from '../errors/taxonomy.js';
 
 /**
  * Optional per-tool convention: input fields carrying scope narrowing. Either a
@@ -105,12 +65,11 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
   // 1. Strict input validation (unknown fields rejected).
   const validation = validateToolInput(tool, rawArgs);
   if (!validation.ok) {
-    return toolErrorResult({
-      code: 'VALIDATION_ERROR',
-      message: validation.error.message,
-      correlationId,
-      issues: validation.error.issues,
-    });
+    return toToolErrorResult(
+      errorPayload('VALIDATION_ERROR', validation.error.message, correlationId, {
+        issues: validation.error.issues,
+      }),
+    );
   }
   const input = validation.data;
 
@@ -121,11 +80,9 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
     requestedBusinessIds: requestedBusinessIds(input),
   });
   if (!decision.allowed) {
-    return toolErrorResult({
-      code: 'AUTHORIZATION_ERROR',
-      message: decision.error.message,
-      correlationId,
-    });
+    return toToolErrorResult(
+      errorPayload('AUTHORIZATION_ERROR', decision.error.message, correlationId),
+    );
   }
 
   // 3. Execute the handler.
@@ -139,35 +96,16 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
   try {
     return await tool.handler(input, context);
   } catch (error) {
-    if (error instanceof ToolInputError) {
-      return toolErrorResult({
-        code: 'VALIDATION_ERROR',
-        message: error.message,
+    // Log unexpected (unmapped) failures so bugs aren't hidden; the caller only
+    // ever sees the generic, sanitized INTERNAL_ERROR message.
+    if (isInternalError(error)) {
+      log('error', 'unexpected error during tool execution', {
+        tool: tool.name,
         correlationId,
-        issues: error.issues,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
-    if (error instanceof UpstreamError) {
-      return toolErrorResult({
-        code: error.code,
-        message: error.message,
-        correlationId,
-        retryable: error.retryable,
-      });
-    }
-    // Unexpected failure — log it (with the tool + correlation id) so the
-    // observability gap doesn't hide production bugs; the caller only sees a
-    // generic message.
-    log('error', 'unexpected error during tool execution', {
-      tool: tool.name,
-      correlationId,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    return toolErrorResult({
-      code: 'INTERNAL_ERROR',
-      message: 'Tool execution failed',
-      correlationId,
-    });
+    return toToolErrorResult(toErrorPayload(error, correlationId));
   }
 }
