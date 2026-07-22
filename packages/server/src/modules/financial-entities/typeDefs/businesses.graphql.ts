@@ -44,6 +44,9 @@ export default gql`
     exemptDealer: Boolean
     optionalVAT: Boolean
 
+    " the business' bank accounts, used to match incoming bank transactions by their contra account "
+    bankAccounts: [BusinessBankAccount!]!
+
     suggestions: Suggestions
 
     pcn874RecordType: Pcn874RecordType
@@ -53,6 +56,21 @@ export default gql`
     isDocumentsOptional: Boolean
     createdAt: DateTime!
     updatedAt: DateTime!
+  }
+
+  " a business' bank account details (used to match incoming bank transactions by contra account) "
+  type BusinessBankAccount {
+    id: UUID!
+    bankNumber: Int!
+    branchNumber: Int!
+    accountNumber: Int!
+  }
+
+  " input for a single business bank account "
+  input BusinessBankAccountInput {
+    bankNumber: Int!
+    branchNumber: Int!
+    accountNumber: Int!
   }
 
   " input for business suggestions "
@@ -137,6 +155,8 @@ export default gql`
     taxCategory: UUID
     exemptDealer: Boolean
     suggestions: SuggestionsInput
+    " full replacement set of the business's bank accounts (omit to leave unchanged) "
+    bankAccounts: [BusinessBankAccountInput!]
     optionalVAT: Boolean
     isReceiptEnough: Boolean
     isDocumentsOptional: Boolean
@@ -163,6 +183,8 @@ export default gql`
     taxCategory: UUID
     exemptDealer: Boolean
     suggestions: SuggestionsInput
+    " full replacement set of the business's bank accounts (omit to leave unchanged) "
+    bankAccounts: [BusinessBankAccountInput!]
     optionalVAT: Boolean
     isReceiptEnough: Boolean
     isDocumentsOptional: Boolean

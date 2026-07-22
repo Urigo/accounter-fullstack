@@ -2,6 +2,7 @@ import { GraphQLError } from 'graphql';
 import { Injector } from 'graphql-modules';
 import type { UpdateBusinessInput } from '../../../__generated__/types.js';
 import { updateGreenInvoiceClient } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
+import { BusinessBankAccountsProvider } from '../providers/business-bank-accounts.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -10,6 +11,7 @@ import type {
   IUpdateBusinessParams,
   IUpdateBusinessTaxCategoryParams,
 } from '../types.js';
+import { parseBusinessBankAccounts } from './business-bank-account.helper.js';
 import type { SuggestionData } from './business-suggestion-data-schema.helper.js';
 import { updateSuggestions } from './businesses.helper.js';
 import { hasFinancialEntitiesCoreProperties } from './financial-entities.helper.js';
@@ -74,6 +76,19 @@ export async function updateSingleBusiness(
         if (e instanceof GraphQLError) {
           throw e;
         }
+        throw new Error(message);
+      });
+  }
+
+  // replace the full set of bank accounts when provided (omit to leave unchanged)
+  if (fields.bankAccounts != null) {
+    const accounts = parseBusinessBankAccounts(fields.bankAccounts);
+    await injector
+      .get(BusinessBankAccountsProvider)
+      .setBankAccountsForBusiness(businessId, ownerId, accounts)
+      .catch((e: Error) => {
+        const message = `Error updating bank accounts for business ID="${businessId}"`;
+        console.error(`${message}: ${e}`);
         throw new Error(message);
       });
   }
