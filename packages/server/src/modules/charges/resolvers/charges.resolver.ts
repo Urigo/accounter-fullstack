@@ -814,6 +814,38 @@ export const chargesResolvers: ChargesModule.Resolvers &
           return 'VALID';
         }
 
+        // An empty common-type charge (no transactions, documents, ledger
+        // records or misc expenses) generates an empty, error-free ledger that
+        // trivially matches the empty stored ledger — skip the expensive
+        // generation. Scoped to common-type charges: specialized types may
+        // legitimately report errors on missing data.
+        const chargeType = await getChargeType(DbCharge, injector);
+        if (
+          chargeType === ChargeTypeEnum.Common ||
+          chargeType === ChargeTypeEnum.CreditcardBankCharge
+        ) {
+          const [{ transactionsCount }, { documentsCount }, ledgerCount, miscExpenses] =
+            await Promise.all([
+              getChargeTransactionsMeta(DbCharge, injector),
+              getChargeDocumentsMeta(DbCharge, injector),
+              isEnrichedFilteredCharge(DbCharge)
+                ? Number(DbCharge.ledger_count ?? 0)
+                : injector
+                    .get(LedgerProvider)
+                    .getLedgerRecordsByChargesIdLoader.load(DbCharge.id)
+                    .then(records => records.length),
+              injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(DbCharge.id),
+            ]);
+          if (
+            transactionsCount === 0 &&
+            documentsCount === 0 &&
+            ledgerCount === 0 &&
+            miscExpenses.length === 0
+          ) {
+            return 'VALID';
+          }
+        }
+
         const generatedLedgerPromise = ledgerGenerationByCharge(
           DbCharge,
           { insertLedgerRecordsIfNotExists: false },
