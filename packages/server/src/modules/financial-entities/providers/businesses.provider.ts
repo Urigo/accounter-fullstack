@@ -19,14 +19,14 @@ import type {
 } from '../types.js';
 
 const getBusinessesByIds = sql<IGetBusinessesByIdsQuery>`
-    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code, b.bank_account_bank_number, b.bank_account_branch_number, b.bank_account_account_number
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id)
     WHERE b.id IN $$ids;`;
 
 const getAllBusinesses = sql<IGetAllBusinessesQuery>`
-    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code, b.bank_account_bank_number, b.bank_account_branch_number, b.bank_account_account_number
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id);`;
@@ -44,7 +44,7 @@ const getAllBusinesses = sql<IGetAllBusinessesQuery>`
 // jsonb_typeof guard keeps jsonb_array_elements_text from throwing on a
 // malformed/legacy record whose `emails` is not a JSON array.
 const getBusinessByEmail = sql<IGetBusinessByEmailQuery>`
-    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code
+    SELECT fe.*, b.vat_number, b.hebrew_name, b.address, b.address_hebrew, b.email, b.website, b.phone_number, b.country, b.no_invoices_required, b.suggestion_data, b.can_settle_with_receipt, b.exempt_dealer, b.optional_vat, b.pcn874_record_type_override, b.city, b.zip_code, b.bank_account_bank_number, b.bank_account_branch_number, b.bank_account_account_number
     FROM accounter_schema.businesses b
     INNER JOIN accounter_schema.financial_entities fe
       USING (id)
@@ -128,6 +128,18 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   pcn874_record_type_override = COALESCE(
     $pcn874RecordTypeOverride,
     pcn874_record_type_override
+  ),
+  bank_account_bank_number = COALESCE(
+    $bankAccountBankNumber,
+    bank_account_bank_number
+  ),
+  bank_account_branch_number = COALESCE(
+    $bankAccountBranchNumber,
+    bank_account_branch_number
+  ),
+  bank_account_account_number = COALESCE(
+    $bankAccountAccountNumber,
+    bank_account_account_number
   )
   WHERE
     id = $businessId
@@ -135,8 +147,8 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
 `;
 
 const insertBusinesses = sql<IInsertBusinessesQuery>`
-  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required, owner_id)
-  VALUES $$businesses(id, hebrewName, address, city, zipCode, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional, ownerId)
+  INSERT INTO accounter_schema.businesses (id, hebrew_name, address, city, zip_code, email, website, phone_number, vat_number, exempt_dealer, suggestion_data, optional_vat, country, pcn874_record_type_override, can_settle_with_receipt, no_invoices_required, owner_id, bank_account_bank_number, bank_account_branch_number, bank_account_account_number)
+  VALUES $$businesses(id, hebrewName, address, city, zipCode, email, website, phoneNumber, governmentId, exemptDealer, suggestions, optionalVat, country, pcn874RecordTypeOverride, isReceiptEnough, isDocumentsOptional, ownerId, bankAccountBankNumber, bankAccountBranchNumber, bankAccountAccountNumber)
   RETURNING *;`;
 
 const replaceBusinesses = sql<IReplaceBusinessesQuery>`

@@ -162,6 +162,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
           country: fields.country,
           suggestions,
           pcn874RecordTypeOverride: fields.pcn874RecordType,
+          bankAccountBankNumber: fields.bankAccount?.bankNumber ?? null,
+          bankAccountBranchNumber: fields.bankAccount?.branchNumber ?? null,
+          bankAccountAccountNumber: fields.bankAccount?.accountNumber ?? null,
         });
 
         if (!business) {
@@ -431,6 +434,9 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
             isReceiptEnough: false,
             isDocumentsOptional: false,
             pcn874RecordTypeOverride: null,
+            bankAccountBankNumber: null,
+            bankAccountBranchNumber: null,
+            bankAccountAccountNumber: null,
           });
 
           if (!business) {
@@ -472,6 +478,16 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,
+    bankAccount: DbBusiness =>
+      DbBusiness.bank_account_bank_number == null &&
+      DbBusiness.bank_account_branch_number == null &&
+      DbBusiness.bank_account_account_number == null
+        ? null
+        : {
+            bankNumber: DbBusiness.bank_account_bank_number,
+            branchNumber: DbBusiness.bank_account_branch_number,
+            accountNumber: DbBusiness.bank_account_account_number,
+          },
     exemptDealer: DbBusiness => DbBusiness.exempt_dealer,
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,

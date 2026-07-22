@@ -194,6 +194,8 @@ import migration_2026_07_06T17_00_00_enhance_conversion_recognition from './acti
 import migration_2026_07_07T13_00_00_extend_deel_table from './actions/2026-07-07T13-00-00.extend-deel-table.js';
 import migration_2026_07_08T17_00_00_poalim_ils_trigger_fix from './actions/2026-07-08T17-00-00.poalim-ils-trigger-fix.js';
 import migration_2026_08_01T10_00_00_extended_tags_owner_id from './actions/2026-08-01T10-00-00.extended-tags-owner-id.js';
+import migration_2026_08_04T10_00_00_add_business_bank_account_fields from './actions/2026-08-04T10-00-00.add-business-bank-account-fields.js';
+import migration_2026_08_04T10_30_00_match_business_by_contra_account from './actions/2026-08-04T10-30-00.match-business-by-contra-account.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -392,6 +394,8 @@ export const MIGRATIONS = [
   migration_2026_07_07T13_00_00_extend_deel_table,
   migration_2026_07_08T17_00_00_poalim_ils_trigger_fix,
   migration_2026_08_01T10_00_00_extended_tags_owner_id,
+  migration_2026_08_04T10_00_00_add_business_bank_account_fields,
+  migration_2026_08_04T10_30_00_match_business_by_contra_account,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
