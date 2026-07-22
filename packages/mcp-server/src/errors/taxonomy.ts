@@ -162,6 +162,6 @@ export function toToolErrorResult(payload: McpErrorPayload): ToolResult {
   return {
     content: [{ type: 'text', text: `${payload.code}: ${payload.message}` }],
     isError: true,
-    structuredContent: withOptionalFields(payload) as unknown as Record<string, unknown>,
+    structuredContent: withOptionalFields(payload),
   };
 }
