@@ -12,26 +12,56 @@ import { MiscExpensesProvider } from '../../misc-expenses/providers/misc-expense
 import { getTransactionsMeta } from '../../transactions/helpers/common.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
+import type { IGetChargesByFiltersResult, IGetChargesByIdsResult } from '../types.js';
+
+/**
+ * Charge reference accepted by the meta helpers: a charge id (resolved via the
+ * by-id loader) or an already-loaded charge row. Passing the row from
+ * `getChargesByFilters` unlocks the enriched fast path — the aggregates were
+ * already computed by that query, so no child-table loads are needed.
+ */
+export type ChargeRef = string | IGetChargesByIdsResult;
+
+/**
+ * Whether this charge row came from `getChargesByFilters` and carries the
+ * precomputed per-charge aggregates. `abs_event_amount` is selected only by
+ * that query, so it doubles as the marker. The `js_*`-derived columns mirror
+ * the JS meta helpers exactly (fee-aware amounts, debit_timestamp-based dates,
+ * debtor-sign document sums), so serving them from the row is
+ * behavior-preserving.
+ */
+export function isEnrichedFilteredCharge(
+  charge: IGetChargesByIdsResult,
+): charge is IGetChargesByIdsResult & IGetChargesByFiltersResult {
+  return 'abs_event_amount' in charge;
+}
+
+async function resolveCharge(
+  chargeRef: ChargeRef,
+  injector: Injector,
+): Promise<IGetChargesByIdsResult> {
+  if (typeof chargeRef !== 'string') {
+    return chargeRef;
+  }
+  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeRef);
+  if (!charge) {
+    throw new Error(`Charge ID="${chargeRef}" not found`);
+  }
+  return charge;
+}
 
 export async function calculateTotalAmount(
-  chargeId: string,
+  chargeRef: ChargeRef,
   injector: Injector,
   defaultLocalCurrency: Currency,
 ): Promise<FinancialAmount | null> {
   try {
-    const [
-      charge,
-      { transactionsAmount, transactionsCurrency },
-      { documentsCurrency, documentsAmount },
-    ] = await Promise.all([
-      injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-      getChargeTransactionsMeta(chargeId, injector),
-      getChargeDocumentsMeta(chargeId, injector),
-    ]);
-
-    if (!charge) {
-      throw new Error(`Charge ID="${chargeId}" not found`);
-    }
+    const charge = await resolveCharge(chargeRef, injector);
+    const [{ transactionsAmount, transactionsCurrency }, { documentsCurrency, documentsAmount }] =
+      await Promise.all([
+        getChargeTransactionsMeta(charge, injector),
+        getChargeDocumentsMeta(charge, injector),
+      ]);
 
     if (charge.type === 'PAYROLL' && transactionsAmount) {
       return formatFinancialAmount(transactionsAmount, defaultLocalCurrency);
@@ -49,18 +79,24 @@ export async function calculateTotalAmount(
   }
 }
 
-export async function getChargeBusinesses(chargeId: string, injector: Injector) {
-  const [charge, transactions, documents, ledgerRecords, miscExpenses] = await Promise.all([
-    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-    injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(chargeId),
-    injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
-    injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(chargeId),
-    injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(chargeId),
-  ]);
+export async function getChargeBusinesses(chargeRef: ChargeRef, injector: Injector) {
+  const charge = await resolveCharge(chargeRef, injector);
 
-  if (!charge) {
-    throw new Error(`Charge ID="${chargeId}" not found`);
+  if (isEnrichedFilteredCharge(charge)) {
+    // business_array folds in transactions, documents, ledger and misc-expense
+    // parties (minus the owner), so no child-table loads are needed.
+    return {
+      allBusinessIds: charge.business_array ?? [],
+      mainBusinessId: (charge.business_id as string | null) ?? null,
+    };
   }
+
+  const [transactions, documents, ledgerRecords, miscExpenses] = await Promise.all([
+    injector.get(TransactionsProvider).transactionsByChargeIDLoader.load(charge.id),
+    injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(charge.id),
+    injector.get(LedgerProvider).getLedgerRecordsByChargesIdLoader.load(charge.id),
+    injector.get(MiscExpensesProvider).getExpensesByChargeIdLoader.load(charge.id),
+  ]);
 
   const allBusinessIdsSet = new Set<string>();
   const mainBusinessIdsSet = new Set<string>();
@@ -114,15 +150,44 @@ export async function getChargeBusinesses(chargeId: string, injector: Injector) 
   };
 }
 
-export async function getChargeDocumentsMeta(chargeId: string, injector: Injector) {
-  const [charge, documents] = await Promise.all([
-    injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId),
-    injector.get(DocumentsProvider).getDocumentsByChargeIdLoader.load(chargeId),
-  ]);
+export async function getChargeDocumentsMeta(chargeRef: ChargeRef, injector: Injector) {
+  const charge = await resolveCharge(chargeRef, injector);
 
-  if (!charge) {
-    throw new Error(`Charge ID="${chargeId}" not found`);
+  if (isEnrichedFilteredCharge(charge)) {
+    const invoiceCount = Number(charge.invoices_count ?? 0);
+    const receiptCount = Number(charge.receipts_count ?? 0);
+    const invoiceAmount = charge.documents_invoice_amount ?? 0;
+    const receiptAmount = charge.documents_receipt_amount ?? 0;
+    const proformaAmount = charge.documents_proforma_amount;
+    const accountancyCurrencies = (charge.documents_accountancy_currencies ?? []) as Currency[];
+    const proformaCurrencies = (charge.documents_proforma_currencies ?? []) as Currency[];
+    const currencies =
+      accountancyCurrencies.length > 0 ? accountancyCurrencies : proformaCurrencies;
+    const documentsAmount =
+      invoiceCount > 0 ? invoiceAmount : receiptCount > 0 ? receiptAmount : proformaAmount;
+
+    return {
+      receiptAmount,
+      receiptCount,
+      invoiceAmount,
+      invoiceCount,
+      documentsAmount,
+      documentsVatAmount:
+        charge.documents_invoice_vat_amount ?? charge.documents_receipt_vat_amount,
+      documentsCount: Number(charge.documents_count ?? 0),
+      documentsCurrency: currencies.length === 1 ? currencies[0] : null,
+      // SQL semantics differ slightly from basicDocumentValidation (VAT required
+      // for receipts, proforma not validated); validateCharge derives its own
+      // value from the loaded documents where exactness matters.
+      invalidDocuments: charge.invalid_documents ?? false,
+      documentsMinDate: charge.documents_min_date,
+      documentsMaxDate: charge.documents_max_date,
+    };
   }
+
+  const documents = await injector
+    .get(DocumentsProvider)
+    .getDocumentsByChargeIdLoader.load(charge.id);
 
   let invalidDocuments = false;
   let receiptAmount = 0;
@@ -236,7 +301,26 @@ export async function getChargeDocumentsMeta(chargeId: string, injector: Injecto
   };
 }
 
-export async function getChargeTransactionsMeta(chargeId: string, injector: Injector) {
+export async function getChargeTransactionsMeta(chargeRef: ChargeRef, injector: Injector) {
+  if (typeof chargeRef !== 'string' && isEnrichedFilteredCharge(chargeRef)) {
+    const currencies = (chargeRef.transactions_fee_excluded_currencies ?? []) as Currency[];
+    return {
+      transactionsCount: Number(chargeRef.transactions_count ?? 0),
+      transactionsAmount:
+        chargeRef.transactions_fee_excluded_amount == null
+          ? null
+          : Number(chargeRef.transactions_fee_excluded_amount),
+      transactionsCurrencies: currencies,
+      transactionsCurrency: currencies.length === 1 ? currencies[0] : null,
+      invalidTransactions: chargeRef.invalid_transactions ?? false,
+      transactionsMinDebitDate: chargeRef.transactions_min_debit_timestamp,
+      transactionsMinEventDate: chargeRef.transactions_min_event_date,
+      transactionsMaxDebitDate: chargeRef.transactions_max_debit_timestamp,
+      transactionsMaxEventDate: chargeRef.transactions_max_event_date,
+    };
+  }
+
+  const chargeId = typeof chargeRef === 'string' ? chargeRef : chargeRef.id;
   const transactions = await injector
     .get(TransactionsProvider)
     .transactionsByChargeIDLoader.load(chargeId);
@@ -244,7 +328,17 @@ export async function getChargeTransactionsMeta(chargeId: string, injector: Inje
   return getTransactionsMeta(transactions);
 }
 
-export async function getChargeLedgerMeta(chargeId: string, injector: Injector) {
+export async function getChargeLedgerMeta(chargeRef: ChargeRef, injector: Injector) {
+  if (typeof chargeRef !== 'string' && isEnrichedFilteredCharge(chargeRef)) {
+    return {
+      ledgerMinValueDate: chargeRef.ledger_min_value_date,
+      ledgerMinInvoiceDate: chargeRef.ledger_min_invoice_date,
+      ledgerMaxValueDate: chargeRef.ledger_max_value_date,
+      ledgerMaxInvoiceDate: chargeRef.ledger_max_invoice_date,
+    };
+  }
+
+  const chargeId = typeof chargeRef === 'string' ? chargeRef : chargeRef.id;
   const ledgerRecords = await injector
     .get(LedgerProvider)
     .getLedgerRecordsByChargesIdLoader.load(chargeId);
@@ -253,18 +347,21 @@ export async function getChargeLedgerMeta(chargeId: string, injector: Injector) 
 }
 
 export async function getChargeTaxCategoryId(
-  chargeId: string,
+  chargeRef: ChargeRef,
   injector: Injector,
 ): Promise<string | null> {
-  const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-  if (!charge) {
-    throw new Error(`Charge ID="${chargeId}" not found`);
-  }
+  const charge = await resolveCharge(chargeRef, injector);
   if (charge.tax_category_id) {
     return charge.tax_category_id;
   }
 
-  const { mainBusinessId } = await getChargeBusinesses(chargeId, injector);
+  // The filters query already coalesces the business tax-category match into
+  // tax_category_id, so a null here means there is genuinely none to derive.
+  if (isEnrichedFilteredCharge(charge)) {
+    return null;
+  }
+
+  const { mainBusinessId } = await getChargeBusinesses(charge, injector);
 
   if (!mainBusinessId) {
     return null;

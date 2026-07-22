@@ -140,3 +140,19 @@ exports nothing. Workaround used: set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localh
 
 Profiling setup: Jaeger all-in-one (OTLP HTTP :4318), `OTEL_ENABLED=1`,
 `OTEL_TRACES_SAMPLER=parentbased_always_on`. Traces appear under service `accounter-server`.
+
+## Results
+
+Same AllCharges filter/page re-traced after each enhancement step.
+
+| Step                                      | Duration | Trace shape                                                                                                                  |
+| ----------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Baseline                                  | 23.95s   | 366 spans; every query wrapped in BEGIN/SET/COMMIT, serialized                                                               |
+| Step 1 — request-scoped DB transaction    | ~8.2s    | One connect + one BEGIN + one RLS SET for the whole request; bare sequential SELECTs (~75ms RTT each); main WITH query 1.86s |
+| Step 2 — parent-aware resolvers + priming | ~8.3s    | Initial-phase batched loader queries gone (~10 fewer); total unchanged within RTT noise — the per-charge staircase dominates |
+
+Remaining cost after step 2 is the sequential per-charge staircase (~70 × ~75ms):
+`missingInfoSuggestions` runs `getSimilarCharges` per suggestion-needing charge in the non-deferred
+path (blocks first render — step 5), and the deferred `invalidLedger` issues several queries per
+charge for ledger generation (step 3). Step 2 still cut ~10 queries, DB load, and JS re-aggregation,
+and its enriched fast path is what steps 3/5 build on. The main query (1.75s) remains step 4.

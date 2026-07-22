@@ -29,7 +29,7 @@ export const commonFinancialEntityFields:
 
 export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   taxCategory: async (DbCharge, _, { injector }) => {
-    const taxCategoryId = await getChargeTaxCategoryId(DbCharge.id, injector);
+    const taxCategoryId = await getChargeTaxCategoryId(DbCharge, injector);
     if (!taxCategoryId) {
       return null;
     }
@@ -42,7 +42,7 @@ export const commonTaxChargeFields: FinancialEntitiesModule.ChargeResolvers = {
 
 export const commonChargeFields: FinancialEntitiesModule.ChargeResolvers = {
   counterparty: async (DbCharge, _, { injector }) => {
-    const { mainBusinessId } = await getChargeBusinesses(DbCharge.id, injector);
+    const { mainBusinessId } = await getChargeBusinesses(DbCharge, injector);
     return mainBusinessId
       ? injector
           .get(FinancialEntitiesProvider)

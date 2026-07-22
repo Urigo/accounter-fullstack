@@ -29,6 +29,7 @@ import {
   getChargeDocumentsMeta,
   getChargeLedgerMeta,
   getChargeTransactionsMeta,
+  isEnrichedFilteredCharge,
 } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.helper.js';
@@ -729,6 +730,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
     createdAt: DbCharge => DbCharge.created_at,
     updatedAt: DbCharge => DbCharge.updated_at,
     invoicesCount: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return Number(DbCharge.invoices_count ?? 0);
+      }
       try {
         return injector
           .get(DocumentsProvider)
@@ -739,6 +743,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     receiptsCount: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return Number(DbCharge.receipts_count ?? 0);
+      }
       try {
         return injector
           .get(DocumentsProvider)
@@ -749,6 +756,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     documentsCount: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return Number(DbCharge.documents_count ?? 0);
+      }
       try {
         return injector
           .get(DocumentsProvider)
@@ -759,6 +769,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     openDocuments: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return DbCharge.open_docs_flag ?? false;
+      }
       try {
         const res = await injector
           .get(IssuedDocumentsProvider)
@@ -769,6 +782,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     transactionsCount: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return Number(DbCharge.transactions_count ?? 0);
+      }
       const transactions = await injector
         .get(TransactionsProvider)
         .transactionsByChargeIDLoader.load(DbCharge.id)
@@ -777,14 +793,18 @@ export const chargesResolvers: ChargesModule.Resolvers &
         });
       return transactions.length;
     },
-    ledgerCount: async (DbCharge, _, { injector }) =>
-      injector
+    ledgerCount: async (DbCharge, _, { injector }) => {
+      if (isEnrichedFilteredCharge(DbCharge)) {
+        return Number(DbCharge.ledger_count ?? 0);
+      }
+      return injector
         .get(LedgerProvider)
         .getLedgerRecordsByChargesIdLoader.load(DbCharge.id)
         .catch(error => {
           throw errorSimplifier('Error loading ledger records', error);
         })
-        .then(records => records.length),
+        .then(records => records.length);
+    },
     invalidLedger: async (DbCharge, _, context, info) => {
       const { injector } = context;
 
@@ -842,7 +862,7 @@ export const chargesResolvers: ChargesModule.Resolvers &
     },
     optionalBusinesses: async (DbCharge, _, { injector }) => {
       try {
-        const { allBusinessIds } = await getChargeBusinesses(DbCharge.id, injector);
+        const { allBusinessIds } = await getChargeBusinesses(DbCharge, injector);
         return allBusinessIds.length > 1 ? allBusinessIds : [];
       } catch (error) {
         throw errorSimplifier('Failed to fetch optional businesses', error);

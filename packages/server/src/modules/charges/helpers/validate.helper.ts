@@ -3,7 +3,10 @@ import type { ResolversTypes } from '../../../__generated__/types.js';
 import { ChargeTypeEnum, MissingChargeInfo } from '../../../shared/enums.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { isInvoice } from '../../documents/helpers/common.helper.js';
-import { validateDocumentAllocation } from '../../documents/helpers/validate-document.helper.js';
+import {
+  basicDocumentValidation,
+  validateDocumentAllocation,
+} from '../../documents/helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { ChargeTagsProvider } from '../../tags/providers/charge-tags.provider.js';
@@ -14,6 +17,7 @@ import {
   getChargeDocumentsMeta,
   getChargeTaxCategoryId,
   getChargeTransactionsMeta,
+  isEnrichedFilteredCharge,
 } from './common.helper.js';
 
 export const validateCharge = async (
@@ -24,8 +28,8 @@ export const validateCharge = async (
 
   const [chargeType, { mainBusinessId }, taxCategoryId] = await Promise.all([
     getChargeType(charge, injector),
-    getChargeBusinesses(charge.id, injector),
-    getChargeTaxCategoryId(charge.id, injector),
+    getChargeBusinesses(charge, injector),
+    getChargeTaxCategoryId(charge, injector),
   ]);
 
   const adminContext = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -46,11 +50,11 @@ export const validateCharge = async (
   const [
     business,
     { invalidTransactions, transactionsCount },
-    { documentsVatAmount, invoiceCount, receiptCount, invalidDocuments },
+    { documentsVatAmount, invoiceCount, receiptCount },
   ] = await Promise.all([
     businessPromise,
-    getChargeTransactionsMeta(charge.id, injector),
-    getChargeDocumentsMeta(charge.id, injector),
+    getChargeTransactionsMeta(charge, injector),
+    getChargeDocumentsMeta(charge, injector),
   ]);
 
   const businessIsFine = businessNotRequired || !!business;
@@ -93,7 +97,9 @@ export const validateCharge = async (
       }),
     );
     const isReceiptEnough = !!(business?.can_settle_with_receipt && receiptCount > 0);
-    const dbDocumentsAreValid = !invalidDocuments;
+    // Derived from the loaded documents (not the meta helper) so enriched
+    // charge rows keep the exact basicDocumentValidation semantics.
+    const dbDocumentsAreValid = !documents.some(doc => !basicDocumentValidation(doc));
     documentsAreFine =
       dbDocumentsAreValid && (invoiceCount > 0 || isReceiptEnough) && !missingAllocationNumber;
   } else {
@@ -118,8 +124,9 @@ export const validateCharge = async (
   }
 
   // validate tags
-  const tags = await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id);
-  const tagsAreFine = tags.length > 0;
+  const tagsAreFine = isEnrichedFilteredCharge(charge)
+    ? (charge.tags ?? []).length > 0
+    : (await injector.get(ChargeTagsProvider).getTagsByChargeIDLoader.load(charge.id)).length > 0;
   if (!tagsAreFine) {
     missingInfo.push(MissingChargeInfo.Tags);
   }

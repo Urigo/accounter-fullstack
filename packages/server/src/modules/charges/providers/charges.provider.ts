@@ -249,6 +249,16 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
            max(t.event_date) AS max_event_date,
            min(COALESCE(t.debit_date_override, t.debit_date)) AS min_debit_date,
            max(COALESCE(t.debit_date_override, t.debit_date)) AS max_debit_date,
+           min(COALESCE(t.debit_timestamp, t.debit_date)) AS min_debit_timestamp,
+           max(COALESCE(t.debit_timestamp, t.debit_date)) AS max_debit_timestamp,
+           COALESCE(
+             sum(t.amount) FILTER (WHERE t.is_fee IS NOT TRUE),
+             sum(t.amount)
+           ) AS fee_excluded_event_amount,
+           COALESCE(
+             array_agg(DISTINCT t.currency) FILTER (WHERE t.is_fee IS NOT TRUE),
+             array_agg(DISTINCT t.currency)
+           ) AS fee_excluded_currency_array,
            sum(t.amount) AS event_amount,
            count(*) AS transactions_count,
            count(*) FILTER (
@@ -418,6 +428,88 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
                ]
              )
            ) AS currency_array,
+           sum(
+             d.total_amount *
+             CASE
+               WHEN d.debtor_id = fc.owner_id THEN '-1'::integer
+               ELSE 1
+             END::double precision
+           ) FILTER (
+             WHERE d.type = ANY (
+               ARRAY[
+                 'INVOICE'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type,
+                 'CREDIT_INVOICE'::accounter_schema.document_type
+               ]
+             )
+           ) AS js_invoice_event_amount,
+           sum(
+             d.total_amount *
+             CASE
+               WHEN d.debtor_id = fc.owner_id THEN '-1'::integer
+               ELSE 1
+             END::double precision
+           ) FILTER (
+             WHERE d.type = ANY (
+               ARRAY[
+                 'RECEIPT'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type
+               ]
+             )
+           ) AS js_receipt_event_amount,
+           sum(
+             d.total_amount *
+             CASE
+               WHEN d.debtor_id = fc.owner_id THEN '-1'::integer
+               ELSE 1
+             END::double precision
+           ) FILTER (
+             WHERE d.type = 'PROFORMA'::accounter_schema.document_type
+           ) AS js_proforma_event_amount,
+           sum(
+             d.vat_amount *
+             CASE
+               WHEN d.debtor_id = fc.owner_id THEN '-1'::integer
+               ELSE 1
+             END::double precision
+           ) FILTER (
+             WHERE d.type = ANY (
+               ARRAY[
+                 'INVOICE'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type,
+                 'CREDIT_INVOICE'::accounter_schema.document_type
+               ]
+             )
+           ) AS js_invoice_vat_amount,
+           sum(
+             d.vat_amount *
+             CASE
+               WHEN d.debtor_id = fc.owner_id THEN '-1'::integer
+               ELSE 1
+             END::double precision
+           ) FILTER (
+             WHERE d.type = ANY (
+               ARRAY[
+                 'RECEIPT'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type
+               ]
+             )
+           ) AS js_receipt_vat_amount,
+           array_agg(DISTINCT d.currency_code) FILTER (
+             WHERE d.currency_code IS NOT NULL
+             AND d.type = ANY (
+               ARRAY[
+                 'INVOICE'::accounter_schema.document_type,
+                 'INVOICE_RECEIPT'::accounter_schema.document_type,
+                 'RECEIPT'::accounter_schema.document_type,
+                 'CREDIT_INVOICE'::accounter_schema.document_type
+               ]
+             )
+           ) AS js_accountancy_currency_array,
+           array_agg(DISTINCT d.currency_code) FILTER (
+             WHERE d.currency_code IS NOT NULL
+             AND d.type = 'PROFORMA'::accounter_schema.document_type
+           ) AS js_proforma_currency_array,
            COALESCE(BOOL_OR(doc_issued.status = 'OPEN'), false) AS open_docs_flag,
            string_agg(COALESCE(d.description, '') || ' ' || COALESCE(d.remarks, '') || ' ' || COALESCE(d.serial_number, ''), ' ') AS search_text
     FROM accounter_schema.documents d
@@ -491,6 +583,18 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
         FROM accounter_schema.ledger_records lr
         JOIN filtered_charges fc ON fc.id = lr.charge_id
         WHERE lr.debit_entity2 IS NOT NULL
+
+        UNION
+        SELECT me.charge_id, me.creditor_id, true AS is_fee
+        FROM accounter_schema.misc_expenses me
+        JOIN filtered_charges fc ON fc.id = me.charge_id
+        WHERE me.creditor_id IS NOT NULL
+
+        UNION
+        SELECT me.charge_id, me.debtor_id, true AS is_fee
+        FROM accounter_schema.misc_expenses me
+        JOIN filtered_charges fc ON fc.id = me.charge_id
+        WHERE me.debtor_id IS NOT NULL
       ) b
       GROUP BY b.charge_id
     ) base
@@ -544,6 +648,10 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       tbc.max_event_date AS transactions_max_event_date,
       tbc.min_debit_date AS transactions_min_debit_date,
       tbc.max_debit_date AS transactions_max_debit_date,
+      tbc.min_debit_timestamp AS transactions_min_debit_timestamp,
+      tbc.max_debit_timestamp AS transactions_max_debit_timestamp,
+      tbc.fee_excluded_event_amount AS transactions_fee_excluded_amount,
+      tbc.fee_excluded_currency_array AS transactions_fee_excluded_currencies,
       tbc.event_amount AS transactions_event_amount,
       CASE
         WHEN array_length(tbc.currency_array, 1) = 1 THEN tbc.currency_array[1]
@@ -557,6 +665,13 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       COALESCE(dbc.max_event_date, dbc.max_any_event_date) AS documents_max_date,
       COALESCE(dbc.invoice_event_amount, dbc.receipt_event_amount) AS documents_event_amount,
       COALESCE(dbc.invoice_vat_amount, dbc.receipt_vat_amount) AS documents_vat_amount,
+      dbc.js_invoice_event_amount AS documents_invoice_amount,
+      dbc.js_receipt_event_amount AS documents_receipt_amount,
+      dbc.js_proforma_event_amount AS documents_proforma_amount,
+      dbc.js_invoice_vat_amount AS documents_invoice_vat_amount,
+      dbc.js_receipt_vat_amount AS documents_receipt_vat_amount,
+      dbc.js_accountancy_currency_array AS documents_accountancy_currencies,
+      dbc.js_proforma_currency_array AS documents_proforma_currencies,
       CASE
         WHEN array_length(dbc.currency_array, 1) = 1 THEN dbc.currency_array[1]
         ELSE NULL::accounter_schema.currency
@@ -1132,7 +1247,12 @@ export class ChargesProvider {
       // strip thousands separators so amount searches match the plain value stored in the DB
       freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
     };
-    return getChargesByFilters.run(fullParams, this.db) as Promise<IGetChargesByFiltersResult[]>;
+    return getChargesByFilters.run(fullParams, this.db).then(charges => {
+      // The enriched rows are supersets of the plain charge rows — prime the
+      // by-id loader so field-resolver helpers don't re-fetch the same charges.
+      charges.map(charge => this.getChargeByIdLoader.prime(charge.id, charge));
+      return charges;
+    }) as Promise<IGetChargesByFiltersResult[]>;
   }
 
   public async getSimilarCharges(params: IGetSimilarChargesParams) {
