@@ -88,6 +88,8 @@ export function createLedgerTestContext(options: {
     }),
   } as AuthContextProvider;
 
+  // No request lifecycle here to dispose the client — constructing without a
+  // GraphQL context defaults to autoRelease (commit-and-release per operation).
   const tenantAwareDB = new TenantAwareDBClient(dbProvider, authContextProvider);
 
   // Create AdminContextProvider for providers that need it

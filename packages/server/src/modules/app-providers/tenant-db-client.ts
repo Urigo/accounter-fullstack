@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Mutex } from 'async-mutex';
 import { GraphQLError } from 'graphql';
-import { Injectable, Scope } from 'graphql-modules';
+import { CONTEXT, Inject, Injectable, Optional, Scope } from 'graphql-modules';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { resolveWriteTargetBusinessId } from '../../shared/helpers/auth-scope.js';
 import type { AuthContext } from '../../shared/types/auth.js';
@@ -9,10 +9,23 @@ import { AuthContextProvider } from '../auth/providers/auth-context.provider.js'
 import { DBProvider } from './db.provider.js';
 
 /**
+ * Statements that may modify data (or session/schema state). Used to decide
+ * whether a stand-alone query must be committed immediately (durability before
+ * the response) or may stay in the request-scoped read transaction. Word-bound
+ * so column names like `updated_at` don't match. False positives only cost an
+ * extra COMMIT + re-BEGIN; false negatives are still committed at request end.
+ */
+const DATA_MODIFYING_SQL =
+  /\b(insert|update|delete|merge|truncate|create|alter|drop|grant|revoke|copy|call|do|refresh|lock|setval|set_config|vacuum|cluster|reindex)\b/i;
+
+export function isDataModifyingQuery(text: string): boolean {
+  return DATA_MODIFYING_SQL.test(text);
+}
+
+/**
  * TenantAwareDBClient enforces Row-Level Security (RLS) by setting PostgreSQL
- * session variables for every database transaction.
- 
- * 
+ * session variables on a request-scoped transaction.
+ *
  * RLS Enforcement:
  * - app.current_business_id: Set to the authenticated user's active business
  * - app.current_user_id: Set to the authenticated user's ID (or NULL for API keys)
@@ -31,6 +44,19 @@ import { DBProvider } from './db.provider.js';
  *   }
  * }
  *
+ * Session model (request-scoped):
+ * - The first query checks out one pooled connection and opens a transaction
+ *   with the RLS variables set once. Subsequent read queries reuse it — one
+ *   round trip per query instead of BEGIN/SET/query/COMMIT for each.
+ * - Data-modifying stand-alone queries and explicit `transaction()` scopes are
+ *   committed immediately on success, so a mutation response always reflects
+ *   durable state. The read session re-opens lazily on the next query.
+ * - A failed statement aborts the surrounding transaction (Postgres 25P02), so
+ *   errors roll the session back and the next query starts a fresh one. Only
+ *   uncommitted read-only work is discarded — writes were already committed.
+ * - `dispose()` (invoked by dbCleanupPlugin at request/stream end) commits any
+ *   open read session and releases the connection back to the pool.
+ *
  * Transaction Management:
  * - Supports nested transactions via SAVEPOINTs
  * - Automatically rolls back on error
@@ -48,21 +74,43 @@ export class TenantAwareDBClient {
   private mutex = new Mutex();
   private storage = new AsyncLocalStorage<boolean>();
   private activeClient: PoolClient | null = null;
+  private sessionOpen = false;
   private transactionDepth = 0;
   private isDisposed = false;
-  private initializationPromise: Promise<void> | null = null;
   private authContext: AuthContext | null = null;
   private authContextInitialized = false;
+
+  /**
+   * Per-operation mode: commit and release the connection after every
+   * top-level query/transaction (the pre-request-scoped behavior). Defaults to
+   * true for direct constructions outside the GraphQL request lifecycle (no
+   * CONTEXT injection — test harnesses, scripts) where nothing calls
+   * dispose(): a held connection would otherwise leak from the pool, keep
+   * table locks, and block pool.end().
+   */
+  public autoRelease: boolean;
 
   constructor(
     private dbProvider: DBProvider,
     private authContextProvider: AuthContextProvider,
-  ) {}
+    @Optional() @Inject(CONTEXT) context?: GraphQLModules.GlobalContext,
+  ) {
+    // Register for end-of-request disposal (commit + release of the
+    // request-scoped connection). dbCleanupPlugin drains this list once the
+    // response — including any @defer/@stream tail — is fully sent. Absent
+    // context (direct construction), fall back to commit-and-release per
+    // operation since nothing would ever call dispose().
+    if (context) {
+      (context.dbClientsToDispose ??= []).push(this);
+      this.autoRelease = false;
+    } else {
+      this.autoRelease = true;
+    }
+  }
 
   /**
-   * Execute a query with RLS enforcement.
-   * If a transaction is already active, uses it.
-   * If not, starts a new transaction/session, executes the query, and commits.
+   * Execute a query with RLS enforcement on the request-scoped session.
+   * Data-modifying statements are committed immediately.
    */
   public async query<T extends QueryResultRow = QueryResultRow>(
     text: string,
@@ -78,20 +126,38 @@ export class TenantAwareDBClient {
       );
     }
 
+    // Inside an explicit transaction() scope — run on its client directly.
     if (this.storage.getStore() && this.activeClient) {
       const result = await this.activeClient.query<T>(text, params);
       return { ...result, rowCount: result.rowCount ?? 0 };
     }
 
-    return this.transaction(async client => {
-      const result = await client.query<T>(text, params);
-      return { ...result, rowCount: result.rowCount ?? 0 };
+    return this.mutex.runExclusive(async () => {
+      this.ensureNotDisposed();
+      const client = await this.ensureSession();
+      try {
+        const result = await client.query<T>(text, params);
+        if (this.autoRelease || isDataModifyingQuery(text)) {
+          await this.endSession('COMMIT');
+        }
+        return { ...result, rowCount: result.rowCount ?? 0 };
+      } catch (error) {
+        // The failed statement aborted the transaction; roll back so the next
+        // query gets a fresh session instead of 25P02 errors.
+        await this.endSession('ROLLBACK');
+        throw error;
+      } finally {
+        if (this.autoRelease) {
+          this.releaseClient();
+        }
+      }
     });
   }
 
   /**
    * Execute a function within a transaction block.
-   * Handles nested transactions using SAVEPOINTs.
+   * Handles nested transactions using SAVEPOINTs. The outermost scope is
+   * committed immediately on success.
    */
   public async transaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
     this.ensureNotDisposed();
@@ -117,45 +183,8 @@ export class TenantAwareDBClient {
   }
 
   private async executeTransactionInternal<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
-    // 1. Wait for initialization if in progress
-    if (this.initializationPromise) {
-      try {
-        await this.initializationPromise;
-      } catch {
-        // Initialization failed.
-        // We proceed to check (!this.activeClient) which will re-attempt or fail.
-      }
-    }
-
-    // 2. Initialize if needed
-    if (!this.activeClient) {
-      this.initializationPromise = (async () => {
-        const client = await this.dbProvider.pool.connect();
-        try {
-          await client.query('BEGIN');
-          await this.setRLSVariables(client);
-          this.activeClient = client;
-        } catch (error) {
-          client.release();
-          throw error;
-        }
-      })();
-
-      try {
-        await this.initializationPromise;
-      } finally {
-        this.initializationPromise = null;
-      }
-    }
-
-    // Guard: activeClient must be set by now
-    if (!this.activeClient) {
-      throw new Error('Failed to initialize database client');
-    }
-
-    const client = this.activeClient;
+    const client = await this.ensureSession();
     this.transactionDepth++;
-    let success = false;
 
     try {
       let result: T;
@@ -173,40 +202,95 @@ export class TenantAwareDBClient {
           throw error;
         }
       } else {
-        // Root scope (depth === 1) runs directly in the main transaction
         result = await fn(client);
+        // Outermost scope: commit promptly — explicit transactions are used by
+        // mutations whose success response must reflect durable state.
+        await this.endSession('COMMIT');
       }
 
-      success = true;
       return result;
     } catch (error) {
-      // If we are the last active scope and an error occurred, we deliberately ROLLBACK.
-      // Note: If depth > 1, the inner try/catch already handled the savepoint rollback,
-      // so this block only handles the root transaction failure or unhandled critical errors.
+      // Nested savepoint rollbacks are handled above; an error reaching the
+      // outermost scope rolls back the whole session.
       if (this.transactionDepth === 1) {
-        // Ensure we don't try to rollback if already disposed or closed
-        try {
-          await client.query('ROLLBACK');
-        } catch {
-          // Ignore rollback errors (e.g. if connection closed)
-        }
+        await this.endSession('ROLLBACK');
       }
       throw error;
     } finally {
       this.transactionDepth--;
 
-      // If we are the last scope to exit, we are responsible for cleanup.
-      if (this.transactionDepth === 0) {
-        if (success && !this.isDisposed) {
-          try {
-            await client.query('COMMIT');
-          } catch (commitError) {
-            console.error('Failed to commit transaction:', commitError);
-          }
-        }
-        client.release();
-        this.activeClient = null;
+      if (this.transactionDepth === 0 && this.autoRelease) {
+        this.releaseClient();
       }
+    }
+  }
+
+  /**
+   * Ensure the request-scoped session is open: one pooled connection for the
+   * whole request, with an open transaction carrying the RLS variables.
+   * Always called while holding the mutex.
+   */
+  private async ensureSession(): Promise<PoolClient> {
+    this.activeClient ||= await this.dbProvider.pool.connect();
+
+    if (!this.sessionOpen) {
+      const client = this.activeClient;
+      try {
+        await client.query('BEGIN');
+        await this.setRLSVariables(client);
+        this.sessionOpen = true;
+      } catch (error) {
+        // A failed BEGIN/RLS setup leaves the connection in an unknown state —
+        // discard it entirely rather than returning it to the pool.
+        try {
+          await client.query('ROLLBACK');
+        } catch {
+          // Ignore rollback errors (e.g. if connection closed)
+        }
+        try {
+          client.release(true);
+        } catch {
+          // Ignore release errors
+        }
+        this.activeClient = null;
+        throw error;
+      }
+    }
+
+    return this.activeClient;
+  }
+
+  /**
+   * Close the open transaction (COMMIT or ROLLBACK). The connection is kept
+   * for the next session unless the close itself fails, in which case the
+   * connection state is unknown and it is destroyed.
+   */
+  private async endSession(mode: 'COMMIT' | 'ROLLBACK'): Promise<void> {
+    if (!this.activeClient || !this.sessionOpen) {
+      return;
+    }
+    this.sessionOpen = false;
+    try {
+      await this.activeClient.query(mode);
+    } catch (error) {
+      console.error(`Failed to ${mode} transaction:`, error);
+      try {
+        this.activeClient.release(true);
+      } catch {
+        // Ignore release errors
+      }
+      this.activeClient = null;
+    }
+  }
+
+  private releaseClient(): void {
+    if (this.activeClient) {
+      try {
+        this.activeClient.release();
+      } catch (e) {
+        console.error('Error releasing client:', e);
+      }
+      this.activeClient = null;
     }
   }
 
@@ -262,28 +346,21 @@ export class TenantAwareDBClient {
   }
 
   /**
-   * Manually dispose the client.
+   * End-of-request cleanup: commit any open read session and release the
+   * connection. Invoked by dbCleanupPlugin once the response (including any
+   * deferred stream) is fully sent; safe to call manually for direct
+   * constructions.
    */
   public async dispose(): Promise<void> {
     if (this.isDisposed) return;
 
-    // In normal operation, activeClient should already be null because
-    // executeTransactionInternal's finally block releases it.
-    // If it's null, we can skip the expensive mutex acquisition.
     if (!this.activeClient) {
       this.isDisposed = true;
       return;
     }
 
-    // If we get here, activeClient is not null, which means the transaction
-    // didn't clean up properly. This is an abnormal situation (e.g., connection leak,
-    // error in finally block, or dispose called prematurely).
-    console.warn(
-      'TenantAwareDBClient.dispose() called with activeClient still set. Forcing cleanup.',
-    );
-
-    // Use a timeout or race to prevent hanging indefinitely during disposal
-    // If a query is stuck, we don't want to block the entire server request handler.
+    // Use a timeout to prevent hanging indefinitely if a query is stuck
+    // holding the mutex — we don't want to block the request handler.
     const TIMEOUT_MS = 5000;
     let release: (() => void) | undefined;
 
@@ -299,47 +376,31 @@ export class TenantAwareDBClient {
         'Timeout acquiring mutex during TenantAwareDBClient disposal. Connection may be in use.',
         e,
       );
-      // Don't force cleanup - let executeTransactionInternal's finally block handle it.
-      // Forcing cleanup here creates a race condition where we destroy a connection
-      // that's actively being used, causing query failures.
-      // However, mark as disposed to prevent further usage of this instance.
+      // Mark disposed to prevent further usage, and schedule cleanup for when
+      // the in-flight operation finishes — otherwise the held connection would
+      // leak from the pool.
       this.isDisposed = true;
+      void this.mutex
+        .runExclusive(async () => {
+          await this.endSession('ROLLBACK');
+          this.releaseClient();
+        })
+        .catch(e2 => {
+          console.error('Deferred TenantAwareDBClient cleanup failed:', e2);
+        });
       return;
     }
 
     try {
       if (this.isDisposed) return;
 
-      if (this.activeClient) {
-        let hadRollbackError = false;
-        try {
-          // Attempt rollback, but catch errors if connection is busy/closed
-          await Promise.race([
-            this.activeClient.query('ROLLBACK'),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Rollback timeout')), 1000),
-            ),
-          ]);
-        } catch (error) {
-          hadRollbackError = true;
-          console.error('Error disposing TenantAwareDBClient (rollback failed):', error);
-        } finally {
-          try {
-            // Only destroy the connection (release(true)) if there was an error.
-            // For normal disposal, return it to the pool (release()) to avoid pool exhaustion.
-            // pg's release(true) removes the connection from the pool permanently.
-            this.activeClient.release(hadRollbackError);
-          } catch (e) {
-            console.error('Error releasing client during disposal:', e);
-          }
-          this.activeClient = null;
-        }
-      }
+      // Any uncommitted residue is read-only (writes commit promptly), but
+      // COMMIT keeps a missed write-classification durable as a safety net.
+      await this.endSession('COMMIT');
+      this.releaseClient();
       this.isDisposed = true;
     } finally {
-      if (release) {
-        release();
-      }
+      release();
     }
   }
 
