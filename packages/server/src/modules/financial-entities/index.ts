@@ -1,5 +1,6 @@
 import { createModule } from 'graphql-modules';
 import { AdminBusinessesProvider } from './providers/admin-businesses.provider.js';
+import { BusinessBankAccountsProvider } from './providers/business-bank-accounts.provider.js';
 import { BusinessesOperationProvider } from './providers/businesses-operation.provider.js';
 import { BusinessUsageProvider } from './providers/businesses-usage.provider.js';
 import { BusinessesProvider } from './providers/businesses.provider.js';
@@ -47,6 +48,7 @@ export const financialEntitiesModule = createModule({
   ],
   providers: () => [
     BusinessesProvider,
+    BusinessBankAccountsProvider,
     BusinessesOperationProvider,
     BusinessUsageProvider,
     TaxCategoriesProvider,
