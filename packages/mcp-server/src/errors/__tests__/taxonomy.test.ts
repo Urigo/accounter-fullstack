@@ -22,8 +22,11 @@ describe('errorPayload', () => {
 
   it('honors an explicit retryable override and includes issues', () => {
     const payload = errorPayload('VALIDATION_ERROR', 'bad', CID, {
+      retryable: true,
       issues: [{ path: 'x', message: 'required' }],
     });
+    // VALIDATION_ERROR defaults to non-retryable; the explicit override wins.
+    expect(payload.retryable).toBe(true);
     expect(payload.issues).toEqual([{ path: 'x', message: 'required' }]);
   });
 
