@@ -121,6 +121,21 @@ describe('balanceReportTool — invalid range', () => {
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
+
+  it('rejects an impossible date that still matches the format', async () => {
+    const client = clientReturning([]);
+    // Passes the schema's format regex but is not a real calendar date, so the
+    // handler's own Date.parse guard (not zod) must reject it.
+    const result = await run(client, authContext(['b1']), {
+      businessId: 'b1',
+      fromDate: '2026-13-01',
+      toDate: '2026-03-01',
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { message: string }).message).toBe(
+      'Invalid fromDate/toDate',
+    );
+  });
 });
 
 describe('balanceReportTool — oversized results', () => {
