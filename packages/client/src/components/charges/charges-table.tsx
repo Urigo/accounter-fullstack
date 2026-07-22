@@ -16,6 +16,7 @@ import {
 import {
   AccountantStatus,
   ChargeForChargesTableFieldsFragmentDoc,
+  ChargesTableSuggestionsFieldsFragmentDoc,
   MissingChargeInfo,
   type ChargeForChargesTableFieldsFragment,
 } from '../../gql/graphql.js';
@@ -36,6 +37,21 @@ import { ChargeRow } from './charges-row.js';
 import { columns } from './columns.js';
 import { DownloadChargesCsv } from './download-charges-csv.js';
 import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './utils.js';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
+/* GraphQL */ `
+  fragment ChargesTableSuggestionsFields on Charge {
+    id
+    missingInfoSuggestions {
+      description
+      tags {
+        id
+        name
+        namePath
+      }
+    }
+  }
+`;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -93,16 +109,7 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
         missingInfo
       }
     }
-    ... on Charge {
-      missingInfoSuggestions {
-        description
-        tags {
-          id
-          name
-          namePath
-        }
-      }
-    }
+    ...ChargesTableSuggestionsFields @defer
   }
 `;
 
@@ -125,6 +132,14 @@ export interface ChargeRow {
 export function convertChargeFragmentToTableRow(
   fragmentData: ChargeForChargesTableFieldsFragment,
 ): ChargeRow {
+  // The suggestions fragment is deferred — its fields are absent from the
+  // payload until the patch arrives, so unwrap defensively.
+  const missingInfoSuggestions = getFragmentData(
+    ChargesTableSuggestionsFieldsFragmentDoc,
+    // each charge subtype carries its own variant ref, which the overloads
+    // can't distribute over — the runtime is an identity unwrap either way
+    fragmentData as FragmentType<typeof ChargesTableSuggestionsFieldsFragmentDoc>,
+  )?.missingInfoSuggestions;
   return {
     id: fragmentData.id,
     onChange: () => {},
@@ -174,7 +189,7 @@ export function convertChargeFragmentToTableRow(
       chargeId: fragmentData.id,
       value: fragmentData.userDescription?.trim() ?? undefined,
       isMissing: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Description),
-      suggestedDescription: fragmentData.missingInfoSuggestions?.description?.trim() ?? undefined,
+      suggestedDescription: missingInfoSuggestions?.description?.trim() ?? undefined,
     },
     tags: {
       chargeId: fragmentData.id,
@@ -184,7 +199,7 @@ export function convertChargeFragmentToTableRow(
         namePath: tag.namePath ?? undefined,
       })),
       suggestedTags:
-        fragmentData.missingInfoSuggestions?.tags.map(tag => ({
+        missingInfoSuggestions?.tags.map(tag => ({
           id: tag.id,
           name: tag.name,
           namePath: tag.namePath ?? undefined,
