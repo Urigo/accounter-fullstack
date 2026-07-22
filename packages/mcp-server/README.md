@@ -37,6 +37,11 @@ the serialized payload (dropping whole trailing items — never invalid JSON), r
 / `totalCount` / `truncated`, and attaches a `continuation` hint whenever not all results were
 returned (an upstream cap or the payload-size guard).
 
+Each `tools/call` is rate-limited (`src/rate-limit/`) with an in-memory fixed-window counter keyed
+by **user + business scope + tool**, enforced before any upstream call. Exceeding the limit returns
+a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LIMIT_CONFIG`
+(`{"windowMs":60000,"max":60}` by default).
+
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
   days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
