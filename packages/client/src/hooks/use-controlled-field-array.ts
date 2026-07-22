@@ -4,7 +4,6 @@ import {
   type FieldArrayPathValue,
   type FieldValues,
   type Path,
-  type PathValue,
   type UseFieldArrayReturn,
   type UseFormReturn,
 } from 'react-hook-form';
@@ -22,30 +21,38 @@ export type FieldArrayItem<
     ? TItem
     : never;
 
-type UseControlledFieldArrayReturn<TFieldValues extends FieldValues> = Pick<
-  UseFieldArrayReturn<TFieldValues, ArrayPath<TFieldValues>>,
-  'append' | 'remove'
-> & {
-  controlledFields: UseFieldArrayReturn<TFieldValues, ArrayPath<TFieldValues>>['fields'];
-  watchFieldArray: PathValue<TFieldValues, Path<TFieldValues>>;
+type UseControlledFieldArrayReturn<
+  TFieldValues extends FieldValues,
+  TPath extends ArrayPath<TFieldValues>,
+> = Pick<UseFieldArrayReturn<TFieldValues, TPath>, 'append' | 'remove'> & {
+  controlledFields: UseFieldArrayReturn<TFieldValues, TPath>['fields'];
+  watchFieldArray: FieldArrayItem<TFieldValues, TPath>[];
 };
 
 /**
  * Wraps `useFieldArray` and merges the registered fields with the watched values,
  * so consumers render always-current values while keeping stable field ids as keys.
  */
-export function useControlledFieldArray<TFieldValues extends FieldValues>(
+export function useControlledFieldArray<
+  TFieldValues extends FieldValues,
+  TPath extends ArrayPath<TFieldValues> = ArrayPath<TFieldValues>,
+>(
   formManager: UseFormReturn<TFieldValues, unknown>,
-  arrayPath: ArrayPath<TFieldValues>,
-): UseControlledFieldArrayReturn<TFieldValues> {
+  arrayPath: TPath,
+): UseControlledFieldArrayReturn<TFieldValues, TPath> {
   const { control, watch } = formManager;
   const { fields, append, remove } = useFieldArray({ control, name: arrayPath });
 
-  const watchFieldArray = watch(arrayPath as Path<TFieldValues>);
-  const controlledFields = fields.map((field, index) => ({
-    ...field,
-    ...watchFieldArray?.[index],
-  }));
+  const watchFieldArray = (watch(arrayPath as unknown as Path<TFieldValues>) ??
+    []) as FieldArrayItem<TFieldValues, TPath>[];
+
+  const controlledFields = fields.map((field, index) => {
+    const watchedValue = watchFieldArray[index];
+    return {
+      ...field,
+      ...(typeof watchedValue === 'object' && watchedValue !== null ? watchedValue : {}),
+    };
+  });
 
   return { controlledFields, append, remove, watchFieldArray };
 }

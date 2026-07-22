@@ -44,8 +44,8 @@ export function ChargeSpreadInput<T extends FieldValues>({
                 rules={{
                   required: 'Required',
                   validate: (value: string): boolean | string => {
-                    const years = watchFieldArray.map((record: { year: string }) => record.year);
-                    if (years.filter((year: string) => year === value).length > 1) {
+                    const years = watchFieldArray.map(record => (record as { year?: string }).year);
+                    if (years.filter(year => year === value).length > 1) {
                       return 'Years must be unique';
                     }
                     return true;
