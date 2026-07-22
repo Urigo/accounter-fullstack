@@ -34,7 +34,7 @@ import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { ComboBox } from '../common';
+import { ComboBox, NumberInput } from '../common';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -56,6 +56,11 @@ import { ComboBox } from '../common';
       # localAddress
       phoneNumber
       website
+      bankAccount {
+        bankNumber
+        branchNumber
+        accountNumber
+      }
       clientInfo {
         id
         emails
@@ -75,6 +80,9 @@ const contactInfoSchema = z.object({
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
+  bankNumber: z.number().int().nonnegative().optional().nullable(),
+  bankBranchNumber: z.number().int().nonnegative().optional().nullable(),
+  bankAccountNumber: z.number().int().nonnegative().optional().nullable(),
   generalContacts: z.array(z.email()).optional(),
   billingEmails: z.array(z.email()).optional(),
 });
@@ -100,6 +108,9 @@ function ContactsSectionFragmentToFormValues(
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
     website: business.website ?? undefined,
+    bankNumber: business.bankAccount?.bankNumber ?? undefined,
+    bankBranchNumber: business.bankAccount?.branchNumber ?? undefined,
+    bankAccountNumber: business.bankAccount?.accountNumber ?? undefined,
     generalContacts: business.email
       ?.split(',')
       .map(email => email.trim())
@@ -111,6 +122,11 @@ function ContactsSectionFragmentToFormValues(
 function convertFormDataToUpdateBusinessInput(
   formData: Partial<ContactInfoFormValues>,
 ): UpdateBusinessInput {
+  const hasBankAccountData =
+    'bankNumber' in formData ||
+    'bankBranchNumber' in formData ||
+    'bankAccountNumber' in formData;
+
   return {
     name: formData.businessName,
     country: formData.locality,
@@ -123,6 +139,13 @@ function convertFormDataToUpdateBusinessInput(
     phoneNumber: formData.phone,
     website: formData.website,
     email: formData.generalContacts?.join(', '),
+    bankAccount: hasBankAccountData
+      ? {
+          bankNumber: formData.bankNumber,
+          branchNumber: formData.bankBranchNumber,
+          accountNumber: formData.bankAccountNumber,
+        }
+      : undefined,
   };
 }
 
@@ -471,6 +494,69 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                         {...field}
                         type="url"
                         placeholder="https://example.com"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bankNumber"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Bank Number</FormLabel>
+                    <FormControl>
+                      <NumberInput
+                        value={field.value ?? undefined}
+                        onValueChange={value => field.onChange(value ?? null)}
+                        hideControls
+                        decimalScale={0}
+                        placeholder="Enter Bank Number"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bankBranchNumber"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Bank Branch Number</FormLabel>
+                    <FormControl>
+                      <NumberInput
+                        value={field.value ?? undefined}
+                        onValueChange={value => field.onChange(value ?? null)}
+                        hideControls
+                        decimalScale={0}
+                        placeholder="Enter Branch Number"
+                        className={dirtyFieldMarker(fieldState)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="bankAccountNumber"
+                render={({ field, fieldState }) => (
+                  <FormItem>
+                    <FormLabel>Bank Account Number</FormLabel>
+                    <FormControl>
+                      <NumberInput
+                        value={field.value ?? undefined}
+                        onValueChange={value => field.onChange(value ?? null)}
+                        hideControls
+                        decimalScale={0}
+                        placeholder="Enter Account Number"
                         className={dirtyFieldMarker(fieldState)}
                       />
                     </FormControl>
