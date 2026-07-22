@@ -82,13 +82,18 @@ function fittingCount(
  */
 export function shapeListResult<T>(params: ShapeListParams<T>): ToolResult {
   const maxBytes = params.maxBytes ?? MAX_TOOL_RESULT_BYTES;
-  const total = params.total ?? params.items.length;
+  // Never let a caller-supplied `total` fall below the number of items on hand;
+  // otherwise `totalCount` could be < `returnedCount` and `truncated` would be
+  // computed incorrectly.
+  const total = Math.max(params.total ?? params.items.length, params.items.length);
 
   const structuredFor = (shown: number): Record<string, unknown> => {
     const truncated = shown < total;
+    // Spread `extra` first so the framework-owned keys below always win a name
+    // collision — `extra` can never clobber the items array or the counts.
     const structured: Record<string, unknown> = {
-      [params.itemsKey]: params.items.slice(0, shown),
       ...params.extra,
+      [params.itemsKey]: params.items.slice(0, shown),
       returnedCount: shown,
       totalCount: total,
       truncated,
