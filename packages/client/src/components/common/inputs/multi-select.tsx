@@ -2,6 +2,7 @@ import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { CheckIcon, ChevronDown, WandSparkles, XCircle, XIcon } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
+import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Badge } from '../../ui/badge.js';
 import { Button } from '../../ui/button.js';
 import {
@@ -130,6 +131,14 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
     },
     ref,
   ) => {
+    // When rendered inside a modal layer (e.g. the vaul Drawer used by PopUpDrawer), the underlying
+    // Radix Dialog traps focus and blocks interaction with any element portaled to `document.body`,
+    // making the search input unusable and treating clicks on the popover as "outside" the drawer
+    // (which closes it). Such layers provide their content element via PortalContainerContext so the
+    // popover portals inside the dialog and stays focusable/clickable. Outside those layers the value
+    // is `null` and the popover keeps its default `document.body` portaling.
+    // See https://github.com/emilkowalski/vaul/issues/496
+    const portalContainer = usePortalContainer();
     const [selectedValues, setSelectedValues] = React.useState<string[]>(defaultValue);
     const [isPopoverOpen, setIsPopoverOpen] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
@@ -198,7 +207,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
           }
           setIsPopoverOpen(open);
         }}
-        modal={modalPopover}
+        modal={modalPopover || !!portalContainer}
       >
         <PopoverTrigger asChild={asChild}>
           <Button
@@ -306,6 +315,7 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
         <PopoverContent
           className="w-auto p-0"
           align="start"
+          container={portalContainer}
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
         >
           <Command>
