@@ -73,18 +73,28 @@ async function getInvoicePaymentCurrencyDiffErrors(
     return [];
   }
 
-  const [{ documentsCurrency }, { transactionsCurrency }] = await Promise.all([
-    getChargeDocumentsMeta(charge, injector),
-    getChargeTransactionsMeta(charge, injector),
-  ]);
+  try {
+    const [{ documentsCurrency }, { transactionsCurrency }] = await Promise.all([
+      getChargeDocumentsMeta(charge, injector),
+      getChargeTransactionsMeta(charge, injector),
+    ]);
 
-  if (documentsCurrency && transactionsCurrency && documentsCurrency !== transactionsCurrency) {
-    return [
-      `Main document currency (${documentsCurrency}) differs from main transaction currency (${transactionsCurrency}). Turn on the "Invoice-Payment currency difference" switch for this charge.`,
-    ];
+    if (documentsCurrency && transactionsCurrency && documentsCurrency !== transactionsCurrency) {
+      return [
+        `Main document currency (${documentsCurrency}) differs from main transaction currency (${transactionsCurrency}). Turn on the "Invoice-Payment currency difference" switch for this charge.`,
+      ];
+    }
+
+    return [];
+  } catch (err) {
+    // This check is display-only; a loader/DB failure here must not turn the
+    // whole validation into an error. Log and fall back to no extra errors.
+    console.error(
+      `Failed to evaluate invoice/payment currency-diff for charge ID="${charge.id}"`,
+      err,
+    );
+    return [];
   }
-
-  return [];
 }
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
