@@ -191,6 +191,27 @@ describe('mcpHttpHandler', () => {
     resetEnvCache();
   });
 
+  it('challenges with 401 + error="invalid_token" when identity mapping fails', async () => {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../../config/env.js');
+    resetEnvCache();
+    // A verified token with no subject cannot be mapped to a user, so
+    // resolveAuthContext throws IdentityMappingError — a 401, not a 5xx.
+    mockVerify.mockResolvedValue({ ...PRINCIPAL, subject: '', claims: {} });
+
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list')), res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
+    const wwwAuth = res.setHeader.mock.calls.find(([name]) => name === 'WWW-Authenticate');
+    expect(wwwAuth?.[1]).toContain('error="invalid_token"');
+    vi.unstubAllEnvs();
+    resetEnvCache();
+  });
+
   it('propagates infrastructure errors instead of returning a misleading 401', async () => {
     // An error without a token-validation code (e.g. a JWKS outage) must bubble
     // up so the request becomes a 5xx, not a 401.
