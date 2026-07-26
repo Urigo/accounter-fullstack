@@ -74,7 +74,17 @@ export function handleRpcRequest(request: JsonRpcRequest): JsonRpcResponse | nul
       return success(id, { tools: listedTools });
 
     case 'tools/call': {
-      const params = (request.params ?? {}) as { name?: unknown; arguments?: unknown };
+      // Params, when present, must be a JSON object. An array (which
+      // asJsonRpcRequest permits) or other non-object shape is a malformed
+      // params error, not a mislabeled "Unknown tool: undefined".
+      const rawParams = request.params;
+      if (
+        rawParams !== undefined &&
+        (typeof rawParams !== 'object' || rawParams === null || Array.isArray(rawParams))
+      ) {
+        return failure(id, JsonRpcErrorCode.InvalidParams, 'tools/call params must be an object');
+      }
+      const params = (rawParams ?? {}) as { name?: unknown; arguments?: unknown };
       if (params.name === SMOKE_TOOL_NAME) {
         return success(id, runSmokeTool(params.arguments));
       }

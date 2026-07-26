@@ -94,6 +94,47 @@ describe('GET /.well-known/oauth-protected-resource', () => {
   });
 });
 
+describe('MCP kill-switch (MCP_ENABLED=0)', () => {
+  async function withMcpDisabled(run: () => Promise<void>) {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    vi.stubEnv('MCP_ENABLED', '0');
+    const { resetEnvCache } = await import('../config/env.js');
+    resetEnvCache();
+    try {
+      await run();
+    } finally {
+      vi.unstubAllEnvs();
+      resetEnvCache();
+    }
+  }
+
+  it('serves health but 404s the MCP transport and its metadata route', async () => {
+    await withMcpDisabled(async () => {
+      const health = mockRes();
+      await requestHandler(mockReq({ method: 'GET', url: '/health' }), health);
+      expect(health.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
+
+      const mcpGet = mockRes();
+      await requestHandler(mockReq({ method: 'GET', url: '/mcp' }), mcpGet);
+      expect(mcpGet.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
+
+      const mcpPost = mockRes();
+      await requestHandler(mockReq({ method: 'POST', url: '/mcp' }), mcpPost);
+      expect(mcpPost.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
+
+      const meta = mockRes();
+      await requestHandler(
+        mockReq({ method: 'GET', url: PROTECTED_RESOURCE_METADATA_PATH }),
+        meta,
+      );
+      expect(meta.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
+    });
+  });
+});
+
 describe('requestHandler routing', () => {
   it('returns 404 for unknown paths', async () => {
     const res = mockRes();
