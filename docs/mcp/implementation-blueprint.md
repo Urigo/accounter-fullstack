@@ -512,8 +512,10 @@ Validation:
 You are implementing Prompt 08b.
 
 Context:
-The MCP connector already forwards the caller's bearer token to the Accounter GraphQL server on
-every upstream call (the upstream client sets Authorization from the request context). So resolving
+This is the MCP's first upstream call to the Accounter GraphQL server: the current handler performs
+no upstream GraphQL calls. So the new MembershipSource must forward the caller's bearer token itself
+(setting Authorization from the request context on the upstream call) — that forwarding is a
+requirement of this prompt, not existing behavior. Once the token is forwarded, resolving
 memberships is just a normal authenticated query — no Auth0 custom claim and no shared service
 secret (unlike email-ingestion-gateway, which is unattended and uses an X-Gateway-CP-Token).
 
@@ -522,12 +524,16 @@ Resolve business memberships by calling the server's `myMemberships` query with 
 and make that the wired membership source.
 
 Requirements:
-- Implement an upstream MembershipSource that issues `myMemberships` using the existing upstream
-  client (reuse createReadOperation + UpstreamGraphQLClient in
-  packages/mcp-server/src/upstream/graphql-client.ts and getUpstreamClient()); map the result to the
-  internal BusinessMembership shape (reuse coerceMembership from auth/identity.ts).
-- Thread the caller's Authorization header + correlation id into the source, and wire it into
-  resolveAuthContext at packages/mcp-server/src/mcp/handler.ts, replacing the default claims source.
+- Introduce a minimal upstream GraphQL client as part of this prompt — do not assume one exists yet.
+  Create packages/mcp-server/src/upstream/graphql-client.ts exposing an UpstreamGraphQLClient, a
+  createReadOperation helper, and a getUpstreamClient() accessor. Keep it small; Prompt 12 later
+  generalizes and hardens this client with timeout/retry guardrails.
+- Implement an upstream MembershipSource that issues `myMemberships` through that client; map the
+  result to the internal BusinessMembership shape via a coerceMembership helper (add it, e.g. in
+  auth/identity.ts).
+- Thread the caller's Authorization header + correlation id into the source, and wire it into the
+  auth-context resolution in packages/mcp-server/src/mcp/handler.ts — introduce a resolveAuthContext
+  seam if one does not exist yet — replacing the default claims source.
 - Error semantics: throw on upstream/auth/infra failure (so the request surfaces 401/5xx, not a
   silent empty scope); return [] only when the server legitimately reports no memberships.
 

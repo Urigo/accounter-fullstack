@@ -136,13 +136,14 @@ If Claude Code support is added later, also support loopback callback patterns a
 
 ## 6.4 Token and Scope Model
 
-The Auth0 access token conveys **identity only** — the `sub` (stable user id) and `email`. It does
-**not** carry the user's Accounter business memberships or roles: those live in the Accounter
-server's database and are resolved at request time (see §7.1).
+The Auth0 access token conveys **identity only** — the `sub` (stable user id), plus `email` and
+`email_verified` when present (the `email` claim is optional and may be absent). It does **not**
+carry the user's Accounter business memberships or roles: those live in the Accounter server's
+database and are resolved at request time (see §7.1).
 
 The access token is used to:
 
-- authenticate the caller (identity: `sub`, `email`)
+- authenticate the caller (identity: `sub`, plus optional `email`/`email_verified`)
 - carry coarse OAuth transport scopes (not fine-grained business capability)
 
 Tenant/business memberships and roles are **not** read from token claims — they are resolved from
