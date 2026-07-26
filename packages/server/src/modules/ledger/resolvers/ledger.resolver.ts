@@ -12,8 +12,12 @@ import { formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { degradeChargesAccountantApproval } from '../../accountant-approval/helpers/degrade-charges.helper.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ScopeProvider } from '../../auth/providers/scope.provider.js';
+import {
+  getChargeDocumentsMeta,
+  getChargeTransactionsMeta,
+} from '../../charges/helpers/common.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
-import { accountant_statusArray } from '../../charges/types.js';
+import { accountant_statusArray, type IGetChargesByIdsResult } from '../../charges/types.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
 import { IGetFinancialEntitiesByIdsResult } from '../../financial-entities/types.js';
 import {
@@ -55,6 +59,42 @@ async function recordLocalCurrency(
     .get(AdminContextProvider)
     .getVerifiedAdminContext();
   return defaultLocalCurrency;
+}
+
+// When the main financial document (usually the invoice) and the main
+// transaction settle in different currencies, the charge requires the dedicated
+// invoice/payment currency-diff handling. If that flag is off, surface an error
+// so the user knows to turn the "Invoice-Payment currency difference" switch on.
+async function getInvoicePaymentCurrencyDiffErrors(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<string[]> {
+  if (charge.invoice_payment_currency_diff) {
+    return [];
+  }
+
+  try {
+    const [{ documentsCurrency }, { transactionsCurrency }] = await Promise.all([
+      getChargeDocumentsMeta(charge, injector),
+      getChargeTransactionsMeta(charge, injector),
+    ]);
+
+    if (documentsCurrency && transactionsCurrency && documentsCurrency !== transactionsCurrency) {
+      return [
+        `Main document currency (${documentsCurrency}) differs from main transaction currency (${transactionsCurrency}). Turn on the "Invoice-Payment currency difference" switch for this charge.`,
+      ];
+    }
+
+    return [];
+  } catch (err) {
+    // This check is display-only; a loader/DB failure here must not turn the
+    // whole validation into an error. Log and fall back to no extra errors.
+    console.error(
+      `Failed to evaluate invoice/payment currency-diff for charge ID="${charge.id}"`,
+      err,
+    );
+    return [];
+  }
 }
 
 export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'GeneratedLedgerRecords'> = {
@@ -493,6 +533,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           errors: [],
         };
       }
+      const currencyDiffErrors = await getInvoicePaymentCurrencyDiffErrors(charge, injector);
+
       try {
         const generated = await ledgerGenerationByCharge(
           charge,
@@ -505,7 +547,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
             isValid: false,
             differences: [],
             matches: [],
-            errors: [],
+            errors: [...currencyDiffErrors],
           };
         }
 
@@ -515,10 +557,10 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
 
         if (fullMatching.isFullyMatched) {
           return {
-            isValid: true,
+            isValid: currencyDiffErrors.length === 0,
             differences: [],
             matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
-            errors: generated.errors,
+            errors: [...generated.errors, ...currencyDiffErrors],
           };
         }
 
@@ -528,10 +570,13 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         );
 
         return {
-          isValid: fullMatching.isFullyMatched && generated.errors.length === 0,
+          isValid:
+            fullMatching.isFullyMatched &&
+            generated.errors.length === 0 &&
+            currencyDiffErrors.length === 0,
           differences: toUpdate,
           matches: Array.from(fullMatching.fullMatches.values()).filter(Boolean) as string[],
-          errors: generated.errors,
+          errors: [...generated.errors, ...currencyDiffErrors],
         };
       } catch (err) {
         console.error(err);
@@ -539,7 +584,7 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
           isValid: false,
           differences: [],
           matches: [],
-          errors: [],
+          errors: [...currencyDiffErrors],
         };
       }
     },
