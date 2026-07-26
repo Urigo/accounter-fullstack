@@ -58,6 +58,7 @@ describe('missingMonthlyVatInfoSuggestions', () => {
         },
       },
       injector,
+      { includeChargeBuckets: false },
     );
     expect(result).toEqual({
       description: 'VAT for 04/2026',

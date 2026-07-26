@@ -97,8 +97,10 @@ export async function adjustTaxRecord(
         .get(DepreciationProvider)
         .getDepreciationRecordsByChargeIdLoader.load(charge.id)
         .then(records => records.length > 0),
-      getChargeTransactionsMeta(charge.id, injector),
-      getChargeDocumentsMeta(charge.id, injector),
+      // Pass the charge row (not its id) so the enriched fast path serves the
+      // precomputed transaction/document meta instead of firing loader batches.
+      getChargeTransactionsMeta(charge, injector),
+      getChargeDocumentsMeta(charge, injector),
     ]);
 
     const isDecreasedVat = charge.is_property;

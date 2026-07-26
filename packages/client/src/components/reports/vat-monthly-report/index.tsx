@@ -69,9 +69,13 @@ export const VatMonthlyReport = (): ReactElement => {
     }
   }, [filter, userContext?.context.adminBusinessId]);
 
+  // Deduping the fragments produces a fresh document object; memoize it so the
+  // query identity is stable across renders and urql doesn't re-key the operation.
+  const query = useMemo(() => dedupeFragments(VatMonthlyReportDocument), []);
+
   // fetch data
   const [{ data, fetching }] = useQuery({
-    query: dedupeFragments(VatMonthlyReportDocument),
+    query,
     variables: {
       filters: filter,
     },

@@ -84,6 +84,7 @@ export const generateLedgerRecordsForMonthlyVat: ResolverFn<
       const { income, expenses } = await getVatRecords(
         { filters: { financialEntityId: charge.owner_id, monthDate } },
         injector,
+        { includeChargeBuckets: false },
       );
 
       return {
