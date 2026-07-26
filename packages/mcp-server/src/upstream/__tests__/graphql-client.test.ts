@@ -89,6 +89,23 @@ describe('UpstreamGraphQLClient.query — timeout & retries', () => {
     ).rejects.toMatchObject({ code: 'TIMEOUT_ERROR', retryable: true });
   });
 
+  it('maps an abort while reading the body to a retryable TIMEOUT_ERROR', async () => {
+    const abortErr = Object.assign(new Error('aborted'), { name: 'AbortError' });
+    const fetchImpl = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => {
+            throw abortErr;
+          },
+        }) as unknown as Response,
+    );
+    await expect(
+      client(fetchImpl as unknown as typeof fetch, 0).query({ query: 'query { x }' }, ctx),
+    ).rejects.toMatchObject({ code: 'TIMEOUT_ERROR', retryable: true });
+  });
+
   it('retries a 503 up to maxRetries then succeeds', async () => {
     const fetchImpl = vi
       .fn()
@@ -169,6 +186,23 @@ describe('UpstreamGraphQLClient.query — GraphQL errors', () => {
     await expect(
       client(fetchImpl as unknown as typeof fetch).query({ query: 'query { x }' }, ctx),
     ).rejects.toMatchObject({ code: 'UPSTREAM_ERROR', retryable: false });
+  });
+
+  it('normalizes whitespace and caps long GraphQL error messages', async () => {
+    const noisy = `Internal error:\n  ${'x'.repeat(500)}\n\tinternal stack line`;
+    const fetchImpl = vi.fn(async () => jsonResponse({ errors: [{ message: noisy }] }));
+    let caught: unknown;
+    try {
+      await client(fetchImpl as unknown as typeof fetch).query({ query: 'query { x }' }, ctx);
+    } catch (error) {
+      caught = error;
+    }
+    const message = (caught as Error).message;
+    expect(message).not.toMatch(/[\n\t]/);
+    // Single message is capped at 200 chars, so the trailing "stack line" is dropped.
+    expect(message.length).toBeLessThanOrEqual(200);
+    expect(message.startsWith('Internal error: xxxx')).toBe(true);
+    expect(message).not.toContain('internal stack line');
   });
 });
 

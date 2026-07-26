@@ -15,7 +15,12 @@
 
 export type UpstreamErrorCode = 'UPSTREAM_ERROR' | 'TIMEOUT_ERROR';
 
-/** Sanitized upstream failure. Carries no stack traces or internal details. */
+/**
+ * Sanitized upstream failure. Its `message` is business-safe: it never carries
+ * upstream stack traces, SQL, or other internal upstream details. (Like any JS
+ * Error it still has a local `.stack` for this call site — that's ours, not the
+ * upstream's internals.)
+ */
 export class UpstreamError extends Error {
   constructor(
     public readonly code: UpstreamErrorCode,
@@ -69,16 +74,27 @@ function assertReadOnly(query: string): void {
   }
 }
 
+/** Max characters kept per individual upstream error message. */
+const MAX_ERROR_MESSAGE_LENGTH = 200;
+/** Max characters for the combined sanitized error string. */
+const MAX_SANITIZED_ERROR_LENGTH = 500;
+
 /** Collapse GraphQL error messages into a single business-safe string. */
 function sanitizeGraphQLErrors(errors: Array<{ message?: unknown }>): string {
   const messages = errors
     .map(error =>
       error && typeof error === 'object' && typeof error.message === 'string' ? error.message : '',
     )
-    .map(message => message.trim())
+    // Normalize whitespace (collapse newlines/tabs/runs of spaces) and cap each
+    // message so a verbose upstream error can neither bloat logs nor smuggle
+    // multi-line internal detail into the business-safe summary.
+    .map(message => message.replace(/\s+/g, ' ').trim().slice(0, MAX_ERROR_MESSAGE_LENGTH))
     .filter(Boolean)
     .slice(0, 3);
-  return messages.length > 0 ? messages.join('; ') : 'Upstream GraphQL error';
+  if (messages.length === 0) {
+    return 'Upstream GraphQL error';
+  }
+  return messages.join('; ').slice(0, MAX_SANITIZED_ERROR_LENGTH);
 }
 
 export class UpstreamGraphQLClient {
@@ -134,60 +150,70 @@ export class UpstreamGraphQLClient {
       headers.Authorization = context.authorization;
     }
 
-    let response: Response;
+    // The timeout budget spans the entire exchange — obtaining the response AND
+    // consuming its body — so an upstream that sends headers then stalls the body
+    // is still aborted. The timer is cleared only once everything is done.
     try {
-      response = await this.fetchImpl(this.endpoint, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          query: request.query,
-          variables: request.variables ?? {},
-          ...(request.operationName ? { operationName: request.operationName } : {}),
-        }),
-        signal: controller.signal,
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new UpstreamError('TIMEOUT_ERROR', 'Upstream request timed out', true);
+      let response: Response;
+      try {
+        response = await this.fetchImpl(this.endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            query: request.query,
+            variables: request.variables ?? {},
+            ...(request.operationName ? { operationName: request.operationName } : {}),
+          }),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new UpstreamError('TIMEOUT_ERROR', 'Upstream request timed out', true);
+        }
+        // Network/connection error — a read may be safely retried.
+        throw new UpstreamError('UPSTREAM_ERROR', 'Upstream request failed', true);
       }
-      // Network/connection error — a read may be safely retried.
-      throw new UpstreamError('UPSTREAM_ERROR', 'Upstream request failed', true);
+
+      if (!response.ok) {
+        // 5xx is transient (retryable); 4xx (auth/validation) is not.
+        const retryable = response.status >= 500;
+        throw new UpstreamError(
+          'UPSTREAM_ERROR',
+          `Upstream responded with status ${response.status}`,
+          retryable,
+        );
+      }
+
+      let body: GraphQLResponseBody<TData>;
+      try {
+        body = (await response.json()) as GraphQLResponseBody<TData>;
+      } catch (error) {
+        // An abort raised while streaming the body is a timeout, not a malformed
+        // body — classify it as a retryable TIMEOUT_ERROR.
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new UpstreamError('TIMEOUT_ERROR', 'Upstream request timed out', true);
+        }
+        // Non-JSON body (e.g. an HTML error page) — sanitize rather than leak.
+        throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned a non-JSON response', false);
+      }
+      if (!body || typeof body !== 'object') {
+        throw new UpstreamError(
+          'UPSTREAM_ERROR',
+          'Upstream returned an invalid response body',
+          false,
+        );
+      }
+      if (Array.isArray(body.errors) && body.errors.length > 0) {
+        // GraphQL-level errors are not retried (not transient).
+        throw new UpstreamError('UPSTREAM_ERROR', sanitizeGraphQLErrors(body.errors), false);
+      }
+      if (body.data === undefined) {
+        throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned no data', false);
+      }
+      return body.data;
     } finally {
       clearTimeout(timer);
     }
-
-    if (!response.ok) {
-      // 5xx is transient (retryable); 4xx (auth/validation) is not.
-      const retryable = response.status >= 500;
-      throw new UpstreamError(
-        'UPSTREAM_ERROR',
-        `Upstream responded with status ${response.status}`,
-        retryable,
-      );
-    }
-
-    let body: GraphQLResponseBody<TData>;
-    try {
-      body = (await response.json()) as GraphQLResponseBody<TData>;
-    } catch {
-      // Non-JSON body (e.g. an HTML error page) — sanitize rather than leak.
-      throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned a non-JSON response', false);
-    }
-    if (!body || typeof body !== 'object') {
-      throw new UpstreamError(
-        'UPSTREAM_ERROR',
-        'Upstream returned an invalid response body',
-        false,
-      );
-    }
-    if (Array.isArray(body.errors) && body.errors.length > 0) {
-      // GraphQL-level errors are not retried (not transient).
-      throw new UpstreamError('UPSTREAM_ERROR', sanitizeGraphQLErrors(body.errors), false);
-    }
-    if (body.data === undefined) {
-      throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned no data', false);
-    }
-    return body.data;
   }
 }
 
