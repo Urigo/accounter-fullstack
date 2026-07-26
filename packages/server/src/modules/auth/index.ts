@@ -10,6 +10,7 @@ import { SuperAdminProvider } from './providers/super-admin.provider.js';
 import { apiKeysResolvers } from './resolvers/api-keys.resolver.js';
 import { businessUsersResolvers } from './resolvers/business-users.resolver.js';
 import { invitationsResolvers } from './resolvers/invitations.resolver.js';
+import { membershipsResolvers } from './resolvers/memberships.resolver.js';
 import auth from './typeDefs/auth.graphql.js';
 
 const __dirname = import.meta.dirname;
@@ -18,7 +19,7 @@ export const authModule = createModule({
   id: 'auth',
   dirname: __dirname,
   typeDefs: [auth],
-  resolvers: [invitationsResolvers, apiKeysResolvers, businessUsersResolvers],
+  resolvers: [invitationsResolvers, apiKeysResolvers, businessUsersResolvers, membershipsResolvers],
   providers: () => [
     AcceptInvitationsProvider,
     Auth0ManagementProvider,
