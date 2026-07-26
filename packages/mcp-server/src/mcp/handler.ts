@@ -8,10 +8,12 @@ import {
 } from '../auth/token.js';
 import { verifyAccessToken } from '../auth/verifier.js';
 import { env } from '../config/env.js';
-import { getRequestContext } from '../context.js';
+import { generateId, getRequestContext } from '../context.js';
 import { createRequestLogger, log } from '../logger.js';
 import { sendUnauthorized } from '../oauth/challenge.js';
 import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
+import { getUpstreamClient } from '../upstream/default-client.js';
+import { createUpstreamMembershipSource } from '../upstream/memberships.js';
 import { getServiceVersion, SERVICE_NAME } from '../version.js';
 import {
   asJsonRpcRequest,
@@ -28,10 +30,10 @@ import { listedTools, runSmokeTool, SMOKE_TOOL_NAME } from './tools.js';
  * MCP transport route (Streamable HTTP) — request dispatch skeleton.
  *
  * Handles the JSON-RPC methods needed to establish a session and list tools.
- * It is intentionally auth-agnostic for now (authentication and per-tool
- * authorization are layered on in later steps) and performs NO upstream
- * GraphQL calls. Unknown methods get a deterministic JSON-RPC "method not
- * found" error.
+ * The JSON-RPC dispatcher itself performs no upstream GraphQL calls (per-tool
+ * authorization is layered on in later steps); the one upstream call here is in
+ * `authenticate`, which resolves the caller's business memberships from the
+ * server. Unknown methods get a deterministic JSON-RPC "method not found" error.
  */
 
 /** MCP protocol revision this server implements. */
@@ -180,9 +182,16 @@ async function authenticate(
     const principal = await verifyAccessToken(token);
     setAuthPrincipal(req, principal);
     // Map the verified identity to internal user + business membership context.
-    // An empty membership set is a valid user with no access; per-tool policy
-    // (a later step) decides what that permits.
-    setAuthContext(req, await resolveAuthContext(principal));
+    // Memberships are resolved from the Accounter server (not token claims) by
+    // forwarding the caller's bearer token to `myMemberships`. An upstream/auth
+    // failure throws (surfaces as 401/5xx); only a genuinely empty membership
+    // set resolves to no access, and per-tool policy decides what that permits.
+    const membershipSource = createUpstreamMembershipSource({
+      client: getUpstreamClient(),
+      authorization: req.headers.authorization,
+      correlationId: getRequestContext(req)?.correlationId ?? generateId(),
+    });
+    setAuthContext(req, await resolveAuthContext(principal, membershipSource));
     return principal;
   } catch (error) {
     // An invalid token, or a verified token that cannot be mapped to a usable

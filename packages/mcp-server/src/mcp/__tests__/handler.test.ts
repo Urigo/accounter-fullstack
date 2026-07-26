@@ -13,6 +13,16 @@ import { SMOKE_TOOL_NAME } from '../tools.js';
 vi.mock('../../auth/verifier.js', () => ({ verifyAccessToken: vi.fn() }));
 const mockVerify = vi.mocked(verifyAccessToken);
 
+// Authentication now resolves memberships from the upstream server. Stub the
+// source so the authenticated path resolves to an empty scope without touching
+// the network (the source itself is covered in upstream/__tests__/memberships).
+vi.mock('../../upstream/memberships.js', () => ({
+  createUpstreamMembershipSource: () => () => Promise.resolve([]),
+}));
+// The upstream client is built from env; stub its accessor so the authenticated
+// path doesn't force upstream env to be configured for these transport tests.
+vi.mock('../../upstream/default-client.js', () => ({ getUpstreamClient: () => ({}) }));
+
 const PRINCIPAL = {
   subject: 'user-1',
   issuer: 'https://tenant.auth0.com/',
