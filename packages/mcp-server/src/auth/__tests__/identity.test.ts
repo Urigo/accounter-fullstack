@@ -124,7 +124,10 @@ describe('membershipsFromClaims', () => {
     ).toEqual([]);
   });
 
-  it('coerces a numeric roleId but never stringifies object/array roles', () => {
+  it('coerces a numeric roleId but rejects entries with object/array roles', () => {
+    // A present-but-non-primitive role marks a malformed entry: it is dropped
+    // entirely rather than coerced to '', so its businessId cannot slip into the
+    // derived read scope. A missing role is still allowed (empty role).
     expect(
       membershipsFromClaims(
         principal({
@@ -133,11 +136,13 @@ describe('membershipsFromClaims', () => {
             memberships: [
               { businessId: 'b1', roleId: 7 },
               { businessId: 'b2', roleId: { nested: true } },
+              { businessId: 'b3', roleId: ['array-role'] },
+              { businessId: 'b4' },
             ],
           },
         }),
       ),
-    ).toEqual([M('b1', '7'), M('b2', '')]);
+    ).toEqual([M('b1', '7'), M('b4', '')]);
   });
 });
 

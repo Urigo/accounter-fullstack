@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { resolveAuthContext, setAuthContext } from '../auth/identity.js';
+import { IdentityMappingError, resolveAuthContext, setAuthContext } from '../auth/identity.js';
 import {
   extractBearerToken,
   setAuthPrincipal,
@@ -175,10 +175,11 @@ async function authenticate(
     setAuthContext(req, await resolveAuthContext(principal));
     return principal;
   } catch (error) {
-    // Only an invalid token is a 401; infrastructure failures (e.g. a JWKS
-    // outage) propagate so the request surfaces as a 5xx rather than a
-    // misleading auth error.
-    if (!(error instanceof TokenVerificationError)) {
+    // An invalid token, or a verified token that cannot be mapped to a usable
+    // identity (e.g. a missing subject claim), is a 401. Infrastructure failures
+    // (e.g. a JWKS outage) propagate so the request surfaces as a 5xx rather than
+    // a misleading auth error.
+    if (!(error instanceof TokenVerificationError) && !(error instanceof IdentityMappingError)) {
       throw error;
     }
     // Log the reason only — never the token.

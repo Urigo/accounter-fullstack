@@ -124,14 +124,21 @@ function coerceMembership(entry: unknown): BusinessMembership | null {
   if (typeof businessId !== 'string' || businessId.length === 0) {
     return null;
   }
-  // Only accept a string or number role; never stringify arbitrary objects.
+  // The role may be absent (treated as an empty role). But a *present* role of a
+  // non-primitive type (object/array/boolean) marks a malformed entry: reject it
+  // outright rather than coercing to '' and letting a bad claim still contribute
+  // its businessId to the derived read scope.
   const rawRoleId = record.roleId ?? record.role_id;
-  const roleId =
-    typeof rawRoleId === 'string'
-      ? rawRoleId
-      : typeof rawRoleId === 'number'
-        ? String(rawRoleId)
-        : '';
+  let roleId: string;
+  if (rawRoleId === undefined || rawRoleId === null) {
+    roleId = '';
+  } else if (typeof rawRoleId === 'string') {
+    roleId = rawRoleId;
+  } else if (typeof rawRoleId === 'number') {
+    roleId = String(rawRoleId);
+  } else {
+    return null;
+  }
   return { businessId, roleId };
 }
 
