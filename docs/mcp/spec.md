@@ -136,11 +136,17 @@ If Claude Code support is added later, also support loopback callback patterns a
 
 ## 6.4 Token and Scope Model
 
-Access token claims must map to:
+The Auth0 access token conveys **identity only** — the `sub` (stable user id) and `email`. It does
+**not** carry the user's Accounter business memberships or roles: those live in the Accounter
+server's database and are resolved at request time (see §7.1).
 
-- user identity
-- tenant/business memberships
-- role claims or resolvable roles from server
+The access token is used to:
+
+- authenticate the caller (identity: `sub`, `email`)
+- carry coarse OAuth transport scopes (not fine-grained business capability)
+
+Tenant/business memberships and roles are **not** read from token claims — they are resolved from
+the Accounter server by forwarding the caller's bearer token.
 
 Scope strategy:
 
@@ -164,6 +170,14 @@ Authorization source of truth remains existing server logic:
 - business membership checks
 - read/write scope resolution helpers
 
+The connector never derives memberships from token claims. It resolves the caller's businesses by
+**forwarding the user's bearer token** to the Accounter GraphQL server and reading them back from a
+dedicated `myMemberships` query (the server maps the Auth0 `sub`/verified email to `business_users`
+at request time). Because the connector holds a real end-user token, "authenticating to the server"
+is just token pass-through — no Auth0 custom claim and no shared service secret. (Contrast the
+unattended `email-ingestion-gateway`, which has no user identity and therefore authenticates to the
+server with an `X-Gateway-CP-Token` control-plane credential.)
+
 ## 7.2 Tool-Level Access Policy
 
 Each tool must define:
@@ -181,7 +195,8 @@ Phase 1 policy:
 
 ## 7.3 Scope Narrowing
 
-Support explicit scope narrowing input (when needed), but only as subset of authorized memberships.
+Support explicit scope narrowing input (when needed), but only as a subset of the authorized
+memberships resolved from the server (§7.1).
 
 Rules:
 
@@ -373,7 +388,8 @@ Deliverable:
 1. Implement well-known protected resource metadata route.
 2. Implement 401 challenge behavior with resource_metadata pointer.
 3. Wire Auth0 token validation with PKCE-compatible expectations.
-4. Validate claim-to-user mapping against existing auth/user model.
+4. Validate token-identity-to-user mapping and server-resolved memberships against the existing
+   auth/user model.
 
 Deliverable:
 
