@@ -83,7 +83,13 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
   });
 
   try {
-    const handler = routes[context.method]?.[context.route];
+    // Kill-switch: when MCP is disabled the server serves health only, so the
+    // MCP transport and its OAuth resource-metadata discovery route are treated
+    // as absent (404) rather than being advertised/served.
+    const isMcpRoute =
+      context.route === MCP_ROUTE_PATH || context.route === PROTECTED_RESOURCE_METADATA_PATH;
+    const handler =
+      isMcpRoute && !env.server.enabled ? undefined : routes[context.method]?.[context.route];
     if (handler) {
       await handler(req, res);
     } else {

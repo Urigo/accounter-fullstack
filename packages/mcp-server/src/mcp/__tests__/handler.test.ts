@@ -60,6 +60,12 @@ describe('handleMcpBody — method dispatch', () => {
     expect(res.error.code).toBe(JsonRpcErrorCode.InvalidParams);
   });
 
+  it('returns InvalidParams (not "Unknown tool") when tools/call params is an array', () => {
+    const res = handleMcpBody(rpc('tools/call', ['not', 'an', 'object'])) as JsonRpcErrorResponse;
+    expect(res.error.code).toBe(JsonRpcErrorCode.InvalidParams);
+    expect(res.error.message).toContain('must be an object');
+  });
+
   it('returns MethodNotFound for an unsupported method', () => {
     const res = handleMcpBody(rpc('resources/list')) as JsonRpcErrorResponse;
     expect(res.error.code).toBe(JsonRpcErrorCode.MethodNotFound);
