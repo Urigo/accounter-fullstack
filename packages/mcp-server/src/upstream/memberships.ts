@@ -24,13 +24,19 @@ import {
   type UpstreamGraphQLClient,
 } from './graphql-client.js';
 
-/** Read-only query for the authenticated caller's own business memberships. */
+/**
+ * Read-only query for the authenticated caller's own business memberships.
+ *
+ * Only `businessId` and `roleId` are selected: the internal
+ * {@link BusinessMembership} shape keeps nothing else, so fetching `businessName`
+ * would just add payload and upstream work for a field that is immediately
+ * dropped.
+ */
 export const MY_MEMBERSHIPS_QUERY = /* GraphQL */ `
   query McpMyMemberships {
     myMemberships {
       businessId
       roleId
-      businessName
     }
   }
 `;
@@ -52,6 +58,12 @@ const runMyMemberships = createReadOperation<
   Record<string, never>,
   BusinessMembership[]
 >(MY_MEMBERSHIPS_QUERY, data => {
+  // A misbehaving upstream/proxy can return `data: null` (which the client
+  // passes through, since only `undefined` is treated as "no data"). Guard it
+  // so we raise a sanitized UpstreamError instead of a raw TypeError.
+  if (!data || typeof data !== 'object') {
+    throw new UpstreamError('UPSTREAM_ERROR', 'Upstream returned an invalid response body', false);
+  }
   const rows = data.myMemberships;
   if (!Array.isArray(rows)) {
     throw new UpstreamError(

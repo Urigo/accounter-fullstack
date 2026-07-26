@@ -84,6 +84,16 @@ describe('createUpstreamMembershipSource', () => {
     ]);
   });
 
+  it('throws when the server returns null data (misbehaving upstream)', async () => {
+    const query = vi.fn().mockResolvedValue(null);
+    const source = createUpstreamMembershipSource({
+      client: fakeClient(query),
+      correlationId: 'corr-1',
+    });
+
+    await expect(source(PRINCIPAL)).rejects.toBeInstanceOf(UpstreamError);
+  });
+
   it('throws when the server returns a non-list payload (contract violation)', async () => {
     const query = vi.fn().mockResolvedValue({ myMemberships: null });
     const source = createUpstreamMembershipSource({
