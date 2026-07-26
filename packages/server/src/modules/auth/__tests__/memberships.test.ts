@@ -8,7 +8,9 @@ const myMembershipsResolver = membershipsResolvers.Query?.myMemberships as (
   args: Record<string, never>,
   context: { injector: { get<T>(token: unknown): T } },
   info: GraphQLResolveInfo,
-) => Promise<Array<{ businessId: string; roleId: string; businessName: string | null }>>;
+) => Promise<
+  Array<{ id: string; businessId: string; roleId: string; businessName: string | null }>
+>;
 
 const mockInfo = {} as GraphQLResolveInfo;
 
@@ -30,6 +32,7 @@ describe('myMemberships resolver', () => {
   it('returns all memberships for a multi-business user', async () => {
     const getAuthContext = vi.fn().mockResolvedValue({
       authType: 'jwt',
+      user: { userId: 'user-1' },
       tenant: { businessId: 'business-1', roleId: 'business_owner' },
       memberships: [
         { businessId: 'business-1', roleId: 'business_owner', businessName: 'Acme' },
@@ -40,8 +43,18 @@ describe('myMemberships resolver', () => {
     const result = await myMembershipsResolver({}, {}, contextWith(getAuthContext), mockInfo);
 
     expect(result).toEqual([
-      { businessId: 'business-1', roleId: 'business_owner', businessName: 'Acme' },
-      { businessId: 'business-2', roleId: 'accountant', businessName: null },
+      {
+        id: 'user-1:business-1',
+        businessId: 'business-1',
+        roleId: 'business_owner',
+        businessName: 'Acme',
+      },
+      {
+        id: 'user-1:business-2',
+        businessId: 'business-2',
+        roleId: 'accountant',
+        businessName: null,
+      },
     ]);
   });
 
@@ -68,11 +81,38 @@ describe('myMemberships resolver', () => {
     expect(result).toEqual([]);
   });
 
-  it('wraps unexpected failures in a GraphQLError', async () => {
-    const getAuthContext = vi.fn().mockRejectedValue(new Error('db down'));
+  it('wraps unexpected failures in a GraphQLError with the resolver code and original error', async () => {
+    const originalError = new Error('db down');
+    const getAuthContext = vi.fn().mockRejectedValue(originalError);
+
+    const error = await myMembershipsResolver(
+      {},
+      {},
+      contextWith(getAuthContext),
+      mockInfo,
+    ).then(
+      () => {
+        throw new Error('expected myMemberships to reject');
+      },
+      (thrown: unknown) => thrown,
+    );
+
+    expect(error).toBeInstanceOf(GraphQLError);
+    expect(error).toMatchObject({
+      message: 'Failed to resolve memberships',
+      extensions: { code: 'MEMBERSHIPS_RESOLUTION_FAILED' },
+      originalError,
+    });
+  });
+
+  it('rethrows GraphQLErrors from the auth context unchanged', async () => {
+    const authError = new GraphQLError('Unauthenticated', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+    const getAuthContext = vi.fn().mockRejectedValue(authError);
 
     await expect(
       myMembershipsResolver({}, {}, contextWith(getAuthContext), mockInfo),
-    ).rejects.toBeInstanceOf(GraphQLError);
+    ).rejects.toBe(authError);
   });
 });

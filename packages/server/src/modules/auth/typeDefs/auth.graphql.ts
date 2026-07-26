@@ -12,12 +12,15 @@ export default gql`
     listApiKeys: [ApiKey!]! @requiresRole(role: "business_owner")
     listBusinessUsers: [BusinessUser!]! @requiresRole(role: "business_owner")
     listInvitations: [Invitation!]! @requiresRole(role: "business_owner")
-    " the authenticated caller's own business memberships; authenticated but not role- or scope-gated "
-    myMemberships: [MyBusinessMembership!]! @requiresAuth
+    " the authenticated caller's own business memberships "
+    myMemberships: [MyBusinessMembership!]!
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
-  " a single business the authenticated caller belongs to, with the role they hold in it " # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- identified by (user, business); no single id
+  " a single business the authenticated caller belongs to, with the role they hold in it "
   type MyBusinessMembership {
+    " composite identity of the membership: the caller's user id combined with the business id "
+    id: ID!
     businessId: ID!
     roleId: String!
     businessName: String
