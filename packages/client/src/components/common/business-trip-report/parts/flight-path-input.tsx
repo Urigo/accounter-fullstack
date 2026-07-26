@@ -1,13 +1,10 @@
 import type { ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
+import { type ArrayPath, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import {
-  useFieldArray,
-  type ArrayPath,
-  type FieldArray,
-  type FieldValues,
-  type Path,
-  type UseFormReturn,
-} from 'react-hook-form';
+  useControlledFieldArray,
+  type FieldArrayItem,
+} from '../../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../../ui/form';
 import { Input } from '../../../ui/input';
@@ -24,19 +21,11 @@ export function FlightPathInput<T extends FieldValues>({
   flightPathPath,
   flightPathData,
 }: Props<T>): ReactElement {
-  const { control, watch, trigger } = formManager;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: flightPathPath as ArrayPath<T>,
-  });
-
-  const watchFieldArray = watch(flightPathPath);
-  const controlledFields = fields.map((field, index) => {
-    return {
-      ...field,
-      ...watchFieldArray[index],
-    };
-  });
+  const { control, trigger } = formManager;
+  const { controlledFields, append, remove } = useControlledFieldArray(
+    formManager,
+    flightPathPath as ArrayPath<T>,
+  );
 
   if (!flightPathData) {
     return <div>Cannot edit flight path stay, lacking some mandatory information!</div>;
@@ -87,7 +76,7 @@ export function FlightPathInput<T extends FieldValues>({
           size="icon"
           className="size-7.5"
           onClick={(): void => {
-            append('' as FieldArray<T, ArrayPath<T>>);
+            append('' as FieldArrayItem<T>);
             trigger(flightPathPath);
           }}
         >

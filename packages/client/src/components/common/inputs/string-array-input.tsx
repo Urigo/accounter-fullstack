@@ -1,13 +1,10 @@
 import type { ReactElement } from 'react';
 import { ListPlus, Trash2 } from 'lucide-react';
+import { type ArrayPath, type FieldValues, type Path, type UseFormReturn } from 'react-hook-form';
 import {
-  useFieldArray,
-  type ArrayPath,
-  type FieldArray,
-  type FieldValues,
-  type Path,
-  type UseFormReturn,
-} from 'react-hook-form';
+  useControlledFieldArray,
+  type FieldArrayItem,
+} from '../../../hooks/use-controlled-field-array.js';
 import { Button } from '../../ui/button.js';
 import { FormControl, FormField, FormItem, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
@@ -23,19 +20,11 @@ export function StringArrayInput<T extends FieldValues>({
   formManager,
   arrayPath,
 }: Props<T>): ReactElement {
-  const { control, watch } = formManager;
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: arrayPath as ArrayPath<T>,
-  });
-
-  const watchStringsArray = watch(arrayPath);
-  const controlledFields = fields.map((field, index) => {
-    return {
-      id: field.id,
-      ...watchStringsArray[index],
-    };
-  });
+  const { control } = formManager;
+  const { controlledFields, append, remove } = useControlledFieldArray(
+    formManager,
+    arrayPath as ArrayPath<T>,
+  );
 
   return (
     <div>
@@ -82,7 +71,7 @@ export function StringArrayInput<T extends FieldValues>({
           variant="ghost"
           size="icon"
           className="size-7.5"
-          onClick={() => append(undefined as FieldArray<T>)}
+          onClick={() => append(undefined as FieldArrayItem<T>)}
         >
           <ListPlus className="size-5" />
         </Button>
