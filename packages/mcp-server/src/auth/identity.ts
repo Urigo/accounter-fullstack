@@ -114,7 +114,14 @@ export type MembershipSource = (
   principal: AuthPrincipal,
 ) => readonly BusinessMembership[] | Promise<readonly BusinessMembership[]>;
 
-function coerceMembership(entry: unknown): BusinessMembership | null {
+/**
+ * Coerce a single raw membership entry (a token claim entry or a
+ * `myMemberships` GraphQL row) into the internal {@link BusinessMembership}
+ * shape, or `null` when it is not a usable membership. Exported so the upstream
+ * membership source (which resolves memberships from the server) maps rows the
+ * same way the claims source does.
+ */
+export function coerceMembership(entry: unknown): BusinessMembership | null {
   // Arrays are objects too; exclude them and any non-object claim entries.
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
     return null;
