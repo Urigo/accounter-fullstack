@@ -163,7 +163,10 @@ export class ToolRegistry {
     return this.list().map(tool => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: z.toJSONSchema(tool.inputSchema) as Record<string, unknown>,
+      // Render from the same `.strict()` schema that `validateToolInput` enforces
+      // so the advertised JSON Schema (`additionalProperties: false`) matches the
+      // runtime unknown-field rejection, rather than describing a laxer shape.
+      inputSchema: z.toJSONSchema(tool.inputSchema.strict()) as Record<string, unknown>,
     }));
   }
 }
