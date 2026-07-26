@@ -37,6 +37,11 @@ import { VatMonthlyReportFilter } from './vat-monthly-report-filters.js';
   }
 `;
 
+// Dedupe the fragments once at module load: the document never depends on render
+// state, so hoisting it keeps a stable query reference across renders (a fresh
+// object each render would re-key the urql operation) without an empty-deps hook.
+const vatMonthlyReportQuery = dedupeFragments(VatMonthlyReportDocument);
+
 export const VatMonthlyReport = (): ReactElement => {
   const { get } = useUrlQuery();
   const { setFiltersContext } = useContext(FiltersContext);
@@ -71,7 +76,7 @@ export const VatMonthlyReport = (): ReactElement => {
 
   // fetch data
   const [{ data, fetching }] = useQuery({
-    query: dedupeFragments(VatMonthlyReportDocument),
+    query: vatMonthlyReportQuery,
     variables: {
       filters: filter,
     },

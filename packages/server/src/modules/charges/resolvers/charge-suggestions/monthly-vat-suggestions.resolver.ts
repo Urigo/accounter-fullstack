@@ -46,6 +46,7 @@ export const missingMonthlyVatInfoSuggestions: ResolverFn<
         },
       },
       injector,
+      { includeChargeBuckets: false },
     );
 
     const monthlyVatTotalAmount = calculateMonthlyVatTotalAmount(

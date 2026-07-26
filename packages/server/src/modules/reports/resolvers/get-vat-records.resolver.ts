@@ -19,10 +19,23 @@ import {
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
 
+export type GetVatRecordsOptions = {
+  /**
+   * Whether to compute the `missingInfo` / `differentMonthDoc` / `businessTrips`
+   * charge buckets. Building them runs `validateCharge` plus a business-trip
+   * load for every charge in the month — work that only the VAT report screen
+   * consumes. The ledger-validation, description-suggestion and PCN874 callers
+   * read only `income`/`expenses`, so they pass `false` to skip it entirely.
+   */
+  includeChargeBuckets?: boolean;
+};
+
 export const getVatRecords = async (
   { filters }: Partial<QueryVatReportArgs>,
   injector: Injector,
+  options: GetVatRecordsOptions = {},
 ): Promise<ResolversTypes['VatReportResult']> => {
+  const { includeChargeBuckets = true } = options;
   const {
     authorities: { vatReportExcludedBusinessNames },
   } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
@@ -192,40 +205,43 @@ export const getVatRecords = async (
       ]);
     }
 
-    // validate charges for missing info
-    const validatedCharges = await Promise.all<{
-      charge: IGetChargesByIdsResult;
-      isValid: boolean;
-      businessTripId: string | null;
-    }>(
-      charges.map(async charge => {
-        const [validation, businessTrip] = await Promise.all([
-          validateCharge(charge, injector),
-          injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
-        ]);
-        if (!('isValid' in validation)) {
-          throw new Error('Error validating charge');
-        }
-        return {
-          charge,
-          isValid: validation.isValid,
-          businessTripId: businessTrip?.id ?? null,
-        };
-      }),
-    );
+    // validate charges for missing info (only needed by the VAT report screen —
+    // the income/expenses-only callers skip this expensive per-charge pass)
+    if (includeChargeBuckets) {
+      const validatedCharges = await Promise.all<{
+        charge: IGetChargesByIdsResult;
+        isValid: boolean;
+        businessTripId: string | null;
+      }>(
+        charges.map(async charge => {
+          const [validation, businessTrip] = await Promise.all([
+            validateCharge(charge, injector),
+            injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),
+          ]);
+          if (!('isValid' in validation)) {
+            throw new Error('Error validating charge');
+          }
+          return {
+            charge,
+            isValid: validation.isValid,
+            businessTripId: businessTrip?.id ?? null,
+          };
+        }),
+      );
 
-    for (const { charge, isValid, businessTripId } of validatedCharges) {
-      if (businessTripId) {
-        // If valid and has business trip, add to business trips
-        response.businessTrips.push(charge);
-      } else if (isValid) {
-        if (!includedChargeIDs.has(charge.id)) {
-          // If valid but not yet included, add to charges with different month doc
-          response.differentMonthDoc.push(charge);
+      for (const { charge, isValid, businessTripId } of validatedCharges) {
+        if (businessTripId) {
+          // If valid and has business trip, add to business trips
+          response.businessTrips.push(charge);
+        } else if (isValid) {
+          if (!includedChargeIDs.has(charge.id)) {
+            // If valid but not yet included, add to charges with different month doc
+            response.differentMonthDoc.push(charge);
+          }
+        } else {
+          // add to charges with missing info
+          response.missingInfo.push(charge);
         }
-      } else {
-        // add to charges with missing info
-        response.missingInfo.push(charge);
       }
     }
 

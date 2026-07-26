@@ -251,6 +251,7 @@ export async function getPcn874String(
   const vatRecords = await getVatRecords(
     { filters: { monthDate, financialEntityId: businessId } },
     injector,
+    { includeChargeBuckets: false },
   );
   const reportMonth = format(new Date(monthDate), 'yyyyMM');
   const reportContent = generatePcnFromVatRecords(

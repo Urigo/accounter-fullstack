@@ -20,7 +20,39 @@ import {
   isEnrichedFilteredCharge,
 } from './common.helper.js';
 
-export const validateCharge = async (
+/**
+ * Request-scoped memoization of charge validation, keyed by the
+ * operation-scoped injector. `validateCharge` is run once per charge while the
+ * VAT report buckets charges by missing info, then again by the
+ * `Charge.validationData` field resolver for the same charges — cache the
+ * validation promise so the second pass reuses the first result instead of
+ * re-deriving it. Charges are immutable within a single (read) request, so the
+ * two callers always see identical input.
+ */
+const validationCache = new WeakMap<
+  Injector,
+  Map<string, Promise<ResolversTypes['ValidationData']>>
+>();
+
+export const validateCharge = (
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<ResolversTypes['ValidationData']> => {
+  let cache = validationCache.get(injector);
+  if (!cache) {
+    cache = new Map();
+    validationCache.set(injector, cache);
+  }
+  const cached = cache.get(charge.id);
+  if (cached) {
+    return cached;
+  }
+  const result = computeChargeValidation(charge, injector);
+  cache.set(charge.id, result);
+  return result;
+};
+
+const computeChargeValidation = async (
   charge: IGetChargesByIdsResult,
   injector: Injector,
 ): Promise<ResolversTypes['ValidationData']> => {
