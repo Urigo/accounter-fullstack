@@ -11,6 +11,7 @@ import {
 } from '../../../gql/graphql.js';
 import { TIMELESS_DATE_REGEX } from '../../../helpers/consts.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
+import { usePortalContainer } from '../../../providers/portal-container.js';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Input } from '../../ui/input.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
@@ -33,6 +34,9 @@ export const ModifyDocumentFields = ({
 }: ModifyDocumentFieldsProps): ReactElement => {
   const { control, watch, trigger } = formManager;
   const [showExtendedFields, setShowExtendedFields] = useState<boolean>(false);
+  // These fields render inside PopUpDrawer, whose focus-trapping dialog blocks interaction with
+  // anything portaled to `document.body`. See `usePortalContainer`.
+  const portalContainer = usePortalContainer();
 
   const { selectableFinancialEntities: financialEntities, fetching: fetchingFinancialEntities } =
     useGetFinancialEntities();
@@ -74,7 +78,7 @@ export const ModifyDocumentFields = ({
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent onClick={event => event.stopPropagation()}>
+              <SelectContent onClick={event => event.stopPropagation()} container={portalContainer}>
                 {Object.entries(DocumentType).map(([label, value]) => (
                   <SelectItem key={value} value={value}>
                     {label}

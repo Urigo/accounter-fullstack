@@ -270,7 +270,10 @@ export const MultiSelect = React.forwardRef<HTMLButtonElement, MultiSelectProps>
                             {`+ ${selectedValues.length - maxCount} more`}
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent className="flex flex-col gap-0.5">
+                        <TooltipContent
+                          className="flex flex-col gap-0.5"
+                          container={portalContainer}
+                        >
                           {selectedValues.slice(maxCount).map(value => {
                             const option = options.find(o => o.value === value);
                             return <span key={value}>{option?.label ?? value}</span>;

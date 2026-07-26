@@ -3,6 +3,7 @@ import { Check, ChevronDownIcon } from 'lucide-react';
 import { NumberInput } from '@mantine/core';
 import { Currency } from '../../../gql/graphql.js';
 import { cn } from '../../../lib/utils.js';
+import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Button } from '../../ui/button.js';
 import {
   Command,
@@ -30,6 +31,8 @@ type CurrencyCodeProps = {
 
 export const CurrencyCodeInput = forwardRef<HTMLButtonElement, CurrencyCodeProps>(
   function CurrencyCodeInput({ label, value, onChange, disabled, name, form }) {
+    // Portal into the surrounding modal layer when there is one — see `usePortalContainer`.
+    const portalContainer = usePortalContainer();
     return (
       <div className="bottom-0 mt-6">
         {label && <Label className="sr-only">{label}</Label>}
@@ -37,7 +40,7 @@ export const CurrencyCodeInput = forwardRef<HTMLButtonElement, CurrencyCodeProps
           <SelectTrigger>
             <SelectValue placeholder="Currency" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent container={portalContainer}>
             {CURRENCIES.map(currency => (
               <SelectItem key={currency} value={currency}>
                 {currency}
@@ -73,6 +76,10 @@ function CurrencySelect({
   form,
 }: CurrencyCodeFieldProps) {
   const [open, setOpen] = useState(false);
+  // Same modal-layer workaround as `ComboBox`: the currency search input is unusable and clicks on
+  // it close the surrounding drawer while the popover lives in `document.body`.
+  // See `usePortalContainer` and https://github.com/emilkowalski/vaul/issues/496
+  const portalContainer = usePortalContainer();
 
   return (
     <div className="w-1/2 min-w-[75px] mt-6">
@@ -95,7 +102,7 @@ function CurrencySelect({
             />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-40 p-0" align="start">
+        <PopoverContent className="w-40 p-0" align="start" container={portalContainer}>
           <Command>
             <CommandInput placeholder="Search currency..." form={form} />
             <CommandList>
