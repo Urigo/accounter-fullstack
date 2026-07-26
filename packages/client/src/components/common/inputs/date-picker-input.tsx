@@ -10,6 +10,7 @@ import {
   InputGroupInput,
 } from '@/components/ui/input-group.js';
 import { TIMELESS_DATE_REGEX, type TimelessDateString } from '@/helpers/index.js';
+import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Calendar } from '../../ui/calendar.js';
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.js';
 
@@ -35,6 +36,12 @@ export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...p
   const generatedId = React.useId();
   const inputId = id ?? generatedId;
   const [open, setOpen] = React.useState(false);
+  // Inside a modal layer (e.g. the vaul Drawer used by PopUpDrawer) a popover portaled to
+  // `document.body` sits outside the dialog's focus scope, so the calendar's day buttons cannot be
+  // focused and clicking them counts as "outside" the drawer, closing it. Portal into the layer's
+  // own element instead, and make the popover modal so it stays interactive.
+  // See `usePortalContainer` and https://github.com/emilkowalski/vaul/issues/496
+  const portalContainer = usePortalContainer();
   const [date, setDate] = React.useState<TimelessDateString | undefined>(valueDate);
   const [month, setMonth] = React.useState<Date | undefined>(
     date ? timelessDateStringToDate(date) : undefined,
@@ -102,7 +109,7 @@ export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...p
           }}
         />
         <InputGroupAddon align="inline-end">
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open} onOpenChange={setOpen} modal={!!portalContainer}>
             <PopoverTrigger asChild>
               <InputGroupButton variant="ghost" size="icon-xs" aria-label="Select date">
                 <CalendarIcon />
@@ -114,6 +121,7 @@ export function DatePickerInput({ value: valueDate, onChange, disabled, id, ...p
               align="end"
               alignOffset={-8}
               sideOffset={10}
+              container={portalContainer}
             >
               <Calendar
                 mode="single"

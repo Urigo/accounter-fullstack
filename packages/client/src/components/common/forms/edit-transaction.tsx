@@ -14,6 +14,7 @@ import {
 } from '../../../helpers/index.js';
 import { useGetFinancialEntities } from '../../../hooks/use-get-financial-entities.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { usePortalContainer } from '../../../providers/portal-container.js';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../ui/form.js';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.js';
 import { Switch } from '../../ui/switch.js';
@@ -45,6 +46,9 @@ type Props = {
 };
 
 export const EditTransaction = ({ transactionID, onDone, onChange }: Props): ReactElement => {
+  // This form renders inside PopUpDrawer, whose focus-trapping dialog blocks interaction with
+  // anything portaled to `document.body`. See `usePortalContainer`.
+  const portalContainer = usePortalContainer();
   const [{ data: transactionData, fetching: fetchingTransaction }] = useQuery({
     query: EditTransactionDocument,
     variables: {
@@ -118,7 +122,10 @@ export const EditTransaction = ({ transactionID, onDone, onChange }: Props): Rea
                             <SelectValue placeholder="Scroll to see all options" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent onClick={event => event.stopPropagation()}>
+                        <SelectContent
+                          onClick={event => event.stopPropagation()}
+                          container={portalContainer}
+                        >
                           {financialEntities.map(({ value, label }) => (
                             <SelectItem key={value} value={value}>
                               {label}
