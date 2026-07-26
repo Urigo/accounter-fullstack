@@ -1,6 +1,12 @@
 # Accounter MCP Implementation Blueprint and Incremental Prompt Pack
 
-Status: Draft for execution Related spec: docs/mcp/spec.md Last updated: 2026-07-15
+Status: Draft for execution Related spec: docs/mcp/spec.md Last updated: 2026-07-26
+
+> Progress note: Prompts 01–08 are merged into the `mcp-setup` branch. Prompts 08a/08b (server-side
+> `myMemberships` query + MCP upstream membership source) are prerequisites for Prompt 09 and are
+> inserted below between Prompt 08 and Prompt 09. They correct an earlier assumption that Auth0
+> access tokens carry Accounter business memberships — they do not; memberships are resolved from
+> the server. Lettered (08a/08b) to avoid renumbering the later, already-branched prompts.
 
 ## 1) How to use this document
 
@@ -54,7 +60,8 @@ Exit condition:
 1. Serve protected resource metadata on well-known path.
 2. Add standards-compliant 401 challenge with WWW-Authenticate and resource_metadata pointer.
 3. Implement bearer token validator using Auth0 issuer/audience/JWKS.
-4. Add claim mapping into internal auth identity model.
+4. Resolve business memberships from the server (forward the caller's token) and map identity +
+   memberships into the internal auth context.
 
 Exit condition:
 
@@ -176,6 +183,8 @@ This decomposition splits each epic into slices that can usually be done in a si
 
 ### Slice S2-8: Auth0 token verifier module
 
+### Slice S2-8b: server-resolved memberships (server `myMemberships` query + MCP upstream source)
+
 ### Slice S2-9: identity mapping and auth context
 
 ### Slice S2-10: tool registry abstraction and schema contracts
@@ -226,7 +235,8 @@ low-risk implementation and review while still moving the project forward.
     pointer.
 12. Add bearer token extraction and validation middleware boundary.
 13. Implement Auth0 JWKS token verification module.
-14. Map token claims to internal authenticated user context.
+14. Resolve business memberships from the server (forward the caller's token to a `myMemberships`
+    query) and map identity + memberships into the internal authenticated user context.
 15. Add auth guard to MCP tool execution path.
 16. Implement tool registry type contracts (name, schema, auth policy, handler).
 17. Implement input schema validator adapter for tool invocations.
@@ -462,22 +472,105 @@ Validation:
 - Unit tests: valid token accepted, wrong issuer/audience rejected, expired token rejected.
 ```
 
+## Prompt 08a - Server: expose the caller's own business memberships
+
+```text
+You are implementing Prompt 08a.
+
+Context:
+An Auth0 access token carries identity only (sub/email); it does NOT contain the user's Accounter
+business memberships or roles. Those live in the server DB (accounter_schema.business_users, keyed
+by auth0_user_id) and are already resolved per request by the server's auth context. The MCP
+connector needs to read a user's businesses BEFORE any business scope is selected, so a
+role-/scope-gated query cannot be used.
+
+Goal:
+Add a GraphQL query that returns the authenticated caller's own business memberships.
+
+Requirements:
+- Add `myMemberships: [BusinessMembership!]!` to the auth module typeDefs, gated with @requiresAuth
+  only (NOT @requiresRole, NOT dependent on a selected business scope).
+- Add a `BusinessMembership` GraphQL type: `{ businessId: ID!, roleId: String!, businessName: String }`
+  (verify the name is free; prefix if it collides).
+- Resolver returns the memberships already resolved on the request auth context — reuse
+  `AuthContextProvider.getAuthContext()` (packages/server/src/modules/auth/providers/
+  auth-context.provider.ts) and the `BusinessMembership` shape from
+  packages/server/src/shared/types/auth.ts. No new DB query needed.
+- Register the resolver in the auth module; run `yarn generate`.
+
+Constraints:
+- Read-only; no scope side effects.
+- An authenticated user with no memberships returns an empty list, not an error.
+
+Validation:
+- Resolver unit test: multi-business user returns all memberships; user with none returns [].
+```
+
+## Prompt 08b - MCP: resolve memberships from the server (upstream membership source)
+
+```text
+You are implementing Prompt 08b.
+
+Context:
+This is the MCP's first upstream call to the Accounter GraphQL server: the current handler performs
+no upstream GraphQL calls. So the new MembershipSource must forward the caller's bearer token itself
+(setting Authorization from the request context on the upstream call) — that forwarding is a
+requirement of this prompt, not existing behavior. Once the token is forwarded, resolving
+memberships is just a normal authenticated query — no Auth0 custom claim and no shared service
+secret (unlike email-ingestion-gateway, which is unattended and uses an X-Gateway-CP-Token).
+
+Goal:
+Resolve business memberships by calling the server's `myMemberships` query with the forwarded token,
+and make that the wired membership source.
+
+Requirements:
+- Introduce a minimal upstream GraphQL client as part of this prompt — do not assume one exists yet.
+  Create packages/mcp-server/src/upstream/graphql-client.ts exposing an UpstreamGraphQLClient, a
+  createReadOperation helper, and a getUpstreamClient() accessor. Keep it small; Prompt 12 later
+  generalizes and hardens this client with timeout/retry guardrails.
+- Implement an upstream MembershipSource that issues `myMemberships` through that client; map the
+  result to the internal BusinessMembership shape via a coerceMembership helper (add it, e.g. in
+  auth/identity.ts).
+- Thread the caller's Authorization header + correlation id into the source, and wire it into the
+  auth-context resolution in packages/mcp-server/src/mcp/handler.ts — introduce a resolveAuthContext
+  seam if one does not exist yet — replacing the default claims source.
+- Error semantics: throw on upstream/auth/infra failure (so the request surfaces 401/5xx, not a
+  silent empty scope); return [] only when the server legitimately reports no memberships.
+
+Constraints:
+- Keep the MembershipSource seam pluggable; keep membershipsFromClaims exported for tests.
+- Never log the token.
+
+Precheck:
+- The forwarded token authenticates to the server only if the server accepts the MCP's Auth0
+  audience. Verify a real user token against an existing @requiresAuth server query first. If the
+  audiences differ, add a token-acquisition step (shared audience or Auth0 token-exchange) before
+  wiring.
+
+Validation:
+- Unit tests: success maps memberships; upstream error throws; empty server result maps to [].
+```
+
 ## Prompt 09 - Identity mapping to business scope
 
 ```text
 You are implementing Prompt 09.
 
 Goal:
-Map verified token identity to internal user + business membership context.
+Assemble the internal user + business membership auth context from the memberships resolved by the
+upstream MembershipSource (Prompt 08b).
 
 Requirements:
-- Build auth context object containing user id, roles, authorized memberships, and default read scope.
-- Reuse existing server-side identity/membership assumptions where possible.
+- Build auth context object containing user id, roles, authorized memberships (from the upstream
+  source), and default read scope.
+- Reuse the server-side identity/membership model (mirror the shapes in
+  packages/server/src/shared/types/auth.ts and shared/helpers/auth-scope.ts).
 - Add a clear failure mode when mapping cannot resolve a valid user.
 
 Constraints:
 - Keep phase 1 read-only semantics.
 - No write-target resolution needed yet.
+- Do NOT read memberships from token claims (they are not present there — see Prompt 08a/08b).
 
 Validation:
 - Unit/integration tests for user with multiple businesses and narrowed scope behavior.
