@@ -15,9 +15,20 @@ Early scaffolding. This package is being built incrementally following the promp
 implementation blueprint. It currently contains the package skeleton, strict environment
 configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
 transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, per-request
-structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint, and
-Auth0 bearer-token verification on the MCP endpoint. Fine-grained authorization and production tools
-are not implemented yet.
+structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint,
+Auth0 bearer-token verification, and identity mapping from a verified token to an internal user +
+business-membership context. Fine-grained authorization and production tools are not implemented
+yet.
+
+## Identity & tenant scope
+
+A verified token is mapped to an `McpAuthContext` — `userId`, `roles` (token scopes), business
+`memberships`, and a `defaultReadScope` (every business the user belongs to). Memberships are read
+from the token's `memberships` custom claim by default (the source is pluggable so a later step can
+resolve them from the GraphQL upstream instead). Requested scope narrowing is validated against the
+user's memberships: any business id outside them is rejected rather than silently dropped. These
+shapes and rules mirror the server package's tenant-isolation model
+(`packages/server/src/shared/helpers/auth-scope.ts`).
 
 ## OAuth discovery
 
