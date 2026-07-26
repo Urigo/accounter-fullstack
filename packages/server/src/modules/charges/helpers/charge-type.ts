@@ -44,6 +44,16 @@ export function normalizeOptionalDbType(
   return normalizeDbType(chargeType);
 }
 
+/**
+ * Request-scoped memoization of derived charge types, keyed by the
+ * operation-scoped injector. A null-typed charge's type is derived from its
+ * businesses/transactions and is probed up to ~10 times per charge by the
+ * `__isTypeOf` chain (plus validation and suggestions) — cache the derivation
+ * promise so it runs once per charge per request. Charges with an explicit
+ * `type` bypass the cache entirely.
+ */
+const derivedChargeTypeCache = new WeakMap<Injector, Map<string, Promise<ChargeTypeEnum>>>();
+
 export async function getChargeType(
   charge: IGetChargesByIdsResult,
   injector: Injector,
@@ -53,6 +63,24 @@ export async function getChargeType(
     return type;
   }
 
+  let cache = derivedChargeTypeCache.get(injector);
+  if (!cache) {
+    cache = new Map();
+    derivedChargeTypeCache.set(injector, cache);
+  }
+  const cached = cache.get(charge.id);
+  if (cached) {
+    return cached;
+  }
+  const derived = deriveChargeType(charge, injector);
+  cache.set(charge.id, derived);
+  return derived;
+}
+
+async function deriveChargeType(
+  charge: IGetChargesByIdsResult,
+  injector: Injector,
+): Promise<ChargeTypeEnum> {
   const [{ allBusinessIds, mainBusinessId }, businessTrip, transactions] = await Promise.all([
     getChargeBusinesses(charge, injector),
     injector.get(BusinessTripsProvider).getBusinessTripsByChargeIdLoader.load(charge.id),

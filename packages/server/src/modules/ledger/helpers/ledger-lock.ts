@@ -32,9 +32,9 @@ export async function isChargeLocked(
     { ledgerMinInvoiceDate, ledgerMinValueDate },
     { documentsMinDate },
   ] = await Promise.all([
-    getChargeTransactionsMeta(charge.id, injector),
-    getChargeLedgerMeta(charge.id, injector),
-    getChargeDocumentsMeta(charge.id, injector),
+    getChargeTransactionsMeta(charge, injector),
+    getChargeLedgerMeta(charge, injector),
+    getChargeDocumentsMeta(charge, injector),
   ]);
 
   const chargeMinDate = getMinDate([
