@@ -53,7 +53,9 @@ code satisfies them.
       idempotent reads only, sanitized errors.
 - [x] Per-`tools/call` rate limiting keyed by `{user, business scope, tool}` → `RATE_LIMIT_ERROR`
       with `retryAfterMs`.
-- [x] Kill-switch (`MCP_ENABLED=0`) and tool allow-list (`MCP_TOOL_ALLOWLIST`) for fast mitigation.
+- [x] Kill-switch (`MCP_ENABLED=0`) for fast mitigation (disables `/mcp` + its metadata route).
+- [ ] Tool allow-list (`MCP_TOOL_ALLOWLIST`) — parsed at startup but **not yet enforced** (does not
+      restrict advertised/callable tools).
 - [x] Graceful shutdown on `SIGINT`/`SIGTERM`.
 
 ## Observability

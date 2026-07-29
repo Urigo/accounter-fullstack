@@ -13,8 +13,8 @@ is limited to behavior actually implemented in `packages/mcp-server`.
   - `GET /metrics` — in-process telemetry snapshot (JSON, no auth).
   - `GET /.well-known/oauth-protected-resource` — RFC 9728 discovery (no auth).
   - `GET|POST /mcp` — MCP transport (JSON-RPC 2.0), bearer-authenticated.
-- **Kill-switch**: `MCP_ENABLED=0` serves `/health` only; `/mcp` and the metadata route return
-  `404`.
+- **Kill-switch**: `MCP_ENABLED=0` disables only the MCP transport (`/mcp`) and its OAuth metadata
+  route (both return `404`); `/health` and `/metrics` stay available.
 - **Shutdown**: `SIGINT`/`SIGTERM` drains connections, then exits (forced after a grace period).
 
 ## 2. Key metrics (`GET /metrics`)
@@ -72,8 +72,8 @@ Useful queries (adapt to your log backend):
 
 ### D. Suspected data-exposure / tenant-isolation concern
 
-1. Treat as high severity. **Flip the kill-switch**: set `MCP_ENABLED=0` and restart — health-only,
-   `/mcp` returns `404`.
+1. Treat as high severity. **Flip the kill-switch**: set `MCP_ENABLED=0` and restart — `/mcp` and
+   its metadata route return `404` (`/health` and `/metrics` stay up).
 2. Memberships are resolved server-side from `business_users` via `myMemberships`; scope narrowing
    outside memberships is denied (`AUTHORIZATION_ERROR`). Verify the server-side rows and the
    caller's token.
@@ -84,8 +84,10 @@ Useful queries (adapt to your log backend):
   process/health up. No redeploy needed if env can be changed and the process restarted.
 - **Version rollback**: redeploy the previous image/build of `@accounter/mcp-server`. The service is
   stateless, so rollback is safe and requires no data migration.
-- **Narrow exposure**: `MCP_TOOL_ALLOWLIST` can restrict which tools are advertised/callable without
-  a code change.
+
+> **Note:** `MCP_TOOL_ALLOWLIST` is parsed at startup but **not yet enforced** — it does not
+> currently restrict which tools are advertised or callable. Do not rely on it as a mitigation until
+> enforcement lands; use the kill-switch instead.
 
 ## 6. Configuration reference
 
