@@ -35,8 +35,8 @@ payload (spec §10.2): `VALIDATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERRO
   (`pageSize` ≤ 50). Returns normalized charges plus pagination metadata.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name.
   Deterministically sorted (name, then id) and size-capped (≤ 500).
-- **`accounter_list_tax_categories`** — list tax categories (id, name, IRS code, active flag),
-  optionally filtered by name or active status. Same deterministic sort + cap.
+- **`accounter_list_tax_categories`** — list tax categories (id, name, IRS code, bookkeeping sort
+  code, active flag), optionally filtered by name or active status. Same deterministic sort + cap.
 
 ## Upstream GraphQL client
 

@@ -136,6 +136,10 @@ const LIST_TAX_CATEGORIES_QUERY = /* GraphQL */ `
       name
       irsCode
       isActive
+      sortCode {
+        key
+        name
+      }
     }
   }
 `;
@@ -145,6 +149,8 @@ interface RawTaxCategory {
   name: string;
   irsCode: number | null;
   isActive: boolean;
+  /** The bookkeeping (chart-of-accounts) sort code; null when unassigned. */
+  sortCode: { key: number; name: string | null } | null;
 }
 
 async function listTaxCategoriesHandler(

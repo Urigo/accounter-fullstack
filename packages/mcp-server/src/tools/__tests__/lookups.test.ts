@@ -87,19 +87,38 @@ describe('listTaxCategoriesTool', () => {
   const client = () =>
     clientReturning({
       taxCategories: [
-        { id: '1', name: 'Income', irsCode: 100, isActive: true },
-        { id: '2', name: 'Assets', irsCode: null, isActive: false },
+        {
+          id: '1',
+          name: 'Income',
+          irsCode: 100,
+          isActive: true,
+          sortCode: { key: 900, name: 'Revenue' },
+        },
+        { id: '2', name: 'Assets', irsCode: null, isActive: false, sortCode: null },
       ],
     });
 
   it('returns tax categories sorted by name with fields limited to the use case', async () => {
     const result = await runTool(listTaxCategoriesTool, client(), authContext(['b1']), {});
-    const rows = (result.structuredContent as {
-      taxCategories: Array<{ name: string; irsCode: number | null; isActive: boolean }>;
-    }).taxCategories;
+    const rows = (
+      result.structuredContent as {
+        taxCategories: Array<{
+          name: string;
+          irsCode: number | null;
+          isActive: boolean;
+          sortCode: { key: number; name: string | null } | null;
+        }>;
+      }
+    ).taxCategories;
     expect(rows).toEqual([
-      { id: '2', name: 'Assets', irsCode: null, isActive: false },
-      { id: '1', name: 'Income', irsCode: 100, isActive: true },
+      { id: '2', name: 'Assets', irsCode: null, isActive: false, sortCode: null },
+      {
+        id: '1',
+        name: 'Income',
+        irsCode: 100,
+        isActive: true,
+        sortCode: { key: 900, name: 'Revenue' },
+      },
     ]);
   });
 
