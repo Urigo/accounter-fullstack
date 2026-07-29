@@ -2,10 +2,15 @@ import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import { SkeletonRow } from '../../components/skeleton.js';
 import { createSource, deleteSource, getSources, updateSource } from '../../lib/api.js';
 import { SourceForm } from './source-forms.js';
-import { SOURCE_LABELS, type SourceConfig, type SourceType } from './source-types.js';
+import {
+  CONFIGURABLE_SOURCE_TYPES,
+  SOURCE_LABELS,
+  type ConfigurableSourceType,
+  type SourceConfig,
+} from './source-types.js';
 
 type DialogState =
-  | { mode: 'add'; sourceType: SourceType }
+  | { mode: 'add'; sourceType: ConfigurableSourceType }
   | { mode: 'edit'; source: SourceConfig }
   | { mode: 'confirm-delete'; source: SourceConfig }
   | null;
@@ -15,7 +20,7 @@ export function SourcesTab(): ReactElement {
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
-  const [addType, setAddType] = useState<SourceType>('poalim');
+  const [addType, setAddType] = useState<ConfigurableSourceType>('poalim');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -37,7 +42,7 @@ export function SourcesTab(): ReactElement {
     try {
       const list = await createSource<SourceConfig>({
         ...data,
-        type: (dialog as { mode: 'add'; sourceType: SourceType }).sourceType,
+        type: (dialog as { mode: 'add'; sourceType: ConfigurableSourceType }).sourceType,
       });
       setSources(list);
       setDialog(null);
@@ -123,9 +128,9 @@ export function SourcesTab(): ReactElement {
           <select
             aria-label="Source type"
             value={addType}
-            onChange={e => setAddType(e.target.value as SourceType)}
+            onChange={e => setAddType(e.target.value as ConfigurableSourceType)}
           >
-            {(Object.keys(SOURCE_LABELS) as SourceType[]).map(t => (
+            {CONFIGURABLE_SOURCE_TYPES.map(t => (
               <option key={t} value={t}>
                 {SOURCE_LABELS[t]}
               </option>

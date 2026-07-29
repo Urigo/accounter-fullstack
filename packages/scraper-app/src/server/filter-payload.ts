@@ -144,5 +144,11 @@ export function filterPayload(
       const p = payload as DiscountPayload;
       return p;
     }
+
+    case 'otsar-hahayal':
+    case 'otsar-hahayal-credit-card':
+      // Otsar HaHayal accounts are filtered at scrape time by the caller, which checks each
+      // discovered account against the vault before uploading — nothing to filter here.
+      return payload;
   }
 }

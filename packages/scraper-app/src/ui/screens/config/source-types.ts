@@ -90,6 +90,22 @@ export type SourceConfig =
 
 export type { SourceType } from '../../../shared/source-types.js';
 
+/**
+ * Source types the user can configure directly. Excludes 'otsar-hahayal-credit-card', which is
+ * not a login of its own — those cards are discovered through an Otsar HaHayal source.
+ */
+export type ConfigurableSourceType = SourceConfig['type'];
+
+export const CONFIGURABLE_SOURCE_TYPES = [
+  'poalim',
+  'discount',
+  'isracard',
+  'amex',
+  'cal',
+  'max',
+  'otsar-hahayal',
+] as const satisfies readonly ConfigurableSourceType[];
+
 export const SOURCE_LABELS: Record<SourceType, string> = {
   poalim: 'Bank Hapoalim',
   discount: 'Bank Discount',

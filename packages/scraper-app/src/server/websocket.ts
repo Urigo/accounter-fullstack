@@ -10,8 +10,13 @@ import { ClientMessageSchema, type ServerMessage } from '../shared/ws-protocol.j
 import { registerDiscoveredAccounts } from './account-discovery.js';
 import { checkAccounts, type ValidatedPayload } from './check-accounts.js';
 import { filterPayload, type FilterableCreds } from './filter-payload.js';
-import { ChangedTransaction, InsertedTransactionSummary } from './gql/index.js';
-import { createUploadClient, ScraperUploadResult, type UploadClient } from './graphql/client.js';
+import {
+  createUploadClient,
+  type ChangedTransaction,
+  type InsertedTransactionSummary,
+  type ScraperUploadResult,
+  type UploadClient,
+} from './graphql/client.js';
 import { appendRun } from './history.js';
 import { OtpManager } from './otp-manager.js';
 import type { CalPayload } from './payload-schemas/cal.schema.js';

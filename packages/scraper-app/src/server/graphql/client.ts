@@ -52,8 +52,10 @@ function extractResult<K extends string>(data: GqlResponse<K>, key: K): ScraperU
 }
 
 type ScraperUploadResult = UploadPoalimIlsTransactionsMutation['uploadPoalimIlsTransactions'];
+type InsertedTransactionSummary = ScraperUploadResult['insertedTransactions'][number];
+type ChangedTransaction = ScraperUploadResult['changedTransactions'][number];
 
-export type { ScraperUploadResult };
+export type { ScraperUploadResult, InsertedTransactionSummary, ChangedTransaction };
 
 export function createUploadClient(serverUrl: string, apiKey: string) {
   const gql = new GraphQLClient(serverUrl, {

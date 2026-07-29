@@ -1,28 +1,23 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkAccounts } from '../check-accounts.js';
+import { makeIsracardPayload } from './fixtures/isracard.js';
+import { makePoalimAccount } from './fixtures/poalim.js';
 import type { AccountRecord } from '../check-accounts.js';
 import { _resetRunState, startRun, type ScrapeTask } from '../scrape-runner.js';
 import type { ServerMessage } from '../../shared/ws-protocol.js';
 
-const poalimPayload = {
-  accountNumber: 100000,
-  branchNumber: 600,
-  bankNumber: 12,
-};
+const poalimPayload = makePoalimAccount(100000, 600);
 
-const isracardPayload = {
-  Header: { Status: '1', Message: null },
-  CardsTransactionsListBean: {
-    cardNumberList: ['CARD 9876', 'CARD 4545'],
-    Index0: {
-      '@AllCards': 'AllCards',
-      CurrentCardTransactions: [
-        { txnIsrael: null, txnAbroad: null },
-        { txnIsrael: null, txnAbroad: null },
-      ],
-    },
+const isracardPayload = makeIsracardPayload({
+  cardNumberList: ['CARD 9876', 'CARD 4545'],
+  Index0: {
+    '@AllCards': 'AllCards',
+    CurrentCardTransactions: [
+      { txnIsrael: null, txnAbroad: null },
+      { txnIsrael: null, txnAbroad: null },
+    ],
   },
-};
+});
 
 const calPayload = [
   { card: 'ACC-1', month: '2024-01', transactions: [] },
@@ -144,53 +139,44 @@ describe('checkAccounts — isracard / amex', () => {
   });
 
   it('returns empty when there are no cards in payload', () => {
-    const emptyPayload = {
-      Header: { Status: '1', Message: null },
-      CardsTransactionsListBean: {
-        cardNumberList: [],
-        Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
-      },
-    };
+    const emptyPayload = makeIsracardPayload({
+      cardNumberList: [],
+      Index0: { '@AllCards': 'AllCards', CurrentCardTransactions: [] },
+    });
     const result = checkAccounts('isracard', emptyPayload, []);
     expect(result).toEqual({ accepted: [], ignored: [], unknown: [] });
   });
 
   it('collects identifiers from cardNumberList', () => {
-    const multiIndexPayload = {
-      Header: { Status: '1', Message: null },
-      CardsTransactionsListBean: {
-        cardNumberList: ['CARD 1111', 'CARD 2222', 'CARD 3333'],
-        Index0: {
-          '@AllCards': 'AllCards',
-          CurrentCardTransactions: [{ '@cardTransactions': 'CARD-A' }],
-        },
-        Index1: {
-          '@AllCards': 'AllCards',
-          CurrentCardTransactions: [{ '@cardTransactions': 'CARD-B' }],
-        },
-        Index2: {
-          '@AllCards': 'AllCards',
-          CurrentCardTransactions: [{ '@cardTransactions': 'CARD-C' }],
-        },
+    const multiIndexPayload = makeIsracardPayload({
+      cardNumberList: ['CARD 1111', 'CARD 2222', 'CARD 3333'],
+      Index0: {
+        '@AllCards': 'AllCards',
+        CurrentCardTransactions: [{ '@cardTransactions': 'CARD-A' }],
       },
-    };
+      Index1: {
+        '@AllCards': 'AllCards',
+        CurrentCardTransactions: [{ '@cardTransactions': 'CARD-B' }],
+      },
+      Index2: {
+        '@AllCards': 'AllCards',
+        CurrentCardTransactions: [{ '@cardTransactions': 'CARD-C' }],
+      },
+    });
     const result = checkAccounts('isracard', multiIndexPayload, []);
     expect(result.unknown.sort()).toEqual(['1111', '2222', '3333']);
   });
 
   it('ignores non-Index* keys in CardsTransactionsListBean', () => {
-    const payloadWithExtraKeys = {
-      Header: { Status: '1', Message: null },
-      CardsTransactionsListBean: {
-        cardNumberList: ['CARD 0101'],
-        Index0: {
-          '@AllCards': 'AllCards',
-          CurrentCardTransactions: [],
-        },
-        cardIdx: '0',
-        card0: { some: 'data' },
+    const payloadWithExtraKeys = makeIsracardPayload({
+      cardNumberList: ['CARD 0101'],
+      Index0: {
+        '@AllCards': 'AllCards',
+        CurrentCardTransactions: [],
       },
-    };
+      cardIdx: '0',
+      card0: { some: 'data' },
+    });
     const result = checkAccounts('isracard', payloadWithExtraKeys, []);
     expect(result.unknown).toEqual(['0101']);
   });
