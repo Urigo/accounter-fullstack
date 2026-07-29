@@ -2,13 +2,13 @@ import { useState, type ChangeEvent, type ReactElement } from 'react';
 import type {
   AmexSource,
   CalSource,
+  ConfigurableSourceType,
   DiscountSource,
   IsracardSource,
   MaxSource,
   OtsarHahayalSource,
   PoalimSource,
   SourceConfig,
-  SourceType,
 } from './source-types.js';
 
 type FieldProps = {
@@ -520,7 +520,7 @@ export function OtsarHahayalForm({
 }
 
 type SourceFormProps = {
-  sourceType: SourceType;
+  sourceType: ConfigurableSourceType;
   initial?: Partial<SourceConfig>;
   onSave(data: Omit<SourceConfig, 'id' | 'type'>): void;
   onCancel(): void;

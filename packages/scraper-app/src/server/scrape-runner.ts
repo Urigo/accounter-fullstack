@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { RunRecord as SerializedRunRecord } from '../shared/types.js';
+import type { RunRecord as SerializedRunRecord, SourceRunRecord } from '../shared/types.js';
 import type { ServerMessage } from '../shared/ws-protocol.js';
-import type { ScraperUploadResult } from './gql/index.js';
+import type { ScraperUploadResult } from './graphql/client.js';
 
 export const ERR_RUN_IN_PROGRESS = 'Run already in progress';
 

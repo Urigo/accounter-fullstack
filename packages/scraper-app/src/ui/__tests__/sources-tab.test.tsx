@@ -25,7 +25,7 @@ function mockFetch(sources: SourceConfig[]) {
     if (method === 'PUT') {
       const id = (url as string).split('/').pop()!;
       const patch = JSON.parse(options!.body as string) as Partial<SourceConfig>;
-      sources = sources.map(s => (s.id === id ? { ...s, ...patch } : s));
+      sources = sources.map(s => (s.id === id ? ({ ...s, ...patch } as SourceConfig) : s));
       return { ok: true, json: async () => sources } as Response;
     }
 
