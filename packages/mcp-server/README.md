@@ -8,21 +8,26 @@ See the design docs:
 - [`docs/mcp/spec.md`](../../docs/mcp/spec.md) — connector specification
 - [`docs/mcp/implementation-blueprint.md`](../../docs/mcp/implementation-blueprint.md) — incremental
   implementation plan
+- [`docs/mcp/operations-runbook.md`](../../docs/mcp/operations-runbook.md) — incident handling,
+  metrics, log queries, rollback
+- [`docs/mcp/submission-checklist.md`](../../docs/mcp/submission-checklist.md) — connector
+  submission readiness
 
 ## Status
 
-Early scaffolding. This package is being built incrementally following the prompt pack in the
-implementation blueprint. It currently contains the package skeleton, strict environment
-configuration, a minimal HTTP server with a `/health` endpoint and graceful shutdown, an MCP
-transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smoke tool, per-request
-structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint,
-Auth0 bearer-token verification, identity mapping from a verified token to an internal user +
-business-membership context, a curated tool registry with strict input validation, a per-tool
-authorization policy evaluator, and a hardened upstream GraphQL client. The first production tool
-(read-only charges search) is wired into `tools/list` / `tools/call` and enforces input validation,
-authorization policy, and business-scope narrowing before execution. Operational telemetry
-(request/outcome counters, a latency histogram, auth-failure counters, and tracing spans) is
-recorded per process and exposed at `GET /metrics`.
+Phase 1 (read-only) is feature-complete. The server provides: strict startup env validation; an HTTP
+transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
+route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
+mapping to an internal user + business-membership context with memberships resolved from the
+Accounter GraphQL server; a curated registry of four read-only tools (`accounter_search_charges`,
+`accounter_list_tags`, `accounter_list_tax_categories`, `accounter_balance_report`) each gated by
+strict input validation, a per-tool authorization policy, and business-scope narrowing; a hardened
+upstream GraphQL client (timeout, bounded retries, header propagation, sanitized errors); a unified
+error taxonomy; per-`tools/call` rate limiting; and operational telemetry (request/outcome counters,
+a latency histogram, auth-failure counters, tracing spans) exposed at `GET /metrics`.
+
+Phase 2 (write scope) is **not** implemented — see
+[Known limitations & phase 2](#known-limitations--phase-2-write-scope).
 
 ## Tools
 
@@ -69,11 +74,13 @@ generic "execute anything" surface — tools use typed read-only wrappers via `c
 ## Identity & tenant scope
 
 A verified token is mapped to an `McpAuthContext` — `userId`, `roles` (token scopes), business
-`memberships`, and a `defaultReadScope` (every business the user belongs to). Memberships are read
-from the token's `memberships` custom claim by default (the source is pluggable so a later step can
-resolve them from the GraphQL upstream instead). Requested scope narrowing is validated against the
-user's memberships: any business id outside them is rejected rather than silently dropped. These
-shapes and rules mirror the server package's tenant-isolation model
+`memberships`, and a `defaultReadScope` (every business the user belongs to). Memberships are
+resolved from the Accounter GraphQL server by forwarding the caller's bearer token to a dedicated
+`myMemberships` query (`src/upstream/memberships.ts`) — never derived from token claims — so tenant
+membership is always authoritative from the server's database. The membership source is a pluggable
+seam (`MembershipSource`) for testing. Requested scope narrowing is validated against the user's
+memberships: any business id outside them is rejected rather than silently dropped. These shapes and
+rules mirror the server package's tenant-isolation model
 (`packages/server/src/shared/helpers/auth-scope.ts`).
 
 ## OAuth discovery
@@ -149,8 +156,8 @@ bearer token in the `Authorization` header. The token is verified (signature via
 plus `issuer`, `audience`, and expiry). A request with no token gets a `401` pointing at the
 protected-resource metadata document; a request with an invalid/expired token gets a `401` with
 `error="invalid_token"`. Supported methods: `initialize`, `ping`, `tools/list`, and `tools/call`
-(for the internal `accounter_smoke_ping` tool). Unknown methods return a deterministic JSON-RPC
-`-32601` error; notifications receive `202 Accepted` with no body.
+(the four curated tools plus the internal `accounter_smoke_ping` tool). Unknown methods return a
+deterministic JSON-RPC `-32601` error; notifications receive `202 Accepted` with no body.
 
 ```bash
 curl -sX POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
@@ -185,4 +192,68 @@ yarn workspace @accounter/mcp-server dev       # run entrypoint with tsx (watch)
 yarn workspace @accounter/mcp-server lint      # eslint
 yarn workspace @accounter/mcp-server test      # vitest (package-scoped)
 yarn workspace @accounter/mcp-server typecheck # tsc --noEmit
+yarn workspace @accounter/mcp-server benchmark # perf/timeout suite → bench/summary.md
 ```
+
+## Smoke test
+
+With the four required env vars set and the server running
+(`yarn workspace @accounter/mcp-server dev`):
+
+```bash
+# 1. Health (no auth) → 200 {"status":"ok",...}
+curl -s http://localhost:3100/health
+
+# 2. OAuth discovery (no auth) → resource + authorization_servers
+curl -s http://localhost:3100/.well-known/oauth-protected-resource
+
+# 3. Unauthenticated MCP call → 401 with a WWW-Authenticate resource_metadata pointer
+curl -si -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -i -E 'HTTP/|www-authenticate'
+
+# 4. Authenticated tool list → the four curated tools (+ the smoke tool)
+TOKEN=<a valid Auth0 access token for AUTH0_AUDIENCE>
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# 5. Authenticated tool call
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{}}}'
+```
+
+The automated equivalent of steps 1–5 (with the Auth0 verifier and upstream mocked) lives in
+`src/__tests__/mcp-e2e.test.ts` and runs with `yarn workspace @accounter/mcp-server test`.
+
+## Troubleshooting
+
+| Symptom                                                            | Likely cause / fix                                                                                                                                                                                    |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Process exits at startup with `[env] Invalid environment …`        | A required env var is missing/malformed. The printed report lists each offending key; fix and restart. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`. |
+| `POST /mcp` returns `401` with no `error`                          | No bearer token. The `WWW-Authenticate` header points at the metadata document.                                                                                                                       |
+| `POST /mcp` returns `401` with `error="invalid_token"`             | Token failed verification (signature/JWKS, `iss`, `aud`, or expiry). Confirm the token's audience matches `AUTH0_AUDIENCE` and the issuer matches `AUTH0_ISSUER_URL`.                                 |
+| `/mcp` and `/.well-known/...` return `404`, `/health` is `200`     | The kill-switch is on (`MCP_ENABLED=0`) — the server serves health only. Set `MCP_ENABLED=1`.                                                                                                         |
+| Tool result `isError: true`, code `UPSTREAM_ERROR`/`TIMEOUT_ERROR` | The Accounter GraphQL server was unreachable/slow. Check `GRAPHQL_UPSTREAM_URL` and `GRAPHQL_UPSTREAM_TIMEOUT_MS`; timeouts are retried (bounded), 4xx/GraphQL errors are not.                        |
+| Tool result code `AUTHORIZATION_ERROR`                             | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                         |
+| Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`            | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                              |
+
+## Known limitations & phase 2 (write scope)
+
+Phase 1 is intentionally **read-only** and single-purpose:
+
+- Only the four read-only tools above are exposed; there is no generic "run any query" surface and
+  **no mutations/subscriptions** (the upstream client refuses them).
+- Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
+  payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
+  rather than streamed in full.
+- Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
+  limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
+- Tracing is a dependency-free stub emitting structured span logs; it is not wired to OpenTelemetry.
+
+**Phase 2 (write scope)** — not implemented — will add mutating tools (e.g. tagging/updating
+charges) behind: per-tool write policies and role checks reusing the server's authorization model;
+the server's accountant-approval degradation on charge-mutating operations; write-target business
+resolution (a single owning business per write, versus phase-1 multi-business read scope); and
+idempotency/audit for writes. Until then, all tools are safe to expose to read-only assistant
+workflows.
