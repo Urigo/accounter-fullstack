@@ -30,6 +30,7 @@
     "accounter"
   ],
   "scripts": {
+    "acceptance": "node scripts/acceptance.mjs",
     "benchmark": "cd ../.. && vitest run --project unit packages/mcp-server/src/__tests__/perf.test.ts",
     "build": "tsc",
     "dev": "tsx watch src/index.ts",

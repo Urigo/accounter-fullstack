@@ -7,7 +7,8 @@ import { verifyAccessToken } from '../../auth/verifier.js';
 import { dispatchMcpRequest, handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
 import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
-import { SMOKE_TOOL_NAME } from '../tools.js';
+
+const SEARCH_CHARGES_TOOL = 'accounter_search_charges';
 
 // The MCP handler verifies bearer tokens via the env-backed verifier, which
 // would otherwise fetch a remote JWKS. Mock it so tests stay hermetic.
@@ -52,18 +53,11 @@ describe('handleMcpBody — method dispatch', () => {
     expect(res.result).toEqual({});
   });
 
-  it('lists the smoke tool', () => {
+  it('lists the curated registry tools', () => {
     const res = handleMcpBody(rpc('tools/list')) as JsonRpcSuccess;
-    const result = res.result as { tools: Array<{ name: string }> };
-    expect(result.tools).toHaveLength(1);
-    expect(result.tools[0].name).toBe(SMOKE_TOOL_NAME);
-  });
-
-  it('calls the smoke tool and echoes the message', () => {
-    const res = handleMcpBody(
-      rpc('tools/call', { name: SMOKE_TOOL_NAME, arguments: { message: 'hi' } }),
-    ) as JsonRpcSuccess;
-    expect(res.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
+    const names = (res.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
+    expect(names).toContain(SEARCH_CHARGES_TOOL);
+    expect(names).not.toContain('accounter_smoke_ping');
   });
 
   it('returns InvalidParams for an unknown tool', () => {
@@ -147,7 +141,8 @@ describe('mcpHttpHandler', () => {
 
     expect(res.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
     const body = JSON.parse(res.end.mock.calls[0][0] as string);
-    expect(body.result.tools[0].name).toBe(SMOKE_TOOL_NAME);
+    const names = (body.result.tools as Array<{ name: string }>).map(t => t.name);
+    expect(names).toContain(SEARCH_CHARGES_TOOL);
   });
 
   it('responds 202 with no body for a notification', async () => {
@@ -256,14 +251,14 @@ describe('dispatchMcpRequest — registry integration', () => {
     [],
   );
 
-  it('lists the smoke tool alongside the registered production tools', async () => {
+  it('lists the registered production tools and not the removed smoke stub', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { auth, correlationId: 'c' },
     )) as JsonRpcSuccess;
     const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
-    expect(names).toContain(SMOKE_TOOL_NAME);
     expect(names).toContain('accounter_search_charges');
+    expect(names).not.toContain('accounter_smoke_ping');
   });
 
   it('returns InvalidParams for an unknown tool name', async () => {

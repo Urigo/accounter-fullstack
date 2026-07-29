@@ -35,7 +35,6 @@ import {
   type JsonRpcRequest,
   type JsonRpcResponse,
 } from './jsonrpc.js';
-import { listedTools, runSmokeTool, SMOKE_TOOL_NAME } from './tools.js';
 
 /**
  * MCP transport route (Streamable HTTP) — request dispatch skeleton.
@@ -84,7 +83,7 @@ export function handleRpcRequest(request: JsonRpcRequest): JsonRpcResponse | nul
       return success(id, {});
 
     case 'tools/list':
-      return success(id, { tools: listedTools });
+      return success(id, { tools: toolRegistry.describe() });
 
     case 'tools/call': {
       // Params, when present, must be a JSON object. An array (which
@@ -97,12 +96,10 @@ export function handleRpcRequest(request: JsonRpcRequest): JsonRpcResponse | nul
       ) {
         return failure(id, JsonRpcErrorCode.InvalidParams, 'tools/call params must be an object');
       }
+      // Registered tools execute on the async path (validation → policy →
+      // handler); this synchronous dispatcher never runs a tool, so any name is
+      // reported as an unrecognized tool rather than executed here.
       const params = (rawParams ?? {}) as { name?: unknown; arguments?: unknown };
-      if (params.name === SMOKE_TOOL_NAME) {
-        return success(id, runSmokeTool(params.arguments));
-      }
-      // The `tools/call` method itself is supported; an unrecognized tool name
-      // is an invalid parameter, not an unsupported method.
       return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${String(params.name)}`);
     }
 
@@ -158,9 +155,9 @@ export interface McpDispatchContext {
 }
 
 /**
- * Async dispatch used by the HTTP handler. Handles `tools/list` (curated
- * registry + the smoke tool) and `tools/call` for registered tools (validation
- * → policy → execution), delegating everything else to {@link handleRpcRequest}.
+ * Async dispatch used by the HTTP handler. Handles `tools/list` (the curated
+ * registry) and `tools/call` for registered tools (validation → policy →
+ * execution), delegating everything else to {@link handleRpcRequest}.
  */
 export async function dispatchMcpRequest(
   request: JsonRpcRequest,
@@ -172,15 +169,12 @@ export async function dispatchMcpRequest(
   const id = request.id ?? null;
 
   if (request.method === 'tools/list') {
-    return success(id, { tools: [...listedTools, ...toolRegistry.describe()] });
+    return success(id, { tools: toolRegistry.describe() });
   }
 
   if (request.method === 'tools/call') {
     const params = (request.params ?? {}) as { name?: unknown; arguments?: unknown };
     const name = typeof params.name === 'string' ? params.name : '';
-    if (name === SMOKE_TOOL_NAME) {
-      return success(id, runSmokeTool(params.arguments));
-    }
     const tool = toolRegistry.get(name);
     if (!tool) {
       return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${name}`);
