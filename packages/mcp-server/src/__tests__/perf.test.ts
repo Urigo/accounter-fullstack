@@ -61,14 +61,26 @@ function delayedFetch(delayMs: number, body: unknown): typeof fetch {
       return Promise.resolve({ ok: true, status: 200, json: async () => body } as Response);
     }
     return new Promise((resolve, reject) => {
+      const signal = init?.signal;
+      const abortError = () => Object.assign(new Error('aborted'), { name: 'AbortError' });
+      // Match real fetch: if the signal is already aborted, reject immediately
+      // rather than waiting for an 'abort' event that will never fire.
+      if (signal?.aborted) {
+        reject(abortError());
+        return;
+      }
       const timer = setTimeout(
         () => resolve({ ok: true, status: 200, json: async () => body } as Response),
         delayMs,
       );
-      init?.signal?.addEventListener('abort', () => {
-        clearTimeout(timer);
-        reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
-      });
+      signal?.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+          reject(abortError());
+        },
+        { once: true },
+      );
     });
   }) as unknown as typeof fetch;
 }
@@ -83,7 +95,9 @@ function fastClient(): UpstreamGraphQLClient {
 
 function percentile(sorted: number[], q: number): number {
   if (sorted.length === 0) return 0;
-  const index = Math.min(sorted.length - 1, Math.floor(q * sorted.length));
+  // Nearest-rank: the q-th percentile is the ceil(q·n)-th value (1-indexed), so
+  // p95 of 100 samples is the 95th value, not the 96th.
+  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(q * sorted.length) - 1));
   return sorted[index];
 }
 
@@ -152,8 +166,11 @@ describe('read-only tool call load', () => {
     let issued = 0;
     await Promise.all(
       Array.from({ length: CONCURRENCY }, async () => {
-        while (issued < LOAD_CALLS) {
-          issued++;
+        for (;;) {
+          // Claim a slot atomically (read-then-increment with no await between)
+          // so the pool issues exactly LOAD_CALLS across all workers.
+          const current = issued++;
+          if (current >= LOAD_CALLS) break;
           const result = await callCharges(client, auth);
           expect(result.isError).toBeUndefined();
           completed++;
