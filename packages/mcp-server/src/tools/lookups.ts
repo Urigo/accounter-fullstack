@@ -31,11 +31,13 @@ const limit = z
   .default(MAX_LOOKUP_RESULTS)
   .describe(`Maximum rows to return (capped at ${MAX_LOOKUP_RESULTS}).`);
 
-/** Stable order: by name (case-insensitive, locale-aware), tie-broken by id. */
+// Fixed-locale collator so the ordering is deterministic across hosts/runtimes
+// rather than depending on the ambient default locale.
+const NAME_COLLATOR = new Intl.Collator('en', { sensitivity: 'base' });
+
+/** Stable order: by name (case-insensitive, fixed-locale), tie-broken by id. */
 function byNameThenId(a: { name: string; id: string }, b: { name: string; id: string }): number {
-  return (
-    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) || a.id.localeCompare(b.id)
-  );
+  return NAME_COLLATOR.compare(a.name, b.name) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 }
 
 function applyFilterSortCap<T extends { name: string; id: string }>(
