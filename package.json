@@ -73,7 +73,7 @@
     "@typescript-eslint/parser": "8.65.0",
     "@vitest/coverage-v8": "4.1.10",
     "bob-the-bundler": "7.0.1",
-    "concurrently": "10.0.3",
+    "concurrently": "10.0.4",
     "dotenv": "17.4.2",
     "eslint": "10.8.0",
     "eslint-config-flat-gitignore": "2.3.0",
