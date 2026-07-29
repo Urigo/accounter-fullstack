@@ -95,6 +95,22 @@ describe('searchChargesTool — successful read', () => {
     const variables = (sentBody as { variables: { filters: { byBusinesses: string[] } } }).variables;
     expect(variables.filters.byBusinesses).toEqual(['b2']);
   });
+
+  it('requests the first upstream page (0-based) for the default page', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), {});
+    const variables = (sentBody as { variables: { page: number } }).variables;
+    expect(variables.page).toBe(0);
+  });
+
+  it('translates the 1-based page to the upstream 0-based page index', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { page: 2 });
+    const variables = (sentBody as { variables: { page: number } }).variables;
+    expect(variables.page).toBe(1);
+  });
 });
 
 describe('searchChargesTool — empty results', () => {
@@ -133,6 +149,16 @@ describe('searchChargesTool — invalid filters', () => {
     const result = await run(client, authContext(['b1']), { fromDate: '2026-13-01' });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { message: string }).message).toBe('Invalid fromDate');
+  });
+
+  it('rejects a day-overflow date that Date.parse would silently roll over', async () => {
+    const client = clientReturning(oneCharge);
+    // 2026-02-31 is not a real date; Date.parse rolls it to March, so it must be
+    // caught by explicit calendar validation, not just a NaN check.
+    const result = await run(client, authContext(['b1']), { toDate: '2026-02-31' });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect((result.structuredContent as { message: string }).message).toBe('Invalid toDate');
   });
 
   it('rejects an inverted date range', async () => {

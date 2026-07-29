@@ -91,17 +91,45 @@ export interface NormalizedCharge {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Parse a strict `YYYY-MM-DD` string to a UTC timestamp, or `null` if it is not a
+ * real calendar date. `Date.parse` alone is unsafe here: it silently rolls
+ * impossible dates over (e.g. `2026-02-31` → `2026-03-03`) instead of failing, so
+ * we verify the parsed components round-trip back to the input.
+ */
+function parseCalendarDate(value: string): number | null {
+  const [year, month, day] = value.split('-').map(Number);
+  const timestamp = Date.UTC(year, month - 1, day);
+  const date = new Date(timestamp);
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return timestamp;
+}
+
 /** Reject an invalid, inverted, or too-wide date range before hitting upstream. */
 function assertDateRange(input: SearchChargesInput): void {
   // Validate each supplied date even when only one is present — a value can
   // match the format regex yet be an impossible calendar date (e.g. 2026-02-31).
-  const from = input.fromDate ? Date.parse(input.fromDate) : undefined;
-  const to = input.toDate ? Date.parse(input.toDate) : undefined;
-  if (from !== undefined && Number.isNaN(from)) {
-    throw new ToolInputError('Invalid fromDate');
+  let from: number | undefined;
+  let to: number | undefined;
+  if (input.fromDate !== undefined) {
+    const parsed = parseCalendarDate(input.fromDate);
+    if (parsed === null) {
+      throw new ToolInputError('Invalid fromDate');
+    }
+    from = parsed;
   }
-  if (to !== undefined && Number.isNaN(to)) {
-    throw new ToolInputError('Invalid toDate');
+  if (input.toDate !== undefined) {
+    const parsed = parseCalendarDate(input.toDate);
+    if (parsed === null) {
+      throw new ToolInputError('Invalid toDate');
+    }
+    to = parsed;
   }
   if (from !== undefined && to !== undefined) {
     if (from > to) {
@@ -152,7 +180,10 @@ async function handler(
       query: SEARCH_CHARGES_QUERY,
       variables: {
         filters: buildFilters(input, context.readScope.businessIds),
-        page: input.page,
+        // The tool exposes a 1-based `page`, but upstream `allCharges` is 0-based
+        // (it slices `[page * limit, (page + 1) * limit]`), so translate here —
+        // otherwise page 1 would skip the first page of results.
+        page: input.page - 1,
         limit: input.pageSize,
       },
     },
