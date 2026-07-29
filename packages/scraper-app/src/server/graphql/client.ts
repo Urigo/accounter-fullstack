@@ -5,7 +5,7 @@ import type {
   HapoalimILSTransactions,
   IsracardCardsTransactionsList,
 } from '@accounter/modern-poalim-scraper';
-import type { ScraperUploadResult } from '../gql/index.js';
+import type { UploadPoalimIlsTransactionsMutation } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
@@ -50,6 +50,8 @@ function extractResult<K extends string>(data: GqlResponse<K>, key: K): ScraperU
   if (!result) throw new Error(`GraphQL response missing field: ${key}`);
   return result;
 }
+
+type ScraperUploadResult = UploadPoalimIlsTransactionsMutation['uploadPoalimIlsTransactions'];
 
 export type { ScraperUploadResult };
 

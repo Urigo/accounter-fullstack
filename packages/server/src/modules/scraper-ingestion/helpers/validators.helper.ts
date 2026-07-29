@@ -21,6 +21,16 @@ import {
   IUploadPoalimSwiftTransactionsParams,
 } from '../types.js';
 
+export function convertBooleanToBit<T extends boolean>(
+  value: boolean | null | undefined,
+  optional: T,
+): 1 | 0 | (T extends false ? never : null) {
+  if (value === null || value === undefined) {
+    return optional ? (null as T extends false ? never : null) : 0;
+  }
+  return value ? 1 : 0;
+}
+
 export function validatePoalimIlsTransactions(
   transactions: readonly PoalimIlsTransactionInput[],
 ): IUploadPoalimIlsTransactionsParams['transactions'] {
@@ -286,7 +296,10 @@ export function validateMaxTransactions(
     dealDataIndexRateBase: t.dealDataIndexRateBase,
     dealDataIndexRatePmt: t.dealDataIndexRatePmt,
     dealDataInterestAmount: t.dealDataInterestAmount,
-    dealDataIsAllowedSpreadWithBenefit: t.dealDataIsAllowedSpreadWithBenefit,
+    dealDataIsAllowedSpreadWithBenefit: convertBooleanToBit(
+      t.dealDataIsAllowedSpreadWithBenefit,
+      false,
+    ) as unknown as boolean,
     dealDataIssuerCurrency: t.dealDataIssuerCurrency,
     dealDataIssuerExchangeRate: t.dealDataIssuerExchangeRate,
     dealDataOriginalTerm: t.dealDataOriginalTerm,
@@ -297,11 +310,23 @@ export function validateMaxTransactions(
     dealDataPurchaseAmount: t.dealDataPurchaseAmount,
     dealDataPurchaseTime: t.dealDataPurchaseTime,
     dealDataRefNbr: t.dealDataRefNbr,
-    dealDataShowCancelDebit: t.dealDataShowCancelDebit,
-    dealDataShowSpread: t.dealDataShowSpread,
-    dealDataShowSpreadBenefitButton: t.dealDataShowSpreadBenefitButton,
-    dealDataShowSpreadButton: t.dealDataShowSpreadButton,
-    dealDataShowSpreadForLeumi: t.dealDataShowSpreadForLeumi,
+    dealDataShowCancelDebit: convertBooleanToBit(
+      t.dealDataShowCancelDebit,
+      false,
+    ) as unknown as boolean,
+    dealDataShowSpread: convertBooleanToBit(t.dealDataShowSpread, false) as unknown as boolean,
+    dealDataShowSpreadBenefitButton: convertBooleanToBit(
+      t.dealDataShowSpreadBenefitButton,
+      false,
+    ) as unknown as boolean,
+    dealDataShowSpreadButton: convertBooleanToBit(
+      t.dealDataShowSpreadButton,
+      false,
+    ) as unknown as boolean,
+    dealDataShowSpreadForLeumi: convertBooleanToBit(
+      t.dealDataShowSpreadForLeumi,
+      false,
+    ) as unknown as boolean,
     dealDataTdmCardToken: t.dealDataTdmCardToken,
     dealDataTdmTransactionType: t.dealDataTdmTransactionType,
     dealDataTransactionType: t.dealDataTransactionType,
@@ -310,15 +335,18 @@ export function validateMaxTransactions(
     dealDataWithdrawalCommissionAmount: t.dealDataWithdrawalCommissionAmount,
     discountKeyAmount: t.discountKeyAmount,
     discountKeyRecType: t.discountKeyRecType,
-    ethocaInd: t.ethocaInd,
+    ethocaInd: convertBooleanToBit(t.ethocaInd, false) as unknown as boolean,
     fundsTransferComment: t.fundsTransferComment,
     fundsTransferReceiverOrTransfer: t.fundsTransferReceiverOrTransfer,
-    isRegisterCh: t.isRegisterCh,
-    isSpreadingAutorizationAllowed: t.isSpreadingAutorizationAllowed,
+    isRegisterCh: convertBooleanToBit(t.isRegisterCh, false) as unknown as boolean,
+    isSpreadingAutorizationAllowed: convertBooleanToBit(
+      t.isSpreadingAutorizationAllowed,
+      false,
+    ) as unknown as boolean,
     issuerId: t.issuerId,
     merchantAddress: t.merchantAddress,
     merchantCoordinates: t.merchantCoordinates,
-    merchantMaxPhone: t.merchantMaxPhone,
+    merchantMaxPhone: convertBooleanToBit(t.merchantMaxPhone, true) as unknown as boolean,
     merchant: t.merchant,
     merchantCommercialName: t.merchantCommercialName,
     merchantNumber: t.merchantNumber,
@@ -341,7 +369,10 @@ export function validateMaxTransactions(
     runtimeReferenceType: t.runtimeReferenceType,
     runtimeReferenceId: t.runtimeReferenceId,
     shortCardNumber: t.shortCardNumber,
-    spreadTransactionByCampainInd: t.spreadTransactionByCampainInd,
+    spreadTransactionByCampainInd: convertBooleanToBit(
+      t.spreadTransactionByCampainInd,
+      false,
+    ) as unknown as boolean,
     spreadTransactionByCampainNumber: t.spreadTransactionByCampainNumber,
     tableType: t.tableType,
     tag: t.tag,

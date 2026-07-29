@@ -375,52 +375,52 @@ export default gql`
 
   " Input for a Max (formerly Leumi Card) credit card transaction "
   input MaxTransactionInput {
-    actualPaymentAmount: String!
-    arn: String!
+    actualPaymentAmount: String
+    arn: String
     cardIndex: Int!
     categoryId: Int!
     comments: String!
-    dealDataAcq: String!
+    dealDataAcq: String
     dealDataAdjustmentAmount: String
-    dealDataAdjustmentType: String!
-    dealDataAmount: String!
-    dealDataAmountIls: String!
-    dealDataAmountLeft: String!
-    dealDataArn: String!
-    dealDataAuthorizationNumber: String!
+    dealDataAdjustmentType: Float
+    dealDataAmount: Float
+    dealDataAmountIls: Float
+    dealDataAmountLeft: Float
+    dealDataArn: String
+    dealDataAuthorizationNumber: String
     dealDataCardName: String
     dealDataCardToken: String
-    dealDataCommissionVat: String!
+    dealDataCommissionVat: Float
     dealDataDirectExchange: String
     dealDataExchangeCommissionAmount: String
     dealDataExchangeCommissionMaam: String
     dealDataExchangeCommissionType: String
-    dealDataExchangeDirect: String!
-    dealDataExchangeRate: String!
+    dealDataExchangeDirect: String
+    dealDataExchangeRate: Float
     dealDataIndexRateBase: String
     dealDataIndexRatePmt: String
-    dealDataInterestAmount: String!
-    dealDataIsAllowedSpreadWithBenefit: Boolean!
-    dealDataIssuerCurrency: String!
+    dealDataInterestAmount: Float
+    dealDataIsAllowedSpreadWithBenefit: Boolean
+    dealDataIssuerCurrency: String
     dealDataIssuerExchangeRate: String
     dealDataOriginalTerm: String
-    dealDataPercentMaam: String
-    dealDataPlan: String!
-    dealDataPosEntryEmv: String!
-    dealDataProcessingDate: String!
+    dealDataPercentMaam: Float
+    dealDataPlan: Float
+    dealDataPosEntryEmv: Float
+    dealDataProcessingDate: String
     dealDataPurchaseAmount: String
     dealDataPurchaseTime: String
-    dealDataRefNbr: String!
-    dealDataShowCancelDebit: Boolean!
-    dealDataShowSpread: Boolean!
-    dealDataShowSpreadBenefitButton: Boolean!
-    dealDataShowSpreadButton: Boolean!
-    dealDataShowSpreadForLeumi: Boolean!
-    dealDataTdmCardToken: String!
-    dealDataTdmTransactionType: Int!
-    dealDataTransactionType: Int!
-    dealDataTxnCode: Int!
-    dealDataUserName: String!
+    dealDataRefNbr: String
+    dealDataShowCancelDebit: Boolean
+    dealDataShowSpread: Boolean
+    dealDataShowSpreadBenefitButton: Boolean
+    dealDataShowSpreadButton: Boolean
+    dealDataShowSpreadForLeumi: Boolean
+    dealDataTdmCardToken: String
+    dealDataTdmTransactionType: Int
+    dealDataTransactionType: Int
+    dealDataTxnCode: Int
+    dealDataUserName: String
     dealDataWithdrawalCommissionAmount: String
     discountKeyAmount: String
     discountKeyRecType: String
@@ -439,14 +439,14 @@ export default gql`
     merchantNumber: String!
     merchantPhone: String!
     merchantTaxId: String!
-    originalAmount: String!
+    originalAmount: Float!
     originalCurrency: String!
     paymentCurrency: Int
-    paymentDate: String!
+    paymentDate: String
     planName: String!
     planTypeId: Int!
-    promotionAmount: String
-    promotionClub: String!
+    promotionAmount: Float
+    promotionClub: String
     promotionType: String
     purchaseDate: String!
     receiptPDF: String
