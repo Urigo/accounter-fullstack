@@ -23,7 +23,7 @@ function makeIsracardPayload(cards: string[]): IsracardCardsTransactionsList {
     };
   });
   return {
-    Header: { Status: 'OK', Message: null },
+    Header: { Status: '1', Message: null },
     CardsTransactionsListBean: bean as IsracardCardsTransactionsList['CardsTransactionsListBean'],
   };
 }
