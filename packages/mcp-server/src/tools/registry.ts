@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AuthorizedReadScope, McpAuthContext } from '../auth/identity.js';
+import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
 
 /**
  * Curated tool registry abstraction.
@@ -34,6 +35,10 @@ export interface ToolExecutionContext {
   readScope: AuthorizedReadScope;
   /** Correlation id for tracing/log/upstream propagation. */
   correlationId: string;
+  /** Shared upstream GraphQL client for read-only operations. */
+  client: UpstreamGraphQLClient;
+  /** Caller's Authorization header, forwarded upstream (never logged). */
+  authorization?: string;
 }
 
 export interface ToolTextContent {
