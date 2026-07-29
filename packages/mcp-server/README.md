@@ -18,8 +18,21 @@ transport route (`POST /mcp`) that speaks JSON-RPC 2.0 and lists an internal smo
 structured logging with request/correlation ids, the OAuth protected-resource metadata endpoint,
 Auth0 bearer-token verification, identity mapping from a verified token to an internal user +
 business-membership context, a curated tool registry with strict input validation, a per-tool
-authorization policy evaluator, and a hardened upstream GraphQL client. Production tools that use
-these building blocks are not implemented yet.
+authorization policy evaluator, and a hardened upstream GraphQL client. The first production tool
+(read-only charges search) is wired into `tools/list` / `tools/call` and enforces input validation,
+authorization policy, and business-scope narrowing before execution.
+
+## Tools
+
+`tools/call` for a registered tool runs input validation → authorization policy → handler, and maps
+failures to a tool result with `isError` and a `{ code, message, correlationId, retryable? }`
+payload (spec §10.2): `VALIDATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERROR`, `TIMEOUT_ERROR`,
+`INTERNAL_ERROR`.
+
+- **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
+  businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
+  days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
+  (`pageSize` ≤ 50). Returns normalized charges plus pagination metadata.
 
 ## Upstream GraphQL client
 
