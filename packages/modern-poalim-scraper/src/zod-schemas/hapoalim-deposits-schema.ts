@@ -7,7 +7,7 @@ const TopMetadataMessageSchema = z
     messageCode: z.number().int(),
     severity: z.string(),
   })
-  .passthrough(); // schema allows additionalProperties: true
+  .strict(); // schema allows additionalProperties: true
 
 // Deposit-level messages item
 const DepositMessageItemSchema = z
@@ -55,7 +55,7 @@ const HiddenFlagSchema = z
   .object({
     hidden: z.string(),
   })
-  .passthrough();
+  .strict();
 
 const DepositAttributesSchema = z
   .object({
@@ -68,14 +68,14 @@ const DepositAttributesSchema = z
     ratePercentFactor: HiddenFlagSchema,
     fixedInterestRate: HiddenFlagSchema,
   })
-  .passthrough(); // allows additionalProperties: true
+  .strict(); // allows additionalProperties: true
 
 const DepositMetadataSchema = z
   .object({
     attributes: DepositAttributesSchema,
-    links: z.object({}).passthrough(),
+    links: z.object({}).strict(),
   })
-  .passthrough(); // additionalProperties: true
+  .strict(); // additionalProperties: true
 
 const DepositDataItemSchema = z
   .object({
@@ -153,9 +153,9 @@ const DepositsArraySchema = z.array(DepositItemSchema);
 const TopMetadataSchema = z
   .object({
     messages: z.array(TopMetadataMessageSchema),
-    links: z.object({}).passthrough(),
+    links: z.object({}).strict(),
   })
-  .passthrough(); // top-level metadata allows additionalProperties: true
+  .strict(); // top-level metadata allows additionalProperties: true
 
 export const HapoalimDepositsSchema = z
   .object({
