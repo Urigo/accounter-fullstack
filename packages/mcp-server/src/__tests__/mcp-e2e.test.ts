@@ -53,9 +53,16 @@ vi.mock('../auth/verifier.js', () => ({
 // --- Mock the upstream GraphQL client with fixtures by operation. -----------
 const AUTHORIZED_BUSINESS = 'aa000000-0000-4000-8000-000000000001';
 
-function upstreamData(query: string): unknown {
+function upstreamData(query: string, authorization?: string): unknown {
   if (query.includes('myMemberships')) {
-    return { myMemberships: [{ businessId: AUTHORIZED_BUSINESS, roleId: 'business_owner' }] };
+    // Vary memberships by the forwarded caller so the fixture stays consistent
+    // with each principal: the owner holds a business, the roleless viewer holds
+    // none. (Keeps the suite honest if role gating ever moves from token scopes
+    // to membership roles.)
+    if (authorization === 'Bearer owner-token') {
+      return { myMemberships: [{ businessId: AUTHORIZED_BUSINESS, roleId: 'business_owner' }] };
+    }
+    return { myMemberships: [] };
   }
   if (query.includes('allCharges')) {
     return {
@@ -96,7 +103,9 @@ function upstreamData(query: string): unknown {
 }
 
 const fakeUpstreamClient = {
-  query: vi.fn(async (request: { query: string }) => upstreamData(request.query)),
+  query: vi.fn(async (request: { query: string }, context: { authorization?: string }) =>
+    upstreamData(request.query, context.authorization),
+  ),
 };
 
 vi.mock('../upstream/default-client.js', () => ({
