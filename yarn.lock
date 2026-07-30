@@ -18566,6 +18566,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jose@npm:6.2.3":
+  version: 6.2.3
+  resolution: "jose@npm:6.2.3"
+  checksum: 10c0/aa91bccba22cc84d86308f833749bcb0b00441e35c24e0ac79abeac5f76dc62d47bdef9c1da6a0c609f5da6478595f52b252085888b89dbdb163861e40ea4188
+  languageName: node
+  linkType: hard
+
 "jose@npm:6.2.4, jose@npm:^6.0.8, jose@npm:^6.2.2":
   version: 6.2.4
   resolution: "jose@npm:6.2.4"
