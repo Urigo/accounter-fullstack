@@ -57,17 +57,26 @@ describe('listTagsTool', () => {
 
   it('filters by nameContains (case-insensitive)', async () => {
     const result = await runTool(listTagsTool, client(), authContext(['b1']), { nameContains: 'an' });
-    const structured = result.structuredContent as { tags: Array<{ name: string }>; total: number };
+    const structured = result.structuredContent as {
+      tags: Array<{ name: string }>;
+      totalCount: number;
+    };
     expect(structured.tags.map(t => t.name)).toEqual(['Banana']);
-    expect(structured.total).toBe(1);
+    expect(structured.totalCount).toBe(1);
   });
 
   it('caps results and flags truncation', async () => {
     const result = await runTool(listTagsTool, client(), authContext(['b1']), { limit: 2 });
-    const structured = result.structuredContent as { tags: unknown[]; total: number; truncated: boolean };
+    const structured = result.structuredContent as {
+      tags: unknown[];
+      totalCount: number;
+      truncated: boolean;
+      continuation: { reason: string };
+    };
     expect(structured.tags).toHaveLength(2);
-    expect(structured.total).toBe(3);
+    expect(structured.totalCount).toBe(3);
     expect(structured.truncated).toBe(true);
+    expect(structured.continuation.reason).toBe('result_cap');
   });
 
   it('enforces business scope (denies a caller with no memberships)', async () => {

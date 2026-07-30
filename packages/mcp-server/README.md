@@ -29,6 +29,11 @@ failures to a tool result with `isError` and a `{ code, message, correlationId, 
 payload (spec §10.2): `VALIDATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERROR`, `TIMEOUT_ERROR`,
 `INTERNAL_ERROR`.
 
+List-producing tools build their output through a shared formatter (`src/tools/output.ts`) that caps
+the serialized payload (dropping whole trailing items — never invalid JSON), reports `returnedCount`
+/ `totalCount` / `truncated`, and attaches a `continuation` hint whenever not all results were
+returned (an upstream cap or the payload-size guard).
+
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
   days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination

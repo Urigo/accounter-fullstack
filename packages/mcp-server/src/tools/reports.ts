@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ToolInputError } from './execute.js';
+import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
@@ -100,7 +101,6 @@ async function handler(
 
   // Defend against a null/absent list from a nullable upstream field.
   const all = data.transactionsForBalanceReport ?? [];
-  const truncated = all.length > MAX_REPORT_ROWS;
   const rows = all.slice(0, MAX_REPORT_ROWS).map(row => ({
     id: row.id,
     chargeId: row.chargeId,
@@ -114,24 +114,20 @@ async function handler(
     },
   }));
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Balance report for ${input.fromDate}–${input.toDate}: ${all.length} transaction(s)${
-          truncated ? ` (showing first ${MAX_REPORT_ROWS})` : ''
-        }.`,
-      },
-    ],
-    structuredContent: {
+  return shapeListResult({
+    items: rows,
+    itemsKey: 'rows',
+    total: all.length,
+    extra: {
       reportType: input.reportType,
       businessId: ownerId,
       period: { fromDate: input.fromDate, toDate: input.toDate },
-      rows,
-      rowCount: all.length,
-      truncated,
     },
-  };
+    summarize: (shown, total) =>
+      `Balance report for ${input.fromDate}–${input.toDate}: ${total} transaction(s)${
+        shown < total ? ` (showing ${shown})` : ''
+      }.`,
+  });
 }
 
 export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
