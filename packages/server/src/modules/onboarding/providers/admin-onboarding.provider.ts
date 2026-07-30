@@ -59,8 +59,15 @@ const getBootstrapBusiness = sql<IGetBootstrapBusinessQuery>`
 `;
 
 const getBootstrapContext = sql<IGetBootstrapContextQuery>`
-  SELECT * FROM accounter_schema.user_context
-  WHERE owner_id = $ownerId;
+  SELECT
+    uc.*,
+    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
+    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
+    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
+    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
+    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids
+  FROM accounter_schema.user_context uc
+  WHERE uc.owner_id = $ownerId;
 `;
 
 const expireActiveInvitations = sql<IExpireActiveInvitationsQuery>`
@@ -259,6 +266,24 @@ export class AdminOnboardingProvider {
       await client.query(
         `INSERT INTO accounter_schema.user_context (${columns}) VALUES (${placeholders}) ON CONFLICT (owner_id) DO NOTHING`,
         Object.values(contextCols),
+      );
+
+      // 6b. Classify the authority businesses as VAT-report-excluded via the
+      // abstract admin_business_roles table (replaces the previously hardcoded
+      // vat/tax/social-security list in admin-context.provider — see #3612).
+      await client.query(
+        `INSERT INTO accounter_schema.admin_business_roles (owner_id, business_id, role)
+         VALUES
+           ($1, $2, 'VAT_EXCLUDED'::accounter_schema.admin_business_role),
+           ($1, $3, 'VAT_EXCLUDED'::accounter_schema.admin_business_role),
+           ($1, $4, 'VAT_EXCLUDED'::accounter_schema.admin_business_role)
+         ON CONFLICT DO NOTHING`,
+        [
+          adminEntityId,
+          authorityBusinessIds['VAT'],
+          authorityBusinessIds['Tax'],
+          authorityBusinessIds['Social Security'],
+        ],
       );
 
       // 7. Create Auth0 user (blocked) + invitation

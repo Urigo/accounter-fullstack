@@ -210,6 +210,8 @@ import migration_2026_09_09T10_00_00_uuidv7_id_defaults from './actions/2026-09-
 import migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals from './actions/2026-09-23T10-00-00.dynamic-report-snapshot-approvals.js';
 import migration_2026_09_28T10_00_00_dynamic_report_comments from './actions/2026-09-28T10-00-00.dynamic-report-comments.js';
 import migration_2026_09_28T10_30_00_rls_dynamic_report_comments from './actions/2026-09-28T10-30-00.rls-dynamic-report-comments.js';
+import migration_2026_07_30T10_00_00_add_admin_business_roles_table from './actions/2026-07-30T10-00-00.add-admin-business-roles-table.js';
+import migration_2026_07_30T11_00_00_backfill_admin_business_roles from './actions/2026-07-30T11-00-00.backfill-admin-business-roles.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -424,6 +426,8 @@ export const MIGRATIONS = [
   migration_2026_09_23T10_00_00_dynamic_report_snapshot_approvals,
   migration_2026_09_28T10_00_00_dynamic_report_comments,
   migration_2026_09_28T10_30_00_rls_dynamic_report_comments,
+  migration_2026_07_30T10_00_00_add_admin_business_roles_table,
+  migration_2026_07_30T11_00_00_backfill_admin_business_roles,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

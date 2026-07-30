@@ -204,6 +204,25 @@ export async function seedAdminCore(
     console.log('ℹ️  user_context already exists, skipping insert');
   }
 
+  // 7. Classify authority businesses as VAT-report-excluded through the abstract
+  // admin_business_roles table (replaces the hardcoded vat/tax/social-security
+  // list in admin-context.provider — see #3612). Idempotent.
+  await client.query(
+    `INSERT INTO accounter_schema.admin_business_roles (owner_id, business_id, role)
+     VALUES
+       ($1, $2, 'VAT_EXCLUDED'::accounter_schema.admin_business_role),
+       ($1, $3, 'VAT_EXCLUDED'::accounter_schema.admin_business_role),
+       ($1, $4, 'VAT_EXCLUDED'::accounter_schema.admin_business_role)
+     ON CONFLICT DO NOTHING`,
+    [
+      adminEntityId,
+      authorityBusinessIds['VAT'],
+      authorityBusinessIds['Tax'],
+      authorityBusinessIds['Social Security'],
+    ],
+  );
+  console.log('✅ Authority VAT-excluded roles created');
+
   console.log('🎉 Admin context seed complete!');
   return { adminEntityId };
 }
