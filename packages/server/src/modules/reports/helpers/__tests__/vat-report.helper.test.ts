@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Currency } from '../../../../shared/enums.js';
+import { Currency, DocumentType } from '../../../../shared/enums.js';
+import type { IGetDocumentsByFiltersResult } from '../../../documents/types.js';
 import {
   calculateMonthlyVatTotalAmount,
+  isVatReportRelevantDocument,
   isWithinMonthlyVatAmountTolerance,
   type RawVatReportRecord,
 } from '../vat-report.helper.js';
@@ -50,5 +52,47 @@ describe('vat-report helper monthly VAT utilities', () => {
     expect(isWithinMonthlyVatAmountTolerance(100, -100.009)).toBe(true);
     expect(isWithinMonthlyVatAmountTolerance(100, -100.02)).toBe(false);
     expect(isWithinMonthlyVatAmountTolerance(100, 100)).toBe(false);
+  });
+});
+
+function createDocument(
+  overrides: Partial<IGetDocumentsByFiltersResult> = {},
+): IGetDocumentsByFiltersResult {
+  return {
+    charge_id: 'charge-1',
+    creditor_id: 'creditor-1',
+    debtor_id: 'debtor-1',
+    type: DocumentType.Invoice,
+    ...overrides,
+  } as IGetDocumentsByFiltersResult;
+}
+
+describe('isVatReportRelevantDocument', () => {
+  it('accepts financial (invoice) documents linked to a charge with both counterparties', () => {
+    expect(isVatReportRelevantDocument(createDocument({ type: DocumentType.Invoice }))).toBe(true);
+    expect(
+      isVatReportRelevantDocument(createDocument({ type: DocumentType.InvoiceReceipt })),
+    ).toBe(true);
+    expect(
+      isVatReportRelevantDocument(createDocument({ type: DocumentType.CreditInvoice })),
+    ).toBe(true);
+  });
+
+  it('rejects "OTHER" documents even when they carry a date and counterparties (issue #3375)', () => {
+    expect(isVatReportRelevantDocument(createDocument({ type: DocumentType.Other }))).toBe(false);
+  });
+
+  it('rejects other non-financial document types', () => {
+    expect(isVatReportRelevantDocument(createDocument({ type: DocumentType.Receipt }))).toBe(false);
+    expect(isVatReportRelevantDocument(createDocument({ type: DocumentType.Proforma }))).toBe(false);
+    expect(
+      isVatReportRelevantDocument(createDocument({ type: DocumentType.Unprocessed })),
+    ).toBe(false);
+  });
+
+  it('rejects documents missing a charge or a counterparty', () => {
+    expect(isVatReportRelevantDocument(createDocument({ charge_id: null }))).toBe(false);
+    expect(isVatReportRelevantDocument(createDocument({ creditor_id: null }))).toBe(false);
+    expect(isVatReportRelevantDocument(createDocument({ debtor_id: null }))).toBe(false);
   });
 });
