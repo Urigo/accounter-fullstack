@@ -24,10 +24,13 @@ authorization policy, and business-scope narrowing before execution.
 
 ## Tools
 
-`tools/call` for a registered tool runs input validation → authorization policy → handler, and maps
-failures to a tool result with `isError` and a `{ code, message, correlationId, retryable? }`
-payload (spec §10.2): `VALIDATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERROR`, `TIMEOUT_ERROR`,
-`INTERNAL_ERROR`.
+`tools/call` for a registered tool runs input validation → authorization policy → handler. Every
+failure is normalized through a single error taxonomy (`src/errors/taxonomy.ts`) and returned as a
+tool result with `isError` and a `{ code, message, correlationId, retryable }` payload (plus
+`issues` for validation and `retryAfterMs` for rate limiting). Machine codes (spec §10.2):
+`VALIDATION_ERROR`, `AUTHENTICATION_ERROR`, `AUTHORIZATION_ERROR`, `UPSTREAM_ERROR`,
+`TIMEOUT_ERROR`, `RATE_LIMIT_ERROR`, `INTERNAL_ERROR`. Unexpected errors map to a sanitized
+`INTERNAL_ERROR` — stack traces and internal details are never leaked.
 
 List-producing tools build their output through a shared formatter (`src/tools/output.ts`) that caps
 the serialized payload (dropping whole trailing items — never invalid JSON), reports `returnedCount`
