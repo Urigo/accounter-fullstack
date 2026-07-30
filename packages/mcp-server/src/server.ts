@@ -7,6 +7,7 @@ import {
   buildProtectedResourceMetadata,
   PROTECTED_RESOURCE_METADATA_PATH,
 } from './oauth/metadata.js';
+import { getMetrics } from './observability/metrics.js';
 import { getServiceVersion, SERVICE_NAME } from './version.js';
 
 /**
@@ -45,6 +46,10 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
         uptimeSeconds: Math.round(process.uptime()),
       };
       sendJson(res, 200, body);
+    },
+    // Operational metrics snapshot (counters + latency histogram).
+    '/metrics': (_req, res) => {
+      sendJson(res, 200, getMetrics().snapshot());
     },
     // OAuth 2.0 Protected Resource Metadata (RFC 9728) — lets Claude clients
     // discover the Auth0 authorization server for this resource.
