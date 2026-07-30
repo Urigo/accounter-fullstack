@@ -10,7 +10,7 @@
  * added in subsequent, incremental steps.
  */
 
-import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { log } from './logger.js';
 import { start } from './server.js';
 
@@ -45,8 +45,9 @@ export function main(): void {
 }
 
 // Only auto-run when executed directly (e.g. `node dist/index.js`), never when
-// imported by tests or other modules. Compare via fileURLToPath so paths with
-// spaces or other special characters (URL-encoded in import.meta.url) match.
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// imported by tests or other modules. Compare both sides as file URLs: convert
+// argv[1] with pathToFileURL so the check is robust even when the entry point is
+// reached through a bin symlink (where argv[1] and import.meta.url differ).
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }
