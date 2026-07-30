@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* eslint-disable no-undef */
+
+/* eslint-disable no-console */
 /**
  * Final acceptance gate for @accounter/mcp-server (blueprint Prompt 24).
  *
