@@ -73,7 +73,7 @@
     "@typescript-eslint/parser": "8.65.0",
     "@vitest/coverage-v8": "4.1.10",
     "bob-the-bundler": "7.0.1",
-    "concurrently": "10.0.3",
+    "concurrently": "10.0.4",
     "dotenv": "17.4.2",
     "eslint": "10.8.0",
     "eslint-config-flat-gitignore": "2.3.0",
@@ -101,7 +101,7 @@
     "vitest": "4.1.10"
   },
   "resolutions": {
-    "@slonik/pg-driver@npm:^49.10.7": "patch:@slonik/pg-driver@npm%3A49.10.7#~/.yarn/patches/@slonik-pg-driver-npm-49.10.7-7bd58c1a0b.patch",
+    "@slonik/pg-driver@npm:^49.10.9": "patch:@slonik/pg-driver@npm%3A49.10.9#~/.yarn/patches/@slonik-pg-driver-npm-49.10.9-8d2c0c21df.patch",
     "graphql": "16.14.2"
   },
   "lint-staged": {
