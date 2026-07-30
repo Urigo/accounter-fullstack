@@ -18,6 +18,7 @@ import { generateId, getRequestContext } from '../context.js';
 import { createRequestLogger, log } from '../logger.js';
 import { sendUnauthorized } from '../oauth/challenge.js';
 import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
+import { getRateLimiter } from '../rate-limit/default-limiter.js';
 import { executeRegisteredTool } from '../tools/execute.js';
 import { toolRegistry } from '../tools/registry-instance.js';
 import { getUpstreamClient } from '../upstream/default-client.js';
@@ -189,6 +190,7 @@ export async function dispatchMcpRequest(
       correlationId: context.correlationId,
       authorization: context.authorization,
       client: getUpstreamClient(),
+      limiter: getRateLimiter(),
     });
     return success(id, result);
   }
