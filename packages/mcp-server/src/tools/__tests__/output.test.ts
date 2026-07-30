@@ -35,6 +35,26 @@ describe('shapeListResult — within limits', () => {
   });
 });
 
+describe('shapeListResult — default summary', () => {
+  it('reports "No results." when there are no items', () => {
+    const result = shapeListResult({ items: [], itemsKey: 'things' });
+    expect(result.content[0].text).toBe('No results.');
+    const structured = result.structuredContent as { totalCount: number; truncated: boolean };
+    expect(structured.totalCount).toBe(0);
+    expect(structured.truncated).toBe(false);
+  });
+
+  it('reports returned-of-total with a truncated marker', () => {
+    const result = shapeListResult({ items: [{ a: 1 }], itemsKey: 'things', total: 5 });
+    expect(result.content[0].text).toBe('Returning 1 of 5 result(s) (truncated).');
+  });
+
+  it('omits the truncated marker when everything is returned', () => {
+    const result = shapeListResult({ items: [{ a: 1 }, { a: 2 }], itemsKey: 'things' });
+    expect(result.content[0].text).toBe('Returning 2 of 2 result(s).');
+  });
+});
+
 describe('shapeListResult — result cap (total > items)', () => {
   it('marks truncated with a result_cap continuation when more exist upstream', () => {
     const result = shapeListResult({ items: [{ a: 1 }], itemsKey: 'things', total: 10 });
