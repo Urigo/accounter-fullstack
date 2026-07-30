@@ -30,6 +30,7 @@
     "accounter"
   ],
   "scripts": {
+    "benchmark": "cd ../.. && vitest run --project unit packages/mcp-server/src/__tests__/perf.test.ts",
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet",
