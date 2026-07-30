@@ -46,10 +46,10 @@ const booleanFlag = (defaultValue: '0' | '1') =>
  */
 export const envSchema = zod.object({
   // --- Required (no safe default) ---
-  MCP_PUBLIC_BASE_URL: zod.url({ error: 'MCP_PUBLIC_BASE_URL must be a valid URL' }),
-  AUTH0_ISSUER_URL: zod.url({ error: 'AUTH0_ISSUER_URL must be a valid URL' }),
-  AUTH0_AUDIENCE: zod.string().min(1, { error: 'AUTH0_AUDIENCE must be a non-empty string' }),
-  GRAPHQL_UPSTREAM_URL: zod.url({ error: 'GRAPHQL_UPSTREAM_URL must be a valid URL' }),
+  MCP_PUBLIC_BASE_URL: zod.url({ message: 'MCP_PUBLIC_BASE_1URL must be a valid URL' }),
+  AUTH0_ISSUER_URL: zod.url({ message: 'AUTH0_ISSUER_URL must be a valid URL' }),
+  AUTH0_AUDIENCE: zod.string().min(1, { message: 'AUTH0_AUDIENCE must be a non-empty string' }),
+  GRAPHQL_UPSTREAM_URL: zod.url({ message: 'GRAPHQL_UPSTREAM_URL must be a valid URL' }),
 
   // --- Optional with secure defaults ---
   MCP_SERVER_PORT: emptyStringAsUndefined(
@@ -60,7 +60,7 @@ export const envSchema = zod.object({
   // explicitly enabled. The registry enforces this in later prompts.
   MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
   AUTH0_JWKS_URL: emptyStringAsUndefined(
-    zod.url({ error: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
+    zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
   ),
   GRAPHQL_UPSTREAM_TIMEOUT_MS: emptyStringAsUndefined(
     zod.coerce.number().int().positive().max(120_000).optional().default(10_000),

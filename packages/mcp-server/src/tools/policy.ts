@@ -50,23 +50,26 @@ export interface EvaluatePolicyParams {
 export function evaluateToolPolicy(params: EvaluatePolicyParams): PolicyDecision {
   const { policy, auth, requestedBusinessIds } = params;
 
-  // 1. Role gate (any-of).
-  if (policy.requiredRoles && policy.requiredRoles.length > 0) {
-    const held = new Set(auth.roles);
-    if (!policy.requiredRoles.some(role => held.has(role))) {
-      return deny('Caller is missing a required role for this tool');
-    }
-  }
-
-  // 2. Resolve requested scope as a subset of authorized memberships.
+  // 1. Resolve requested scope as a subset of authorized memberships.
   const readScope = resolveRequestedReadScope(auth, requestedBusinessIds);
   if (readScope === null) {
     return deny('Requested business scope is outside your authorized memberships');
   }
 
-  // 3. Business-scope requirement.
+  // 2. Business-scope requirement.
   if (policy.requiresBusinessScope && readScope.businessIds.length === 0) {
     return deny('No authorized business scope for this request');
+  }
+
+  // 3. Role gate (any-of) evaluated against membership roleIds in the resolved scope.
+  if (policy.requiredRoles && policy.requiredRoles.length > 0) {
+    const inScope = new Set(readScope.businessIds);
+    const held = new Set(
+      auth.memberships.filter(m => inScope.has(m.businessId)).map(m => m.roleId),
+    );
+    if (!policy.requiredRoles.some(role => held.has(role))) {
+      return deny('Caller is missing a required role for this tool');
+    }
   }
 
   return { allowed: true, readScope };

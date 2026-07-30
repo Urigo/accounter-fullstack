@@ -64,15 +64,28 @@ interface RawBalanceRow {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function assertDateRange(input: BalanceReportInput): void {
-  const from = Date.parse(input.fromDate);
-  const to = Date.parse(input.toDate);
-  if (Number.isNaN(from) || Number.isNaN(to)) {
+  const parseCalendarDate = (value: string): number | null => {
+    const [year, month, day] = value.split('-').map(Number);
+    const timestamp = Date.UTC(year, month - 1, day);
+    const date = new Date(timestamp);
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      return null;
+    }
+    return timestamp;
+  };
+  const from = parseCalendarDate(input.fromDate);
+  const to = parseCalendarDate(input.toDate);
+  if (from === null || to === null) {
     throw new ToolInputError('Invalid fromDate/toDate');
   }
   if (from > to) {
     throw new ToolInputError('fromDate must be on or before toDate');
   }
-  if ((to - from) / DAY_MS > MAX_REPORT_DATE_RANGE_DAYS) {
+  if (Math.round((to - from) / DAY_MS) > MAX_REPORT_DATE_RANGE_DAYS) {
     throw new ToolInputError(`Date range must not exceed ${MAX_REPORT_DATE_RANGE_DAYS} days`);
   }
 }
