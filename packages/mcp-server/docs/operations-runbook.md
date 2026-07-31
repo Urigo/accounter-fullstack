@@ -91,6 +91,6 @@ Useful queries (adapt to your log backend):
 
 ## 6. Configuration reference
 
-See [`packages/mcp-server/README.md`](../../packages/mcp-server/README.md#configuration) for the
-full env-var table. Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`,
-`GRAPHQL_UPSTREAM_URL`. The process fails fast at startup on any missing/malformed value.
+See [`packages/mcp-server/README.md`](../README.md#configuration) for the full env-var table.
+Required: `MCP_PUBLIC_BASE_URL`, `AUTH0_ISSUER_URL`, `AUTH0_AUDIENCE`, `GRAPHQL_UPSTREAM_URL`. The
+process fails fast at startup on any missing/malformed value.

@@ -5,13 +5,13 @@ capabilities to Claude clients (Claude.ai / Claude Desktop).
 
 See the design docs:
 
-- [`docs/mcp/spec.md`](../../docs/mcp/spec.md) — connector specification
-- [`docs/mcp/implementation-blueprint.md`](../../docs/mcp/implementation-blueprint.md) — incremental
+- [`docs/mcp/spec.md`](./docs/mcp/spec.md) — connector specification
+- [`docs/mcp/implementation-blueprint.md`](./docs/mcp/implementation-blueprint.md) — incremental
   implementation plan
-- [`docs/mcp/operations-runbook.md`](../../docs/mcp/operations-runbook.md) — incident handling,
-  metrics, log queries, rollback
-- [`docs/mcp/submission-checklist.md`](../../docs/mcp/submission-checklist.md) — connector
-  submission readiness
+- [`docs/mcp/operations-runbook.md`](./docs/mcp/operations-runbook.md) — incident handling, metrics,
+  log queries, rollback
+- [`docs/mcp/submission-checklist.md`](./docs/mcp/submission-checklist.md) — connector submission
+  readiness
 
 ## Status
 
@@ -148,6 +148,11 @@ curl http://localhost:3100/health
 
 The server handles `SIGINT`/`SIGTERM` by closing connections and exiting cleanly (forcing exit after
 a grace period).
+
+To connect this server to Claude Desktop as a custom connector — HTTPS tunnel, Auth0 application,
+connector fields, and a troubleshooting table — see
+[`docs/mcp/local-development.md`](./docs/mcp/local-development.md). Note that Claude requires an
+HTTPS connector URL, so `http://localhost:3100` cannot be used directly.
 
 ### MCP endpoint
 
