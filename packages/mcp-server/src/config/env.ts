@@ -105,8 +105,10 @@ export class EnvValidationError extends Error {
 
 const stripTrailingSlash = (url: string): string => url.replace(/\/+$/, '');
 
+const ensureTrailingSlash = (url: string): string => `${stripTrailingSlash(url)}/`;
+
 const deriveJwksUrl = (issuerUrl: string): string =>
-  new URL('.well-known/jwks.json', `${stripTrailingSlash(issuerUrl)}/`).toString();
+  new URL('.well-known/jwks.json', ensureTrailingSlash(issuerUrl)).toString();
 
 /**
  * Validate a raw environment source and build the typed config. Throws
@@ -130,7 +132,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
         .filter(Boolean),
     },
     auth0: {
-      issuerUrl: raw.AUTH0_ISSUER_URL,
+      issuerUrl: ensureTrailingSlash(raw.AUTH0_ISSUER_URL),
       audience: raw.AUTH0_AUDIENCE,
       jwksUrl: raw.AUTH0_JWKS_URL ?? deriveJwksUrl(raw.AUTH0_ISSUER_URL),
     },

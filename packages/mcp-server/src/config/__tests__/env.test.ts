@@ -29,8 +29,18 @@ describe('parseEnv — valid configuration', () => {
     expect(config.server.publicBaseUrl).toBe('https://mcp.example.com');
   });
 
+  it('normalizes issuer urls to include a trailing slash', () => {
+    const config = parseEnv({ ...validEnv, AUTH0_ISSUER_URL: 'https://tenant.auth0.com' });
+    expect(config.auth0.issuerUrl).toBe('https://tenant.auth0.com/');
+  });
+
   it('derives the JWKS url from the issuer when not provided', () => {
     const config = parseEnv(validEnv);
+    expect(config.auth0.jwksUrl).toBe('https://tenant.auth0.com/.well-known/jwks.json');
+  });
+
+  it('derives the JWKS url from a slashless issuer', () => {
+    const config = parseEnv({ ...validEnv, AUTH0_ISSUER_URL: 'https://tenant.auth0.com' });
     expect(config.auth0.jwksUrl).toBe('https://tenant.auth0.com/.well-known/jwks.json');
   });
 
