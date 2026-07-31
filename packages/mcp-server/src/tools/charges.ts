@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { McpSearchChargesQuery, McpSearchChargesQueryVariables } from '../gql/index.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
@@ -62,24 +63,8 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
   }
 `;
 
-interface RawCharge {
-  id: string;
-  userDescription: string | null;
-  totalAmount: { raw: number; formatted: string; currency: string } | null;
-  minEventDate: string | null;
-}
-
-interface SearchChargesData {
-  allCharges: {
-    nodes: RawCharge[];
-    pageInfo: {
-      totalPages: number;
-      totalRecords: number;
-      currentPage: number | null;
-      pageSize: number | null;
-    };
-  };
-}
+/** A single charge node as returned by the generated `McpSearchCharges` query. */
+type RawCharge = McpSearchChargesQuery['allCharges']['nodes'][number];
 
 /** Normalized charge shape returned to the caller. */
 export interface NormalizedCharge {
@@ -119,15 +104,20 @@ function assertDateRange(input: SearchChargesInput): void {
   }
 }
 
-function buildFilters(input: SearchChargesInput, businessIds: readonly string[]) {
-  const filters: Record<string, unknown> = { chargesType: input.flow };
+function buildFilters(
+  input: SearchChargesInput,
+  businessIds: readonly string[],
+): NonNullable<McpSearchChargesQueryVariables['filters']> {
+  const filters: NonNullable<McpSearchChargesQueryVariables['filters']> = {
+    chargesType: input.flow,
+  };
   // Always scope to the authorized businesses.
   if (businessIds.length > 0) {
     filters.byBusinesses = [...businessIds];
   }
   if (input.fromDate) filters.fromDate = input.fromDate;
   if (input.toDate) filters.toDate = input.toDate;
-  if (input.tags && input.tags.length > 0) filters.byTags = input.tags;
+  if (input.tags && input.tags.length > 0) filters.byTags = [...input.tags];
   if (input.freeText) filters.freeText = input.freeText;
   return filters;
 }
@@ -153,18 +143,16 @@ async function handler(
 ): Promise<ToolResult> {
   assertDateRange(input);
 
-  const data = await context.client.query<SearchChargesData>(
-    {
-      query: SEARCH_CHARGES_QUERY,
-      variables: {
-        filters: buildFilters(input, context.readScope.businessIds),
-        // The tool exposes a 1-based `page`, but upstream `allCharges` is 0-based
-        // (it slices `[page * limit, (page + 1) * limit]`), so translate here —
-        // otherwise page 1 would skip the first page of results.
-        page: input.page - 1,
-        limit: input.pageSize,
-      },
-    },
+  const variables: McpSearchChargesQueryVariables = {
+    filters: buildFilters(input, context.readScope.businessIds),
+    // The tool exposes a 1-based `page`, but upstream `allCharges` is 0-based
+    // (it slices `[page * limit, (page + 1) * limit]`), so translate here —
+    // otherwise page 1 would skip the first page of results.
+    page: input.page - 1,
+    limit: input.pageSize,
+  };
+  const data = await context.client.query<McpSearchChargesQuery>(
+    { query: SEARCH_CHARGES_QUERY, variables },
     { correlationId: context.correlationId, authorization: context.authorization },
   );
 
