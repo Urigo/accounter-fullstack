@@ -4,15 +4,14 @@ import type { AuthPrincipal } from '../../auth/token.js';
 import { authorizeToolCall, evaluateToolPolicy } from '../policy.js';
 import type { ToolAuthPolicy, ToolDefinition } from '../registry.js';
 
-function authContext(
-  memberships: Array<{ businessId: string; roleId: string }>,
-  scopes: string[] = [],
-): McpAuthContext {
+function authContext(memberships: Array<{ businessId: string; roleId: string }>): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
     audience: 'aud',
-    scopes,
+    // Coarse OAuth transport scopes only — business roles are never read from
+    // the token, they ride on the memberships resolved upstream (spec §6.4/§7.1).
+    scopes: ['openid'],
     email: null,
     expiresAt: undefined,
     claims: { sub: 'user-1' },
@@ -20,7 +19,7 @@ function authContext(
   return buildAuthContext(principal, memberships);
 }
 
-const M = (businessId: string) => ({ businessId, roleId: 'accountant' });
+const M = (businessId: string, roleId = 'accountant') => ({ businessId, roleId });
 
 const scopedPolicy: ToolAuthPolicy = {
   requiresBusinessScope: true,
@@ -69,7 +68,7 @@ describe('evaluateToolPolicy — business scope', () => {
 
 describe('evaluateToolPolicy — roles', () => {
   const roleScopedPolicy: ToolAuthPolicy = {
-    requiredRoles: ['read:reports', 'admin'],
+    requiredRoles: ['accountant', 'admin'],
     requiresBusinessScope: false,
     dataClassification: 'business',
   };
@@ -77,7 +76,7 @@ describe('evaluateToolPolicy — roles', () => {
   it('allows when the caller holds one of the required roles (any-of)', () => {
     const decision = evaluateToolPolicy({
       policy: roleScopedPolicy,
-      auth: authContext([M('b1')], ['read:reports']),
+      auth: authContext([M('b1', 'accountant')]),
     });
     expect(decision.allowed).toBe(true);
   });
@@ -85,7 +84,7 @@ describe('evaluateToolPolicy — roles', () => {
   it('denies when the caller holds none of the required roles', () => {
     const decision = evaluateToolPolicy({
       policy: roleScopedPolicy,
-      auth: authContext([M('b1')], ['read:charges']),
+      auth: authContext([M('b1', 'viewer')]),
     });
     expect(decision.allowed).toBe(false);
     if (!decision.allowed) {
@@ -96,7 +95,7 @@ describe('evaluateToolPolicy — roles', () => {
   it('applies no role gate when requiredRoles is omitted', () => {
     const decision = evaluateToolPolicy({
       policy: { requiresBusinessScope: false, dataClassification: 'public' },
-      auth: authContext([], []),
+      auth: authContext([]),
     });
     expect(decision).toEqual({ allowed: true, readScope: { businessIds: [] } });
   });

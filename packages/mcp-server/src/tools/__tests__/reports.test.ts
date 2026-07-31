@@ -5,19 +5,23 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
 import { balanceReportTool, MAX_REPORT_ROWS } from '../reports.js';
 
-function authContext(businessIds: string[], roles: string[] = ['accountant']): McpAuthContext {
+/**
+ * The caller's business role is the membership `roleId` resolved upstream — the
+ * token carries identity plus coarse transport scopes only (spec §6.4/§7.1).
+ */
+function authContext(businessIds: string[], roleId = 'accountant'): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
     audience: 'aud',
-    scopes: roles,
+    scopes: ['openid'],
     email: null,
     expiresAt: undefined,
     claims: { sub: 'user-1' },
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    businessIds.map(businessId => ({ businessId, roleId })),
   );
 }
 
@@ -161,7 +165,7 @@ describe('balanceReportTool — oversized results', () => {
 describe('balanceReportTool — authorization', () => {
   it('denies a caller without the required role', async () => {
     const client = clientReturning([]);
-    const result = await run(client, authContext(['b1'], ['read:charges']), validArgs);
+    const result = await run(client, authContext(['b1'], 'viewer'), validArgs);
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });
