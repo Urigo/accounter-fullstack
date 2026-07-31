@@ -264,6 +264,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@accounter/mcp-server@workspace:packages/mcp-server":
+  version: 0.0.0-use.local
+  resolution: "@accounter/mcp-server@workspace:packages/mcp-server"
+  dependencies:
+    "@types/node": "npm:25.9.5"
+    dotenv: "npm:17.4.2"
+    jose: "npm:6.2.3"
+    tsx: "npm:4.23.1"
+    typescript: "npm:6.0.3"
+    vitest: "npm:4.1.10"
+    zod: "npm:4.4.3"
+  languageName: unknown
+  linkType: soft
+
 "@accounter/modern-poalim-scraper@workspace:^, @accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper":
   version: 0.0.0-use.local
   resolution: "@accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper"
@@ -18549,6 +18563,13 @@ __metadata:
   bin:
     jiti: lib/jiti-cli.mjs
   checksum: 10c0/1b1e2310a490dce1aeea3da5f5dfe18273516c20ce48be2e98eb8ea452d5f3dcc8fd0cfd6d28b4052a24c5dbab6e3089b2d7e79f0bce7915b10d750929563c42
+  languageName: node
+  linkType: hard
+
+"jose@npm:6.2.3":
+  version: 6.2.3
+  resolution: "jose@npm:6.2.3"
+  checksum: 10c0/aa91bccba22cc84d86308f833749bcb0b00441e35c24e0ac79abeac5f76dc62d47bdef9c1da6a0c609f5da6478595f52b252085888b89dbdb163861e40ea4188
   languageName: node
   linkType: hard
 

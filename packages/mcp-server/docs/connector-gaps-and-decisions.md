@@ -1,0 +1,148 @@
+# MCP Connector — Known Gaps & Open Decisions
+
+Findings from the first end-to-end Claude Desktop ↔ `@accounter/mcp-server` connection
+(2026-07-30/31). The connector works locally; this records what stands between that and a
+production/published connector, and what still needs a decision.
+
+Complements [`submission-checklist.md`](./submission-checklist.md) — none of the gaps below appear
+there, and its "Authentication & OAuth discovery" section is marked fully complete while gap 1 is
+outstanding.
+
+Setup instructions live in [`local-development.md`](./local-development.md).
+
+## Known gaps
+
+### 1. Auth0 DCR is rejected by Claude — **critical, blocks production**
+
+`POST /oidc/register` returns `201 Created`, but Claude reports "Couldn't register with Accounter's
+sign-in service" and never proceeds to `/authorize`.
+
+The logged response body contains only `client_id`, `client_secret`, `client_name`, `redirect_uris`,
+`token_endpoint_auth_method` — no `grant_types` or `response_types`. RFC 7591 expects registered
+metadata echoed back; that is the likely rejection cause, though Claude's side is not observable.
+
+Registration originates from Anthropic's backend (`160.79.106.x`, `python-httpx`), not the desktop
+app, so nothing can be patched locally.
+
+**Impact.** A published connector _must_ use DCR — arbitrary users cannot be handed a confidential
+client secret. The pre-registered-client workaround is viable only for developers and small trusted
+groups. **This is the critical path to production, and it is not ours to fix.** Options: report the
+interop bug to Anthropic and/or Auth0, or front Auth0 with an authorization server that implements
+RFC 7591 the way Claude expects.
+
+Reproduction data is in the Auth0 tenant logs (type `sapi`, "Dynamic client registration").
+
+### 2. `MCP_TOOL_ALLOWLIST` is not enforced — **high before phase 2**
+
+Parsed into `env.server.toolAllowlist` (`packages/mcp-server/src/config/env.ts`) and documented as
+the least-privilege control ("empty allowlist means no tools are exposed"), but no code reads it.
+All registered tools are exposed regardless.
+
+**Impact.** Low today — phase 1 is read-only. It becomes a real control gap the moment phase 2 adds
+mutating tools. Either wire it into the registry or correct the documentation; today the docs
+describe a control that does not exist.
+
+### 3. No resource binding: MCP and GraphQL share one audience — **medium**
+
+Auth0 ignores the RFC 8707 `resource` parameter Claude sends (observed: `resource=<tunnel URL>`
+discarded) and substitutes the tenant Default Audience, `https://api.accounter.com`.
+
+**Impact.** The MCP server and the GraphQL API validate the same audience, so a token minted for the
+web SPA is accepted by the MCP server and vice versa. The mechanism that normally prevents token
+reuse across resources is not in effect. Giving the MCP server a distinct audience is not currently
+possible: Claude only sends `resource`, and Auth0 will keep substituting the tenant default. Note
+also that Default Audience is tenant-wide and affects every application in the tenant.
+
+This is a design decision to make consciously, not a bug to fix.
+
+### 4. Ephemeral tunnel hostname — **medium (dev friction)**
+
+`cloudflared` quick tunnels get a new hostname on every restart, silently invalidating both
+`MCP_PUBLIC_BASE_URL` and the connector URL. Rotated twice in a single session. Production needs a
+stable domain with real TLS; ongoing development wants a named tunnel.
+
+### 5. `POST /mcp/` returns 404 — **low**
+
+Only the exact path `/mcp` is routed; `/` and `/mcp/` both `404`. A trailing slash looks correct and
+fails silently, and 404s never reach the auth layer, so `/metrics` records nothing — this cost real
+debugging time. Tolerating a trailing slash is a small change.
+
+### 6. `submission-checklist.md` omits client registration — **low-medium**
+
+The checklist covers the server's OAuth discovery obligations but never mentions DCR or how clients
+obtain credentials, so it reads as complete while gap 1 is open. Add a client-registration line item
+and list gap 1 under "Known gaps to disclose at submission".
+
+### 7. Connector uses the API's auto-created test application — **low-medium (deferred)**
+
+The connector authenticates as `jTQFYG0Jgzoj5HlQzB2YNiRbfiB8dYJh`, which is the Accounter API's
+auto-created _"Accounter API (Test Application)"_ renamed to `Claude MCP Connector`. Accepted
+deliberately (2026-07-31) to avoid extra setup while the local connector was being brought up.
+
+Latent problems, none of which affect current operation:
+
+- **Lifecycle is tied to the API object.** Auth0 removes the test application when its API is
+  deleted, so recreating or replacing the Accounter API silently destroys the connector's
+  credentials with nothing pointing at the dependency.
+- **Shared with the dashboard.** It backs the API's **Test** tab; anyone rotating its secret there
+  breaks the connector.
+- **Wrong application type.** It is a non-interactive M2M client running an Authorization Code +
+  Refresh Token flow. Functional (grant types were enabled manually), but Auth0 defaults and
+  anything keying off `app_type` assume M2M, and the name now misrepresents what the object is.
+
+**Task:** replace it with a purpose-built **Regular Web Application** (callback
+`https://claude.ai/api/mcp/auth_callback`, Authorization Code + Refresh Token grants), move the
+user-delegated grant on the Accounter API to the new app, update the connector's client ID/secret in
+Claude Desktop, and restore the test application's original name. Best paired with any other change
+that already requires re-granting API access.
+
+## Auth0 tenant changes made during debugging
+
+Applied to the dev tenant `dev-cnaunfqjwhwwd8ld` to get DCR-based connection working. Both exist
+only because Auth0 marks DCR clients as third-party (`tpc_…` ids); neither is exposed in the normal
+Auth0 dashboard views.
+
+| Change                                                                         | Object                                   | Purpose                                                  |
+| ------------------------------------------------------------------------------ | ---------------------------------------- | -------------------------------------------------------- |
+| `subject_type_authorization.user.policy`: `require_client_grant` → `allow_all` | Accounter API `699c2d8a2f8cfd0eb0e4f68f` | third-party clients cannot hold pre-registered grants    |
+| `is_domain_connection`: `false` → `true`                                       | `google-oauth2` `con_lbR5Lim19YOK1qIu`   | third-party clients only accept domain-level connections |
+
+Neither is required once the setup uses a pre-registered first-party client, and **both were
+reverted on 2026-07-31**, verified by a full reconnect:
+
+- `is_domain_connection` — back to `false`.
+- `user.policy` — back to `require_client_grant`.
+
+The connector is now authorized by an explicit _user-subject_ grant on the Accounter API (**APIs →
+Accounter API → Application access → User-delegated access**) rather than by a permissive policy.
+That grant must move with the application if the app is ever replaced — see gap 7.
+
+**Ordering matters.** A first attempt at the `user.policy` revert was rolled back because the grant
+did not yet exist: it broke the connector instantly, including refresh-token exchanges on the live
+session (`fertft` in the tenant logs), not just new logins. Create the grant first, then flip the
+policy, then verify with a full reconnect — under `allow_all` a successful reconnect proves nothing
+about the grant.
+
+**Do not replay either on a production tenant without a deliberate decision** — domain-level
+promotion lets any third-party app registering against the tenant use that connection for login, and
+`allow_all` lets any client request user-delegated tokens for the Accounter API.
+
+Temporarily widened Management API scopes on the `accounter` M2M application (`read:connections`,
+`update:connections`, `read:resource_servers`, `update:resource_servers`, `read:logs`) should be
+returned to the original four `*:users` scopes. These credentials are the root `.env`
+`AUTH0_CLIENT_ID`/`SECRET` used by the running server, so the widening applies to the application
+process itself. `read:logs` is read-only and worth keeping — it was the single most useful
+diagnostic in this work.
+
+## Open decisions
+
+1. **Audience strategy.** Accept the shared `https://api.accounter.com` audience for MCP and GraphQL
+   (gap 3), or pursue separation. Constrained by Auth0 ignoring `resource`.
+2. **DCR interop.** Who owns reporting it, and is a fronting authorization server acceptable as a
+   fallback if it is not fixed upstream? Gates any published connector.
+3. **`MCP_TOOL_ALLOWLIST`.** Implement enforcement, or remove the claim from the docs (gap 2).
+   Should be settled before phase 2 write tools land.
+4. **Production hosting.** Stable domain and TLS for the MCP origin; `MCP_PUBLIC_BASE_URL` must
+   match it exactly.
+5. **Third-party posture.** If a published connector is the goal, the tenant changes above become
+   permanent production requirements, not debugging artifacts. Decide deliberately.
