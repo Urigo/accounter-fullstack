@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -16,8 +17,6 @@ export const SEARCH_CHARGES_TOOL_NAME = 'accounter_search_charges';
 export const MAX_PAGE_SIZE = 50;
 export const DEFAULT_PAGE_SIZE = 25;
 export const MAX_DATE_RANGE_DAYS = 366;
-
-const TIMELESS_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
 const searchChargesInput = z.object({
   businessIds: z
@@ -88,28 +87,6 @@ export interface NormalizedCharge {
   description: string | null;
   amount: { value: number; formatted: string; currency: string } | null;
   date: string | null;
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Parse a strict `YYYY-MM-DD` string to a UTC timestamp, or `null` if it is not a
- * real calendar date. `Date.parse` alone is unsafe here: it silently rolls
- * impossible dates over (e.g. `2026-02-31` → `2026-03-03`) instead of failing, so
- * we verify the parsed components round-trip back to the input.
- */
-function parseCalendarDate(value: string): number | null {
-  const [year, month, day] = value.split('-').map(Number);
-  const timestamp = Date.UTC(year, month - 1, day);
-  const date = new Date(timestamp);
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
-    return null;
-  }
-  return timestamp;
 }
 
 /** Reject an invalid, inverted, or too-wide date range before hitting upstream. */
