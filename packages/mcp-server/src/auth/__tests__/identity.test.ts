@@ -144,6 +144,34 @@ describe('membershipsFromClaims', () => {
       ),
     ).toEqual([M('b1', '7'), M('b4', '')]);
   });
+
+  it('carries businessName but never drops a membership over a malformed one', () => {
+    // Unlike roleId, the display name is not load-bearing for authorization, so
+    // a bad name must never cost the caller access to a real business — it is
+    // simply treated as "no name".
+    const memberships = membershipsFromClaims(
+      principal({
+        claims: {
+          sub: 'u',
+          memberships: [
+            { businessId: 'b1', roleId: 'accountant', businessName: 'Acme' },
+            { businessId: 'b2', roleId: 'accountant', business_name: 'Snake Case' },
+            { businessId: 'b3', roleId: 'accountant', businessName: { nested: true } },
+            { businessId: 'b4', roleId: 'accountant', businessName: null },
+            { businessId: 'b5', roleId: 'accountant' },
+          ],
+        },
+      }),
+    );
+
+    expect(memberships.map(m => [m.businessId, m.businessName])).toEqual([
+      ['b1', 'Acme'],
+      ['b2', 'Snake Case'],
+      ['b3', undefined],
+      ['b4', undefined],
+      ['b5', undefined],
+    ]);
+  });
 });
 
 describe('resolveAuthContext', () => {
