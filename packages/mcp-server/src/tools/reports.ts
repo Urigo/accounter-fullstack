@@ -96,11 +96,17 @@ async function handler(
 ): Promise<ToolResult> {
   assertDateRange(input);
 
-  // Policy has already confirmed the requested business is within scope; use the
-  // narrowed scope as the single owner. Assert defensively — a business-scoped
-  // tool must never reach upstream without a concrete owner.
-  const ownerId = context.readScope.businessIds[0];
-  if (!ownerId) {
+  // Report on the business the caller actually asked for. Deriving the owner
+  // from the scope instead (`readScope.businessIds[0]`) happens to agree today
+  // only because the policy narrows the scope to exactly this one business — it
+  // would silently report on the wrong business the moment the scope can hold
+  // more than one entry.
+  //
+  // The membership check is defense in depth: the policy has already verified
+  // this business is in scope, so a mismatch means the two disagree, and a
+  // business-scoped tool must never reach upstream with an unauthorized owner.
+  const ownerId = input.businessId;
+  if (!context.readScope.businessIds.includes(ownerId)) {
     throw new ToolInputError('No authorized business in scope for this report');
   }
 

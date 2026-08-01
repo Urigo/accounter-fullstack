@@ -83,20 +83,31 @@ describe('searchChargesTool — successful read', () => {
     expect(structured.pagination.hasNextPage).toBe(false);
   });
 
-  it('scopes the query to the authorized businesses (byBusinesses)', async () => {
+  it('scopes the query to the authorized businesses (byOwners)', async () => {
     let sentBody: unknown;
     const client = clientReturning(oneCharge, body => (sentBody = body));
     await run(client, authContext(['b1', 'b2']), {});
-    const variables = (sentBody as { variables: { filters: { byBusinesses: string[] } } }).variables;
-    expect(variables.filters.byBusinesses).toEqual(['b1', 'b2']);
+    const variables = (sentBody as { variables: { filters: { byOwners: string[] } } }).variables;
+    expect(variables.filters.byOwners).toEqual(['b1', 'b2']);
   });
 
   it('narrows the scope to a requested subset', async () => {
     let sentBody: unknown;
     const client = clientReturning(oneCharge, body => (sentBody = body));
     await run(client, authContext(['b1', 'b2', 'b3']), { businessIds: ['b2'] });
-    const variables = (sentBody as { variables: { filters: { byBusinesses: string[] } } }).variables;
-    expect(variables.filters.byBusinesses).toEqual(['b2']);
+    const variables = (sentBody as { variables: { filters: { byOwners: string[] } } }).variables;
+    expect(variables.filters.byOwners).toEqual(['b2']);
+  });
+
+  // Regression guard: `byBusinesses` is the COUNTERPARTY predicate, and upstream
+  // strips the owner from `business_array`, so filtering by it returned only
+  // inter-company charges. Owner scoping must never go back to that field.
+  it('never sends byBusinesses — that is the counterparty predicate', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1', 'b2']), {});
+    const { filters } = (sentBody as { variables: { filters: Record<string, unknown> } }).variables;
+    expect('byBusinesses' in filters).toBe(false);
   });
 
   it('requests the first upstream page (0-based) for the default page', async () => {

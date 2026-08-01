@@ -65,6 +65,38 @@ const run = (client: UpstreamGraphQLClient, auth: McpAuthContext, rawArgs: unkno
 const validArgs = { businessId: 'b1', fromDate: '2026-01-01', toDate: '2026-03-01' };
 
 describe('balanceReportTool — valid report', () => {
+  // Regression guard for the owner source. Driven through the handler directly
+  // rather than `executeRegisteredTool`, because the policy narrows `readScope`
+  // to exactly `[input.businessId]` (execute.ts honors the singular field), so
+  // via the normal path the scope-derived owner and the requested owner always
+  // agree and the two are indistinguishable.
+  //
+  // The bug is therefore latent, not live — but it goes live the moment the
+  // resolved scope can hold more than one business, at which point deriving the
+  // owner from `readScope.businessIds[0]` silently reports on the wrong one.
+  it('takes the owner from input.businessId, not from the first id in scope', async () => {
+    let sent: unknown;
+    const client = clientReturning([row('t1')], body => (sent = body));
+    const auth = authContext(['b1', 'b2']);
+    const result = await balanceReportTool.handler(
+      { businessId: 'b2', fromDate: '2026-01-01', toDate: '2026-03-01', reportType: 'BALANCE' },
+      {
+        auth,
+        // Deliberately wider than one business, and ordered so that
+        // `businessIds[0]` is NOT the requested business.
+        readScope: { businessIds: ['b1', 'b2'] },
+        correlationId: 'c',
+        client,
+        authorization: 'Bearer t',
+        upstream: { correlationId: 'c', authorization: 'Bearer t', businessScope: ['b1', 'b2'] },
+      },
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect((sent as { variables: { ownerId: string } }).variables.ownerId).toBe('b2');
+    expect((result.structuredContent as { businessId: string }).businessId).toBe('b2');
+  });
+
   it('returns normalized rows scoped to the requested business (ownerId)', async () => {
     let sent: unknown;
     const client = clientReturning([row('t1')], body => (sent = body));

@@ -144,9 +144,20 @@ function assertDateRange(input: SearchChargesInput): void {
 
 function buildFilters(input: SearchChargesInput, businessIds: readonly string[]) {
   const filters: Record<string, unknown> = { chargesType: input.flow };
-  // Always scope to the authorized businesses.
+  // Always scope to the authorized businesses — by OWNER, not counterparty.
+  //
+  // `byOwners` is the owner predicate (`c.owner_id IN $ownerIds`). `byBusinesses`
+  // is the *counterparty* predicate (`ec.business_array && $ids`), and upstream
+  // builds that array as `array_remove(base.business_array, fc.owner_id)` — the
+  // owner is explicitly removed from it. Filtering by `byBusinesses` therefore
+  // matched only charges where an authorized business appears as the *other*
+  // party, i.e. inter-company charges: a small and wrong slice of the results.
+  //
+  // Kept as an explicit predicate even though `x-business-scope` now narrows via
+  // RLS upstream: defence in depth, and the tool stays correct if upstream ever
+  // runs under a scope-bypassing role.
   if (businessIds.length > 0) {
-    filters.byBusinesses = [...businessIds];
+    filters.byOwners = [...businessIds];
   }
   if (input.fromDate) filters.fromDate = input.fromDate;
   if (input.toDate) filters.toDate = input.toDate;
