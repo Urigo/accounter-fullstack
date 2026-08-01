@@ -128,6 +128,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
     __isTypeOf: parent => 'hashavshevet_name' in parent,
     id: parent => parent.id,
     name: parent => parent.name,
+    isActive: parent => parent.is_active ?? true,
   },
   CommonCharge: commonTaxChargeFields,
   FinancialCharge: commonTaxChargeFields,
@@ -148,7 +149,7 @@ export const taxCategoriesResolvers: FinancialEntitiesModule.Resolvers = {
       // The field is nullable: many businesses (e.g. auto-generated ones) have no
       // tax category yet, and the management screen lists them all, so return null
       // rather than throwing when none is matched.
-      return taxCategory ?? null;
+      return taxCategory ? { ...taxCategory, isActive: taxCategory.is_active ?? true } : null;
     },
   },
 };
