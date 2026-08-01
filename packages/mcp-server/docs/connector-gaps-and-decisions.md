@@ -42,6 +42,13 @@ All registered tools are exposed regardless.
 mutating tools. Either wire it into the registry or correct the documentation; today the docs
 describe a control that does not exist.
 
+> **When enforcement lands, `accounter_list_businesses` must be in the default allowlist.** It is
+> the discovery entry point for business scoping: the model calls it to learn which `businessId`
+> values exist before passing them to the other tools. Omitting it does not degrade scoping
+> gracefully — it removes the only way to discover a business id, so every business-scoped call is
+> left guessing. Note the failure would be silent: the remaining tools still work, just unscoped and
+> defaulted to all memberships.
+
 ### 3. No resource binding: MCP and GraphQL share one audience — **medium**
 
 Auth0 ignores the RFC 8707 `resource` parameter Claude sends (observed: `resource=<tunnel URL>`
