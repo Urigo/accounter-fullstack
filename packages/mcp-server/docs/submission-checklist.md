@@ -37,8 +37,15 @@ code satisfies them.
 
 ## Tools & responses
 
-- [x] Curated tool set: `accounter_search_charges`, `accounter_list_tags`,
-      `accounter_list_tax_categories`, `accounter_balance_report`.
+- [x] Curated tool set: `accounter_list_businesses`, `accounter_search_charges`,
+      `accounter_list_tags`, `accounter_list_tax_categories`, `accounter_balance_report`. Discovery
+      is registered first so it leads `tools/list`; the internal `accounter_smoke_ping` is
+      dispatchable but deliberately not advertised.
+- [x] Uniform business scoping: optional `businessIds` (singular required `businessId` on the
+      single-business report), out-of-scope ids rejected rather than dropped, resolved scope
+      forwarded upstream as `x-business-scope` with RLS as the enforcement point.
+- [x] Self-describing responses: rows carry `ownerId` (charges also `ownerName`) and every
+      business-scoped tool echoes `scope.businessIds`.
 - [x] Strict input schemas (unknown fields rejected); advertised JSON Schema matches runtime
       validation (`additionalProperties: false`).
 - [x] Bounded, deterministic responses (date-range ≤ 366 days, page size ≤ 50, list caps 500,

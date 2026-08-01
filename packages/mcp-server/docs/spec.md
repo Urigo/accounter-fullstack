@@ -204,6 +204,47 @@ Rules:
 - Requested scope outside memberships => forbidden
 - Empty requested scope => default authorized read scope
 
+### 7.3.1 Forwarding rule
+
+The resolved read scope MUST be forwarded to the Accounter GraphQL server on every tool call as the
+`x-business-scope` header (comma-joined business ids). The server maps it to
+`app.current_business_scope`, and **row-level security is the enforcement point**. MCP-side
+narrowing is the first gate — it rejects out-of-scope ids early with a legible `AUTHORIZATION_ERROR`
+— but it is not the only one.
+
+This is mandatory rather than best-effort because the argument-less upstream queries (`allTags`,
+`taxCategories`) have no filter arguments capable of expressing a scope; the header is their only
+narrowing mechanism.
+
+Two rules constrain how the header is emitted:
+
+- **An empty or absent scope MUST NOT send the header.** The server reads an absent
+  `x-business-scope` as "all of the caller's memberships", so an empty header would _widen_ the
+  scope rather than narrow it.
+- **Ids MUST NOT be filtered before joining.** Silently dropping an id is precisely the failure mode
+  scope validation exists to prevent; an unusable id is a rejected request, not a smaller scope.
+
+The scope-discovery query (`myMemberships`, §7.1) is the one call that MUST NOT carry the header:
+scoping the query that resolves the scope is circular, and a stale or not-yet-known id would fail
+the whole request at authentication time instead of returning an empty membership list.
+
+To make omission structurally impossible, the upstream request context is built once where the
+resolved scope is known and handed to handlers, rather than assembled per handler.
+
+### 7.3.2 Self-describing response contract
+
+Scope handling MUST be visible in the response, not inferred by the caller:
+
+- Every business-scoped tool echoes the effective scope as `scope.businessIds`.
+- Every returned row carries its owning business (`ownerId`; charges also carry `ownerName`), so
+  results spanning several businesses can be grouped rather than silently merged.
+- Text summaries surface a multi-business result, since the text content is what a model reads
+  first.
+
+The discovery tool (`accounter_list_businesses`) is exempt from both: it takes no scope input and
+echoes no scope, because it _is_ the scope. A single-business tool reports its one owner once
+(alongside the echoed scope) instead of tagging every row.
+
 ## 8) Tool Exposure Strategy
 
 ## 8.1 Selection Framework

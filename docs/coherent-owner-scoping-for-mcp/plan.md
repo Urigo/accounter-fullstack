@@ -319,8 +319,8 @@ asserting `schema.graphql` contains `ownerId: UUID!` inside `type Tag`.
   self-describing-response contract.
 - `packages/mcp-server/docs/local-development.md` §6 Verify (line 106) — the end-to-end scope check
   below.
-- `packages/mcp-server/docs/connector-gaps-and-decisions.md` — Phase 0 view/RLS finding ✅ recorded
-  (2026-08-01); still to add: the stateless-vs-stateful decision.
+- `packages/mcp-server/docs/connector-gaps-and-decisions.md` — ✅ Phase 0 view/RLS finding and the
+  stateless-vs-stateful decision both recorded (2026-08-01).
 - `packages/mcp-server/docs/submission-checklist.md:40` — tool list.
 
 ---

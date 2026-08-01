@@ -205,6 +205,29 @@ returned to the original four `*:users` scopes. These credentials are the root `
 process itself. `read:logs` is read-only and worth keeping — it was the single most useful
 diagnostic in this work.
 
+## Decided: stateless connector, self-describing responses
+
+**Decision (2026-08-01): the connector stays stateless; business scope is carried per call, never
+held as session state.**
+
+There is no `Mcp-Session-Id`, no session store, and auth is re-derived per request — so there is
+nowhere to hang an "active business" even if we wanted one. The alternative considered was a
+stateful `set_active_business`-style tool with server-side stickiness.
+
+**Why stateless.** A sticky active business is invisible to the model between calls: it cannot see
+what scope a result was produced under, so a silently-widened or stale scope looks identical to a
+correct one. It would also need a session store, an expiry policy, and a cross-request invalidation
+story when memberships change mid-session — all to avoid passing an id the model already has.
+
+**What replaces stickiness.** The feedback loop that session state would have provided is delivered
+on _every_ call instead: a discovery tool enumerates businesses, every business-scoped tool takes a
+uniform optional `businessIds`, the resolved scope is forwarded as `x-business-scope` (RLS enforces
+it), and each response echoes `scope.businessIds` with every row owner-tagged.
+
+**Cost accepted.** The model must pass ids explicitly on each call, and omitting them means "all my
+businesses" — a wider default than a sticky single business would give. That widening is made
+visible rather than silent, which is the trade: the response says which businesses it covered.
+
 ## Open decisions
 
 1. **Audience strategy.** Accept the shared `https://api.accounter.com` audience for MCP and GraphQL
