@@ -83,7 +83,7 @@ async function listTagsHandler(
 ): Promise<ToolResult> {
   const data = await context.client.query<{ allTags: RawTag[] }>(
     { query: LIST_TAGS_QUERY },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const { rows, total } = filterSortCap(data.allTags, input.nameContains, input.limit);
@@ -152,7 +152,7 @@ async function listTaxCategoriesHandler(
 ): Promise<ToolResult> {
   const data = await context.client.query<{ taxCategories: RawTaxCategory[] }>(
     { query: LIST_TAX_CATEGORIES_QUERY },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const activeFiltered = input.activeOnly
