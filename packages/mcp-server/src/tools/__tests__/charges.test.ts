@@ -70,10 +70,15 @@ describe('searchChargesTool — successful read', () => {
       totalCount: number;
       truncated: boolean;
     };
+    // This fixture omits `owner` on purpose — it predates the field. Owner
+    // tagging must degrade to nulls rather than throwing, so older fixtures and
+    // any upstream that stops returning the field keep working.
     expect(structured.charges).toEqual([
       {
         id: 'c1',
         description: 'Coffee',
+        ownerId: null,
+        ownerName: null,
         amount: { value: 12.5, formatted: '₪12.50', currency: 'ILS' },
         date: '2026-01-05',
       },
@@ -81,6 +86,34 @@ describe('searchChargesTool — successful read', () => {
     expect(structured.totalCount).toBe(1);
     expect(structured.truncated).toBe(false);
     expect(structured.pagination.hasNextPage).toBe(false);
+  });
+
+  it('tags each charge with its owning business', async () => {
+    const client = clientReturning({
+      allCharges: {
+        nodes: [
+          {
+            id: 'c1',
+            userDescription: 'Coffee',
+            owner: { id: 'b1', name: 'Acme' },
+            totalAmount: { raw: 12.5, formatted: '₪12.50', currency: 'ILS' },
+            minEventDate: '2026-01-05',
+          },
+        ],
+        pageInfo: { totalPages: 1, totalRecords: 1, currentPage: 1, pageSize: 25 },
+      },
+    });
+    const result = await run(client, authContext(['b1', 'b2']), {});
+
+    const structured = result.structuredContent as {
+      charges: Array<{ ownerId: string | null; ownerName: string | null }>;
+      scope: { businessIds: string[] };
+    };
+    expect(structured.charges[0]).toMatchObject({ ownerId: 'b1', ownerName: 'Acme' });
+    // The response echoes the effective scope, so a silent widening is visible.
+    expect(structured.scope).toEqual({ businessIds: ['b1', 'b2'] });
+    // …and the text content — what the model reads first — says so too.
+    expect(result.content[0]!.text).toContain('across 2 businesses');
   });
 
   it('scopes the query to the authorized businesses (byOwners)', async () => {
