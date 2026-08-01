@@ -14,10 +14,9 @@ export const toolRegistry = new ToolRegistry();
 // curated tool list — ordering is a real prompt-engineering lever for getting
 // the model to scope its calls.
 //
-// Note this is first *within the curated registry*, not necessarily in the
-// advertised `tools/list`: `dispatchMcpRequest` sends
-// `[...listedTools, ...toolRegistry.describe()]`, so any transport-level
-// internal tool (currently `accounter_smoke_ping`) still precedes it.
+// `dispatchMcpRequest` sends `[...listedTools, ...toolRegistry.describe()]`, and
+// `listedTools` is now empty (the internal smoke tool is dispatchable but no
+// longer advertised), so this is genuinely the first tool the model sees.
 toolRegistry.register(listBusinessesTool);
 toolRegistry.register(searchChargesTool);
 toolRegistry.register(listTagsTool);
