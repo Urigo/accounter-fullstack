@@ -93,6 +93,7 @@ export const tagsResolvers: TagsModule.Resolvers = {
   Tag: {
     id: tag => tag.id!,
     name: tag => tag.name!,
+    ownerId: tag => tag.owner_id!,
     parent: (dbTag, _, { injector }) =>
       dbTag.parent
         ? injector

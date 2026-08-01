@@ -5,13 +5,12 @@ capabilities to Claude clients (Claude.ai / Claude Desktop).
 
 See the design docs:
 
-- [`docs/mcp/spec.md`](./docs/mcp/spec.md) — connector specification
-- [`docs/mcp/implementation-blueprint.md`](./docs/mcp/implementation-blueprint.md) — incremental
+- [`docs/spec.md`](./docs/spec.md) — connector specification
+- [`docs/implementation-blueprint.md`](./docs/implementation-blueprint.md) — incremental
   implementation plan
-- [`docs/mcp/operations-runbook.md`](./docs/mcp/operations-runbook.md) — incident handling, metrics,
-  log queries, rollback
-- [`docs/mcp/submission-checklist.md`](./docs/mcp/submission-checklist.md) — connector submission
-  readiness
+- [`docs/operations-runbook.md`](./docs/operations-runbook.md) — incident handling, metrics, log
+  queries, rollback
+- [`docs/submission-checklist.md`](./docs/submission-checklist.md) — connector submission readiness
 
 ## Status
 
@@ -151,8 +150,8 @@ a grace period).
 
 To connect this server to Claude Desktop as a custom connector — HTTPS tunnel, Auth0 application,
 connector fields, and a troubleshooting table — see
-[`docs/mcp/local-development.md`](./docs/mcp/local-development.md). Note that Claude requires an
-HTTPS connector URL, so `http://localhost:3100` cannot be used directly.
+[`docs/local-development.md`](./docs/local-development.md). Note that Claude requires an HTTPS
+connector URL, so `http://localhost:3100` cannot be used directly.
 
 ### MCP endpoint
 
