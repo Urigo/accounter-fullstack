@@ -221,8 +221,20 @@ Two rules constrain how the header is emitted:
 - **An empty or absent scope MUST NOT send the header.** The server reads an absent
   `x-business-scope` as "all of the caller's memberships", so an empty header would _widen_ the
   scope rather than narrow it.
-- **Ids MUST NOT be filtered before joining.** Silently dropping an id is precisely the failure mode
-  scope validation exists to prevent; an unusable id is a rejected request, not a smaller scope.
+- **Business ids MUST NOT be silently dropped.** An id outside the caller's memberships is a
+  **rejected request** (`AUTHORIZATION_ERROR` at the policy gate), never a quietly smaller scope —
+  silently narrowing is precisely the failure mode scope validation exists to prevent.
+
+  This constrains _meaningful_ ids. Blank entries are removed before joining, because an empty
+  string denotes no business and would otherwise emit a trailing or doubled comma, which upstream
+  rejects outright with `FORBIDDEN`. Dropping them therefore changes no caller's access.
+
+  These two rules interact in one edge case: if every entry were blank, the filter would empty the
+  scope and the rule above would then omit the header — which upstream reads as "all memberships", a
+  widening. That case is unreachable by construction rather than by guard: membership coercion
+  rejects an empty `businessId` (§7.1), and both the default and narrowed read scopes are built only
+  from accepted memberships, so a blank id cannot reach the client. A future change that relaxes
+  membership coercion MUST also make this case fail closed.
 
 The scope-discovery query (`myMemberships`, §7.1) is the one call that MUST NOT carry the header:
 scoping the query that resolves the scope is circular, and a stale or not-yet-known id would fail
