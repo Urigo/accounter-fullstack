@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import { SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 3: a selected read-only report (spec §8.2).
@@ -23,7 +24,11 @@ const balanceReportInput = z.object({
   businessId: z
     .string()
     .min(1)
-    .describe('The business to report on (must be one of your memberships).'),
+    .describe(
+      'The business (owner) id to report on — must be one of the businesses you belong to. ' +
+        'Unlike the list tools this report covers exactly one business, so the id is required. ' +
+        'Use accounter_list_businesses to discover ids.',
+    ),
   fromDate: TIMELESS_DATE.describe('Start of the reporting period (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.describe('End of the reporting period (YYYY-MM-DD).'),
   reportType: z
@@ -140,6 +145,7 @@ async function handler(
     extra: {
       reportType: input.reportType,
       businessId: ownerId,
+      scope: { businessIds: context.readScope.businessIds },
       period: { fromDate: input.fromDate, toDate: input.toDate },
     },
     summarize: (shown, total) =>
@@ -152,7 +158,8 @@ async function handler(
 export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
   name: BALANCE_REPORT_TOOL_NAME,
   description:
-    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role.',
+    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role. ' +
+    SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: balanceReportInput,
   policy: {
     requiredRoles: ['business_owner', 'accountant'],

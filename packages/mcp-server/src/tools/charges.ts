@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 1: read-only charges search/browse (spec §8.2).
@@ -20,11 +21,7 @@ export const MAX_DATE_RANGE_DAYS = 366;
 const TIMELESS_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
 const searchChargesInput = z.object({
-  businessIds: z
-    .array(z.string().min(1))
-    .max(50)
-    .optional()
-    .describe('Narrow results to these business ids (must be a subset of your memberships).'),
+  businessIds: businessIdsInput,
   fromDate: TIMELESS_DATE.optional().describe('Only charges on/after this date (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.optional().describe('Only charges on/before this date (YYYY-MM-DD).'),
   tags: z.array(z.string().min(1)).max(20).optional().describe('Only charges carrying these tags.'),
@@ -46,6 +43,10 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
       nodes {
         id
         userDescription
+        owner {
+          id
+          name
+        }
         totalAmount {
           raw
           formatted
@@ -66,6 +67,11 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
 interface RawCharge {
   id: string;
   userDescription: string | null;
+  /**
+   * Owning business. `Charge.owner` is non-null upstream, but this stays
+   * optional so existing test/perf fixtures that omit it keep deserializing.
+   */
+  owner?: { id: string; name: string | null } | null;
   totalAmount: { raw: number; formatted: string; currency: string } | null;
   minEventDate: string | null;
 }
@@ -86,6 +92,9 @@ interface SearchChargesData {
 export interface NormalizedCharge {
   id: string;
   description: string | null;
+  /** Owning business, so multi-business results can be grouped by the model. */
+  ownerId: string | null;
+  ownerName: string | null;
   amount: { value: number; formatted: string; currency: string } | null;
   date: string | null;
 }
@@ -170,6 +179,9 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
   return {
     id: charge.id,
     description: charge.userDescription,
+    // Optional chaining: fixtures predating owner selection omit the field.
+    ownerId: charge.owner?.id ?? null,
+    ownerName: charge.owner?.name ?? null,
     amount: charge.totalAmount
       ? {
           value: charge.totalAmount.raw,
@@ -211,22 +223,30 @@ async function handler(
     hasNextPage: (pageInfo.currentPage ?? input.page) < pageInfo.totalPages,
   };
 
+  const scope = { businessIds: context.readScope.businessIds };
+  // The text content is what the model reads first, so surface a multi-business
+  // result there — otherwise a union across businesses looks like a single-
+  // business answer until the model inspects `scope` in the structured payload.
+  const scopeNote =
+    scope.businessIds.length > 1 ? ` across ${scope.businessIds.length} businesses` : '';
+
   return shapeListResult({
     items: charges,
     itemsKey: 'charges',
     total: pageInfo.totalRecords,
-    extra: { pagination },
+    extra: { pagination, scope },
     summarize: (shown, total) =>
       total === 0
-        ? 'No charges matched the given filters.'
-        : `Found ${total} charge(s); showing ${shown} on page ${pagination.page} of ${pagination.totalPages}.`,
+        ? `No charges matched the given filters${scopeNote}.`
+        : `Found ${total} charge(s)${scopeNote}; showing ${shown} on page ${pagination.page} of ${pagination.totalPages}.`,
   });
 }
 
 export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {
   name: SEARCH_CHARGES_TOOL_NAME,
   description:
-    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Read-only.',
+    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Read-only. ' +
+    SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: searchChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler,
