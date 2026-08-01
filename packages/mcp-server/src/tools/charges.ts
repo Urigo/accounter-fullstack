@@ -154,7 +154,7 @@ function buildFilters(input: SearchChargesInput, businessIds: readonly string[])
   // party, i.e. inter-company charges: a small and wrong slice of the results.
   //
   // Kept as an explicit predicate even though `x-business-scope` now narrows via
-  // RLS upstream: defence in depth, and the tool stays correct if upstream ever
+  // RLS upstream: defense in depth, and the tool stays correct if upstream ever
   // runs under a scope-bypassing role.
   if (businessIds.length > 0) {
     filters.byOwners = [...businessIds];
