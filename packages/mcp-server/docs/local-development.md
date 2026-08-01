@@ -119,6 +119,26 @@ curl -s http://localhost:3100/metrics # after a tool call
 `resource` must equal the origin exactly — not `.../mcp`. A healthy connector shows entries under
 `requestsTotal` (e.g. `accounter_search_charges|success`) and nothing new in `authFailuresTotal`.
 
+### End-to-end business scoping
+
+Worth checking once from a real client, because a broken scope still returns plausible-looking data
+— it is just the wrong (wider) set. Ask Claude to run the three steps below and inspect the replies.
+
+1. **Discover** — "list the businesses I have access to". Should return one row per business with
+   `businessId`, `name`, and your role.
+2. **Scope a call** — "list tags for `<businessId>`". In the structured reply, `scope.businessIds`
+   must equal exactly the id you asked for, and every row's `ownerId` must match it. If `scope`
+   contains more ids than you asked for, narrowing is not reaching the server.
+3. **Negative check** — ask for a business id you do not belong to (any random UUID). It must come
+   back as an error with code `AUTHORIZATION_ERROR`. A successful reply, or an empty-but-successful
+   one, means ids are being silently dropped instead of rejected — the failure mode scope validation
+   exists to prevent.
+
+To confirm the header itself is doing the work rather than the MCP-side filter, tail the GraphQL
+server and check `app.current_business_scope` is set per request. Note that
+`parseBusinessScopeHeader` requires strict UUIDs upstream, so a dev database seeded with non-UUID
+business ids will fail every scoped tool call with an `UPSTREAM_ERROR`.
+
 ## 7. Shutting down
 
 Stop `cloudflared` when you are not actively testing — the quick tunnel publishes your local server

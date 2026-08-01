@@ -18,12 +18,13 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of four read-only tools (`accounter_search_charges`,
-`accounter_list_tags`, `accounter_list_tax_categories`, `accounter_balance_report`) each gated by
-strict input validation, a per-tool authorization policy, and business-scope narrowing; a hardened
-upstream GraphQL client (timeout, bounded retries, header propagation, sanitized errors); a unified
-error taxonomy; per-`tools/call` rate limiting; and operational telemetry (request/outcome counters,
-a latency histogram, auth-failure counters, tracing spans) exposed at `GET /metrics`.
+Accounter GraphQL server; a curated registry of five read-only tools (`accounter_list_businesses`,
+`accounter_search_charges`, `accounter_list_tags`, `accounter_list_tax_categories`,
+`accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
+and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
+client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
+per-`tools/call` rate limiting; and operational telemetry (request/outcome counters, a latency
+histogram, auth-failure counters, tracing spans) exposed at `GET /metrics`.
 
 Phase 2 (write scope) is **not** implemented — see
 [Known limitations & phase 2](#known-limitations--phase-2-write-scope).
@@ -48,27 +49,56 @@ by **user + business scope + tool**, enforced before any upstream call. Exceedin
 a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LIMIT_CONFIG`
 (`{"windowMs":60000,"max":60}` by default).
 
+### Business scoping contract
+
+Every business-scoped tool follows one convention, so the model learns it once:
+
+- **Discover, then scope.** `accounter_list_businesses` returns `{ businessId, name, role }`. Pass
+  those ids back as `businessIds` (or, for the balance report, the singular required `businessId`).
+- **`businessIds` is optional and means "narrow".** Omitting it covers every business the caller
+  belongs to. Any id outside the caller's memberships is **rejected**, never silently dropped.
+- **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
+  is the actual enforcement point (see [Identity & tenant scope](#identity--tenant-scope)).
+- **Rows are owner-tagged.** List rows carry `ownerId` (charges also carry `ownerName`), so results
+  spanning several businesses can be grouped rather than silently merged.
+- **The response echoes `scope.businessIds`.** A widened scope is visible in the payload instead of
+  being inferred, and the charges summary text names the business count when it is greater than one.
+
+`accounter_list_businesses` is the one exception: it takes no parameters and echoes no scope,
+because it _is_ the scope.
+
+- **`accounter_list_businesses`** — list the businesses the caller can access, with their role in
+  each. Sorted by name (fixed-locale, case-insensitive) then id, with unnamed businesses last. Pure:
+  memberships are already on the auth context, so it makes no upstream call. A caller with no
+  memberships gets an empty list, not an error.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
   days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
-  (`pageSize` ≤ 50). Returns normalized charges plus pagination metadata.
-- **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name.
-  Deterministically sorted (name, then id) and size-capped (≤ 500).
-- **`accounter_list_tax_categories`** — list tax categories (id, name, IRS code, bookkeeping sort
-  code, active flag), optionally filtered by name or active status. Same deterministic sort + cap.
-- **`accounter_balance_report`** — read-only balance report (transactions) for one of your
-  businesses over a bounded date range (≤ 366 days). Requires `business_owner`/`accountant` role;
-  rows are capped at 500 with a `truncated` flag.
+  (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
+  pagination metadata and the echoed `scope`. Scoping uses the `byOwners` predicate upstream (the
+  owner), never `byBusinesses` (the counterparty).
+- **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
+  `businessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and size-capped (≤
+  500).
+- **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
+  bookkeeping sort code, active flag), optionally filtered by name, active status, or `businessIds`.
+  Same deterministic sort + cap.
+- **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
+  your businesses over a bounded date range (≤ 366 days), selected by the required singular
+  `businessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
+  `truncated` flag. Rows are not individually owner-tagged — they all share the one owner, which the
+  response reports once alongside the echoed `scope`.
 
 ## Upstream GraphQL client
 
 Tool handlers talk to the Accounter GraphQL server through a single hardened client
 (`src/upstream/graphql-client.ts`): a strict per-request **timeout** with cancellation, **bounded
 retries** for idempotent read failures only (network errors, timeouts, and 5xx — never 4xx
-auth/validation errors or GraphQL-level errors), **header propagation** of the correlation id and
-the caller's `Authorization` bearer token, and **sanitized** upstream errors (no stack traces or
-internal details). Phase 1 is read-only: mutations/subscriptions are refused, and there is **no**
-generic "execute anything" surface — tools use typed read-only wrappers via `createReadOperation`.
+auth/validation errors or GraphQL-level errors), **header propagation** of the correlation id, the
+caller's `Authorization` bearer token, and the resolved read scope as `x-business-scope`, and
+**sanitized** upstream errors (no stack traces or internal details). Phase 1 is read-only:
+mutations/subscriptions are refused, and there is **no** generic "execute anything" surface — tools
+use typed read-only wrappers via `createReadOperation`.
 
 ## Identity & tenant scope
 
@@ -81,6 +111,27 @@ seam (`MembershipSource`) for testing. Requested scope narrowing is validated ag
 memberships: any business id outside them is rejected rather than silently dropped. These shapes and
 rules mirror the server package's tenant-isolation model
 (`packages/server/src/shared/helpers/auth-scope.ts`).
+
+**RLS upstream is the enforcement point.** The resolved read scope is forwarded on every tool call
+as the `x-business-scope` header, which the Accounter server turns into `app.current_business_scope`
+and applies through row-level security. MCP-side narrowing is the _first_ gate, not the only one: it
+rejects out-of-scope ids early with a legible `AUTHORIZATION_ERROR`, but the database is what
+actually constrains the rows. This matters for the argument-less upstream queries (`allTags`,
+`taxCategories`), which have no filter arguments to narrow — the header is the only mechanism
+available to them.
+
+The context is built once in `execute.ts`, where the resolved scope is known, and handlers receive
+it as `context.upstream`. A handler therefore cannot forget to forward the scope; a registry-wide
+test asserts every registered tool sends the header.
+
+Two deliberate exceptions:
+
+- **The membership bootstrap is never scoped.** `myMemberships` is the query that _discovers_ the
+  scope, so scoping it would be circular, and a stale or unknown id would fail the whole request at
+  authentication time rather than returning an empty list.
+- **An empty scope sends no header at all.** Upstream reads an absent `x-business-scope` as "all of
+  the caller's memberships", so emitting an empty header would widen the scope rather than narrow it
+  — the exact opposite of the intent.
 
 ## OAuth discovery
 
@@ -223,13 +274,25 @@ curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
-# 5. Authenticated tool call
+# 5. Discover the businesses you can read → [{ businessId, name, role }]
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_businesses","arguments":{}}}'
+
+# 6. Authenticated tool call, scoped to one of those ids.
+#    The response echoes scope.businessIds and every row carries ownerId.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"businessIds":["<businessId from step 5>"]}}}'
+
+# 7. Negative check: an id outside your memberships must be REJECTED, not ignored.
+#    Expect isError: true and code AUTHORIZATION_ERROR.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"businessIds":["00000000-0000-4000-8000-000000000000"]}}}'
 ```
 
-The automated equivalent of steps 1–5 (with the Auth0 verifier and upstream mocked) lives in
+The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mocked) lives in
 `src/__tests__/mcp-e2e.test.ts` and runs with `yarn workspace @accounter/mcp-server test`.
 
 ## Troubleshooting
