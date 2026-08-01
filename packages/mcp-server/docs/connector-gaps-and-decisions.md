@@ -103,6 +103,24 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
+### 8. MCP GraphQL documents are not validated by CI — **medium**
+
+The connector's upstream queries are template literals in `src/tools/*.ts` and
+`src/upstream/memberships.ts`. Nothing checks them against the schema: `yarn graphql:validate` scans
+`packages/client` only, `graphql-codegen` does not read this package, and TypeScript sees the
+queries as opaque strings.
+
+**Impact.** A misspelled field, a field removed upstream, or a selection on the wrong type compiles,
+lints, and passes every unit test — the tool suites stub `fetch`, so they never contact a real
+schema. The failure surfaces only at runtime against the live server, as a sanitized
+`UPSTREAM_ERROR` that does not name the offending field. This is a live risk whenever the schema
+changes underneath the connector: nothing in this repo links the two.
+
+**Task:** add a CI step that parses each `/* GraphQL */` document in `packages/mcp-server/src` and
+runs `graphql`'s `validate()` against the generated `schema.graphql`, failing the build on any
+error. Roughly 30 lines. It was run manually during Phase 5 (5 queries, 0 invalid) — the point is to
+stop that being a manual step.
+
 ## Owner-scoping pre-flight (Phase 0) — RLS reaches `extended_tags`
 
 Pre-flight check from
