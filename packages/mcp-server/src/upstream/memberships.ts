@@ -27,16 +27,17 @@ import {
 /**
  * Read-only query for the authenticated caller's own business memberships.
  *
- * Only `businessId` and `roleId` are selected: the internal
- * {@link BusinessMembership} shape keeps nothing else, so fetching `businessName`
- * would just add payload and upstream work for a field that is immediately
- * dropped.
+ * `businessName` is selected so the `accounter_list_businesses` discovery tool
+ * can present human-readable names without a second upstream round trip — this
+ * query already runs on every authenticated request, so the name rides along
+ * for free. It is display-only and never used for authorization.
  */
 export const MY_MEMBERSHIPS_QUERY = /* GraphQL */ `
   query McpMyMemberships {
     myMemberships {
       businessId
       roleId
+      businessName
     }
   }
 `;
