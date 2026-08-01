@@ -7,7 +7,10 @@ import { searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
 import { listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 import { balanceReportTool } from '../reports.js';
-import { SCOPE_DESCRIPTION_SUFFIX } from '../scope-input.js';
+import {
+  SCOPE_DESCRIPTION_SUFFIX,
+  SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
+} from '../scope-input.js';
 
 /**
  * Cross-tool contract for Phase 5: one uniform scoping input, owner-tagged rows,
@@ -50,11 +53,37 @@ const BUSINESS_SCOPED_TOOLS = [
   balanceReportTool,
 ];
 
+const MULTI_BUSINESS_TOOLS = [searchChargesTool, listTagsTool, listTaxCategoriesTool];
+
 describe('uniform business-scope input', () => {
-  it.each(BUSINESS_SCOPED_TOOLS.map(tool => [tool.name, tool] as const))(
-    '%s teaches the scoping workflow in its description',
+  it.each(MULTI_BUSINESS_TOOLS.map(tool => [tool.name, tool] as const))(
+    '%s teaches the multi-business scoping workflow',
     (_name, tool) => {
       expect(tool.description).toContain(SCOPE_DESCRIPTION_SUFFIX);
+    },
+  );
+
+  // The single-business report must NOT claim an optional `businessIds` or
+  // per-row `ownerId` — it has neither. It still points at discovery.
+  it('balance report uses the single-business clause, not the list-tool one', () => {
+    expect(balanceReportTool.description).toContain(SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX);
+    expect(balanceReportTool.description).not.toContain(SCOPE_DESCRIPTION_SUFFIX);
+  });
+
+  it.each(BUSINESS_SCOPED_TOOLS.map(tool => [tool.name, tool] as const))(
+    '%s points at the discovery tool',
+    (_name, tool) => {
+      expect(tool.description).toContain('accounter_list_businesses');
+    },
+  );
+
+  // Guards the mismatch Copilot caught on #4094: a description may only promise
+  // `businessIds` if the tool actually accepts that field.
+  it.each(BUSINESS_SCOPED_TOOLS.map(tool => [tool.name, tool] as const))(
+    '%s only advertises `businessIds` if it accepts it',
+    (_name, tool) => {
+      const acceptsBusinessIds = 'businessIds' in tool.inputSchema.shape;
+      expect(tool.description.includes('`businessIds`')).toBe(acceptsBusinessIds);
     },
   );
 

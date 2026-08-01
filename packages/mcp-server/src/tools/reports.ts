@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 3: a selected read-only report (spec §8.2).
@@ -159,7 +159,7 @@ export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
   name: BALANCE_REPORT_TOOL_NAME,
   description:
     'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role. ' +
-    SCOPE_DESCRIPTION_SUFFIX,
+    SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: balanceReportInput,
   policy: {
     requiredRoles: ['business_owner', 'accountant'],

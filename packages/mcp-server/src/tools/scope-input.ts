@@ -21,16 +21,31 @@ export const businessIdsInput = z
   .max(MAX_REQUESTED_BUSINESS_IDS)
   .optional()
   .describe(
-    'Limit results to these business (owner) ids — must be a subset of the businesses you belong to. ' +
-      'Omit to include all of them. Use accounter_list_businesses to discover ids. ' +
+    'Limit results to the businesses with these (owner) ids — must be a subset of the businesses you ' +
+      'belong to. Omit to include all of them. Use accounter_list_businesses to discover ids. ' +
       'Every returned row carries its ownerId so results can be grouped by business.',
   );
 
 /**
- * Trailing clause appended to every business-scoped tool description, so the
- * scoping workflow is taught consistently wherever the model looks.
+ * Trailing clause for the **multi-business list tools** — those taking the
+ * optional {@link businessIdsInput} and returning owner-tagged rows.
+ *
+ * Not applicable to single-business tools: it would promise an optional
+ * `businessIds` field and per-row `ownerId` that they do not have. Use
+ * {@link SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX} there instead.
  */
 export const SCOPE_DESCRIPTION_SUFFIX =
   'Scope: omitting `businessIds` covers every business you belong to; results are tagged with `ownerId` ' +
   'and the response echoes the effective `scope.businessIds`. If you have more than one business, call ' +
   '`accounter_list_businesses` first and pass explicit ids.';
+
+/**
+ * Trailing clause for tools scoped to exactly **one** business via a required
+ * singular `businessId`. States only what is actually true of them: no optional
+ * `businessIds`, no per-row `ownerId` (every row shares the one owner, which the
+ * response reports once), but the same discovery entry point.
+ */
+export const SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX =
+  'Scope: this covers exactly one business — pass its id as the required `businessId`. The response ' +
+  'echoes the effective `scope.businessIds` alongside it. If you have more than one business, call ' +
+  '`accounter_list_businesses` first to choose.';
