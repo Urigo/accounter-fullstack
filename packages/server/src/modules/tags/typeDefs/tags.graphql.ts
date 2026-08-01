@@ -82,6 +82,7 @@ export default gql`
   type Tag {
     name: String!
     id: UUID!
+    ownerId: UUID!
     parent: Tag
     namePath: [String!]
     fullPath: [Tag!]

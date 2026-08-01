@@ -96,6 +96,52 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
+## Owner-scoping pre-flight (Phase 0) — RLS reaches `extended_tags`
+
+Pre-flight check from
+[`../../../docs/coherent-owner-scoping-for-mcp/plan.md`](../../../docs/coherent-owner-scoping-for-mcp/plan.md)
+Phase 0, run on 2026-08-01 against the **production** database (`accounter_prod_db` on Azure — the
+target the repo root `.env` points at), read-only catalog queries only.
+
+**Result: PASS.** Forwarding `x-business-scope` _will_ narrow `allTags` through the `extended_tags`
+view. No `security_invoker` change and no resolver-side `WHERE owner_id = ANY(...)` fallback are
+needed, and Phase 2 for tags is not invalidated.
+
+Verified chain — every link must hold, and all four do:
+
+| Check                            | Result                                                          |
+| -------------------------------- | --------------------------------------------------------------- |
+| `extended_tags` view owner       | `prod_group`                                                    |
+| `prod_group` privileges          | `rolsuper = f`, `rolbypassrls = f` — cannot bypass RLS          |
+| `tags` table RLS                 | `relrowsecurity = t` **and `relforcerowsecurity = t`**          |
+| `tags` policy `tenant_isolation` | `owner_id = ANY(accounter_schema.get_current_business_scope())` |
+| `get_current_business_scope()`   | reads `current_setting('app.current_business_scope')`           |
+
+Two points worth keeping, because the plan's stated check alone is not sufficient:
+
+- **`FORCE ROW LEVEL SECURITY` is the load-bearing setting here.** `prod_group` owns `tags`, and a
+  table owner bypasses its own RLS policies _unless_ RLS is forced. The plan checks only
+  `rolsuper`/`rolbypassrls`; had `relforcerowsecurity` been `f`, the view would have escaped RLS
+  with both of those still `f`. `charges` and `tax_categories` are likewise `t`/`t`.
+- **Scope comes from a session GUC, not `current_user`.** Because the policy resolves through
+  `current_setting('app.current_business_scope')`, it evaluates identically regardless of which role
+  executes the view — which is precisely why the missing `security_invoker` is harmless here.
+  `extended_tags` has empty `reloptions` (no `security_invoker`), and it does not matter.
+
+Note that `extended_charges` is owned by a _different_ role (`accounter_prod_user`) than
+`extended_tags` (`prod_group`), so the plan's reasoning that "`extended_charges` works, therefore
+this most likely already works" does not transfer directly — the two were checked independently.
+
+On the current behavior the plan describes as a leak: with no `x-business-scope` header the server
+sets the scope to the caller's full membership list, so `allTags` returns a **union across the
+caller's own businesses** — untagged and indistinguishable, but not a cross-tenant leak.
+`get_current_business_scope()` falls back to a single business id only when the GUC is unset
+entirely.
+
+> Verified on **production**. Ownership and role attributes are environment-specific, so re-run
+> these queries against the local dev database before assuming dev behaves the same — dev is the
+> unverified environment here, not prod.
+
 ## Auth0 tenant changes made during debugging
 
 Applied to the dev tenant `dev-cnaunfqjwhwwd8ld` to get DCR-based connection working. Both exist
