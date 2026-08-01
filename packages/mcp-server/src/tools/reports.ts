@@ -109,7 +109,7 @@ async function handler(
       query: BALANCE_REPORT_QUERY,
       variables: { fromDate: input.fromDate, toDate: input.toDate, ownerId },
     },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   // Defend against a null/absent list from a nullable upstream field.

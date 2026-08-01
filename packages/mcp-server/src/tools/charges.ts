@@ -188,7 +188,7 @@ async function handler(
         limit: input.pageSize,
       },
     },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const charges = data.allCharges.nodes.map(normalizeCharge);

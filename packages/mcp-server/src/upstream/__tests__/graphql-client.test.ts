@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  BUSINESS_SCOPE_HEADER,
   createReadOperation,
   UpstreamError,
   UpstreamGraphQLClient,
@@ -44,6 +45,45 @@ describe('UpstreamGraphQLClient.query — success & headers', () => {
     );
     const headers = (fetchImpl.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
     expect('Authorization' in headers).toBe(false);
+  });
+});
+
+describe('UpstreamGraphQLClient.query — x-business-scope', () => {
+  async function headersFor(businessScope?: readonly string[]): Promise<Record<string, string>> {
+    const fetchImpl = vi.fn(async () => jsonResponse({ data: { ok: true } }));
+    await client(fetchImpl as unknown as typeof fetch).query(
+      { query: 'query { ok }' },
+      { ...ctx, businessScope },
+    );
+    return (fetchImpl.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
+  }
+
+  it('sends a comma-joined scope', async () => {
+    const headers = await headersFor(['b1', 'b2']);
+    expect(headers[BUSINESS_SCOPE_HEADER]).toBe('b1,b2');
+  });
+
+  // Load-bearing: upstream reads an ABSENT header as "all memberships". Emitting
+  // an empty header would widen the scope rather than narrow it.
+  it('omits the header entirely when the scope is empty', async () => {
+    const headers = await headersFor([]);
+    expect(BUSINESS_SCOPE_HEADER in headers).toBe(false);
+  });
+
+  it('omits the header entirely when the scope is undefined', async () => {
+    const headers = await headersFor(undefined);
+    expect(BUSINESS_SCOPE_HEADER in headers).toBe(false);
+  });
+
+  // A trailing/double comma is a hard FORBIDDEN upstream.
+  it('filters falsy ids so no trailing or double comma is emitted', async () => {
+    const headers = await headersFor(['b1', '', 'b2']);
+    expect(headers[BUSINESS_SCOPE_HEADER]).toBe('b1,b2');
+  });
+
+  it('omits the header when every id is falsy', async () => {
+    const headers = await headersFor(['', '']);
+    expect(BUSINESS_SCOPE_HEADER in headers).toBe(false);
   });
 });
 
