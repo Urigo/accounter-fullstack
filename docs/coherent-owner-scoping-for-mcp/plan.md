@@ -39,23 +39,72 @@ widening is visible rather than silent.
 
 ---
 
-## Phase 0 — pre-flight check (do this first, it can invalidate Phase 2 for tags)
+## Phase 0 — pre-flight check — ✅ **DONE (2026-08-01): PASS**
+
+**Outcome: `x-business-scope` will narrow `allTags` through `extended_tags`.** No `security_invoker`
+change and no resolver-side fallback are needed. **Phase 2 for tags proceeds as written.** Full
+write-up in
+[`packages/mcp-server/docs/connector-gaps-and-decisions.md`](../../packages/mcp-server/docs/connector-gaps-and-decisions.md).
 
 `extended_tags` is a **view**, and no view in this repo sets `security_invoker`, so views run with
-the view owner's privileges. If that owner is a superuser or has `BYPASSRLS`, `x-business-scope`
-will not narrow `allTags` at all (and `allTags` is leaking cross-tenant today):
+the view owner's privileges. If the view owner can escape RLS, `x-business-scope` will not narrow
+`allTags` at all.
+
+Verified against the **production** database (`accounter_prod_db`) — every link must hold, and all
+four do:
 
 ```sql
+-- 1. view owner → prod_group
 SELECT viewowner FROM pg_views WHERE schemaname='accounter_schema' AND viewname='extended_tags';
-SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = '<that owner>';
+
+-- 2. owner cannot bypass RLS → rolsuper=f, rolbypassrls=f
+SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'prod_group';
+
+-- 3. RLS is ENABLED *and FORCED* on the base table → tags: t / t
+--    (also charges: t/t, tax_categories: t/t)
+SELECT c.relname, pg_get_userbyid(c.relowner) AS owner,
+       c.relrowsecurity, c.relforcerowsecurity
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname='accounter_schema' AND c.relname IN ('tags','extended_tags');
+
+-- 4. policy resolves through a session GUC, not current_user
+SELECT policyname, qual FROM pg_policies
+WHERE schemaname='accounter_schema' AND tablename='tags';
+--   tenant_isolation: owner_id = ANY (accounter_schema.get_current_business_scope())
+--   → get_current_business_scope() reads current_setting('app.current_business_scope')
 ```
 
-`extended_charges` is also a view on the primary RLS-scoped read path, so this most likely already
-works. If it does not: `ALTER VIEW accounter_schema.extended_tags SET (security_invoker = true)` (PG
-15+), or add an explicit `WHERE owner_id = ANY($ownerIds)` to `TagsProvider.getAllTags` fed by
-`ScopeProvider.getReadScope()` — the canonical resolver-side pattern
+Two corrections to the original reasoning, both learned by running this:
+
+- **Step 3 is the load-bearing check, and was missing.** `prod_group` _owns_ `tags`, and a table
+  owner bypasses its own RLS policies unless `FORCE ROW LEVEL SECURITY` is set. Checking only
+  `rolsuper`/`rolbypassrls` is insufficient — had `relforcerowsecurity` been `f`, the view would
+  have escaped RLS with both of those still `f` and the check reporting green.
+- **`extended_charges` does not imply `extended_tags`.** They have _different_ owners
+  (`accounter_prod_user` vs `prod_group`), so the "the charges path works, therefore this most
+  likely works" inference does not transfer. Check each view's own owner.
+
+Also note that scope resolves through a session GUC rather than `current_user`, which is exactly why
+the absent `security_invoker` is harmless: the policy evaluates identically no matter which role
+executes the view.
+
+**Correction to the leak framing.** `allTags` is _not_ leaking cross-tenant today. With no
+`x-business-scope` header the server sets the scope to the caller's full membership list, so
+`allTags` returns a **union across the caller's own businesses** — untagged and indistinguishable
+(the actual problem this plan solves), but within the tenant boundary.
+`get_current_business_scope()` falls back to a single business id only when the GUC is unset
+entirely.
+
+If a future environment fails any of the four checks, the remedies are:
+`ALTER VIEW accounter_schema.extended_tags SET (security_invoker = true)` (PG 15+), or an explicit
+`WHERE owner_id = ANY($ownerIds)` in `TagsProvider.getAllTags` fed by `ScopeProvider.getReadScope()`
+— the canonical resolver-side pattern
 (`packages/server/src/modules/auth/providers/scope.provider.ts`). `taxCategories` queries base
 tables directly and is unaffected either way.
+
+> **Verified on production.** Ownership and role attributes are environment-specific, so re-run
+> these four queries against the local dev database before assuming dev behaves identically — dev is
+> the unverified environment here, not prod.
 
 ---
 
@@ -270,8 +319,8 @@ asserting `schema.graphql` contains `ownerId: UUID!` inside `type Tag`.
   self-describing-response contract.
 - `packages/mcp-server/docs/local-development.md` §6 Verify (line 106) — the end-to-end scope check
   below.
-- `packages/mcp-server/docs/connector-gaps-and-decisions.md` — record the Phase 0 view/RLS finding
-  and the stateless-vs-stateful decision.
+- `packages/mcp-server/docs/connector-gaps-and-decisions.md` — Phase 0 view/RLS finding ✅ recorded
+  (2026-08-01); still to add: the stateless-vs-stateful decision.
 - `packages/mcp-server/docs/submission-checklist.md:40` — tool list.
 
 ---
