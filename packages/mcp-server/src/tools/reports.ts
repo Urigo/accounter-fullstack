@@ -87,7 +87,7 @@ async function handler(
   };
   const data = await context.client.query<McpBalanceReportQuery>(
     { query: BALANCE_REPORT_QUERY, variables },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   // Defend against a null/absent list from a nullable upstream field.

@@ -161,12 +161,21 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
   }
 
   // 4. Execute the handler.
+  //
+  // `upstream` is built here, where the resolved read scope is known, so a
+  // handler cannot forget to forward `x-business-scope` — it only has to pass
+  // `context.upstream` through to `client.query`.
   const context: ToolExecutionContext = {
     auth,
     readScope: decision.readScope,
     correlationId,
     client,
     authorization,
+    upstream: {
+      correlationId,
+      authorization,
+      businessScope: decision.readScope.businessIds,
+    },
   };
   try {
     // Span covers the handler + its upstream calls for tracing.

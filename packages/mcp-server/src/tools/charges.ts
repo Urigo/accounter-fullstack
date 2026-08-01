@@ -153,7 +153,7 @@ async function handler(
   };
   const data = await context.client.query<McpSearchChargesQuery>(
     { query: SEARCH_CHARGES_QUERY, variables },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const charges = data.allCharges.nodes.map(normalizeCharge);

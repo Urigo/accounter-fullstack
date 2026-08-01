@@ -116,4 +116,22 @@ describe('createUpstreamMembershipSource', () => {
 
     await expect(source(PRINCIPAL)).rejects.toBeInstanceOf(UpstreamError);
   });
+
+  // This is the query that DISCOVERS the scope, so it must never be scoped:
+  // narrowing it would be circular, and a stale/unknown business id would be
+  // rejected upstream at authentication time, failing the whole request.
+  it('never sends a business scope — the scope-discovery query must stay unscoped', async () => {
+    const query = vi.fn().mockResolvedValue({ myMemberships: [] });
+    const source = createUpstreamMembershipSource({
+      client: fakeClient(query),
+      authorization: 'Bearer forwarded-token',
+      correlationId: 'corr-1',
+    });
+
+    await source(PRINCIPAL);
+
+    const context = query.mock.calls[0][1] as Record<string, unknown>;
+    expect(context).toEqual({ correlationId: 'corr-1', authorization: 'Bearer forwarded-token' });
+    expect('businessScope' in context).toBe(false);
+  });
 });

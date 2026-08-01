@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { AuthorizedReadScope, McpAuthContext } from '../auth/identity.js';
-import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
+import type { UpstreamGraphQLClient, UpstreamRequestContext } from '../upstream/graphql-client.js';
 
 /**
  * Curated tool registry abstraction.
@@ -39,6 +39,13 @@ export interface ToolExecutionContext {
   client: UpstreamGraphQLClient;
   /** Caller's Authorization header, forwarded upstream (never logged). */
   authorization?: string;
+  /**
+   * Prebuilt upstream context — correlation id, authorization, and the resolved
+   * `businessScope`. Handlers must pass this to `client.query` rather than
+   * hand-building `{ correlationId, authorization }`, which silently drops the
+   * business scope and leaves the query unnarrowed upstream.
+   */
+  upstream: UpstreamRequestContext;
 }
 
 export interface ToolTextContent {
