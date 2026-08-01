@@ -60,7 +60,11 @@ function upstreamData(query: string, authorization?: string): unknown {
     // none. (Keeps the suite honest if role gating ever moves from token scopes
     // to membership roles.)
     if (authorization === 'Bearer owner-token') {
-      return { myMemberships: [{ businessId: AUTHORIZED_BUSINESS, roleId: 'business_owner' }] };
+      return {
+        myMemberships: [
+          { businessId: AUTHORIZED_BUSINESS, roleId: 'business_owner', businessName: 'Acme Ltd' },
+        ],
+      };
     }
     return { myMemberships: [] };
   }
@@ -71,6 +75,7 @@ function upstreamData(query: string, authorization?: string): unknown {
           {
             id: 'charge-1',
             userDescription: 'Coffee supplies',
+            owner: { id: AUTHORIZED_BUSINESS, name: 'Acme Ltd' },
             totalAmount: { raw: -12.5, formatted: '-12.50', currency: 'ILS' },
             minEventDate: '2026-01-05',
           },
@@ -80,10 +85,23 @@ function upstreamData(query: string, authorization?: string): unknown {
     };
   }
   if (query.includes('allTags')) {
-    return { allTags: [{ id: 'tag-1', name: 'food', namePath: ['food'] }] };
+    return {
+      allTags: [{ id: 'tag-1', name: 'food', namePath: ['food'], ownerId: AUTHORIZED_BUSINESS }],
+    };
   }
   if (query.includes('taxCategories')) {
-    return { taxCategories: [{ id: 'tc-1', name: 'Income', irsCode: 100, isActive: true }] };
+    return {
+      taxCategories: [
+        {
+          id: 'tc-1',
+          name: 'Income',
+          ownerId: AUTHORIZED_BUSINESS,
+          irsCode: 100,
+          isActive: true,
+          sortCode: null,
+        },
+      ],
+    };
   }
   if (query.includes('transactionsForBalanceReport')) {
     return {
@@ -102,9 +120,22 @@ function upstreamData(query: string, authorization?: string): unknown {
   throw new Error(`unexpected upstream query: ${query}`);
 }
 
+/**
+ * Records the business scope forwarded on each upstream call, so the e2e can
+ * assert that tool calls carry `x-business-scope` while the membership
+ * bootstrap — the query that *discovers* the scope — carries none.
+ */
+const forwardedScopes: Array<{ query: string; businessScope?: readonly string[] }> = [];
+
 const fakeUpstreamClient = {
-  query: vi.fn(async (request: { query: string }, context: { authorization?: string }) =>
-    upstreamData(request.query, context.authorization),
+  query: vi.fn(
+    async (
+      request: { query: string },
+      context: { authorization?: string; businessScope?: readonly string[] },
+    ) => {
+      forwardedScopes.push({ query: request.query, businessScope: context.businessScope });
+      return upstreamData(request.query, context.authorization);
+    },
   ),
 };
 
@@ -217,20 +248,63 @@ describe('authenticated tool invocation', () => {
     ).result.tools.map(t => t.name);
     expect(tools).toEqual(
       expect.arrayContaining([
+        'accounter_list_businesses',
         'accounter_search_charges',
         'accounter_list_tags',
         'accounter_list_tax_categories',
         'accounter_balance_report',
       ]),
     );
+    // Discovery leads the list, and the internal smoke tool is not advertised.
+    expect(tools[0]).toBe('accounter_list_businesses');
+    expect(tools).not.toContain('accounter_smoke_ping');
   });
 
   it('runs a charges search scoped to the caller and returns structured results', async () => {
     const result = await callTool('accounter_search_charges', { fromDate: '2026-01-01' }, 'owner-token');
     expect(result.isError).toBeUndefined();
-    const { charges } = result.structuredContent as { charges: Array<{ id: string }> };
+    const { charges, scope } = result.structuredContent as {
+      charges: Array<{ id: string; ownerId: string | null; ownerName: string | null }>;
+      scope: { businessIds: string[] };
+    };
     expect(charges).toHaveLength(1);
     expect(charges[0].id).toBe('charge-1');
+    // Rows are owner-tagged and the response echoes the effective scope.
+    expect(charges[0].ownerId).toBe(AUTHORIZED_BUSINESS);
+    expect(charges[0].ownerName).toBe('Acme Ltd');
+    expect(scope).toEqual({ businessIds: [AUTHORIZED_BUSINESS] });
+  });
+
+  it('forwards x-business-scope on tool calls but never on the membership bootstrap', async () => {
+    forwardedScopes.length = 0;
+    await callTool('accounter_list_tags', {}, 'owner-token');
+
+    const bootstrap = forwardedScopes.filter(c => c.query.includes('myMemberships'));
+    const toolCalls = forwardedScopes.filter(c => !c.query.includes('myMemberships'));
+
+    expect(bootstrap.length).toBeGreaterThan(0);
+    // Scoping the scope-discovery query would be circular; it must stay unscoped.
+    for (const call of bootstrap) {
+      expect(call.businessScope).toBeUndefined();
+    }
+    expect(toolCalls.length).toBeGreaterThan(0);
+    for (const call of toolCalls) {
+      expect(call.businessScope).toEqual([AUTHORIZED_BUSINESS]);
+    }
+  });
+
+  it('lists the caller businesses without any upstream call', async () => {
+    forwardedScopes.length = 0;
+    const result = await callTool('accounter_list_businesses', {}, 'owner-token');
+
+    const { businesses } = result.structuredContent as {
+      businesses: Array<{ businessId: string; name: string | null; role: string }>;
+    };
+    expect(businesses).toEqual([
+      { businessId: AUTHORIZED_BUSINESS, name: 'Acme Ltd', role: 'business_owner' },
+    ]);
+    // Only the membership bootstrap talks upstream; the handler itself is pure.
+    expect(forwardedScopes.every(c => c.query.includes('myMemberships'))).toBe(true);
   });
 
   it('runs a role-gated balance report for a caller who holds the role', async () => {

@@ -52,8 +52,24 @@ export const smokeTool: ToolDescriptor = {
   },
 };
 
-/** Tools advertised by `tools/list` in the current (skeleton) phase. */
-export const listedTools: readonly ToolDescriptor[] = [smokeTool];
+/**
+ * Transport-level tools advertised by `tools/list`, *in addition to* the curated
+ * registry. Deliberately empty.
+ *
+ * The smoke tool stays dispatchable — `tools/call` still routes
+ * `accounter_smoke_ping` (see `handler.ts`), so connectivity checks and the
+ * documented smoke test keep working — but it is no longer advertised to the
+ * model. Two reasons:
+ *
+ *  - It is an internal diagnostic that echoes a string. Advertising it spends
+ *    the first slot in `tools/list` (ordering is a prompt-engineering lever) on
+ *    a non-capability, ahead of `accounter_list_businesses`, which is the
+ *    intended entry point for business scoping.
+ *  - It short-circuits dispatch *before* the curated pipeline — no policy
+ *    evaluation, rate limiting, or metrics. Harmless for an echo, but not
+ *    something to put in front of the model as if it were a normal tool.
+ */
+export const listedTools: readonly ToolDescriptor[] = [];
 
 /** Execute the smoke tool. Pure and side-effect free — no upstream calls. */
 export function runSmokeTool(args: unknown): ToolCallResult {

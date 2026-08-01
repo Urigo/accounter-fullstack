@@ -160,8 +160,9 @@ bearer token in the `Authorization` header. The token is verified (signature via
 plus `issuer`, `audience`, and expiry). A request with no token gets a `401` pointing at the
 protected-resource metadata document; a request with an invalid/expired token gets a `401` with
 `error="invalid_token"`. Supported methods: `initialize`, `ping`, `tools/list`, and `tools/call`
-(the four curated tools plus the internal `accounter_smoke_ping` tool). Unknown methods return a
-deterministic JSON-RPC `-32601` error; notifications receive `202 Accepted` with no body.
+(the curated tools; the internal `accounter_smoke_ping` tool is still dispatchable by name but is no
+longer advertised by `tools/list`). Unknown methods return a deterministic JSON-RPC `-32601` error;
+notifications receive `202 Accepted` with no body.
 
 ```bash
 curl -sX POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
@@ -215,7 +216,8 @@ curl -s http://localhost:3100/.well-known/oauth-protected-resource
 curl -si -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -i -E 'HTTP/|www-authenticate'
 
-# 4. Authenticated tool list → the four curated tools (+ the smoke tool)
+# 4. Authenticated tool list → the curated tools, accounter_list_businesses first
+#    (accounter_smoke_ping is dispatchable but intentionally not listed)
 TOKEN=<a valid Auth0 access token for AUTH0_AUDIENCE>
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \

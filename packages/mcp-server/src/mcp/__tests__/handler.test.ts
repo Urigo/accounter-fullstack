@@ -52,11 +52,12 @@ describe('handleMcpBody — method dispatch', () => {
     expect(res.result).toEqual({});
   });
 
-  it('lists the smoke tool', () => {
+  // The smoke tool is dispatchable but no longer advertised: it is an internal
+  // diagnostic, and it short-circuits dispatch before the curated pipeline.
+  it('advertises no transport-level tools', () => {
     const res = handleMcpBody(rpc('tools/list')) as JsonRpcSuccess;
     const result = res.result as { tools: Array<{ name: string }> };
-    expect(result.tools).toHaveLength(1);
-    expect(result.tools[0].name).toBe(SMOKE_TOOL_NAME);
+    expect(result.tools).toEqual([]);
   });
 
   it('calls the smoke tool and echoes the message', () => {
@@ -147,7 +148,9 @@ describe('mcpHttpHandler', () => {
 
     expect(res.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
     const body = JSON.parse(res.end.mock.calls[0][0] as string);
-    expect(body.result.tools[0].name).toBe(SMOKE_TOOL_NAME);
+    const names = (body.result.tools as Array<{ name: string }>).map(t => t.name);
+    expect(names[0]).toBe('accounter_list_businesses');
+    expect(names).not.toContain(SMOKE_TOOL_NAME);
   });
 
   it('responds 202 with no body for a notification', async () => {
@@ -256,14 +259,25 @@ describe('dispatchMcpRequest — registry integration', () => {
     [],
   );
 
-  it('lists the smoke tool alongside the registered production tools', async () => {
+  it('lists the curated tools with discovery first, and hides the smoke tool', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
       { auth, correlationId: 'c' },
     )) as JsonRpcSuccess;
     const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
-    expect(names).toContain(SMOKE_TOOL_NAME);
+    // Discovery leads: tools/list ordering steers how the model scopes calls.
+    expect(names[0]).toBe('accounter_list_businesses');
     expect(names).toContain('accounter_search_charges');
+    expect(names).not.toContain(SMOKE_TOOL_NAME);
+  });
+
+  // Unadvertised, but still routable — the documented smoke test relies on it.
+  it('still dispatches the smoke tool by name', async () => {
+    const response = (await dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: SMOKE_TOOL_NAME, arguments: { message: 'hi' } } },
+      { auth, correlationId: 'c' },
+    )) as JsonRpcSuccess;
+    expect(response.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
   });
 
   it('returns InvalidParams for an unknown tool name', async () => {
