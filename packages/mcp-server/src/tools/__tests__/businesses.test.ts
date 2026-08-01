@@ -106,6 +106,30 @@ describe('listBusinessesTool', () => {
     ]);
   });
 
+  // A blank name is normalized to null rather than being displayed as "", and
+  // is grouped with the other unnamed entries. Mixing '' and null previously
+  // made the comparator non-antisymmetric (it returned 1 in both directions),
+  // so the ordering of unnamed entries was unstable rather than id-ordered.
+  it('treats blank names as unnamed and orders them with the other unnamed by id', async () => {
+    const { client } = neverCalledClient();
+    const result = await run(
+      authContext([
+        { businessId: 'b5', roleId: 'accountant', businessName: '   ' },
+        { businessId: 'b2', roleId: 'accountant', businessName: '' },
+        { businessId: 'b3', roleId: 'accountant', businessName: null },
+        { businessId: 'b1', roleId: 'accountant', businessName: 'Real' },
+      ]),
+      client,
+    );
+
+    expect((result.structuredContent as Structured).businesses).toEqual([
+      { businessId: 'b1', name: 'Real', role: 'accountant' },
+      { businessId: 'b2', name: null, role: 'accountant' },
+      { businessId: 'b3', name: null, role: 'accountant' },
+      { businessId: 'b5', name: null, role: 'accountant' },
+    ]);
+  });
+
   // The policy sets requiresBusinessScope: false on purpose — discovery must
   // tell a caller "you have no access" rather than failing with
   // AUTHORIZATION_ERROR, which would leave the model with no way to find out.

@@ -32,16 +32,33 @@ interface BusinessSummary {
 const NAME_COLLATOR = new Intl.Collator('en', { sensitivity: 'base' });
 
 /**
+ * Normalize a display name: absent, `null`, or blank (whitespace-only) all mean
+ * "no name" and become `null`. Doing this once at the boundary keeps `name`
+ * either a meaningful string or `null`, so the comparator never has to decide
+ * whether `''` counts as named — and callers never see an empty display string.
+ */
+function normalizeName(businessName: string | null | undefined): string | null {
+  return businessName && businessName.trim().length > 0 ? businessName : null;
+}
+
+/**
  * Stable order: by name (case-insensitive, fixed-locale), tie-broken by id.
  * Unnamed businesses sort last so the readable ones lead, and ties among them
  * still resolve deterministically by id.
+ *
+ * The named/unnamed test is an explicit `!== null` rather than truthiness: with
+ * truthiness an empty-string name counts as unnamed for branch selection but as
+ * *distinct from* `null` in the tie-break, which made the comparator return `1`
+ * in both directions when comparing `''` against `null` — not antisymmetric, so
+ * the sort became unstable rather than merely mis-ordered.
  */
 function byNameThenId(a: BusinessSummary, b: BusinessSummary): number {
-  if (a.name && b.name) {
+  if (a.name !== null && b.name !== null) {
     const byName = NAME_COLLATOR.compare(a.name, b.name);
     if (byName !== 0) return byName;
   } else if (a.name !== b.name) {
-    return a.name ? -1 : 1;
+    // Exactly one is unnamed — the named one leads.
+    return a.name === null ? 1 : -1;
   }
   return a.businessId < b.businessId ? -1 : a.businessId > b.businessId ? 1 : 0;
 }
@@ -50,7 +67,7 @@ function handler(_input: ListBusinessesInput, context: ToolExecutionContext): To
   const businesses = context.auth.memberships
     .map(membership => ({
       businessId: membership.businessId,
-      name: membership.businessName ?? null,
+      name: normalizeName(membership.businessName),
       role: membership.roleId,
     }))
     .sort(byNameThenId);
