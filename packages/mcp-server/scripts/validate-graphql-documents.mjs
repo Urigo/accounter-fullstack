@@ -15,8 +15,7 @@
  * compiles, lints, and passes every unit test — the tool suites stub `fetch`,
  * so they never contact a real schema — and fails only at runtime, as a
  * sanitized UPSTREAM_ERROR that does not name the offending field.
- *
- * Exits non-zero on the first invalid document. See gap 8 in
+ * Exits non-zero if any document is invalid. See gap 8 in
  * docs/connector-gaps-and-decisions.md.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
