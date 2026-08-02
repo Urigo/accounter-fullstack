@@ -232,7 +232,7 @@ __metadata:
     "@graphql-mesh/json-schema": "npm:0.110.0"
     "@graphql-mesh/runtime": "npm:0.106.40"
     "@graphql-mesh/store": "npm:0.104.40"
-    "@graphql-mesh/transform-resolvers-composition": "npm:0.104.38"
+    "@graphql-mesh/transform-resolvers-composition": "npm:0.105.0"
     "@graphql-mesh/types": "npm:0.104.30"
     "@graphql-mesh/utils": "npm:0.104.38"
     graphql: "npm:16.14.2"
@@ -3553,18 +3553,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/transform-resolvers-composition@npm:0.104.38":
-  version: 0.104.38
-  resolution: "@graphql-mesh/transform-resolvers-composition@npm:0.104.38"
+"@graphql-mesh/transform-resolvers-composition@npm:0.105.0":
+  version: 0.105.0
+  resolution: "@graphql-mesh/transform-resolvers-composition@npm:0.105.0"
   dependencies:
-    "@graphql-mesh/types": "npm:^0.104.30"
-    "@graphql-mesh/utils": "npm:^0.104.38"
+    "@graphql-mesh/types": "npm:^0.105.0"
+    "@graphql-mesh/utils": "npm:^0.105.0"
     "@graphql-tools/resolvers-composition": "npm:^7.0.33"
     "@graphql-tools/schema": "npm:^10.0.36"
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/1a5e575dc867e1fe759fe5462b0c5748a53de14855312e538e705adba8551e614a46cacac2a2f5f1fce82186c75188c33ace7f3804a6433d3d15fc5acf552fa8
+  checksum: 10c0/60754d594396469fdf0a21ed25b504eef2e0b47ebf178ac3b411e22d428623d76521ffeded41c6d477d9f75ec3d20e36a15665b2eb3fb9721861c73c5eac9a7a
   languageName: node
   linkType: hard
 
