@@ -12,6 +12,7 @@ const {
   requestHandler,
   getServiceVersion,
   createShutdownHandler,
+  normalizeRoutePath,
   SERVICE_NAME,
 } = await import('../server.js');
 
@@ -131,6 +132,63 @@ describe('MCP kill-switch (MCP_ENABLED=0)', () => {
         meta,
       );
       expect(meta.writeHead).toHaveBeenCalledWith(404, { 'Content-Type': 'application/json' });
+    });
+  });
+});
+
+describe('normalizeRoutePath', () => {
+  it('strips a trailing slash so /mcp/ routes as /mcp', () => {
+    expect(normalizeRoutePath('/mcp/')).toBe('/mcp');
+  });
+
+  it('collapses repeated trailing slashes', () => {
+    expect(normalizeRoutePath('/mcp///')).toBe('/mcp');
+  });
+
+  it('leaves a canonical path untouched', () => {
+    expect(normalizeRoutePath('/mcp')).toBe('/mcp');
+    expect(normalizeRoutePath('/health')).toBe('/health');
+  });
+
+  it('preserves the root path', () => {
+    expect(normalizeRoutePath('/')).toBe('/');
+  });
+});
+
+describe('trailing-slash tolerance on the MCP route', () => {
+  async function withMcpEnv(run: () => Promise<void>) {
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../config/env.js');
+    resetEnvCache();
+    try {
+      await run();
+    } finally {
+      vi.unstubAllEnvs();
+      resetEnvCache();
+    }
+  }
+
+  it('routes GET /mcp/ to the same 405 as GET /mcp (not a 404)', async () => {
+    await withMcpEnv(async () => {
+      const res = mockRes();
+      await requestHandler(mockReq({ method: 'GET', url: '/mcp/' }), res);
+      expect(res.writeHead).toHaveBeenCalledWith(405, {
+        'Content-Type': 'application/json',
+        Allow: 'POST',
+      });
+    });
+  });
+
+  it('lets POST /mcp/ reach the auth layer (401), not a silent 404', async () => {
+    await withMcpEnv(async () => {
+      const res = mockRes();
+      // No Authorization header → the MCP handler must challenge with 401.
+      // A 404 here would mean the trailing slash never reached auth.
+      await requestHandler(mockReq({ method: 'POST', url: '/mcp/' }), res);
+      expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
     });
   });
 });
