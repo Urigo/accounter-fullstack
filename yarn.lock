@@ -343,7 +343,7 @@ __metadata:
     "@vitejs/plugin-react": "npm:6.0.4"
     date-fns: "npm:4.4.0"
     fast-xml-parser: "npm:5.10.1"
-    fastify: "npm:5.10.0"
+    fastify: "npm:5.11.0"
     graphql-request: "npm:7.4.0"
     msw: "npm:2.15.0"
     react: "npm:19.2.8"
@@ -16042,9 +16042,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fastify@npm:5.10.0":
-  version: 5.10.0
-  resolution: "fastify@npm:5.10.0"
+"fastify@npm:5.11.0":
+  version: 5.11.0
+  resolution: "fastify@npm:5.11.0"
   dependencies:
     "@fastify/ajv-compiler": "npm:^4.0.5"
     "@fastify/error": "npm:^4.0.0"
@@ -16061,7 +16061,7 @@ __metadata:
     secure-json-parse: "npm:^4.0.0"
     semver: "npm:^7.6.0"
     toad-cache: "npm:^3.7.0"
-  checksum: 10c0/02b34326413cb4fd69e9cb8f6e0f043a867abd975e6db07384073a5f04ff05e9b51b4c6e1345c61bcd53f62f60b0d6018a00bab49088ab76a51cbf63fc961f85
+  checksum: 10c0/baca681a07272e7483ab453d4ef4df645c7512ac74162ef25190bb6e303ba115d009a349dd242a86d2cf8f931334bd31e89bb4e8f12a25d453076829cf149d27
   languageName: node
   linkType: hard
 
