@@ -11,6 +11,7 @@ const config: CodegenConfig = {
     './packages/gmail-listener/src/server-requests.ts',
     './packages/scraper-app/src/server/graphql/mutations.ts',
     './packages/email-ingestion-gateway/src/graphql/mutations.ts',
+    './packages/mcp-server/src/tools/*.ts',
   ],
   emitLegacyCommonJSImports: false,
   generates: {
@@ -238,6 +239,36 @@ const config: CodegenConfig = {
         useTypeImports: true,
         rawRequest: true,
         scalars: {
+          UUID: {
+            input: 'string',
+            output: 'string',
+          },
+        },
+      },
+    },
+    // The MCP server calls the GraphQL API through its own read-only upstream
+    // client (not graphql-request), so it only needs the operation result and
+    // variables types — no SDK. `typescript-operations` is self-contained here:
+    // it emits the referenced input/enum types alongside inline operation types,
+    // giving tool handlers end-to-end inferred types in place of hand-written
+    // interfaces.
+    'packages/mcp-server/src/gql/index.ts': {
+      plugins: ['typescript-operations'],
+      config: {
+        enumType: 'const',
+        useTypeImports: true,
+        scalars: {
+          // The upstream client consumes the raw JSON response, where date
+          // scalars arrive as ISO strings — represent them as `string` rather
+          // than `Date`/`unknown` so tool handlers get the true runtime shape.
+          TimelessDate: {
+            input: 'string',
+            output: 'string',
+          },
+          DateTime: {
+            input: 'string',
+            output: 'string',
+          },
           UUID: {
             input: 'string',
             output: 'string',

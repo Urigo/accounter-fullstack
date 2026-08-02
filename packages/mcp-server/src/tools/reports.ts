@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { McpBalanceReportQuery, McpBalanceReportQueryVariables } from '../gql/index.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
@@ -51,15 +52,6 @@ const BALANCE_REPORT_QUERY = /* GraphQL */ `
   }
 `;
 
-interface RawBalanceRow {
-  id: string;
-  chargeId: string;
-  date: string;
-  isFee: boolean;
-  description: string | null;
-  amount: { raw: number; formatted: string; currency: string };
-}
-
 function assertDateRange(input: BalanceReportInput): void {
   const from = parseCalendarDate(input.fromDate);
   const to = parseCalendarDate(input.toDate);
@@ -88,11 +80,13 @@ async function handler(
     throw new ToolInputError('No authorized business in scope for this report');
   }
 
-  const data = await context.client.query<{ transactionsForBalanceReport: RawBalanceRow[] }>(
-    {
-      query: BALANCE_REPORT_QUERY,
-      variables: { fromDate: input.fromDate, toDate: input.toDate, ownerId },
-    },
+  const variables: McpBalanceReportQueryVariables = {
+    fromDate: input.fromDate,
+    toDate: input.toDate,
+    ownerId,
+  };
+  const data = await context.client.query<McpBalanceReportQuery>(
+    { query: BALANCE_REPORT_QUERY, variables },
     { correlationId: context.correlationId, authorization: context.authorization },
   );
 

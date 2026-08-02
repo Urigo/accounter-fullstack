@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { McpListTagsQuery, McpListTaxCategoriesQuery } from '../gql/index.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
@@ -71,17 +72,11 @@ const LIST_TAGS_QUERY = /* GraphQL */ `
   }
 `;
 
-interface RawTag {
-  id: string;
-  name: string;
-  namePath: string[] | null;
-}
-
 async function listTagsHandler(
   input: ListTagsInput,
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
-  const data = await context.client.query<{ allTags: RawTag[] }>(
+  const data = await context.client.query<McpListTagsQuery>(
     { query: LIST_TAGS_QUERY },
     { correlationId: context.correlationId, authorization: context.authorization },
   );
@@ -137,20 +132,11 @@ const LIST_TAX_CATEGORIES_QUERY = /* GraphQL */ `
   }
 `;
 
-interface RawTaxCategory {
-  id: string;
-  name: string;
-  irsCode: number | null;
-  isActive: boolean;
-  /** The bookkeeping (chart-of-accounts) sort code; null when unassigned. */
-  sortCode: { key: number; name: string | null } | null;
-}
-
 async function listTaxCategoriesHandler(
   input: ListTaxCategoriesInput,
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
-  const data = await context.client.query<{ taxCategories: RawTaxCategory[] }>(
+  const data = await context.client.query<McpListTaxCategoriesQuery>(
     { query: LIST_TAX_CATEGORIES_QUERY },
     { correlationId: context.correlationId, authorization: context.authorization },
   );
