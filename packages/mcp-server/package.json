@@ -37,8 +37,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "validate:graphql": "node scripts/validate-graphql-documents.mjs"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "dotenv": "17.4.2",
@@ -47,7 +46,6 @@
   },
   "devDependencies": {
     "@types/node": "25.9.5",
-    "graphql": "16.14.2",
     "tsx": "4.23.1",
     "typescript": "6.0.3",
     "vitest": "4.1.10"

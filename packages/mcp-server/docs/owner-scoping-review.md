@@ -4,8 +4,9 @@ Review of the completed owner/business-scoping effort on the `mcp-owner-scoping`
 all seven phases of
 [`../../../docs/coherent-owner-scoping-for-mcp/plan.md`](../../../docs/coherent-owner-scoping-for-mcp/plan.md).
 
-Reviewed 2026-08-02 against the merged branch tip (`f2c97e7ff`), 8 commits ahead of `main`; 39
-files, +2093/−93.
+Reviewed 2026-08-02 against the merged branch tip, then re-checked after the branch was rebased onto
+`main` (which brought in #4077 `TIMELESS_DATE` centralization and #4078 graphql-codegen for tool
+operation types).
 
 | Phase | Change                                                        | PR    |
 | ----- | ------------------------------------------------------------- | ----- |
@@ -36,9 +37,9 @@ All against the merged tree.
 
 ## Findings
 
-### F1 — Branch is behind `main`; `TaxCategory.isActive` has no resolver
+### F1 — Branch was behind `main`; `TaxCategory.isActive` had no resolver
 
-**High. Blocks a standalone deploy of this branch; does not block the merge.**
+**Was high. ✅ Resolved by rebasing onto `main` (2026-08-02).**
 
 `main` carries #4090 (`0335b6e7b`), which added to
 `packages/server/src/modules/financial-entities/resolvers/tax-categories.resolver.ts`:
@@ -56,11 +57,8 @@ against a row that exposes `is_active`, producing a non-null violation.
 built from this branch alone. Unit tests do not catch it: the tool suites stub `fetch`, so no real
 resolver runs.
 
-A normal merge to `main` resolves this — the branch never touched the file, so a three-way merge
-keeps main's addition.
-
-**Action:** merge or rebase `main` into the branch before any deploy or further branch work, and do
-not deploy this branch standalone.
+The branch never touched that file, so rebasing simply picked up main's version. Verified present
+after the rebase.
 
 ### F2 — Rate-limit quota multiplies with scope subsets
 
@@ -119,8 +117,10 @@ explicitly that the cap is an input guard, not a scope guard.
   Confirmed on the merged tree: the only references are `config/env.ts` and its tests. When
   enforcement lands, `accounter_list_businesses` must be in the default allowlist, or discovery
   disappears and every scoped call is left guessing — silently, since the other tools keep working.
-- **Gap 8** — no CI validation of the MCP GraphQL documents. Closed by
-  `packages/mcp-server/scripts/validate-graphql-documents.mjs`, added alongside this report.
+- **Gap 8** — no CI validation of the MCP GraphQL documents. Closed by graphql-codegen: #4078 added
+  `src/tools/*.ts` to the codegen `documents` list, and this branch adds `src/upstream/*.ts` so the
+  membership bootstrap is covered too. Codegen exits non-zero on a bad field, and it runs in the
+  shared CI setup action, so this fails every job rather than one dedicated check.
 
 ### F6 — Gap 1 remains the production blocker
 
@@ -160,7 +160,7 @@ indistinguishable through the normal path.
 
 The work is sound and ready to merge to `main`. Before it does:
 
-1. **Settle F1** — merge `main` in, or accept that the branch must not be deployed standalone.
+1. ~~Settle F1~~ — done: the branch is rebased onto `main`.
 2. **Decide on F2** — the quota change is a real behavioural regression in abuse protection, even
-   though it is not a security one.
+   though it is not a security one. Still open.
 3. F3 and F4 are safe to defer; both are recorded with the conditions that would make them live.

@@ -108,8 +108,8 @@ that already requires re-granting API access.
 ### 8. MCP GraphQL documents are not validated by CI — ✅ **CLOSED (2026-08-02)**
 
 The connector's upstream queries are template literals in `src/tools/*.ts` and
-`src/upstream/memberships.ts`. Nothing checks them against the schema: `yarn graphql:validate` scans
-`packages/client` only, `graphql-codegen` does not read this package, and TypeScript sees the
+`src/upstream/memberships.ts`. Nothing checked them against the schema: `yarn graphql:validate`
+scans `packages/client` only, `graphql-codegen` did not read this package, and TypeScript sees the
 queries as opaque strings.
 
 **Impact.** A misspelled field, a field removed upstream, or a selection on the wrong type compiles,
@@ -118,16 +118,19 @@ schema. The failure surfaces only at runtime against the live server, as a sanit
 `UPSTREAM_ERROR` that does not name the offending field. This is a live risk whenever the schema
 changes underneath the connector: nothing in this repo links the two.
 
-**Resolved by** `scripts/validate-graphql-documents.mjs`, wired as
-`yarn workspace @accounter/mcp-server validate:graphql` and run in
-`.github/workflows/graphql-validation.yml` alongside the existing client-document check. It extracts
-every `/* GraphQL */` document under `src/tools` and `src/upstream`, validates each against the
-generated `schema.graphql`, and fails the build on any error.
+**Resolved by graphql-codegen.** #4078 added `./packages/mcp-server/src/tools/*.ts` to the
+`documents` list in `codegen.ts`, and this change adds `./packages/mcp-server/src/upstream/*.ts`
+alongside it — the membership bootstrap issues its own query outside `src/tools`, so without the
+second entry it would remain the one MCP document nothing validates.
 
-Two guards keep it from degrading into a no-op: a missing `schema.graphql` fails with the
-`yarn generate:graphql` instruction rather than a bare `ENOENT` (the file is generated and
-git-ignored), and finding _zero_ documents is itself an error, so renaming the `/* GraphQL */` tag
-cannot silently switch the check off.
+Codegen validates every listed document against the schema and **exits non-zero** on a bad field
+(verified in both directories by temporarily misspelling one). Because `yarn generate:graphql` runs
+in the shared `./.github/actions/setup` action, this fails every CI job that builds the repo, not
+just a dedicated check.
+
+A standalone validator script was written for this first and then removed: with the codegen
+documents list extended, it duplicated the same check with a second mechanism to keep in sync, and
+covered strictly less (it validated documents but produced no types).
 
 ## Owner-scoping pre-flight (Phase 0) — RLS reaches `extended_tags`
 
