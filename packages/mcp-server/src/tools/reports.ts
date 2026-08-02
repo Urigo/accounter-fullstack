@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -16,8 +17,6 @@ export const BALANCE_REPORT_TOOL_NAME = 'accounter_balance_report';
 /** Bounds keeping the payload deterministic and small (spec §9.1, §9.3). */
 export const MAX_REPORT_DATE_RANGE_DAYS = 366;
 export const MAX_REPORT_ROWS = 500;
-
-const TIMELESS_DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format');
 
 const balanceReportInput = z.object({
   businessId: z
@@ -61,22 +60,7 @@ interface RawBalanceRow {
   amount: { raw: number; formatted: string; currency: string };
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 function assertDateRange(input: BalanceReportInput): void {
-  const parseCalendarDate = (value: string): number | null => {
-    const [year, month, day] = value.split('-').map(Number);
-    const timestamp = Date.UTC(year, month - 1, day);
-    const date = new Date(timestamp);
-    if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
-    ) {
-      return null;
-    }
-    return timestamp;
-  };
   const from = parseCalendarDate(input.fromDate);
   const to = parseCalendarDate(input.toDate);
   if (from === null || to === null) {
