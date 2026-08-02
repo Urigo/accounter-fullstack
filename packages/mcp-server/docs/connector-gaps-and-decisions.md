@@ -8,7 +8,9 @@ Complements [`submission-checklist.md`](./submission-checklist.md) — none of t
 there, and its "Authentication & OAuth discovery" section is marked fully complete while gap 1 is
 outstanding.
 
-Setup instructions live in [`local-development.md`](./local-development.md).
+Setup instructions live in [`local-development.md`](./local-development.md). The completed
+owner-scoping effort is reviewed in [`owner-scoping-review.md`](./owner-scoping-review.md), which
+also records findings not tracked as gaps here.
 
 ## Known gaps
 
@@ -103,11 +105,11 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
-### 8. MCP GraphQL documents are not validated by CI — **medium**
+### 8. MCP GraphQL documents are not validated by CI — ✅ **CLOSED (2026-08-02)**
 
 The connector's upstream queries are template literals in `src/tools/*.ts` and
-`src/upstream/memberships.ts`. Nothing checks them against the schema: `yarn graphql:validate` scans
-`packages/client` only, `graphql-codegen` does not read this package, and TypeScript sees the
+`src/upstream/memberships.ts`. Nothing checked them against the schema: `yarn graphql:validate`
+scans `packages/client` only, `graphql-codegen` did not read this package, and TypeScript sees the
 queries as opaque strings.
 
 **Impact.** A misspelled field, a field removed upstream, or a selection on the wrong type compiles,
@@ -116,10 +118,19 @@ schema. The failure surfaces only at runtime against the live server, as a sanit
 `UPSTREAM_ERROR` that does not name the offending field. This is a live risk whenever the schema
 changes underneath the connector: nothing in this repo links the two.
 
-**Task:** add a CI step that parses each `/* GraphQL */` document in `packages/mcp-server/src` and
-runs `graphql`'s `validate()` against the generated `schema.graphql`, failing the build on any
-error. Roughly 30 lines. It was run manually during Phase 5 (5 queries, 0 invalid) — the point is to
-stop that being a manual step.
+**Resolved by graphql-codegen.** #4078 added `./packages/mcp-server/src/tools/*.ts` to the
+`documents` list in `codegen.ts`, and this change adds `./packages/mcp-server/src/upstream/*.ts`
+alongside it — the membership bootstrap issues its own query outside `src/tools`, so without the
+second entry it would remain the one MCP document nothing validates.
+
+Codegen validates every listed document against the schema and **exits non-zero** on a bad field
+(verified in both directories by temporarily misspelling one). Because `yarn generate:graphql` runs
+in the shared `./.github/actions/setup` action, this fails every CI job that builds the repo, not
+just a dedicated check.
+
+A standalone validator script was written for this first and then removed: with the codegen
+documents list extended, it duplicated the same check with a second mechanism to keep in sync, and
+covered strictly less (it validated documents but produced no types).
 
 ## Owner-scoping pre-flight (Phase 0) — RLS reaches `extended_tags`
 
