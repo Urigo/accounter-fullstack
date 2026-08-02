@@ -143,6 +143,66 @@ describe('searchChargesTool — successful read', () => {
     expect('byBusinesses' in filters).toBe(false);
   });
 
+  // Regression guard for the "charges of June returned 6,672 rows from 2020"
+  // report: the tool built the date bounds correctly, but nothing asserted they
+  // reached upstream, so when `allCharges` silently ignored them the tool kept
+  // looking healthy. Pin the forwarding here and the wiring server-side
+  // (`allCharges` filter-forwarding test).
+  //
+  // The tool sends the `*AnyDate` pair deliberately. Upstream, `fromDate`/
+  // `toDate` test the charge's primary window (`COALESCE(documents_min_date,
+  // transactions_min_event_date)`), whereas `fromAnyDate`/`toAnyDate` test
+  // whether the charge's span across *all* date sources — documents,
+  // transaction event and debit, ledger invoice and value — overlaps the range
+  // (`charges.provider.ts`). That is the broader, overlap semantic: "charges
+  // active in this period", not "charges belonging to it".
+  it('forwards the date range to upstream as the AnyDate pair', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { fromDate: '2026-06-01', toDate: '2026-06-30' });
+    const { filters } = (
+      sentBody as { variables: { filters: { fromAnyDate?: string; toAnyDate?: string } } }
+    ).variables;
+    expect(filters.fromAnyDate).toBe('2026-06-01');
+    expect(filters.toAnyDate).toBe('2026-06-30');
+  });
+
+  // Guards the choice of predicate, not just that some date reached upstream:
+  // sending the narrow pair would silently change which charges match.
+  it('does not send the narrow fromDate/toDate pair', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { fromDate: '2026-06-01', toDate: '2026-06-30' });
+    const { filters } = (sentBody as { variables: { filters: Record<string, unknown> } }).variables;
+    expect('fromDate' in filters).toBe(false);
+    expect('toDate' in filters).toBe(false);
+  });
+
+  it('omits date bounds that were not requested', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { fromDate: '2026-06-01' });
+    const { filters } = (sentBody as { variables: { filters: Record<string, unknown> } }).variables;
+    expect(filters.fromAnyDate).toBe('2026-06-01');
+    // An absent bound must stay absent rather than become an explicit null —
+    // upstream reads a missing upper bound as unbounded, which is what the
+    // caller asked for.
+    expect('toAnyDate' in filters).toBe(false);
+  });
+
+  // Upstream `allCharges` sorts ASCENDING when no `sortBy` is given, so an
+  // unsorted request answers "show me charges" with the oldest rows in the
+  // database. The tool must always ask for newest-first explicitly.
+  it('requests newest-first ordering', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), {});
+    const { filters } = (
+      sentBody as { variables: { filters: { sortBy?: { field: string; asc: boolean } } } }
+    ).variables;
+    expect(filters.sortBy).toEqual({ field: 'DATE', asc: false });
+  });
+
   it('requests the first upstream page (0-based) for the default page', async () => {
     let sentBody: unknown;
     const client = clientReturning(oneCharge, body => (sentBody = body));

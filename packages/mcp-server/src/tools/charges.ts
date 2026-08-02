@@ -108,12 +108,24 @@ function assertDateRange(input: SearchChargesInput): void {
   }
 }
 
+/**
+ * Newest charges first.
+ *
+ * Upstream `allCharges` defaults to *ascending* when no `sortBy` is supplied
+ * (`asc: filters?.sortBy?.asc !== false`), so an unsorted request returns the
+ * oldest rows in the database — for a broad question that is the least useful
+ * page there is. Ask for descending explicitly rather than relying on a default
+ * that points the wrong way.
+ */
+const SORT_NEWEST_FIRST = { field: 'DATE', asc: false } as const;
+
 function buildFilters(
   input: SearchChargesInput,
   businessIds: readonly string[],
 ): NonNullable<McpSearchChargesQueryVariables['filters']> {
   const filters: NonNullable<McpSearchChargesQueryVariables['filters']> = {
     chargesType: input.flow,
+    sortBy: SORT_NEWEST_FIRST,
   };
   // Always scope to the authorized businesses — by OWNER, not counterparty.
   //
@@ -130,8 +142,8 @@ function buildFilters(
   if (businessIds.length > 0) {
     filters.byOwners = [...businessIds];
   }
-  if (input.fromDate) filters.fromDate = input.fromDate;
-  if (input.toDate) filters.toDate = input.toDate;
+  if (input.fromDate) filters.fromAnyDate = input.fromDate;
+  if (input.toDate) filters.toAnyDate = input.toDate;
   if (input.tags && input.tags.length > 0) filters.byTags = [...input.tags];
   if (input.freeText) filters.freeText = input.freeText;
   return filters;
