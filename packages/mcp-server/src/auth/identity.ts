@@ -17,6 +17,11 @@ import type { AuthPrincipal } from './token.js';
 export interface BusinessMembership {
   businessId: string;
   roleId: string;
+  /**
+   * Human-readable business name, for display in the discovery tool. Absent or
+   * `null` when upstream has no name — never load-bearing for authorization.
+   */
+  businessName?: string | null;
 }
 
 /** The set of businesses a request is authorized to read from. */
@@ -146,7 +151,13 @@ export function coerceMembership(entry: unknown): BusinessMembership | null {
   } else {
     return null;
   }
-  return { businessId, roleId };
+  // The display name is deliberately lenient, unlike `roleId` above: it is
+  // never used for authorization, so a malformed name must never drop an
+  // otherwise valid membership (and with it, a business the caller can read).
+  // Anything that is not a string is simply treated as "no name".
+  const rawBusinessName = record.businessName ?? record.business_name;
+  const businessName = typeof rawBusinessName === 'string' ? rawBusinessName : undefined;
+  return { businessId, roleId, businessName };
 }
 
 /** De-duplicate memberships by business id (first occurrence wins). */

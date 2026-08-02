@@ -4,6 +4,7 @@ import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 1: read-only charges search/browse (spec §8.2).
@@ -20,11 +21,7 @@ export const DEFAULT_PAGE_SIZE = 25;
 export const MAX_DATE_RANGE_DAYS = 366;
 
 const searchChargesInput = z.object({
-  businessIds: z
-    .array(z.string().min(1))
-    .max(50)
-    .optional()
-    .describe('Narrow results to these business ids (must be a subset of your memberships).'),
+  businessIds: businessIdsInput,
   fromDate: TIMELESS_DATE.optional().describe('Only charges on/after this date (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.optional().describe('Only charges on/before this date (YYYY-MM-DD).'),
   tags: z.array(z.string().min(1)).max(20).optional().describe('Only charges carrying these tags.'),
@@ -46,6 +43,10 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
       nodes {
         id
         userDescription
+        owner {
+          id
+          name
+        }
         totalAmount {
           raw
           formatted
@@ -70,6 +71,9 @@ type RawCharge = McpSearchChargesQuery['allCharges']['nodes'][number];
 export interface NormalizedCharge {
   id: string;
   description: string | null;
+  /** Owning business, so multi-business results can be grouped by the model. */
+  ownerId: string | null;
+  ownerName: string | null;
   amount: { value: number; formatted: string; currency: string } | null;
   date: string | null;
 }
@@ -104,19 +108,42 @@ function assertDateRange(input: SearchChargesInput): void {
   }
 }
 
+/**
+ * Newest charges first.
+ *
+ * Upstream `allCharges` defaults to *ascending* when no `sortBy` is supplied
+ * (`asc: filters?.sortBy?.asc !== false`), so an unsorted request returns the
+ * oldest rows in the database — for a broad question that is the least useful
+ * page there is. Ask for descending explicitly rather than relying on a default
+ * that points the wrong way.
+ */
+const SORT_NEWEST_FIRST = { field: 'DATE', asc: false } as const;
+
 function buildFilters(
   input: SearchChargesInput,
   businessIds: readonly string[],
 ): NonNullable<McpSearchChargesQueryVariables['filters']> {
   const filters: NonNullable<McpSearchChargesQueryVariables['filters']> = {
     chargesType: input.flow,
+    sortBy: SORT_NEWEST_FIRST,
   };
-  // Always scope to the authorized businesses.
+  // Always scope to the authorized businesses — by OWNER, not counterparty.
+  //
+  // `byOwners` is the owner predicate (`c.owner_id IN $ownerIds`). `byBusinesses`
+  // is the *counterparty* predicate (`ec.business_array && $ids`), and upstream
+  // builds that array as `array_remove(base.business_array, fc.owner_id)` — the
+  // owner is explicitly removed from it. Filtering by `byBusinesses` therefore
+  // matched only charges where an authorized business appears as the *other*
+  // party, i.e. inter-company charges: a small and wrong slice of the results.
+  //
+  // Kept as an explicit predicate even though `x-business-scope` now narrows via
+  // RLS upstream: defense in depth, and the tool stays correct if upstream ever
+  // runs under a scope-bypassing role.
   if (businessIds.length > 0) {
-    filters.byBusinesses = [...businessIds];
+    filters.byOwners = [...businessIds];
   }
-  if (input.fromDate) filters.fromDate = input.fromDate;
-  if (input.toDate) filters.toDate = input.toDate;
+  if (input.fromDate) filters.fromAnyDate = input.fromDate;
+  if (input.toDate) filters.toAnyDate = input.toDate;
   if (input.tags && input.tags.length > 0) filters.byTags = [...input.tags];
   if (input.freeText) filters.freeText = input.freeText;
   return filters;
@@ -126,6 +153,9 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
   return {
     id: charge.id,
     description: charge.userDescription,
+    // Optional chaining: fixtures predating owner selection omit the field.
+    ownerId: charge.owner?.id ?? null,
+    ownerName: charge.owner?.name ?? null,
     amount: charge.totalAmount
       ? {
           value: charge.totalAmount.raw,
@@ -153,7 +183,7 @@ async function handler(
   };
   const data = await context.client.query<McpSearchChargesQuery>(
     { query: SEARCH_CHARGES_QUERY, variables },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const charges = data.allCharges.nodes.map(normalizeCharge);
@@ -165,22 +195,30 @@ async function handler(
     hasNextPage: (pageInfo.currentPage ?? input.page) < pageInfo.totalPages,
   };
 
+  const scope = { businessIds: context.readScope.businessIds };
+  // The text content is what the model reads first, so surface a multi-business
+  // result there — otherwise a union across businesses looks like a single-
+  // business answer until the model inspects `scope` in the structured payload.
+  const scopeNote =
+    scope.businessIds.length > 1 ? ` across ${scope.businessIds.length} businesses` : '';
+
   return shapeListResult({
     items: charges,
     itemsKey: 'charges',
     total: pageInfo.totalRecords,
-    extra: { pagination },
+    extra: { pagination, scope },
     summarize: (shown, total) =>
       total === 0
-        ? 'No charges matched the given filters.'
-        : `Found ${total} charge(s); showing ${shown} on page ${pagination.page} of ${pagination.totalPages}.`,
+        ? `No charges matched the given filters${scopeNote}.`
+        : `Found ${total} charge(s)${scopeNote}; showing ${shown} on page ${pagination.page} of ${pagination.totalPages}.`,
   });
 }
 
 export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {
   name: SEARCH_CHARGES_TOOL_NAME,
   description:
-    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Read-only.',
+    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Read-only. ' +
+    SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: searchChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler,

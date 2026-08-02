@@ -21,10 +21,11 @@ function authContext(businessIds: string[]): McpAuthContext {
   );
 }
 
-function clientReturning(data: unknown) {
-  const fetchImpl = vi.fn(
-    async () => ({ ok: true, status: 200, json: async () => ({ data }) }) as unknown as Response,
-  );
+function clientReturning(data: unknown, capture?: (init: RequestInit) => void) {
+  const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+    capture?.(init);
+    return { ok: true, status: 200, json: async () => ({ data }) } as unknown as Response;
+  });
   return new UpstreamGraphQLClient({
     endpoint: 'http://localhost:4000/graphql',
     timeoutMs: 1000,
@@ -137,5 +138,55 @@ describe('listTaxCategoriesTool', () => {
     });
     const rows = (result.structuredContent as { taxCategories: Array<{ name: string }> }).taxCategories;
     expect(rows.map(r => r.name)).toEqual(['Income']);
+  });
+});
+
+describe('lookups — business scoping', () => {
+  const TAGS = { allTags: [{ id: '1', name: 'a', namePath: ['a'], ownerId: 'b2' }] };
+  const TAX_CATEGORIES = {
+    taxCategories: [
+      { id: '1', name: 'a', ownerId: 'b2', irsCode: null, isActive: true, sortCode: null },
+    ],
+  };
+
+  it.each([
+    ['accounter_list_tags', listTagsTool, TAGS, 'tags'],
+    ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES, 'taxCategories'],
+  ] as const)('%s narrows to a requested subset and reflects it in scope', async (
+    _name,
+    tool,
+    data,
+    itemsKey,
+  ) => {
+    let sentHeaders: Record<string, string> | undefined;
+    const client = clientReturning(data, init => {
+      sentHeaders = init.headers as Record<string, string>;
+    });
+
+    const result = await runTool(tool, client, authContext(['b1', 'b2']), {
+      businessIds: ['b2'],
+    });
+
+    expect(result.isError).toBeUndefined();
+    // The header is the only way these argument-less queries can be narrowed.
+    expect(sentHeaders?.['x-business-scope']).toBe('b2');
+    const structured = result.structuredContent as Record<string, unknown> & {
+      scope: { businessIds: string[] };
+    };
+    expect(structured.scope).toEqual({ businessIds: ['b2'] });
+    // ownerId passes straight through so rows stay attributable.
+    expect((structured[itemsKey] as Array<{ ownerId?: string }>)[0]?.ownerId).toBe('b2');
+  });
+
+  it.each([
+    ['accounter_list_tags', listTagsTool, TAGS],
+    ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES],
+  ] as const)('%s denies ids outside the caller memberships', async (_name, tool, data) => {
+    const result = await runTool(tool, clientReturning(data), authContext(['b1']), {
+      businessIds: ['b9'],
+    });
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });
 });

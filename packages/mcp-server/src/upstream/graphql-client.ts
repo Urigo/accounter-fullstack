@@ -40,6 +40,13 @@ export interface GraphQLRequest<TVariables = Record<string, unknown>> {
   operationName?: string;
 }
 
+/**
+ * Header carrying the resolved read scope upstream, where RLS is the actual
+ * enforcement point. Mirrors
+ * `packages/server/src/plugins/business-scope-header.ts`.
+ */
+export const BUSINESS_SCOPE_HEADER = 'x-business-scope';
+
 /** Per-call context propagated to the upstream server. */
 export interface UpstreamRequestContext {
   correlationId: string;
@@ -48,6 +55,15 @@ export interface UpstreamRequestContext {
    * authenticated request. Never logged. Omitted ⇒ no header sent.
    */
   authorization?: string;
+  /**
+   * Resolved business read scope. Sent as `x-business-scope` so the upstream
+   * server narrows via RLS.
+   *
+   * Omitted or empty ⇒ **no header at all**. Upstream parses an absent header
+   * as "all of the caller's memberships", so emitting an empty header would
+   * mean the exact opposite of "no businesses". See the guard in `executeOnce`.
+   */
+  businessScope?: readonly string[];
 }
 
 export interface UpstreamClientConfig {
@@ -154,6 +170,18 @@ export class UpstreamGraphQLClient {
     // Forward the caller's bearer token so upstream applies the same identity.
     if (context.authorization) {
       headers.Authorization = context.authorization;
+    }
+    // Forward the resolved read scope so upstream RLS narrows the query.
+    //
+    // Two guards, both load-bearing:
+    //  - Only set the header when at least one id survives. Upstream reads an
+    //    absent header as "all memberships", so an empty header would widen the
+    //    scope instead of narrowing it — the exact opposite of the intent.
+    //  - Filter falsy ids first, so a stray empty entry can never produce a
+    //    trailing/double comma, which upstream rejects with a hard FORBIDDEN.
+    const businessScope = context.businessScope?.filter(Boolean) ?? [];
+    if (businessScope.length > 0) {
+      headers[BUSINESS_SCOPE_HEADER] = businessScope.join(',');
     }
 
     // The timeout budget spans the entire exchange — obtaining the response AND

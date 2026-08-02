@@ -4,6 +4,7 @@ import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 3: a selected read-only report (spec §8.2).
@@ -23,7 +24,11 @@ const balanceReportInput = z.object({
   businessId: z
     .string()
     .min(1)
-    .describe('The business to report on (must be one of your memberships).'),
+    .describe(
+      'The business (owner) id to report on — must be one of the businesses you belong to. ' +
+        'Unlike the list tools this report covers exactly one business, so the id is required. ' +
+        'Use accounter_list_businesses to discover ids.',
+    ),
   fromDate: TIMELESS_DATE.describe('Start of the reporting period (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.describe('End of the reporting period (YYYY-MM-DD).'),
   reportType: z
@@ -72,11 +77,17 @@ async function handler(
 ): Promise<ToolResult> {
   assertDateRange(input);
 
-  // Policy has already confirmed the requested business is within scope; use the
-  // narrowed scope as the single owner. Assert defensively — a business-scoped
-  // tool must never reach upstream without a concrete owner.
-  const ownerId = context.readScope.businessIds[0];
-  if (!ownerId) {
+  // Report on the business the caller actually asked for. Deriving the owner
+  // from the scope instead (`readScope.businessIds[0]`) happens to agree today
+  // only because the policy narrows the scope to exactly this one business — it
+  // would silently report on the wrong business the moment the scope can hold
+  // more than one entry.
+  //
+  // The membership check is defense in depth: the policy has already verified
+  // this business is in scope, so a mismatch means the two disagree, and a
+  // business-scoped tool must never reach upstream with an unauthorized owner.
+  const ownerId = input.businessId;
+  if (!context.readScope.businessIds.includes(ownerId)) {
     throw new ToolInputError('No authorized business in scope for this report');
   }
 
@@ -87,7 +98,7 @@ async function handler(
   };
   const data = await context.client.query<McpBalanceReportQuery>(
     { query: BALANCE_REPORT_QUERY, variables },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   // Defend against a null/absent list from a nullable upstream field.
@@ -112,6 +123,7 @@ async function handler(
     extra: {
       reportType: input.reportType,
       businessId: ownerId,
+      scope: { businessIds: context.readScope.businessIds },
       period: { fromDate: input.fromDate, toDate: input.toDate },
     },
     summarize: (shown, total) =>
@@ -124,7 +136,8 @@ async function handler(
 export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
   name: BALANCE_REPORT_TOOL_NAME,
   description:
-    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role.',
+    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role. ' +
+    SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: balanceReportInput,
   policy: {
     requiredRoles: ['business_owner', 'accountant'],

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpListTagsQuery, McpListTaxCategoriesQuery } from '../gql/index.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 2: read-only lookups for tags and tax categories (spec §8.2).
@@ -59,7 +60,7 @@ function filterSortCap<T extends { name: string; id: string }>(
 // Tags
 // ---------------------------------------------------------------------------
 
-const listTagsInput = z.object({ nameContains, limit });
+const listTagsInput = z.object({ businessIds: businessIdsInput, nameContains, limit });
 type ListTagsInput = z.infer<typeof listTagsInput>;
 
 const LIST_TAGS_QUERY = /* GraphQL */ `
@@ -68,6 +69,7 @@ const LIST_TAGS_QUERY = /* GraphQL */ `
       id
       name
       namePath
+      ownerId
     }
   }
 `;
@@ -78,13 +80,14 @@ async function listTagsHandler(
 ): Promise<ToolResult> {
   const data = await context.client.query<McpListTagsQuery>(
     { query: LIST_TAGS_QUERY },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const { rows, total } = filterSortCap(data.allTags, input.nameContains, input.limit);
   const tags = rows.map(tag => ({
     id: tag.id,
     name: tag.name,
+    ownerId: tag.ownerId,
     namePath: tag.namePath ?? [tag.name],
   }));
 
@@ -92,6 +95,7 @@ async function listTagsHandler(
     items: tags,
     itemsKey: 'tags',
     total,
+    extra: { scope: { businessIds: context.readScope.businessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} ${count === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
   });
@@ -100,7 +104,8 @@ async function listTagsHandler(
 export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
   name: LIST_TAGS_TOOL_NAME,
   description:
-    'List the tags available for categorizing charges, optionally filtered by name. Read-only.',
+    'List the tags available for categorizing charges, optionally filtered by name. Read-only. ' +
+    SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listTagsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler: listTagsHandler,
@@ -111,6 +116,7 @@ export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
 // ---------------------------------------------------------------------------
 
 const listTaxCategoriesInput = z.object({
+  businessIds: businessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active tax categories.'),
   limit,
@@ -122,6 +128,7 @@ const LIST_TAX_CATEGORIES_QUERY = /* GraphQL */ `
     taxCategories {
       id
       name
+      ownerId
       irsCode
       isActive
       sortCode {
@@ -138,7 +145,7 @@ async function listTaxCategoriesHandler(
 ): Promise<ToolResult> {
   const data = await context.client.query<McpListTaxCategoriesQuery>(
     { query: LIST_TAX_CATEGORIES_QUERY },
-    { correlationId: context.correlationId, authorization: context.authorization },
+    context.upstream,
   );
 
   const activeFiltered = input.activeOnly
@@ -155,6 +162,7 @@ async function listTaxCategoriesHandler(
     items: taxCategories,
     itemsKey: 'taxCategories',
     total,
+    extra: { scope: { businessIds: context.readScope.businessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} tax ${count === 1 ? 'category' : 'categories'}${
         truncated ? ' (truncated)' : ''
@@ -165,7 +173,8 @@ async function listTaxCategoriesHandler(
 export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput> = {
   name: LIST_TAX_CATEGORIES_TOOL_NAME,
   description:
-    'List tax categories (id, name, IRS code, active flag), optionally filtered by name or active status. Read-only.',
+    'List tax categories (id, name, IRS code, active flag), optionally filtered by name or active status. Read-only. ' +
+    SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listTaxCategoriesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler: listTaxCategoriesHandler,

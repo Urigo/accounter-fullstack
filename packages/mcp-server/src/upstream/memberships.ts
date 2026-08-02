@@ -27,16 +27,17 @@ import {
 /**
  * Read-only query for the authenticated caller's own business memberships.
  *
- * Only `businessId` and `roleId` are selected: the internal
- * {@link BusinessMembership} shape keeps nothing else, so fetching `businessName`
- * would just add payload and upstream work for a field that is immediately
- * dropped.
+ * `businessName` is selected so the `accounter_list_businesses` discovery tool
+ * can present human-readable names without a second upstream round trip — this
+ * query already runs on every authenticated request, so the name rides along
+ * for free. It is display-only and never used for authorization.
  */
 export const MY_MEMBERSHIPS_QUERY = /* GraphQL */ `
   query McpMyMemberships {
     myMemberships {
       businessId
       roleId
+      businessName
     }
   }
 `;
@@ -105,6 +106,14 @@ export interface UpstreamMembershipSourceOptions {
  *
  * The identity is carried entirely by the forwarded token, so the resolved
  * principal is not consulted here.
+ *
+ * **This call must never send `x-business-scope`** — unlike every tool call,
+ * which goes through `ToolExecutionContext.upstream`. This is the query that
+ * *discovers* the scope, so scoping it would be circular: it would narrow the
+ * very result used to compute the scope, and a stale or not-yet-known business
+ * id would be rejected upstream at authentication time, failing the whole
+ * request rather than returning an empty list. The context is therefore built
+ * inline with only `{ correlationId, authorization }`, and a test locks this in.
  */
 export function createUpstreamMembershipSource(
   options: UpstreamMembershipSourceOptions,
