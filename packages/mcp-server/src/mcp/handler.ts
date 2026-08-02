@@ -21,6 +21,7 @@ import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
 import { getMetrics } from '../observability/metrics.js';
 import { withSpan } from '../observability/tracing.js';
 import { getRateLimiter } from '../rate-limit/default-limiter.js';
+import { isToolAllowed } from '../tools/allowlist.js';
 import { executeRegisteredTool } from '../tools/execute.js';
 import { toolRegistry } from '../tools/registry-instance.js';
 import { getUpstreamClient } from '../upstream/default-client.js';
@@ -155,6 +156,12 @@ export interface McpDispatchContext {
   correlationId: string;
   /** Caller's Authorization header value, forwarded upstream (never logged). */
   authorization?: string;
+  /**
+   * `MCP_TOOL_ALLOWLIST`, resolved at the HTTP boundary. Empty/omitted ⇒ no
+   * restriction (every registered tool is exposed); non-empty ⇒ `tools/list`
+   * and `tools/call` are limited to exactly these tool names.
+   */
+  allowlist?: readonly string[];
 }
 
 /**
@@ -171,8 +178,17 @@ export async function dispatchMcpRequest(
   }
   const id = request.id ?? null;
 
+  // `MCP_TOOL_ALLOWLIST` enforcement: an empty allowlist exposes every tool; a
+  // non-empty one restricts both discovery and dispatch to the named subset.
+  // The list is threaded in via the dispatch context (built at the HTTP
+  // boundary) so this function stays env-free and directly unit-testable.
+  const allowlist = context.allowlist ?? [];
+
   if (request.method === 'tools/list') {
-    return success(id, { tools: [...listedTools, ...toolRegistry.describe()] });
+    const registered = toolRegistry
+      .describe()
+      .filter(descriptor => isToolAllowed(allowlist, descriptor.name));
+    return success(id, { tools: [...listedTools, ...registered] });
   }
 
   if (request.method === 'tools/call') {
@@ -181,7 +197,10 @@ export async function dispatchMcpRequest(
     if (name === SMOKE_TOOL_NAME) {
       return success(id, runSmokeTool(params.arguments));
     }
-    const tool = toolRegistry.get(name);
+    // A tool that exists but is excluded by the allowlist is reported as
+    // unknown — indistinguishable from a nonexistent one, so the allowlist does
+    // not leak which capabilities the server could otherwise offer.
+    const tool = isToolAllowed(allowlist, name) ? toolRegistry.get(name) : undefined;
     if (!tool) {
       return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${name}`);
     }
@@ -350,6 +369,7 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     correlationId: getRequestContext(req)?.correlationId ?? '',
     authorization:
       typeof req.headers.authorization === 'string' ? req.headers.authorization : undefined,
+    allowlist: env.server.toolAllowlist,
   });
 
   if (response === null) {

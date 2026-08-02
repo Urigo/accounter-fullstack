@@ -19,7 +19,7 @@ import zod from 'zod';
  * | GRAPHQL_UPSTREAM_URL        | yes      | —                        | Base URL of the Accounter GraphQL server the tools call.          |
  * | MCP_SERVER_PORT             | no       | 3100                     | TCP port the HTTP transport listens on.                           |
  * | MCP_ENABLED                 | no       | 1                        | Master kill-switch (`1` on / `0` off).                            |
- * | MCP_TOOL_ALLOWLIST          | no       | '' (none)                | Comma-separated tool names allowed in production (least priv).    |
+ * | MCP_TOOL_ALLOWLIST          | no       | '' (all tools)           | Comma-separated allowed tool names; empty ⇒ no restriction.       |
  * | AUTH0_JWKS_URL              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`.      |
  * | GRAPHQL_UPSTREAM_TIMEOUT_MS | no       | 10000                    | Upstream GraphQL request timeout budget in milliseconds.          |
  * | MCP_RATE_LIMIT_CONFIG       | no       | '' (defaults applied)    | Optional rate-limit override spec (parsed by the limiter later).  |
@@ -56,8 +56,11 @@ export const envSchema = zod.object({
     zod.coerce.number().int().positive().max(65_535).optional().default(3100),
   ),
   MCP_ENABLED: booleanFlag('1'),
-  // Least-privilege default: empty allowlist means no tools are exposed unless
-  // explicitly enabled. The registry enforces this in later prompts.
+  // Tool allowlist: an empty value imposes no restriction (every registered
+  // tool is exposed); a non-empty value restricts `tools/list` and `tools/call`
+  // to exactly the named tools. Enforced in `mcp/handler.ts` via
+  // `tools/allowlist.ts`. When narrowing, keep `accounter_list_businesses` in
+  // the set — it is the discovery entry point for business scoping.
   MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
   AUTH0_JWKS_URL: emptyStringAsUndefined(
     zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
@@ -77,7 +80,7 @@ export interface AppConfig {
     /** Public origin without a trailing slash. */
     publicBaseUrl: string;
     enabled: boolean;
-    /** Parsed tool allowlist; empty array means "no tools exposed". */
+    /** Parsed tool allowlist; empty array means "no restriction" (all tools). */
     toolAllowlist: readonly string[];
   };
   auth0: {
