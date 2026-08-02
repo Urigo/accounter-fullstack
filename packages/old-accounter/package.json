@@ -28,8 +28,8 @@
     "uuid": "14.0.1"
   },
   "devDependencies": {
-    "@types/lodash": "4.17.24",
-    "@types/pg": "8.20.0",
+    "@types/lodash": "4.17.25",
+    "@types/pg": "8.20.3",
     "@types/uuid": "11.0.0"
   }
 }
