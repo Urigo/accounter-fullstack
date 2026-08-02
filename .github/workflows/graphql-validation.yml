@@ -22,3 +22,9 @@ jobs:
 
       - name: Validate GraphQL schema
         run: yarn graphql:validate
+
+      # The MCP server's operations are tagged template literals, so codegen
+      # never reads them and `graphql:validate` (client documents only) cannot
+      # cover them. Without this, a bad field name fails only at runtime.
+      - name: Validate MCP server GraphQL documents
+        run: yarn workspace @accounter/mcp-server validate:graphql

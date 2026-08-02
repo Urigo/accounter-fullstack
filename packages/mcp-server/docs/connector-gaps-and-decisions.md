@@ -8,7 +8,9 @@ Complements [`submission-checklist.md`](./submission-checklist.md) — none of t
 there, and its "Authentication & OAuth discovery" section is marked fully complete while gap 1 is
 outstanding.
 
-Setup instructions live in [`local-development.md`](./local-development.md).
+Setup instructions live in [`local-development.md`](./local-development.md). The completed
+owner-scoping effort is reviewed in [`owner-scoping-review.md`](./owner-scoping-review.md), which
+also records findings not tracked as gaps here.
 
 ## Known gaps
 
@@ -103,7 +105,7 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
-### 8. MCP GraphQL documents are not validated by CI — **medium**
+### 8. MCP GraphQL documents are not validated by CI — ✅ **CLOSED (2026-08-02)**
 
 The connector's upstream queries are template literals in `src/tools/*.ts` and
 `src/upstream/memberships.ts`. Nothing checks them against the schema: `yarn graphql:validate` scans
@@ -116,10 +118,16 @@ schema. The failure surfaces only at runtime against the live server, as a sanit
 `UPSTREAM_ERROR` that does not name the offending field. This is a live risk whenever the schema
 changes underneath the connector: nothing in this repo links the two.
 
-**Task:** add a CI step that parses each `/* GraphQL */` document in `packages/mcp-server/src` and
-runs `graphql`'s `validate()` against the generated `schema.graphql`, failing the build on any
-error. Roughly 30 lines. It was run manually during Phase 5 (5 queries, 0 invalid) — the point is to
-stop that being a manual step.
+**Resolved by** `scripts/validate-graphql-documents.mjs`, wired as
+`yarn workspace @accounter/mcp-server validate:graphql` and run in
+`.github/workflows/graphql-validation.yml` alongside the existing client-document check. It extracts
+every `/* GraphQL */` document under `src/tools` and `src/upstream`, validates each against the
+generated `schema.graphql`, and fails the build on any error.
+
+Two guards keep it from degrading into a no-op: a missing `schema.graphql` fails with the
+`yarn generate:graphql` instruction rather than a bare `ENOENT` (the file is generated and
+git-ignored), and finding _zero_ documents is itself an error, so renaming the `/* GraphQL */` tag
+cannot silently switch the check off.
 
 ## Owner-scoping pre-flight (Phase 0) — RLS reaches `extended_tags`
 
