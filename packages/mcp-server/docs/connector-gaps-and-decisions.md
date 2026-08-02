@@ -12,6 +12,9 @@ Setup instructions live in [`local-development.md`](./local-development.md). The
 owner-scoping effort is reviewed in [`owner-scoping-review.md`](./owner-scoping-review.md), which
 also records findings not tracked as gaps here.
 
+**For the actionable list, see [`todo.md`](./todo.md)** — it consolidates the open items from this
+document and the review into one place. This document keeps the analysis behind each item.
+
 ## Known gaps
 
 ### 1. Auth0 DCR is rejected by Claude — **critical, blocks production**

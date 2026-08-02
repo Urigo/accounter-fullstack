@@ -20,7 +20,8 @@ operation types).
 | 7     | Documentation of the scoping contract                         | #4096 |
 
 Outstanding items tracked in [`connector-gaps-and-decisions.md`](./connector-gaps-and-decisions.md)
-are referenced rather than repeated.
+are referenced rather than repeated. The findings below that remain open are carried into
+[`todo.md`](./todo.md), which is the actionable list.
 
 ## Verification performed
 
