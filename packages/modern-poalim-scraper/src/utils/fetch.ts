@@ -23,12 +23,28 @@ export async function fetchPostWithinPage<TResult>(
             ),
           ),
         })
-          .then(result => {
-            if (result.status === 204) {
+          .then(async result => {
+            const resultText = await result.text();
+            if (
+              result.status === 429 ||
+              (resultText && /block automation|bot detection/i.test(resultText))
+            ) {
+              throw new Error(
+                `Automation detected and blocked by server. Status: ${result.status}, URL: ${url}`,
+              );
+            } else if (result.status === 204) {
               // No content response
               resolve(null);
             } else {
-              resolve(result.json());
+              if (resultText === null) {
+                resolve(null);
+              } else if (resultText === undefined) {
+                resolve(undefined as unknown as TResult);
+              } else if (resultText === '') {
+                resolve(undefined as unknown as TResult);
+              } else {
+                resolve(JSON.parse(resultText) as TResult);
+              }
             }
           })
           .catch(e => {
@@ -49,11 +65,27 @@ export async function fetchGetWithinPage<TResult>(
   return page.evaluate(url => {
     return new Promise<TResult | null>((resolve, reject) => {
       fetch(url, { credentials: 'include' })
-        .then(result => {
-          if (result.status === 204) {
+        .then(async result => {
+          const resultText = await result.text();
+          if (
+            result.status === 429 ||
+            (resultText && /block automation|bot detection/i.test(resultText))
+          ) {
+            throw new Error(
+              `Automation detected and blocked by server. Status: ${result.status}, URL: ${url}`,
+            );
+          } else if (result.status === 204) {
             resolve(null);
           } else {
-            resolve(result.json());
+            if (resultText === null) {
+              resolve(undefined as unknown as TResult);
+            } else if (resultText === undefined) {
+              resolve(undefined as unknown as TResult);
+            } else if (resultText === '') {
+              resolve(undefined as unknown as TResult);
+            } else {
+              resolve(JSON.parse(resultText) as TResult);
+            }
           }
         })
         .catch(e => {
