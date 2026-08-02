@@ -16,7 +16,7 @@
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "26.5.0"
+    "node": "26.5.1"
   },
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -41,12 +41,12 @@
   },
   "dependencies": {
     "dotenv": "17.4.2",
-    "jose": "6.2.3",
+    "jose": "6.2.7",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "25.9.5",
-    "tsx": "4.23.1",
+    "tsx": "4.23.2",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   }
