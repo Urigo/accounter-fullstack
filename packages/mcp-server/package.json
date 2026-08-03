@@ -32,14 +32,20 @@
   "scripts": {
     "benchmark": "cd ../.. && vitest run --project unit packages/mcp-server/src/__tests__/perf.test.ts",
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --import ./src/bootstrap-telemetry.ts src/index.ts",
     "lint": "eslint './src/**/*.{js,ts,tsx}' --quiet",
-    "start": "node dist/index.js",
+    "start": "node --import ./dist/bootstrap-telemetry.js dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "0.79.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.221.0",
+    "@opentelemetry/resources": "2.10.0",
+    "@opentelemetry/sdk-node": "0.221.0",
+    "@opentelemetry/semantic-conventions": "1.43.0",
     "dotenv": "17.4.2",
     "jose": "6.2.7",
     "zod": "4.4.3"

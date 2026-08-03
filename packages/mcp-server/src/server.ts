@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { trace } from '@opentelemetry/api';
 import { env } from './config/env.js';
 import { createRequestContext, elapsedMs, setRequestContext } from './context.js';
 import { completionFields, createRequestLogger, log } from './logger.js';
@@ -8,6 +9,8 @@ import {
   PROTECTED_RESOURCE_METADATA_PATH,
 } from './oauth/metadata.js';
 import { getMetrics } from './observability/metrics.js';
+import { CORRELATION_ID_ATTRIBUTE } from './observability/tracing.js';
+import { shutdownTelemetry } from './telemetry/index.js';
 import { getServiceVersion, SERVICE_NAME } from './version.js';
 
 /**
@@ -91,6 +94,16 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
   setRequestContext(req, context);
   const logger = createRequestLogger(context);
 
+  // Tag the auto-instrumented incoming HTTP span with the business-level
+  // correlation id (and request id) so this MCP trace — and, via `traceparent`
+  // propagation, the backend trace it triggers — are both searchable by the
+  // same `X-Correlation-Id` in Grafana. A no-op when telemetry is disabled.
+  const activeSpan = trace.getActiveSpan();
+  if (activeSpan) {
+    activeSpan.setAttribute(CORRELATION_ID_ATTRIBUTE, context.correlationId);
+    activeSpan.setAttribute('accounter.request_id', context.requestId);
+  }
+
   // Echo the correlation id so callers can tie their logs to ours.
   res.setHeader('X-Correlation-Id', context.correlationId);
 
@@ -165,13 +178,17 @@ export function createShutdownHandler({
 
     server.close(error => {
       clearTimeout(forceTimer);
-      if (error) {
-        log('error', 'error during shutdown', { error: String(error) });
-        exit(1);
-        return;
-      }
-      log('info', 'shutdown complete', { signal });
-      exit(0);
+      // Flush pending spans before exiting so in-flight traces are not dropped.
+      // A no-op when telemetry was never started (OTEL disabled).
+      void shutdownTelemetry().finally(() => {
+        if (error) {
+          log('error', 'error during shutdown', { error: String(error) });
+          exit(1);
+          return;
+        }
+        log('info', 'shutdown complete', { signal });
+        exit(0);
+      });
     });
 
     // `server.close()` stops accepting new connections but leaves idle

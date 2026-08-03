@@ -246,7 +246,7 @@ describe('createShutdownHandler', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('closes the server and exits 0 on clean shutdown', () => {
+  it('closes the server and exits 0 on clean shutdown', async () => {
     const exit = vi.fn();
     const server = {
       close: vi.fn((cb: (err?: Error) => void) => cb()),
@@ -256,7 +256,9 @@ describe('createShutdownHandler', () => {
     handler('SIGTERM');
 
     expect(server.close).toHaveBeenCalledTimes(1);
-    expect(exit).toHaveBeenCalledWith(0);
+    // Exit is deferred until telemetry has flushed (a resolved no-op when OTEL
+    // is disabled), so it lands on a later microtask.
+    await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(0));
   });
 
   it('closes idle keep-alive connections to avoid stalling shutdown', () => {
@@ -273,7 +275,7 @@ describe('createShutdownHandler', () => {
     expect(closeIdleConnections).toHaveBeenCalledTimes(1);
   });
 
-  it('exits 1 when close reports an error', () => {
+  it('exits 1 when close reports an error', async () => {
     const exit = vi.fn();
     const server = {
       close: vi.fn((cb: (err?: Error) => void) => cb(new Error('close failed'))),
@@ -282,7 +284,7 @@ describe('createShutdownHandler', () => {
     const handler = createShutdownHandler({ server, exit, graceMs: 1000 });
     handler('SIGINT');
 
-    expect(exit).toHaveBeenCalledWith(1);
+    await vi.waitFor(() => expect(exit).toHaveBeenCalledWith(1));
   });
 
   it('ignores repeated signals (idempotent)', () => {

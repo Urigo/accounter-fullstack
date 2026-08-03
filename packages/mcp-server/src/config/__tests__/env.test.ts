@@ -124,6 +124,72 @@ describe('parseEnv — invalid configuration', () => {
   });
 });
 
+describe('parseEnv — OpenTelemetry configuration', () => {
+  it('defaults OTEL to disabled with the MCP service identity', () => {
+    const config = parseEnv(validEnv);
+    expect(config.otel.enabled).toBe(false);
+    expect(config.otel.serviceName).toBe('accounter-mcp-server');
+    expect(config.otel.serviceNamespace).toBe('accounter');
+    expect(config.otel.tracesSampler).toBe('always_on');
+    expect(config.otel.exporterEndpoint).toBeUndefined();
+    expect(config.otel.tracesSamplerArg).toBeUndefined();
+    expect(config.otel.startupStrict).toBe(false);
+  });
+
+  it('requires an exporter endpoint when OTEL is enabled', () => {
+    expect(() => parseEnv({ ...validEnv, OTEL_ENABLED: '1' })).toThrow(EnvValidationError);
+  });
+
+  it('parses an enabled configuration', () => {
+    const config = parseEnv({
+      ...validEnv,
+      OTEL_ENABLED: '1',
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318/v1/traces',
+      OTEL_EXPORTER_OTLP_HEADERS: 'x-api-key=secret',
+      OTEL_SERVICE_NAME: 'mcp-prod',
+      OTEL_STARTUP_STRICT: 'true',
+    });
+    expect(config.otel.enabled).toBe(true);
+    expect(config.otel.exporterEndpoint).toBe('http://localhost:4318/v1/traces');
+    expect(config.otel.exporterHeaders).toBe('x-api-key=secret');
+    expect(config.otel.serviceName).toBe('mcp-prod');
+    expect(config.otel.startupStrict).toBe(true);
+  });
+
+  it('requires a valid ratio arg for ratio-based samplers', () => {
+    expect(() =>
+      parseEnv({
+        ...validEnv,
+        OTEL_ENABLED: '1',
+        OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318/v1/traces',
+        OTEL_TRACES_SAMPLER: 'parentbased_traceidratio',
+      }),
+    ).toThrow(EnvValidationError);
+
+    expect(() =>
+      parseEnv({
+        ...validEnv,
+        OTEL_ENABLED: '1',
+        OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318/v1/traces',
+        OTEL_TRACES_SAMPLER: 'traceidratio',
+        OTEL_TRACES_SAMPLER_ARG: '2',
+      }),
+    ).toThrow(EnvValidationError);
+  });
+
+  it('coerces a valid ratio sampler arg to a number', () => {
+    const config = parseEnv({
+      ...validEnv,
+      OTEL_ENABLED: '1',
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318/v1/traces',
+      OTEL_TRACES_SAMPLER: 'parentbased_traceidratio',
+      OTEL_TRACES_SAMPLER_ARG: '0.25',
+    });
+    expect(config.otel.tracesSampler).toBe('parentbased_traceidratio');
+    expect(config.otel.tracesSamplerArg).toBe(0.25);
+  });
+});
+
 describe('loadEnv — fail-fast startup', () => {
   // Point dotenv at a nonexistent file so no real .env leaks into the source.
   const missingEnvFile = resolve(tmpdir(), 'accounter-mcp-nonexistent.env');

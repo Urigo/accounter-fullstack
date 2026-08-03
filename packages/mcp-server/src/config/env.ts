@@ -23,6 +23,15 @@ import zod from 'zod';
  * | AUTH0_JWKS_URL              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`.      |
  * | GRAPHQL_UPSTREAM_TIMEOUT_MS | no       | 10000                    | Upstream GraphQL request timeout budget in milliseconds.          |
  * | MCP_RATE_LIMIT_CONFIG       | no       | '' (defaults applied)    | Optional rate-limit override spec (parsed by the limiter later).  |
+ * | OTEL_ENABLED                | no       | 0                        | Master switch for OpenTelemetry tracing (`1` on / `0` off).       |
+ * | OTEL_SERVICE_NAME           | no       | accounter-mcp-server     | `service.name` resource attribute.                                |
+ * | OTEL_SERVICE_NAMESPACE      | no       | accounter                | `service.namespace` resource attribute.                           |
+ * | OTEL_DEPLOYMENT_ENV         | no       | NODE_ENV or development  | `deployment.environment.name` resource attribute.                 |
+ * | OTEL_EXPORTER_OTLP_ENDPOINT | if OTEL  | —                        | OTLP/HTTP traces endpoint (required when OTEL_ENABLED=1).          |
+ * | OTEL_EXPORTER_OTLP_HEADERS  | no       | —                        | OTLP exporter headers as `key=value,key=value`.                   |
+ * | OTEL_TRACES_SAMPLER         | no       | always_on                | Sampler strategy (see builder.ts).                                |
+ * | OTEL_TRACES_SAMPLER_ARG     | if ratio | —                        | Ratio 0–1, required for the ratio-based samplers.                 |
+ * | OTEL_STARTUP_STRICT         | no       | —                        | `true` ⇒ a telemetry startup failure aborts the process.          |
  *
  * Secrets are never embedded here; they are supplied via the environment only.
  */
@@ -69,6 +78,73 @@ export const envSchema = zod.object({
     zod.coerce.number().int().positive().max(120_000).optional().default(10_000),
   ),
   MCP_RATE_LIMIT_CONFIG: emptyStringAsUndefined(zod.string().optional().default('')),
+
+  // --- OpenTelemetry (traces exported over OTLP/HTTP to Grafana Tempo) ---
+  // Mirrors the main server's OTEL_* configuration so both services share one
+  // Grafana backend and the same conventions. Disabled by default; when enabled
+  // the exporter endpoint is required. See `../telemetry/builder.ts`.
+  OTEL_ENABLED: booleanFlag('0'),
+  OTEL_SERVICE_NAME: emptyStringAsUndefined(
+    zod.string().optional().default('accounter-mcp-server'),
+  ),
+  OTEL_SERVICE_NAMESPACE: emptyStringAsUndefined(zod.string().optional().default('accounter')),
+  OTEL_DEPLOYMENT_ENV: emptyStringAsUndefined(
+    zod
+      .string()
+      .optional()
+      .default(process.env.NODE_ENV ?? 'development'),
+  ),
+  OTEL_EXPORTER_OTLP_ENDPOINT: emptyStringAsUndefined(zod.string().optional()),
+  OTEL_EXPORTER_OTLP_HEADERS: emptyStringAsUndefined(zod.string().optional()),
+  OTEL_TRACES_SAMPLER: emptyStringAsUndefined(
+    zod
+      .enum([
+        'parentbased_traceidratio',
+        'always_on',
+        'always_off',
+        'traceidratio',
+        'parentbased_always_on',
+        'parentbased_always_off',
+      ])
+      .optional()
+      .default('always_on'),
+  ),
+  OTEL_TRACES_SAMPLER_ARG: emptyStringAsUndefined(zod.string().optional()),
+  OTEL_STARTUP_STRICT: emptyStringAsUndefined(
+    zod.union([zod.literal('true'), zod.literal('false')]).optional(),
+  ),
+}).superRefine((data, ctx) => {
+  if (data.OTEL_ENABLED === '1' && !data.OTEL_EXPORTER_OTLP_ENDPOINT) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['OTEL_EXPORTER_OTLP_ENDPOINT'],
+      message: 'OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_ENABLED is "1".',
+    });
+  }
+
+  const usesRatioSampler =
+    data.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
+    data.OTEL_TRACES_SAMPLER === 'traceidratio';
+
+  if (usesRatioSampler) {
+    if (data.OTEL_TRACES_SAMPLER_ARG === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OTEL_TRACES_SAMPLER_ARG'],
+        message:
+          'OTEL_TRACES_SAMPLER_ARG is required when OTEL_TRACES_SAMPLER is a ratio sampler ("traceidratio" or "parentbased_traceidratio").',
+      });
+    } else {
+      const num = Number(data.OTEL_TRACES_SAMPLER_ARG);
+      if (!Number.isFinite(num) || num < 0 || num > 1) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['OTEL_TRACES_SAMPLER_ARG'],
+          message: 'OTEL_TRACES_SAMPLER_ARG must be a numeric string between 0 and 1.',
+        });
+      }
+    }
+  }
 });
 
 export type RawEnv = zod.infer<typeof envSchema>;
@@ -95,6 +171,32 @@ export interface AppConfig {
   rateLimit: {
     /** Raw config spec; parsed by the rate limiter in a later prompt. */
     raw: string;
+  };
+  otel: {
+    /** Master switch; when false the telemetry SDK is never started. */
+    enabled: boolean;
+    /** `service.name` resource attribute. */
+    serviceName: string;
+    /** `service.namespace` resource attribute. */
+    serviceNamespace: string;
+    /** `deployment.environment.name` resource attribute. */
+    deploymentEnv: string;
+    /** OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`). */
+    exporterEndpoint: string | undefined;
+    /** OTLP exporter headers as a raw `key=value,key=value` string. */
+    exporterHeaders: string | undefined;
+    /** Trace sampler strategy. */
+    tracesSampler:
+      | 'parentbased_traceidratio'
+      | 'always_on'
+      | 'always_off'
+      | 'traceidratio'
+      | 'parentbased_always_on'
+      | 'parentbased_always_off';
+    /** Ratio (0–1) for the ratio-based samplers; undefined otherwise. */
+    tracesSamplerArg: number | undefined;
+    /** When true, a telemetry startup failure aborts the process. */
+    startupStrict: boolean;
   };
 }
 
@@ -145,6 +247,22 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
     },
     rateLimit: {
       raw: raw.MCP_RATE_LIMIT_CONFIG,
+    },
+    otel: {
+      enabled: raw.OTEL_ENABLED === '1',
+      serviceName: raw.OTEL_SERVICE_NAME,
+      serviceNamespace: raw.OTEL_SERVICE_NAMESPACE,
+      deploymentEnv: raw.OTEL_DEPLOYMENT_ENV,
+      exporterEndpoint: raw.OTEL_EXPORTER_OTLP_ENDPOINT,
+      exporterHeaders: raw.OTEL_EXPORTER_OTLP_HEADERS,
+      tracesSampler: raw.OTEL_TRACES_SAMPLER,
+      tracesSamplerArg:
+        (raw.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
+          raw.OTEL_TRACES_SAMPLER === 'traceidratio') &&
+        raw.OTEL_TRACES_SAMPLER_ARG !== undefined
+          ? Number(raw.OTEL_TRACES_SAMPLER_ARG)
+          : undefined,
+      startupStrict: raw.OTEL_STARTUP_STRICT === 'true',
     },
   };
 }

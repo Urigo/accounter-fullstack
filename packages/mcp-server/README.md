@@ -24,8 +24,9 @@ Accounter GraphQL server; a curated registry of eight read-only tools (`accounte
 `accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
 and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
 client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
-per-`tools/call` rate limiting; and operational telemetry (request/outcome counters, a latency
-histogram, auth-failure counters, tracing spans) exposed at `GET /metrics`.
+per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
+histogram, auth-failure counters) exposed at `GET /metrics`; and OpenTelemetry tracing exported to
+Grafana Tempo (opt-in), correlated with the backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) is **not** implemented — see
 [Known limitations & phase 2](#known-limitations--phase-2-write-scope).
@@ -194,13 +195,40 @@ A snapshot is exposed at `GET /metrics`:
 curl http://localhost:3100/metrics
 ```
 
-### Tracing spans
+### Tracing (OpenTelemetry → Grafana Tempo)
 
-Lightweight tracing spans (`src/observability/tracing.ts`) wrap the key units of work — token
-verification (`auth:verify`), tool execution (`tool:<name>`), and each upstream GraphQL call
-(`upstream:graphql`) — emitting structured `span start`/`span end` debug logs carrying the
-correlation id and span duration. The implementation is deliberately dependency-free so it can be
-swapped for OpenTelemetry later without touching call sites.
+The MCP server emits OpenTelemetry traces over OTLP/HTTP to the same Grafana Tempo backend as the
+main Accounter server, using the same `OTEL_*` configuration conventions (see
+[Configuration](#configuration)). Tracing is **off by default** and enabled with `OTEL_ENABLED=1`
+plus an `OTEL_EXPORTER_OTLP_ENDPOINT`.
+
+Spans come from two sources:
+
+- **Auto-instrumentation** (`@opentelemetry/auto-instrumentations-node`): the incoming `POST /mcp`
+  HTTP server span, and the outbound `fetch` client spans for upstream GraphQL calls (via the
+  `undici` instrumentation).
+- **Manual spans** (`src/observability/tracing.ts`, `withSpan`): token verification (`auth:verify`),
+  tool execution (`tool:<name>`), and each upstream GraphQL call (`upstream:graphql`). Each carries
+  the business-level `accounter.correlation_id` attribute. The `withSpan` signature is unchanged, so
+  call sites did not move — and when OTEL is disabled it resolves to the API's no-op tracer at
+  effectively zero cost.
+
+The SDK is started from a `--import` preload (`src/bootstrap-telemetry.ts`) so instrumentation
+patches `node:http`/`fetch` before the app loads, and flushed on graceful shutdown.
+
+#### Linking MCP traces to the backend
+
+Two mechanisms tie an MCP request to the backend work it triggers:
+
+1. **W3C `traceparent` propagation (the distributed-trace join).** The upstream `fetch` is
+   auto-instrumented, so `traceparent` is injected on every upstream GraphQL call and the Accounter
+   server's HTTP instrumentation continues the **same trace**. A single Grafana trace therefore
+   spans `POST /mcp` → `tool:<name>` → `upstream:graphql` → the backend HTTP/GraphQL/Postgres spans.
+2. **`X-Correlation-Id` as a shared, searchable attribute.** The correlation id (inherited from the
+   inbound header or generated) is set as `accounter.correlation_id` on the MCP spans and forwarded
+   upstream as `X-Correlation-Id`; the backend records the same attribute on its spans (via its
+   `correlationIdPlugin`). This lets you pivot from an MCP log line to the backend trace and search
+   Tempo by the business-level id.
 
 ## Running locally
 
@@ -254,6 +282,15 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `AUTH0_JWKS_URL`              | no       | derived from issuer | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`     |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`             | Upstream GraphQL request timeout budget (ms)                    |
 | `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)     | Optional rate-limit override spec (parsed by the limiter later) |
+| `OTEL_ENABLED`                | no       | `0`                 | Enable OpenTelemetry tracing (`1` on / `0` off)                 |
+| `OTEL_SERVICE_NAME`           | no       | `accounter-mcp-server` | `service.name` resource attribute                            |
+| `OTEL_SERVICE_NAMESPACE`      | no       | `accounter`         | `service.namespace` resource attribute                          |
+| `OTEL_DEPLOYMENT_ENV`         | no       | `NODE_ENV`/`development` | `deployment.environment.name` resource attribute            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | if OTEL  | —                   | OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`) |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | no       | —                   | OTLP exporter headers as `key=value,key=value`                  |
+| `OTEL_TRACES_SAMPLER`         | no       | `always_on`         | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)   |
+| `OTEL_TRACES_SAMPLER_ARG`     | if ratio | —                   | Ratio `0`–`1` for the ratio-based samplers                      |
+| `OTEL_STARTUP_STRICT`         | no       | —                   | `true` ⇒ abort the process on a telemetry startup failure       |
 
 ## Scripts
 
@@ -333,7 +370,8 @@ Phase 1 is intentionally **read-only** and single-purpose:
   rather than streamed in full.
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
-- Tracing is a dependency-free stub emitting structured span logs; it is not wired to OpenTelemetry.
+- Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
+  remain in-process (`GET /metrics`) and are not yet exported over OTLP.
 
 **Phase 2 (write scope)** — not implemented — will add mutating tools (e.g. tagging/updating
 charges) behind: per-tool write policies and role checks reusing the server's authorization model;

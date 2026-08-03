@@ -268,6 +268,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/mcp-server@workspace:packages/mcp-server"
   dependencies:
+    "@opentelemetry/api": "npm:1.9.1"
+    "@opentelemetry/auto-instrumentations-node": "npm:0.79.0"
+    "@opentelemetry/exporter-trace-otlp-http": "npm:0.221.0"
+    "@opentelemetry/resources": "npm:2.10.0"
+    "@opentelemetry/sdk-node": "npm:0.221.0"
+    "@opentelemetry/semantic-conventions": "npm:1.43.0"
     "@types/node": "npm:25.9.5"
     dotenv: "npm:17.4.2"
     jose: "npm:6.2.7"
