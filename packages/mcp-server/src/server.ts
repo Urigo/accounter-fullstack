@@ -110,8 +110,7 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
     // MCP transport and its OAuth resource-metadata discovery route are treated
     // as absent (404) rather than being advertised/served.
     const isMcpRoute = route === MCP_ROUTE_PATH || route === PROTECTED_RESOURCE_METADATA_PATH;
-    const handler =
-      isMcpRoute && !env.server.enabled ? undefined : routes[context.method]?.[route];
+    const handler = isMcpRoute && !env.server.enabled ? undefined : routes[context.method]?.[route];
     if (handler) {
       await handler(req, res);
     } else {
