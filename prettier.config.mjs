@@ -24,50 +24,63 @@ import prettierConfig from '@theguild/prettier-config';
  * - prettier-plugin-sql (v0.19.2): PostgreSQL/SQL formatting
  */
 
+/**
+ * Stricter import ordering for better code organization.
+ * Overrides the default guild config import order.
+ *
+ * Order (most restrictive to most general):
+ * 1. React and framework core imports
+ * 2. Third-party regular packages (pg, express, etc.)
+ * 3. Third-party scoped packages (@pgtyped, @mui, @graphql, etc.)
+ * 4. Internal monorepo aliases (@accounter/*, @accounter-helper/*)
+ * 5. Internal absolute imports (from tsconfig paths)
+ * 6. Relative imports and local files
+ * 7. Style and non-JS asset imports
+ */
+const importOrder = [
+  // React and React-adjacent libraries
+  '^react$',
+  '^react-dom',
+  '^next',
+  // Third-party regular packages (pg, express, etc.)
+  '^[a-zA-Z]',
+  // Third-party scoped packages (@pgtyped, @mui, @graphql, etc.)
+  // Excludes our internal monorepo packages via negative lookahead
+  '^@(?!accounter|accounter-helper|/)',
+  // Internal monorepo packages
+  '^@(accounter|accounter-helper)/',
+  // Internal absolute imports (from tsconfig paths)
+  '^@/([^/]+)(/.*|$)',
+  // Relative imports
+  '^\\.',
+  // Style and asset imports
+  '^(?=.*\\.(css|scss|less|graphql|gql|sql)$)',
+];
+
+/**
+ * Parser plugins for @ianvs/prettier-plugin-sort-imports.
+ * Merged with guild config defaults, ensuring importAssertions is included.
+ * Guild config includes: typescript, jsx, decorators-legacy
+ */
+const importOrderParserPlugins = [
+  ...new Set([...prettierConfig.importOrderParserPlugins, 'importAssertions']),
+];
+
+/**
+ * The guild config sets `importOrder` / `importOrderParserPlugins` at the top
+ * level. We deliberately strip them here (and re-apply our own values via a
+ * scoped override below) so these plugin-owned options never leak onto files
+ * whose override removes the owning plugin — most notably `*.md`, where the
+ * import-sorting plugin is disabled. Leaving them at the top level made
+ * Prettier log a `[warn] Ignored unknown option { importOrder: ... }` for every
+ * markdown file, because the option had no owning plugin loaded for that file.
+ */
+const baseConfig = { ...prettierConfig };
+delete baseConfig.importOrder;
+delete baseConfig.importOrderParserPlugins;
+
 const config = {
-  ...prettierConfig,
-
-  /**
-   * Stricter import ordering for better code organization.
-   * Overrides the default guild config import order.
-   *
-   * Order (most restrictive to most general):
-   * 1. React and framework core imports
-   * 2. Third-party regular packages (pg, express, etc.)
-   * 3. Third-party scoped packages (@pgtyped, @mui, @graphql, etc.)
-   * 4. Internal monorepo aliases (@accounter/*, @accounter-helper/*)
-   * 5. Internal absolute imports (from tsconfig paths)
-   * 6. Relative imports and local files
-   * 7. Style and non-JS asset imports
-   */
-  importOrder: [
-    // React and React-adjacent libraries
-    '^react$',
-    '^react-dom',
-    '^next',
-    // Third-party regular packages (pg, express, etc.)
-    '^[a-zA-Z]',
-    // Third-party scoped packages (@pgtyped, @mui, @graphql, etc.)
-    // Excludes our internal monorepo packages via negative lookahead
-    '^@(?!accounter|accounter-helper|/)',
-    // Internal monorepo packages
-    '^@(accounter|accounter-helper)/',
-    // Internal absolute imports (from tsconfig paths)
-    '^@/([^/]+)(/.*|$)',
-    // Relative imports
-    '^\\.',
-    // Style and asset imports
-    '^(?=.*\\.(css|scss|less|graphql|gql|sql)$)',
-  ],
-
-  /**
-   * Parser plugins for @ianvs/prettier-plugin-sort-imports.
-   * Merged with guild config defaults, ensuring importAssertions is included.
-   * Guild config includes: typescript, jsx, decorators-legacy
-   */
-  importOrderParserPlugins: [
-    ...new Set([...prettierConfig.importOrderParserPlugins, 'importAssertions']),
-  ],
+  ...baseConfig,
 
   /**
    * Add prettier-plugin-sql to the plugin list for PostgreSQL formatting.
@@ -75,18 +88,30 @@ const config = {
   plugins: [...prettierConfig.plugins, 'prettier-plugin-sql'],
 
   /**
-   * PostgreSQL formatting options for prettier-plugin-sql.
-   * - language: PostgreSQL dialect for SQL formatting
-   * - keywordCase: Format SQL keywords to UPPERCASE for consistency
-   */
-  language: 'postgresql',
-  keywordCase: 'upper',
-
-  /**
-   * File-type-specific overrides
+   * File-type-specific overrides.
+   *
+   * Plugin-specific options live here (rather than at the top level) so each
+   * option is only ever present on files whose owning plugin is actually
+   * loaded. This keeps Prettier from emitting "Ignored unknown option"
+   * warnings on files (e.g. markdown) that opt out of a given plugin.
    */
   overrides: [
     ...prettierConfig.overrides,
+    {
+      // Import sorting: applies only to JS/TS sources, where the sort-imports
+      // plugin is active.
+      files: ['*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
+      options: { importOrder, importOrderParserPlugins },
+    },
+    {
+      /**
+       * PostgreSQL formatting options for prettier-plugin-sql.
+       * - language: PostgreSQL dialect for SQL formatting
+       * - keywordCase: Format SQL keywords to UPPERCASE for consistency
+       */
+      files: '*.sql',
+      options: { language: 'postgresql', keywordCase: 'upper' },
+    },
     {
       /**
        * Markdown files: Disable import sorting plugin
