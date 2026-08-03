@@ -245,6 +245,7 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
     AND ($toDate ::TEXT IS NULL OR date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
+    AND ($isChargeIDs = 0 OR charge_id IN $$chargeIDs)
     AND ($isTypes = 0 OR type IN $$types)
     AND ($isMissingCounterparty = 0 OR debtor_id IS NULL OR creditor_id IS NULL)
     AND ($isUnmatched = 0 OR NOT EXISTS (
@@ -291,8 +292,9 @@ type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
     | 'types'
     | 'isMissingCounterparty'
     | 'freeTextNumeric'
+    | 'isChargeIDs'
   >,
-  'IDs' | 'businessIDs' | 'ownerIDs'
+  'IDs' | 'businessIDs' | 'ownerIDs' | 'chargeIDs'
 > & {
   fromDate?: TimelessDateString | null;
   toDate?: TimelessDateString | null;
@@ -383,6 +385,7 @@ export class DocumentsProvider {
     const isIDs = !!sqlParams.IDs?.filter(Boolean).length;
     const isBusinessIDs = !!sqlParams.businessIDs?.filter(Boolean).length;
     const isOwnerIDs = !!sqlParams.ownerIDs?.filter(Boolean).length;
+    const isChargeIDs = !!sqlParams.chargeIDs?.filter(Boolean).length;
     const isTypes = !!type?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByExtendedFiltersParams = {
@@ -392,12 +395,14 @@ export class DocumentsProvider {
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
+      isChargeIDs: isChargeIDs ? 1 : 0,
       isTypes: isTypes ? 1 : 0,
       isMissingCounterparty: missingCounterparty ? 1 : 0,
       isUnmatched: unmatched ? 1 : 0,
       IDs: isIDs ? sqlParams.IDs! : [null],
       businessIDs: isBusinessIDs ? sqlParams.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? sqlParams.ownerIDs! : [null],
+      chargeIDs: isChargeIDs ? sqlParams.chargeIDs! : [null],
       types: isTypes ? type! : [null],
       // strip thousands separators so amount searches match the plain value stored in the DB
       freeTextNumeric: sqlParams.freeText ? sqlParams.freeText.replaceAll(',', '') : null,

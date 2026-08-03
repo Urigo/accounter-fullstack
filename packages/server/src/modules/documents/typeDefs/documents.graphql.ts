@@ -14,6 +14,8 @@ export default gql`
   input DocumentsFilters {
     businessIDs: [UUID!]
     ownerIDs: [UUID!]
+    " Include only documents linked to the given charges "
+    chargeIDs: [UUID!]
     fromDate: TimelessDate
     toDate: TimelessDate
     " Include only documents without matching transactions "
