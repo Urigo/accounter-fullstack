@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildAuthContext } from '../../auth/identity.js';
 import { TokenVerificationError } from '../../auth/token.js';
 import { verifyAccessToken } from '../../auth/verifier.js';
@@ -136,10 +136,24 @@ function mockRes() {
 }
 
 describe('mcpHttpHandler', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // A valid bearer token resolves to a principal by default.
     mockVerify.mockReset();
     mockVerify.mockResolvedValue(PRINCIPAL);
+    // The handler reads env at the HTTP boundary (public base URL for 401
+    // challenges, tool allowlist for dispatch), so provide a valid config.
+    vi.stubEnv('MCP_PUBLIC_BASE_URL', 'https://mcp.example.com');
+    vi.stubEnv('AUTH0_ISSUER_URL', 'https://tenant.auth0.com/');
+    vi.stubEnv('AUTH0_AUDIENCE', 'aud');
+    vi.stubEnv('GRAPHQL_UPSTREAM_URL', 'http://localhost:4000/graphql');
+    const { resetEnvCache } = await import('../../config/env.js');
+    resetEnvCache();
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    const { resetEnvCache } = await import('../../config/env.js');
+    resetEnvCache();
   });
 
   it('responds 200 with the JSON-RPC result for a request', async () => {
@@ -262,7 +276,7 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('lists the curated tools with discovery first, and hides the smoke tool', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcSuccess;
     const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
     // Discovery leads: tools/list ordering steers how the model scopes calls.
@@ -275,7 +289,7 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('still dispatches the smoke tool by name', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: SMOKE_TOOL_NAME, arguments: { message: 'hi' } } },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcSuccess;
     expect(response.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
   });
@@ -283,9 +297,57 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('returns InvalidParams for an unknown tool name', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'nope' } },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcErrorResponse;
     expect(response.error.code).toBe(JsonRpcErrorCode.InvalidParams);
+  });
+
+  it('lists every registered tool when the allowlist is empty', async () => {
+    const response = (await dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      { auth, correlationId: 'c', allowlist: [] },
+    )) as JsonRpcSuccess;
+    const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
+    expect(names).toContain('accounter_list_businesses');
+    expect(names).toContain('accounter_search_charges');
+    expect(names).toContain('accounter_balance_report');
+  });
+
+  it('lists only allowlisted tools when the allowlist is non-empty', async () => {
+    const response = (await dispatchMcpRequest(
+      { jsonrpc: '2.0', id: 1, method: 'tools/list' },
+      { auth, correlationId: 'c', allowlist: ['accounter_list_businesses'] },
+    )) as JsonRpcSuccess;
+    const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
+    expect(names).toEqual(['accounter_list_businesses']);
+  });
+
+  it('reports an allowlisted-out tool as unknown on tools/call (no capability leak)', async () => {
+    const response = (await dispatchMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'tools/call',
+        params: { name: 'accounter_search_charges', arguments: {} },
+      },
+      { auth, correlationId: 'c', allowlist: ['accounter_list_businesses'] },
+    )) as JsonRpcErrorResponse;
+    // Excluded tool is indistinguishable from a nonexistent one.
+    expect(response.error.code).toBe(JsonRpcErrorCode.InvalidParams);
+    expect(response.error.message).toContain('Unknown tool');
+  });
+
+  it('still dispatches the smoke tool even under a restrictive allowlist', async () => {
+    const response = (await dispatchMcpRequest(
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: SMOKE_TOOL_NAME, arguments: { message: 'hi' } },
+      },
+      { auth, correlationId: 'c', allowlist: ['accounter_list_businesses'] },
+    )) as JsonRpcSuccess;
+    expect(response.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
   });
 });
 
