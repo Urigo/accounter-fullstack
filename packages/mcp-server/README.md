@@ -270,27 +270,27 @@ Environment variables are validated at startup with a strict schema
 ([`src/config/env.ts`](src/config/env.ts)). Missing required variables or malformed values cause the
 process to exit immediately with a clear error. Secrets are supplied via the environment only.
 
-| Variable                      | Required | Default             | Description                                                     |
-| ----------------------------- | -------- | ------------------- | --------------------------------------------------------------- |
-| `MCP_PUBLIC_BASE_URL`         | yes      | —                   | Public HTTPS origin of this MCP server (used in OAuth metadata) |
-| `AUTH0_ISSUER_URL`            | yes      | —                   | Auth0 issuer/tenant URL used to validate access tokens          |
-| `AUTH0_AUDIENCE`              | yes      | —                   | Expected `aud` claim for incoming access tokens                 |
-| `GRAPHQL_UPSTREAM_URL`        | yes      | —                   | Base URL of the Accounter GraphQL server the tools call         |
-| `MCP_SERVER_PORT`             | no       | `3100`              | TCP port the HTTP transport listens on                          |
-| `MCP_ENABLED`                 | no       | `1`                 | Master kill-switch (`1` on / `0` off)                           |
-| `MCP_TOOL_ALLOWLIST`          | no       | `''` (none)         | Comma-separated tool names allowed (empty = least privilege)    |
-| `AUTH0_JWKS_URL`              | no       | derived from issuer | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`     |
-| `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`             | Upstream GraphQL request timeout budget (ms)                    |
-| `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)     | Optional rate-limit override spec (parsed by the limiter later) |
-| `OTEL_ENABLED`                | no       | `0`                 | Enable OpenTelemetry tracing (`1` on / `0` off)                 |
-| `OTEL_SERVICE_NAME`           | no       | `accounter-mcp-server` | `service.name` resource attribute                            |
-| `OTEL_SERVICE_NAMESPACE`      | no       | `accounter`         | `service.namespace` resource attribute                          |
-| `OTEL_DEPLOYMENT_ENV`         | no       | `NODE_ENV`/`development` | `deployment.environment.name` resource attribute            |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | if OTEL  | —                   | OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`) |
-| `OTEL_EXPORTER_OTLP_HEADERS`  | no       | —                   | OTLP exporter headers as `key=value,key=value`                  |
-| `OTEL_TRACES_SAMPLER`         | no       | `always_on`         | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)   |
-| `OTEL_TRACES_SAMPLER_ARG`     | if ratio | —                   | Ratio `0`–`1` for the ratio-based samplers                      |
-| `OTEL_STARTUP_STRICT`         | no       | —                   | `true` ⇒ abort the process on a telemetry startup failure       |
+| Variable                      | Required | Default                  | Description                                                        |
+| ----------------------------- | -------- | ------------------------ | ------------------------------------------------------------------ |
+| `MCP_PUBLIC_BASE_URL`         | yes      | —                        | Public HTTPS origin of this MCP server (used in OAuth metadata)    |
+| `AUTH0_ISSUER_URL`            | yes      | —                        | Auth0 issuer/tenant URL used to validate access tokens             |
+| `AUTH0_AUDIENCE`              | yes      | —                        | Expected `aud` claim for incoming access tokens                    |
+| `GRAPHQL_UPSTREAM_URL`        | yes      | —                        | Base URL of the Accounter GraphQL server the tools call            |
+| `MCP_SERVER_PORT`             | no       | `3100`                   | TCP port the HTTP transport listens on                             |
+| `MCP_ENABLED`                 | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
+| `MCP_TOOL_ALLOWLIST`          | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
+| `AUTH0_JWKS_URL`              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
+| `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
+| `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
+| `OTEL_ENABLED`                | no       | `0`                      | Enable OpenTelemetry tracing (`1` on / `0` off)                    |
+| `OTEL_SERVICE_NAME`           | no       | `accounter-mcp-server`   | `service.name` resource attribute                                  |
+| `OTEL_SERVICE_NAMESPACE`      | no       | `accounter`              | `service.namespace` resource attribute                             |
+| `OTEL_DEPLOYMENT_ENV`         | no       | `NODE_ENV`/`development` | `deployment.environment.name` resource attribute                   |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | if OTEL  | —                        | OTLP/HTTP traces endpoint (e.g. `http://localhost:4318/v1/traces`) |
+| `OTEL_EXPORTER_OTLP_HEADERS`  | no       | —                        | OTLP exporter headers as `key=value,key=value`                     |
+| `OTEL_TRACES_SAMPLER`         | no       | `always_on`              | Sampler strategy (`always_on`, `parentbased_traceidratio`, …)      |
+| `OTEL_TRACES_SAMPLER_ARG`     | if ratio | —                        | Ratio `0`–`1` for the ratio-based samplers                         |
+| `OTEL_STARTUP_STRICT`         | no       | —                        | `true` ⇒ abort the process on a telemetry startup failure          |
 
 ## Scripts
 

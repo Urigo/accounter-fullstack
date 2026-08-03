@@ -53,99 +53,101 @@ const booleanFlag = (defaultValue: '0' | '1') =>
  * NOT used here because the ambient environment contains many unrelated
  * variables; instead we only read the keys we know about.
  */
-export const envSchema = zod.object({
-  // --- Required (no safe default) ---
-  MCP_PUBLIC_BASE_URL: zod.url({ message: 'MCP_PUBLIC_BASE_1URL must be a valid URL' }),
-  AUTH0_ISSUER_URL: zod.url({ message: 'AUTH0_ISSUER_URL must be a valid URL' }),
-  AUTH0_AUDIENCE: zod.string().min(1, { message: 'AUTH0_AUDIENCE must be a non-empty string' }),
-  GRAPHQL_UPSTREAM_URL: zod.url({ message: 'GRAPHQL_UPSTREAM_URL must be a valid URL' }),
+export const envSchema = zod
+  .object({
+    // --- Required (no safe default) ---
+    MCP_PUBLIC_BASE_URL: zod.url({ message: 'MCP_PUBLIC_BASE_1URL must be a valid URL' }),
+    AUTH0_ISSUER_URL: zod.url({ message: 'AUTH0_ISSUER_URL must be a valid URL' }),
+    AUTH0_AUDIENCE: zod.string().min(1, { message: 'AUTH0_AUDIENCE must be a non-empty string' }),
+    GRAPHQL_UPSTREAM_URL: zod.url({ message: 'GRAPHQL_UPSTREAM_URL must be a valid URL' }),
 
-  // --- Optional with secure defaults ---
-  MCP_SERVER_PORT: emptyStringAsUndefined(
-    zod.coerce.number().int().positive().max(65_535).optional().default(3100),
-  ),
-  MCP_ENABLED: booleanFlag('1'),
-  // Tool allowlist: an empty value imposes no restriction (every registered
-  // tool is exposed); a non-empty value restricts `tools/list` and `tools/call`
-  // to exactly the named tools. Enforced in `mcp/handler.ts` via
-  // `tools/allowlist.ts`. When narrowing, keep `accounter_list_businesses` in
-  // the set — it is the discovery entry point for business scoping.
-  MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
-  AUTH0_JWKS_URL: emptyStringAsUndefined(
-    zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
-  ),
-  GRAPHQL_UPSTREAM_TIMEOUT_MS: emptyStringAsUndefined(
-    zod.coerce.number().int().positive().max(120_000).optional().default(10_000),
-  ),
-  MCP_RATE_LIMIT_CONFIG: emptyStringAsUndefined(zod.string().optional().default('')),
+    // --- Optional with secure defaults ---
+    MCP_SERVER_PORT: emptyStringAsUndefined(
+      zod.coerce.number().int().positive().max(65_535).optional().default(3100),
+    ),
+    MCP_ENABLED: booleanFlag('1'),
+    // Tool allowlist: an empty value imposes no restriction (every registered
+    // tool is exposed); a non-empty value restricts `tools/list` and `tools/call`
+    // to exactly the named tools. Enforced in `mcp/handler.ts` via
+    // `tools/allowlist.ts`. When narrowing, keep `accounter_list_businesses` in
+    // the set — it is the discovery entry point for business scoping.
+    MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
+    AUTH0_JWKS_URL: emptyStringAsUndefined(
+      zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
+    ),
+    GRAPHQL_UPSTREAM_TIMEOUT_MS: emptyStringAsUndefined(
+      zod.coerce.number().int().positive().max(120_000).optional().default(10_000),
+    ),
+    MCP_RATE_LIMIT_CONFIG: emptyStringAsUndefined(zod.string().optional().default('')),
 
-  // --- OpenTelemetry (traces exported over OTLP/HTTP to Grafana Tempo) ---
-  // Mirrors the main server's OTEL_* configuration so both services share one
-  // Grafana backend and the same conventions. Disabled by default; when enabled
-  // the exporter endpoint is required. See `../telemetry/builder.ts`.
-  OTEL_ENABLED: booleanFlag('0'),
-  OTEL_SERVICE_NAME: emptyStringAsUndefined(
-    zod.string().optional().default('accounter-mcp-server'),
-  ),
-  OTEL_SERVICE_NAMESPACE: emptyStringAsUndefined(zod.string().optional().default('accounter')),
-  OTEL_DEPLOYMENT_ENV: emptyStringAsUndefined(
-    zod
-      .string()
-      .optional()
-      .default(process.env.NODE_ENV ?? 'development'),
-  ),
-  OTEL_EXPORTER_OTLP_ENDPOINT: emptyStringAsUndefined(zod.string().optional()),
-  OTEL_EXPORTER_OTLP_HEADERS: emptyStringAsUndefined(zod.string().optional()),
-  OTEL_TRACES_SAMPLER: emptyStringAsUndefined(
-    zod
-      .enum([
-        'parentbased_traceidratio',
-        'always_on',
-        'always_off',
-        'traceidratio',
-        'parentbased_always_on',
-        'parentbased_always_off',
-      ])
-      .optional()
-      .default('always_on'),
-  ),
-  OTEL_TRACES_SAMPLER_ARG: emptyStringAsUndefined(zod.string().optional()),
-  OTEL_STARTUP_STRICT: emptyStringAsUndefined(
-    zod.union([zod.literal('true'), zod.literal('false')]).optional(),
-  ),
-}).superRefine((data, ctx) => {
-  if (data.OTEL_ENABLED === '1' && !data.OTEL_EXPORTER_OTLP_ENDPOINT) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['OTEL_EXPORTER_OTLP_ENDPOINT'],
-      message: 'OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_ENABLED is "1".',
-    });
-  }
-
-  const usesRatioSampler =
-    data.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
-    data.OTEL_TRACES_SAMPLER === 'traceidratio';
-
-  if (usesRatioSampler) {
-    if (data.OTEL_TRACES_SAMPLER_ARG === undefined) {
+    // --- OpenTelemetry (traces exported over OTLP/HTTP to Grafana Tempo) ---
+    // Mirrors the main server's OTEL_* configuration so both services share one
+    // Grafana backend and the same conventions. Disabled by default; when enabled
+    // the exporter endpoint is required. See `../telemetry/builder.ts`.
+    OTEL_ENABLED: booleanFlag('0'),
+    OTEL_SERVICE_NAME: emptyStringAsUndefined(
+      zod.string().optional().default('accounter-mcp-server'),
+    ),
+    OTEL_SERVICE_NAMESPACE: emptyStringAsUndefined(zod.string().optional().default('accounter')),
+    OTEL_DEPLOYMENT_ENV: emptyStringAsUndefined(
+      zod
+        .string()
+        .optional()
+        .default(process.env.NODE_ENV ?? 'development'),
+    ),
+    OTEL_EXPORTER_OTLP_ENDPOINT: emptyStringAsUndefined(zod.string().optional()),
+    OTEL_EXPORTER_OTLP_HEADERS: emptyStringAsUndefined(zod.string().optional()),
+    OTEL_TRACES_SAMPLER: emptyStringAsUndefined(
+      zod
+        .enum([
+          'parentbased_traceidratio',
+          'always_on',
+          'always_off',
+          'traceidratio',
+          'parentbased_always_on',
+          'parentbased_always_off',
+        ])
+        .optional()
+        .default('always_on'),
+    ),
+    OTEL_TRACES_SAMPLER_ARG: emptyStringAsUndefined(zod.string().optional()),
+    OTEL_STARTUP_STRICT: emptyStringAsUndefined(
+      zod.union([zod.literal('true'), zod.literal('false')]).optional(),
+    ),
+  })
+  .superRefine((data, ctx) => {
+    if (data.OTEL_ENABLED === '1' && !data.OTEL_EXPORTER_OTLP_ENDPOINT) {
       ctx.addIssue({
         code: 'custom',
-        path: ['OTEL_TRACES_SAMPLER_ARG'],
-        message:
-          'OTEL_TRACES_SAMPLER_ARG is required when OTEL_TRACES_SAMPLER is a ratio sampler ("traceidratio" or "parentbased_traceidratio").',
+        path: ['OTEL_EXPORTER_OTLP_ENDPOINT'],
+        message: 'OTEL_EXPORTER_OTLP_ENDPOINT is required when OTEL_ENABLED is "1".',
       });
-    } else {
-      const num = Number(data.OTEL_TRACES_SAMPLER_ARG);
-      if (!Number.isFinite(num) || num < 0 || num > 1) {
+    }
+
+    const usesRatioSampler =
+      data.OTEL_TRACES_SAMPLER === 'parentbased_traceidratio' ||
+      data.OTEL_TRACES_SAMPLER === 'traceidratio';
+
+    if (usesRatioSampler) {
+      if (data.OTEL_TRACES_SAMPLER_ARG === undefined) {
         ctx.addIssue({
           code: 'custom',
           path: ['OTEL_TRACES_SAMPLER_ARG'],
-          message: 'OTEL_TRACES_SAMPLER_ARG must be a numeric string between 0 and 1.',
+          message:
+            'OTEL_TRACES_SAMPLER_ARG is required when OTEL_TRACES_SAMPLER is a ratio sampler ("traceidratio" or "parentbased_traceidratio").',
         });
+      } else {
+        const num = Number(data.OTEL_TRACES_SAMPLER_ARG);
+        if (!Number.isFinite(num) || num < 0 || num > 1) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['OTEL_TRACES_SAMPLER_ARG'],
+            message: 'OTEL_TRACES_SAMPLER_ARG must be a numeric string between 0 and 1.',
+          });
+        }
       }
     }
-  }
-});
+  });
 
 export type RawEnv = zod.infer<typeof envSchema>;
 

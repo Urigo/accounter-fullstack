@@ -177,10 +177,12 @@ export function createShutdownHandler({
     forceTimer.unref?.();
 
     server.close(error => {
-      clearTimeout(forceTimer);
       // Flush pending spans before exiting so in-flight traces are not dropped.
-      // A no-op when telemetry was never started (OTEL disabled).
+      // A no-op when telemetry was never started (OTEL disabled). Keep the grace
+      // timer armed across the flush so a stalled exporter can't hang shutdown
+      // indefinitely — clear it only once we're actually about to exit.
       void shutdownTelemetry().finally(() => {
+        clearTimeout(forceTimer);
         if (error) {
           log('error', 'error during shutdown', { error: String(error) });
           exit(1);
