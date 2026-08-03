@@ -46,6 +46,9 @@ function dataFor(query: string): unknown {
       },
     };
   }
+  if (query.includes('chargesByIDs')) return { chargesByIDs: [] };
+  if (query.includes('transactionsByIDs')) return { transactionsByIDs: [] };
+  if (query.includes('documentsByIds')) return { documentsByIds: [] };
   if (query.includes('allTags')) return { allTags: [] };
   if (query.includes('taxCategories')) return { taxCategories: [] };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
@@ -74,6 +77,9 @@ function capturingClient() {
 /** Minimal valid arguments per tool; everything else is optional. */
 const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_balance_report: { businessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
+  accounter_get_charges: { chargeIds: ['c1'] },
+  accounter_get_transactions: { transactionIds: ['t1'] },
+  accounter_get_documents: { documentIds: ['d1'] },
 };
 
 describe('registry-wide business-scope forwarding', () => {

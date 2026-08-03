@@ -18,8 +18,9 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of five read-only tools (`accounter_list_businesses`,
-`accounter_search_charges`, `accounter_list_tags`, `accounter_list_tax_categories`,
+Accounter GraphQL server; a curated registry of eight read-only tools (`accounter_list_businesses`,
+`accounter_search_charges`, `accounter_get_charges`, `accounter_get_transactions`,
+`accounter_get_documents`, `accounter_list_tags`, `accounter_list_tax_categories`,
 `accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
 and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
 client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
@@ -77,6 +78,20 @@ because it _is_ the scope.
   (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
   pagination metadata and the echoed `scope`. Scoping uses the `byOwners` predicate upstream (the
   owner), never `byBusinesses` (the counterparty).
+- **`accounter_get_charges`** — read-only charge **detail** by id (1–25 `chargeIds`). Returns each
+  charge with owner, counterparty, amounts (total, VAT, withholding), the full set of dates, tags,
+  and `metadata` counts, plus — by default — its linked `transactions` and `documents` nested inline
+  (toggle with `includeTransactions` / `includeDocuments`). This is the drill-down for
+  `accounter_search_charges`. A charge whose `owner` falls outside the resolved scope is dropped as
+  defense-in-depth on top of RLS.
+- **`accounter_get_transactions`** — read-only bank/card **transactions** by id (1–50
+  `transactionIds`). Each row carries direction, amount, event/effective dates, source description,
+  `isFee`, `chargeId`, counterparty, and account. Scope is enforced upstream by RLS (transactions
+  carry no owner field for a client-side filter).
+- **`accounter_get_documents`** — read-only **documents** by id (1–50 `documentIds`). Each row
+  carries `documentType`, serial number, date, amount, VAT, creditor/debtor, `chargeId`, and
+  `file`/`image` links. A document whose owning charge falls outside the resolved scope is dropped
+  as defense-in-depth on top of RLS.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `businessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and size-capped (≤
   500).

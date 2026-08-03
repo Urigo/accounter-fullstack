@@ -274,6 +274,10 @@ Expose only capabilities that pass all checks:
 Recommended initial groups:
 
 - Charges browse/search (read-only)
+- Charge / transaction / document detail by id (read-only): `accounter_get_charges` (charges with
+  their transactions and documents nested inline), `accounter_get_transactions`,
+  `accounter_get_documents`. These narrow to the caller's businesses via RLS (`x-business-scope`),
+  with an owner-scope filter as defense-in-depth where an owner is resolvable.
 - Tags and tax-category lookups
 - Counterparty/business entity lookups
 - Selected report generation queries (read-only)

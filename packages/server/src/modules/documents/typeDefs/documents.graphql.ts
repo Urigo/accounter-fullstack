@@ -5,6 +5,7 @@ export default gql`
     documents: [Document!]! @requiresAuth
     documentsByFilters(filters: DocumentsFilters!): [Document!]! @requiresAuth
     documentById(documentId: UUID!): Document @requiresAuth
+    documentsByIds(documentIds: [UUID!]!): [Document!]! @requiresAuth
     recentDocumentsByBusiness(businessId: UUID!, limit: Int): [Document!]! @requiresAuth
     recentDocumentsByClient(clientId: UUID!, limit: Int): [Document!]! @requiresAuth
     recentIssuedDocumentsByType(documentType: DocumentType!, limit: Int): [Document!]! @requiresAuth
