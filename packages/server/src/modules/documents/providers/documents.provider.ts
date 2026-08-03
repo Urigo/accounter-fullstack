@@ -376,27 +376,31 @@ export class DocumentsProvider {
   }
 
   public getDocumentsByExtendedFilters(params: IGetAdjustedDocumentsByExtendedFiltersParams) {
-    const isIDs = !!params?.IDs?.filter(Boolean).length;
-    const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
-    const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
-    const isTypes = !!params?.type?.filter(Boolean).length;
+    // pull out the wrapper-only fields so only pgtyped-recognized params are
+    // forwarded to the query below.
+    const { type, missingCounterparty, missingInfo, unmatched, ...sqlParams } = params;
+
+    const isIDs = !!sqlParams.IDs?.filter(Boolean).length;
+    const isBusinessIDs = !!sqlParams.businessIDs?.filter(Boolean).length;
+    const isOwnerIDs = !!sqlParams.ownerIDs?.filter(Boolean).length;
+    const isTypes = !!type?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByExtendedFiltersParams = {
+      fromVatDate: null,
+      toVatDate: null,
+      ...sqlParams,
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
       isTypes: isTypes ? 1 : 0,
-      isMissingCounterparty: params.missingCounterparty ? 1 : 0,
-      fromVatDate: null,
-      toVatDate: null,
-      ...params,
-      isUnmatched: params.unmatched ? 1 : 0,
-      IDs: isIDs ? params.IDs! : [null],
-      businessIDs: isBusinessIDs ? params.businessIDs! : [null],
-      ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
-      types: isTypes ? params.type! : [null],
+      isMissingCounterparty: missingCounterparty ? 1 : 0,
+      isUnmatched: unmatched ? 1 : 0,
+      IDs: isIDs ? sqlParams.IDs! : [null],
+      businessIDs: isBusinessIDs ? sqlParams.businessIDs! : [null],
+      ownerIDs: isOwnerIDs ? sqlParams.ownerIDs! : [null],
+      types: isTypes ? type! : [null],
       // strip thousands separators so amount searches match the plain value stored in the DB
-      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
+      freeTextNumeric: sqlParams.freeText ? sqlParams.freeText.replaceAll(',', '') : null,
     };
     return getDocumentsByExtendedFilters.run(fullParams, this.db);
   }

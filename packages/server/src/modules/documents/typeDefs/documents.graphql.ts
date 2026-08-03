@@ -148,6 +148,8 @@ export default gql`
 
   " combined validation info for a financial document, aggregating all validation checks "
   type DocumentValidationInfo {
+    " the validated document's ID "
+    documentId: UUID!
     " true only when every validation check passes "
     isValid: Boolean!
     " human readable list of all detected validation issues "

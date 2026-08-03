@@ -125,6 +125,7 @@ export type DocumentValidationCheck = {
 
 /** aggregated validation info combining all document validations */
 export type DocumentValidationInfo = {
+  documentId: string;
   isValid: boolean;
   issues: string[];
   basicValidation: DocumentValidationCheck;
@@ -148,14 +149,17 @@ export async function getDocumentValidationInfo(
   };
 
   // VAT amount validation
-  let vatValid = true;
+  let vatValid: boolean;
   let vatMessage: string | null = null;
   const vatRate = document.date
     ? await injector
         .get(VatProvider)
         .getVatValueByDateLoader.load(dateToTimelessDateString(document.date))
     : null;
-  if (document.vat_amount != null && vatRate == null) {
+  // a falsy vat_amount (0 / null) means there is no VAT to validate, matching
+  // validateDocumentVat's own `!document.vat_amount` short-circuit — so the VAT
+  // rate is only required when an actual VAT amount is present.
+  if (document.vat_amount && vatRate == null) {
     vatValid = false;
     vatMessage = `Unable to determine VAT rate for document ID=${document.id}`;
   } else {
@@ -166,7 +170,7 @@ export async function getDocumentValidationInfo(
   const vatValidation: DocumentValidationCheck = { isValid: vatValid, message: vatMessage };
 
   // allocation number validation
-  let allocationValid = true;
+  let allocationValid: boolean;
   let allocationMessage: string | null = null;
   try {
     allocationValid = await validateDocumentAllocation(document, injector);
@@ -190,6 +194,7 @@ export async function getDocumentValidationInfo(
     .filter((message): message is string => !!message);
 
   return {
+    documentId: document.id,
     isValid: basicValid && vatValid && allocationValid,
     issues,
     basicValidation,
