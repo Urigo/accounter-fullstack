@@ -38,48 +38,6 @@ All against the merged tree.
 
 ## Findings
 
-### F1 — Branch was behind `main`; `TaxCategory.isActive` had no resolver
-
-**Was high. ✅ Resolved by rebasing onto `main` (2026-08-02).**
-
-`main` carries #4090 (`0335b6e7b`), which added to
-`packages/server/src/modules/financial-entities/resolvers/tax-categories.resolver.ts`:
-
-```ts
-isActive: parent => parent.is_active ?? true,
-```
-
-plus the equivalent mapping in the single-tax-category resolver. `mcp-owner-scoping` does not have
-it. Both branches declare `TaxCategory.isActive: Boolean!` in the typeDefs, so on this branch the
-field is non-null with **no field resolver** — the default resolver looks for `parent.isActive`
-against a row that exposes `is_active`, producing a non-null violation.
-
-`accounter_list_tax_categories` selects `isActive`, so that tool fails entirely against a server
-built from this branch alone. Unit tests do not catch it: the tool suites stub `fetch`, so no real
-resolver runs.
-
-The branch never touched that file, so rebasing simply picked up main's version. Verified present
-after the rebase.
-
-### F2 — Rate-limit quota multiplies with scope subsets
-
-**Medium. Introduced by Phase 5.**
-
-`rateLimitKey` (`src/rate-limit/limiter.ts`) builds `userId|sortedScope|toolName`. Sorting the ids
-defeats permutation abuse, but distinct _subsets_ remain distinct keys, each with its own quota.
-
-Before Phase 5, `accounter_list_tags` and `accounter_list_tax_categories` accepted no `businessIds`,
-so each had exactly one bucket per user. They now accept it, so a caller with N businesses can
-address up to 2^N−1 buckets per tool.
-
-This is not a tenant-isolation problem — every subset is already authorized, and the caller cannot
-reach data they could not otherwise reach. It weakens abuse protection and upstream load control,
-and it does so precisely on the tools that now push RLS-scoped work upstream. Memory is bounded by
-the existing sweep (`SWEEP_EVERY = 1000`), so the concern is quota, not a leak.
-
-**Options:** key the limiter on `userId|toolName`, or keep per-scope buckets and add a per-user
-aggregate ceiling above them.
-
 ### F3 — Empty-scope widening path
 
 **Medium. Documented; unreachable today.**
@@ -111,17 +69,6 @@ default scope — every membership — is uncapped and joined into the header, s
 
 No practical risk at current tenant sizes. Worth either applying a consistent bound or noting
 explicitly that the cap is an input guard, not a scope guard.
-
-### F5 — Carried gaps, re-verified as still open
-
-- **Gap 2** — `MCP_TOOL_ALLOWLIST` is parsed into `env.server.toolAllowlist` and never read.
-  Confirmed on the merged tree: the only references are `config/env.ts` and its tests. When
-  enforcement lands, `accounter_list_businesses` must be in the default allowlist, or discovery
-  disappears and every scoped call is left guessing — silently, since the other tools keep working.
-- **Gap 8** — no CI validation of the MCP GraphQL documents. Closed by graphql-codegen: #4078 added
-  `src/tools/*.ts` to the codegen `documents` list, and this branch adds `src/upstream/*.ts` so the
-  membership bootstrap is covered too. Codegen exits non-zero on a bad field, and it runs in the
-  shared CI setup action, so this fails every job rather than one dedicated check.
 
 ### F6 — Gap 1 remains the production blocker
 
@@ -156,12 +103,3 @@ reverting the fix and confirming the test fails. This caught one test that passe
 code — the balance-report owner check, which had to be driven through the handler directly because
 the policy narrows the scope to exactly the requested business, making the two owner sources
 indistinguishable through the normal path.
-
-## Recommendation
-
-The work is sound and ready to merge to `main`. Before it does:
-
-1. ~~Settle F1~~ — done: the branch is rebased onto `main`.
-2. **Decide on F2** — the quota change is a real behavioural regression in abuse protection, even
-   though it is not a security one. Still open.
-3. F3 and F4 are safe to defer; both are recorded with the conditions that would make them live.
