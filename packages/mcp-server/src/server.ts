@@ -36,6 +36,20 @@ type RouteHandler = (req: IncomingMessage, res: ServerResponse) => void | Promis
 
 export const MCP_ROUTE_PATH = '/mcp';
 
+/**
+ * Normalize a request path for routing: strip a single-or-repeated trailing
+ * slash so a correct-looking URL such as `/mcp/` matches the `/mcp` route
+ * instead of silently 404ing. The root path `/` is preserved as-is.
+ *
+ * This runs before route lookup so a trailing slash reaches the same handler
+ * (and, for `/mcp`, the auth layer and metrics) as the canonical path — a
+ * trailing-slash 404 never reaches auth, so it records nothing and looks like
+ * an outage rather than a typo.
+ */
+export function normalizeRoutePath(route: string): string {
+  return route.length > 1 ? route.replace(/\/+$/, '') || '/' : route;
+}
+
 export const routes: Record<string, Record<string, RouteHandler>> = {
   GET: {
     '/health': (_req, res) => {
@@ -88,13 +102,15 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
   });
 
   try {
+    // Tolerate a trailing slash (e.g. `/mcp/`) so the request is dispatched to
+    // the same handler as its canonical path. `context.route` keeps the raw
+    // pathname for logging fidelity; only routing uses the normalized form.
+    const route = normalizeRoutePath(context.route);
     // Kill-switch: when MCP is disabled the server serves health only, so the
     // MCP transport and its OAuth resource-metadata discovery route are treated
     // as absent (404) rather than being advertised/served.
-    const isMcpRoute =
-      context.route === MCP_ROUTE_PATH || context.route === PROTECTED_RESOURCE_METADATA_PATH;
-    const handler =
-      isMcpRoute && !env.server.enabled ? undefined : routes[context.method]?.[context.route];
+    const isMcpRoute = route === MCP_ROUTE_PATH || route === PROTECTED_RESOURCE_METADATA_PATH;
+    const handler = isMcpRoute && !env.server.enabled ? undefined : routes[context.method]?.[route];
     if (handler) {
       await handler(req, res);
     } else {
