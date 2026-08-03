@@ -4,6 +4,32 @@ export default gql`
   extend type Query {
     transactionsByIDs(transactionIDs: [UUID!]!): [Transaction!]! @requiresAuth
     transactionsByFinancialEntity(financialEntityID: UUID!): [Transaction!]! @requiresAuth
+    " fetch transactions filtered by the given criteria "
+    transactionsByFilters(filters: TransactionsFilters): [Transaction!]! @requiresAuth
+  }
+
+  " filter options for the transactionsByFilters query "
+  input TransactionsFilters {
+    " Include only transactions with event date on or after this date "
+    fromEventDate: TimelessDate
+    " Include only transactions with event date on or before this date "
+    toEventDate: TimelessDate
+    " Include only transactions with debit date on or after this date "
+    fromDebitDate: TimelessDate
+    " Include only transactions with debit date on or before this date "
+    toDebitDate: TimelessDate
+    " Include only transactions with any date (event or debit) on or after this date "
+    fromAnyDate: TimelessDate
+    " Include only transactions with any date (event or debit) on or before this date "
+    toAnyDate: TimelessDate
+    " Include only transactions whose counterparty is one of these financial entities "
+    byCounterparties: [UUID!]
+    " Include only transactions with a missing counterparty (no linked business) "
+    withMissingCounterparty: Boolean
+    " Include only transactions with missing required info (fail transaction validation) "
+    withMissingInfo: Boolean
+    " Include only transactions matching this free text (source description / reference, amount, counter account, origin key, counterparty name) "
+    freeText: String
   }
 
   extend type Mutation {

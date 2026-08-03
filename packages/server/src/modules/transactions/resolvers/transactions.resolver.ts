@@ -58,6 +58,26 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
         .then(res => res.map(t => t.id));
       return transactions;
     },
+    transactionsByFilters: async (_, { filters }, { injector }) => {
+      const ownerIDs = await injector.get(ScopeProvider).getReadScope();
+      const transactions = await injector
+        .get(TransactionsProvider)
+        .getTransactionsByExtendedFilters({
+          ownerIDs,
+          fromEventDate: filters?.fromEventDate,
+          toEventDate: filters?.toEventDate,
+          fromDebitDate: filters?.fromDebitDate,
+          toDebitDate: filters?.toDebitDate,
+          fromAnyDate: filters?.fromAnyDate,
+          toAnyDate: filters?.toAnyDate,
+          counterpartyIDs: filters?.byCounterparties ?? undefined,
+          withMissingCounterparty: filters?.withMissingCounterparty,
+          withMissingInfo: filters?.withMissingInfo,
+          freeText: filters?.freeText?.trim() || null,
+        })
+        .then(res => res.map(t => t.id));
+      return transactions;
+    },
   },
   Mutation: {
     updateTransaction: async (_, { transactionId, fields }, { injector }) => {
