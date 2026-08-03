@@ -59,11 +59,22 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       return transactions;
     },
     transactionsByFilters: async (_, { filters }, { injector }) => {
-      const ownerIDs = await injector.get(ScopeProvider).getReadScope();
+      // getReadScope narrows the authorized scope by the requested owners (throwing
+      // if any are outside it), so byOwners can never broaden access.
+      const ownerIDs = await injector
+        .get(ScopeProvider)
+        .getReadScope(filters?.byOwners ?? undefined);
+      // Guard against an empty read scope: passing no owner ids to the provider is
+      // treated as "no owner filter" and would return transactions across all owners.
+      if (ownerIDs.length === 0) {
+        return [];
+      }
       const transactions = await injector
         .get(TransactionsProvider)
         .getTransactionsByExtendedFilters({
           ownerIDs,
+          IDs: filters?.byIds ?? undefined,
+          chargeIDs: filters?.byChargeIds ?? undefined,
           fromEventDate: filters?.fromEventDate,
           toEventDate: filters?.toEventDate,
           fromDebitDate: filters?.fromDebitDate,

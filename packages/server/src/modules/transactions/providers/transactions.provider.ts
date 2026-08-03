@@ -54,14 +54,28 @@ const getTransactionsByExtendedFilters = sql<IGetTransactionsByExtendedFiltersQu
   LEFT JOIN accounter_schema.financial_entities fe ON fe.id = t.business_id
   WHERE
     ($isIDs = 0 OR t.id IN $$IDs)
+    AND ($isChargeIDs = 0 OR t.charge_id IN $$chargeIDs)
     AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
     AND ($isCounterpartyIDs = 0 OR t.business_id IN $$counterpartyIDs)
     AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
     AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
     AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
     AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
-    AND ($fromAnyDate ::TEXT IS NULL OR GREATEST(t.event_date, COALESCE(t.debit_date_override, t.debit_date))::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
-    AND ($toAnyDate ::TEXT IS NULL OR LEAST(t.event_date, COALESCE(t.debit_date_override, t.debit_date))::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+    -- "any date" matches when a single date (event OR debit) falls within the requested range,
+    -- so a transaction whose event date precedes the range and debit date follows it is excluded.
+    AND (
+      ($fromAnyDate ::TEXT IS NULL AND $toAnyDate ::TEXT IS NULL)
+      OR (
+        t.event_date IS NOT NULL
+        AND ($fromAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+        AND ($toAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+      )
+      OR (
+        COALESCE(t.debit_date_override, t.debit_date) IS NOT NULL
+        AND ($fromAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+        AND ($toAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+      )
+    )
     AND ($withMissingCounterparty = FALSE OR t.business_id IS NULL)
     AND ($withMissingInfo = FALSE OR t.business_id IS NULL OR (t.debit_date IS NULL AND t.debit_date_override IS NULL))
     AND (
@@ -150,6 +164,7 @@ type IGetAdjustedTransactionsByExtendedFiltersParams = Optional<
   Omit<
     IGetTransactionsByExtendedFiltersParams,
     | 'isIDs'
+    | 'isChargeIDs'
     | 'isOwnerIDs'
     | 'isCounterpartyIDs'
     | 'fromEventDate'
@@ -162,7 +177,7 @@ type IGetAdjustedTransactionsByExtendedFiltersParams = Optional<
     | 'withMissingCounterparty'
     | 'withMissingInfo'
   >,
-  'IDs' | 'ownerIDs' | 'counterpartyIDs' | 'freeText'
+  'IDs' | 'chargeIDs' | 'ownerIDs' | 'counterpartyIDs' | 'freeText'
 > & {
   fromEventDate?: TimelessDateString | null;
   toEventDate?: TimelessDateString | null;
@@ -251,6 +266,7 @@ export class TransactionsProvider {
 
   public getTransactionsByExtendedFilters(params: IGetAdjustedTransactionsByExtendedFiltersParams) {
     const isIDs = !!params?.IDs?.length;
+    const isChargeIDs = !!params?.chargeIDs?.length;
     const isOwnerIDs = !!params?.ownerIDs?.length;
     const isCounterpartyIDs = !!params?.counterpartyIDs?.length;
 
@@ -263,9 +279,11 @@ export class TransactionsProvider {
       toAnyDate: null,
       ...params,
       isIDs: isIDs ? 1 : 0,
+      isChargeIDs: isChargeIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
       isCounterpartyIDs: isCounterpartyIDs ? 1 : 0,
       IDs: isIDs ? params.IDs! : [null],
+      chargeIDs: isChargeIDs ? params.chargeIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
       counterpartyIDs: isCounterpartyIDs ? params.counterpartyIDs! : [null],
       withMissingCounterparty: params.withMissingCounterparty ?? false,

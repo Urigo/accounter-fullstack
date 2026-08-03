@@ -10,6 +10,12 @@ export default gql`
 
   " filter options for the transactionsByFilters query "
   input TransactionsFilters {
+    " Include only transactions with one of these transaction ids "
+    byIds: [UUID!]
+    " Include only transactions linked to one of these charges "
+    byChargeIds: [UUID!]
+    " Include only transactions owned by one of these financial entities (must be within the authorized read scope) "
+    byOwners: [UUID!]
     " Include only transactions with event date on or after this date "
     fromEventDate: TimelessDate
     " Include only transactions with event date on or before this date "
