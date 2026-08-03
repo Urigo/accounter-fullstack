@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql, type IDatabaseConnection } from '@pgtyped/runtime';
+import { DocumentType } from '../../../shared/enums.js';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -244,10 +245,33 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
     AND ($toDate ::TEXT IS NULL OR date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
+    AND ($isChargeIDs = 0 OR charge_id IN $$chargeIDs)
+    AND ($isTypes = 0 OR type IN $$types)
+    AND ($isMissingCounterparty = 0 OR debtor_id IS NULL OR creditor_id IS NULL)
     AND ($isUnmatched = 0 OR NOT EXISTS (
-      SELECT 1 
-      FROM accounter_schema.transactions t 
+      SELECT 1
+      FROM accounter_schema.transactions t
       WHERE t.charge_id = charge_id
+    ))
+    AND ($freeText::TEXT IS NULL OR (
+      serial_number ILIKE '%' || $freeText || '%'
+      OR description ILIKE '%' || $freeText || '%'
+      OR remarks ILIKE '%' || $freeText || '%'
+      -- match amounts. $freeTextNumeric has thousands separators stripped
+      -- so both "1,234.56" and "1234.56" match the plain value stored in the DB.
+      OR ($freeTextNumeric::TEXT IS NOT NULL AND (
+        total_amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+        OR ABS(total_amount)::TEXT ILIKE '%' || $freeTextNumeric || '%'
+      ))
+      -- match counterparty (creditor / debtor) business names
+      OR EXISTS (
+        SELECT 1 FROM accounter_schema.financial_entities fe
+        WHERE fe.id = documents.creditor_id AND fe.name ILIKE '%' || $freeText || '%'
+      )
+      OR EXISTS (
+        SELECT 1 FROM accounter_schema.financial_entities fe
+        WHERE fe.id = documents.debtor_id AND fe.name ILIKE '%' || $freeText || '%'
+      )
     ))
   ORDER BY created_at DESC;
 `;
@@ -258,12 +282,26 @@ type IGetAdjustedDocumentsByFiltersParams = Optional<
 >;
 
 type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
-  Omit<IGetDocumentsByExtendedFiltersParams, 'isIDs' | 'fromDate' | 'toDate' | 'isUnmatched'>,
-  'IDs' | 'businessIDs' | 'ownerIDs'
+  Omit<
+    IGetDocumentsByExtendedFiltersParams,
+    | 'isIDs'
+    | 'fromDate'
+    | 'toDate'
+    | 'isUnmatched'
+    | 'isTypes'
+    | 'types'
+    | 'isMissingCounterparty'
+    | 'freeTextNumeric'
+    | 'isChargeIDs'
+  >,
+  'IDs' | 'businessIDs' | 'ownerIDs' | 'chargeIDs'
 > & {
   fromDate?: TimelessDateString | null;
   toDate?: TimelessDateString | null;
   unmatched?: boolean | null;
+  type?: readonly DocumentType[] | null;
+  missingCounterparty?: boolean | null;
+  missingInfo?: boolean | null;
 };
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
@@ -340,21 +378,40 @@ export class DocumentsProvider {
   }
 
   public getDocumentsByExtendedFilters(params: IGetAdjustedDocumentsByExtendedFiltersParams) {
-    const isIDs = !!params?.IDs?.filter(Boolean).length;
-    const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
-    const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
+    // pull out the wrapper-only fields so only pgtyped-recognized params are
+    // forwarded to the query below. `missingInfo` is applied in the resolver.
+    const {
+      type,
+      missingCounterparty,
+      missingInfo: _missingInfo,
+      unmatched,
+      ...sqlParams
+    } = params;
+
+    const isIDs = !!sqlParams.IDs?.filter(Boolean).length;
+    const isBusinessIDs = !!sqlParams.businessIDs?.filter(Boolean).length;
+    const isOwnerIDs = !!sqlParams.ownerIDs?.filter(Boolean).length;
+    const isChargeIDs = !!sqlParams.chargeIDs?.filter(Boolean).length;
+    const isTypes = !!type?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByExtendedFiltersParams = {
+      fromVatDate: null,
+      toVatDate: null,
+      ...sqlParams,
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
-      fromVatDate: null,
-      toVatDate: null,
-      ...params,
-      isUnmatched: params.unmatched ? 1 : 0,
-      IDs: isIDs ? params.IDs! : [null],
-      businessIDs: isBusinessIDs ? params.businessIDs! : [null],
-      ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
+      isChargeIDs: isChargeIDs ? 1 : 0,
+      isTypes: isTypes ? 1 : 0,
+      isMissingCounterparty: missingCounterparty ? 1 : 0,
+      isUnmatched: unmatched ? 1 : 0,
+      IDs: isIDs ? sqlParams.IDs! : [null],
+      businessIDs: isBusinessIDs ? sqlParams.businessIDs! : [null],
+      ownerIDs: isOwnerIDs ? sqlParams.ownerIDs! : [null],
+      chargeIDs: isChargeIDs ? sqlParams.chargeIDs! : [null],
+      types: isTypes ? type! : [null],
+      // strip thousands separators so amount searches match the plain value stored in the DB
+      freeTextNumeric: sqlParams.freeText ? sqlParams.freeText.replaceAll(',', '') : null,
     };
     return getDocumentsByExtendedFilters.run(fullParams, this.db);
   }

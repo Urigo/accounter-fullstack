@@ -3,6 +3,7 @@ import {
   formatFinancialAmount,
   optionalDateToTimelessDateString,
 } from '../../../shared/helpers/index.js';
+import { getDocumentValidationInfo } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import type { document_type, DocumentsModule } from '../types.js';
 
@@ -75,6 +76,18 @@ export const commonFinancialDocumentsFields:
     documentRoot.exchange_rate_override == null
       ? null
       : Number(documentRoot.exchange_rate_override),
+};
+
+// `validation` lives only on the FinancialDocument interface (and its concrete
+// implementers), so it is kept separate from `commonFinancialDocumentsFields`,
+// which is also spread into the non-financial Unprocessed/OtherDocument types.
+export const commonFinancialDocumentValidationField:
+  | DocumentsModule.InvoiceResolvers
+  | DocumentsModule.ReceiptResolvers
+  | DocumentsModule.InvoiceReceiptResolvers
+  | DocumentsModule.ProformaResolvers
+  | DocumentsModule.CreditInvoiceResolvers = {
+  validation: (documentRoot, _, { injector }) => getDocumentValidationInfo(documentRoot, injector),
 };
 
 export const commonChargeFields: DocumentsModule.ChargeResolvers = {

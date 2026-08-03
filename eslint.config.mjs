@@ -139,6 +139,7 @@ export default [
       '@graphql-eslint/strict-id-in-types': [
         'error',
         {
+          acceptedIdNames: ['id', 'documentId'],
           acceptedIdTypes: ['ID', 'UUID'],
 
           exceptions: {
@@ -166,6 +167,7 @@ export default [
               'DocumentIncomeRecord',
               'DocumentPaymentRecord',
               'DocumentSuggestions',
+              'DocumentValidationCheck',
               'DynamicReportNodeData',
               'ExchangeRates',
               'FinancialAmount',
