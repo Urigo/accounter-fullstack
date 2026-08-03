@@ -6,8 +6,8 @@ Everything still outstanding for `@accounter/mcp-server`, consolidated from
 documents remain the source of detail — each item below links back to its section rather than
 restating the analysis.
 
-Last consolidated 2026-08-02, after all owner-scoping work (#4089–#4097) merged into
-`mcp-owner-scoping`.
+Last consolidated 2026-08-03, after I1/I2/I4 (#4103–#4105) merged into `main`. The preceding
+owner-scoping work (#4089–#4097) is also in.
 
 **Status of the connector today:** working end-to-end against Claude Desktop with a pre-registered
 Auth0 client, read-only, five curated tools, business scope enforced by RLS upstream. Not
@@ -45,10 +45,10 @@ These need a human call, not implementation. Several gate work below.
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ---------------------- |
 | D1  | **Audience strategy** — accept MCP and GraphQL sharing `https://api.accounter.com`, or pursue separation. Constrained: Auth0 ignores RFC 8707 `resource`, so a distinct audience is not currently obtainable. | production security posture     | gap 3                  |
 | D2  | **DCR interop** — who owns reporting it, and is a fronting authorization server an acceptable fallback if upstream does not fix it?                                                                           | B1, any published connector     | gap 1                  |
-| D3  | **`MCP_TOOL_ALLOWLIST`** — implement enforcement, or delete the claim from the docs. Today the docs describe a control that does not exist.                                                                   | I1, phase 2 write tools         | gap 2                  |
 | D4  | **Production hosting** — stable domain + TLS for the MCP origin. `MCP_PUBLIC_BASE_URL` must match it exactly.                                                                                                 | I5, leaving dev tunnels         | gap 4                  |
 | D5  | **Third-party posture** — if a published connector is the goal, the reverted Auth0 tenant changes become permanent production requirements, not debugging artifacts.                                          | D1, D2, production tenant setup | tenant-changes section |
-| D6  | **Rate-limit keying** — accept per-scope quota multiplication, key on `userId\|toolName`, or add a per-user aggregate ceiling.                                                                                | I2                              | F2                     |
+
+D3 (`MCP_TOOL_ALLOWLIST`) and D6 (rate-limit keying) are settled — see the closed list.
 
 ---
 
@@ -56,68 +56,13 @@ These need a human call, not implementation. Several gate work below.
 
 Ranked by when they start to hurt, not by size.
 
-### I1. Enforce `MCP_TOOL_ALLOWLIST` — **high before phase 2**
+### I5. Stable tunnel for local development — **low (friction)**
 
-**Gated on D3.** `env.server.toolAllowlist` is parsed and never read; every registered tool is
-exposed regardless. Harmless while phase 1 is read-only; a real control gap the moment mutating
-tools land.
+Production is settled (see the closed list — `https://mcp.accounter.tax`). Local development still
+uses `cloudflared` quick tunnels, which get a new hostname on every restart, silently invalidating
+both `MCP_PUBLIC_BASE_URL` and the connector URL. It rotated twice in one session.
 
-- [ ] Wire the allowlist into the registry (or, if D3 goes the other way, remove the claim from
-      `config/env.ts` and the docs)
-- [ ] **`accounter_list_businesses` must be in the default allowlist.** Omitting it removes the only
-      way to discover a `businessId`, and it fails _silently_ — the other tools keep working, just
-      unscoped and defaulted to all memberships
-
-Source: gap 2, F5.
-
-### I2. Rate-limit quota multiplies with scope subsets — **medium**
-
-**Gated on D6.** `rateLimitKey` is `userId|sortedScope|toolName`. Sorting defeats permutation abuse,
-but distinct _subsets_ remain distinct buckets. Phase 5 gave two more tools a `businessIds` input —
-they previously had one bucket each — so a caller with N businesses can address up to 2^N−1 buckets
-per tool.
-
-Not a tenant-isolation issue: every subset is already authorized. It weakens abuse protection and
-upstream load control on exactly the tools that now push RLS-scoped work upstream. Memory is bounded
-by the existing sweep, so this is quota, not a leak.
-
-- [ ] Implement whichever option D6 selects
-
-Source: F2.
-
-### I3. Replace the Auth0 test application — **low-medium**
-
-The connector authenticates as the Accounter API's auto-created _"Accounter API (Test
-Application)"_, renamed. Accepted deliberately during bring-up. Latent problems: Auth0 deletes it
-with its API, it backs the API's **Test** tab (anyone rotating that secret breaks the connector),
-and it is an M2M client running an Authorization Code flow.
-
-- [ ] Create a purpose-built **Regular Web Application** (callback
-      `https://claude.ai/api/mcp/auth_callback`, Authorization Code + Refresh Token grants)
-- [ ] Move the user-delegated grant on the Accounter API to the new app
-- [ ] Update the connector's client ID/secret in Claude Desktop
-- [ ] Restore the test application's original name
-
-Best paired with any other change that already requires re-granting API access.
-
-Source: gap 7.
-
-### I4. `POST /mcp/` returns 404 — **low**
-
-Only the exact path `/mcp` is routed. A trailing slash looks correct and fails silently, and 404s
-never reach the auth layer, so `/metrics` records nothing — this cost real debugging time.
-
-- [ ] Tolerate a trailing slash
-
-Source: gap 5.
-
-### I5. Stable tunnel / origin for development — **low (friction)**
-
-`cloudflared` quick tunnels get a new hostname on every restart, silently invalidating both
-`MCP_PUBLIC_BASE_URL` and the connector URL. It rotated twice in one session.
-
-- [ ] Set up a named tunnel (or equivalent) for ongoing development
-- [ ] Production origin is D4
+- [ ] Set up a named tunnel (or equivalent) for ongoing local development
 
 Source: gap 4.
 
@@ -188,6 +133,21 @@ Recorded so nobody re-discovers them as bugs. Each has a stated condition that w
 
 ## ✅ Closed — for reference
 
+Item ids (I1…I5, D1…D6) are kept stable even where the numbering now has gaps, because the other
+docs and PR descriptions reference them.
+
+- **I1 / D3 — `MCP_TOOL_ALLOWLIST` enforcement** — done in #4104. `isToolAllowed`
+  (`src/tools/allowlist.ts`) is applied at the transport boundary: `tools/list` filters advertised
+  descriptors and `tools/call` rejects an excluded tool as `Unknown tool`, so the allowlist never
+  reveals which tools exist. **Semantics: an empty allowlist means no restriction**, a non-empty one
+  permits only its members — so there is no "default allowlist" to keep `accounter_list_businesses`
+  in, but any operator who sets one should include it or lose business discovery.
+- **I2 / D6 — rate-limit keying** — done in #4105. `rateLimitKey` is now `userId|toolName`; scope
+  was dropped from the key entirely, so subsets no longer fragment the quota. Isolation stays with
+  RLS via `x-business-scope`.
+- **I4 — `POST /mcp/` returned 404** — done in #4103. `normalizeRoutePath` strips a trailing slash
+  for route lookup only; `/mcp/` now reaches the same handler, auth layer, and metrics, while
+  `context.route` keeps the raw pathname.
 - **Auth0 DCR tenant workarounds** (domain-level connection, `allow_all` user policy) — both
   reverted 2026-07-31 and verified by full reconnect. The connector is now authorized by an explicit
   user-subject grant. _That grant must move with the application — see I3._

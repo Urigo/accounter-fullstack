@@ -85,9 +85,11 @@ Useful queries (adapt to your log backend):
 - **Version rollback**: redeploy the previous image/build of `@accounter/mcp-server`. The service is
   stateless, so rollback is safe and requires no data migration.
 
-> **Note:** `MCP_TOOL_ALLOWLIST` is parsed at startup but **not yet enforced** — it does not
-> currently restrict which tools are advertised or callable. Do not rely on it as a mitigation until
-> enforcement lands; use the kill-switch instead.
+> **Note:** `MCP_TOOL_ALLOWLIST` is enforced (#4104) and can be used to disable a single misbehaving
+> tool without taking the connector down: set it to the tools you want to keep. **An empty value
+> means no restriction**, not "no tools" — to disable everything, use the kill-switch. Changing it
+> requires a process restart, and any allowlist you set should include `accounter_list_businesses`
+> or business discovery is lost.
 
 ## 6. Configuration reference
 
