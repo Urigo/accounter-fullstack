@@ -11,6 +11,7 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
+import { basicDocumentValidation } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../providers/issued-documents.provider.js';
 import type {
@@ -23,6 +24,7 @@ import {
   commonChargeFields,
   commonDocumentsFields,
   commonFinancialDocumentsFields,
+  commonFinancialDocumentValidationField,
 } from './common.js';
 
 export const documentsResolvers: DocumentsModule.Resolvers &
@@ -41,6 +43,11 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     },
     documentsByFilters: async (_, { filters }, { injector }) => {
       const dbDocs = await injector.get(DocumentsProvider).getDocumentsByExtendedFilters(filters);
+      // `missingInfo` reuses the shared basicDocumentValidation logic, so it is
+      // applied here rather than duplicating its semantics in SQL.
+      if (filters.missingInfo) {
+        return dbDocs.filter(doc => !basicDocumentValidation(doc));
+      }
       return dbDocs;
     },
     documentById: async (_, { documentId }, { injector }) => {
@@ -579,18 +586,22 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   Invoice: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    ...commonFinancialDocumentValidationField,
   },
   InvoiceReceipt: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    ...commonFinancialDocumentValidationField,
   },
   CreditInvoice: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    ...commonFinancialDocumentValidationField,
   },
   Proforma: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    ...commonFinancialDocumentValidationField,
   },
   Unprocessed: {
     ...commonDocumentsFields,
@@ -603,6 +614,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
   Receipt: {
     ...commonDocumentsFields,
     ...commonFinancialDocumentsFields,
+    ...commonFinancialDocumentValidationField,
   },
   CommonCharge: commonChargeFields,
   FinancialCharge: commonChargeFields,

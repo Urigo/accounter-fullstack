@@ -1,6 +1,7 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql, type IDatabaseConnection } from '@pgtyped/runtime';
+import { DocumentType } from '../../../shared/enums.js';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import type { Optional, TimelessDateString } from '../../../shared/types/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
@@ -244,9 +245,11 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
     AND ($toDate ::TEXT IS NULL OR date::TEXT::DATE <= date_trunc('day', $toDate ::DATE))
     AND ($isBusinessIDs = 0 OR debtor_id IN $$businessIDs OR creditor_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
+    AND ($isTypes = 0 OR type IN $$types)
+    AND ($isMissingCounterparty = 0 OR debtor_id IS NULL OR creditor_id IS NULL)
     AND ($isUnmatched = 0 OR NOT EXISTS (
-      SELECT 1 
-      FROM accounter_schema.transactions t 
+      SELECT 1
+      FROM accounter_schema.transactions t
       WHERE t.charge_id = charge_id
     ))
   ORDER BY created_at DESC;
@@ -258,12 +261,24 @@ type IGetAdjustedDocumentsByFiltersParams = Optional<
 >;
 
 type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
-  Omit<IGetDocumentsByExtendedFiltersParams, 'isIDs' | 'fromDate' | 'toDate' | 'isUnmatched'>,
+  Omit<
+    IGetDocumentsByExtendedFiltersParams,
+    | 'isIDs'
+    | 'fromDate'
+    | 'toDate'
+    | 'isUnmatched'
+    | 'isTypes'
+    | 'types'
+    | 'isMissingCounterparty'
+  >,
   'IDs' | 'businessIDs' | 'ownerIDs'
 > & {
   fromDate?: TimelessDateString | null;
   toDate?: TimelessDateString | null;
   unmatched?: boolean | null;
+  type?: readonly DocumentType[] | null;
+  missingCounterparty?: boolean | null;
+  missingInfo?: boolean | null;
 };
 
 const replaceDocumentsChargeId = sql<IReplaceDocumentsChargeIdQuery>`
@@ -343,11 +358,14 @@ export class DocumentsProvider {
     const isIDs = !!params?.IDs?.filter(Boolean).length;
     const isBusinessIDs = !!params?.businessIDs?.filter(Boolean).length;
     const isOwnerIDs = !!params?.ownerIDs?.filter(Boolean).length;
+    const isTypes = !!params?.type?.filter(Boolean).length;
 
     const fullParams: IGetDocumentsByExtendedFiltersParams = {
       isIDs: isIDs ? 1 : 0,
       isBusinessIDs: isBusinessIDs ? 1 : 0,
       isOwnerIDs: isOwnerIDs ? 1 : 0,
+      isTypes: isTypes ? 1 : 0,
+      isMissingCounterparty: params.missingCounterparty ? 1 : 0,
       fromVatDate: null,
       toVatDate: null,
       ...params,
@@ -355,6 +373,7 @@ export class DocumentsProvider {
       IDs: isIDs ? params.IDs! : [null],
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
+      types: isTypes ? params.type! : [null],
     };
     return getDocumentsByExtendedFilters.run(fullParams, this.db);
   }

@@ -18,6 +18,12 @@ export default gql`
     toDate: TimelessDate
     " Include only documents without matching transactions "
     unmatched: Boolean
+    " Include only documents of the given types "
+    type: [DocumentType!]
+    " Include only documents with a missing creditor or debtor "
+    missingCounterparty: Boolean
+    " Include only documents that fail basic information validation "
+    missingInfo: Boolean
   }
 
   extend type Mutation {
@@ -130,6 +136,28 @@ export default gql`
     exchangeRateOverride: Float
   }
 
+  " result of a single document validation check "
+  type DocumentValidationCheck {
+    " whether this specific check passed "
+    isValid: Boolean!
+    " explanatory message when the check fails "
+    message: String
+  }
+
+  " combined validation info for a financial document, aggregating all validation checks "
+  type DocumentValidationInfo {
+    " true only when every validation check passes "
+    isValid: Boolean!
+    " human readable list of all detected validation issues "
+    issues: [String!]!
+    " basic required-fields validation (see basicDocumentValidation) "
+    basicValidation: DocumentValidationCheck!
+    " VAT amount validation "
+    vatValidation: DocumentValidationCheck!
+    " allocation number validation "
+    allocationValidation: DocumentValidationCheck!
+  }
+
   " represent a financial document "
   interface FinancialDocument implements Document & Linkable {
     id: UUID!
@@ -148,6 +176,8 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    " aggregated validation info combining all document validations "
+    validation: DocumentValidationInfo
   }
 
   " invoice document "
@@ -168,6 +198,7 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    validation: DocumentValidationInfo
   }
 
   " proforma document "
@@ -188,6 +219,7 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    validation: DocumentValidationInfo
   }
 
   " receipt document "
@@ -207,6 +239,7 @@ export default gql`
     exchangeRateOverride: Float
     description: String
     remarks: String
+    validation: DocumentValidationInfo
   }
 
   " Invoice receipt document - חשבונית מס קבלה "
@@ -227,6 +260,7 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    validation: DocumentValidationInfo
   }
 
   " Credit invoice document - חשבונית זיכוי "
@@ -247,6 +281,7 @@ export default gql`
     noVatAmount: Float
     allocationNumber: String
     exchangeRateOverride: Float
+    validation: DocumentValidationInfo
   }
 
   " input variables for updateDocument "

@@ -1,7 +1,9 @@
 import { Injector } from 'graphql-modules';
 import { Currency, DocumentType } from '../../../shared/enums.js';
+import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
+import { VatProvider } from '../../vat/providers/vat.provider.js';
 import type { IGetAllDocumentsResult } from '../types.js';
 import { isInvoice } from './common.helper.js';
 
@@ -113,4 +115,85 @@ export function basicDocumentValidation(document: IGetAllDocumentsResult) {
   const isInvoiceValid = !isInvoice(document.type) || document.vat_amount != null;
 
   return hasRequiredFields && isInvoiceValid;
+}
+
+/** result of a single validation check */
+export type DocumentValidationCheck = {
+  isValid: boolean;
+  message: string | null;
+};
+
+/** aggregated validation info combining all document validations */
+export type DocumentValidationInfo = {
+  isValid: boolean;
+  issues: string[];
+  basicValidation: DocumentValidationCheck;
+  vatValidation: DocumentValidationCheck;
+  allocationValidation: DocumentValidationCheck;
+};
+
+/**
+ * Runs all document validations (basic required-fields, VAT and allocation) and
+ * combines them into a single informative response.
+ */
+export async function getDocumentValidationInfo(
+  document: IGetAllDocumentsResult,
+  injector: Injector,
+): Promise<DocumentValidationInfo> {
+  // basic required-fields validation
+  const basicValid = !!basicDocumentValidation(document);
+  const basicValidation: DocumentValidationCheck = {
+    isValid: basicValid,
+    message: basicValid ? null : `Document ID=${document.id} is missing required information`,
+  };
+
+  // VAT amount validation
+  let vatValid = true;
+  let vatMessage: string | null = null;
+  const vatRate = document.date
+    ? await injector
+        .get(VatProvider)
+        .getVatValueByDateLoader.load(dateToTimelessDateString(document.date))
+    : null;
+  if (document.vat_amount != null && vatRate == null) {
+    vatValid = false;
+    vatMessage = `Unable to determine VAT rate for document ID=${document.id}`;
+  } else {
+    vatValid = validateDocumentVat(document, vatRate ?? 0, message => {
+      vatMessage = message;
+    });
+  }
+  const vatValidation: DocumentValidationCheck = { isValid: vatValid, message: vatMessage };
+
+  // allocation number validation
+  let allocationValid = true;
+  let allocationMessage: string | null = null;
+  try {
+    allocationValid = await validateDocumentAllocation(document, injector);
+    if (!allocationValid) {
+      allocationMessage = `Allocation number is missing for document ID=${document.id}`;
+    }
+  } catch (error) {
+    allocationValid = false;
+    allocationMessage =
+      error instanceof Error
+        ? error.message
+        : `Allocation validation failed for document ID=${document.id}`;
+  }
+  const allocationValidation: DocumentValidationCheck = {
+    isValid: allocationValid,
+    message: allocationMessage,
+  };
+
+  const issues = [basicValidation, vatValidation, allocationValidation]
+    .map(check => check.message)
+    .filter((message): message is string => !!message);
+
+  return {
+    isValid: basicValid && vatValid && allocationValid,
+    issues,
+    basicValidation,
+    vatValidation,
+    allocationValidation,
+  };
 }
