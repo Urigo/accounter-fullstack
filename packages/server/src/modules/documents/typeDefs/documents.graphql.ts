@@ -24,6 +24,8 @@ export default gql`
     missingCounterparty: Boolean
     " Include only documents that fail basic information validation "
     missingInfo: Boolean
+    " Free text search across serial number, amount, description, remarks and counterparty (creditor / debtor) names "
+    freeText: String
   }
 
   extend type Mutation {

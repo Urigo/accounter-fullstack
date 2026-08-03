@@ -252,6 +252,26 @@ const getDocumentsByExtendedFilters = sql<IGetDocumentsByExtendedFiltersQuery>`
       FROM accounter_schema.transactions t
       WHERE t.charge_id = charge_id
     ))
+    AND ($freeText::TEXT IS NULL OR (
+      serial_number ILIKE '%' || $freeText || '%'
+      OR description ILIKE '%' || $freeText || '%'
+      OR remarks ILIKE '%' || $freeText || '%'
+      -- match amounts. $freeTextNumeric has thousands separators stripped
+      -- so both "1,234.56" and "1234.56" match the plain value stored in the DB.
+      OR ($freeTextNumeric::TEXT IS NOT NULL AND (
+        total_amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+        OR ABS(total_amount)::TEXT ILIKE '%' || $freeTextNumeric || '%'
+      ))
+      -- match counterparty (creditor / debtor) business names
+      OR EXISTS (
+        SELECT 1 FROM accounter_schema.financial_entities fe
+        WHERE fe.id = documents.creditor_id AND fe.name ILIKE '%' || $freeText || '%'
+      )
+      OR EXISTS (
+        SELECT 1 FROM accounter_schema.financial_entities fe
+        WHERE fe.id = documents.debtor_id AND fe.name ILIKE '%' || $freeText || '%'
+      )
+    ))
   ORDER BY created_at DESC;
 `;
 
@@ -270,6 +290,7 @@ type IGetAdjustedDocumentsByExtendedFiltersParams = Optional<
     | 'isTypes'
     | 'types'
     | 'isMissingCounterparty'
+    | 'freeTextNumeric'
   >,
   'IDs' | 'businessIDs' | 'ownerIDs'
 > & {
@@ -374,6 +395,8 @@ export class DocumentsProvider {
       businessIDs: isBusinessIDs ? params.businessIDs! : [null],
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
       types: isTypes ? params.type! : [null],
+      // strip thousands separators so amount searches match the plain value stored in the DB
+      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
     };
     return getDocumentsByExtendedFilters.run(fullParams, this.db);
   }
