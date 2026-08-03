@@ -276,7 +276,7 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('lists the curated tools with discovery first, and hides the smoke tool', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/list' },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcSuccess;
     const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
     // Discovery leads: tools/list ordering steers how the model scopes calls.
@@ -289,7 +289,7 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('still dispatches the smoke tool by name', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: SMOKE_TOOL_NAME, arguments: { message: 'hi' } } },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcSuccess;
     expect(response.result).toEqual({ content: [{ type: 'text', text: 'pong: hi' }], isError: false });
   });
@@ -297,7 +297,7 @@ describe('dispatchMcpRequest — registry integration', () => {
   it('returns InvalidParams for an unknown tool name', async () => {
     const response = (await dispatchMcpRequest(
       { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'nope' } },
-      { auth, correlationId: 'c' },
+      { auth, correlationId: 'c', allowlist: [] },
     )) as JsonRpcErrorResponse;
     expect(response.error.code).toBe(JsonRpcErrorCode.InvalidParams);
   });

@@ -157,11 +157,15 @@ export interface McpDispatchContext {
   /** Caller's Authorization header value, forwarded upstream (never logged). */
   authorization?: string;
   /**
-   * `MCP_TOOL_ALLOWLIST`, resolved at the HTTP boundary. Empty/omitted ⇒ no
-   * restriction (every registered tool is exposed); non-empty ⇒ `tools/list`
-   * and `tools/call` are limited to exactly these tool names.
+   * `MCP_TOOL_ALLOWLIST`, resolved at the HTTP boundary. Empty ⇒ no restriction
+   * (every registered tool is exposed); non-empty ⇒ `tools/list` and
+   * `tools/call` are limited to exactly these tool names.
+   *
+   * Required — not optional — precisely because it is a security control:
+   * making every caller pass it (even the empty, unrestricted case) means a new
+   * call site cannot silently bypass enforcement by forgetting the field.
    */
-  allowlist?: readonly string[];
+  allowlist: readonly string[];
 }
 
 /**
@@ -182,7 +186,7 @@ export async function dispatchMcpRequest(
   // non-empty one restricts both discovery and dispatch to the named subset.
   // The list is threaded in via the dispatch context (built at the HTTP
   // boundary) so this function stays env-free and directly unit-testable.
-  const allowlist = context.allowlist ?? [];
+  const { allowlist } = context;
 
   if (request.method === 'tools/list') {
     const registered = toolRegistry
