@@ -1,4 +1,4 @@
-import { type Span, SpanStatusCode, trace } from '@opentelemetry/api';
+import { SpanStatusCode, trace, type Span } from '@opentelemetry/api';
 import { getServiceVersion, SERVICE_NAME } from '../version.js';
 
 /**
