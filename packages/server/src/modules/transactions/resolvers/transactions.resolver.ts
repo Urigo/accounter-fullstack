@@ -63,7 +63,7 @@ export const transactionsResolvers: TransactionsModule.Resolvers &
       // if any are outside it), so byOwners can never broaden access.
       const ownerIDs = await injector
         .get(ScopeProvider)
-        .getReadScope(filters?.byOwners ?? undefined);
+        .getReadScope(filters?.byOwners ? [...filters.byOwners] : undefined);
       // Guard against an empty read scope: passing no owner ids to the provider is
       // treated as "no owner filter" and would return transactions across all owners.
       if (ownerIDs.length === 0) {
