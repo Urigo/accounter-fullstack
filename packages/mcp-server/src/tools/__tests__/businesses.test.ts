@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type BusinessMembership, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { listBusinessesTool } from '../businesses.js';
+import { listBusinessMembershipsTool } from '../businesses.js';
 import { executeRegisteredTool } from '../execute.js';
 
 const PRINCIPAL: AuthPrincipal = {
@@ -22,7 +22,7 @@ function authContext(memberships: BusinessMembership[]): McpAuthContext {
 /** The handler is pure; this client exists only to prove it is never called. */
 function neverCalledClient() {
   const fetchImpl = vi.fn(async () => {
-    throw new Error('upstream must not be called by accounter_list_businesses');
+    throw new Error('upstream must not be called by accounter_list_business_memberships');
   });
   const client = new UpstreamGraphQLClient({
     endpoint: 'http://localhost:4000/graphql',
@@ -34,7 +34,7 @@ function neverCalledClient() {
 
 const run = (auth: McpAuthContext, client: UpstreamGraphQLClient) =>
   executeRegisteredTool({
-    tool: listBusinessesTool,
+    tool: listBusinessMembershipsTool,
     rawArgs: {},
     auth,
     correlationId: 'c',
@@ -48,7 +48,7 @@ interface Structured {
   totalCount: number;
 }
 
-describe('listBusinessesTool', () => {
+describe('listBusinessMembershipsTool', () => {
   it('lists memberships as {businessId, name, role} without any upstream call', async () => {
     const { client, fetchImpl } = neverCalledClient();
     const result = await run(

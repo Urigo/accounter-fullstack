@@ -1,11 +1,15 @@
 import { z } from 'zod';
-import type { McpListTagsQuery, McpListTaxCategoriesQuery } from '../gql/index.js';
+import type {
+  McpListBusinessesQuery,
+  McpListTagsQuery,
+  McpListTaxCategoriesQuery,
+} from '../gql/index.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
- * Tool 2: read-only lookups for tags and tax categories (spec §8.2).
+ * Tool 2: read-only lookups for tags, tax categories, and businesses (spec §8.2).
  *
  * These are reference-data lookups. Input is minimal, output is deterministically
  * sorted (by name, then id) and size-capped. A caller must belong to at least
@@ -14,6 +18,7 @@ import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 export const LIST_TAGS_TOOL_NAME = 'accounter_list_tags';
 export const LIST_TAX_CATEGORIES_TOOL_NAME = 'accounter_list_tax_categories';
+export const LIST_BUSINESSES_TOOL_NAME = 'accounter_list_businesses';
 
 /** Hard cap on returned rows (spec §9.3). */
 export const MAX_LOOKUP_RESULTS = 1000;
@@ -178,4 +183,90 @@ export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput
   inputSchema: listTaxCategoriesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler: listTaxCategoriesHandler,
+};
+
+// ---------------------------------------------------------------------------
+// Businesses (full directory)
+// ---------------------------------------------------------------------------
+
+const listBusinessesInput = z.object({
+  businessIds: businessIdsInput,
+  nameContains,
+  activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
+  limit,
+});
+type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
+
+// `name` is forwarded to the upstream `allBusinesses(name:)` filter so the
+// server narrows the directory before it is serialized, rather than shipping the
+// whole businesses table on every call. The client-side `filterSortCap` below
+// still runs: upstream matches Hebrew names too, so it re-applies the stricter
+// English-name predicate (keeping `totalCount` accurate) and owns the
+// deterministic global sort + size cap that all the lookups share.
+const LIST_BUSINESSES_QUERY = /* GraphQL */ `
+  query McpListBusinesses($name: String) {
+    allBusinesses(name: $name) {
+      nodes {
+        id
+        name
+        ownerId
+        isActive
+      }
+    }
+  }
+`;
+
+async function listBusinessesHandler(
+  input: ListBusinessesInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  const data = await context.client.query<McpListBusinessesQuery>(
+    { query: LIST_BUSINESSES_QUERY, variables: { name: input.nameContains ?? null } },
+    context.upstream,
+  );
+
+  const allBusinesses = data.allBusinesses?.nodes ?? [];
+  const activeFiltered = input.activeOnly
+    ? allBusinesses.filter(business => business.isActive)
+    : allBusinesses;
+  const { rows, total } = filterSortCap(activeFiltered, input.nameContains, input.limit);
+  const businesses = rows.map(business => ({
+    id: business.id,
+    name: business.name,
+    ownerId: business.ownerId,
+    isActive: business.isActive,
+  }));
+
+  return shapeListResult({
+    items: businesses,
+    itemsKey: 'businesses',
+    total,
+    extra: { scope: { businessIds: context.readScope.businessIds } },
+    summarize: (_shown, count, truncated) =>
+      `Found ${count} ${count === 1 ? 'business' : 'businesses'}${
+        truncated ? ' (truncated)' : ''
+      }.`,
+  });
+}
+
+// A dedicated scope clause rather than the shared `SCOPE_DESCRIPTION_SUFFIX`:
+// this tool is the full directory, so "omitting `businessIds` covers every
+// business you belong to" (the shared wording, written for the owner-scoped
+// tags/tax-category lookups) would be wrong here. It still teaches the same
+// convention — optional narrowing, `ownerId`-tagged rows, echoed scope, and the
+// same discovery entry point.
+const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
+  'Scope: omitting `businessIds` returns the whole directory visible to you; passing them narrows to ' +
+  'those owning businesses. Rows are tagged with `ownerId` and the response echoes the effective ' +
+  '`scope.businessIds`. If you have more than one business, call `accounter_list_business_memberships` ' +
+  'first to discover ids.';
+
+export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
+  name: LIST_BUSINESSES_TOOL_NAME,
+  description:
+    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
+    DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
+  inputSchema: listBusinessesInput,
+  policy: { requiresBusinessScope: true, dataClassification: 'business' },
+  handler: listBusinessesHandler,
 };

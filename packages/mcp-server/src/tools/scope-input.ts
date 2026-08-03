@@ -22,7 +22,7 @@ export const businessIdsInput = z
   .optional()
   .describe(
     'Limit results to the businesses with these (owner) ids — must be a subset of the businesses you ' +
-      'belong to. Omit to include all of them. Use accounter_list_businesses to discover ids. ' +
+      'belong to. Omit to include all of them. Use accounter_list_business_memberships to discover ids. ' +
       'Every returned row carries its ownerId so results can be grouped by business.',
   );
 
@@ -37,7 +37,7 @@ export const businessIdsInput = z
 export const SCOPE_DESCRIPTION_SUFFIX =
   'Scope: omitting `businessIds` covers every business you belong to; results are tagged with `ownerId` ' +
   'and the response echoes the effective `scope.businessIds`. If you have more than one business, call ' +
-  '`accounter_list_businesses` first and pass explicit ids.';
+  '`accounter_list_business_memberships` first and pass explicit ids.';
 
 /**
  * Trailing clause for tools scoped to exactly **one** business via a required
@@ -48,4 +48,4 @@ export const SCOPE_DESCRIPTION_SUFFIX =
 export const SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX =
   'Scope: this covers exactly one business — pass its id as the required `businessId`. The response ' +
   'echoes the effective `scope.businessIds` alongside it. If you have more than one business, call ' +
-  '`accounter_list_businesses` first to choose.';
+  '`accounter_list_business_memberships` first to choose.';

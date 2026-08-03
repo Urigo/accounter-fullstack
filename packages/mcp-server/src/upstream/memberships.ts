@@ -27,8 +27,8 @@ import {
 /**
  * Read-only query for the authenticated caller's own business memberships.
  *
- * `businessName` is selected so the `accounter_list_businesses` discovery tool
- * can present human-readable names without a second upstream round trip — this
+ * `businessName` is selected so the `accounter_list_business_memberships`
+ * discovery tool can present human-readable names without a second upstream round trip — this
  * query already runs on every authenticated request, so the name rides along
  * for free. It is display-only and never used for authorization.
  */

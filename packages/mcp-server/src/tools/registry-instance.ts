@@ -1,8 +1,8 @@
-import { listBusinessesTool } from './businesses.js';
+import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
 import { getDocumentsTool } from './document-details.js';
-import { listTagsTool, listTaxCategoriesTool } from './lookups.js';
+import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
 import { getTransactionsTool } from './transaction-details.js';
@@ -20,7 +20,7 @@ export const toolRegistry = new ToolRegistry();
 // `dispatchMcpRequest` sends `[...listedTools, ...toolRegistry.describe()]`, and
 // `listedTools` is now empty (the internal smoke tool is dispatchable but no
 // longer advertised), so this is genuinely the first tool the model sees.
-toolRegistry.register(listBusinessesTool);
+toolRegistry.register(listBusinessMembershipsTool);
 toolRegistry.register(searchChargesTool);
 // Charge detail (by id) sits next to search: the model searches, then drills
 // into specific charges — which nest their transactions and documents.
@@ -29,4 +29,6 @@ toolRegistry.register(getTransactionsTool);
 toolRegistry.register(getDocumentsTool);
 toolRegistry.register(listTagsTool);
 toolRegistry.register(listTaxCategoriesTool);
+// The full business directory sits with the other reference-data lookups.
+toolRegistry.register(listBusinessesTool);
 toolRegistry.register(balanceReportTool);

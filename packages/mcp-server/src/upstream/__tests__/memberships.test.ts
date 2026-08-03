@@ -32,7 +32,7 @@ describe('createUpstreamMembershipSource', () => {
 
     const memberships = await source(PRINCIPAL);
 
-    // businessName is carried through for `accounter_list_businesses`. A null
+    // businessName is carried through for `accounter_list_business_memberships`. A null
     // name maps to `undefined` (i.e. "no name"), never dropping the membership.
     expect(memberships).toEqual([
       { businessId: 'b1', roleId: 'business_owner', businessName: 'Acme' },
