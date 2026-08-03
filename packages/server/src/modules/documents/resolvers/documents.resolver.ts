@@ -54,6 +54,20 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       const doc = await injector.get(DocumentsProvider).getDocumentsByIdLoader.load(documentId);
       return doc ?? null;
     },
+    documentsByIds: async (_, { documentIds }, { injector }) => {
+      // De-dupe ids so a repeated id doesn't yield duplicate rows. RLS narrows
+      // the underlying query to the caller's read scope, so ids outside it
+      // resolve to `undefined` (the loader's miss value) and are dropped here —
+      // the response only ever carries documents the caller may read.
+      const uniqueIds = [...new Set(documentIds)];
+      const loaded = await injector
+        .get(DocumentsProvider)
+        .getDocumentsByIdLoader.loadMany(uniqueIds);
+      return loaded.filter(
+        (doc): doc is Exclude<typeof doc, Error | undefined | null> =>
+          doc != null && !(doc instanceof Error),
+      );
+    },
     recentDocumentsByBusiness: async (_, { businessId, limit }, { injector }) => {
       const businessDocs = await injector
         .get(DocumentsProvider)

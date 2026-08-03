@@ -1,8 +1,11 @@
 import { listBusinessesTool } from './businesses.js';
+import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
+import { getDocumentsTool } from './document-details.js';
 import { listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
+import { getTransactionsTool } from './transaction-details.js';
 
 /**
  * The process-wide registry of curated production tools. Tools register here as
@@ -19,6 +22,11 @@ export const toolRegistry = new ToolRegistry();
 // longer advertised), so this is genuinely the first tool the model sees.
 toolRegistry.register(listBusinessesTool);
 toolRegistry.register(searchChargesTool);
+// Charge detail (by id) sits next to search: the model searches, then drills
+// into specific charges — which nest their transactions and documents.
+toolRegistry.register(getChargesTool);
+toolRegistry.register(getTransactionsTool);
+toolRegistry.register(getDocumentsTool);
 toolRegistry.register(listTagsTool);
 toolRegistry.register(listTaxCategoriesTool);
 toolRegistry.register(balanceReportTool);
