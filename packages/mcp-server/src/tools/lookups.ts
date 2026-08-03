@@ -197,9 +197,15 @@ const listBusinessesInput = z.object({
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
+// `name` is forwarded to the upstream `allBusinesses(name:)` filter so the
+// server narrows the directory before it is serialized, rather than shipping the
+// whole businesses table on every call. The client-side `filterSortCap` below
+// still runs: upstream matches Hebrew names too, so it re-applies the stricter
+// English-name predicate (keeping `totalCount` accurate) and owns the
+// deterministic global sort + size cap that all the lookups share.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses {
-    allBusinesses {
+  query McpListBusinesses($name: String) {
+    allBusinesses(name: $name) {
       nodes {
         id
         name
@@ -215,7 +221,7 @@ async function listBusinessesHandler(
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
   const data = await context.client.query<McpListBusinessesQuery>(
-    { query: LIST_BUSINESSES_QUERY },
+    { query: LIST_BUSINESSES_QUERY, variables: { name: input.nameContains ?? null } },
     context.upstream,
   );
 
@@ -237,15 +243,29 @@ async function listBusinessesHandler(
     total,
     extra: { scope: { businessIds: context.readScope.businessIds } },
     summarize: (_shown, count, truncated) =>
-      `Found ${count} ${count === 1 ? 'business' : 'businesses'}${truncated ? ' (truncated)' : ''}.`,
+      `Found ${count} ${count === 1 ? 'business' : 'businesses'}${
+        truncated ? ' (truncated)' : ''
+      }.`,
   });
 }
+
+// A dedicated scope clause rather than the shared `SCOPE_DESCRIPTION_SUFFIX`:
+// this tool is the full directory, so "omitting `businessIds` covers every
+// business you belong to" (the shared wording, written for the owner-scoped
+// tags/tax-category lookups) would be wrong here. It still teaches the same
+// convention — optional narrowing, `ownerId`-tagged rows, echoed scope, and the
+// same discovery entry point.
+const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
+  'Scope: omitting `businessIds` returns the whole directory visible to you; passing them narrows to ' +
+  'those owning businesses. Rows are tagged with `ownerId` and the response echoes the effective ' +
+  '`scope.businessIds`. If you have more than one business, call `accounter_list_business_memberships` ' +
+  'first to discover ids.';
 
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List every business known to the system (id, name, ownerId, active flag), optionally filtered by name or active status — the full directory, not just the ones you are a member of. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
-    SCOPE_DESCRIPTION_SUFFIX,
+    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
+    DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listBusinessesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
   handler: listBusinessesHandler,

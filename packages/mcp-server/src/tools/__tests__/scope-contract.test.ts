@@ -54,12 +54,11 @@ const BUSINESS_SCOPED_TOOLS = [
   balanceReportTool,
 ];
 
-const MULTI_BUSINESS_TOOLS = [
-  searchChargesTool,
-  listTagsTool,
-  listTaxCategoriesTool,
-  listBusinessesTool,
-];
+// The full-directory tool uses its own accurate scope clause, not the shared
+// suffix (see lookups.ts), so it is deliberately excluded from the shared-suffix
+// assertion below — but still checked for the discovery pointer, the
+// `businessIds` input, and the echoed scope like the other list tools.
+const MULTI_BUSINESS_TOOLS = [searchChargesTool, listTagsTool, listTaxCategoriesTool];
 
 describe('uniform business-scope input', () => {
   it.each(MULTI_BUSINESS_TOOLS.map(tool => [tool.name, tool] as const))(

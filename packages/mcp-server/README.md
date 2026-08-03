@@ -101,10 +101,11 @@ scope, because it _is_ the scope.
 - **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
   bookkeeping sort code, active flag), optionally filtered by name, active status, or `businessIds`.
   Same deterministic sort + cap.
-- **`accounter_list_businesses`** — list every business known to the system (id, name, `ownerId`,
-  active flag) — the full directory, not just the caller's memberships — optionally filtered by name,
-  active status, or `businessIds`. Same deterministic sort + cap. Use
-  `accounter_list_business_memberships` instead for just the caller's own memberships and roles.
+- **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
+  flag) — every business visible to the caller, not just their memberships — optionally filtered by
+  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or `businessIds`.
+  Same deterministic sort + cap. Use `accounter_list_business_memberships` instead for just the
+  caller's own memberships and roles.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 366 days), selected by the required singular
   `businessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
