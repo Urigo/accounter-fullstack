@@ -1,9 +1,9 @@
 /**
  * In-memory rate limiter (spec §11.4).
  *
- * A fixed-window counter keyed by authenticated identity + business scope +
- * tool. Enforced before expensive upstream calls. Phase 1 uses an in-process
- * store; a shared store can replace it later without changing callers.
+ * A fixed-window counter keyed by authenticated identity + tool. Enforced
+ * before expensive upstream calls. Phase 1 uses an in-process store; a shared
+ * store can replace it later without changing callers.
  */
 
 export interface RateLimitConfig {
@@ -40,14 +40,19 @@ interface Bucket {
 /** How many `check` calls between opportunistic sweeps of expired buckets. */
 const SWEEP_EVERY = 1000;
 
-/** Build a limiter key scoped to identity + business scope + tool. */
-export function rateLimitKey(params: {
-  userId: string;
-  toolName: string;
-  businessIds: readonly string[];
-}): string {
-  const scope = params.businessIds.length > 0 ? [...params.businessIds].sort().join(',') : 'none';
-  return `${params.userId}|${scope}|${params.toolName}`;
+/**
+ * Build a limiter key scoped to identity + tool.
+ *
+ * Deliberately **not** keyed by business scope. Every scope subset a caller can
+ * request is already authorized, so scope in the key would only fragment the
+ * quota: a caller with N businesses could address up to 2^N−1 distinct buckets
+ * per tool (one per subset) and multiply their effective budget. Keying on
+ * `userId|toolName` gives one bucket per caller per tool, which is what the
+ * quota is meant to bound. Tenant isolation is enforced upstream by RLS via the
+ * forwarded `x-business-scope` header, not by the rate-limit key.
+ */
+export function rateLimitKey(params: { userId: string; toolName: string }): string {
+  return `${params.userId}|${params.toolName}`;
 }
 
 export class RateLimiter implements RateLimiterLike {

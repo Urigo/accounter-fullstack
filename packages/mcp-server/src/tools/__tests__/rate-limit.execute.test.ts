@@ -68,12 +68,14 @@ describe('executeRegisteredTool — rate limiting', () => {
     expect(structured.retryAfterMs).toBe(1000);
   });
 
-  it('keys the limit by tool + business scope (different scope is independent)', async () => {
+  it('keys the limit by user + tool, independent of business scope (I2)', async () => {
     const limiter = new RateLimiter({ windowMs: 1000, max: 1 }, () => 0);
+    // Same user + tool but a different business scope must NOT get a fresh
+    // bucket — otherwise a caller with N businesses could address 2^N−1 buckets
+    // per tool and multiply their quota.
     expect((await run(limiter, authContext(['b1']))).isError).toBeUndefined();
-    // Same user + tool but a different business scope → separate bucket.
-    expect((await run(limiter, authContext(['b2']))).isError).toBeUndefined();
-    // Repeat of the first scope is now limited.
+    // Different scope subset, same user + tool → same bucket, already exhausted.
+    expect((await run(limiter, authContext(['b2']))).isError).toBe(true);
     expect((await run(limiter, authContext(['b1']))).isError).toBe(true);
   });
 });

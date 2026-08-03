@@ -7,14 +7,15 @@ import {
 } from '../limiter.js';
 
 describe('rateLimitKey', () => {
-  it('scopes the key to identity + sorted business scope + tool', () => {
-    expect(rateLimitKey({ userId: 'u1', toolName: 't', businessIds: ['b2', 'b1'] })).toBe(
-      'u1|b1,b2|t',
-    );
+  it('scopes the key to identity + tool', () => {
+    expect(rateLimitKey({ userId: 'u1', toolName: 't' })).toBe('u1|t');
   });
 
-  it('uses "none" when there is no business scope', () => {
-    expect(rateLimitKey({ userId: 'u1', toolName: 't', businessIds: [] })).toBe('u1|none|t');
+  it('is independent of business scope, so scope subsets share one bucket', () => {
+    // A caller must not be able to multiply their quota by addressing distinct
+    // scope subsets — every subset maps to the same identity|tool bucket.
+    const key = rateLimitKey({ userId: 'u1', toolName: 't' });
+    expect(rateLimitKey({ userId: 'u1', toolName: 't' })).toBe(key);
   });
 });
 

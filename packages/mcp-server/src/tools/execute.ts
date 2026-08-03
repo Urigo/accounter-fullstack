@@ -137,14 +137,15 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
     );
   }
 
-  // 3. Rate limit (before any expensive upstream call), keyed by
-  // identity + business scope + tool.
+  // 3. Rate limit (before any expensive upstream call), keyed by identity +
+  // tool. Business scope is intentionally left out of the key — every subset is
+  // already authorized, so keying on it would let a caller multiply their quota
+  // across scope subsets (see `rateLimitKey`).
   if (limiter) {
     const outcome = limiter.check(
       rateLimitKey({
         userId: auth.userId,
         toolName: tool.name,
-        businessIds: decision.readScope.businessIds,
       }),
     );
     if (!outcome.allowed) {
