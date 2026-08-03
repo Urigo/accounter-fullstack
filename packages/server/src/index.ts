@@ -14,6 +14,7 @@ import { createGraphQLApp } from './modules-app.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
 import { authPlugin } from './plugins/auth-plugin.js';
+import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
 import { AccounterContext } from './shared/types/index.js';
 
@@ -88,6 +89,7 @@ async function main() {
 
   const yoga = createYoga({
     plugins: [
+      correlationIdPlugin(),
       dbCleanupPlugin(),
       authPlugin(),
       useGraphQLModules(application),
