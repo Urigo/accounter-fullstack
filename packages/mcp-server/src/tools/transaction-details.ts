@@ -5,6 +5,7 @@ import type {
   McpSearchTransactionsByFiltersQuery,
   McpSearchTransactionsByFiltersQueryVariables,
 } from '../gql/index.js';
+import { UpstreamError } from '../upstream/graphql-client.js';
 import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeTransaction, type RawTransaction } from './entity-shapes.js';
 import { shapeListResult } from './output.js';
@@ -89,7 +90,7 @@ const getTransactionsInput = z
       .optional()
       .describe(
         `The transaction ids to fetch (1–${MAX_DETAIL_IDS}). Discover ids via accounter_get_charges ` +
-          '(each charge lists its transactions) or accounter_search_charges.',
+          '(each charge lists its transactions).',
       ),
     filters: transactionFiltersInput
       .optional()
@@ -198,6 +199,16 @@ function buildTransactionsFilters(
   return filters;
 }
 
+function isNotFoundByIdUpstreamError(error: unknown): boolean {
+  if (!(error instanceof UpstreamError) || error.code !== 'UPSTREAM_ERROR') {
+    return false;
+  }
+  return (
+    /^Transaction ID=".+" not found$/i.test(error.message) ||
+    /^Couldn't find any transactions$/i.test(error.message)
+  );
+}
+
 async function handler(
   input: GetTransactionsInput,
   context: ToolExecutionContext,
@@ -212,14 +223,24 @@ async function handler(
         const variables: McpGetTransactionsQueryVariables = {
           transactionIDs: input.transactionIds!,
         };
-        const data = await context.client.query<McpGetTransactionsQuery>(
-          {
-            query: TRANSACTIONS_QUERY_DOCUMENT,
-            operationName: 'McpGetTransactions',
-            variables,
-          },
-          context.upstream,
-        );
+        const data = await context.client
+          .query<McpGetTransactionsQuery>(
+            {
+              query: TRANSACTIONS_QUERY_DOCUMENT,
+              operationName: 'McpGetTransactions',
+              variables,
+            },
+            context.upstream,
+          )
+          .catch(error => {
+            // Upstream `transactionsByIDs` throws for any missing id. For this
+            // read-only tool we normalize that specific not-found condition to
+            // an empty result, matching the tool contract for out-of-scope ids.
+            if (isNotFoundByIdUpstreamError(error)) {
+              return { transactionsByIDs: [] } satisfies McpGetTransactionsQuery;
+            }
+            throw error;
+          });
         return (data.transactionsByIDs ?? []).map(raw =>
           normalizeTransaction(raw as RawTransaction),
         );

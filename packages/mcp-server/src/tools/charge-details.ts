@@ -5,6 +5,7 @@ import type {
   McpGetChargesQuery,
   McpGetChargesQueryVariables,
 } from '../gql/index.js';
+import { UpstreamError } from '../upstream/graphql-client.js';
 import { TIMELESS_DATE } from './dates.js';
 import {
   normalizeAmount,
@@ -397,6 +398,16 @@ function buildChargeFilters(
   return filters;
 }
 
+function isNotFoundByIdUpstreamError(error: unknown): boolean {
+  if (!(error instanceof UpstreamError) || error.code !== 'UPSTREAM_ERROR') {
+    return false;
+  }
+  return (
+    /^Charge ID=".+" not found$/i.test(error.message) ||
+    /^Couldn't find any charges$/i.test(error.message)
+  );
+}
+
 type RawCharge = McpGetChargesQuery['chargesByIDs'][number];
 
 interface NormalizedCharge {
@@ -458,18 +469,28 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
   const usingIds = hasChargeIds && !hasFilters;
 
   const byIdsData = usingIds
-    ? await context.client.query<McpGetChargesQuery>(
-        {
-          query: CHARGES_QUERY_DOCUMENT,
-          operationName: 'McpGetCharges',
-          variables: {
-            chargeIDs: input.chargeIds!,
-            includeTransactions: input.includeTransactions,
-            includeDocuments: input.includeDocuments,
-          } satisfies McpGetChargesQueryVariables,
-        },
-        context.upstream,
-      )
+    ? await context.client
+        .query<McpGetChargesQuery>(
+          {
+            query: CHARGES_QUERY_DOCUMENT,
+            operationName: 'McpGetCharges',
+            variables: {
+              chargeIDs: input.chargeIds!,
+              includeTransactions: input.includeTransactions,
+              includeDocuments: input.includeDocuments,
+            } satisfies McpGetChargesQueryVariables,
+          },
+          context.upstream,
+        )
+        .catch(error => {
+          // Upstream `chargesByIDs` throws for any missing id. Normalize this
+          // specific not-found condition to an empty success result so callers
+          // get consistent read semantics for out-of-scope/unknown ids.
+          if (isNotFoundByIdUpstreamError(error)) {
+            return { chargesByIDs: [] } satisfies McpGetChargesQuery;
+          }
+          throw error;
+        })
     : null;
 
   const filteredData = usingIds

@@ -115,7 +115,7 @@ export interface RawDocument {
   debtor?: RawEntityRef | null;
   file?: string | null;
   image?: string | null;
-  charge?: { id: string; owner?: RawEntityRef | null } | null;
+  charge?: { id: string; owner?: { id: string } | null } | null;
 }
 
 export interface NormalizedDocument {

@@ -46,6 +46,22 @@ function clientReturning(data: unknown, capture?: (body: unknown) => void) {
   });
 }
 
+function clientGraphQLErrors(messages: string[], capture?: (body: unknown) => void) {
+  const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+    capture?.(JSON.parse(init.body as string));
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ errors: messages.map(message => ({ message })) }),
+    } as unknown as Response;
+  });
+  return new UpstreamGraphQLClient({
+    endpoint: 'http://localhost:4000/graphql',
+    timeoutMs: 1000,
+    fetchImpl: fetchImpl as unknown as typeof fetch,
+  });
+}
+
 function run(
   tool: ToolDefinition,
   client: UpstreamGraphQLClient,
@@ -305,6 +321,14 @@ describe('getChargesTool', () => {
     expect(result.content[0]!.text).toMatch(/No charges/);
   });
 
+  it('normalizes upstream chargesByIDs not-found error to empty result', async () => {
+    const client = clientGraphQLErrors(['Charge ID="missing" not found']);
+    const result = await run(getChargesTool, client, authContext([B1]), { chargeIds: ['missing'] });
+    expect(result.isError).toBeUndefined();
+    expect((result.structuredContent as { charges: unknown[] }).charges).toEqual([]);
+    expect(result.content[0]!.text).toMatch(/No charges/);
+  });
+
   it('rejects an empty id list', async () => {
     const client = clientReturning(chargeFixture);
     const result = await run(getChargesTool, client, authContext([B1]), { chargeIds: [] });
@@ -401,6 +425,16 @@ describe('getTransactionsTool', () => {
     const result = await run(getTransactionsTool, client, authContext([B1]), {
       transactionIds: ['missing'],
     });
+    expect((result.structuredContent as { transactions: unknown[] }).transactions).toEqual([]);
+    expect(result.content[0]!.text).toMatch(/No transactions/);
+  });
+
+  it('normalizes upstream transactionsByIDs not-found error to empty result', async () => {
+    const client = clientGraphQLErrors(['Transaction ID="missing" not found']);
+    const result = await run(getTransactionsTool, client, authContext([B1]), {
+      transactionIds: ['missing'],
+    });
+    expect(result.isError).toBeUndefined();
     expect((result.structuredContent as { transactions: unknown[] }).transactions).toEqual([]);
     expect(result.content[0]!.text).toMatch(/No transactions/);
   });
