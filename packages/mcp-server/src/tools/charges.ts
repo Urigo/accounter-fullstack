@@ -16,9 +16,9 @@ import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 export const SEARCH_CHARGES_TOOL_NAME = 'accounter_search_charges';
 
 /** Hard caps to keep responses bounded (spec §9.1, §9.3). */
-export const MAX_PAGE_SIZE = 50;
-export const DEFAULT_PAGE_SIZE = 25;
-export const MAX_DATE_RANGE_DAYS = 366;
+export const MAX_PAGE_SIZE = 500;
+export const DEFAULT_PAGE_SIZE = 100;
+export const MAX_DATE_RANGE_DAYS = 1096; // ~3 years
 
 const searchChargesInput = z.object({
   businessIds: businessIdsInput,

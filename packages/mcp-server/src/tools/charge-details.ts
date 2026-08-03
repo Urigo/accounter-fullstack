@@ -40,12 +40,12 @@ import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 export const GET_CHARGES_TOOL_NAME = 'accounter_get_charges';
 
 /** Lower than the flat detail tools because each charge nests its children. */
-export const MAX_CHARGE_IDS = 25;
+export const MAX_CHARGE_IDS = 300;
 
-const CHARGE_FILTER_IDS_CAP = 100;
+const CHARGE_FILTER_IDS_CAP = 300;
 const CHARGE_FILTER_TAGS_CAP = 50;
 const CHARGE_FILTER_TEXT_MAX = 200;
-const MAX_FILTERED_CHARGES = 100;
+const MAX_FILTERED_CHARGES = 300;
 
 function optionalNonEmptyStringArray(max: number) {
   return z.preprocess(

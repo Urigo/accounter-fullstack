@@ -26,7 +26,7 @@ import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 export const GET_TRANSACTIONS_TOOL_NAME = 'accounter_get_transactions';
 
-const TRANSACTION_FILTER_IDS_CAP = 100;
+const TRANSACTION_FILTER_IDS_CAP = 300;
 
 function optionalNonEmptyStringArray(max: number) {
   return z.preprocess(
