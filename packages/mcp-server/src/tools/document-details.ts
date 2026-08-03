@@ -24,7 +24,7 @@ import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 export const GET_DOCUMENTS_TOOL_NAME = 'accounter_get_documents';
 
-const DOCUMENT_FILTER_IDS_CAP = 100;
+const DOCUMENT_FILTER_IDS_CAP = 300;
 
 const DOCUMENT_TYPES = [
   'INVOICE',

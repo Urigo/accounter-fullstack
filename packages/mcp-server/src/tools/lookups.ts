@@ -16,7 +16,7 @@ export const LIST_TAGS_TOOL_NAME = 'accounter_list_tags';
 export const LIST_TAX_CATEGORIES_TOOL_NAME = 'accounter_list_tax_categories';
 
 /** Hard cap on returned rows (spec §9.3). */
-export const MAX_LOOKUP_RESULTS = 500;
+export const MAX_LOOKUP_RESULTS = 1000;
 
 const nameContains = z
   .string()

@@ -17,8 +17,8 @@ import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 export const BALANCE_REPORT_TOOL_NAME = 'accounter_balance_report';
 
 /** Bounds keeping the payload deterministic and small (spec §9.1, §9.3). */
-export const MAX_REPORT_DATE_RANGE_DAYS = 366;
-export const MAX_REPORT_ROWS = 500;
+export const MAX_REPORT_DATE_RANGE_DAYS = 1096; // ~3 years
+export const MAX_REPORT_ROWS = 1000;
 
 const balanceReportInput = z.object({
   businessId: z
