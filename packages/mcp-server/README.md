@@ -22,12 +22,12 @@ Accounter GraphQL server; a curated registry of nine read-only tools
 (`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
 `accounter_get_transactions`, `accounter_get_documents`, `accounter_list_tags`,
 `accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
-by strict input validation, a per-tool authorization policy,
-and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
-client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
-per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
-histogram, auth-failure counters) exposed at `GET /metrics`; and OpenTelemetry tracing exported to
-Grafana Tempo (opt-in), correlated with the backend via `traceparent` and `X-Correlation-Id`.
+by strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
+upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
+propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
+operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
+at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
+backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) is **not** implemented — see
 [Known limitations & phase 2](#known-limitations--phase-2-write-scope).
@@ -56,8 +56,9 @@ a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LI
 
 Every business-scoped tool follows one convention, so the model learns it once:
 
-- **Discover, then scope.** `accounter_list_business_memberships` returns `{ businessId, name, role }`.
-  Pass those ids back as `businessIds` (or, for the balance report, the singular required `businessId`).
+- **Discover, then scope.** `accounter_list_business_memberships` returns
+  `{ businessId, name, role }`. Pass those ids back as `businessIds` (or, for the balance report,
+  the singular required `businessId`).
 - **`businessIds` is optional and means "narrow".** Omitting it covers every business the caller
   belongs to. Any id outside the caller's memberships is **rejected**, never silently dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
@@ -72,8 +73,8 @@ scope, because it _is_ the scope.
 
 - **`accounter_list_business_memberships`** — list the businesses the caller is a member of, with
   their role in each. Sorted by name (fixed-locale, case-insensitive) then id, with unnamed
-  businesses last. Pure: memberships are already on the auth context, so it makes no upstream call. A
-  caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
+  businesses last. Pure: memberships are already on the auth context, so it makes no upstream call.
+  A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
