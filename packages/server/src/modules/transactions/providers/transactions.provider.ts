@@ -7,6 +7,8 @@ import type {
   IGetSimilarTransactionsParams,
   IGetSimilarTransactionsQuery,
   IGetTransactionsByChargeIdsQuery,
+  IGetTransactionsByExtendedFiltersParams,
+  IGetTransactionsByExtendedFiltersQuery,
   IGetTransactionsByFiltersParams,
   IGetTransactionsByFiltersQuery,
   IGetTransactionsByIdsQuery,
@@ -44,6 +46,52 @@ const getTransactionsByFilters = sql<IGetTransactionsByFiltersQuery>`
     AND ($isBusinessIDs = 0 OR business_id IN $$businessIDs)
     AND ($isOwnerIDs = 0 OR owner_id IN $$ownerIDs)
   ORDER BY event_date DESC;
+`;
+
+const getTransactionsByExtendedFilters = sql<IGetTransactionsByExtendedFiltersQuery>`
+  SELECT t.*
+  FROM accounter_schema.transactions t
+  LEFT JOIN accounter_schema.financial_entities fe ON fe.id = t.business_id
+  WHERE
+    ($isIDs = 0 OR t.id IN $$IDs)
+    AND ($isChargeIDs = 0 OR t.charge_id IN $$chargeIDs)
+    AND ($isOwnerIDs = 0 OR t.owner_id IN $$ownerIDs)
+    AND ($isCounterpartyIDs = 0 OR t.business_id IN $$counterpartyIDs)
+    AND ($fromEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromEventDate ::DATE))
+    AND ($toEventDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toEventDate ::DATE))
+    AND ($fromDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromDebitDate ::DATE))
+    AND ($toDebitDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toDebitDate ::DATE))
+    -- "any date" matches when a single date (event OR debit) falls within the requested range,
+    -- so a transaction whose event date precedes the range and debit date follows it is excluded.
+    AND (
+      ($fromAnyDate ::TEXT IS NULL AND $toAnyDate ::TEXT IS NULL)
+      OR (
+        t.event_date IS NOT NULL
+        AND ($fromAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+        AND ($toAnyDate ::TEXT IS NULL OR t.event_date::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+      )
+      OR (
+        COALESCE(t.debit_date_override, t.debit_date) IS NOT NULL
+        AND ($fromAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE >= date_trunc('day', $fromAnyDate ::DATE))
+        AND ($toAnyDate ::TEXT IS NULL OR COALESCE(t.debit_date_override, t.debit_date)::TEXT::DATE <= date_trunc('day', $toAnyDate ::DATE))
+      )
+    )
+    AND ($withMissingCounterparty = FALSE OR t.business_id IS NULL)
+    AND ($withMissingInfo = FALSE OR t.business_id IS NULL OR (t.debit_date IS NULL AND t.debit_date_override IS NULL))
+    AND (
+      $freeText ::TEXT IS NULL
+      OR t.source_description ILIKE '%' || $freeText || '%'
+      OR t.source_reference ILIKE '%' || $freeText || '%'
+      OR t.counter_account ILIKE '%' || $freeText || '%'
+      OR t.origin_key ILIKE '%' || $freeText || '%'
+      OR fe.name ILIKE '%' || $freeText || '%'
+      -- match transaction amount. $freeTextNumeric has thousands separators stripped
+      -- so both "1,234.56" and "1234.56" match the plain value stored in the DB.
+      OR ($freeTextNumeric ::TEXT IS NOT NULL
+          AND (t.amount::TEXT ILIKE '%' || $freeTextNumeric || '%'
+               OR ABS(t.amount)::TEXT ILIKE '%' || $freeTextNumeric || '%'))
+    )
+  ORDER BY t.event_date DESC;
 `;
 
 const getSimilarTransactions = sql<IGetSimilarTransactionsQuery>`
@@ -110,6 +158,35 @@ type IGetAdjustedTransactionsByFiltersParams = Optional<
   toEventDate?: TimelessDateString | null;
   fromDebitDate?: TimelessDateString | null;
   toDebitDate?: TimelessDateString | null;
+};
+
+type IGetAdjustedTransactionsByExtendedFiltersParams = Optional<
+  Omit<
+    IGetTransactionsByExtendedFiltersParams,
+    | 'isIDs'
+    | 'isChargeIDs'
+    | 'isOwnerIDs'
+    | 'isCounterpartyIDs'
+    | 'fromEventDate'
+    | 'toEventDate'
+    | 'fromDebitDate'
+    | 'toDebitDate'
+    | 'fromAnyDate'
+    | 'toAnyDate'
+    | 'freeTextNumeric'
+    | 'withMissingCounterparty'
+    | 'withMissingInfo'
+  >,
+  'IDs' | 'chargeIDs' | 'ownerIDs' | 'counterpartyIDs' | 'freeText'
+> & {
+  fromEventDate?: TimelessDateString | null;
+  toEventDate?: TimelessDateString | null;
+  fromDebitDate?: TimelessDateString | null;
+  toDebitDate?: TimelessDateString | null;
+  fromAnyDate?: TimelessDateString | null;
+  toAnyDate?: TimelessDateString | null;
+  withMissingCounterparty?: boolean | null;
+  withMissingInfo?: boolean | null;
 };
 
 @Injectable({
@@ -185,6 +262,42 @@ export class TransactionsProvider {
       ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
     };
     return getTransactionsByFilters.run(fullParams, this.db);
+  }
+
+  public getTransactionsByExtendedFilters(params: IGetAdjustedTransactionsByExtendedFiltersParams) {
+    const isIDs = !!params?.IDs?.length;
+    const isChargeIDs = !!params?.chargeIDs?.length;
+    const isOwnerIDs = !!params?.ownerIDs?.length;
+    const isCounterpartyIDs = !!params?.counterpartyIDs?.length;
+
+    const fullParams: IGetTransactionsByExtendedFiltersParams = {
+      fromEventDate: null,
+      toEventDate: null,
+      fromDebitDate: null,
+      toDebitDate: null,
+      fromAnyDate: null,
+      toAnyDate: null,
+      ...params,
+      isIDs: isIDs ? 1 : 0,
+      isChargeIDs: isChargeIDs ? 1 : 0,
+      isOwnerIDs: isOwnerIDs ? 1 : 0,
+      isCounterpartyIDs: isCounterpartyIDs ? 1 : 0,
+      IDs: isIDs ? params.IDs! : [null],
+      chargeIDs: isChargeIDs ? params.chargeIDs! : [null],
+      ownerIDs: isOwnerIDs ? params.ownerIDs! : [null],
+      counterpartyIDs: isCounterpartyIDs ? params.counterpartyIDs! : [null],
+      withMissingCounterparty: params.withMissingCounterparty ?? false,
+      withMissingInfo: params.withMissingInfo ?? false,
+      freeText: params.freeText ?? null,
+      // strip thousands separators so amount searches match the plain value stored in the DB
+      freeTextNumeric: params.freeText ? params.freeText.replaceAll(',', '') : null,
+    };
+    return getTransactionsByExtendedFilters.run(fullParams, this.db).then(res =>
+      res.map(t => {
+        this.transactionByIdLoader.prime(t.id, t);
+        return t;
+      }),
+    );
   }
 
   public async getSimilarTransactions(params: IGetSimilarTransactionsParams) {
