@@ -380,7 +380,13 @@ export class DocumentsProvider {
   public getDocumentsByExtendedFilters(params: IGetAdjustedDocumentsByExtendedFiltersParams) {
     // pull out the wrapper-only fields so only pgtyped-recognized params are
     // forwarded to the query below. `missingInfo` is applied in the resolver.
-    const { type, missingCounterparty, missingInfo: _missingInfo, unmatched, ...sqlParams } = params;
+    const {
+      type,
+      missingCounterparty,
+      missingInfo: _missingInfo,
+      unmatched,
+      ...sqlParams
+    } = params;
 
     const isIDs = !!sqlParams.IDs?.filter(Boolean).length;
     const isBusinessIDs = !!sqlParams.businessIDs?.filter(Boolean).length;
