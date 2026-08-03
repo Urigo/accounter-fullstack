@@ -163,7 +163,7 @@ describe('mcpHttpHandler', () => {
     expect(res.writeHead).toHaveBeenCalledWith(200, { 'Content-Type': 'application/json' });
     const body = JSON.parse(res.end.mock.calls[0][0] as string);
     const names = (body.result.tools as Array<{ name: string }>).map(t => t.name);
-    expect(names[0]).toBe('accounter_list_businesses');
+    expect(names[0]).toBe('accounter_list_business_memberships');
     expect(names).not.toContain(SMOKE_TOOL_NAME);
   });
 
@@ -280,7 +280,7 @@ describe('dispatchMcpRequest — registry integration', () => {
     )) as JsonRpcSuccess;
     const names = (response.result as { tools: Array<{ name: string }> }).tools.map(t => t.name);
     // Discovery leads: tools/list ordering steers how the model scopes calls.
-    expect(names[0]).toBe('accounter_list_businesses');
+    expect(names[0]).toBe('accounter_list_business_memberships');
     expect(names).toContain('accounter_search_charges');
     expect(names).not.toContain(SMOKE_TOOL_NAME);
   });

@@ -2,10 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { listBusinessesTool } from '../businesses.js';
+import { listBusinessMembershipsTool } from '../businesses.js';
 import { searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
-import { listTagsTool, listTaxCategoriesTool } from '../lookups.js';
+import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 import { balanceReportTool } from '../reports.js';
 import {
   SCOPE_DESCRIPTION_SUFFIX,
@@ -50,10 +50,16 @@ const BUSINESS_SCOPED_TOOLS = [
   searchChargesTool,
   listTagsTool,
   listTaxCategoriesTool,
+  listBusinessesTool,
   balanceReportTool,
 ];
 
-const MULTI_BUSINESS_TOOLS = [searchChargesTool, listTagsTool, listTaxCategoriesTool];
+const MULTI_BUSINESS_TOOLS = [
+  searchChargesTool,
+  listTagsTool,
+  listTaxCategoriesTool,
+  listBusinessesTool,
+];
 
 describe('uniform business-scope input', () => {
   it.each(MULTI_BUSINESS_TOOLS.map(tool => [tool.name, tool] as const))(
@@ -73,7 +79,7 @@ describe('uniform business-scope input', () => {
   it.each(BUSINESS_SCOPED_TOOLS.map(tool => [tool.name, tool] as const))(
     '%s points at the discovery tool',
     (_name, tool) => {
-      expect(tool.description).toContain('accounter_list_businesses');
+      expect(tool.description).toContain('accounter_list_business_memberships');
     },
   );
 
@@ -124,6 +130,11 @@ describe('echoed effective scope', () => {
       },
       'taxCategories',
     ],
+    [
+      listBusinessesTool,
+      { allBusinesses: { nodes: [{ id: 'b1', name: 'c', ownerId: 'b1', isActive: true }] } },
+      'businesses',
+    ],
   ] as const;
 
   it.each(FIXTURES.map(([tool, data, key]) => [tool.name, tool, data, key] as const))(
@@ -167,9 +178,9 @@ describe('echoed effective scope', () => {
   });
 
   // Discovery is the scope; echoing one would be circular.
-  it('accounter_list_businesses does not echo a scope', async () => {
+  it('accounter_list_business_memberships does not echo a scope', async () => {
     const result = await executeRegisteredTool({
-      tool: listBusinessesTool,
+      tool: listBusinessMembershipsTool,
       rawArgs: {},
       auth: authContext(['b1']),
       correlationId: 'c',

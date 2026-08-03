@@ -63,8 +63,8 @@ export const smokeTool: ToolDescriptor = {
  *
  *  - It is an internal diagnostic that echoes a string. Advertising it spends
  *    the first slot in `tools/list` (ordering is a prompt-engineering lever) on
- *    a non-capability, ahead of `accounter_list_businesses`, which is the
- *    intended entry point for business scoping.
+ *    a non-capability, ahead of `accounter_list_business_memberships`, which is
+ *    the intended entry point for business scoping.
  *  - It short-circuits dispatch *before* the curated pipeline — no policy
  *    evaluation, rate limiting, or metrics. Harmless for an echo, but not
  *    something to put in front of the model as if it were a normal tool.

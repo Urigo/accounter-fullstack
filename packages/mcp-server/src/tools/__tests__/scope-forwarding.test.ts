@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { BUSINESS_SCOPE_HEADER, UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { LIST_BUSINESSES_TOOL_NAME } from '../businesses.js';
+import { LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME } from '../businesses.js';
 import { executeRegisteredTool } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
 
@@ -51,6 +51,7 @@ function dataFor(query: string): unknown {
   if (query.includes('documentsByIds')) return { documentsByIds: [] };
   if (query.includes('allTags')) return { allTags: [] };
   if (query.includes('taxCategories')) return { taxCategories: [] };
+  if (query.includes('allBusinesses')) return { allBusinesses: { nodes: [] } };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
   return {};
 }
@@ -105,7 +106,7 @@ describe('registry-wide business-scope forwarding', () => {
       expect(result.isError, `${name} should succeed`).toBeUndefined();
       const structured = result.structuredContent as Record<string, unknown>;
 
-      if (name === LIST_BUSINESSES_TOOL_NAME) {
+      if (name === LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME) {
         // Discovery is pure and *is* the scope — no upstream call, no echo.
         expect(headersSeen).toHaveLength(0);
         expect(structured).not.toHaveProperty('scope');

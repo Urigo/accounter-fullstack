@@ -69,8 +69,8 @@ export const envSchema = zod
     // Tool allowlist: an empty value imposes no restriction (every registered
     // tool is exposed); a non-empty value restricts `tools/list` and `tools/call`
     // to exactly the named tools. Enforced in `mcp/handler.ts` via
-    // `tools/allowlist.ts`. When narrowing, keep `accounter_list_businesses` in
-    // the set — it is the discovery entry point for business scoping.
+    // `tools/allowlist.ts`. When narrowing, keep `accounter_list_business_memberships`
+    // in the set — it is the discovery entry point for business scoping.
     MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
     AUTH0_JWKS_URL: emptyStringAsUndefined(
       zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),

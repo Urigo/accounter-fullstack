@@ -18,10 +18,11 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of eight read-only tools (`accounter_list_businesses`,
-`accounter_search_charges`, `accounter_get_charges`, `accounter_get_transactions`,
-`accounter_get_documents`, `accounter_list_tags`, `accounter_list_tax_categories`,
-`accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
+Accounter GraphQL server; a curated registry of nine read-only tools
+(`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
+`accounter_get_transactions`, `accounter_get_documents`, `accounter_list_tags`,
+`accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
+by strict input validation, a per-tool authorization policy,
 and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
 client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
 per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
@@ -55,8 +56,8 @@ a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LI
 
 Every business-scoped tool follows one convention, so the model learns it once:
 
-- **Discover, then scope.** `accounter_list_businesses` returns `{ businessId, name, role }`. Pass
-  those ids back as `businessIds` (or, for the balance report, the singular required `businessId`).
+- **Discover, then scope.** `accounter_list_business_memberships` returns `{ businessId, name, role }`.
+  Pass those ids back as `businessIds` (or, for the balance report, the singular required `businessId`).
 - **`businessIds` is optional and means "narrow".** Omitting it covers every business the caller
   belongs to. Any id outside the caller's memberships is **rejected**, never silently dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
@@ -66,13 +67,14 @@ Every business-scoped tool follows one convention, so the model learns it once:
 - **The response echoes `scope.businessIds`.** A widened scope is visible in the payload instead of
   being inferred, and the charges summary text names the business count when it is greater than one.
 
-`accounter_list_businesses` is the one exception: it takes no parameters and echoes no scope,
-because it _is_ the scope.
+`accounter_list_business_memberships` is the one exception: it takes no parameters and echoes no
+scope, because it _is_ the scope.
 
-- **`accounter_list_businesses`** — list the businesses the caller can access, with their role in
-  each. Sorted by name (fixed-locale, case-insensitive) then id, with unnamed businesses last. Pure:
-  memberships are already on the auth context, so it makes no upstream call. A caller with no
-  memberships gets an empty list, not an error.
+- **`accounter_list_business_memberships`** — list the businesses the caller is a member of, with
+  their role in each. Sorted by name (fixed-locale, case-insensitive) then id, with unnamed
+  businesses last. Pure: memberships are already on the auth context, so it makes no upstream call. A
+  caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
+  point; to browse the full business directory use `accounter_list_businesses`.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
   days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
@@ -99,6 +101,10 @@ because it _is_ the scope.
 - **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
   bookkeeping sort code, active flag), optionally filtered by name, active status, or `businessIds`.
   Same deterministic sort + cap.
+- **`accounter_list_businesses`** — list every business known to the system (id, name, `ownerId`,
+  active flag) — the full directory, not just the caller's memberships — optionally filtered by name,
+  active status, or `businessIds`. Same deterministic sort + cap. Use
+  `accounter_list_business_memberships` instead for just the caller's own memberships and roles.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 366 days), selected by the required singular
   `businessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
@@ -319,7 +325,7 @@ curl -s http://localhost:3100/.well-known/oauth-protected-resource
 curl -si -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | grep -i -E 'HTTP/|www-authenticate'
 
-# 4. Authenticated tool list → the curated tools, accounter_list_businesses first
+# 4. Authenticated tool list → the curated tools, accounter_list_business_memberships first
 #    (accounter_smoke_ping is dispatchable but intentionally not listed)
 TOKEN=<a valid Auth0 access token for AUTH0_AUDIENCE>
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
@@ -329,7 +335,7 @@ curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
 # 5. Discover the businesses you can read → [{ businessId, name, role }]
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_businesses","arguments":{}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_business_memberships","arguments":{}}}'
 
 # 6. Authenticated tool call, scoped to one of those ids.
 #    The response echoes scope.businessIds and every row carries ownerId.

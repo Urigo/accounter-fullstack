@@ -27,7 +27,7 @@ const balanceReportInput = z.object({
     .describe(
       'The business (owner) id to report on — must be one of the businesses you belong to. ' +
         'Unlike the list tools this report covers exactly one business, so the id is required. ' +
-        'Use accounter_list_businesses to discover ids.',
+        'Use accounter_list_business_memberships to discover ids.',
     ),
   fromDate: TIMELESS_DATE.describe('Start of the reporting period (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.describe('End of the reporting period (YYYY-MM-DD).'),

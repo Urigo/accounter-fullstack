@@ -3,7 +3,7 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
-import { listTagsTool, listTaxCategoriesTool } from '../lookups.js';
+import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 
 function authContext(businessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
@@ -34,7 +34,7 @@ function clientReturning(data: unknown, capture?: (init: RequestInit) => void) {
 }
 
 const runTool = (
-  tool: typeof listTagsTool | typeof listTaxCategoriesTool,
+  tool: typeof listTagsTool | typeof listTaxCategoriesTool | typeof listBusinessesTool,
   client: UpstreamGraphQLClient,
   auth: McpAuthContext,
   rawArgs: unknown,
@@ -141,6 +141,68 @@ describe('listTaxCategoriesTool', () => {
   });
 });
 
+describe('listBusinessesTool', () => {
+  const client = () =>
+    clientReturning({
+      allBusinesses: {
+        nodes: [
+          { id: '3', name: 'Zebra', ownerId: 'o1', isActive: true },
+          { id: '1', name: 'apple', ownerId: 'o1', isActive: false },
+          { id: '2', name: 'Banana', ownerId: 'o1', isActive: true },
+        ],
+      },
+    });
+
+  it('returns businesses sorted by name (case-insensitive), then id', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {});
+    const names = (
+      result.structuredContent as { businesses: Array<{ name: string }> }
+    ).businesses.map(b => b.name);
+    expect(names).toEqual(['apple', 'Banana', 'Zebra']);
+  });
+
+  it('filters by nameContains (case-insensitive)', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {
+      nameContains: 'an',
+    });
+    const structured = result.structuredContent as {
+      businesses: Array<{ name: string }>;
+      totalCount: number;
+    };
+    expect(structured.businesses.map(b => b.name)).toEqual(['Banana']);
+    expect(structured.totalCount).toBe(1);
+  });
+
+  it('filters to active businesses when activeOnly is set', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {
+      activeOnly: true,
+    });
+    const rows = (result.structuredContent as { businesses: Array<{ name: string }> }).businesses;
+    expect(rows.map(b => b.name)).toEqual(['Banana', 'Zebra']);
+  });
+
+  it('enforces business scope (denies a caller with no memberships)', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext([]), {});
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
+  });
+
+  it('tolerates a null allBusinesses payload', async () => {
+    const result = await runTool(
+      listBusinessesTool,
+      clientReturning({ allBusinesses: null }),
+      authContext(['b1']),
+      {},
+    );
+    const structured = result.structuredContent as {
+      businesses: unknown[];
+      totalCount: number;
+    };
+    expect(structured.businesses).toEqual([]);
+    expect(structured.totalCount).toBe(0);
+  });
+});
+
 describe('lookups — business scoping', () => {
   const TAGS = { allTags: [{ id: '1', name: 'a', namePath: ['a'], ownerId: 'b2' }] };
   const TAX_CATEGORIES = {
@@ -148,10 +210,14 @@ describe('lookups — business scoping', () => {
       { id: '1', name: 'a', ownerId: 'b2', irsCode: null, isActive: true, sortCode: null },
     ],
   };
+  const BUSINESSES = {
+    allBusinesses: { nodes: [{ id: '1', name: 'a', ownerId: 'b2', isActive: true }] },
+  };
 
   it.each([
     ['accounter_list_tags', listTagsTool, TAGS, 'tags'],
     ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES, 'taxCategories'],
+    ['accounter_list_businesses', listBusinessesTool, BUSINESSES, 'businesses'],
   ] as const)('%s narrows to a requested subset and reflects it in scope', async (
     _name,
     tool,
@@ -181,6 +247,7 @@ describe('lookups — business scoping', () => {
   it.each([
     ['accounter_list_tags', listTagsTool, TAGS],
     ['accounter_list_tax_categories', listTaxCategoriesTool, TAX_CATEGORIES],
+    ['accounter_list_businesses', listBusinessesTool, BUSINESSES],
   ] as const)('%s denies ids outside the caller memberships', async (_name, tool, data) => {
     const result = await runTool(tool, clientReturning(data), authContext(['b1']), {
       businessIds: ['b9'],

@@ -3,20 +3,25 @@ import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
 
 /**
- * Tool 0: business discovery (spec §8.2).
+ * Tool 0: business-membership discovery (spec §8.2).
  *
  * The connector is stateless — no `Mcp-Session-Id`, no session store, auth
  * re-derived per request — so there is no "active business" to hang scope on.
  * This tool is the entry point instead: the model enumerates the businesses the
- * caller can read, then passes the returned ids back as `businessIds` to the
- * business-scoped tools.
+ * caller is a *member of*, then passes the returned ids back as `businessIds` to
+ * the business-scoped tools.
+ *
+ * This lists only the caller's memberships (the businesses they can act within),
+ * not the full business directory. To browse every business known to the system
+ * — e.g. counterparties for categorizing charges — use `accounter_list_businesses`
+ * in `lookups.ts`.
  *
  * The handler is **pure**: memberships are already resolved on the auth context
  * by `resolveAuthContext` (via the upstream `myMemberships` query), so listing
  * them costs no upstream call.
  */
 
-export const LIST_BUSINESSES_TOOL_NAME = 'accounter_list_businesses';
+export const LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME = 'accounter_list_business_memberships';
 
 const listBusinessesInput = z.object({});
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
@@ -83,10 +88,10 @@ function handler(_input: ListBusinessesInput, context: ToolExecutionContext): To
   });
 }
 
-export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
-  name: LIST_BUSINESSES_TOOL_NAME,
+export const listBusinessMembershipsTool: ToolDefinition<typeof listBusinessesInput> = {
+  name: LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME,
   description:
-    'List the businesses you have access to, with your role in each. Call this first when you may have access to more than one business, then pass the returned `businessId` values as `businessIds` to the other tools. Read-only; takes no parameters.',
+    'List the businesses you are a member of, with your role in each. This is your access/scope discovery entry point — call it first when you may belong to more than one business, then pass the returned `businessId` values as `businessIds` to the other tools. To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
   inputSchema: listBusinessesInput,
   policy: {
     // Deliberately false: a caller with zero memberships should get an empty

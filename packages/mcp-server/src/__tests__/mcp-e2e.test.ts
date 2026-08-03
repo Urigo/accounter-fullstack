@@ -248,6 +248,7 @@ describe('authenticated tool invocation', () => {
     ).result.tools.map(t => t.name);
     expect(tools).toEqual(
       expect.arrayContaining([
+        'accounter_list_business_memberships',
         'accounter_list_businesses',
         'accounter_search_charges',
         'accounter_list_tags',
@@ -256,7 +257,7 @@ describe('authenticated tool invocation', () => {
       ]),
     );
     // Discovery leads the list, and the internal smoke tool is not advertised.
-    expect(tools[0]).toBe('accounter_list_businesses');
+    expect(tools[0]).toBe('accounter_list_business_memberships');
     expect(tools).not.toContain('accounter_smoke_ping');
   });
 
@@ -295,7 +296,7 @@ describe('authenticated tool invocation', () => {
 
   it('lists the caller businesses without any upstream call', async () => {
     forwardedScopes.length = 0;
-    const result = await callTool('accounter_list_businesses', {}, 'owner-token');
+    const result = await callTool('accounter_list_business_memberships', {}, 'owner-token');
 
     const { businesses } = result.structuredContent as {
       businesses: Array<{ businessId: string; name: string | null; role: string }>;
