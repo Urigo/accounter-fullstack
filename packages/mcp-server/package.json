@@ -47,12 +47,12 @@
     "@opentelemetry/sdk-node": "0.221.0",
     "@opentelemetry/semantic-conventions": "1.43.0",
     "dotenv": "17.4.2",
-    "jose": "6.2.7",
+    "jose": "6.2.8",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/node": "25.9.5",
-    "tsx": "4.23.2",
+    "tsx": "4.23.5",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   }
