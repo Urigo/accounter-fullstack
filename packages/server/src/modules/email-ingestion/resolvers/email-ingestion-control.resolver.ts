@@ -80,10 +80,13 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
         expiresAt: grant.expiresAt.toISOString(),
       },
       // null signals "no business recognized" → gateway applies default
-      // treatment. We return config only for a recognized external business;
-      // self-issued (and tenant-matched) emails are dropped/quarantined at ingest,
-      // so we return no treatment config either, sparing the gateway needless
-      // document work (link-fetch / body→PDF) for a document that will be skipped.
+      // treatment. We return config only for a recognized external business.
+      // When none is recognized the email is not inserted at ingest — a
+      // self-issued/tenant-matched email is QUARANTINED (recorded and
+      // reprocessable, never silently dropped; see
+      // EmailIngestionIngestProvider.performIngest) — so we return no treatment
+      // config either, sparing the gateway needless document work (link-fetch /
+      // body→PDF) for a document that will not be inserted.
       businessEmailConfig: externalBusinessId
         ? {
             businessId: externalBusinessId,
