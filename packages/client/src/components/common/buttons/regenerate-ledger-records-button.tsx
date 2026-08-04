@@ -18,9 +18,7 @@ export function RegenerateLedgerRecordsButton({
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
 
   function onRegenerate(): void {
-    regenerateLedgerRecords({
-      chargeId,
-    }).then(onChange);
+    regenerateLedgerRecords([chargeId]).then(onChange);
   }
 
   return (
