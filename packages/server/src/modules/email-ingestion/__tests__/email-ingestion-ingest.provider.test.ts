@@ -224,14 +224,29 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
     expect(validateAndConsumeGrant).toHaveBeenCalledWith(binding, expect.anything());
   });
 
-  it('does not consume the grant when document preparation fails, leaving the email retryable', async () => {
-    // The regression this guards: consuming the grant before the fallible, non-transactional
-    // document prep (Cloudinary upload / OCR) burned the grant on any prep failure — the email
-    // could then never be retried (GRANT_INVALID) and nothing was recorded. With prep moved
-    // ahead of consumption, a prep failure throws while the grant is still intact.
+  it('quarantines with UPLOAD_FAILED (not a raw throw) when document preparation fails', async () => {
+    // The regression this guards: a Cloudinary upload failure during document prep used to
+    // throw raw. Combined with consuming the grant up front, that stranded an accepted email
+    // with no durable record. Now prep runs before the grant is consumed, and a prep failure
+    // is turned into an UPLOAD_FAILED quarantine — the grant is consumed atomically with the
+    // quarantine write, so the failure is recorded and reprocessable rather than invisible.
+    const idemRow = {
+      id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, audit_id: 'audit-up', created_at: NOW,
+    };
+    const dedupRow = {
+      id: 'dedup-row', owner_id: TENANT_ID, fingerprint: 'fp',
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, correlation_id: CORR_ID, created_at: NOW,
+    };
     const { provider, validateAndConsumeGrant, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
       VALID_GRANT_WITH_BUSINESS,
-      [{ rows: [], rowCount: 0 }], // early idempotency miss
+      [
+        { rows: [], rowCount: 0 }, // early idempotency miss
+        { rows: [], rowCount: 0 }, // prepareDocuments: checkDocumentByHash → new candidate
+        { rows: [{ id: 'q-id' }], rowCount: 1 }, // quarantine insert
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
     );
     uploadInvoiceToCloudinary.mockRejectedValueOnce(new Error('cloudinary down'));
 
@@ -242,11 +257,37 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       ],
     };
 
-    await expect(provider.performIngest(inputWithContent, ocrInjector)).rejects.toThrow('cloudinary down');
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
 
-    // The grant was never consumed, and nothing durable was written — so a retry can succeed.
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.QUARANTINED,
+      reasonCode: IngestReasonCode.UPLOAD_FAILED,
+    });
+    expect(uploadInvoiceToCloudinary).toHaveBeenCalled();
+    // Grant consumed atomically with the quarantine write, and the failure is recorded.
+    expect(validateAndConsumeGrant).toHaveBeenCalledWith(
+      { jti: JTI, tenantId: TENANT_ID, messageId: MSG_ID, rawMessageHash: MSG_HASH },
+      expect.anything(),
+    );
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine'))).toBe(true);
+    // No charge/document rows written for a failed-preparation quarantine.
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+  });
+
+  it('rethrows an unexpected (non-preparation) error without consuming the grant', async () => {
+    // Errors that are not DocumentPreparationError (e.g. a DB failure) must not be masked as a
+    // quarantine — they surface raw, leaving the grant unconsumed so the ingest can be retried.
+    const { provider, validateAndConsumeGrant } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+    ]);
+    // Fail the prepareDocuments hash-dedup read (runs before the upload try/catch), which is not
+    // wrapped in DocumentPreparationError.
+    const err = new Error('db connection lost');
+    vi.spyOn(provider as unknown as { prepareDocuments: () => Promise<unknown> }, 'prepareDocuments').mockRejectedValueOnce(err);
+
+    await expect(provider.performIngest(BASE_INPUT, ocrInjector)).rejects.toThrow('db connection lost');
     expect(validateAndConsumeGrant).not.toHaveBeenCalled();
-    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
   });
 });
 

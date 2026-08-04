@@ -30,6 +30,20 @@ import { EmailIngestionControlProvider } from './email-ingestion-control.provide
 /** A single OCR'd document, ready to insert (cf. DocumentsProvider.insertDocuments columns). */
 type PreparedDocument = IInsertDocumentsParams['documents'][number];
 
+/**
+ * Thrown by {@link EmailIngestionIngestProvider.prepareDocuments} when a document
+ * cannot be uploaded/prepared (e.g. the Cloudinary upload fails). Distinguishes an
+ * expected, recoverable preparation failure — which the ingest flow turns into an
+ * `UPLOAD_FAILED` quarantine (recorded, reprocessable) — from a truly unexpected
+ * error, which is rethrown as-is. The original cause is carried on `.cause`.
+ */
+export class DocumentPreparationError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options as ErrorOptions | undefined);
+    this.name = 'DocumentPreparationError';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // SQL queries
 // ---------------------------------------------------------------------------
@@ -307,11 +321,47 @@ export class EmailIngestionIngestProvider {
     // failure throws while the grant is still valid (leaving the email retryable).
     // The dedup short-circuits re-deliveries (their documents already exist) so
     // they don't re-upload or re-OCR.
-    const preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments, {
-      injector,
-      businessId,
-      messageId,
-    });
+    let preparedDocuments: PreparedDocument[];
+    try {
+      preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments, {
+        injector,
+        businessId,
+        messageId,
+      });
+    } catch (err) {
+      if (!(err instanceof DocumentPreparationError)) {
+        // Unexpected (e.g. a DB error during the dedup read). Leave the grant
+        // unconsumed and let it surface — nothing is recorded, and a retry can run.
+        throw err;
+      }
+      // Expected, recoverable failure: a document couldn't be uploaded/prepared
+      // (e.g. Cloudinary was down). Consume the grant and QUARANTINE the email in a
+      // single transaction so the failure is recorded and reprocessable via the
+      // quarantine workflow, instead of throwing raw and leaving the accepted email
+      // with no durable trace.
+      console.error(
+        `email ingest: document preparation failed (correlationId: ${corrId}, messageId: ${messageId}):`,
+        err.cause ?? err,
+      );
+      return withTenantContext(this.dbProvider.pool, tenantId, async client => {
+        const consumed = await this.controlProvider.validateAndConsumeGrant(
+          { jti: grantJti, tenantId, messageId, rawMessageHash },
+          client,
+        );
+        if (!consumed.valid) {
+          return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
+        }
+        return this.recordQuarantine(client, {
+          reasonCode: IngestReasonCode.UPLOAD_FAILED,
+          tenantId,
+          messageId,
+          rawMessageHash,
+          idempotencyKey,
+          fingerprint,
+          correlationId: corrId,
+        });
+      });
+    }
 
     // 2–5. All tenant-bound work runs under the grant tenant's RLS context, in a
     // single transaction: consume the grant, then check idempotency/dedup and
@@ -359,34 +409,15 @@ export class EmailIngestionIngestProvider {
 
       // 4. Quarantine if no documents were extracted.
       if (extractedDocuments.length === 0) {
-        await insertQuarantineForIngest.run(
-          {
-            reasonCode: IngestReasonCode.NO_DOCUMENTS,
-            tenantCandidate: tenantId,
-            messageId,
-            rawMessageHash,
-            correlationId: corrId,
-          },
-          client,
-        );
-
-        const auditId = randomUUID();
-        await this.persistIdempotencyAndDedup({
-          idempotencyKey,
-          tenantId,
-          fingerprint,
-          outcome: IngestOutcome.QUARANTINED,
-          ingestId: null,
-          auditId,
-          correlationId: corrId,
-          client,
-        });
-
-        return {
-          outcome: IngestOutcome.QUARANTINED,
-          auditId,
+        return this.recordQuarantine(client, {
           reasonCode: IngestReasonCode.NO_DOCUMENTS,
-        };
+          tenantId,
+          messageId,
+          rawMessageHash,
+          idempotencyKey,
+          fingerprint,
+          correlationId: corrId,
+        });
       }
 
       // 5. Happy path: insert the prepared documents (charge + documents) under
@@ -479,43 +510,102 @@ export class EmailIngestionIngestProvider {
       return fresh;
     });
 
-    // Upload + OCR the new documents in parallel, outside any transaction.
-    return Promise.all(
-      newCandidates.map(async ({ doc, fileHash }) => {
-        const file = new File([Buffer.from(doc.content, 'base64')], doc.filename ?? 'document', {
-          type: doc.mimeType,
-        });
-        const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
-        const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
-          this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
-          // isSensitive=false → run OCR (Anthropic), as the legacy path does.
-          getOcrData(injector, file, false).catch((): OcrData => ({
-            documentType: DocumentType.Unprocessed,
-          })),
-        ]);
-        // The recognized issuing business is the counterparty (null when none).
-        if (businessId) {
-          ocrData.counterpartyId = businessId;
-        }
-        const params = await getDocumentFromUrlsAndOcrData(
-          injector,
-          fileUrl,
-          imageUrl,
-          ocrData,
-          tenantId,
-          null,
-          fileHash,
-        );
-        // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
-        // OCR-derived remarks with an email identifier. (There it is the email
-        // description; the v2 ingest payload carries only the message id.) All
-        // other OCR fields — amount, currency, date, serial — are persisted as-is.
-        params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
-          .filter(Boolean)
-          .join('; ');
-        return params;
-      }),
+    // Upload + OCR the new documents in parallel, outside any transaction. A
+    // failure here — the Cloudinary upload or the params build; OCR itself is
+    // caught above and degrades to UNPROCESSED — is wrapped in
+    // DocumentPreparationError so the caller QUARANTINEs the email (recorded,
+    // reprocessable) instead of letting it throw raw and strand an accepted email
+    // with no durable record.
+    try {
+      return await Promise.all(
+        newCandidates.map(async ({ doc, fileHash }) => {
+          const file = new File([Buffer.from(doc.content, 'base64')], doc.filename ?? 'document', {
+            type: doc.mimeType,
+          });
+          const dataUri = `data:${doc.mimeType};base64,${doc.content}`;
+          const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
+            this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
+            // isSensitive=false → run OCR (Anthropic), as the legacy path does.
+            getOcrData(injector, file, false).catch((): OcrData => ({
+              documentType: DocumentType.Unprocessed,
+            })),
+          ]);
+          // The recognized issuing business is the counterparty (null when none).
+          if (businessId) {
+            ocrData.counterpartyId = businessId;
+          }
+          const params = await getDocumentFromUrlsAndOcrData(
+            injector,
+            fileUrl,
+            imageUrl,
+            ocrData,
+            tenantId,
+            null,
+            fileHash,
+          );
+          // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
+          // OCR-derived remarks with an email identifier. (There it is the email
+          // description; the v2 ingest payload carries only the message id.) All
+          // other OCR fields — amount, currency, date, serial — are persisted as-is.
+          params.remarks = [params.remarks, `email-ingestion: ${messageId}`]
+            .filter(Boolean)
+            .join('; ');
+          return params;
+        }),
+      );
+    } catch (err) {
+      throw new DocumentPreparationError('Failed to prepare email documents for ingest', {
+        cause: err,
+      });
+    }
+  }
+
+  /**
+   * Record a QUARANTINE outcome inside the caller's tenant-pinned write transaction:
+   * insert the quarantine row and persist the idempotency key + dedup fingerprint
+   * (so a re-delivery short-circuits) under a single audit id. Shared by the
+   * NO_DOCUMENTS (empty set) and UPLOAD_FAILED (preparation error) paths.
+   */
+  private async recordQuarantine(
+    client: PoolClient,
+    args: {
+      reasonCode: IngestReasonCode;
+      tenantId: string;
+      messageId: string;
+      rawMessageHash: string;
+      idempotencyKey: string;
+      fingerprint: string;
+      correlationId: string;
+    },
+  ): Promise<IngestResult> {
+    const {
+      reasonCode,
+      tenantId,
+      messageId,
+      rawMessageHash,
+      idempotencyKey,
+      fingerprint,
+      correlationId,
+    } = args;
+
+    await insertQuarantineForIngest.run(
+      { reasonCode, tenantCandidate: tenantId, messageId, rawMessageHash, correlationId },
+      client,
     );
+
+    const auditId = randomUUID();
+    await this.persistIdempotencyAndDedup({
+      idempotencyKey,
+      tenantId,
+      fingerprint,
+      outcome: IngestOutcome.QUARANTINED,
+      ingestId: null,
+      auditId,
+      correlationId,
+      client,
+    });
+
+    return { outcome: IngestOutcome.QUARANTINED, auditId, reasonCode };
   }
 
   /**

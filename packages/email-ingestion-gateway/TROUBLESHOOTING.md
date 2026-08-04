@@ -61,6 +61,7 @@ cross-package runtime import) and kept in sync by parity tests.
 | `GRANT_INVALID`      | server `email-ingestion-control.provider` | Grant missing, expired, already consumed, wrong action, or message/hash mismatch. |
 | `TENANT_MISMATCH`    | server `email-ingestion-control.provider` | Grant's `owner_id` ≠ the claimed `tenantId`.                                      |
 | `NO_DOCUMENTS`       | server `email-ingestion-ingest.provider`  | After treatment, the document set was empty. **Most common quarantine reason.**   |
+| `UPLOAD_FAILED`      | server `email-ingestion-ingest.provider`  | Document preparation failed (e.g. Cloudinary upload error) after accept. Quarantined for reprocessing. |
 
 ---
 
@@ -246,7 +247,11 @@ ORDER BY created_at DESC
 LIMIT 50;
 ```
 
-- `reason_code` tells you why (almost always `NO_DOCUMENTS` from the ingest backstop).
+- `reason_code` tells you why — usually `NO_DOCUMENTS` (the ingest backstop), or `UPLOAD_FAILED`
+  when document preparation (e.g. the Cloudinary upload) errored after the email was accepted. An
+  `UPLOAD_FAILED` row means the grant was consumed and the failure recorded (not silently lost); the
+  underlying cause is logged server-side (`email ingest: document preparation failed`) keyed by
+  `correlation_id`, and the row can be reprocessed once the upstream issue clears.
 - `tenant_candidate` may be `NULL` for orphaned rows; those are **invisible to tenant sessions** by
   RLS and only visible to ops tooling using the RLS-bypassing pool.
 - Join back to the gateway logs via `correlation_id` to find the upstream cause (e.g. the real
