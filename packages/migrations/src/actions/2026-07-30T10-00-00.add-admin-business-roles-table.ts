@@ -39,6 +39,17 @@ export default {
       USING (owner_id = ANY (accounter_schema.get_current_business_scope()))
       WITH CHECK (owner_id = accounter_schema.get_current_business_id());
 
+    -- Pin DELETEs to the single write-target business. Postgres evaluates only
+    -- USING for DELETE (WITH CHECK is ignored), so without this a multi-business
+    -- read scope could delete another in-scope tenant's rows. A RESTRICTIVE policy
+    -- ANDs with the permissive one above, matching the guarantee that
+    -- 2026-05-26T10-00-00.rls-delete-write-target retrofitted onto every existing
+    -- tenant table (new tables must add it themselves).
+    CREATE POLICY tenant_isolation_delete ON accounter_schema.admin_business_roles
+      AS RESTRICTIVE
+      FOR DELETE
+      USING (owner_id = accounter_schema.get_current_business_id());
+
     -- Force RLS even for the table owner (superusers still bypass).
     ALTER TABLE accounter_schema.admin_business_roles FORCE ROW LEVEL SECURITY;
 
