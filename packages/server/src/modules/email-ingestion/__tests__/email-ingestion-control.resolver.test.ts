@@ -241,13 +241,13 @@ describe('Mutation.requestIngestControl', () => {
 
   it('binds a recognized external business even when the evidence would self-issue', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
-    // A real supplier (Aiven) is recognized from a body-harvested candidate, but
-    // the live From collapses onto the tenant's own forwarding group — which the
+    // A real supplier is recognized from a body-harvested candidate, but the live
+    // From collapses onto the tenant's own forwarding group — which the
     // single-address self-issued heuristic would otherwise flag as self-issued.
     // Recognition must win: the invoice is attributed to the supplier, not dropped.
     const recognizeBusinessFromEvidence = vi
       .fn()
-      .mockResolvedValue({ businessId: 'biz-aiven', config: { attachments: ['PDF'] } });
+      .mockResolvedValue({ businessId: 'biz-vendor', config: { attachments: ['PDF'] } });
     const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
 
     const result = await resolver(
@@ -256,8 +256,8 @@ describe('Mutation.requestIngestControl', () => {
         input: {
           ...baseInput,
           senderEvidence: {
-            from: 'ap@the-guild.dev',
-            issuerCandidates: ['ap@the-guild.dev', 'billing@aiven.io'],
+            from: 'group@tenant.example',
+            issuerCandidates: ['group@tenant.example', 'billing@vendor.example'],
           },
         },
       },
@@ -266,10 +266,10 @@ describe('Mutation.requestIngestControl', () => {
     );
 
     // The recognized external business is bound — not the tenant.
-    expect(issueGrant.mock.calls[0][0].businessId).toBe('biz-aiven');
+    expect(issueGrant.mock.calls[0][0].businessId).toBe('biz-vendor');
     // and its treatment config is returned so the gateway does the document work.
     expect(result).toMatchObject({
-      businessEmailConfig: { businessId: 'biz-aiven', attachments: ['PDF'] },
+      businessEmailConfig: { businessId: 'biz-vendor', attachments: ['PDF'] },
     });
   });
 });
