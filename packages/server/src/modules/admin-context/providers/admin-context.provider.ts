@@ -25,11 +25,11 @@ import type {
 const getAdminContexts = sql<IGetAdminContextsQuery>`
   SELECT
     uc.*,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids
   FROM accounter_schema.user_context uc
   WHERE uc.owner_id IN $$ownerIds;
 `;
@@ -304,11 +304,11 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
   WHERE owner_id = $ownerId
   RETURNING
     user_context.*,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
-    COALESCE((SELECT array_agg(r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids;
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids;
 `;
 
 /**

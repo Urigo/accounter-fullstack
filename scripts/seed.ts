@@ -535,35 +535,37 @@ async function createAdminBusinessContext(
       INSERT INTO accounter_schema.admin_business_roles (owner_id, business_id, role)
       SELECT owner_id, business_id, role
       FROM (
-        SELECT owner_id, poalim_business_id AS business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role AS role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, poalim_business_id AS business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role AS role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, discount_business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, discount_business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, otsar_hahayal_business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, otsar_hahayal_business_id, 'BANK_ACCOUNT'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, isracard_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, isracard_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, amex_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, amex_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, cal_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, cal_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, otsar_hahayal_credit_card_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, otsar_hahayal_credit_card_business_id, 'CREDIT_CARD'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, etana_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, etana_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, kraken_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, kraken_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, etherscan_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, etherscan_business_id, 'CRYPTO_WALLET'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, vat_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, vat_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, tax_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, tax_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
         UNION ALL
-        SELECT owner_id, social_security_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = '${adminEntityId}'
+        SELECT owner_id, social_security_business_id, 'VAT_EXCLUDED'::accounter_schema.admin_business_role FROM accounter_schema.user_context WHERE owner_id = $1
       ) roles
       WHERE business_id IS NOT NULL
       ON CONFLICT DO NOTHING;
-    `);
+    `,
+      [adminEntityId],
+    );
   } catch (e) {
     console.error('Failed to create admin business roles:', e);
     throw new Error('Failed to create admin business roles', { cause: e });
