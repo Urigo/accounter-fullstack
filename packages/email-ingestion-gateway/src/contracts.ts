@@ -25,9 +25,12 @@ export const IngestReasonCode = {
   OVERSIZE_MESSAGE: 'OVERSIZE_MESSAGE',
   TIMEOUT: 'TIMEOUT',
   TRANSIENT_UPSTREAM: 'TRANSIENT_UPSTREAM',
-  // Self-issued document: a confirmation email for an invoice the tenant issued
-  // itself (e.g. via Morning/greeninvoice). The underlying document already
-  // exists on the server from creation, so the email is skipped as a DUPLICATE.
+  // Self-issued document: the recognized issuer is the tenant's own business —
+  // typically a confirmation email for an invoice the tenant issued itself (e.g.
+  // via Morning/greeninvoice), whose document already exists from creation. The
+  // email is not inserted; it is QUARANTINED (recorded, visible, reprocessable)
+  // rather than dropped, because the same signal can also fire on a real supplier
+  // invoice that collapsed onto the tenant's own forwarding address.
   SELF_ISSUED: 'SELF_ISSUED',
   // Document preparation failed on the server (e.g. Cloudinary upload error)
   // after the email was accepted. The email is QUARANTINED (recorded, retryable

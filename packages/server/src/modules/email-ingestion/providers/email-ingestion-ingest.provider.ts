@@ -187,8 +187,6 @@ export type IngestResult =
       outcome: typeof IngestOutcome.DUPLICATE;
       existingIngestId: string | null;
       auditId: string;
-      /** Present only for self-issued skips (SELF_ISSUED); absent for content re-deliveries. */
-      reasonCode?: string;
     }
   | { outcome: typeof IngestOutcome.QUARANTINED; auditId: string; reasonCode: string }
   | { outcome: typeof IngestOutcome.REJECTED; reasonCode: string };
@@ -276,13 +274,18 @@ export class EmailIngestionIngestProvider {
     const corrId = correlationId ?? randomUUID();
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
-    // Self-issued short-circuit: when the recognized issuing business is the
-    // tenant's own business, the email is a confirmation of an invoice the
-    // tenant issued itself (e.g. via Morning/greeninvoice). That document was
-    // already inserted at creation time, so ingesting it would duplicate it —
-    // skip before any upload/OCR/insert. Reported as DUPLICATE (the document
-    // already exists) with a SELF_ISSUED reason. Consume the grant and persist
-    // the idempotency key + dedup fingerprint in one transaction so a gateway
+    // Self-issued short-circuit: the recognized issuing business is the tenant's
+    // own business. The canonical case is a confirmation of an invoice the tenant
+    // issued itself (e.g. via Morning/greeninvoice), whose document already exists
+    // from creation — so we must not re-insert it. But the same signal also fires
+    // when a real supplier invoice reaches the tenant through its own forwarding
+    // group and no external issuer could be recognized (the issuer heuristic
+    // collapses onto the forwarder/tenant). Silently dropping those (the previous
+    // DUPLICATE behavior) lost the document with no trace. Instead QUARANTINE
+    // before any upload/OCR/insert: recorded, visible, and reprocessable, so a
+    // misclassification is never silent data loss, while a genuine self-issued
+    // duplicate is still not inserted. Consume the grant and persist the quarantine
+    // row + idempotency key + dedup fingerprint in one transaction so a gateway
     // retry short-circuits at the early idempotency check.
     if (businessId === tenantId) {
       return withTenantContext(this.dbProvider.pool, tenantId, async client => {
@@ -294,24 +297,15 @@ export class EmailIngestionIngestProvider {
           return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
         }
 
-        const auditId = randomUUID();
-        await this.persistIdempotencyAndDedup({
-          idempotencyKey,
-          tenantId,
-          fingerprint,
-          outcome: IngestOutcome.DUPLICATE,
-          ingestId: null,
-          auditId,
-          correlationId: corrId,
-          client,
-        });
-
-        return {
-          outcome: IngestOutcome.DUPLICATE,
-          existingIngestId: null,
-          auditId,
+        return this.recordQuarantine(client, {
           reasonCode: IngestReasonCode.SELF_ISSUED,
-        };
+          tenantId,
+          messageId,
+          rawMessageHash,
+          idempotencyKey,
+          fingerprint,
+          correlationId: corrId,
+        });
       });
     }
 
