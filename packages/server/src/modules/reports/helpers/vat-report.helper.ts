@@ -56,11 +56,16 @@ export type RawVatReportRecord = {
  * `UNPROCESSED` — may still carry a date, counterparty or amount, yet they must never be included
  * in the report nor pull their charge into it via that date (issue #3375).
  *
- * Acts as a type guard so callers can safely treat `charge_id` as a non-null string.
+ * Acts as a type guard so callers can safely treat `charge_id`, `creditor_id` and `debtor_id`
+ * as non-null strings — all three are asserted present here.
  */
 export function isVatReportRelevantDocument(
   doc: IGetDocumentsByFiltersResult,
-): doc is IGetDocumentsByFiltersResult & { charge_id: string } {
+): doc is IGetDocumentsByFiltersResult & {
+  charge_id: string;
+  creditor_id: string;
+  debtor_id: string;
+} {
   if (!doc.charge_id || !doc.creditor_id || !doc.debtor_id) {
     return false;
   }
