@@ -317,8 +317,11 @@ export class EmailIngestionIngestProvider {
 
     // Prepare documents (hash dedup read + Cloudinary upload + OCR) BEFORE the
     // write transaction — and, critically, before the grant is consumed — so the
-    // network I/O never holds a pooled connection / open transaction, and a prep
-    // failure throws while the grant is still valid (leaving the email retryable).
+    // network I/O never holds a pooled connection / open transaction, and the grant
+    // is still unconsumed when prep runs. That lets the catch below choose the
+    // grant's fate: an expected DocumentPreparationError becomes an UPLOAD_FAILED
+    // quarantine (grant consumed atomically with that recorded write), while any
+    // other error rethrows with the grant unconsumed, leaving the email retryable.
     // The dedup short-circuits re-deliveries (their documents already exist) so
     // they don't re-upload or re-OCR.
     let preparedDocuments: PreparedDocument[];

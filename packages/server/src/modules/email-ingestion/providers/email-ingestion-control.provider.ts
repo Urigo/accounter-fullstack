@@ -309,9 +309,12 @@ export class EmailIngestionControlProvider {
    * fallible, non-transactional document preparation (Cloudinary upload / OCR).
    * The grant is consumed later, atomically with the durable outcome write, via
    * {@link validateAndConsumeGrant} passing the write transaction's client. This
-   * separation is what keeps a failed ingest retryable: a prep failure throws
-   * while the grant is still unconsumed, so a gateway retry can succeed instead
-   * of hitting an already-consumed grant with nothing recorded.
+   * separation is what lets the ingest flow decide the grant's fate based on the
+   * outcome: an expected preparation failure (e.g. a Cloudinary upload error) is
+   * turned into an UPLOAD_FAILED quarantine that consumes the grant atomically
+   * with its own recorded write, while an unexpected error throws with the grant
+   * still unconsumed, so a gateway retry can succeed instead of hitting an
+   * already-consumed grant with nothing recorded.
    */
   async validateGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
     return withTenantContext(this.dbProvider.pool, input.tenantId, client =>
