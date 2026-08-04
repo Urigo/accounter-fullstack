@@ -89,15 +89,19 @@ describe('payload byte budget with owner-tagged rows', () => {
     expect(serialized.length).toBeLessThanOrEqual(MAX_TOOL_RESULT_BYTES);
   });
 
-  it('does not truncate when the same row count fits the budget', async () => {
+  it('does not truncate when the row count fits the budget', async () => {
+    // A full MAX_LOOKUP_RESULTS lookup no longer fits the byte budget even with
+    // short names, so this pins the no-truncation contract at a count that does
+    // fit. Kept below the result cap so nothing is dropped for either reason.
+    const fittingRowCount = 500;
     const result = await executeRegisteredTool({
       tool: listTagsTool,
       rawArgs: {},
       auth: authContext(),
       correlationId: 'c',
-      // Short names: 500 rows well inside the budget.
+      // Short names: rows well inside the budget.
       client: clientReturning({
-        allTags: Array.from({ length: MAX_LOOKUP_RESULTS }, (_, i) => ({
+        allTags: Array.from({ length: fittingRowCount }, (_, i) => ({
           id: `t${i}`,
           name: `n${i}`,
           namePath: [`n${i}`],
@@ -112,7 +116,7 @@ describe('payload byte budget with owner-tagged rows', () => {
       continuation?: unknown;
     };
     expect(structured.truncated).toBe(false);
-    expect(structured.returnedCount).toBe(MAX_LOOKUP_RESULTS);
+    expect(structured.returnedCount).toBe(fittingRowCount);
     expect(structured.continuation).toBeUndefined();
   });
 });

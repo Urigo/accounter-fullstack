@@ -45,7 +45,7 @@ export const MAX_CHARGE_IDS = 300;
 const CHARGE_FILTER_IDS_CAP = 300;
 const CHARGE_FILTER_TAGS_CAP = 50;
 const CHARGE_FILTER_TEXT_MAX = 200;
-const MAX_FILTERED_CHARGES = 300;
+export const MAX_FILTERED_CHARGES = 300;
 
 function optionalNonEmptyStringArray(max: number) {
   return z.preprocess(
