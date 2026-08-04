@@ -239,8 +239,15 @@ export class EmailIngestionIngestProvider {
       };
     }
 
-    // 1. Validate and atomically consume the grant (control-plane, pre-tenant).
-    const grantResult = await this.controlProvider.validateAndConsumeGrant({
+    // 1. Validate the grant WITHOUT consuming it yet. Consuming here (in its own
+    //    committed transaction) and only later doing the fallible, non-transactional
+    //    document prep (Cloudinary upload / OCR) is what previously stranded emails:
+    //    a prep failure left the grant burned with nothing recorded — no document,
+    //    no quarantine, no idempotency row — and every retry then hit an
+    //    already-consumed grant (GRANT_INVALID → REJECTED). Instead, validate now to
+    //    resolve the bound business, run prep while the grant is still intact, and
+    //    consume the grant atomically inside the write transaction below.
+    const grantResult = await this.controlProvider.validateGrant({
       jti: grantJti,
       tenantId,
       messageId,
@@ -251,6 +258,7 @@ export class EmailIngestionIngestProvider {
       return { outcome: IngestOutcome.REJECTED, reasonCode: grantResult.reason };
     }
 
+    const businessId = grantResult.grant.businessId;
     const corrId = correlationId ?? randomUUID();
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
@@ -259,14 +267,21 @@ export class EmailIngestionIngestProvider {
     // tenant issued itself (e.g. via Morning/greeninvoice). That document was
     // already inserted at creation time, so ingesting it would duplicate it —
     // skip before any upload/OCR/insert. Reported as DUPLICATE (the document
-    // already exists) with a SELF_ISSUED reason. Persist the idempotency key +
-    // dedup fingerprint (as the QUARANTINE path does) so a gateway retry
-    // short-circuits at the early idempotency check instead of failing grant
-    // validation against the already-consumed grant.
-    if (grantResult.grant.businessId === tenantId) {
-      const auditId = randomUUID();
-      await withTenantContext(this.dbProvider.pool, tenantId, client =>
-        this.persistIdempotencyAndDedup({
+    // already exists) with a SELF_ISSUED reason. Consume the grant and persist
+    // the idempotency key + dedup fingerprint in one transaction so a gateway
+    // retry short-circuits at the early idempotency check.
+    if (businessId === tenantId) {
+      return withTenantContext(this.dbProvider.pool, tenantId, async client => {
+        const consumed = await this.controlProvider.validateAndConsumeGrant(
+          { jti: grantJti, tenantId, messageId, rawMessageHash },
+          client,
+        );
+        if (!consumed.valid) {
+          return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
+        }
+
+        const auditId = randomUUID();
+        await this.persistIdempotencyAndDedup({
           idempotencyKey,
           tenantId,
           fingerprint,
@@ -275,29 +290,45 @@ export class EmailIngestionIngestProvider {
           auditId,
           correlationId: corrId,
           client,
-        }),
-      );
+        });
 
-      return {
-        outcome: IngestOutcome.DUPLICATE,
-        existingIngestId: null,
-        auditId,
-        reasonCode: IngestReasonCode.SELF_ISSUED,
-      };
+        return {
+          outcome: IngestOutcome.DUPLICATE,
+          existingIngestId: null,
+          auditId,
+          reasonCode: IngestReasonCode.SELF_ISSUED,
+        };
+      });
     }
 
     // Prepare documents (hash dedup read + Cloudinary upload + OCR) BEFORE the
-    // write transaction, so the network I/O never holds a pooled connection / open
-    // transaction. The dedup short-circuits re-deliveries (their documents already
-    // exist) so they don't re-upload or re-OCR.
+    // write transaction — and, critically, before the grant is consumed — so the
+    // network I/O never holds a pooled connection / open transaction, and a prep
+    // failure throws while the grant is still valid (leaving the email retryable).
+    // The dedup short-circuits re-deliveries (their documents already exist) so
+    // they don't re-upload or re-OCR.
     const preparedDocuments = await this.prepareDocuments(tenantId, extractedDocuments, {
       injector,
-      businessId: grantResult.grant.businessId,
+      businessId,
       messageId,
     });
 
-    // 2–5. All tenant-bound work runs under the grant tenant's RLS context.
+    // 2–5. All tenant-bound work runs under the grant tenant's RLS context, in a
+    // single transaction: consume the grant, then check idempotency/dedup and
+    // quarantine-or-insert — so consumption commits atomically with the outcome.
     return withTenantContext(this.dbProvider.pool, tenantId, async client => {
+      // Atomically consume the grant as the first write of this transaction. If it
+      // was consumed concurrently (or lapsed during prep) this rolls the whole
+      // transaction back with nothing written — and, unlike before, no document
+      // upload was wasted on a grant that couldn't be honored.
+      const consumed = await this.controlProvider.validateAndConsumeGrant(
+        { jti: grantJti, tenantId, messageId, rawMessageHash },
+        client,
+      );
+      if (!consumed.valid) {
+        return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
+      }
+
       // 2. Idempotency check — return prior outcome if this key was already processed.
       const idemRows = await checkIdempotencyKeyForIngest.run(
         { idempotencyKey, ownerId: tenantId },

@@ -106,8 +106,16 @@ function makeProvider(
   grantResult: Awaited<ReturnType<EmailIngestionControlProvider['validateAndConsumeGrant']>>,
   dbResponses: QueryResponse[],
 ) {
+  // validateGrant is the read-only gate (resolves the bound business, rejects an
+  // invalid grant) that runs before the fallible document prep; validateAndConsumeGrant
+  // is the atomic consume that runs inside the write transaction. Both are stubbed to
+  // return the same grant result so a single fixture drives the whole flow.
+  const validateGrant = vi.fn().mockResolvedValue(grantResult);
   const validateAndConsumeGrant = vi.fn().mockResolvedValue(grantResult);
-  const controlProvider = { validateAndConsumeGrant } as unknown as EmailIngestionControlProvider;
+  const controlProvider = {
+    validateGrant,
+    validateAndConsumeGrant,
+  } as unknown as EmailIngestionControlProvider;
 
   const uploadInvoiceToCloudinary = vi
     .fn()
@@ -139,6 +147,7 @@ function makeProvider(
 
   return {
     provider: new EmailIngestionIngestProvider(dbProvider, controlProvider, cloudinaryProvider),
+    validateGrant,
     validateAndConsumeGrant,
     uploadInvoiceToCloudinary,
     queryFn,
@@ -193,8 +202,8 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
   });
 
-  it('calls validateAndConsumeGrant with the correct grant binding fields', async () => {
-    const { provider, validateAndConsumeGrant } = makeProvider(
+  it('validates and consumes the grant with the correct binding fields', async () => {
+    const { provider, validateGrant, validateAndConsumeGrant } = makeProvider(
       VALID_GRANT,
       // early idem miss → idempotency check (miss) → dedup check (miss) → insert idem → insert dedup
       [
@@ -208,12 +217,36 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
-    expect(validateAndConsumeGrant).toHaveBeenCalledWith({
-      jti: JTI,
-      tenantId: TENANT_ID,
-      messageId: MSG_ID,
-      rawMessageHash: MSG_HASH,
-    });
+    const binding = { jti: JTI, tenantId: TENANT_ID, messageId: MSG_ID, rawMessageHash: MSG_HASH };
+    // Read-only validation runs first (no transaction client)…
+    expect(validateGrant).toHaveBeenCalledWith(binding);
+    // …then the atomic consume runs inside the write transaction (with a client).
+    expect(validateAndConsumeGrant).toHaveBeenCalledWith(binding, expect.anything());
+  });
+
+  it('does not consume the grant when document preparation fails, leaving the email retryable', async () => {
+    // The regression this guards: consuming the grant before the fallible, non-transactional
+    // document prep (Cloudinary upload / OCR) burned the grant on any prep failure — the email
+    // could then never be retried (GRANT_INVALID) and nothing was recorded. With prep moved
+    // ahead of consumption, a prep failure throws while the grant is still intact.
+    const { provider, validateAndConsumeGrant, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_WITH_BUSINESS,
+      [{ rows: [], rowCount: 0 }], // early idempotency miss
+    );
+    uploadInvoiceToCloudinary.mockRejectedValueOnce(new Error('cloudinary down'));
+
+    const inputWithContent = {
+      ...BASE_INPUT,
+      extractedDocuments: [
+        { hash: 'doc-hash', sizeBytes: 1024, mimeType: 'application/pdf', filename: 'invoice.pdf', content: DOC_CONTENT_B64 },
+      ],
+    };
+
+    await expect(provider.performIngest(inputWithContent, ocrInjector)).rejects.toThrow('cloudinary down');
+
+    // The grant was never consumed, and nothing durable was written — so a retry can succeed.
+    expect(validateAndConsumeGrant).not.toHaveBeenCalled();
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
   });
 });
 
