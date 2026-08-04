@@ -168,3 +168,44 @@ describe('EmailIngestionControlProvider.validateAndConsumeGrant', () => {
     expect(dataQueries).toHaveLength(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateGrant (read-only: same binding checks, but never consumes)
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionControlProvider.validateGrant', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns valid=true with the bound business but issues no consume UPDATE', async () => {
+    const withBusiness = { ...baseGrant, business_id: 'business-uuid-x' };
+    const { provider, dataQueries } = makeProvider([withBusiness], [{ id: 'row-uuid' }]);
+    const result = await provider.validateGrant(baseInput);
+
+    expect(result).toMatchObject({ valid: true, grant: { businessId: 'business-uuid-x' } });
+    // Only the lookup SELECT runs — the grant is left unconsumed for the later
+    // atomic consume inside the ingest write transaction.
+    expect(dataQueries).toHaveLength(1);
+  });
+
+  it('rejects an already-consumed grant just like validateAndConsumeGrant', async () => {
+    const consumed = { ...baseGrant, consumed_at: new Date(NOW.getTime() - 60_000) };
+    const { provider } = makeProvider([consumed], []);
+    const result = await provider.validateGrant(baseInput);
+
+    expect(result).toEqual({ valid: false, reason: IngestReasonCode.GRANT_INVALID });
+  });
+
+  it('returns TENANT_MISMATCH when owner_id does not match tenantId', async () => {
+    const { provider } = makeProvider();
+    const result = await provider.validateGrant({ ...baseInput, tenantId: 'other-tenant' });
+
+    expect(result).toEqual({ valid: false, reason: IngestReasonCode.TENANT_MISMATCH });
+  });
+});

@@ -38,14 +38,15 @@ describe('IngestReasonCode', () => {
     'TIMEOUT',
     'TRANSIENT_UPSTREAM',
     'SELF_ISSUED',
+    'UPLOAD_FAILED',
   ] as const;
 
   it.each(REQUIRED_CODES)('defines %s', code => {
     expect(IngestReasonCode[code]).toBe(code);
   });
 
-  it('has exactly eleven reason codes', () => {
-    expect(Object.keys(IngestReasonCode)).toHaveLength(11);
+  it('has exactly twelve reason codes', () => {
+    expect(Object.keys(IngestReasonCode)).toHaveLength(12);
   });
 
   it('all keys equal their values (self-referential constants)', () => {

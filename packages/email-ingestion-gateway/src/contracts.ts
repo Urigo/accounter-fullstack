@@ -29,6 +29,11 @@ export const IngestReasonCode = {
   // itself (e.g. via Morning/greeninvoice). The underlying document already
   // exists on the server from creation, so the email is skipped as a DUPLICATE.
   SELF_ISSUED: 'SELF_ISSUED',
+  // Document preparation failed on the server (e.g. Cloudinary upload error)
+  // after the email was accepted. The email is QUARANTINED (recorded, retryable
+  // via the quarantine reprocessing workflow) rather than throwing and leaving
+  // no durable trace.
+  UPLOAD_FAILED: 'UPLOAD_FAILED',
 } as const;
 
 export type IngestReasonCode = (typeof IngestReasonCode)[keyof typeof IngestReasonCode];

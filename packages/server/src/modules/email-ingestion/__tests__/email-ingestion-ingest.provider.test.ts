@@ -106,8 +106,16 @@ function makeProvider(
   grantResult: Awaited<ReturnType<EmailIngestionControlProvider['validateAndConsumeGrant']>>,
   dbResponses: QueryResponse[],
 ) {
+  // validateGrant is the read-only gate (resolves the bound business, rejects an
+  // invalid grant) that runs before the fallible document prep; validateAndConsumeGrant
+  // is the atomic consume that runs inside the write transaction. Both are stubbed to
+  // return the same grant result so a single fixture drives the whole flow.
+  const validateGrant = vi.fn().mockResolvedValue(grantResult);
   const validateAndConsumeGrant = vi.fn().mockResolvedValue(grantResult);
-  const controlProvider = { validateAndConsumeGrant } as unknown as EmailIngestionControlProvider;
+  const controlProvider = {
+    validateGrant,
+    validateAndConsumeGrant,
+  } as unknown as EmailIngestionControlProvider;
 
   const uploadInvoiceToCloudinary = vi
     .fn()
@@ -139,6 +147,7 @@ function makeProvider(
 
   return {
     provider: new EmailIngestionIngestProvider(dbProvider, controlProvider, cloudinaryProvider),
+    validateGrant,
     validateAndConsumeGrant,
     uploadInvoiceToCloudinary,
     queryFn,
@@ -193,8 +202,8 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema'))).toBe(false);
   });
 
-  it('calls validateAndConsumeGrant with the correct grant binding fields', async () => {
-    const { provider, validateAndConsumeGrant } = makeProvider(
+  it('validates and consumes the grant with the correct binding fields', async () => {
+    const { provider, validateGrant, validateAndConsumeGrant } = makeProvider(
       VALID_GRANT,
       // early idem miss → idempotency check (miss) → dedup check (miss) → insert idem → insert dedup
       [
@@ -208,12 +217,77 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
 
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
-    expect(validateAndConsumeGrant).toHaveBeenCalledWith({
-      jti: JTI,
-      tenantId: TENANT_ID,
-      messageId: MSG_ID,
-      rawMessageHash: MSG_HASH,
+    const binding = { jti: JTI, tenantId: TENANT_ID, messageId: MSG_ID, rawMessageHash: MSG_HASH };
+    // Read-only validation runs first (no transaction client)…
+    expect(validateGrant).toHaveBeenCalledWith(binding);
+    // …then the atomic consume runs inside the write transaction (with a client).
+    expect(validateAndConsumeGrant).toHaveBeenCalledWith(binding, expect.anything());
+  });
+
+  it('quarantines with UPLOAD_FAILED (not a raw throw) when document preparation fails', async () => {
+    // The regression this guards: a Cloudinary upload failure during document prep used to
+    // throw raw. Combined with consuming the grant up front, that stranded an accepted email
+    // with no durable record. Now prep runs before the grant is consumed, and a prep failure
+    // is turned into an UPLOAD_FAILED quarantine — the grant is consumed atomically with the
+    // quarantine write, so the failure is recorded and reprocessable rather than invisible.
+    const idemRow = {
+      id: 'idem-row', idempotency_key: IDEM_KEY, owner_id: TENANT_ID,
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, audit_id: 'audit-up', created_at: NOW,
+    };
+    const dedupRow = {
+      id: 'dedup-row', owner_id: TENANT_ID, fingerprint: 'fp',
+      outcome: IngestOutcome.QUARANTINED, ingest_id: null, correlation_id: CORR_ID, created_at: NOW,
+    };
+    const { provider, validateAndConsumeGrant, uploadInvoiceToCloudinary, dataCalls } = makeProvider(
+      VALID_GRANT_WITH_BUSINESS,
+      [
+        { rows: [], rowCount: 0 }, // early idempotency miss
+        { rows: [], rowCount: 0 }, // prepareDocuments: checkDocumentByHash → new candidate
+        { rows: [{ id: 'q-id' }], rowCount: 1 }, // quarantine insert
+        { rows: [idemRow], rowCount: 1 }, // idempotency insert
+        { rows: [dedupRow], rowCount: 1 }, // dedup insert
+      ],
+    );
+    uploadInvoiceToCloudinary.mockRejectedValueOnce(new Error('cloudinary down'));
+
+    const inputWithContent = {
+      ...BASE_INPUT,
+      extractedDocuments: [
+        { hash: 'doc-hash', sizeBytes: 1024, mimeType: 'application/pdf', filename: 'invoice.pdf', content: DOC_CONTENT_B64 },
+      ],
+    };
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.QUARANTINED,
+      reasonCode: IngestReasonCode.UPLOAD_FAILED,
     });
+    expect(uploadInvoiceToCloudinary).toHaveBeenCalled();
+    // Grant consumed atomically with the quarantine write, and the failure is recorded.
+    expect(validateAndConsumeGrant).toHaveBeenCalledWith(
+      { jti: JTI, tenantId: TENANT_ID, messageId: MSG_ID, rawMessageHash: MSG_HASH },
+      expect.anything(),
+    );
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine'))).toBe(true);
+    // No charge/document rows written for a failed-preparation quarantine.
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+  });
+
+  it('rethrows an unexpected (non-preparation) error without consuming the grant', async () => {
+    // Errors that are not DocumentPreparationError (e.g. a DB failure) must not be masked as a
+    // quarantine — they surface raw, leaving the grant unconsumed so the ingest can be retried.
+    const { provider, validateAndConsumeGrant } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+    ]);
+    // Fail the prepareDocuments hash-dedup read (runs before the upload try/catch), which is not
+    // wrapped in DocumentPreparationError.
+    const err = new Error('db connection lost');
+    vi.spyOn(provider as unknown as { prepareDocuments: () => Promise<unknown> }, 'prepareDocuments').mockRejectedValueOnce(err);
+
+    await expect(provider.performIngest(BASE_INPUT, ocrInjector)).rejects.toThrow('db connection lost');
+    expect(validateAndConsumeGrant).not.toHaveBeenCalled();
   });
 });
 

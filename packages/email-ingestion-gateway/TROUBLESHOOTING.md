@@ -49,18 +49,19 @@ cross-package runtime import) and kept in sync by parity tests.
 
 ### Reason codes — where each is produced
 
-| Reason code          | Stage / file                              | What happened                                                                     |
-| -------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `INVALID_AUTH`       | gateway `verifier.ts`                     | IP not allowlisted, timestamp outside ±300s, or bad HMAC signature. → `401`.      |
-| `REPLAY_DETECTED`    | gateway `verifier.ts`                     | Nonce already seen within the retention window (default 600s). → `401`.           |
-| `OVERSIZE_MESSAGE`   | gateway `mime-extractor.ts`               | Raw MIME > 25 MB, > 10 attachments, or extracted bytes > 20 MB.                   |
-| `PARSE_ERROR`        | gateway `mime-extractor.ts`               | Empty body or `postal-mime` failed (e.g. nesting depth > 10).                     |
-| `UNKNOWN_ALIAS`      | server `email-ingestion-control.provider` | `recipientAlias` does not resolve to an active tenant alias.                      |
-| `TIMEOUT`            | gateway `server-client.ts`                | Control (3s) or ingest (10s) call timed out after retries.                        |
-| `TRANSIENT_UPSTREAM` | gateway `server-client.ts`                | Server returned 5xx / network error after retries, or empty response.             |
-| `GRANT_INVALID`      | server `email-ingestion-control.provider` | Grant missing, expired, already consumed, wrong action, or message/hash mismatch. |
-| `TENANT_MISMATCH`    | server `email-ingestion-control.provider` | Grant's `owner_id` ≠ the claimed `tenantId`.                                      |
-| `NO_DOCUMENTS`       | server `email-ingestion-ingest.provider`  | After treatment, the document set was empty. **Most common quarantine reason.**   |
+| Reason code          | Stage / file                              | What happened                                                                                          |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `INVALID_AUTH`       | gateway `verifier.ts`                     | IP not allowlisted, timestamp outside ±300s, or bad HMAC signature. → `401`.                           |
+| `REPLAY_DETECTED`    | gateway `verifier.ts`                     | Nonce already seen within the retention window (default 600s). → `401`.                                |
+| `OVERSIZE_MESSAGE`   | gateway `mime-extractor.ts`               | Raw MIME > 25 MB, > 10 attachments, or extracted bytes > 20 MB.                                        |
+| `PARSE_ERROR`        | gateway `mime-extractor.ts`               | Empty body or `postal-mime` failed (e.g. nesting depth > 10).                                          |
+| `UNKNOWN_ALIAS`      | server `email-ingestion-control.provider` | `recipientAlias` does not resolve to an active tenant alias.                                           |
+| `TIMEOUT`            | gateway `server-client.ts`                | Control (3s) or ingest (10s) call timed out after retries.                                             |
+| `TRANSIENT_UPSTREAM` | gateway `server-client.ts`                | Server returned 5xx / network error after retries, or empty response.                                  |
+| `GRANT_INVALID`      | server `email-ingestion-control.provider` | Grant missing, expired, already consumed, wrong action, or message/hash mismatch.                      |
+| `TENANT_MISMATCH`    | server `email-ingestion-control.provider` | Grant's `owner_id` ≠ the claimed `tenantId`.                                                           |
+| `NO_DOCUMENTS`       | server `email-ingestion-ingest.provider`  | After treatment, the document set was empty. **Most common quarantine reason.**                        |
+| `UPLOAD_FAILED`      | server `email-ingestion-ingest.provider`  | Document preparation failed (e.g. Cloudinary upload error) after accept. Quarantined for reprocessing. |
 
 ---
 
@@ -246,7 +247,11 @@ ORDER BY created_at DESC
 LIMIT 50;
 ```
 
-- `reason_code` tells you why (almost always `NO_DOCUMENTS` from the ingest backstop).
+- `reason_code` tells you why — usually `NO_DOCUMENTS` (the ingest backstop), or `UPLOAD_FAILED`
+  when document preparation (e.g. the Cloudinary upload) errored after the email was accepted. An
+  `UPLOAD_FAILED` row means the grant was consumed and the failure recorded (not silently lost); the
+  underlying cause is logged server-side (`email ingest: document preparation failed`) keyed by
+  `correlation_id`, and the row can be reprocessed once the upstream issue clears.
 - `tenant_candidate` may be `NULL` for orphaned rows; those are **invisible to tenant sessions** by
   RLS and only visible to ops tooling using the RLS-bypassing pool.
 - Join back to the gateway logs via `correlation_id` to find the upstream cause (e.g. the real

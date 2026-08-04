@@ -51,7 +51,19 @@ const ingestEmail: EmailIngestionModule.MutationResolvers['ingestEmail'] = async
       auditId: 'auditId' in result ? result.auditId : '',
       reasonCode: 'reasonCode' in result ? result.reasonCode : null,
     };
-  } catch {
+  } catch (error) {
+    // Log the real cause before collapsing to a generic CommonError. performIngest
+    // does fallible, non-transactional work (Cloudinary upload, OCR, document
+    // inserts); without this line those failures are invisible server-side and the
+    // only trace of a stranded email is a consumed grant with no document —
+    // exactly the case this handler exists to make diagnosable. Key by
+    // correlationId/messageId so it joins back to the gateway logs.
+    console.error(
+      `Failed to process email ingest request (correlationId: ${
+        input.correlationId ?? 'none'
+      }, messageId: ${input.messageId}):`,
+      error,
+    );
     return {
       __typename: 'CommonError',
       message: 'Failed to process email ingest request',

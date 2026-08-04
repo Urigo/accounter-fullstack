@@ -302,6 +302,27 @@ export class EmailIngestionControlProvider {
   }
 
   /**
+   * Validate a presented grant against the stored record **without** consuming it.
+   * Runs all the binding checks (existence, expiry, consumed state, action scope,
+   * tenant binding, message/hash binding) so callers can resolve the bound
+   * business and reject an obviously-invalid grant up front — before doing the
+   * fallible, non-transactional document preparation (Cloudinary upload / OCR).
+   * The grant is consumed later, atomically with the durable outcome write, via
+   * {@link validateAndConsumeGrant} passing the write transaction's client. This
+   * separation is what lets the ingest flow decide the grant's fate based on the
+   * outcome: an expected preparation failure (e.g. a Cloudinary upload error) is
+   * turned into an UPLOAD_FAILED quarantine that consumes the grant atomically
+   * with its own recorded write, while an unexpected error throws with the grant
+   * still unconsumed, so a gateway retry can succeed instead of hitting an
+   * already-consumed grant with nothing recorded.
+   */
+  async validateGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
+    return withTenantContext(this.dbProvider.pool, input.tenantId, client =>
+      this.checkGrant(input, client, false),
+    );
+  }
+
+  /**
    * Validate a presented grant against the stored record and atomically consume it.
    * Checks: existence, expiry, consumed state, action scope, tenant binding, and message binding.
    * The consume UPDATE (SET consumed_at = NOW() WHERE consumed_at IS NULL) is atomic —
@@ -312,58 +333,83 @@ export class EmailIngestionControlProvider {
    * business context. Pinning to input.tenantId means a grant owned by another
    * tenant is filtered out by the USING policy and surfaces as GRANT_INVALID;
    * the explicit owner_id check below remains as defense-in-depth.
+   *
+   * Pass `client` to run inside an existing tenant-pinned transaction so the
+   * consume commits atomically with the outcome write (the ingest flow does
+   * this); omit it to run in a standalone transaction.
    */
-  async validateAndConsumeGrant(input: ValidateGrantInput): Promise<GrantValidationResult> {
-    return withTenantContext(this.dbProvider.pool, input.tenantId, async client => {
-      const rows = await getGrantByJtiForValidation.run({ jti: input.jti }, client);
+  async validateAndConsumeGrant(
+    input: ValidateGrantInput,
+    client?: PoolClient,
+  ): Promise<GrantValidationResult> {
+    if (client) {
+      return this.checkGrant(input, client, true);
+    }
+    return withTenantContext(this.dbProvider.pool, input.tenantId, c =>
+      this.checkGrant(input, c, true),
+    );
+  }
 
-      if (rows.length === 0) {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+  /**
+   * Shared grant-binding checks, optionally followed by the atomic consume.
+   * The caller supplies a tenant-pinned `client` (RLS is enforced by the caller's
+   * transaction context).
+   */
+  private async checkGrant(
+    input: ValidateGrantInput,
+    client: PoolClient,
+    consume: boolean,
+  ): Promise<GrantValidationResult> {
+    const rows = await getGrantByJtiForValidation.run({ jti: input.jti }, client);
 
-      const grant = rows[0];
+    if (rows.length === 0) {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
 
-      if (grant.consumed_at !== null) {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+    const grant = rows[0];
 
-      if (grant.expires_at <= new Date()) {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+    if (grant.consumed_at !== null) {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
 
-      if (grant.action !== 'ingest') {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+    if (grant.expires_at <= new Date()) {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
 
-      if (grant.owner_id !== input.tenantId) {
-        return { valid: false, reason: IngestReasonCode.TENANT_MISMATCH };
-      }
+    if (grant.action !== 'ingest') {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
 
-      if (grant.message_id !== input.messageId) {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+    if (grant.owner_id !== input.tenantId) {
+      return { valid: false, reason: IngestReasonCode.TENANT_MISMATCH };
+    }
 
-      if (grant.raw_message_hash !== input.rawMessageHash) {
-        return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
-      }
+    if (grant.message_id !== input.messageId) {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
 
+    if (grant.raw_message_hash !== input.rawMessageHash) {
+      return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
+    }
+
+    if (consume) {
       // Atomic consume-once: if this returns 0 rows a concurrent request beat us to it.
       const consumed = await consumeGrantByJti.run({ jti: input.jti }, client);
 
       if (consumed.length === 0) {
         return { valid: false, reason: IngestReasonCode.GRANT_INVALID };
       }
+    }
 
-      return {
-        valid: true,
-        grant: {
-          jti: grant.jti,
-          tenantId: grant.owner_id,
-          action: grant.action,
-          expiresAt: grant.expires_at,
-          businessId: grant.business_id ?? null,
-        },
-      };
-    });
+    return {
+      valid: true,
+      grant: {
+        jti: grant.jti,
+        tenantId: grant.owner_id,
+        action: grant.action,
+        expiresAt: grant.expires_at,
+        businessId: grant.business_id ?? null,
+      },
+    };
   }
 }
