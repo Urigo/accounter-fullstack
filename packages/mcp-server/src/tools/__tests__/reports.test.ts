@@ -3,7 +3,7 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
-import { balanceReportTool, MAX_REPORT_ROWS } from '../reports.js';
+import { balanceReportTool, MAX_REPORT_DATE_RANGE_DAYS, MAX_REPORT_ROWS } from '../reports.js';
 
 /**
  * The caller's business role is the membership `roleId` resolved upstream — the
@@ -138,10 +138,13 @@ describe('balanceReportTool — invalid range', () => {
 
   it('rejects a range wider than the cap', async () => {
     const client = clientReturning([]);
+    // One day beyond the cap, derived from the constant so the test tracks it.
+    const toMs = Date.UTC(2024, 0, 1) + (MAX_REPORT_DATE_RANGE_DAYS + 1) * 24 * 60 * 60 * 1000;
+    const toDate = new Date(toMs).toISOString().slice(0, 10);
     const result = await run(client, authContext(['b1']), {
       businessId: 'b1',
       fromDate: '2024-01-01',
-      toDate: '2026-01-01',
+      toDate,
     });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { message: string }).message).toMatch(/must not exceed/);

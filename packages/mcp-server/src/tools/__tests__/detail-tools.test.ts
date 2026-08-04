@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { getChargesTool, MAX_CHARGE_IDS } from '../charge-details.js';
+import { getChargesTool, MAX_CHARGE_IDS, MAX_FILTERED_CHARGES } from '../charge-details.js';
 import { getDocumentsTool } from '../document-details.js';
 import { MAX_DETAIL_IDS } from '../entity-shapes.js';
 import { executeRegisteredTool } from '../execute.js';
@@ -284,7 +284,7 @@ describe('getChargesTool', () => {
     expect(variables.includeTransactions).toBe(false);
     expect(variables.includeDocuments).toBe(true);
     expect(variables.page).toBe(0);
-    expect(variables.limit).toBe(100);
+    expect(variables.limit).toBe(MAX_FILTERED_CHARGES);
   });
 
   it('combines chargeIds with filters and keeps only requested ids', async () => {
