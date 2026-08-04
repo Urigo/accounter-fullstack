@@ -686,26 +686,26 @@ describe('extractFromMime — body capture & issuer candidates', () => {
   });
 
   it('recovers the real issuer from a body contact mailto when the quoted From is a forwarder', async () => {
-    // The Aiven-via-Google-Group case: the mailing list rewrote the quoted `From:`
-    // to the forwarding group address, so the real issuer survives only as a
-    // footer/contact `mailto:` link. It must still be harvested — appended after
-    // the header-anchored forwarder address, not instead of it.
+    // Mailing-list forward: the list rewrote the quoted `From:` to the forwarding
+    // group address, so the real issuer survives only as a footer/contact `mailto:`
+    // link. It must still be harvested — appended after the header-anchored
+    // forwarder address, not instead of it.
     const html = [
       '<div>---------- Forwarded message ---------</div>',
-      '<div>From: \'Aiven Billing\' via Account Payables &lt;<a href="mailto:ap@the-guild.dev">ap@the-guild.dev</a>&gt;</div>',
-      '<div>To: <a href="mailto:ap@the-guild.dev">ap@the-guild.dev</a></div>',
-      '<p>If you have any questions, contact <a href="mailto:billing@aiven.io">billing@aiven.io</a>.</p>',
+      '<div>From: \'Vendor Billing\' via Group Alias &lt;<a href="mailto:group@tenant.example">group@tenant.example</a>&gt;</div>',
+      '<div>To: <a href="mailto:group@tenant.example">group@tenant.example</a></div>',
+      '<p>If you have any questions, contact <a href="mailto:billing@vendor.example">billing@vendor.example</a>.</p>',
     ].join('');
     const result = await extractFromMime(makeHtmlMime(html));
     expect(result.success).toBe(true);
     if (result.success) {
       const candidates = result.senderEvidence.issuerCandidates;
       // the real issuer, recovered from the contact mailto link
-      expect(candidates).toContain('billing@aiven.io');
+      expect(candidates).toContain('billing@vendor.example');
       // the forwarder group (header-anchored) is still present and ordered first
-      expect(candidates).toContain('ap@the-guild.dev');
-      expect(candidates.indexOf('ap@the-guild.dev')).toBeLessThan(
-        candidates.indexOf('billing@aiven.io'),
+      expect(candidates).toContain('group@tenant.example');
+      expect(candidates.indexOf('group@tenant.example')).toBeLessThan(
+        candidates.indexOf('billing@vendor.example'),
       );
     }
   });
