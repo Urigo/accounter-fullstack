@@ -240,7 +240,7 @@ function extractIssuerCandidates(body: string): string[] {
   // 1. Header-anchored addresses from the quoted From/Reply-To/Sender block —
   //    highest signal, kept first so they win in the server's selection policy.
   for (const match of body.matchAll(ISSUER_CANDIDATE_RE)) {
-    if (add(match[1] ?? match[2] ?? '', Boolean(match[1]))) {
+    if (add(match[1] ?? match[2] ?? '', !!match[1])) {
       return candidates;
     }
   }
