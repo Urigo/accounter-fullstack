@@ -8,8 +8,8 @@ import { MAX_TOOL_RESULT_BYTES } from '../output.js';
 
 /**
  * Payload-size guard at the cap. Every row now carries `ownerId` (Phase 5), so a
- * full 500-row lookup is meaningfully larger than before — this pins the
- * behaviour at the boundary rather than assuming the extra field is free.
+ * full MAX_LOOKUP_RESULTS-row lookup is meaningfully larger than before — this pins
+ * the behaviour at the boundary rather than assuming the extra field is free.
  *
  * The contract when the guard trips: whole trailing items are dropped (never
  * invalid JSON), `truncated` is true, and the continuation hint says the payload
@@ -42,7 +42,7 @@ function clientReturning(data: unknown) {
   });
 }
 
-/** 500 owner-tagged tags with names long enough to blow the byte budget. */
+/** Owner-tagged tags with names long enough to blow the byte budget. */
 function manyTags(count: number) {
   return Array.from({ length: count }, (_, i) => ({
     id: `tag-${String(i).padStart(4, '0')}`,
@@ -89,15 +89,19 @@ describe('payload byte budget with owner-tagged rows', () => {
     expect(serialized.length).toBeLessThanOrEqual(MAX_TOOL_RESULT_BYTES);
   });
 
-  it('does not truncate when the same row count fits the budget', async () => {
+  it('does not truncate a payload that fits within the byte budget', async () => {
+    // Short-named rows well inside the byte budget: the guard must leave them
+    // untouched. (A full MAX_LOOKUP_RESULTS lookup exceeds MAX_TOOL_RESULT_BYTES
+    // even with short names once each row carries an `ownerId`, so the cap itself
+    // can't stand in for "fits" here — pick a count comfortably under the budget.)
+    const fittingCount = 300;
     const result = await executeRegisteredTool({
       tool: listTagsTool,
       rawArgs: {},
       auth: authContext(),
       correlationId: 'c',
-      // Short names: 500 rows well inside the budget.
       client: clientReturning({
-        allTags: Array.from({ length: MAX_LOOKUP_RESULTS }, (_, i) => ({
+        allTags: Array.from({ length: fittingCount }, (_, i) => ({
           id: `t${i}`,
           name: `n${i}`,
           namePath: [`n${i}`],
@@ -112,7 +116,7 @@ describe('payload byte budget with owner-tagged rows', () => {
       continuation?: unknown;
     };
     expect(structured.truncated).toBe(false);
-    expect(structured.returnedCount).toBe(MAX_LOOKUP_RESULTS);
+    expect(structured.returnedCount).toBe(fittingCount);
     expect(structured.continuation).toBeUndefined();
   });
 });

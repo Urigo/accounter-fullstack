@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
-import { searchChargesTool } from '../charges.js';
+import { MAX_DATE_RANGE_DAYS, MAX_PAGE_SIZE, searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
 
 function authContext(businessIds: string[]): McpAuthContext {
@@ -287,17 +287,21 @@ describe('searchChargesTool — invalid filters', () => {
 
   it('rejects a date range wider than the cap', async () => {
     const client = clientReturning(oneCharge);
-    const result = await run(client, authContext(['b1']), {
-      fromDate: '2024-01-01',
-      toDate: '2026-01-01',
-    });
+    const toDate = '2026-01-01';
+    // Derive a `fromDate` a few days past the cap so the test tracks the cap value.
+    const fromDate = new Date(
+      Date.parse(`${toDate}T00:00:00Z`) - (MAX_DATE_RANGE_DAYS + 5) * 86_400_000,
+    )
+      .toISOString()
+      .slice(0, 10);
+    const result = await run(client, authContext(['b1']), { fromDate, toDate });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { message: string }).message).toMatch(/must not exceed/);
   });
 
   it('rejects a page size above the cap', async () => {
     const client = clientReturning(oneCharge);
-    const result = await run(client, authContext(['b1']), { pageSize: 500 });
+    const result = await run(client, authContext(['b1']), { pageSize: MAX_PAGE_SIZE + 1 });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
