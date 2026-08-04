@@ -20,6 +20,7 @@ COPY packages/hashavshevet-mesh/package.json ./packages/hashavshevet-mesh/
 COPY packages/israeli-vat-scraper/package.json ./packages/israeli-vat-scraper/
 COPY packages/kraken-scraper/package.json ./packages/kraken-scraper/
 COPY packages/migrations/package.json ./packages/migrations/
+COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY packages/modern-poalim-scraper/package.json ./packages/modern-poalim-scraper/
 COPY packages/payper-mesh/package.json ./packages/payper-mesh/
 COPY packages/pcn874-generator/package.json ./packages/pcn874-generator/
