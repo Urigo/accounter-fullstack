@@ -169,6 +169,14 @@ export async function getDocumentFromUrlsAndOcrData(
   adminBusinessId: string,
   chargeId?: string | null,
   fileHash?: number,
+  // When provided, the counterparty country + admin locality used for the
+  // foreign-counterparty VAT-0 fallback are taken from here instead of the
+  // auth-coupled `BusinessesProvider` / `AdminContextProvider` loaders. The
+  // gateway email-ingestion path passes this because it runs under a control-plane
+  // context with no auth session, where those loaders' `TenantAwareDBClient` throws
+  // "Missing businessId in AuthContext". Absent (the default), the auth-coupled
+  // loaders are used, as before.
+  vatFallbackContext?: { counterpartyCountry: string | null; adminLocality: string | null },
 ): Promise<IInsertDocumentsParams['documents'][number]> {
   const sides = figureOutSides(
     ocrData.documentType,
@@ -179,12 +187,19 @@ export async function getDocumentFromUrlsAndOcrData(
 
   // in case of missing VAT, use 0 for foreign counterparties
   if (ocrData.counterpartyId && ocrData.vat == null) {
-    const [business, adminContext] = await Promise.all([
-      injector.get(BusinessesProvider).getBusinessByIdLoader.load(ocrData.counterpartyId),
-      injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(adminBusinessId),
-    ]);
-    if (business && adminContext && business.country !== adminContext.locality) {
-      ocrData.vat = 0;
+    if (vatFallbackContext) {
+      const { counterpartyCountry, adminLocality } = vatFallbackContext;
+      if (adminLocality != null && counterpartyCountry !== adminLocality) {
+        ocrData.vat = 0;
+      }
+    } else {
+      const [business, adminContext] = await Promise.all([
+        injector.get(BusinessesProvider).getBusinessByIdLoader.load(ocrData.counterpartyId),
+        injector.get(AdminContextProvider).adminContextByOwnerIdLoader.load(adminBusinessId),
+      ]);
+      if (business && adminContext && business.country !== adminContext.locality) {
+        ocrData.vat = 0;
+      }
     }
   }
 

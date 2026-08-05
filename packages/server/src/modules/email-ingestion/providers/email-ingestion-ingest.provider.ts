@@ -492,20 +492,51 @@ export class EmailIngestionIngestProvider {
     }));
 
     // Find the documents new to this tenant under its RLS context (a short read,
-    // no network I/O held in a long-lived transaction).
-    const newCandidates = await withTenantContext(this.dbProvider.pool, tenantId, async client => {
-      const fresh: typeof candidates = [];
-      for (const candidate of candidates) {
-        const existing = await checkDocumentByHashForIngest.run(
-          { ownerId: tenantId, fileHash: candidate.fileHash.toString() },
-          client,
-        );
-        if (existing.length === 0) {
-          fresh.push(candidate);
+    // no network I/O held in a long-lived transaction). In the same tenant-pinned
+    // read, resolve the inputs for the foreign-counterparty VAT-0 fallback — the
+    // counterparty's country and the tenant's admin locality — so
+    // getDocumentFromUrlsAndOcrData never has to reach into the auth-coupled
+    // Businesses/AdminContext providers, whose TenantAwareDBClient throws
+    // "Missing businessId in AuthContext" in this control-plane context. These use
+    // the raw client directly (no pgtyped) so the control-plane read stays
+    // self-contained; RLS is pinned to the tenant, and the explicit owner_id filter
+    // is defense-in-depth.
+    const { newCandidates, vatFallbackContext } = await withTenantContext(
+      this.dbProvider.pool,
+      tenantId,
+      async client => {
+        const fresh: typeof candidates = [];
+        for (const candidate of candidates) {
+          const existing = await checkDocumentByHashForIngest.run(
+            { ownerId: tenantId, fileHash: candidate.fileHash.toString() },
+            client,
+          );
+          if (existing.length === 0) {
+            fresh.push(candidate);
+          }
         }
-      }
-      return fresh;
-    });
+
+        let ctx: { counterpartyCountry: string | null; adminLocality: string | null } | undefined;
+        if (fresh.length > 0 && businessId) {
+          const [countryRes, localityRes] = await Promise.all([
+            client.query<{ country: string | null }>(
+              'SELECT country FROM accounter_schema.businesses WHERE id = $1 AND owner_id = $2 LIMIT 1',
+              [businessId, tenantId],
+            ),
+            client.query<{ locality: string | null }>(
+              'SELECT locality FROM accounter_schema.user_context WHERE owner_id = $1 LIMIT 1',
+              [tenantId],
+            ),
+          ]);
+          ctx = {
+            counterpartyCountry: countryRes.rows[0]?.country ?? null,
+            adminLocality: localityRes.rows[0]?.locality ?? null,
+          };
+        }
+
+        return { newCandidates: fresh, vatFallbackContext: ctx };
+      },
+    );
 
     // Upload + OCR the new documents in parallel, outside any transaction. A
     // failure here — the Cloudinary upload or the params build; OCR itself is
@@ -539,6 +570,9 @@ export class EmailIngestionIngestProvider {
             tenantId,
             null,
             fileHash,
+            // Pre-resolved above (raw pool, tenant RLS) so the fallback never calls
+            // the auth-coupled providers in this control-plane context.
+            vatFallbackContext,
           );
           // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
           // OCR-derived remarks with an email identifier. (There it is the email
