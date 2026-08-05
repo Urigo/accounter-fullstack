@@ -304,11 +304,12 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     vi.useRealTimers();
   });
 
+  const quarantineRow = { id: 'q-self' };
   const idemRow = {
     id: 'idem-row',
     idempotency_key: IDEM_KEY,
     owner_id: TENANT_ID,
-    outcome: IngestOutcome.DUPLICATE,
+    outcome: IngestOutcome.QUARANTINED,
     ingest_id: null,
     audit_id: 'audit-self',
     created_at: NOW,
@@ -317,7 +318,7 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     id: 'dedup-row',
     owner_id: TENANT_ID,
     fingerprint: 'fp',
-    outcome: IngestOutcome.DUPLICATE,
+    outcome: IngestOutcome.QUARANTINED,
     ingest_id: null,
     correlation_id: CORR_ID,
     created_at: NOW,
@@ -335,9 +336,10 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     ],
   };
 
-  it('returns DUPLICATE with SELF_ISSUED when the issuer is the tenant own business', async () => {
+  it('returns QUARANTINED with SELF_ISSUED when the issuer is the tenant own business', async () => {
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(VALID_GRANT_SELF_ISSUED, [
       { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [quarantineRow], rowCount: 1 }, // quarantine insert
       { rows: [idemRow], rowCount: 1 }, // idempotency insert
       { rows: [dedupRow], rowCount: 1 }, // dedup insert
     ]);
@@ -345,22 +347,26 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     const result = await provider.performIngest(inputWithContent, ocrInjector);
 
     expect(result).toMatchObject({
-      outcome: IngestOutcome.DUPLICATE,
-      existingIngestId: null,
+      outcome: IngestOutcome.QUARANTINED,
       reasonCode: IngestReasonCode.SELF_ISSUED,
     });
     // No document work (upload/OCR run together in prepareDocuments) and no
-    // charge/document rows are written for a self-issued duplicate.
+    // charge/document rows are written — the email is quarantined, not inserted.
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
+    // A quarantine row is recorded so the misclassification is never silent.
+    expect(
+      dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine')),
+    ).toBe(true);
   });
 
-  it('persists idempotency + dedup so a retry short-circuits, without dedup lookup or insert queries', async () => {
+  it('persists quarantine + idempotency + dedup so a retry short-circuits, without dedup lookup query', async () => {
     const { provider, validateAndConsumeGrant, dataCalls, dataQueries } = makeProvider(
       VALID_GRANT_SELF_ISSUED,
       [
         { rows: [], rowCount: 0 }, // early idempotency miss
+        { rows: [quarantineRow], rowCount: 1 }, // quarantine insert
         { rows: [idemRow], rowCount: 1 }, // idempotency insert
         { rows: [dedupRow], rowCount: 1 }, // dedup insert
       ],
@@ -369,10 +375,12 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
     // The grant IS validated/consumed; the self-issued check then short-circuits
-    // before any dedup lookup, charge or document insert — but still records the
-    // idempotency key + dedup fingerprint so retries return DUPLICATE cleanly.
+    // before any dedup lookup, charge or document insert — but records the
+    // quarantine row plus the idempotency key + dedup fingerprint so retries
+    // short-circuit at the early idempotency check.
     expect(validateAndConsumeGrant).toHaveBeenCalled();
-    expect(dataQueries).toHaveLength(3); // early idem lookup + idem insert + dedup insert
+    expect(dataQueries).toHaveLength(4); // early idem lookup + quarantine insert + idem insert + dedup insert
+    expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine'))).toBe(true);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_idempotency_keys'))).toBe(true);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_dedup_fingerprints'))).toBe(true);
   });

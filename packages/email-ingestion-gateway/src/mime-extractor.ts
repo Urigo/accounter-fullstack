@@ -202,14 +202,26 @@ const ISSUER_CANDIDATE_RE = new RegExp(
   `(?:From|Reply-To|Sender):[\\s\\S]{0,250}?(?:href="mailto:([^"?]+)"|(${ISSUER_EMAIL}))`,
   'gi',
 );
+// Any `mailto:` link anywhere in the body, used as a lower-priority fallback.
+// A mailing-list forward ("… via <Group> <group@…>", e.g. a Google Group)
+// rewrites the quoted `From:` to the group's own address, so the header-anchored
+// regex above only recovers the forwarder — the real issuer survives only as a
+// contact/footer link ("If you have questions, contact billing@vendor.com" →
+// `<a href="mailto:billing@vendor.com">`). Harvesting those lets the server's
+// issuer lookup still match the issuing business. Extra addresses are harmless:
+// the server only matches candidates that are registered to a business, and its
+// candidate ordering already prefers non-forwarder addresses.
+const MAILTO_LINK_RE = /mailto:([^"'?>\s]+)/gi;
 const MAX_ISSUER_CANDIDATES = 25;
 
 function extractIssuerCandidates(body: string): string[] {
   const candidates: string[] = [];
   const seen = new Set<string>();
-  for (const match of body.matchAll(ISSUER_CANDIDATE_RE)) {
-    let email = match[1] ?? match[2] ?? '';
-    if (match[1]) {
+
+  // Returns true once the candidate cap is reached, so callers stop scanning.
+  const add = (raw: string, percentDecode: boolean): boolean => {
+    let email = raw;
+    if (percentDecode) {
       try {
         email = decodeURIComponent(email);
       } catch {
@@ -221,10 +233,26 @@ function extractIssuerCandidates(body: string): string[] {
     if (email && !seen.has(key)) {
       seen.add(key);
       candidates.push(email);
-      if (candidates.length >= MAX_ISSUER_CANDIDATES) {
-        break;
-      }
+    }
+    return candidates.length >= MAX_ISSUER_CANDIDATES;
+  };
+
+  // 1. Header-anchored addresses from the quoted From/Reply-To/Sender block —
+  //    highest signal, kept first so they win in the server's selection policy.
+  for (const match of body.matchAll(ISSUER_CANDIDATE_RE)) {
+    if (add(match[1] ?? match[2] ?? '', !!match[1])) {
+      return candidates;
     }
   }
+
+  // 2. Any other `mailto:` link in the body (contact/footer addresses) —
+  //    lower signal, appended after the header-anchored candidates. Deduped
+  //    against them via `seen`, so a link already captured above is not repeated.
+  for (const match of body.matchAll(MAILTO_LINK_RE)) {
+    if (add(match[1] ?? '', true)) {
+      return candidates;
+    }
+  }
+
   return candidates;
 }

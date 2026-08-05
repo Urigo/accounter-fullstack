@@ -31,19 +31,30 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
       input.senderEvidence ?? undefined,
     );
 
-    // Self-issued detection: confirmation emails for invoices the tenant issued
-    // through its own invoicing platform (e.g. Morning/greeninvoice). The
-    // document already exists on the server from creation, so binding the
-    // tenant's own business as the issuer lets the ingest step recognize the
-    // duplicate and skip it (see EmailIngestionIngestProvider.performIngest).
-    // Mirrors the legacy gmail-listener self-issued skip. The recipient alias is
-    // passed as the tenant's own inbound address so a mailing-list forward that
-    // rewrites `From` into that alias is still recognized as self — keeping the
-    // check tenant-agnostic.
-    const selfIssued = isSelfIssuedSenderEvidence(input.senderEvidence ?? undefined, [
-      input.recipientAlias,
-    ]);
-    const issuingBusinessId = selfIssued ? aliasResult.tenantId : businessId;
+    // A positive *external* recognition wins over the self-issued heuristic: if a
+    // real counterparty business (anything other than the tenant itself) matched a
+    // sender-evidence address, attribute the documents to it and skip the
+    // self-issued check entirely. Without this, a supplier invoice that reaches the
+    // tenant through its own forwarding group — which rewrites the quoted `From` to
+    // a forwarder address and so collapses the single-address self-issued heuristic
+    // onto that forwarder — would be wrongly bound to the tenant and dropped at
+    // ingest, even though recognition had already identified the real supplier.
+    const externalBusinessId =
+      businessId && businessId !== aliasResult.tenantId ? businessId : null;
+
+    // Self-issued detection (fallback, only when no external issuer was found):
+    // confirmation emails for invoices the tenant issued through its own invoicing
+    // platform (e.g. Morning/greeninvoice). Binding the tenant's own business as the
+    // issuer lets the ingest step recognize it and skip it (see
+    // EmailIngestionIngestProvider.performIngest). Mirrors the legacy gmail-listener
+    // self-issued skip. The recipient alias is passed as the tenant's own inbound
+    // address so a mailing-list forward that rewrites `From` into that alias is
+    // still recognized as self — keeping the check tenant-agnostic.
+    const selfIssued =
+      externalBusinessId === null &&
+      isSelfIssuedSenderEvidence(input.senderEvidence ?? undefined, [input.recipientAlias]);
+    const issuingBusinessId =
+      externalBusinessId ?? (selfIssued ? aliasResult.tenantId : businessId);
 
     const expiresAt = new Date(Date.now() + GRANT_TTL_MS);
     const grant = await control.issueGrant({
@@ -69,18 +80,21 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
         expiresAt: grant.expiresAt.toISOString(),
       },
       // null signals "no business recognized" → gateway applies default
-      // treatment. Self-issued emails are dropped at ingest, so we return no
-      // treatment config either, sparing the gateway needless document work
-      // (link-fetch / body→PDF) for a document that will be skipped.
-      businessEmailConfig:
-        !selfIssued && businessId
-          ? {
-              businessId,
-              internalEmailLinks: config.internalEmailLinks ?? null,
-              emailBody: config.emailBody ?? null,
-              attachments: config.attachments ?? null,
-            }
-          : null,
+      // treatment. We return config only for a recognized external business.
+      // When none is recognized the email is not inserted at ingest — a
+      // self-issued/tenant-matched email is QUARANTINED (recorded and
+      // reprocessable, never silently dropped; see
+      // EmailIngestionIngestProvider.performIngest) — so we return no treatment
+      // config either, sparing the gateway needless document work (link-fetch /
+      // body→PDF) for a document that will not be inserted.
+      businessEmailConfig: externalBusinessId
+        ? {
+            businessId: externalBusinessId,
+            internalEmailLinks: config.internalEmailLinks ?? null,
+            emailBody: config.emailBody ?? null,
+            attachments: config.attachments ?? null,
+          }
+        : null,
     };
   } catch (err) {
     throw new GraphQLError('Failed to process ingest control request', {
