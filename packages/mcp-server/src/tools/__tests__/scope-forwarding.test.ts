@@ -3,6 +3,7 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { BUSINESS_SCOPE_HEADER, UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME } from '../businesses.js';
+import { DATA_MODEL_GUIDE_TOOL_NAME } from '../data-model-guide.js';
 import { executeRegisteredTool } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
 
@@ -130,6 +131,12 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_ledger_records: { businessId: B1 },
 };
 
+/**
+ * Tools with pure handlers: discovery (memberships are already on the auth
+ * context) and the static data-model guide. Neither talks upstream.
+ */
+const PURE_TOOLS = new Set([LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME, DATA_MODEL_GUIDE_TOOL_NAME]);
+
 /** A tool that took a singular `businessId` must have narrowed the scope to it. */
 function expectedScopeFor(name: string): string[] {
   const args = ARGS_BY_TOOL[name] as { businessId?: string } | undefined;
@@ -159,8 +166,10 @@ describe('registry-wide business-scope forwarding', () => {
       expect(result.isError, `${name} should succeed`).toBeUndefined();
       const structured = result.structuredContent as Record<string, unknown>;
 
-      if (name === LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME) {
-        // Discovery is pure and *is* the scope — no upstream call, no echo.
+      if (PURE_TOOLS.has(name)) {
+        // These make no upstream call, so there is nothing to forward and no
+        // scope to echo. Asserted rather than skipped: if one of them ever grows
+        // an upstream call, it must come back through the scope contract above.
         expect(headersSeen).toHaveLength(0);
         expect(structured).not.toHaveProperty('scope');
         return;

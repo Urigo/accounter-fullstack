@@ -2,6 +2,7 @@ import { listAccountsTool } from './accounts.js';
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
+import { dataModelGuideTool } from './data-model-guide.js';
 import { getDocumentsTool } from './document-details.js';
 import { incomeExpenseSummaryTool, profitAndLossTool, vatReportTool } from './financial-reports.js';
 import { counterpartyTotalsTool, ledgerRecordsTool } from './ledger-reports.js';
@@ -24,6 +25,10 @@ export const toolRegistry = new ToolRegistry();
 // `listedTools` is now empty (the internal smoke tool is dispatchable but no
 // longer advertised), so this is genuinely the first tool the model sees.
 toolRegistry.register(listBusinessMembershipsTool);
+// The data-model guide sits with discovery, ahead of every data tool: it is the
+// one thing that has to be read *before* interpreting results, it needs no
+// scope, and it costs no upstream call.
+toolRegistry.register(dataModelGuideTool);
 
 // Answers before rows.
 //

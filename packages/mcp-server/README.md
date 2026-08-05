@@ -18,8 +18,8 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of fifteen read-only tools
-(`accounter_list_business_memberships`, `accounter_list_accounts`,
+Accounter GraphQL server; a curated registry of sixteen read-only tools
+(`accounter_list_business_memberships`, `accounter_data_model_guide`, `accounter_list_accounts`,
 `accounter_income_expense_summary`, `accounter_profit_and_loss`, `accounter_vat_report`,
 `accounter_counterparty_totals`, `accounter_search_charges`, `accounter_get_charges`,
 `accounter_get_transactions`, `accounter_get_documents`, `accounter_ledger_records`,
@@ -78,6 +78,15 @@ scope, because it _is_ the scope.
   businesses last. Pure: memberships are already on the auth context, so it makes no upstream call.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
+- **`accounter_data_model_guide`** — a static markdown explanation of how accounts, charges,
+  documents, currency, and date filters relate, and of the traps that make naive aggregation wrong.
+  Pure (no upstream call) and **needs no business scope**, so it can be read cold, before a business
+  is chosen — which is the point: the connector feedback identified this missing context as the
+  single most expensive gap, since an agent otherwise reverse-engineers the model from Hebrew bank
+  descriptions. It is a tool rather than an MCP resource because the transport advertises only
+  `tools` capabilities, and `tools/list` is where a model actually looks. `data-model-guide.test.ts`
+  pins its content against the code — every tool it names must be registered, and every charge and
+  account type must be documented — so a rename cannot leave it silently stale.
 
 The **report tools** are registered ahead of the row-level ones on purpose: a model asked "how much
 did we make this year" should assemble and explain a report, not derive one from raw bank rows. All
