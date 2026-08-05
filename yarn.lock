@@ -26655,12 +26655,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz":
-  version: 0.20.2
-  resolution: "xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
+"xlsx@npm:@e965/xlsx@0.20.3":
+  version: 0.20.3
+  resolution: "@e965/xlsx@npm:0.20.3"
   bin:
-    xlsx: ./bin/xlsx.njs
-  checksum: 10c0/664dff22e5ecd83d595f34e00ac90ee852d16e45b72385ada54291551b808c6848b166fb395f5e35249ca976a5b5d514e793ccbcc0a611b87a600ae4024d605a
+    xlsx: bin/xlsx.njs
+  checksum: 10c0/29416c391f55010af50eab38f8d3d3622e656463edb1670e58071a7ed250888a49e63d61fc6a12ed6e431ea045424868cc488374f3ded841e7ae472fbd0a2720
   languageName: node
   linkType: hard
 

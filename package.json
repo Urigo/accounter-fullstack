@@ -102,7 +102,8 @@
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.10.9": "patch:@slonik/pg-driver@npm%3A49.10.9#~/.yarn/patches/@slonik-pg-driver-npm-49.10.9-8d2c0c21df.patch",
-    "graphql": "16.14.2"
+    "graphql": "16.14.2",
+    "xlsx": "npm:@e965/xlsx@0.20.3"
   },
   "lint-staged": {
     "*.--write": "prettier --write"
