@@ -56,10 +56,7 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem
-            disabled={selectedCount === 0}
-            onSelect={() => setConfirmOpen(true)}
-          >
+          <DropdownMenuItem disabled={selectedCount === 0} onSelect={() => setConfirmOpen(true)}>
             <RefreshCcwDot className="size-4" />
             Regenerate ledger
           </DropdownMenuItem>
