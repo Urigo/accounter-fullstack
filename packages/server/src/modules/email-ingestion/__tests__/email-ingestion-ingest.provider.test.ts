@@ -243,6 +243,8 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       [
         { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [], rowCount: 0 }, // prepareDocuments: checkDocumentByHash → new candidate
+        { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
+        { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
         { rows: [{ id: 'q-id' }], rowCount: 1 }, // quarantine insert
         { rows: [idemRow], rowCount: 1 }, // idempotency insert
         { rows: [dedupRow], rowCount: 1 }, // dedup insert
@@ -628,6 +630,8 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       [
         { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+        { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
+        { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
         { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
@@ -656,10 +660,53 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     expect(docInsert?.values).toContain(BUSINESS_ID);
   });
 
+  it('resolves foreign-counterparty VAT via the raw pool, not the auth-coupled providers', async () => {
+    // Regression: the gateway ingest runs under a control-plane context with no auth
+    // session. The foreign-counterparty VAT-0 fallback must read the counterparty
+    // country + admin locality via the raw pool — never via BusinessesProvider /
+    // AdminContextProvider, whose TenantAwareDBClient throws "Missing businessId in
+    // AuthContext" here (which had surfaced as an UPLOAD_FAILED quarantine).
+    businessesProvider.getBusinessByIdLoader.load.mockClear();
+    adminContextProvider.adminContextByOwnerIdLoader.load.mockClear();
+
+    const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      { rows: [{ country: 'US' }], rowCount: 1 }, // counterparty country (foreign)
+      { rows: [{ locality: 'IL' }], rowCount: 1 }, // admin locality
+      { rows: [], rowCount: 0 }, // idempotency miss
+      { rows: [], rowCount: 0 }, // dedup fingerprint miss
+      { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
+      { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED, ingestId: 'charge-1' });
+    // The VAT-0 fallback inputs are read via the raw pool…
+    expect(
+      dataCalls.some(
+        c => c.text.includes('FROM accounter_schema.businesses') && c.text.includes('country'),
+      ),
+    ).toBe(true);
+    expect(
+      dataCalls.some(
+        c => c.text.includes('FROM accounter_schema.user_context') && c.text.includes('locality'),
+      ),
+    ).toBe(true);
+    // …and never via the auth-coupled providers (which would throw in this context).
+    expect(businessesProvider.getBusinessByIdLoader.load).not.toHaveBeenCalled();
+    expect(adminContextProvider.adminContextByOwnerIdLoader.load).not.toHaveBeenCalled();
+  });
+
   it('sets a descriptive charge description from subject, sender, and received date', async () => {
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
+      { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
       { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
@@ -689,6 +736,8 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
+      { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
       { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
