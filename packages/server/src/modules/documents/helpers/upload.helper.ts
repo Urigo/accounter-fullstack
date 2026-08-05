@@ -189,7 +189,11 @@ export async function getDocumentFromUrlsAndOcrData(
   if (ocrData.counterpartyId && ocrData.vat == null) {
     if (vatFallbackContext) {
       const { counterpartyCountry, adminLocality } = vatFallbackContext;
-      if (adminLocality != null && counterpartyCountry != null && counterpartyCountry !== adminLocality) {
+      if (
+        adminLocality != null &&
+        counterpartyCountry != null &&
+        counterpartyCountry !== adminLocality
+      ) {
         ocrData.vat = 0;
       }
     } else {
