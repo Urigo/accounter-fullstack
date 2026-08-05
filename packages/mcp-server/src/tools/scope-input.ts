@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { ToolInputError } from './execute.js';
+import type { ToolExecutionContext } from './registry.js';
 
 /**
  * Shared business-scope input fragment.
@@ -49,3 +51,42 @@ export const SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX =
   'Scope: this covers exactly one business — pass its id as the required `businessId`. The response ' +
   'echoes the effective `scope.businessIds` alongside it. If you have more than one business, call ' +
   '`accounter_list_business_memberships` first to choose.';
+
+/**
+ * The required singular `businessId` taken by the single-business report tools.
+ *
+ * `requestedBusinessIds()` in `execute.ts` recognizes this field by name and
+ * narrows the resolved read scope — and therefore `x-business-scope` — to just
+ * this business. That matters beyond authorization: several upstream report
+ * resolvers (`incomeExpenseChart`, `profitAndLossReport`, `vatReport`) take no
+ * owner argument at all and derive it from the forwarded scope, so the name of
+ * this field is what points them at the right business.
+ */
+export const businessIdInput = z
+  .string()
+  .min(1)
+  .describe(
+    'The business (owner) id to report on — must be one of the businesses you belong to. ' +
+      'Unlike the list tools this report covers exactly one business, so the id is required. ' +
+      'Use accounter_list_business_memberships to discover ids.',
+  );
+
+/**
+ * Re-check a tool's requested business against the resolved read scope.
+ *
+ * Defense in depth: the policy has already verified this business is in scope,
+ * so a mismatch means the two disagree — and a business-scoped tool must never
+ * reach upstream with an unauthorized owner. Deriving the owner from
+ * `readScope.businessIds[0]` instead would agree today only because the policy
+ * narrows the scope to exactly this one business; it would silently report on
+ * the wrong business the moment the scope can hold more than one entry.
+ */
+export function assertAuthorizedBusiness(
+  businessId: string,
+  context: ToolExecutionContext,
+): string {
+  if (!context.readScope.businessIds.includes(businessId)) {
+    throw new ToolInputError('No authorized business in scope for this report');
+  }
+  return businessId;
+}

@@ -123,7 +123,11 @@ explicitly.
 
 ---
 
-## Phase 2 — Report tools (wrapping existing upstream queries)
+## Phase 2 — Report tools (wrapping existing upstream queries) — ✅ DONE
+
+_Implemented in `src/tools/accounts.ts`, `financial-reports.ts` and `ledger-reports.ts`, registered
+ahead of the row-level tools. 470 tests pass; codegen, lint, typecheck and build clean. The deferred
+server-side items are now recorded as **I6** in `packages/mcp-server/docs/todo.md`._
 
 New file `packages/mcp-server/src/tools/financial-reports.ts`, registered in `registry-instance.ts`.
 Every tool follows the established `balanceReportTool` pattern in `reports.ts`: required singular

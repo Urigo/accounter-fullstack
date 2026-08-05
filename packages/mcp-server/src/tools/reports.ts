@@ -4,7 +4,11 @@ import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import {
+  assertAuthorizedBusiness,
+  businessIdInput,
+  SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
+} from './scope-input.js';
 
 /**
  * Tool 3: a selected read-only report (spec §8.2).
@@ -21,14 +25,7 @@ export const MAX_REPORT_DATE_RANGE_DAYS = 1096; // ~3 years
 export const MAX_REPORT_ROWS = 1000;
 
 const balanceReportInput = z.object({
-  businessId: z
-    .string()
-    .min(1)
-    .describe(
-      'The business (owner) id to report on — must be one of the businesses you belong to. ' +
-        'Unlike the list tools this report covers exactly one business, so the id is required. ' +
-        'Use accounter_list_business_memberships to discover ids.',
-    ),
+  businessId: businessIdInput,
   fromDate: TIMELESS_DATE.describe('Start of the reporting period (YYYY-MM-DD).'),
   toDate: TIMELESS_DATE.describe('End of the reporting period (YYYY-MM-DD).'),
   reportType: z
@@ -77,19 +74,7 @@ async function handler(
 ): Promise<ToolResult> {
   assertDateRange(input);
 
-  // Report on the business the caller actually asked for. Deriving the owner
-  // from the scope instead (`readScope.businessIds[0]`) happens to agree today
-  // only because the policy narrows the scope to exactly this one business — it
-  // would silently report on the wrong business the moment the scope can hold
-  // more than one entry.
-  //
-  // The membership check is defense in depth: the policy has already verified
-  // this business is in scope, so a mismatch means the two disagree, and a
-  // business-scoped tool must never reach upstream with an unauthorized owner.
-  const ownerId = input.businessId;
-  if (!context.readScope.businessIds.includes(ownerId)) {
-    throw new ToolInputError('No authorized business in scope for this report');
-  }
+  const ownerId = assertAuthorizedBusiness(input.businessId, context);
 
   const variables: McpBalanceReportQueryVariables = {
     fromDate: input.fromDate,

@@ -18,16 +18,18 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of nine read-only tools
-(`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
-`accounter_get_transactions`, `accounter_get_documents`, `accounter_list_tags`,
-`accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
-by strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
-upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
-propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
-operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
-at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
-backend via `traceparent` and `X-Correlation-Id`.
+Accounter GraphQL server; a curated registry of fifteen read-only tools
+(`accounter_list_business_memberships`, `accounter_list_accounts`,
+`accounter_income_expense_summary`, `accounter_profit_and_loss`, `accounter_vat_report`,
+`accounter_counterparty_totals`, `accounter_search_charges`, `accounter_get_charges`,
+`accounter_get_transactions`, `accounter_get_documents`, `accounter_ledger_records`,
+`accounter_list_tags`, `accounter_list_tax_categories`, `accounter_list_businesses`,
+`accounter_balance_report`) each gated by strict input validation, a per-tool authorization policy,
+and business-scope narrowing forwarded upstream as `x-business-scope`; a hardened upstream GraphQL
+client (timeout, bounded retries, header propagation, sanitized errors); a unified error taxonomy;
+per-`tools/call` rate limiting; in-process operational metrics (request/outcome counters, a latency
+histogram, auth-failure counters) exposed at `GET /metrics`; and OpenTelemetry tracing exported to
+Grafana Tempo (opt-in), correlated with the backend via `traceparent` and `X-Correlation-Id`.
 
 Phase 2 (write scope) is **not** implemented — see
 [Known limitations & phase 2](#known-limitations--phase-2-write-scope).
@@ -57,8 +59,8 @@ a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LI
 Every business-scoped tool follows one convention, so the model learns it once:
 
 - **Discover, then scope.** `accounter_list_business_memberships` returns
-  `{ businessId, name, role }`. Pass those ids back as `businessIds` (or, for the balance report,
-  the singular required `businessId`).
+  `{ businessId, name, role }`. Pass those ids back as `businessIds` (or, for the single-business
+  report tools, the singular required `businessId`).
 - **`businessIds` is optional and means "narrow".** Omitting it covers every business the caller
   belongs to. Any id outside the caller's memberships is **rejected**, never silently dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
@@ -76,26 +78,63 @@ scope, because it _is_ the scope.
   businesses last. Pure: memberships are already on the auth context, so it makes no upstream call.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
+
+The **report tools** are registered ahead of the row-level ones on purpose: a model asked "how much
+did we make this year" should assemble and explain a report, not derive one from raw bank rows. All
+five are single-business (required `businessId`) and require the `business_owner`/`accountant` role.
+
+- **`accounter_list_accounts`** — one business's financial accounts: id, name, number, `type`
+  (`BANK_ACCOUNT`, `BANK_DEPOSIT_ACCOUNT`, `CREDIT_CARD`, `CRYPTO_WALLET`, `FOREIGN_SECURITIES`),
+  currencies, and bank/card identifiers. `type` is what makes transaction data interpretable —
+  credit-card rows are settled again by a matching bank row, deposits receive checking-account
+  sweeps, and securities rows have no mirror bank leg. **Balances are deliberately not reported:**
+  upstream stores a placeholder `0` for card, deposit and SWIFT rows in a non-null column, so a
+  reported balance would be wrong more often than right.
+- **`accounter_income_expense_summary`** — monthly income/expense totals over a date range (≤ 3660
+  days, so a decade fits one call), converted to a single `currency` using historical rates, plus
+  period totals. `cumulativeNet` is a running sum of the period's own flows from zero — **not** an
+  account balance, and it counts card rows alongside the bank rows that settle them.
+- **`accounter_profit_and_loss`** — the ledger-computed P&L for one calendar year: revenue, cost of
+  sales, gross profit, R&D/marketing/G&A, operating profit, financial expenses, other income, profit
+  before tax, tax, net profit. Optional `referenceYears` (≤ 5) for year-over-year. Line items are
+  flattened to totals; the per-sort-code breakdown is dropped.
+- **`accounter_vat_report`** — monthly VAT: output VAT on income, input VAT on expenses, and net VAT
+  due (positive) or refundable (negative), in local currency. Per-document `records` are opt-in via
+  `includeRecords`; counts are always reported.
+- **`accounter_counterparty_totals`** — per-counterparty credit/debit/net totals from the
+  double-entry ledger, ordered by absolute total, with a per-currency breakdown. This is the direct
+  answer to "who are our biggest customers/suppliers". Revaluation entries are excluded by default.
+- **`accounter_ledger_records`** — individual ledger records (date, counterparty, counter account,
+  local and foreign amounts, `chargeId`, reference) over a bounded range (≤ 1096 days). The ledger,
+  not the raw bank feed, is authoritative about what a movement was. Both ledger tools surface an
+  upstream `CommonError` as a tool error rather than an empty list, which would misread as "no
+  activity".
+
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
   days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
-  (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
-  pagination metadata and the echoed `scope`. Scoping uses the `byOwners` predicate upstream (the
-  owner), never `byBusinesses` (the counterparty).
+  (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName`, plus
+  `chargeType` and `flowKind` — pagination metadata, and the echoed `scope`. Scoping uses the
+  `byOwners` predicate upstream (the owner), never `byBusinesses` (the counterparty).
 - **`accounter_get_charges`** — read-only charge **detail** by id (1–25 `chargeIds`). Returns each
   charge with owner, counterparty, amounts (total, VAT, withholding), the full set of dates, tags,
-  and `metadata` counts, plus — by default — its linked `transactions` and `documents` nested inline
-  (toggle with `includeTransactions` / `includeDocuments`). This is the drill-down for
+  `metadata` counts, `chargeType`, and `flowKind`. Linked `transactions` and `documents` are
+  **opt-in** via `includeTransactions` / `includeDocuments` (both default `false` — nesting them by
+  default is what forced nearly every response over the byte budget). This is the drill-down for
   `accounter_search_charges`. A charge whose `owner` falls outside the resolved scope is dropped as
   defense-in-depth on top of RLS.
 - **`accounter_get_transactions`** — read-only bank/card **transactions** by id (1–50
   `transactionIds`). Each row carries direction, amount, event/effective dates, source description,
-  `isFee`, `chargeId`, counterparty, and account. Scope is enforced upstream by RLS (transactions
-  carry no owner field for a client-side filter).
+  `isFee`, `chargeId`, counterparty, and account, plus `amountLocal` and `exchangeRate` — the amount
+  converted to ILS at that transaction's own event-date rate, so historical rows are never valued at
+  today's rates. Both are `null` when no rate is on file. Scope is enforced upstream by RLS
+  (transactions carry no owner field for a client-side filter).
 - **`accounter_get_documents`** — read-only **documents** by id (1–50 `documentIds`). Each row
-  carries `documentType`, serial number, date, amount, VAT, creditor/debtor, `chargeId`, and
-  `file`/`image` links. A document whose owning charge falls outside the resolved scope is dropped
-  as defense-in-depth on top of RLS.
+  carries `documentType`, serial number, date, amount, `amountExVat`, VAT, creditor/debtor,
+  `chargeId`, `file`/`image` links, and `direction` (`issued` = the business raised it, `received` =
+  it was billed). `direction` is `null` when the owner is neither party — credit invoices and
+  documents with a missing creditor — rather than guessed. A document whose owning charge falls
+  outside the resolved scope is dropped as defense-in-depth on top of RLS.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `businessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and size-capped (≤
   500).
