@@ -29,13 +29,15 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
   const selectedCount = table.getSelectedRowModel().rows.length;
 
   function onRegenerate(): void {
-    const rows = table.getSelectedRowModel().rows;
+    const { rows } = table.getSelectedRowModel();
     if (rows.length === 0) {
       return;
     }
     regenerateLedgerRecords(rows.map(row => row.original.id)).then(() => {
       // Refresh each affected row so the table reflects the regenerated ledger.
-      rows.forEach(row => row.original.onChange());
+      for (const row of rows) {
+        row.original.onChange();
+      }
     });
   }
 
