@@ -97,6 +97,10 @@ async function getInvoicePaymentCurrencyDiffErrors(
   }
 }
 
+// Max charges regenerated in parallel by `regenerateLedgerRecords`. Keeps large
+// batch selections from saturating the DB connection pool.
+const REGENERATE_LEDGER_CONCURRENCY = 5;
+
 // Regenerate the ledger records for a single charge. Any failure (charge not
 // found, locked, or a generation/storage error) is returned as a `CommonError`
 // rather than thrown, so a batched call never aborts the remaining charges.
@@ -396,9 +400,19 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
       // Regenerate each charge independently so a single failure surfaces as a
       // per-charge `CommonError` instead of aborting the whole batch. The single
       // regenerate button calls this with a one-element array.
-      return Promise.all(
-        chargeIds.map(chargeId => regenerateSingleChargeLedgerRecords(chargeId, context, info)),
-      );
+      //
+      // Process in bounded-concurrency chunks (rather than one big `Promise.all`)
+      // so a large selection doesn't fan out every charge's loader/insert/delete
+      // work at once and exhaust DB connections. Order of results is preserved.
+      const results: ResolversTypes['GeneratedLedgerRecords'][] = [];
+      for (let i = 0; i < chargeIds.length; i += REGENERATE_LEDGER_CONCURRENCY) {
+        const chunk = chargeIds.slice(i, i + REGENERATE_LEDGER_CONCURRENCY);
+        const chunkResults = await Promise.all(
+          chunk.map(chargeId => regenerateSingleChargeLedgerRecords(chargeId, context, info)),
+        );
+        results.push(...chunkResults);
+      }
+      return results;
     },
     lockLedgerRecords: async (_, { date }, { injector }) => {
       try {

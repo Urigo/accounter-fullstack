@@ -44,7 +44,11 @@ export const useRegenerateLedgerRecords = (): UseRegenerateLedgerRecords => {
     async (chargeIds: string[]) => {
       const message = 'Error regenerating ledger';
       const isBatch = chargeIds.length > 1;
-      const notificationId = `${NOTIFICATION_ID}-${chargeIds.join('-')}`;
+      // Keep the toast id short and stable: per-charge for a single regenerate (so it dedupes with
+      // that charge's own toast), a fixed id for a batch (joining every UUID could grow unbounded).
+      const notificationId = isBatch
+        ? `${NOTIFICATION_ID}-batch`
+        : `${NOTIFICATION_ID}-${chargeIds[0]}`;
       toast.loading(
         isBatch ? `Regenerating Ledger for ${chargeIds.length} charges` : 'Regenerating Ledger',
         {
