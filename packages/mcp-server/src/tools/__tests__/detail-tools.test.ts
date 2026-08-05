@@ -198,7 +198,7 @@ describe('getChargesTool', () => {
     const client = clientReturning(chargeFixture, body => (sentBody = body));
     await run(getChargesTool, client, authContext([B1]), {
       chargeIds: ['c1', 'c2'],
-      includeDocuments: false,
+      includeTransactions: true,
     });
     const variables = (
       sentBody as {
@@ -207,6 +207,19 @@ describe('getChargesTool', () => {
     ).variables;
     expect(variables.chargeIDs).toEqual(['c1', 'c2']);
     expect(variables.includeTransactions).toBe(true);
+    expect(variables.includeDocuments).toBe(false);
+  });
+
+  // Nesting transactions/documents by default is what forced nearly every call
+  // to spill over the payload budget, so both are opt-in.
+  it('omits nested transactions and documents unless asked', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(chargeFixture, body => (sentBody = body));
+    await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
+    const variables = (
+      sentBody as { variables: { includeTransactions: boolean; includeDocuments: boolean } }
+    ).variables;
+    expect(variables.includeTransactions).toBe(false);
     expect(variables.includeDocuments).toBe(false);
   });
 
@@ -310,6 +323,32 @@ describe('getChargesTool', () => {
     const structured = result.structuredContent as { charges: Array<{ id: string }> };
     expect(structured.charges).toHaveLength(1);
     expect(structured.charges[0]?.id).toBe('c1');
+  });
+
+  it('classifies a charge from its typename', async () => {
+    const client = clientReturning({
+      chargesByIDs: [
+        { ...chargeFixture.chargesByIDs[0], __typename: 'CreditcardBankCharge' },
+        {
+          ...chargeFixture.chargesByIDs[0],
+          id: 'c2',
+          __typename: 'CommonCharge',
+          totalAmount: { raw: 5000, formatted: '₪5,000.00', currency: 'ILS' },
+        },
+      ],
+    });
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      chargeIds: ['c1', 'c2'],
+    });
+    const { charges } = result.structuredContent as {
+      charges: Array<{ chargeType: string | null; flowKind: string }>;
+    };
+    // A card settlement moves money between the owner's own accounts.
+    expect(charges[0]).toMatchObject({
+      chargeType: 'CREDITCARD_BANK',
+      flowKind: 'internal_transfer',
+    });
+    expect(charges[1]).toMatchObject({ chargeType: 'COMMON', flowKind: 'income' });
   });
 
   it('drops a charge whose owner is outside the resolved scope (defense-in-depth)', async () => {
@@ -418,6 +457,31 @@ describe('getTransactionsTool', () => {
     await run(getTransactionsTool, client, authContext([B1]), { transactionIds: ['tx1', 'tx2'] });
     const variables = (sentBody as { variables: { transactionIDs: string[] } }).variables;
     expect(variables.transactionIDs).toEqual(['tx1', 'tx2']);
+  });
+
+  it('converts a foreign-currency row using its own event-date rate', async () => {
+    const client = clientReturning({
+      transactionsByIDs: [
+        {
+          ...fixture.transactionsByIDs[0],
+          amount: { raw: -100, formatted: '$-100.00', currency: 'USD' },
+          eventExchangeRates: { date: '2026-01-05', ils: 1, usd: 3.5 },
+        },
+      ],
+    });
+    const result = await run(getTransactionsTool, client, authContext([B1]), {
+      transactionIds: ['tx1'],
+    });
+    const [transaction] = (
+      result.structuredContent as {
+        transactions: Array<{
+          amountLocal: { value: number; currency: string } | null;
+          exchangeRate: number | null;
+        }>;
+      }
+    ).transactions;
+    expect(transaction!.amountLocal).toEqual({ value: -350, currency: 'ILS' });
+    expect(transaction!.exchangeRate).toBe(3.5);
   });
 
   it('reports no matches for an empty upstream result', async () => {
@@ -603,6 +667,19 @@ describe('getDocumentsTool', () => {
       fileUrl: 'https://files/d1.pdf',
     });
     expect(structured.documents[0]!.vat).toEqual({ value: -17, formatted: '₪-17.00', currency: 'ILS' });
+  });
+
+  it('exposes direction and amountExVat on each row', async () => {
+    const client = clientReturning({ documentsByIds: [doc()] });
+    const result = await run(getDocumentsTool, client, authContext([B1]), { documentIds: ['d1'] });
+    const [document] = (
+      result.structuredContent as {
+        documents: Array<{ direction: string | null; amountExVat: { value: number } | null }>;
+      }
+    ).documents;
+    // B1 is the debtor on this fixture, so the business was billed.
+    expect(document!.direction).toBe('received');
+    expect(document!.amountExVat?.value).toBe(-103);
   });
 
   it('drops a document whose owning charge is outside scope', async () => {

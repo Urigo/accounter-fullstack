@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { McpSearchChargesQuery, McpSearchChargesQueryVariables } from '../gql/index.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
+import { chargeTypeFromTypename, flowKindForCharge, type FlowKind } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -41,6 +42,7 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
   query McpSearchCharges($filters: ChargeFilter, $page: Int!, $limit: Int!) {
     allCharges(filters: $filters, page: $page, limit: $limit) {
       nodes {
+        __typename
         id
         userDescription
         owner {
@@ -71,6 +73,10 @@ type RawCharge = McpSearchChargesQuery['allCharges']['nodes'][number];
 export interface NormalizedCharge {
   id: string;
   description: string | null;
+  /** Same vocabulary as `filters.byChargeTypes`, so it can be fed back as a filter. */
+  chargeType: string | null;
+  /** What the charge does to the money — see `flowKindForCharge`. */
+  flowKind: FlowKind;
   /** Owning business, so multi-business results can be grouped by the model. */
   ownerId: string | null;
   ownerName: string | null;
@@ -150,9 +156,12 @@ function buildFilters(
 }
 
 function normalizeCharge(charge: RawCharge): NormalizedCharge {
+  const chargeType = chargeTypeFromTypename(charge.__typename);
   return {
     id: charge.id,
     description: charge.userDescription,
+    chargeType,
+    flowKind: flowKindForCharge(chargeType, charge.totalAmount),
     // Optional chaining: fixtures predating owner selection omit the field.
     ownerId: charge.owner?.id ?? null,
     ownerName: charge.owner?.name ?? null,
@@ -217,7 +226,7 @@ async function handler(
 export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {
   name: SEARCH_CHARGES_TOOL_NAME,
   description:
-    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Read-only. ' +
+    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Each row carries `chargeType` and `flowKind` (income / expense / internal_transfer / conversion / investment / tax / payroll / dividend / financial), so money moving between your own accounts can be excluded without inspecting descriptions. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: searchChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

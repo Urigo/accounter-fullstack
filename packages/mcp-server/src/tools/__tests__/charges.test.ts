@@ -70,13 +70,16 @@ describe('searchChargesTool — successful read', () => {
       totalCount: number;
       truncated: boolean;
     };
-    // This fixture omits `owner` on purpose — it predates the field. Owner
-    // tagging must degrade to nulls rather than throwing, so older fixtures and
-    // any upstream that stops returning the field keep working.
+    // This fixture omits `owner` and `__typename` on purpose — it predates both
+    // fields. Owner tagging and charge classification must degrade to
+    // nulls/`unknown` rather than throwing, so older fixtures and any upstream
+    // that stops returning a field keep working.
     expect(structured.charges).toEqual([
       {
         id: 'c1',
         description: 'Coffee',
+        chargeType: null,
+        flowKind: 'unknown',
         ownerId: null,
         ownerName: null,
         amount: { value: 12.5, formatted: '₪12.50', currency: 'ILS' },
@@ -86,6 +89,30 @@ describe('searchChargesTool — successful read', () => {
     expect(structured.totalCount).toBe(1);
     expect(structured.truncated).toBe(false);
     expect(structured.pagination.hasNextPage).toBe(false);
+  });
+
+  it('tags each charge with its type and flow kind', async () => {
+    const client = clientReturning({
+      allCharges: {
+        nodes: [
+          {
+            __typename: 'InternalTransferCharge',
+            id: 'c1',
+            userDescription: 'Sweep to deposit',
+            owner: { id: 'b1', name: 'Acme' },
+            totalAmount: { raw: -50_000, formatted: '₪-50,000.00', currency: 'ILS' },
+            minEventDate: '2026-01-05',
+          },
+        ],
+        pageInfo: { totalPages: 1, totalRecords: 1, currentPage: 1, pageSize: 25 },
+      },
+    });
+    const result = await run(client, authContext(['b1']), {});
+    const { charges } = result.structuredContent as {
+      charges: Array<{ chargeType: string; flowKind: string }>;
+    };
+    // Negative amount, but it is not an expense — the money stayed in-house.
+    expect(charges[0]).toMatchObject({ chargeType: 'INTERNAL', flowKind: 'internal_transfer' });
   });
 
   it('tags each charge with its owning business', async () => {
