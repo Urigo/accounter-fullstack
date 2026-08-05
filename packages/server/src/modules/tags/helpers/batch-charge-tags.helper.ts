@@ -13,8 +13,8 @@ const CHARGE_TAGS_CONCURRENCY = 5;
  *
  * Unlike the charges module's `batchUpdateChargesTags` (which replaces a charge's whole tag set),
  * this only touches the given ids. Inserts are idempotent (`ON CONFLICT DO NOTHING`); removing a
- * tag a charge doesn't have is a harmless no-op. Ids present in both lists are treated as adds
- * (the caller is expected to have de-duplicated, but order here is remove-then-add per charge).
+ * tag a charge doesn't have is a harmless no-op. Removal happens before addition per charge, so an
+ * id present in both lists ends up added ("add wins").
  */
 export async function applyChargeTagChanges(
   injector: Injector,

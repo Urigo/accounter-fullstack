@@ -55,6 +55,15 @@ export function ChargesBatchTagsDialog({
     reset();
   };
 
+  // Single close path so both the Dialog's own dismissals (overlay/esc/X) and the Cancel button
+  // clear the selection before closing.
+  const handleOpenChange = (nextOpen: boolean): void => {
+    if (!nextOpen) {
+      reset();
+    }
+    onOpenChange(nextOpen);
+  };
+
   const onApply = async (): Promise<void> => {
     if (selectedTags.length === 0 || count === 0) {
       return;
@@ -71,15 +80,7 @@ export function ChargesBatchTagsDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={nextOpen => {
-        if (!nextOpen) {
-          reset();
-        }
-        onOpenChange(nextOpen);
-      }}
-    >
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md" onClick={event => event.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
@@ -111,7 +112,7 @@ export function ChargesBatchTagsDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button

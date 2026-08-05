@@ -98,13 +98,14 @@ export const tagsResolvers: TagsModule.Resolvers &
       if (!chargeIds || chargeIds.length === 0) {
         return { __typename: 'CommonError', message: 'No charges provided' };
       }
+      const addIds = addTagIds ?? [];
       const removeIds = removeTagIds ?? [];
-      // Drop from adds any id that's also being removed, so a tag in both lists isn't churned.
-      const addIds = (addTagIds ?? []).filter(id => !removeIds.includes(id));
       if (addIds.length === 0 && removeIds.length === 0) {
         return { __typename: 'CommonError', message: 'No tag changes provided' };
       }
       try {
+        // `applyChargeTagChanges` removes then adds per charge, so an id in both lists ends up
+        // added ("add wins") — no need to pre-filter the add list here.
         await applyChargeTagChanges(injector, chargeIds, addIds, removeIds);
 
         const loadedCharges = await injector
@@ -114,9 +115,12 @@ export const tagsResolvers: TagsModule.Resolvers &
             console.error(e);
             throw new GraphQLError('Error loading updated charges');
           });
-        const charges = loadedCharges.filter(
-          (charge): charge is IGetChargesByIdsResult => !!charge && !(charge instanceof Error),
-        );
+        // Fail the whole op if any charge can't be reloaded, rather than silently returning a
+        // partial set (mirrors batchUpdateCharges' post-load validation).
+        if (loadedCharges.some(charge => !charge || charge instanceof Error)) {
+          throw new GraphQLError(`Some updated charges not found (IDs "${chargeIds.join('", "')}")`);
+        }
+        const charges = loadedCharges as IGetChargesByIdsResult[];
         // Tag-only change: intentionally does NOT degrade accountant approval (matches the
         // `tags`-excluded-from-degrade convention used by updateCharge / batchUpdateCharges).
         return { charges };
