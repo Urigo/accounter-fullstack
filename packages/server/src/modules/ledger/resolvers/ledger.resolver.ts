@@ -1,4 +1,4 @@
-import { GraphQLError } from 'graphql';
+import { GraphQLError, type GraphQLResolveInfo } from 'graphql';
 import { type Injector } from 'graphql-modules';
 import { Repeater } from 'graphql-yoga';
 import {
@@ -94,6 +94,158 @@ async function getInvoicePaymentCurrencyDiffErrors(
       err,
     );
     return [];
+  }
+}
+
+// Max charges regenerated in parallel by `regenerateLedgerRecords`. Keeps large
+// batch selections from saturating the DB connection pool.
+const REGENERATE_LEDGER_CONCURRENCY = 5;
+
+// Regenerate the ledger records for a single charge. Any failure (charge not
+// found, locked, or a generation/storage error) is returned as a `CommonError`
+// rather than thrown, so a batched call never aborts the remaining charges.
+async function regenerateSingleChargeLedgerRecords(
+  chargeId: string,
+  context: GraphQLModules.ModuleContext,
+  info: GraphQLResolveInfo,
+): Promise<ResolversTypes['GeneratedLedgerRecords']> {
+  const { injector } = context;
+  try {
+    const { ledgerLock, ownerId } = await injector
+      .get(AdminContextProvider)
+      .getVerifiedAdminContext();
+    const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
+    if (!charge) {
+      return {
+        __typename: 'CommonError',
+        message: `Charge with id ${chargeId} not found`,
+      };
+    }
+    if (await isChargeLocked(charge, injector, ledgerLock)) {
+      return {
+        __typename: 'CommonError',
+        message: `Charge with id ${chargeId} is locked`,
+      };
+    }
+
+    const generated = await ledgerGenerationByCharge(
+      charge,
+      { insertLedgerRecordsIfNotExists: true },
+      context,
+      info,
+    );
+    if (!generated || 'message' in generated) {
+      const message = generated?.message ?? 'generation error';
+      throw new Error(message);
+    }
+
+    const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
+
+    const storageLedgerRecords = await injector
+      .get(LedgerProvider)
+      .getLedgerRecordsByChargesIdLoader.load(chargeId);
+
+    const fullMatching = ledgerRecordsGenerationFullMatchComparison(storageLedgerRecords, records);
+
+    if (fullMatching.isFullyMatched) {
+      return {
+        records: storageLedgerRecords,
+        charge,
+        errors: generated.errors,
+      };
+    }
+
+    const { toUpdate, toRemove } = ledgerRecordsGenerationPartialMatchComparison(
+      fullMatching.unmatchedStorageRecords,
+      fullMatching.unmatchedNewRecords,
+    );
+
+    const [newRecords, recordsToUpdate] = toUpdate.reduce(
+      (acc, record) => {
+        if (record.id === EMPTY_UUID) {
+          acc[0].push(record);
+        } else {
+          acc[1].push(record);
+        }
+        return acc;
+      },
+      [[], []] as [IGetLedgerRecordsByChargesIdsResult[], IGetLedgerRecordsByChargesIdsResult[]],
+    );
+
+    const updatePromise = injector
+      .get(LedgerProvider)
+      .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
+      .catch(e => {
+        const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
+        console.error(`${message}: ${e}`);
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new Error(message);
+      })
+      .then(() =>
+        injector.get(LedgerProvider).insertLedgerRecords({
+          ledgerRecords: recordsToUpdate
+            .map(record => convertLedgerRecordToInput(record, ownerId))
+            .map(record => {
+              record.chargeId = chargeId;
+              return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
+            }),
+        }),
+      )
+      .catch(e => {
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        const message = `Failed to update ledger records for charge ID="${chargeId}"`;
+        console.error(`${message}: ${e}`);
+        throw new Error(message);
+      });
+    const insertPromise =
+      newRecords.length > 0
+        ? injector
+            .get(LedgerProvider)
+            .insertLedgerRecords({
+              ledgerRecords: newRecords.map(record =>
+                convertLedgerRecordToInput(record, ownerId),
+              ) as IInsertLedgerRecordsParams['ledgerRecords'],
+            })
+            .catch(e => {
+              const message = `Failed to insert new ledger records for charge ID="${chargeId}"`;
+              console.error(`${message}: ${e}`);
+              if (e instanceof GraphQLError) {
+                throw e;
+              }
+              throw new Error(message);
+            })
+        : Promise.resolve();
+    const removePromises = toRemove.map(record =>
+      injector
+        .get(LedgerProvider)
+        .deleteLedgerRecordsByIdLoader.load(record.id)
+        .catch(e => {
+          const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
+          console.error(`${message}: ${e}`);
+          if (e instanceof GraphQLError) {
+            throw e;
+          }
+          throw new Error(message);
+        }),
+    );
+    await Promise.all([updatePromise, insertPromise, ...removePromises]);
+
+    const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
+
+    return {
+      records: toUpdate,
+      charge: degradedCharges.get(chargeId) ?? charge,
+      errors: generated.errors,
+    };
+  } catch (e) {
+    return {
+      __typename: 'CommonError',
+      message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
+    };
   }
 }
 
@@ -244,150 +396,23 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
     },
   },
   Mutation: {
-    regenerateLedgerRecords: async (_, { chargeId }, context, info) => {
-      const { injector } = context;
-      const { ledgerLock, ownerId } = await injector
-        .get(AdminContextProvider)
-        .getVerifiedAdminContext();
-      const charge = await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId);
-      if (!charge) {
-        throw new GraphQLError(`Charge with id ${chargeId} not found`);
+    regenerateLedgerRecords: async (_, { chargeIds }, context, info) => {
+      // Regenerate each charge independently so a single failure surfaces as a
+      // per-charge `CommonError` instead of aborting the whole batch. The single
+      // regenerate button calls this with a one-element array.
+      //
+      // Process in bounded-concurrency chunks (rather than one big `Promise.all`)
+      // so a large selection doesn't fan out every charge's loader/insert/delete
+      // work at once and exhaust DB connections. Order of results is preserved.
+      const results: ResolversTypes['GeneratedLedgerRecords'][] = [];
+      for (let i = 0; i < chargeIds.length; i += REGENERATE_LEDGER_CONCURRENCY) {
+        const chunk = chargeIds.slice(i, i + REGENERATE_LEDGER_CONCURRENCY);
+        const chunkResults = await Promise.all(
+          chunk.map(chargeId => regenerateSingleChargeLedgerRecords(chargeId, context, info)),
+        );
+        results.push(...chunkResults);
       }
-      if (await isChargeLocked(charge, injector, ledgerLock)) {
-        return {
-          __typename: 'CommonError',
-          message: `Charge with id ${chargeId} is locked`,
-        };
-      }
-      try {
-        const generated = await ledgerGenerationByCharge(
-          charge,
-          { insertLedgerRecordsIfNotExists: true },
-          context,
-          info,
-        );
-        if (!generated || 'message' in generated) {
-          const message = generated?.message ?? 'generation error';
-          throw new Error(message);
-        }
-
-        const records = generated.records as IGetLedgerRecordsByChargesIdsResult[];
-
-        const storageLedgerRecords = await injector
-          .get(LedgerProvider)
-          .getLedgerRecordsByChargesIdLoader.load(chargeId);
-
-        const fullMatching = ledgerRecordsGenerationFullMatchComparison(
-          storageLedgerRecords,
-          records,
-        );
-
-        if (fullMatching.isFullyMatched) {
-          return {
-            records: storageLedgerRecords,
-            charge,
-            errors: generated.errors,
-          };
-        }
-
-        const { toUpdate, toRemove } = ledgerRecordsGenerationPartialMatchComparison(
-          fullMatching.unmatchedStorageRecords,
-          fullMatching.unmatchedNewRecords,
-        );
-
-        const [newRecords, recordsToUpdate] = toUpdate.reduce(
-          (acc, record) => {
-            if (record.id === EMPTY_UUID) {
-              acc[0].push(record);
-            } else {
-              acc[1].push(record);
-            }
-            return acc;
-          },
-          [[], []] as [
-            IGetLedgerRecordsByChargesIdsResult[],
-            IGetLedgerRecordsByChargesIdsResult[],
-          ],
-        );
-
-        const updatePromise = injector
-          .get(LedgerProvider)
-          .deleteLedgerRecordsByIdLoader.loadMany(recordsToUpdate.map(r => r.id))
-          .catch(e => {
-            const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
-            console.error(`${message}: ${e}`);
-            if (e instanceof GraphQLError) {
-              throw e;
-            }
-            throw new Error(message);
-          })
-          .then(() =>
-            injector.get(LedgerProvider).insertLedgerRecords({
-              ledgerRecords: recordsToUpdate
-                .map(record => convertLedgerRecordToInput(record, ownerId))
-                .map(record => {
-                  record.chargeId = chargeId;
-                  return record as IInsertLedgerRecordsParams['ledgerRecords'][number];
-                }),
-            }),
-          )
-          .catch(e => {
-            if (e instanceof GraphQLError) {
-              throw e;
-            }
-            const message = `Failed to update ledger records for charge ID="${chargeId}"`;
-            console.error(`${message}: ${e}`);
-            throw new Error(message);
-          });
-        const insertPromise =
-          newRecords.length > 0
-            ? injector
-                .get(LedgerProvider)
-                .insertLedgerRecords({
-                  ledgerRecords: newRecords.map(record =>
-                    convertLedgerRecordToInput(record, ownerId),
-                  ) as IInsertLedgerRecordsParams['ledgerRecords'],
-                })
-                .catch(e => {
-                  const message = `Failed to insert new ledger records for charge ID="${chargeId}"`;
-                  console.error(`${message}: ${e}`);
-                  if (e instanceof GraphQLError) {
-                    throw e;
-                  }
-                  throw new Error(message);
-                })
-            : Promise.resolve();
-        const removePromises = toRemove.map(record =>
-          injector
-            .get(LedgerProvider)
-            .deleteLedgerRecordsByIdLoader.load(record.id)
-            .catch(e => {
-              const message = `Failed to delete ledger records for charge ID="${chargeId}"`;
-              console.error(`${message}: ${e}`);
-              if (e instanceof GraphQLError) {
-                throw e;
-              }
-              throw new Error(message);
-            }),
-        );
-        await Promise.all([updatePromise, insertPromise, ...removePromises]);
-
-        const degradedCharges = await degradeChargesAccountantApproval(injector, [chargeId]);
-
-        return {
-          records: toUpdate,
-          charge: degradedCharges.get(chargeId) ?? charge,
-          errors: generated.errors,
-        };
-      } catch (e) {
-        if (e instanceof GraphQLError) {
-          throw e;
-        }
-        return {
-          __typename: 'CommonError',
-          message: `Failed to generate ledger records for charge ID="${chargeId}"\n${e}`,
-        };
-      }
+      return results;
     },
     lockLedgerRecords: async (_, { date }, { injector }) => {
       try {

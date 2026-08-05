@@ -10,7 +10,8 @@ export default gql`
   }
 
   extend type Mutation {
-    regenerateLedgerRecords(chargeId: UUID!): GeneratedLedgerRecords!
+    " regenerate ledger records for one or more charges; returns a result per charge, in order "
+    regenerateLedgerRecords(chargeIds: [UUID!]!): [GeneratedLedgerRecords!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
     lockLedgerRecords(date: TimelessDate!): Boolean!

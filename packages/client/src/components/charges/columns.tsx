@@ -19,13 +19,14 @@ import {
   Vat,
 } from './cells/index.js';
 import { ChargeActionsMenu } from './charge-actions-menu.js';
+import { ChargesBatchActionsMenu } from './charges-batch-actions-menu.js';
 import type { ChargeRow } from './charges-table.js';
 
 export const columns: ColumnDef<ChargeRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-row gap-1 items-center">
         <Checkbox
           checked={
             table.getIsAllPageRowsSelected() ||
@@ -34,6 +35,7 @@ export const columns: ColumnDef<ChargeRow>[] = [
           onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
         />
+        <ChargesBatchActionsMenu table={table} />
       </div>
     ),
     cell: ({ row }) => (
