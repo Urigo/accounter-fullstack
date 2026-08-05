@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react';
-import { MoreVertical, RefreshCcwDot } from 'lucide-react';
+import { MoreVertical, RefreshCcwDot, Tags } from 'lucide-react';
 import type { Table } from '@tanstack/react-table';
 import { useRegenerateLedgerRecords } from '../../hooks/use-regenerate-ledger-records.js';
 import { ConfirmationModal } from '../common/index.js';
@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu.js';
+import { ChargesBatchTagsDialog } from './charges-batch-tags-dialog.js';
 import type { ChargeRow } from './charges-table.js';
 
 interface Props {
@@ -18,27 +19,31 @@ interface Props {
 
 /**
  * Bulk-action menu rendered next to the selection column header. Operates on the table's currently
- * selected rows. Currently exposes a single action — batch "Regenerate ledger" — which mirrors the
- * per-charge {@link RegenerateLedgerRecordsButton} (confirmation modal included) for every selected
- * charge in one request.
+ * selected rows. Exposes batch "Regenerate ledger" (mirrors the per-charge
+ * {@link RegenerateLedgerRecordsButton}, confirmation modal included) and "Change tags" (add/remove
+ * tags across all selected charges), each in a single request.
  */
 export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
 
-  const selectedCount = table.getSelectedRowModel().rows.length;
+  const { rows } = table.getSelectedRowModel();
+  const selectedCount = rows.length;
+  const selectedIds = rows.map(row => row.original.id);
+
+  // Refresh each selected row so the table reflects the applied change.
+  function refreshSelected(): void {
+    for (const row of rows) {
+      row.original.onChange();
+    }
+  }
 
   function onRegenerate(): void {
-    const { rows } = table.getSelectedRowModel();
-    if (rows.length === 0) {
+    if (selectedIds.length === 0) {
       return;
     }
-    regenerateLedgerRecords(rows.map(row => row.original.id)).then(() => {
-      // Refresh each affected row so the table reflects the regenerated ledger.
-      for (const row of rows) {
-        row.original.onChange();
-      }
-    });
+    regenerateLedgerRecords(selectedIds).then(refreshSelected);
   }
 
   return (
@@ -60,6 +65,10 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
             <RefreshCcwDot className="size-4" />
             Regenerate ledger
           </DropdownMenuItem>
+          <DropdownMenuItem disabled={selectedCount === 0} onSelect={() => setTagsOpen(true)}>
+            <Tags className="size-4" />
+            Change tags
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       <ConfirmationModal
@@ -69,6 +78,12 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
         title={`Are you sure you want to regenerate ledger records for ${selectedCount} selected charge${
           selectedCount === 1 ? '' : 's'
         }?`}
+      />
+      <ChargesBatchTagsDialog
+        chargeIds={selectedIds}
+        open={tagsOpen}
+        onOpenChange={setTagsOpen}
+        onDone={refreshSelected}
       />
     </>
   );

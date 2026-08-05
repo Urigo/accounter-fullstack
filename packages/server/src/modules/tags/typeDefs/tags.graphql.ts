@@ -21,12 +21,28 @@ export default gql`
     updateTag(id: UUID!, fields: UpdateTagFieldsInput!): Boolean!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " add and/or remove tags across many charges at once; returns the updated charges "
+    batchUpdateChargesTags(
+      chargeIds: [UUID!]!
+      addTagIds: [UUID!]
+      removeTagIds: [UUID!]
+    ): BatchUpdateChargesTagsResult!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
   " input variables for updateTag "
   input UpdateTagFieldsInput {
     name: String
     parentId: UUID
+  }
+
+  " result type for batchUpdateChargesTags "
+  union BatchUpdateChargesTagsResult = BatchUpdateChargesTagsSuccessfulResult | CommonError
+
+  " successful result of batchUpdateChargesTags "
+  type BatchUpdateChargesTagsSuccessfulResult {
+    charges: [Charge!]!
   }
 
   extend interface Charge {

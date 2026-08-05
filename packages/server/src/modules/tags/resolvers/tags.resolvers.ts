@@ -1,11 +1,16 @@
 import { GraphQLError } from 'graphql';
+import type { Resolvers } from '../../../__generated__/types.js';
 import { EMPTY_UUID } from '../../../shared/constants.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
+import type { IGetChargesByIdsResult } from '../../charges/types.js';
+import { applyChargeTagChanges } from '../helpers/batch-charge-tags.helper.js';
 import { ChargeTagsProvider } from '../providers/charge-tags.provider.js';
 import { TagsProvider } from '../providers/tags.provider.js';
 import type { TagsModule } from '../types.js';
 import { commonTagsChargeFields } from './common.js';
 
-export const tagsResolvers: TagsModule.Resolvers = {
+export const tagsResolvers: TagsModule.Resolvers &
+  Pick<Resolvers, 'BatchUpdateChargesTagsResult'> = {
   Query: {
     allTags: (_, __, { injector }) => injector.get(TagsProvider).getAllTags(),
   },
@@ -88,6 +93,49 @@ export const tagsResolvers: TagsModule.Resolvers = {
           console.error(JSON.stringify(e, null, 2));
           throw new GraphQLError(`Error updating tag id "${id}"`);
         });
+    },
+    batchUpdateChargesTags: async (_, { chargeIds, addTagIds, removeTagIds }, { injector }) => {
+      if (!chargeIds || chargeIds.length === 0) {
+        return { __typename: 'CommonError', message: 'No charges provided' };
+      }
+      const removeIds = removeTagIds ?? [];
+      // Drop from adds any id that's also being removed, so a tag in both lists isn't churned.
+      const addIds = (addTagIds ?? []).filter(id => !removeIds.includes(id));
+      if (addIds.length === 0 && removeIds.length === 0) {
+        return { __typename: 'CommonError', message: 'No tag changes provided' };
+      }
+      try {
+        await applyChargeTagChanges(injector, chargeIds, addIds, removeIds);
+
+        const loadedCharges = await injector
+          .get(ChargesProvider)
+          .getChargeByIdLoader.loadMany(chargeIds)
+          .catch(e => {
+            console.error(e);
+            throw new GraphQLError('Error loading updated charges');
+          });
+        const charges = loadedCharges.filter(
+          (charge): charge is IGetChargesByIdsResult => !!charge && !(charge instanceof Error),
+        );
+        // Tag-only change: intentionally does NOT degrade accountant approval (matches the
+        // `tags`-excluded-from-degrade convention used by updateCharge / batchUpdateCharges).
+        return { charges };
+      } catch (e) {
+        let message = 'Error updating charges tags';
+        if (e instanceof GraphQLError) {
+          message = e.message;
+        } else {
+          console.error(e);
+        }
+        return { __typename: 'CommonError', message };
+      }
+    },
+  },
+  BatchUpdateChargesTagsResult: {
+    __resolveType: (obj, _context, _info) => {
+      if (('__typename' in obj && obj.__typename === 'CommonError') || 'message' in obj)
+        return 'CommonError';
+      return 'BatchUpdateChargesTagsSuccessfulResult';
     },
   },
   Tag: {
