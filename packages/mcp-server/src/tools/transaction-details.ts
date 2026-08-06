@@ -35,7 +35,12 @@ function optionalNonEmptyStringArray(max: number) {
   );
 }
 
-const transactionFiltersInput = z
+/**
+ * Exposed for the schema-contract test, which checks this shape covers every
+ * field of the upstream `TransactionsFilters` input. Field names match upstream
+ * exactly, so there is no alias map here.
+ */
+export const transactionFiltersInput = z
   .object({
     byIds: optionalNonEmptyStringArray(TRANSACTION_FILTER_IDS_CAP)
       .optional()
