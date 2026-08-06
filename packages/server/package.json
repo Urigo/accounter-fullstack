@@ -58,7 +58,7 @@
     "ai": "7.0.52",
     "async-mutex": "0.5.0",
     "auth0": "6.2.0",
-    "basic-auth": "2.0.1",
+    "basic-auth": "3.0.0",
     "bcrypt": "6.0.0",
     "cloudinary": "2.10.0",
     "dataloader": "2.2.3",
