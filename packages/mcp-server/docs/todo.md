@@ -10,7 +10,7 @@ Last consolidated 2026-08-03, after I1/I2/I4 (#4103–#4105) merged into `main`.
 owner-scoping work (#4089–#4097) is also in.
 
 **Status of the connector today:** working end-to-end against Claude Desktop with a pre-registered
-Auth0 client, read-only, five curated tools, business scope enforced by RLS upstream. Not
+Auth0 client, read-only, fifteen curated tools, business scope enforced by RLS upstream. Not
 publishable — see B1.
 
 ---
@@ -55,6 +55,39 @@ D3 (`MCP_TOOL_ALLOWLIST`) and D6 (rate-limit keying) are settled — see the clo
 ## I — Implementation gaps
 
 Ranked by when they start to hurt, not by size.
+
+### I6. Server-side gaps behind the connector-UX work — **high**
+
+Raised by the agent-session feedback (`accounter_mcp_feedback.md`) and scoped out of the MCP-only
+Phases 1–2 (`docs/mcp-extension/plan.md`). These need `packages/server` / `packages/migrations`
+changes.
+
+- [ ] **`transactions.current_balance` is a placeholder for most sources — the blocker for
+      `balanceAfter`.** `resolvers/common.ts:57` passes the column straight through, but only the
+      Poalim ILS/foreign and Discount triggers write a real value; the SWIFT, deposit, and all four
+      credit-card triggers insert a literal `0`. Since `Transaction.balance` is non-null, a
+      placeholder is indistinguishable from a genuine zero balance, and `Transaction` exposes no
+      `sourceOrigin` for the MCP layer to filter on — so per-transaction balances and
+      `accounter_list_accounts`' `includeCurrentBalance` both stay unshipped. Fix: write `NULL`
+      instead of `0`, make the GraphQL field nullable, return `null` from the resolver, and backfill
+      keyed off `source_origin` / account type (**not** off the value — a real `0` is legitimate).
+      Longer term, capture the balance the card and deposit sources do expose.
+- [ ] **No sorting or pagination on `transactionsByFilters`.** `TransactionsFilters` has no `sortBy`
+      and the query returns an unbounded `[Transaction!]!`, which is why the feedback session
+      hand-rolled cursor pagination over ~100 calls. Wants `sortBy` + `limit`/`offset` (or a cursor)
+      and, ideally, a bulk export for the "fetch once, work locally" pattern.
+- [ ] **`Charge.totalAmount` reported `null` on every income charge**, which is why revenue had to
+      be computed from documents. Verify against `packages/server/src/modules/charges`; compute
+      server-side if it is derivable.
+- [ ] **`myMemberships.businessName` is nullable** and came back `null`, so the agent could not tell
+      which business was which without fetching a charge. Fix the resolver's join, or fall back
+      through `businesses(ids:)` in `src/upstream/memberships.ts`.
+- [ ] **Not yet exposed, and asked for:** document → payment status (open/partially paid/paid with
+      matched transaction ids) for invoiced-vs-collected, securities positions (holdings, cost
+      basis, market value, realized/unrealized P&L), and a payroll breakdown. `allDeposits` already
+      exists — a thin wrapper is cheap if deposits become a priority.
+
+Source: `accounter_mcp_feedback.md` §§1–3, 6–7.
 
 ### I5. Stable tunnel for local development — **low (friction)**
 

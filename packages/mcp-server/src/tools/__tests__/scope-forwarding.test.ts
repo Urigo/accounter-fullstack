@@ -53,6 +53,37 @@ function dataFor(query: string): unknown {
   if (query.includes('taxCategories')) return { taxCategories: [] };
   if (query.includes('allBusinesses')) return { allBusinesses: { nodes: [] } };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
+  if (query.includes('financialAccountsByOwner')) return { financialAccountsByOwner: [] };
+  if (query.includes('incomeExpenseChart')) {
+    return {
+      incomeExpenseChart: {
+        currency: 'ILS',
+        fromDate: '2026-01-01',
+        toDate: '2026-03-01',
+        monthlyData: [],
+      },
+    };
+  }
+  if (query.includes('profitAndLossReport')) {
+    return { profitAndLossReport: { report: { year: 2026 }, reference: [] } };
+  }
+  if (query.includes('vatReport')) return { vatReport: { income: [], expenses: [] } };
+  if (query.includes('businessTransactionsSumFromLedgerRecords')) {
+    return {
+      businessTransactionsSumFromLedgerRecords: {
+        __typename: 'BusinessTransactionsSumFromLedgerRecordsSuccessfulResult',
+        businessTransactionsSum: [],
+      },
+    };
+  }
+  if (query.includes('businessTransactionsFromLedgerRecords')) {
+    return {
+      businessTransactionsFromLedgerRecords: {
+        __typename: 'BusinessTransactionsFromLedgerRecordsSuccessfulResult',
+        businessTransactions: [],
+      },
+    };
+  }
   return {};
 }
 
@@ -75,13 +106,35 @@ function capturingClient() {
   return { client, headersSeen };
 }
 
-/** Minimal valid arguments per tool; everything else is optional. */
+/**
+ * Minimal valid arguments per tool; everything else is optional.
+ *
+ * Any entry carrying `businessId` is a single-business tool, which is also how
+ * the expected scope below is derived — so a new report tool only has to be
+ * listed here once.
+ */
 const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_balance_report: { businessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },
+  accounter_list_accounts: { businessId: B1 },
+  accounter_income_expense_summary: {
+    businessId: B1,
+    fromDate: '2026-01-01',
+    toDate: '2026-03-01',
+  },
+  accounter_profit_and_loss: { businessId: B1, year: 2026 },
+  accounter_vat_report: { businessId: B1, month: '2026-01-01' },
+  accounter_counterparty_totals: { businessId: B1 },
+  accounter_ledger_records: { businessId: B1 },
 };
+
+/** A tool that took a singular `businessId` must have narrowed the scope to it. */
+function expectedScopeFor(name: string): string[] {
+  const args = ARGS_BY_TOOL[name] as { businessId?: string } | undefined;
+  return args?.businessId ? [args.businessId] : [B1, B2];
+}
 
 describe('registry-wide business-scope forwarding', () => {
   const tools = toolRegistry.list();
@@ -114,8 +167,8 @@ describe('registry-wide business-scope forwarding', () => {
       }
 
       expect(headersSeen.length, `${name} should call upstream`).toBeGreaterThan(0);
-      // The balance report narrows to its single businessId; the rest keep both.
-      const expectedScope = name === 'accounter_balance_report' ? [B1] : [B1, B2];
+      // Single-business tools narrow to their businessId; the rest keep both.
+      const expectedScope = expectedScopeFor(name);
       for (const headers of headersSeen) {
         expect(headers[BUSINESS_SCOPE_HEADER]).toBe(expectedScope.join(','));
       }
