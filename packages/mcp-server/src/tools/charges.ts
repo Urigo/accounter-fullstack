@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import type { McpSearchChargesQuery, McpSearchChargesQueryVariables } from '../gql/index.js';
+import {
+  buildChargeFilters,
+  CHARGE_FILTER_SHAPE,
+  type ChargeFiltersInput,
+} from './charge-filters.js';
 import { DAY_MS, parseCalendarDate, TIMELESS_DATE } from './dates.js';
 import { chargeTypeFromTypename } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
@@ -21,17 +26,76 @@ export const MAX_PAGE_SIZE = 500;
 export const DEFAULT_PAGE_SIZE = 100;
 export const MAX_DATE_RANGE_DAYS = 1096; // ~3 years
 
+/**
+ * Upstream `ChargeFilter` fields this tool exposes under a friendlier name,
+ * mapped `upstream field → tool input field`.
+ *
+ * Everything else in `CHARGE_FILTER_SHAPE` is spread in below under its upstream
+ * name, so every predicate `accounter_get_charges` accepts is reachable here
+ * too. The aliases are the fields that predate the shared shape and stay put:
+ * renaming `flow`/`tags` would break callers for no gain, and this tool's
+ * `fromDate`/`toDate` have always meant the *overlap* pair
+ * (`fromAnyDate`/`toAnyDate`) — quietly repointing them at the narrower
+ * containment predicate would change which charges an existing query returns
+ * without saying so. The containment pair is exposed as
+ * `fromMainDate`/`toMainDate` instead.
+ *
+ * The schema-contract test reads this map, so a `ChargeFilter` field that is
+ * neither spread in nor aliased here fails the suite rather than going missing.
+ */
+export const SEARCH_CHARGES_FILTER_ALIASES = {
+  chargesType: 'flow',
+  byTags: 'tags',
+  byOwners: 'businessIds',
+  fromAnyDate: 'fromDate',
+  toAnyDate: 'toDate',
+  fromDate: 'fromMainDate',
+  toDate: 'toMainDate',
+} as const;
+
+// The aliased fields are pulled out of the shared shape so they cannot also
+// appear under their upstream name — two spellings of one predicate in a single
+// input object is exactly the ambiguity the alias map exists to avoid.
+const {
+  chargesType: _chargesType,
+  byTags: _byTags,
+  byOwners: _byOwners,
+  fromAnyDate: _fromAnyDate,
+  toAnyDate: _toAnyDate,
+  fromDate: _fromDate,
+  toDate: _toDate,
+  ...PASS_THROUGH_CHARGE_FILTERS
+} = CHARGE_FILTER_SHAPE;
+
 const searchChargesInput = z.object({
   businessIds: businessIdsInput,
-  fromDate: TIMELESS_DATE.optional().describe('Only charges on/after this date (YYYY-MM-DD).'),
-  toDate: TIMELESS_DATE.optional().describe('Only charges on/before this date (YYYY-MM-DD).'),
+  fromDate: TIMELESS_DATE.optional().describe(
+    'Only charges with *any* date (document, transaction event/debit, ledger) on/after this date ' +
+      '(YYYY-MM-DD) — the overlap predicate, i.e. "charges active in this period". For the narrower ' +
+      '"charges belonging to this period" test, use `fromMainDate`.',
+  ),
+  toDate: TIMELESS_DATE.optional().describe(
+    'Only charges with *any* date (document, transaction event/debit, ledger) on/before this date ' +
+      '(YYYY-MM-DD). See `toMainDate` for the narrower containment test.',
+  ),
+  fromMainDate: TIMELESS_DATE.optional().describe(
+    'Only charges whose main date (documents min date, else transactions min event date) is on/after ' +
+      'this date (YYYY-MM-DD). Narrower than `fromDate`.',
+  ),
+  toMainDate: TIMELESS_DATE.optional().describe(
+    'Only charges whose main date (documents max date, else transactions max event date) is on/before ' +
+      'this date (YYYY-MM-DD). Narrower than `toDate`.',
+  ),
   tags: z.array(z.string().min(1)).max(20).optional().describe('Only charges carrying these tags.'),
-  freeText: z.string().min(1).max(200).optional().describe('Free-text search across the charge.'),
   flow: z
     .enum(['ALL', 'INCOME', 'EXPENSE'])
     .optional()
     .default('ALL')
     .describe('Restrict to income or expense charges.'),
+  // Every remaining ChargeFilter predicate, under its upstream name: freeText,
+  // accountantStatus, byBusinesses, byBusinessTrips, byChargeTypes, sortBy, and
+  // the without*/with* flags.
+  ...PASS_THROUGH_CHARGE_FILTERS,
   page: z.number().int().positive().optional().default(1),
   pageSize: z.number().int().positive().max(MAX_PAGE_SIZE).optional().default(DEFAULT_PAGE_SIZE),
 });
@@ -82,34 +146,51 @@ export interface NormalizedCharge {
   date: string | null;
 }
 
-/** Reject an invalid, inverted, or too-wide date range before hitting upstream. */
-function assertDateRange(input: SearchChargesInput): void {
+/**
+ * Reject an invalid, inverted, or too-wide date range before hitting upstream.
+ *
+ * Applied to each date pair independently — the overlap pair (`fromDate`/
+ * `toDate`) and the containment pair (`fromMainDate`/`toMainDate`) — so a bad
+ * bound is caught whichever pair it was passed in, and the error names the field
+ * the caller actually used.
+ */
+function assertDatePair(
+  fromValue: string | undefined,
+  toValue: string | undefined,
+  fromField: string,
+  toField: string,
+): void {
   // Validate each supplied date even when only one is present — a value can
   // match the format regex yet be an impossible calendar date (e.g. 2026-02-31).
   let from: number | undefined;
   let to: number | undefined;
-  if (input.fromDate !== undefined) {
-    const parsed = parseCalendarDate(input.fromDate);
+  if (fromValue !== undefined) {
+    const parsed = parseCalendarDate(fromValue);
     if (parsed === null) {
-      throw new ToolInputError('Invalid fromDate');
+      throw new ToolInputError(`Invalid ${fromField}`);
     }
     from = parsed;
   }
-  if (input.toDate !== undefined) {
-    const parsed = parseCalendarDate(input.toDate);
+  if (toValue !== undefined) {
+    const parsed = parseCalendarDate(toValue);
     if (parsed === null) {
-      throw new ToolInputError('Invalid toDate');
+      throw new ToolInputError(`Invalid ${toField}`);
     }
     to = parsed;
   }
   if (from !== undefined && to !== undefined) {
     if (from > to) {
-      throw new ToolInputError('fromDate must be on or before toDate');
+      throw new ToolInputError(`${fromField} must be on or before ${toField}`);
     }
     if (Math.round((to - from) / DAY_MS) > MAX_DATE_RANGE_DAYS) {
       throw new ToolInputError(`Date range must not exceed ${MAX_DATE_RANGE_DAYS} days`);
     }
   }
+}
+
+function assertDateRange(input: SearchChargesInput): void {
+  assertDatePair(input.fromDate, input.toDate, 'fromDate', 'toDate');
+  assertDatePair(input.fromMainDate, input.toMainDate, 'fromMainDate', 'toMainDate');
 }
 
 /**
@@ -123,34 +204,58 @@ function assertDateRange(input: SearchChargesInput): void {
  */
 const SORT_NEWEST_FIRST = { field: 'DATE', asc: false } as const;
 
+/**
+ * Translate this tool's flat input into the shared `ChargeFilter` shape, then
+ * build the upstream filter with the same builder `accounter_get_charges` uses.
+ *
+ * Owner scoping goes through `byOwners`, never `byBusinesses`: `byOwners` is the
+ * owner predicate (`c.owner_id IN $ownerIds`), while `byBusinesses` is the
+ * *counterparty* predicate (`ec.business_array && $ids`) — and upstream builds
+ * that array as `array_remove(base.business_array, fc.owner_id)`, with the owner
+ * explicitly removed. Filtering by `byBusinesses` therefore matched only charges
+ * where an authorized business is the *other* party (inter-company charges): a
+ * small and wrong slice. `buildChargeFilters` always sets `byOwners` from the
+ * resolved scope, which keeps that defense-in-depth predicate in place even
+ * though `x-business-scope` also narrows via RLS upstream.
+ *
+ * `byBusinesses` remains available as an explicit *counterparty* filter — the
+ * caller opts into it knowingly; it is never used for scoping.
+ */
 function buildFilters(
   input: SearchChargesInput,
   businessIds: readonly string[],
 ): NonNullable<McpSearchChargesQueryVariables['filters']> {
-  const filters: NonNullable<McpSearchChargesQueryVariables['filters']> = {
-    chargesType: input.flow,
-    sortBy: SORT_NEWEST_FIRST,
+  const {
+    flow,
+    tags,
+    fromDate,
+    toDate,
+    fromMainDate,
+    toMainDate,
+    businessIds: _requestedBusinessIds,
+    page: _page,
+    pageSize: _pageSize,
+    ...passThrough
+  } = input;
+
+  const filters: ChargeFiltersInput = {
+    ...passThrough,
+    chargesType: flow,
+    // Default to newest-first: upstream `allCharges` sorts *ascending* when no
+    // `sortBy` is given (`asc: filters?.sortBy?.asc !== false`), so an unsorted
+    // request answers a broad question with the oldest rows in the database.
+    // A caller-supplied `sortBy` wins.
+    sortBy: passThrough.sortBy ?? SORT_NEWEST_FIRST,
+    ...(tags && tags.length > 0 ? { byTags: [...tags] } : {}),
+    ...(fromDate ? { fromAnyDate: fromDate } : {}),
+    ...(toDate ? { toAnyDate: toDate } : {}),
+    ...(fromMainDate ? { fromDate: fromMainDate } : {}),
+    ...(toMainDate ? { toDate: toMainDate } : {}),
   };
-  // Always scope to the authorized businesses — by OWNER, not counterparty.
-  //
-  // `byOwners` is the owner predicate (`c.owner_id IN $ownerIds`). `byBusinesses`
-  // is the *counterparty* predicate (`ec.business_array && $ids`), and upstream
-  // builds that array as `array_remove(base.business_array, fc.owner_id)` — the
-  // owner is explicitly removed from it. Filtering by `byBusinesses` therefore
-  // matched only charges where an authorized business appears as the *other*
-  // party, i.e. inter-company charges: a small and wrong slice of the results.
-  //
-  // Kept as an explicit predicate even though `x-business-scope` now narrows via
-  // RLS upstream: defense in depth, and the tool stays correct if upstream ever
-  // runs under a scope-bypassing role.
-  if (businessIds.length > 0) {
-    filters.byOwners = [...businessIds];
-  }
-  if (input.fromDate) filters.fromAnyDate = input.fromDate;
-  if (input.toDate) filters.toAnyDate = input.toDate;
-  if (input.tags && input.tags.length > 0) filters.byTags = [...input.tags];
-  if (input.freeText) filters.freeText = input.freeText;
-  return filters;
+
+  return buildChargeFilters(filters, businessIds) as NonNullable<
+    McpSearchChargesQueryVariables['filters']
+  >;
 }
 
 function normalizeCharge(charge: RawCharge): NormalizedCharge {
@@ -222,7 +327,7 @@ async function handler(
 export const searchChargesTool: ToolDefinition<typeof searchChargesInput> = {
   name: SEARCH_CHARGES_TOOL_NAME,
   description:
-    'Search and browse accounting charges within your authorized businesses. Supports date range, tag, free-text, and income/expense filters with bounded pagination. Each row carries `chargeType`, so money moving between your own accounts can be excluded without inspecting descriptions. Read-only. ' +
+    'Search and browse accounting charges within your authorized businesses. Supports every ChargeFilter predicate — date ranges (overlap via `fromDate`/`toDate`, containment via `fromMainDate`/`toMainDate`), tags, free text, income/expense, charge types, counterparties, business trips, accountant status, ordering, and the missing-document/transaction/ledger flags — with bounded pagination. Each row carries `chargeType`, so money moving between your own accounts can be excluded without inspecting descriptions. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: searchChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

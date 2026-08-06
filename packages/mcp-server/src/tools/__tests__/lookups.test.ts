@@ -187,6 +187,57 @@ describe('listBusinessesTool', () => {
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });
 
+  // `allBusinesses(page:, limit:)` used to be left unset, so the directory was
+  // unwalkable past `limit` rows. Pin the forwarding — including the 1-based →
+  // 0-based translation, which is the easy half to get wrong.
+  it('forwards limit and the 0-based page to allBusinesses', async () => {
+    let sentInit: RequestInit | undefined;
+    const client = clientReturning(
+      {
+        allBusinesses: {
+          nodes: [{ id: '1', name: 'apple', ownerId: 'o1', isActive: true }],
+          pageInfo: { totalPages: 4, totalRecords: 7, currentPage: 1, pageSize: 2 },
+        },
+      },
+      init => (sentInit = init),
+    );
+    const result = await runTool(listBusinessesTool, client, authContext(['b1']), {
+      page: 2,
+      limit: 2,
+    });
+
+    const variables = (JSON.parse(sentInit!.body as string) as { variables: Record<string, unknown> })
+      .variables;
+    expect(variables.page).toBe(1);
+    expect(variables.limit).toBe(2);
+
+    // `totalRecords` covers the whole directory, not the page, so the model can
+    // tell how much it has not seen; `pagination` is reported 1-based.
+    const structured = result.structuredContent as {
+      totalCount: number;
+      pagination: { page: number; pageSize: number; totalPages: number; hasNextPage: boolean };
+    };
+    expect(structured.totalCount).toBe(7);
+    expect(structured.pagination).toEqual({
+      page: 2,
+      pageSize: 2,
+      totalPages: 4,
+      hasNextPage: true,
+    });
+  });
+
+  it('requests the first upstream page by default', async () => {
+    let sentInit: RequestInit | undefined;
+    const client = clientReturning(
+      { allBusinesses: { nodes: [] } },
+      init => (sentInit = init),
+    );
+    await runTool(listBusinessesTool, client, authContext(['b1']), {});
+    const variables = (JSON.parse(sentInit!.body as string) as { variables: Record<string, unknown> })
+      .variables;
+    expect(variables.page).toBe(0);
+  });
+
   it('tolerates a null allBusinesses payload', async () => {
     const result = await runTool(
       listBusinessesTool,
