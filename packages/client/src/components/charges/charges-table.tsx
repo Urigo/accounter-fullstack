@@ -118,7 +118,7 @@ export interface ChargeRow {
   onChange: () => void;
   type: ChargeType;
   date?: DateProps;
-  amount?: AmountProps;
+  amount?: AmountProps['amount'];
   vat?: Omit<VatProps, 'isError'>;
   counterparty?: CounterpartyProps;
   description: Omit<DescriptionProps, 'onChange'>;

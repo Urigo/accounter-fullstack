@@ -4,13 +4,19 @@ import { Currency } from '../../../gql/graphql.js';
 import { formatAmountWithCurrency } from '../../../helpers/index.js';
 
 export type AmountProps = {
-  value: number;
-  currency: Currency;
-  shouldValidate: boolean;
-  isValid?: boolean;
+  amount?: {
+    value: number;
+    currency: Currency;
+    shouldValidate: boolean;
+    isValid?: boolean;
+  };
 };
 
-export const Amount = ({ value, currency, shouldValidate, isValid }: AmountProps): ReactElement => {
+export const Amount = ({ amount }: AmountProps): ReactElement | null => {
+  if (!amount) {
+    return null;
+  }
+  const { value, currency, shouldValidate, isValid } = amount;
   return (
     <Indicator
       inline

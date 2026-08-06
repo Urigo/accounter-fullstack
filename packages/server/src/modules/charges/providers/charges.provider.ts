@@ -651,7 +651,10 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       tbc.min_debit_timestamp AS transactions_min_debit_timestamp,
       tbc.max_debit_timestamp AS transactions_max_debit_timestamp,
       tbc.fee_excluded_event_amount AS transactions_fee_excluded_amount,
-      tbc.fee_excluded_currency_array AS transactions_fee_excluded_currencies,
+      -- Cast enum arrays to TEXT[]: node-postgres has no array parser registered for the
+      -- custom accounter_schema.currency OID, so a currency[] arrives in JS as the raw
+      -- array literal ('{USD}') rather than an array. TEXT[] is parsed natively.
+      tbc.fee_excluded_currency_array::TEXT[] AS transactions_fee_excluded_currencies,
       tbc.event_amount AS transactions_event_amount,
       CASE
         WHEN array_length(tbc.currency_array, 1) = 1 THEN tbc.currency_array[1]
@@ -670,8 +673,9 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       dbc.js_proforma_event_amount AS documents_proforma_amount,
       dbc.js_invoice_vat_amount AS documents_invoice_vat_amount,
       dbc.js_receipt_vat_amount AS documents_receipt_vat_amount,
-      dbc.js_accountancy_currency_array AS documents_accountancy_currencies,
-      dbc.js_proforma_currency_array AS documents_proforma_currencies,
+      -- See the TEXT[] cast note above.
+      dbc.js_accountancy_currency_array::TEXT[] AS documents_accountancy_currencies,
+      dbc.js_proforma_currency_array::TEXT[] AS documents_proforma_currencies,
       CASE
         WHEN array_length(dbc.currency_array, 1) = 1 THEN dbc.currency_array[1]
         ELSE NULL::accounter_schema.currency
