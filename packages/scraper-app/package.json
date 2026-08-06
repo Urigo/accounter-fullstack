@@ -37,13 +37,13 @@
     "msw": "2.15.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "ws": "8.21.1",
+    "ws": "8.21.2",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@testing-library/dom": "10.4.1",
     "@testing-library/react": "16.3.2",
-    "@testing-library/user-event": "14.6.1",
+    "@testing-library/user-event": "14.6.3",
     "@vitejs/plugin-react": "6.0.5",
     "tsup": "8.5.1",
     "typescript": "6.0.3",
