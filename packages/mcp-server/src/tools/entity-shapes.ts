@@ -99,6 +99,43 @@ export function normalizeTransaction(transaction: RawTransaction): NormalizedTra
 }
 
 // ---------------------------------------------------------------------------
+// Charge classification
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a charge's GraphQL `__typename` to a stable `chargeType` token.
+ *
+ * The tokens are deliberately the *same* vocabulary as the upstream
+ * `ChargeFilter.byChargeTypes` enum, so a `chargeType` read off a result row can
+ * be handed straight back as a filter without translation.
+ */
+const CHARGE_TYPE_BY_TYPENAME: Record<string, string> = {
+  CommonCharge: 'COMMON',
+  ConversionCharge: 'CONVERSION',
+  SalaryCharge: 'PAYROLL',
+  InternalTransferCharge: 'INTERNAL',
+  DividendCharge: 'DIVIDEND',
+  BusinessTripCharge: 'BUSINESS_TRIP',
+  MonthlyVatCharge: 'VAT',
+  BankDepositCharge: 'BANK_DEPOSIT',
+  ForeignSecuritiesCharge: 'FOREIGN_SECURITIES',
+  CreditcardBankCharge: 'CREDITCARD_BANK',
+  FinancialCharge: 'FINANCIAL',
+};
+
+/**
+ * Every charge `__typename` this module knows how to classify. Exported so the
+ * schema-contract suite can fail loudly when upstream adds a charge type — the
+ * runtime behavior otherwise degrades silently to `chargeType: null`, which
+ * looks like missing data rather than a stale map.
+ */
+export const KNOWN_CHARGE_TYPENAMES = Object.keys(CHARGE_TYPE_BY_TYPENAME);
+
+export function chargeTypeFromTypename(typename: string | null | undefined): string | null {
+  return typename ? (CHARGE_TYPE_BY_TYPENAME[typename] ?? null) : null;
+}
+
+// ---------------------------------------------------------------------------
 // Documents
 // ---------------------------------------------------------------------------
 
