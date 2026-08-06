@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { KNOWN_CHARGE_TYPENAMES } from '../entity-shapes.js';
 
 /**
  * Phase 1 (`Tag.ownerId`) has no server-side unit test — the tags module has no
@@ -48,5 +49,21 @@ describe('generated schema contract', () => {
 
   it('TaxCategory exposes ownerId', () => {
     expect(typeBlock(loadSchema(), 'TaxCategory')).toMatch(/ownerId: UUID!?/);
+  });
+
+  // `chargeType` is derived from `__typename`, so a charge type
+  // added upstream would quietly classify as `unknown` — data the model reads as
+  // "not categorized" rather than "the connector is out of date".
+  it('every charge implementation has a chargeType mapping', () => {
+    const typenames = [...loadSchema().matchAll(/^type (\w+) implements Charge\b/gm)].map(
+      match => match[1]!,
+    );
+    expect(typenames.length).toBeGreaterThan(0);
+    expect([...typenames].sort()).toEqual([...KNOWN_CHARGE_TYPENAMES].sort());
+  });
+
+  // Transactions carry `amountLocal`/`exchangeRate` derived from these fields.
+  it('Transaction exposes eventExchangeRates', () => {
+    expect(loadSchema()).toMatch(/^interface Transaction \{[^}]*eventExchangeRates: ExchangeRates/m);
   });
 });
