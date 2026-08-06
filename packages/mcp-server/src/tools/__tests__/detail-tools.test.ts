@@ -198,7 +198,7 @@ describe('getChargesTool', () => {
     const client = clientReturning(chargeFixture, body => (sentBody = body));
     await run(getChargesTool, client, authContext([B1]), {
       chargeIds: ['c1', 'c2'],
-      includeDocuments: false,
+      includeTransactions: true,
     });
     const variables = (
       sentBody as {
@@ -207,6 +207,19 @@ describe('getChargesTool', () => {
     ).variables;
     expect(variables.chargeIDs).toEqual(['c1', 'c2']);
     expect(variables.includeTransactions).toBe(true);
+    expect(variables.includeDocuments).toBe(false);
+  });
+
+  // Nesting transactions/documents by default is what forced nearly every call
+  // to spill over the payload budget, so both are opt-in.
+  it('omits nested transactions and documents unless asked', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(chargeFixture, body => (sentBody = body));
+    await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
+    const variables = (
+      sentBody as { variables: { includeTransactions: boolean; includeDocuments: boolean } }
+    ).variables;
+    expect(variables.includeTransactions).toBe(false);
     expect(variables.includeDocuments).toBe(false);
   });
 
@@ -310,6 +323,31 @@ describe('getChargesTool', () => {
     const structured = result.structuredContent as { charges: Array<{ id: string }> };
     expect(structured.charges).toHaveLength(1);
     expect(structured.charges[0]?.id).toBe('c1');
+  });
+
+  it('classifies a charge from its typename', async () => {
+    const client = clientReturning({
+      chargesByIDs: [
+        { ...chargeFixture.chargesByIDs[0], __typename: 'CreditcardBankCharge' },
+        {
+          ...chargeFixture.chargesByIDs[0],
+          id: 'c2',
+          __typename: 'CommonCharge',
+          totalAmount: { raw: 5000, formatted: '₪5,000.00', currency: 'ILS' },
+        },
+      ],
+    });
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      chargeIds: ['c1', 'c2'],
+    });
+    const { charges } = result.structuredContent as {
+      charges: Array<{ chargeType: string | null }>;
+    };
+    // A card settlement moves money between the owner's own accounts.
+    expect(charges[0]).toMatchObject({
+      chargeType: 'CREDITCARD_BANK',
+    });
+    expect(charges[1]).toMatchObject({ chargeType: 'COMMON' });
   });
 
   it('drops a charge whose owner is outside the resolved scope (defense-in-depth)', async () => {
