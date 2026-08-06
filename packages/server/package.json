@@ -95,7 +95,7 @@
     "slonik": "49.10.9",
     "tsc-alias": "1.9.1",
     "tsx": "4.23.7",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
