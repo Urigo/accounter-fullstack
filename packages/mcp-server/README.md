@@ -77,25 +77,42 @@ scope, because it _is_ the scope.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
-  businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
-  days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
-  (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
+  businesses. Accepts optional `businessIds` (subset of memberships) plus **every `ChargeFilter`
+  predicate upstream honors**, flat: `fromDate`/`toDate` (overlap — any document/transaction/ledger
+  date in the window), `fromMainDate`/`toMainDate` (containment on the charge's main date), each
+  bounded to `MAX_DATE_RANGE_DAYS`; `tags`, `freeText`, `flow` (`ALL`/`INCOME`/`EXPENSE`),
+  `byChargeTypes`, `byBusinesses` (counterparty), `byBusinessTrips`, `accountantStatus`, `sortBy`,
+  and the `without*`/`with*` document/transaction/ledger flags — with bounded pagination (`pageSize`
+  ≤ `MAX_PAGE_SIZE`). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
   pagination metadata and the echoed `scope`. Scoping uses the `byOwners` predicate upstream (the
-  owner), never `byBusinesses` (the counterparty).
-- **`accounter_get_charges`** — read-only charge **detail** by id (1–25 `chargeIds`). Returns each
-  charge with owner, counterparty, amounts (total, VAT, withholding), the full set of dates, tags,
-  and `metadata` counts, plus — by default — its linked `transactions` and `documents` nested inline
-  (toggle with `includeTransactions` / `includeDocuments`). This is the drill-down for
+  owner), never `byBusinesses` (the counterparty). `flow`/`tags`/`fromDate`/`toDate` are the tool's
+  historical names for `chargesType`/`byTags`/`fromAnyDate`/`toAnyDate`; see
+  `SEARCH_CHARGES_FILTER_ALIASES`.
+- **`accounter_get_charges`** — read-only charge **detail**, by id (`chargeIds`) or by `filters`
+  (the same shared `ChargeFilter` shape as `accounter_search_charges`, nested), with `page` /
+  `pageSize` over filtered results. Returns each charge with owner, counterparty, amounts (total,
+  VAT, withholding), the full set of dates, tags, and `metadata` counts; linked `transactions` and
+  `documents` are opt-in via `includeTransactions` / `includeDocuments`. This is the drill-down for
   `accounter_search_charges`. A charge whose `owner` falls outside the resolved scope is dropped as
   defense-in-depth on top of RLS.
-- **`accounter_get_transactions`** — read-only bank/card **transactions** by id (1–50
-  `transactionIds`). Each row carries direction, amount, event/effective dates, source description,
-  `isFee`, `chargeId`, counterparty, and account. Scope is enforced upstream by RLS (transactions
-  carry no owner field for a client-side filter).
-- **`accounter_get_documents`** — read-only **documents** by id (1–50 `documentIds`). Each row
-  carries `documentType`, serial number, date, amount, VAT, creditor/debtor, `chargeId`, and
-  `file`/`image` links. A document whose owning charge falls outside the resolved scope is dropped
-  as defense-in-depth on top of RLS.
+
+  Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
+  `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
+  so a field added upstream fails the suite instead of quietly becoming unreachable. Three fields —
+  `businessTrip`, `byFinancialAccounts`, `unbalanced` — are deliberately **not** accepted: upstream
+  takes them and never passes them to the SQL, and a filter that silently matches everything is
+  worse than an absent one (`UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`).
+
+- **`accounter_get_transactions`** — read-only bank/card **transactions** by id (`transactionIds`)
+  or by `filters` (every `TransactionsFilters` field: ids, charge ids, owners, event/debit/any date
+  ranges, counterparties, missing-counterparty/info flags, free text). Each row carries direction,
+  amount, event/effective dates, source description, `isFee`, `chargeId`, counterparty, and account.
+  Scope is enforced upstream by RLS (transactions carry no owner field for a client-side filter).
+- **`accounter_get_documents`** — read-only **documents** by id (`documentIds`) or by `filters`
+  (every `DocumentsFilters` field: business/owner/charge ids, date range, type, unmatched,
+  missing-counterparty/info flags, free text). Each row carries `documentType`, serial number, date,
+  amount, VAT, creditor/debtor, `chargeId`, and `file`/`image` links. A document whose owning charge
+  falls outside the resolved scope is dropped as defense-in-depth on top of RLS.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `businessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and size-capped (≤
   500).
@@ -104,9 +121,12 @@ scope, because it _is_ the scope.
   Same deterministic sort + cap.
 - **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
   flag) — every business visible to the caller, not just their memberships — optionally filtered by
-  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or `businessIds`.
-  Same deterministic sort + cap. Use `accounter_list_business_memberships` instead for just the
-  caller's own memberships and roles.
+  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or `businessIds`,
+  and paginated with `limit` + 1-based `page` (forwarded as the upstream `limit`/`page` args; the
+  response echoes `pagination`). Same deterministic sort + cap. Note that
+  `activeOnly`/`nameContains` narrowing happens within the fetched page, so a page can come back
+  short. Use `accounter_list_business_memberships` instead for just the caller's own memberships and
+  roles.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 366 days), selected by the required singular
   `businessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a

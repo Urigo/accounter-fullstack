@@ -26,7 +26,7 @@ export const GET_DOCUMENTS_TOOL_NAME = 'accounter_get_documents';
 
 const DOCUMENT_FILTER_IDS_CAP = 300;
 
-const DOCUMENT_TYPES = [
+export const DOCUMENT_TYPES = [
   'INVOICE',
   'RECEIPT',
   'INVOICE_RECEIPT',
@@ -43,7 +43,19 @@ function optionalNonEmptyStringArray(max: number) {
   );
 }
 
-const documentsFiltersInput = z
+/**
+ * Upstream `DocumentsFilters` fields exposed under a different name, mapped
+ * `upstream field → tool input field`. The upstream `*IDs` spellings are
+ * camel-cased here to match every other tool input; the schema-contract test
+ * reads this map so a new upstream field cannot go unexposed.
+ */
+export const DOCUMENTS_FILTER_ALIASES = {
+  businessIDs: 'businessIds',
+  ownerIDs: 'ownerIds',
+  chargeIDs: 'chargeIds',
+} as const;
+
+export const documentsFiltersInput = z
   .object({
     businessIds: optionalNonEmptyStringArray(DOCUMENT_FILTER_IDS_CAP)
       .optional()

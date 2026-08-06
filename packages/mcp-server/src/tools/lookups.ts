@@ -194,6 +194,21 @@ const listBusinessesInput = z.object({
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
   limit,
+  // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
+  // first page made the directory unwalkable past `limit` rows with no way to
+  // tell — the same gap the charge tools had. Exposed 1-based here (upstream is
+  // 0-based) so it matches `page` on every other tool.
+  page: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(1)
+    .describe(
+      '1-based page of the directory, each `limit` rows long. Upstream pages a name-ordered ' +
+        'directory, so `activeOnly`/`nameContains` narrowing happens within the page and a page can ' +
+        'come back short. Read `pagination.totalPages` to walk it.',
+    ),
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
@@ -204,13 +219,19 @@ type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 // English-name predicate (keeping `totalCount` accurate) and owns the
 // deterministic global sort + size cap that all the lookups share.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses($name: String) {
-    allBusinesses(name: $name) {
+  query McpListBusinesses($name: String, $page: Int, $limit: Int) {
+    allBusinesses(name: $name, page: $page, limit: $limit) {
       nodes {
         id
         name
         ownerId
         isActive
+      }
+      pageInfo {
+        totalPages
+        totalRecords
+        currentPage
+        pageSize
       }
     }
   }
@@ -221,7 +242,15 @@ async function listBusinessesHandler(
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
   const data = await context.client.query<McpListBusinessesQuery>(
-    { query: LIST_BUSINESSES_QUERY, variables: { name: input.nameContains ?? null } },
+    {
+      query: LIST_BUSINESSES_QUERY,
+      variables: {
+        name: input.nameContains ?? null,
+        // Upstream slices `[page * limit, (page + 1) * limit]`, so it is 0-based.
+        page: input.page - 1,
+        limit: input.limit,
+      },
+    },
     context.upstream,
   );
 
@@ -237,15 +266,30 @@ async function listBusinessesHandler(
     isActive: business.isActive,
   }));
 
+  // `totalRecords` counts the whole (name-filtered) directory, not just this
+  // page, so report it as the total and let `pagination` say where in it we are.
+  // Never below the rows on hand: `activeOnly` can only shrink a page, and
+  // `shapeListResult` clamps anyway.
+  const pageInfo = data.allBusinesses?.pageInfo;
+  const totalPages = pageInfo?.totalPages ?? 1;
+  const pagination = {
+    // Reported from the request: upstream echoes `currentPage` as the 0-based
+    // index it was given, which would read as an off-by-one page number here.
+    page: input.page,
+    pageSize: input.limit,
+    totalPages,
+    hasNextPage: input.page < totalPages,
+  };
+
   return shapeListResult({
     items: businesses,
     itemsKey: 'businesses',
-    total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
-    summarize: (_shown, count, truncated) =>
-      `Found ${count} ${count === 1 ? 'business' : 'businesses'}${
-        truncated ? ' (truncated)' : ''
-      }.`,
+    total: pageInfo?.totalRecords ?? total,
+    extra: { pagination, scope: { businessIds: context.readScope.businessIds } },
+    summarize: (shown, count, truncated) =>
+      `Found ${count} ${count === 1 ? 'business' : 'businesses'}; showing ${shown} on page ${
+        pagination.page
+      } of ${pagination.totalPages}${truncated ? ' (truncated)' : ''}.`,
   });
 }
 
@@ -264,7 +308,7 @@ const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
+    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listBusinessesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

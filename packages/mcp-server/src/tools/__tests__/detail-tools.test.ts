@@ -229,11 +229,9 @@ describe('getChargesTool', () => {
     const result = await run(getChargesTool, client, authContext([B1]), {
       filters: {
         accountantStatus: ['APPROVED', 'PENDING'],
-        businessTrip: 'bt1',
         byBusinessTrips: ['bt1', 'bt2'],
         byBusinesses: ['biz1'],
         byChargeTypes: ['COMMON', 'BUSINESS_TRIP'],
-        byFinancialAccounts: ['fa1'],
         byOwners: [B1, B2],
         byTags: ['office', 'vat'],
         chargesType: 'EXPENSE',
@@ -243,7 +241,6 @@ describe('getChargesTool', () => {
         sortBy: { field: 'DATE', asc: false },
         toAnyDate: '2026-01-31',
         toDate: '2026-01-31',
-        unbalanced: true,
         withMissingCounterparty: false,
         withOpenDocuments: true,
         withoutDocuments: false,
@@ -271,11 +268,9 @@ describe('getChargesTool', () => {
 
     expect(variables.filters).toEqual({
       accountantStatus: ['APPROVED', 'PENDING'],
-      businessTrip: 'bt1',
       byBusinessTrips: ['bt1', 'bt2'],
       byBusinesses: ['biz1'],
       byChargeTypes: ['COMMON', 'BUSINESS_TRIP'],
-      byFinancialAccounts: ['fa1'],
       byOwners: [B1],
       byTags: ['office', 'vat'],
       chargesType: 'EXPENSE',
@@ -285,7 +280,6 @@ describe('getChargesTool', () => {
       sortBy: { field: 'DATE', asc: false },
       toAnyDate: '2026-01-31',
       toDate: '2026-01-31',
-      unbalanced: true,
       withMissingCounterparty: false,
       withOpenDocuments: true,
       withoutDocuments: false,
@@ -298,6 +292,61 @@ describe('getChargesTool', () => {
     expect(variables.includeDocuments).toBe(true);
     expect(variables.page).toBe(0);
     expect(variables.limit).toBe(MAX_FILTERED_CHARGES);
+  });
+
+  // The filtered path used to be pinned to upstream page 0, so a filter matching
+  // more than MAX_FILTERED_CHARGES charges had no way to reach the rest.
+  it('forwards the requested page and pageSize to allCharges', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(
+      {
+        allCharges: {
+          nodes: chargeFixture.chargesByIDs,
+          pageInfo: { totalPages: 3, totalRecords: 25 },
+        },
+      },
+      body => (sentBody = body),
+    );
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      filters: { freeText: 'coffee' },
+      page: 2,
+      pageSize: 10,
+    });
+
+    expect(result.isError).toBeUndefined();
+    const variables = (sentBody as { variables: { page: number; limit: number } }).variables;
+    // Upstream slices `[page * limit, …]`, so the 1-based input page is shifted.
+    expect(variables.page).toBe(1);
+    expect(variables.limit).toBe(10);
+
+    const structured = result.structuredContent as {
+      totalCount: number;
+      pagination: { page: number; pageSize: number; totalPages: number; hasNextPage: boolean };
+    };
+    expect(structured.totalCount).toBe(25);
+    expect(structured.pagination).toEqual({
+      page: 2,
+      pageSize: 10,
+      totalPages: 3,
+      hasNextPage: true,
+    });
+  });
+
+  // A by-id fetch returns exactly the ids asked for, so a page number over it
+  // would be meaningless — and would invite the model to "fetch the next page".
+  it('omits pagination when fetching by id', async () => {
+    const client = clientReturning(chargeFixture);
+    const result = await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
+    expect(result.structuredContent).not.toHaveProperty('pagination');
+  });
+
+  it('rejects ChargeFilter fields upstream accepts but ignores', async () => {
+    const client = clientReturning(filteredChargeFixture);
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      filters: { unbalanced: true },
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
 
   it('combines chargeIds with filters and keeps only requested ids', async () => {
