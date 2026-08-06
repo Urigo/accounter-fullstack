@@ -10,7 +10,7 @@ Last consolidated 2026-08-03, after I1/I2/I4 (#4103–#4105) merged into `main`.
 owner-scoping work (#4089–#4097) is also in.
 
 **Status of the connector today:** working end-to-end against Claude Desktop with a pre-registered
-Auth0 client, read-only, fifteen curated tools, business scope enforced by RLS upstream. Not
+Auth0 client, read-only, sixteen curated tools, business scope enforced by RLS upstream. Not
 publishable — see B1.
 
 ---

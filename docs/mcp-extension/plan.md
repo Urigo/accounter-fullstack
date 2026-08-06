@@ -172,7 +172,14 @@ balance_report.
 
 ---
 
-## Phase 3 — The data-model guide (§8)
+## Phase 3 — The data-model guide (§8) — ✅ DONE
+
+_Implemented as `src/tools/data-model-guide.ts`, registered second (right after membership
+discovery). 480 tests pass; codegen, lint, typecheck and build clean. Two deviations from the plan
+below, both deliberate: the guide is ~5.8KB rather than ~4KB, and the card-settlement claim was
+corrected against the code — `CreditcardBankCharge` **does** link the settlement transaction to the
+card rows it covers (`creditCardTransactions`, `validCreditCardAmount`), so the guide points at that
+grouping instead of repeating the feedback's "no link between them"._
 
 The feedback says a static doc "would have saved the entire reverse-engineering phase." The MCP
 handler advertises only `capabilities: { tools: { listChanged: false } }`
