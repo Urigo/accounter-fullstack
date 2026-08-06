@@ -190,6 +190,15 @@ export const chargesResolvers: ChargesModule.Resolvers &
         .get(ChargesProvider)
         .getChargesByFilters({
           ownerIds: filters?.byOwners,
+          // Both date families are forwarded: `fromDate`/`toDate` test the
+          // charge's main date (documents min/max, else transaction event
+          // dates) — containment — while `fromAnyDate`/`toAnyDate` test whether
+          // the charge's span across *all* date sources overlaps the range. The
+          // SQL has always supported both; only the `*AnyDate` pair was wired
+          // up here, so a caller passing `fromDate`/`toDate` (as the MCP charge
+          // tools now can) got an unfiltered result instead of a narrower one.
+          fromDate: filters?.fromDate,
+          toDate: filters?.toDate,
           fromAnyDate: filters?.fromAnyDate,
           toAnyDate: filters?.toAnyDate,
           sortColumn,

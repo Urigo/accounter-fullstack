@@ -6,8 +6,14 @@ import type {
   McpGetChargesQueryVariables,
 } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
-import { TIMELESS_DATE } from './dates.js';
 import {
+  buildChargeFilters,
+  chargeFiltersInput,
+  hasAnyChargeFilter,
+  optionalNonEmptyStringArray,
+} from './charge-filters.js';
+import {
+  chargeTypeFromTypename,
   normalizeAmount,
   normalizeDocument,
   normalizeEntity,
@@ -42,84 +48,8 @@ export const GET_CHARGES_TOOL_NAME = 'accounter_get_charges';
 /** Lower than the flat detail tools because each charge nests its children. */
 export const MAX_CHARGE_IDS = 300;
 
-const CHARGE_FILTER_IDS_CAP = 300;
-const CHARGE_FILTER_TAGS_CAP = 50;
-const CHARGE_FILTER_TEXT_MAX = 200;
+/** Cap on charges returned per page of a filtered (non-id) request. */
 export const MAX_FILTERED_CHARGES = 300;
-
-function optionalNonEmptyStringArray(max: number) {
-  return z.preprocess(
-    value => (Array.isArray(value) && value.length === 0 ? undefined : value),
-    z.array(z.string().min(1)).min(1).max(max).optional(),
-  );
-}
-
-const chargeSortByInput = z
-  .object({
-    field: z.enum(['DATE', 'AMOUNT', 'ABS_AMOUNT']),
-    asc: z.boolean().optional(),
-  })
-  .strict();
-
-const chargeFiltersInput = z
-  .object({
-    accountantStatus: z
-      .preprocess(
-        value => (Array.isArray(value) && value.length === 0 ? undefined : value),
-        z
-          .array(z.enum(['APPROVED', 'PENDING', 'UNAPPROVED']))
-          .min(1)
-          .max(3)
-          .optional(),
-      )
-      .optional(),
-    businessTrip: z.string().min(1).optional(),
-    byBusinessTrips: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP).optional(),
-    byBusinesses: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP).optional(),
-    byChargeTypes: z
-      .preprocess(
-        value => (Array.isArray(value) && value.length === 0 ? undefined : value),
-        z
-          .array(
-            z.enum([
-              'COMMON',
-              'CONVERSION',
-              'PAYROLL',
-              'INTERNAL',
-              'DIVIDEND',
-              'BUSINESS_TRIP',
-              'VAT',
-              'BANK_DEPOSIT',
-              'FOREIGN_SECURITIES',
-              'CREDITCARD_BANK',
-              'FINANCIAL',
-            ]),
-          )
-          .min(1)
-          .max(11)
-          .optional(),
-      )
-      .optional(),
-    byFinancialAccounts: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP).optional(),
-    byOwners: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP).optional(),
-    byTags: optionalNonEmptyStringArray(CHARGE_FILTER_TAGS_CAP).optional(),
-    chargesType: z.enum(['ALL', 'INCOME', 'EXPENSE']).optional(),
-    freeText: z.string().min(1).max(CHARGE_FILTER_TEXT_MAX).optional(),
-    fromAnyDate: TIMELESS_DATE.optional(),
-    fromDate: TIMELESS_DATE.optional(),
-    sortBy: chargeSortByInput.optional(),
-    toAnyDate: TIMELESS_DATE.optional(),
-    toDate: TIMELESS_DATE.optional(),
-    unbalanced: z.boolean().optional(),
-    withMissingCounterparty: z.boolean().optional(),
-    withOpenDocuments: z.boolean().optional(),
-    withoutDocuments: z.boolean().optional(),
-    withoutInvoice: z.boolean().optional(),
-    withoutLedger: z.boolean().optional(),
-    withoutReceipt: z.boolean().optional(),
-    withoutTransactions: z.boolean().optional(),
-  })
-  .strict();
 
 const getChargesInput = z
   .object({
@@ -132,16 +62,45 @@ const getChargesInput = z
       .optional()
       .describe('Filter charges by any supported ChargeFilter predicate.'),
     businessIds: businessIdsInput,
+    // `allCharges` is paginated upstream, and the previous version pinned it to
+    // the first page: a filter matching more than `MAX_FILTERED_CHARGES` charges
+    // had no way to reach the rest, and nothing said so. Exposed here as the
+    // same 1-based `page`/`pageSize` pair `accounter_search_charges` uses, and
+    // the response echoes `pagination` so the model can walk the pages.
+    page: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .default(1)
+      .describe('1-based page of filtered results. Ignored when fetching by `chargeIds`.'),
+    pageSize: z
+      .number()
+      .int()
+      .positive()
+      .max(MAX_FILTERED_CHARGES)
+      .optional()
+      .default(MAX_FILTERED_CHARGES)
+      .describe(
+        `Charges per page (1–${MAX_FILTERED_CHARGES}). Ignored when fetching by \`chargeIds\`. ` +
+          'Lower it when including transactions/documents, since nesting them can trip the payload guard.',
+      ),
     includeTransactions: z
       .boolean()
       .optional()
-      .default(true)
-      .describe('Include each charge’s linked transactions (default true).'),
+      .default(false)
+      .describe(
+        'Include each charge’s linked transactions (default false — opt in only when you need the ' +
+          'individual bank/card rows, since nesting them is what forces results to be truncated).',
+      ),
     includeDocuments: z
       .boolean()
       .optional()
-      .default(true)
-      .describe('Include each charge’s linked documents (default true).'),
+      .default(false)
+      .describe(
+        'Include each charge’s linked documents (default false — opt in only when you need the ' +
+          'individual invoices/receipts).',
+      ),
   })
   .superRefine((value, context) => {
     const hasIds = value.chargeIds !== undefined && value.chargeIds.length > 0;
@@ -259,10 +218,14 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     image
     charge {
       id
+      owner {
+        id
+      }
     }
   }
 
   fragment McpChargeDetailFields on Charge {
+    __typename
     id
     userDescription
     owner {
@@ -349,55 +312,6 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
   }
 `;
 
-type ChargeFiltersInput = z.infer<typeof chargeFiltersInput>;
-
-function intersectOwners(
-  requested: readonly string[] | undefined,
-  scopeBusinessIds: readonly string[],
-): string[] {
-  const scopeSet = new Set(scopeBusinessIds);
-  if (!requested || requested.length === 0) {
-    return [...scopeBusinessIds];
-  }
-  return requested.filter(id => scopeSet.has(id));
-}
-
-function buildChargeFilters(
-  input: ChargeFiltersInput,
-  scopeBusinessIds: readonly string[],
-): NonNullable<McpGetChargesByFiltersQueryVariables['filters']> {
-  const filters: NonNullable<McpGetChargesByFiltersQueryVariables['filters']> = {
-    byOwners: intersectOwners(input.byOwners, scopeBusinessIds),
-  };
-  if (input.accountantStatus) filters.accountantStatus = [...input.accountantStatus];
-  if (input.businessTrip) filters.businessTrip = input.businessTrip;
-  if (input.byBusinessTrips) filters.byBusinessTrips = [...input.byBusinessTrips];
-  if (input.byBusinesses) filters.byBusinesses = [...input.byBusinesses];
-  if (input.byChargeTypes) filters.byChargeTypes = [...input.byChargeTypes];
-  if (input.byFinancialAccounts) filters.byFinancialAccounts = [...input.byFinancialAccounts];
-  if (input.byTags) filters.byTags = [...input.byTags];
-  if (input.chargesType) filters.chargesType = input.chargesType;
-  if (input.freeText) filters.freeText = input.freeText;
-  if (input.fromAnyDate) filters.fromAnyDate = input.fromAnyDate;
-  if (input.fromDate) filters.fromDate = input.fromDate;
-  if (input.sortBy) filters.sortBy = { ...input.sortBy };
-  if (input.toAnyDate) filters.toAnyDate = input.toAnyDate;
-  if (input.toDate) filters.toDate = input.toDate;
-  if (input.unbalanced !== undefined) filters.unbalanced = input.unbalanced;
-  if (input.withMissingCounterparty !== undefined) {
-    filters.withMissingCounterparty = input.withMissingCounterparty;
-  }
-  if (input.withOpenDocuments !== undefined) filters.withOpenDocuments = input.withOpenDocuments;
-  if (input.withoutDocuments !== undefined) filters.withoutDocuments = input.withoutDocuments;
-  if (input.withoutInvoice !== undefined) filters.withoutInvoice = input.withoutInvoice;
-  if (input.withoutLedger !== undefined) filters.withoutLedger = input.withoutLedger;
-  if (input.withoutReceipt !== undefined) filters.withoutReceipt = input.withoutReceipt;
-  if (input.withoutTransactions !== undefined) {
-    filters.withoutTransactions = input.withoutTransactions;
-  }
-  return filters;
-}
-
 function isNotFoundByIdUpstreamError(error: unknown): boolean {
   if (!(error instanceof UpstreamError) || error.code !== 'UPSTREAM_ERROR') {
     return false;
@@ -413,6 +327,8 @@ type RawCharge = McpGetChargesQuery['chargesByIDs'][number];
 interface NormalizedCharge {
   id: string;
   description: string | null;
+  /** Same vocabulary as `filters.byChargeTypes`, so it can be fed back as a filter. */
+  chargeType: string | null;
   ownerId: string | null;
   ownerName: string | null;
   counterparty: { id: string; name: string | null } | null;
@@ -438,6 +354,7 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
   return {
     id: charge.id,
     description: charge.userDescription ?? null,
+    chargeType: chargeTypeFromTypename(charge.__typename),
     ownerId: owner?.id ?? null,
     ownerName: owner?.name ?? null,
     counterparty: normalizeEntity(charge.counterparty),
@@ -463,9 +380,7 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
 
 async function handler(input: GetChargesInput, context: ToolExecutionContext): Promise<ToolResult> {
   const hasChargeIds = input.chargeIds !== undefined && input.chargeIds.length > 0;
-  const hasFilters =
-    input.filters !== undefined &&
-    Object.values(input.filters).some(filterValue => filterValue !== undefined);
+  const hasFilters = hasAnyChargeFilter(input.filters);
   const usingIds = hasChargeIds && !hasFilters;
 
   const byIdsData = usingIds
@@ -501,8 +416,10 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
           operationName: 'McpGetChargesByFilters',
           variables: {
             filters: buildChargeFilters(input.filters ?? {}, context.readScope.businessIds),
-            page: 0,
-            limit: MAX_FILTERED_CHARGES,
+            // Upstream `allCharges` is 0-based (it slices `[page * limit, …]`),
+            // so translate the 1-based input page here.
+            page: input.page - 1,
+            limit: input.pageSize,
             includeTransactions: input.includeTransactions,
             includeDocuments: input.includeDocuments,
           } satisfies McpGetChargesByFiltersQueryVariables,
@@ -534,11 +451,30 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
         ? (filteredData?.allCharges.pageInfo.totalRecords ?? charges.length)
         : charges.length;
 
+  // Only a filtered request is paginated; a by-id request returns exactly the
+  // ids asked for, so reporting a page over it would be meaningless.
+  const pageInfo = usingIds ? null : filteredData?.allCharges.pageInfo;
+  const pagination = pageInfo
+    ? {
+        // Reported from the request, not the response: upstream `allCharges`
+        // returns only `totalPages`/`totalRecords`, and its `currentPage` — when
+        // some other field resolver does populate it — is the 0-based index it
+        // was given, which would read as an off-by-one page number here.
+        page: input.page,
+        pageSize: input.pageSize,
+        totalPages: pageInfo.totalPages,
+        hasNextPage: input.page < pageInfo.totalPages,
+      }
+    : null;
+
   return shapeListResult({
     items: charges,
     itemsKey: 'charges',
     total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: {
+      scope: { businessIds: context.readScope.businessIds },
+      ...(pagination ? { pagination } : {}),
+    },
     summarize: (shown, total) =>
       total === 0
         ? usingIds
@@ -551,7 +487,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
 export const getChargesTool: ToolDefinition<typeof getChargesInput> = {
   name: GET_CHARGES_TOOL_NAME,
   description:
-    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts, and — by default — linked transactions and documents. Read-only. ' +
+    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts and `chargeType`. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
