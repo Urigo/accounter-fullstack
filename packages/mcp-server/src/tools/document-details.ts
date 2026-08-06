@@ -309,7 +309,7 @@ async function handler(
 export const getDocumentsTool: ToolDefinition<typeof getDocumentsInput> = {
   name: GET_DOCUMENTS_TOOL_NAME,
   description:
-    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, and file/image links. Read-only. ' +
+    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, `amountExVat`, VAT, creditor/debtor, and file/image links. Each row carries `direction`: `issued` means the owning business raised it (revenue), `received` means it was billed. `direction` is null when the owner is neither party — credit invoices and documents with a missing creditor — so treat null as "undetermined" rather than assuming either way. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getDocumentsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

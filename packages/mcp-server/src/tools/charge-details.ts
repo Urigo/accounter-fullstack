@@ -8,10 +8,13 @@ import type {
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { TIMELESS_DATE } from './dates.js';
 import {
+  chargeTypeFromTypename,
+  flowKindForCharge,
   normalizeAmount,
   normalizeDocument,
   normalizeEntity,
   normalizeTransaction,
+  type FlowKind,
   type NormalizedDocument,
   type NormalizedTransaction,
   type RawDocument,
@@ -135,13 +138,19 @@ const getChargesInput = z
     includeTransactions: z
       .boolean()
       .optional()
-      .default(true)
-      .describe('Include each charge’s linked transactions (default true).'),
+      .default(false)
+      .describe(
+        'Include each charge’s linked transactions (default false — opt in only when you need the ' +
+          'individual bank/card rows, since nesting them is what forces results to be truncated).',
+      ),
     includeDocuments: z
       .boolean()
       .optional()
-      .default(true)
-      .describe('Include each charge’s linked documents (default true).'),
+      .default(false)
+      .describe(
+        'Include each charge’s linked documents (default false — opt in only when you need the ' +
+          'individual invoices/receipts).',
+      ),
   })
   .superRefine((value, context) => {
     const hasIds = value.chargeIds !== undefined && value.chargeIds.length > 0;
@@ -181,6 +190,20 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     account {
       id
       name
+    }
+    eventExchangeRates {
+      date
+      aud
+      cad
+      eur
+      gbp
+      ils
+      jpy
+      sek
+      usd
+      eth
+      grt
+      usdc
     }
   }
 
@@ -259,10 +282,14 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     image
     charge {
       id
+      owner {
+        id
+      }
     }
   }
 
   fragment McpChargeDetailFields on Charge {
+    __typename
     id
     userDescription
     owner {
@@ -413,6 +440,9 @@ type RawCharge = McpGetChargesQuery['chargesByIDs'][number];
 interface NormalizedCharge {
   id: string;
   description: string | null;
+  /** Same vocabulary as `filters.byChargeTypes`, so it can be fed back as a filter. */
+  chargeType: string | null;
+  flowKind: FlowKind;
   ownerId: string | null;
   ownerName: string | null;
   counterparty: { id: string; name: string | null } | null;
@@ -435,9 +465,12 @@ interface NormalizedCharge {
 
 function normalizeCharge(charge: RawCharge): NormalizedCharge {
   const owner = normalizeEntity(charge.owner);
+  const chargeType = chargeTypeFromTypename(charge.__typename);
   return {
     id: charge.id,
     description: charge.userDescription ?? null,
+    chargeType,
+    flowKind: flowKindForCharge(chargeType, charge.totalAmount),
     ownerId: owner?.id ?? null,
     ownerName: owner?.name ?? null,
     counterparty: normalizeEntity(charge.counterparty),
@@ -551,7 +584,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
 export const getChargesTool: ToolDefinition<typeof getChargesInput> = {
   name: GET_CHARGES_TOOL_NAME,
   description:
-    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts, and — by default — linked transactions and documents. Read-only. ' +
+    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts, `chargeType`, and `flowKind` (income / expense / internal_transfer / conversion / investment / tax / payroll / dividend / financial) — use `flowKind` to tell real income and expense apart from money moving between your own accounts. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

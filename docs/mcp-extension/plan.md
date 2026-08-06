@@ -26,7 +26,10 @@ fuzzy `reportType` union for model selection accuracy).
 
 ---
 
-## Phase 1 — Fields that already exist but aren't selected
+## Phase 1 — Fields that already exist but aren't selected — ✅ DONE
+
+_Implemented in `packages/mcp-server/src/tools/` (1.2–1.5; 1.1 deferred as described below). 441
+tests pass; `yarn generate`, `yarn lint` and the mcp-server build are clean._
 
 These are a handful of lines each and address §4, §5 and §6 of the feedback. Do these first; they
 change every existing tool's output. §2 (the biggest accuracy gap) turns out **not** to be a

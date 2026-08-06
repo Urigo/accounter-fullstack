@@ -138,6 +138,20 @@ const TRANSACTIONS_QUERY_DOCUMENT = /* GraphQL */ `
       id
       name
     }
+    eventExchangeRates {
+      date
+      aud
+      cad
+      eur
+      gbp
+      ils
+      jpy
+      sek
+      usd
+      eth
+      grt
+      usdc
+    }
   }
 
   query McpGetTransactions($transactionIDs: [UUID!]!) {
@@ -281,7 +295,7 @@ async function handler(
 export const getTransactionsTool: ToolDefinition<typeof getTransactionsInput> = {
   name: GET_TRANSACTIONS_TOOL_NAME,
   description:
-    'Fetch bank/card transactions either by id or by filters (owners, charge ids, date ranges, counterparties, missing-info flags, and free-text), with amount, dates, direction, counterparty, and account. Read-only. ' +
+    'Fetch bank/card transactions either by id or by filters (owners, charge ids, date ranges, counterparties, missing-info flags, and free-text), with amount, dates, direction, counterparty, and account. Each row also carries `amountLocal` (the amount in ILS) and `exchangeRate` — the historical rate for that transaction’s own event date, so never apply present-day rates to past rows. Both are null when no rate is on file. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getTransactionsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
