@@ -87,8 +87,8 @@ export function ChargesBatchTagsDialog({
             Change tags for {count} charge{count === 1 ? '' : 's'}
           </DialogTitle>
           <DialogDescription>
-            Add the selected tags to, or remove them from, every selected charge. Other tags are left
-            unchanged.
+            Add the selected tags to, or remove them from, every selected charge. Other tags are
+            left unchanged.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3">
