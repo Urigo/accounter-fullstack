@@ -73,6 +73,26 @@ yarn seed:admin-context # Seed admin context for server
   files).
 - TypeScript strict mode throughout.
 
+# TypeScript
+
+The repo builds with **TypeScript 7** (the native Go compiler). TypeScript 7 does not ship the
+JavaScript compiler API, so the two versions are installed side by side under different names:
+
+| Dependency           | Resolves to               | Provides                                                                                          |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------- |
+| `@typescript/native` | `typescript@7`            | the `tsc` binary — every build and type-check                                                     |
+| `typescript`         | `@typescript/typescript6` | the TypeScript 6 JS API for tooling that does `import ts from 'typescript'`, plus a `tsc6` binary |
+
+Tools that read the compiler API — typescript-eslint, `@pgtyped/cli`, `bob-the-bundler`,
+`tsc-alias`, `tsup`, `@0no-co/graphqlsp` — resolve `typescript` and therefore keep working against
+the TypeScript 6 API. Drop the alias once those tools support the TypeScript 7.1 API.
+
+- NEVER change `typescript` back to a plain `typescript@7` dependency — it breaks `yarn lint` and
+  the codegen/bundling toolchain.
+- `node_modules/typescript` is the API shim and has no `tsserver`, so editors use their own bundled
+  TypeScript. Don't set `typescript.tsdk` to `node_modules/typescript/lib`.
+- Run `tsc6` when you need to compare behaviour against the old compiler.
+
 # Git & PR Conventions
 
 - Small, focused PRs; squash merge.
