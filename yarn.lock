@@ -150,7 +150,7 @@ __metadata:
     postal-mime: "npm:2.7.5"
     tsx: "npm:4.23.7"
     typescript: "npm:6.0.3"
-    wrangler: "npm:4.119.0"
+    wrangler: "npm:4.120.0"
     zod: "npm:4.4.3"
   languageName: unknown
   linkType: soft
@@ -20104,17 +20104,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"miniflare@npm:5.20260801.0-alpha":
-  version: 5.20260801.0-alpha
-  resolution: "miniflare@npm:5.20260801.0-alpha"
+"miniflare@npm:5.20260801.1-alpha":
+  version: 5.20260801.1-alpha
+  resolution: "miniflare@npm:5.20260801.1-alpha"
   dependencies:
     "@cspotcode/source-map-support": "npm:0.8.1"
     sharp: "npm:0.35.2"
-    undici: "npm:7.28.0"
+    undici: "npm:7.29.0"
     workerd: "npm:1.20260801.1"
     ws: "npm:8.21.0"
     youch: "npm:4.1.0-beta.10"
-  checksum: 10c0/927d235f41b338ec542f1edac1a325f151db931f758f088a80c3066c024ce398f7d8f0367e03d58312615668440aaace5db5a9682cf74e24c5d8e4241fce5b9d
+  checksum: 10c0/fc038e664ebf5dce89ca175b12514524f9c34f94652dac54931c68cdcbd17a8b848c7a0e7b225519727a64d34ac85bf29966481d33eadaa1be2e8750344ad585
   languageName: node
   linkType: hard
 
@@ -25747,10 +25747,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:7.28.0":
-  version: 7.28.0
-  resolution: "undici@npm:7.28.0"
-  checksum: 10c0/fe781983a26098795e99bb1f64906cbb7d0bcaa029a26baade007b53ea67f2631d189b8f9671a31f4c8d0cb3773b7559608628ba54452fef51fec90e7c78bb0d
+"undici@npm:7.29.0, undici@npm:^7.19.0, undici@npm:^7.28.0":
+  version: 7.29.0
+  resolution: "undici@npm:7.29.0"
+  checksum: 10c0/85ea96e91e7f3de24de678cbbc54230fdd641a3b0643005f2aef044af1f1a2db8fbecb88b28e6fa78bb41ffeafda4479b57075b6b6ab92beac4b7b5ab53f9b10
   languageName: node
   linkType: hard
 
@@ -25758,13 +25758,6 @@ __metadata:
   version: 6.28.0
   resolution: "undici@npm:6.28.0"
   checksum: 10c0/3029a70df06b38b5b2f30732932a1e92544c753cd82c8abdf0d35afad48e0ba91612e79fe3a442dbbb9434d6a9eba2b714d5ea28984c903dda2b5d5444f38354
-  languageName: node
-  linkType: hard
-
-"undici@npm:^7.19.0, undici@npm:^7.28.0":
-  version: 7.29.0
-  resolution: "undici@npm:7.29.0"
-  checksum: 10c0/85ea96e91e7f3de24de678cbbc54230fdd641a3b0643005f2aef044af1f1a2db8fbecb88b28e6fa78bb41ffeafda4479b57075b6b6ab92beac4b7b5ab53f9b10
   languageName: node
   linkType: hard
 
@@ -26661,16 +26654,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrangler@npm:4.119.0":
-  version: 4.119.0
-  resolution: "wrangler@npm:4.119.0"
+"wrangler@npm:4.120.0":
+  version: 4.120.0
+  resolution: "wrangler@npm:4.120.0"
   dependencies:
     "@cloudflare/kv-asset-handler": "npm:0.5.0"
     "@cloudflare/unenv-preset": "npm:2.16.1"
     blake3-wasm: "npm:2.1.5"
     esbuild: "npm:0.28.1"
     fsevents: "npm:2.3.3"
-    miniflare: "npm:5.20260801.0-alpha"
+    miniflare: "npm:5.20260801.1-alpha"
     path-to-regexp: "npm:6.3.0"
     unenv: "npm:2.0.0-rc.24"
     workerd: "npm:1.20260801.1"
@@ -26686,7 +26679,7 @@ __metadata:
     cf-wrangler: bin/cf-wrangler.js
     wrangler: bin/wrangler.js
     wrangler2: bin/wrangler.js
-  checksum: 10c0/d74034fd95f3c0ff7af70b490ba108aec97702c6bc7ac5fc8497d2e2ed75309bc0b6043773f3487ce92cc86b5337b203c8b063b3b171945c918769c1e2932c7a
+  checksum: 10c0/fc5a96f9f30b6264c303a90c4f0147c80ba98f1f82fc38d9430c8e43d883bbae749722bb471f2a222f5dc64e39ddfe49a481e7ca7ec0881f6d8f568f5efb0cc6
   languageName: node
   linkType: hard
 
