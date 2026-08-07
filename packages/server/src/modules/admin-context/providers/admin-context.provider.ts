@@ -18,10 +18,20 @@ import type {
   IUpdateAdminContextQuery,
 } from '../types.js';
 
+// The per-role correlated subqueries below expose each admin_business_role group
+// (see #3612) as an aggregated uuid[] column on the context row, so the runtime
+// arrays (bank accounts, credit cards, internal wallets, dividend payments,
+// VAT-excluded) are data-driven instead of enumerated from named columns/UUIDs.
 const getAdminContexts = sql<IGetAdminContextsQuery>`
-  SELECT *
-  FROM accounter_schema.user_context
-  WHERE owner_id IN $$ownerIds;
+  SELECT
+    uc.*,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = uc.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids
+  FROM accounter_schema.user_context uc
+  WHERE uc.owner_id IN $$ownerIds;
 `;
 
 const updateAdminContext = sql<IUpdateAdminContextQuery>`
@@ -292,8 +302,37 @@ const updateAdminContext = sql<IUpdateAdminContextQuery>`
       locality
     )
   WHERE owner_id = $ownerId
-  RETURNING *;
+  RETURNING
+    user_context.*,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'BANK_ACCOUNT'), '{}'::uuid[]) AS bank_account_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CREDIT_CARD'), '{}'::uuid[]) AS credit_card_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'CRYPTO_WALLET'), '{}'::uuid[]) AS crypto_wallet_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'DIVIDEND_PAYMENT'), '{}'::uuid[]) AS dividend_payment_business_ids,
+    COALESCE((SELECT array_agg(r.business_id ORDER BY r.business_id) FROM accounter_schema.admin_business_roles r WHERE r.owner_id = user_context.owner_id AND r.role = 'VAT_EXCLUDED'), '{}'::uuid[]) AS vat_excluded_business_ids;
 `;
+
+/**
+ * Legacy per-institution `updateAdminContext` inputs mapped to their abstract
+ * {@link https://github.com/Urigo/accounter-fullstack/issues/3612 admin_business_role}.
+ * This lets the deprecated typed mutation inputs (poalimBusinessId, …) keep
+ * admin_business_roles in sync so the role-derived arrays reflect them. Phase 2
+ * replaces these inputs with an abstract data-source API and removes this adapter.
+ */
+const PROVIDER_INPUT_ROLES: ReadonlyArray<[keyof IUpdateAdminContextParams, string]> = [
+  ['poalimBusinessId', 'BANK_ACCOUNT'],
+  ['discountBusinessId', 'BANK_ACCOUNT'],
+  ['otsarHahayalBusinessId', 'BANK_ACCOUNT'],
+  ['isracardBusinessId', 'CREDIT_CARD'],
+  ['amexBusinessId', 'CREDIT_CARD'],
+  ['calBusinessId', 'CREDIT_CARD'],
+  ['otsarHahayalCreditCardBusinessId', 'CREDIT_CARD'],
+  ['etanaBusinessId', 'CRYPTO_WALLET'],
+  ['krakenBusinessId', 'CRYPTO_WALLET'],
+  ['etherscanBusinessId', 'CRYPTO_WALLET'],
+  ['vatBusinessId', 'VAT_EXCLUDED'],
+  ['taxBusinessId', 'VAT_EXCLUDED'],
+  ['socialSecurityBusinessId', 'VAT_EXCLUDED'],
+];
 
 @Injectable({
   scope: Scope.Operation,
@@ -311,31 +350,35 @@ export class AdminContextProvider {
   ) {}
 
   public normalizeContext(rawContext: IGetAdminContextsResult): AdminContext {
-    const dividendPaymentBusinessIds = [
-      '4bcca705-5b47-41c5-ba26-1e42c69cbf0d', // Uri Dividend
-      '909fbe3c-0419-44ed-817d-ab774e93748a', // Dotan Dividend
-      // TODO: fetch those IDs from DB somehow
-    ];
-    const bankAccountIds = [
-      rawContext.poalim_business_id,
-      rawContext.discount_business_id,
-      rawContext.otsar_hahayal_business_id,
-    ].filter(Boolean) as string[];
-    const creditCardIds = [
-      rawContext.isracard_business_id,
-      rawContext.amex_business_id,
-      rawContext.cal_business_id,
-      rawContext.otsar_hahayal_credit_card_business_id,
-    ].filter(Boolean) as string[];
+    // Data-driven data-source / classification arrays, sourced from
+    // admin_business_roles (see #3612) instead of hardcoded per-institution
+    // columns or literal UUIDs. `toIdArray` is defensive against pgTyped's array
+    // nullability and against callers (e.g. unit tests) that supply a row without
+    // the aggregated columns.
+    const toIdArray = (value: readonly (string | null)[] | null | undefined): string[] =>
+      (value ?? []).filter((id): id is string => id != null);
+
+    const bankAccountIds = toIdArray(rawContext.bank_account_business_ids);
+    const creditCardIds = toIdArray(rawContext.credit_card_business_ids);
+    const cryptoWalletIds = toIdArray(rawContext.crypto_wallet_business_ids);
+    const dividendPaymentBusinessIds = toIdArray(rawContext.dividend_payment_business_ids);
+    const vatReportExcludedBusinessNames = toIdArray(rawContext.vat_excluded_business_ids);
     const salaryBatchedBusinessIds = [
       rawContext.batched_employees_business_id,
       rawContext.batched_funds_business_id,
     ].filter(Boolean) as string[];
-    const vatReportExcludedBusinessNames = [
-      rawContext.vat_business_id,
-      rawContext.tax_business_id,
-      rawContext.social_security_business_id,
-    ];
+    // Internal wallets = every self-owned data source (banks + cards + crypto)
+    // plus the foreign-securities business, de-duplicated.
+    const internalWalletsIds = Array.from(
+      new Set(
+        [
+          ...bankAccountIds,
+          ...creditCardIds,
+          ...cryptoWalletIds,
+          rawContext.foreign_securities_business_id,
+        ].filter(Boolean) as string[],
+      ),
+    );
     return {
       defaultLocalCurrency: formatCurrency(rawContext.default_local_currency),
       defaultCryptoConversionFiatCurrency: formatCurrency(
@@ -404,14 +447,7 @@ export class AdminContextProvider {
         foreignSecuritiesBusinessId: rawContext.foreign_securities_business_id,
         bankAccountIds,
         creditCardIds,
-        internalWalletsIds: [
-          ...bankAccountIds,
-          ...creditCardIds,
-          rawContext.etana_business_id,
-          rawContext.kraken_business_id,
-          rawContext.etherscan_business_id,
-          rawContext.foreign_securities_business_id,
-        ].filter(Boolean) as string[],
+        internalWalletsIds,
       },
       salaries: {
         zkufotExpensesTaxCategoryId: rawContext.zkufot_expenses_tax_category_id,
@@ -490,6 +526,10 @@ export class AdminContextProvider {
 
     this.cachedContext = null;
 
+    // Persist role rows for any legacy per-institution inputs BEFORE the update,
+    // so the RETURNING aggregates below already include the change.
+    await this.syncProviderBusinessRoles(ownerId, params);
+
     const updatedContexts = await updateAdminContext.run({ ...params, ownerId }, this.db);
     if (updatedContexts.length >= 1) {
       const normalizedContext = this.normalizeContext(updatedContexts[0]);
@@ -497,6 +537,39 @@ export class AdminContextProvider {
       return normalizedContext;
     }
     return null;
+  }
+
+  /**
+   * Write-through adapter for the legacy typed provider/authority business inputs:
+   * upsert the matching admin_business_roles rows so the role-derived arrays stay
+   * consistent when those inputs are used. Additive only (ON CONFLICT DO NOTHING) —
+   * removals are owned by the Phase 2 data-source API. No-op (and no query) when
+   * the update carries none of these inputs.
+   */
+  private async syncProviderBusinessRoles(
+    ownerId: string,
+    params: IUpdateAdminContextParams,
+  ): Promise<void> {
+    const values: unknown[] = [ownerId];
+    const rows: string[] = [];
+    for (const [key, role] of PROVIDER_INPUT_ROLES) {
+      const businessId = params[key];
+      if (typeof businessId === 'string' && businessId.length > 0) {
+        rows.push(
+          `($1, $${values.length + 1}, $${values.length + 2}::accounter_schema.admin_business_role)`,
+        );
+        values.push(businessId, role);
+      }
+    }
+    if (rows.length === 0) {
+      return;
+    }
+    await this.db.query(
+      `INSERT INTO accounter_schema.admin_business_roles (owner_id, business_id, role)
+       VALUES ${rows.join(', ')}
+       ON CONFLICT DO NOTHING`,
+      values,
+    );
   }
 
   private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {

@@ -198,6 +198,34 @@ describe('seedAdminCore integration', () => {
     });
   });
 
+  it('should classify authority businesses as VAT_EXCLUDED admin_business_roles', async () => {
+    await db.withTransaction(async client => {
+      const { adminEntityId } = await seedAdminCore(client);
+
+      const context = (
+        await client.query(`SELECT * FROM accounter_schema.user_context WHERE owner_id = $1`, [
+          adminEntityId,
+        ])
+      ).rows[0];
+
+      const roles = await client.query(
+        `SELECT business_id FROM accounter_schema.admin_business_roles
+         WHERE owner_id = $1 AND role = 'VAT_EXCLUDED'`,
+        [adminEntityId],
+      );
+
+      // vat + tax + social-security authority businesses, data-driven (see #3612)
+      expect(roles.rows).toHaveLength(3);
+      expect(roles.rows.map(r => r.business_id).sort()).toEqual(
+        [
+          context.vat_business_id,
+          context.tax_business_id,
+          context.social_security_business_id,
+        ].sort(),
+      );
+    });
+  });
+
   it('should validate foreign key relationships', async () => {
     await db.withTransaction(async client => {
       const { adminEntityId } = await seedAdminCore(client);
