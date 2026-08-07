@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { BillingCycle, SubscriptionPlan } from '@/gql/graphql.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { ModifyContractDialog } from '../clients/contracts/modify-contract-dialog.js';
 import { DataTableColumnHeader } from '../common/index.js';
 import { Badge } from '../ui/badge.js';
@@ -11,7 +12,7 @@ import { Checkbox } from '../ui/checkbox.js';
 import { Client, DateCell } from './cells/index.js';
 import type { ContractRow } from './index.js';
 
-export const columns: ColumnDef<ContractRow>[] = [
+export const columns: ColumnDef<TableFeaturesConfig, ContractRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (

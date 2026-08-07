@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import {
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnFiltersState,
   type ExpandedState,
   type OnChangeFn,
   type RowSelectionState,
   type SortingState,
 } from '@tanstack/react-table';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AccountantStatus,
   ChargeForChargesTableFieldsFragmentDoc,
@@ -322,20 +318,16 @@ export const ChargesTable = ({
     );
   }, [data]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: charges,
     columns,
     // Key row selection by charge id (not row index) so the selection map is stable across
     // sorting/filtering and shareable between tables when selection is controlled.
     getRowId: row => row.id,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onExpandedChange: setExpanded,
-    getExpandedRowModel: getExpandedRowModel(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {

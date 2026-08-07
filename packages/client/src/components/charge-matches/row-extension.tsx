@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from 'urql';
 import { type Row } from '@tanstack/react-table';
 import { ChargeExtendedInfoForChargeMatchesDocument } from '@/gql/graphql.js';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { TableSkeleton } from '../common/index.js';
 import { DocumentsTable } from '../documents-table/index.js';
 import { TransactionsTable } from '../transactions-table/index.js';
@@ -26,7 +27,7 @@ import type { ChargeMatchRow } from './index.js';
 `;
 
 interface Props {
-  row: Row<ChargeMatchRow>;
+  row: Row<TableFeaturesConfig, ChargeMatchRow>;
 }
 
 export function ChargeMatchesRowExtensions({ row }: Props) {

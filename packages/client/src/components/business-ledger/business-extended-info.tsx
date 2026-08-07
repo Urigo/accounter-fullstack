@@ -3,16 +3,13 @@ import { ChevronDown, Search } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnFiltersState,
+  type ColumnVisibilityState,
   type PaginationState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   BusinessLedgerInfoDocument,
   Currency,
@@ -188,7 +185,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
   );
 
   // Load column visibility from localStorage, merge with initial visibility
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.COLUMN_VISIBILITY);
       if (stored) {
@@ -219,13 +216,10 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
     });
   }, [initialColumnVisibility]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: extendedLedgerRecords,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -360,10 +354,9 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-700">
-            Showing{' '}
-            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
+            Showing {table.state.pagination.pageIndex * table.state.pagination.pageSize + 1} to{' '}
             {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+              (table.state.pagination.pageIndex + 1) * table.state.pagination.pageSize,
               table.getFilteredRowModel().rows.length,
             )}{' '}
             of {table.getFilteredRowModel().rows.length} transactions
@@ -373,13 +366,13 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium">Rows per page:</p>
             <Select
-              value={String(table.getState().pagination.pageSize)}
+              value={String(table.state.pagination.pageSize)}
               onValueChange={value => {
                 table.setPageSize(Number(value));
               }}
             >
               <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue placeholder={table.state.pagination.pageSize} />
               </SelectTrigger>
               <SelectContent side="top">
                 {[25, 50, 100, 200, 500].map(pageSize => (
@@ -392,7 +385,7 @@ export function BusinessExtendedInfo({ businessID, filter }: Props): ReactElemen
           </div>
           <Pagination
             className="w-fit mx-0"
-            currentPageIndex={table.getState().pagination.pageIndex}
+            currentPageIndex={table.state.pagination.pageIndex}
             totalPages={table.getPageCount()}
             onChange={page => table.setPageIndex(page)}
           />

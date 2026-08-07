@@ -3,14 +3,12 @@ import { Building2, ChevronDown } from 'lucide-react';
 import { useQuery } from 'urql';
 import {
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  type ColumnVisibilityState,
   type RowSelectionState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { AllBusinessesForScreenDocument, BusinessesUsageDocument } from '../../gql/graphql.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import {
@@ -120,7 +118,7 @@ export const Businesses = (): ReactElement => {
 
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [columnVisibility, setColumnVisibility] =
-    useState<VisibilityState>(DEFAULT_COLUMN_VISIBILITY);
+    useState<ColumnVisibilityState>(DEFAULT_COLUMN_VISIBILITY);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [filters, setFilters] = useState<BusinessRowFilters>({
     name: '',
@@ -147,16 +145,14 @@ export const Businesses = (): ReactElement => {
   );
   const filteredRows = useMemo(() => filterBusinessRows(tableRows, filters), [tableRows, filters]);
 
-  // eslint-disable-next-line react-hooks/incompatible-library -- useReactTable returns non-memoizable handles by design
-  const table = useReactTable({
+  // eslint-disable-next-line react-hooks/incompatible-library -- useTable returns non-memoizable handles by design
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: filteredRows,
     columns,
     getRowId: row => row.id,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
-      pagination: { pageSize: 100 },
+      pagination: { pageIndex: 0, pageSize: 100 },
     },
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,

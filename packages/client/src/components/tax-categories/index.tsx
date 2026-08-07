@@ -2,14 +2,8 @@ import { useContext, useEffect, type ReactElement } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AllTaxCategoriesForScreenDocument,
   type AllTaxCategoriesForScreenQuery,
@@ -40,7 +34,7 @@ import { SortCode } from './cells/sort-code.js';
 
 type RowType = AllTaxCategoriesForScreenQuery['taxCategories'][number];
 
-const columns: ColumnDef<RowType>[] = [
+const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
   {
     id: 'name',
     accessorKey: 'name',
@@ -87,14 +81,13 @@ export const TaxCategories = (): ReactElement => {
 
   const taxCategories = data?.taxCategories ?? [];
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: taxCategories,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 30,
       },
     },

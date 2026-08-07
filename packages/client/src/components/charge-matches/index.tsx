@@ -2,14 +2,12 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
 import type { ChargeType } from '@/helpers/charges.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { ChargeMatchesTableFieldsFragmentDoc } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import { MergeChargesButton } from '../common/index.js';
@@ -164,14 +162,12 @@ export const ChargeMatchesTable = ({
     [chargesProps, selectedChargeId],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: charges,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
       columnFilters,

@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown } from 'lucide-react';
 import {
   flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
@@ -22,6 +18,7 @@ import {
 import { ContractForContractsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import type { TimelessDateString } from '@/helpers/dates.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import type { BillingCycle, Product, SubscriptionPlan } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
@@ -137,16 +134,13 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
     [data],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: contracts,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onRowSelectionChange: setRowSelection,
     onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
       rowSelection,
@@ -251,7 +245,7 @@ export const ContractsTable = ({ data }: Props): ReactElement => {
         </div>
         <Pagination
           className="w-fit mx-0"
-          currentPageIndex={table.getState().pagination.pageIndex}
+          currentPageIndex={table.state.pagination.pageIndex}
           totalPages={table.getPageCount()}
           onChange={page => table.setPageIndex(page)}
         />

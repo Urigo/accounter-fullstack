@@ -3,14 +3,8 @@ import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
 import { YearPickerInput } from '@mantine/dates';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable,
-  type ColumnDef,
-  type Row,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef, type Row } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { Currency, YearlyLedgerDocument, type YearlyLedgerQuery } from '../../../gql/graphql.js';
 import { getCurrencyFormatter } from '../../../helpers/index.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -77,7 +71,7 @@ type RowType =
       'openingBalance' | 'closingBalance' | 'totalCredit' | 'totalDebit' | 'entity'
     >;
 
-const columns: ColumnDef<RowType>[] = [
+const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
   {
     id: 'placeholder',
     header: '',
@@ -183,19 +177,19 @@ export const YearlyLedgerReport = (): ReactElement => {
     );
   }, [financialEntitiesInfo]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: records,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 100,
       },
     },
   });
 
-  const currentPage = table.getState().pagination.pageIndex;
+  const currentPage = table.state.pagination.pageIndex;
 
   useEffect(() => {
     setFiltersContext(
@@ -276,7 +270,7 @@ export const YearlyLedgerReport = (): ReactElement => {
   );
 };
 
-function EntityOpeningRows({ row }: { row: Row<RowType> }) {
+function EntityOpeningRows({ row }: { row: Row<TableFeaturesConfig, RowType> }) {
   return (
     <>
       <TableRow key={`${row.id}-opening1`} className="bg-gray-300">
@@ -313,7 +307,7 @@ function EntityOpeningRows({ row }: { row: Row<RowType> }) {
   );
 }
 
-function EntityClosingRows({ row }: { row: Row<RowType> }) {
+function EntityClosingRows({ row }: { row: Row<TableFeaturesConfig, RowType> }) {
   return (
     <>
       <TableRow key={`${row.id}-totals1`} className="bg-gray-200">

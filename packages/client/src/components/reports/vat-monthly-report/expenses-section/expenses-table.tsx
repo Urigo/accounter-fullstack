@@ -10,15 +10,13 @@ import {
 import { Paper } from '@mantine/core';
 import {
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  type ColumnVisibilityState,
   type ExpandedState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
 import { Card } from '@/components/ui/card.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   VatReportExpensesFieldsFragmentDoc,
   VatReportExpensesRowFieldsFragmentDoc,
@@ -69,36 +67,37 @@ export const ExpensesTable = ({
   };
   const [isOpened, setIsOpened] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [expensesView, setExpensesView] = useState<'detailed' | 'summarized'>('detailed');
 
   const tableData: ExpensesTableRowType[] = useMemo(() => {
     let expensesCumulativeAmount = 0;
     let expensesCumulativeVat = 0;
+    const rows: ExpensesTableRowType[] = [];
 
-    return expenses.map(item => {
+    for (const item of expenses) {
       expensesCumulativeAmount += item.taxReducedLocalAmount?.raw ?? 0;
       expensesCumulativeVat += item.roundedLocalVatAfterDeduction?.raw ?? 0;
-      return {
+      rows.push({
         data: item,
         toggleMergeCharge,
         mergeSelectedCharges,
         cumulativeVat: expensesCumulativeVat,
         cumulativeAmount: expensesCumulativeAmount,
-      };
-    });
+      });
+    }
+
+    return rows;
   }, [expenses, toggleMergeCharge, mergeSelectedCharges]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: tableData,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onExpandedChange: setExpanded,
-    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnVisibility,

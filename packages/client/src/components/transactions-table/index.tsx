@@ -1,12 +1,5 @@
 import { useMemo, useState, type ReactElement } from 'react';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type SortingState } from '@tanstack/react-table';
 import { EditTransactionModal, Pagination } from '@/components/common/index.js';
 import {
   Table,
@@ -18,6 +11,7 @@ import {
 } from '@/components/ui/table.js';
 import { TransactionForTransactionsTableFieldsFragmentDoc } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { actionsColumn, columns, type TransactionsTableRowType } from './columns.js';
 
 type Props = {
@@ -58,13 +52,11 @@ export const TransactionsTable = ({
     return enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns;
   }, [enableEdit, enableChargeLink]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data,
     columns: tableColumns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
     },
@@ -123,7 +115,7 @@ export const TransactionsTable = ({
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-end space-x-2 py-4">
           <Pagination
-            currentPageIndex={table.getState().pagination.pageIndex}
+            currentPageIndex={table.state.pagination.pageIndex}
             totalPages={table.getPageCount()}
             onChange={page => table.setPageIndex(page)}
           />

@@ -1,15 +1,7 @@
-import { Fragment, useCallback, useMemo, useRef, useState, type ReactElement } from 'react';
+import { Fragment, useCallback, useMemo, useState, type ReactElement } from 'react';
 import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react';
 import { useQuery } from 'urql';
-import {
-  flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { DepositDialog } from '@/components/bank-deposits/deposit-dialog.js';
 import { DepositsTransactionsTable } from '@/components/bank-deposits/index.js';
 import { Badge } from '@/components/ui/badge.js';
@@ -25,6 +17,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import { AllDepositsDocument } from '@/gql/graphql.js';
 import { useStableValue } from '@/hooks/use-stable-value.js';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -108,118 +101,120 @@ export function DepositsScreen(): ReactElement {
   // sub-rows) only re-render when the deposits actually changed.
   const rows = useStableValue(computedRows);
 
-  const columnsRef = useRef<ColumnDef<DepositRow>[]>([
-    {
-      id: 'expander',
-      header: () => null,
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => row.toggleExpanded()}
-          aria-label={row.getIsExpanded() ? 'Collapse' : 'Expand'}
-        >
-          {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
-        </Button>
-      ),
-      enableSorting: false,
-    },
-    {
-      accessorKey: 'name',
-      header: 'Deposit Name',
-      cell: info => <span className="font-mono text-xs">{info.getValue<string>()}</span>,
-    },
-    {
-      accessorKey: 'currency',
-      header: 'Currency',
-    },
-    {
-      accessorKey: 'isOpen',
-      header: 'Status',
-      cell: info =>
-        info.getValue<boolean>() ? (
-          <Badge className="bg-green-600 text-white" variant="secondary">
-            Open
-          </Badge>
-        ) : (
-          <Badge variant="secondary">Closed</Badge>
+  const columns = useMemo<ColumnDef<TableFeaturesConfig, DepositRow>[]>(
+    () => [
+      {
+        id: 'expander',
+        header: () => null,
+        cell: ({ row }) => (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => row.toggleExpanded()}
+            aria-label={row.getIsExpanded() ? 'Collapse' : 'Expand'}
+          >
+            {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
+          </Button>
         ),
-      sortingFn: (a, b) => Number(a.original.isOpen) - Number(b.original.isOpen),
-    },
-    {
-      accessorKey: 'openDate',
-      header: 'Open Date',
-      cell: info => <span>{info.getValue<string>()}</span>,
-    },
-    {
-      accessorKey: 'closeDate',
-      header: 'Close Date',
-      cell: info => <span>{info.getValue<string | null>() ?? '-'}</span>,
-      sortingFn: (a, b) => {
-        const av = a.original.closeDate ?? '';
-        const bv = b.original.closeDate ?? '';
-        return av.localeCompare(bv);
+        enableSorting: false,
       },
-    },
-    {
-      id: 'totalDeposit',
-      header: 'Total Deposit',
-      accessorFn: row => row.totalDepositRaw,
-      cell: info => <span className="tabular-nums">{info.row.original.totalDepositFormatted}</span>,
-      sortingFn: (a, b) => a.original.totalDepositRaw - b.original.totalDepositRaw,
-    },
-    {
-      id: 'currentBalance',
-      header: 'Current Balance',
-      accessorFn: row => row.currentBalanceRaw,
-      cell: info => (
-        <span className="tabular-nums">{info.row.original.currentBalanceFormatted}</span>
-      ),
-      sortingFn: (a, b) => a.original.currentBalanceRaw - b.original.currentBalanceRaw,
-    },
-    {
-      id: 'totalInterest',
-      header: 'Total Interest',
-      accessorFn: row => row.totalInterestRaw,
-      cell: info => (
-        <span className="tabular-nums">{info.row.original.totalInterestFormatted}</span>
-      ),
-      sortingFn: (a, b) => a.original.totalInterestRaw - b.original.totalInterestRaw,
-    },
-    {
-      id: 'actions',
-      header: () => null,
-      cell: ({ row }) => (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={e => {
-                e.stopPropagation();
-                setEditingDeposit(row.original);
-              }}
-              aria-label="Edit deposit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Edit deposit</TooltipContent>
-        </Tooltip>
-      ),
-      enableSorting: false,
-    },
-  ]);
-  const columns = columnsRef.current;
+      {
+        accessorKey: 'name',
+        header: 'Deposit Name',
+        cell: info => <span className="font-mono text-xs">{info.getValue<string>()}</span>,
+      },
+      {
+        accessorKey: 'currency',
+        header: 'Currency',
+      },
+      {
+        accessorKey: 'isOpen',
+        header: 'Status',
+        cell: info =>
+          info.getValue<boolean>() ? (
+            <Badge className="bg-green-600 text-white" variant="secondary">
+              Open
+            </Badge>
+          ) : (
+            <Badge variant="secondary">Closed</Badge>
+          ),
+        sortFn: (a, b) => Number(a.original.isOpen) - Number(b.original.isOpen),
+      },
+      {
+        accessorKey: 'openDate',
+        header: 'Open Date',
+        cell: info => <span>{info.getValue<string>()}</span>,
+      },
+      {
+        accessorKey: 'closeDate',
+        header: 'Close Date',
+        cell: info => <span>{info.getValue<string | null>() ?? '-'}</span>,
+        sortFn: (a, b) => {
+          const av = a.original.closeDate ?? '';
+          const bv = b.original.closeDate ?? '';
+          return av.localeCompare(bv);
+        },
+      },
+      {
+        id: 'totalDeposit',
+        header: 'Total Deposit',
+        accessorFn: row => row.totalDepositRaw,
+        cell: info => (
+          <span className="tabular-nums">{info.row.original.totalDepositFormatted}</span>
+        ),
+        sortFn: (a, b) => a.original.totalDepositRaw - b.original.totalDepositRaw,
+      },
+      {
+        id: 'currentBalance',
+        header: 'Current Balance',
+        accessorFn: row => row.currentBalanceRaw,
+        cell: info => (
+          <span className="tabular-nums">{info.row.original.currentBalanceFormatted}</span>
+        ),
+        sortFn: (a, b) => a.original.currentBalanceRaw - b.original.currentBalanceRaw,
+      },
+      {
+        id: 'totalInterest',
+        header: 'Total Interest',
+        accessorFn: row => row.totalInterestRaw,
+        cell: info => (
+          <span className="tabular-nums">{info.row.original.totalInterestFormatted}</span>
+        ),
+        sortFn: (a, b) => a.original.totalInterestRaw - b.original.totalInterestRaw,
+      },
+      {
+        id: 'actions',
+        header: () => null,
+        cell: ({ row }) => (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={e => {
+                  e.stopPropagation();
+                  setEditingDeposit(row.original);
+                }}
+                aria-label="Edit deposit"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit deposit</TooltipContent>
+          </Tooltip>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [setEditingDeposit],
+  );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: rows,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
     getRowCanExpand: () => true,
   });
 

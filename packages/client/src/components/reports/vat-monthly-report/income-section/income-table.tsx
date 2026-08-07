@@ -10,15 +10,13 @@ import {
 import { Paper } from '@mantine/core';
 import {
   flexRender,
-  getCoreRowModel,
-  getExpandedRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  type ColumnVisibilityState,
   type ExpandedState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
 import { Card } from '@/components/ui/card.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   VatReportIncomeFieldsFragmentDoc,
   VatReportIncomeRowFieldsFragmentDoc,
@@ -64,33 +62,34 @@ export const IncomeTable = ({
   const { income } = getFragmentData(VatReportIncomeFieldsFragmentDoc, data) ?? { income: [] };
   const [isOpened, setIsOpened] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [incomeView, setIncomeView] = useState<'detailed' | 'summarized'>('detailed');
 
   const tableData: IncomeTableRowType[] = useMemo(() => {
     let incomeCumulativeAmount = 0;
+    const rows: IncomeTableRowType[] = [];
 
-    return income.map(item => {
+    for (const item of income) {
       incomeCumulativeAmount += item.taxReducedLocalAmount?.raw ?? 0;
-      return {
+      rows.push({
         data: item,
         toggleMergeCharge,
         mergeSelectedCharges,
         cumulativeAmount: incomeCumulativeAmount,
-      };
-    });
+      });
+    }
+
+    return rows;
   }, [income, toggleMergeCharge, mergeSelectedCharges]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: tableData,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onExpandedChange: setExpanded,
-    getExpandedRowModel: getExpandedRowModel(),
     state: {
       sorting,
       columnVisibility,
