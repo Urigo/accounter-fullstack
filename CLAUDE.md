@@ -83,9 +83,20 @@ JavaScript compiler API, so the two versions are installed side by side under di
 | `@typescript/native` | `typescript@7`            | the `tsc` binary — every build and type-check                                                     |
 | `typescript`         | `@typescript/typescript6` | the TypeScript 6 JS API for tooling that does `import ts from 'typescript'`, plus a `tsc6` binary |
 
-Tools that read the compiler API — typescript-eslint, `@pgtyped/cli`, `bob-the-bundler`,
-`tsc-alias`, `tsup`, `@0no-co/graphqlsp` — resolve `typescript` and therefore keep working against
-the TypeScript 6 API. Drop the alias once those tools support the TypeScript 7.1 API.
+Three tools import the compiler as a library and would break on TypeScript 7 alone. They resolve
+`typescript` and therefore keep working against the TypeScript 6 API:
+
+- **typescript-eslint** — hard-fails with "typescript-eslint does not support TS 7.0", taking
+  `yarn lint` down with it.
+- **`@pgtyped/cli`** — walks the TypeScript AST to find SQL tagged templates, so `yarn generate:sql`
+  depends on it.
+- **tsup** — calls `ts.parseJsonConfigFileContent` to read tsconfigs, and rollup-plugin-dts for
+  `--dts`.
+
+Other tools in the chain do not need it: `bob-the-bundler` spawns the `tsc` binary, `tsc-alias`
+parses tsconfigs itself, and `@0no-co/graphqlsp` is a tsserver plugin that is handed `ts` by the
+editor's own TypeScript. Drop the alias once typescript-eslint, pgtyped and tsup support the
+TypeScript 7.1 API.
 
 - NEVER change `typescript` back to a plain `typescript@7` dependency — it breaks `yarn lint` and
   the codegen/bundling toolchain.
