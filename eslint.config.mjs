@@ -149,6 +149,7 @@ export default [
               'AnnualId',
               'AutoMatchChargesResult',
               'BatchUpdateChargesSuccessfulResult',
+              'BatchUpdateChargesTagsSuccessfulResult',
               'BusinessEmailConfig',
               'BusinessTripSummary',
               'BusinessTripSummaryRow',
