@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { filterPayload } from '../filter-payload.js';
+import { makeMaxAccount } from './fixtures/max.js';
+import { makePoalimIlsPayload } from './fixtures/poalim.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
 import type { PoalimIlsPayload } from '../payload-schemas/poalim-ils.schema.js';
@@ -23,7 +25,7 @@ function makeIsracardPayload(cards: string[]): IsracardCardsTransactionsList {
     };
   });
   return {
-    Header: { Status: 'OK', Message: null },
+    Header: { Status: '1', Message: null },
     CardsTransactionsListBean: bean as IsracardCardsTransactionsList['CardsTransactionsListBean'],
   };
 }
@@ -47,17 +49,7 @@ function makeCalPayload(cards: string[]): CalPayload {
 }
 
 function makeMaxPayload(accounts: string[]): MaxPayload {
-  return accounts.map(accountNumber => ({
-    accountNumber,
-    txns: [{ cardIndex: 1, categoryId: 1, merchantName: 'Shop', originalAmount: 100, originalCurrency: 'ILS', purchaseDate: '2024-01-01', uid: `${accountNumber}-uid`, planName: 'regular', planTypeId: 1 }],
-  }));
-}
-
-function makePoalimIlsPayload(accountNumber: number, branchNumber: number): PoalimIlsPayload {
-  return {
-    transactions: [{ activityDescription: 'Transfer', activityTypeCode: 1, eventAmount: 100, eventDate: 20240101, serialNumber: 1, transactionType: 'REGULAR', currentBalance: 5000, referenceNumber: 1001 }],
-    retrievalTransactionData: { accountNumber, branchNumber, bankNumber: 12 },
-  };
+  return accounts.map(accountNumber => makeMaxAccount(accountNumber, [{ uid: `${accountNumber}-uid` }]));
 }
 
 const isracardCreds = (accepted?: string[], ignored?: string[]) => ({

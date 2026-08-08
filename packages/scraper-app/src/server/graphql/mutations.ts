@@ -6,11 +6,12 @@ import type {
 } from '@accounter/modern-poalim-scraper';
 import {
   IsracardTransactionInput,
-  MutationUploadAmexTransactionsArgs,
-  MutationUploadIsracardTransactionsArgs,
-  MutationUploadOtsarHahayalCreditCardTransactionsArgs,
-  MutationUploadOtsarHahayalForeignTransactionsArgs,
-  MutationUploadOtsarHahayalIlsTransactionsArgs,
+  MaxTransactionInput,
+  UploadAmexTransactionsMutationVariables,
+  UploadIsracardTransactionsMutationVariables,
+  UploadOtsarHahayalCreditCardTransactionsMutationVariables,
+  UploadOtsarHahayalForeignTransactionsMutationVariables,
+  UploadOtsarHahayalIlsTransactionsMutationVariables,
   UploadPoalimForeignTransactionsMutationVariables,
   UploadPoalimIlsTransactionsMutationVariables,
   UploadPoalimSwiftTransactionsMutationVariables,
@@ -728,13 +729,13 @@ function flattenIsracardAmexPayloads(
 
 export function isracardVars(
   payloads: IsracardCardsTransactionsList[],
-): MutationUploadIsracardTransactionsArgs {
+): UploadIsracardTransactionsMutationVariables {
   return { transactions: flattenIsracardAmexPayloads(payloads) };
 }
 
 export function amexVars(
   payloads: IsracardCardsTransactionsList[],
-): MutationUploadAmexTransactionsArgs {
+): UploadAmexTransactionsMutationVariables {
   return { transactions: flattenIsracardAmexPayloads(payloads) };
 }
 
@@ -803,20 +804,83 @@ export function discountVars(payload: DiscountPayload) {
 export function maxVars(payload: MaxPayload) {
   // MaxPayload is { accountNumber, txns[] }[] — flatten to per-transaction rows.
   const transactions = payload.flatMap(entry =>
-    entry.txns.map(t => ({
-      ...t,
-      // Coerce numeric string fields
-      actualPaymentAmount: t.actualPaymentAmount == null ? null : String(t.actualPaymentAmount),
-      dealDataAmount: t.dealDataAmount == null ? null : String(t.dealDataAmount),
-      dealDataAmountIls: t.dealDataAmountIls == null ? null : String(t.dealDataAmountIls),
-    })),
+    entry.txns.map(rawT => {
+      const { dealData, merchantData, runtimeReference, ...t } = rawT;
+      const transaction: MaxTransactionInput = {
+        ...t,
+        ethocaInd: t.ethocaInd ?? false,
+        isRegisterCh: t.isRegisterCh ?? false,
+        isSpreadingAutorizationAllowed: t.isSpreadingAutorizationAllowed ?? false,
+        spreadTransactionByCampainInd: t.spreadTransactionByCampainInd ?? false,
+        paymentDate: t.paymentDate ?? null,
+        dealDataAcq: dealData?.acq ?? null,
+        dealDataAdjustmentAmount: dealData?.adjustmentAmount ?? null,
+        dealDataAdjustmentType: dealData?.adjustmentType ?? null,
+        dealDataAmount: dealData?.amount ?? null,
+        dealDataAmountIls: dealData?.amountIls ?? null,
+        dealDataAmountLeft: dealData?.amountLeft ?? null,
+        dealDataArn: dealData?.arn ?? null,
+        dealDataAuthorizationNumber: dealData?.authorizationNumber ?? null,
+        dealDataCardName: dealData?.cardName ?? null,
+        dealDataCardToken: dealData?.cardToken ?? null,
+        dealDataCommissionVat: dealData?.commissionVat ?? null,
+        dealDataDirectExchange: dealData?.directExchange ?? null,
+        dealDataExchangeCommissionAmount: dealData?.exchangeCommissionAmount ?? null,
+        dealDataExchangeCommissionMaam: dealData?.exchangeCommissionMaam ?? null,
+        dealDataExchangeCommissionType: dealData?.exchangeCommissionType ?? null,
+        dealDataExchangeDirect: dealData?.exchangeDirect ?? null,
+        dealDataExchangeRate: dealData?.exchangeRate ?? null,
+        dealDataIndexRateBase: dealData?.indexRateBase ?? null,
+        dealDataIndexRatePmt: dealData?.indexRatePmt ?? null,
+        dealDataInterestAmount: dealData?.interestAmount ?? null,
+        dealDataIsAllowedSpreadWithBenefit: dealData?.isAllowedSpreadWithBenefit ?? null,
+        dealDataIssuerCurrency: dealData?.issuerCurrency ?? null,
+        dealDataIssuerExchangeRate: dealData?.issuerExchangeRate ?? null,
+        dealDataOriginalTerm: dealData?.originalTerm ? dealData?.originalTerm.toString() : null,
+        dealDataPercentMaam: dealData?.percentMaam ?? null,
+        dealDataPlan: dealData?.plan ?? null,
+        dealDataPosEntryEmv: dealData?.posEntryEmv ?? null,
+        dealDataProcessingDate: dealData?.processingDate ?? null,
+        dealDataPurchaseAmount: dealData?.purchaseAmount ?? null,
+        dealDataPurchaseTime: dealData?.purchaseTime ?? null,
+        dealDataRefNbr: dealData?.refNbr ?? null,
+        dealDataShowCancelDebit: dealData?.showCancelDebit ?? null,
+        dealDataShowSpread: dealData?.showSpread ?? null,
+        dealDataShowSpreadBenefitButton: dealData?.showSpreadBenefitButton ?? null,
+        dealDataShowSpreadButton: dealData?.showSpreadButton ?? null,
+        dealDataShowSpreadForLeumi: dealData?.showSpreadForLeumi ?? null,
+        dealDataTdmCardToken: dealData?.tdmCardToken ?? null,
+        dealDataTdmTransactionType: dealData?.tdmTransactionType ?? null,
+        dealDataTransactionType: dealData?.transactionType ?? null,
+        dealDataTxnCode: dealData?.txnCode ?? null,
+        dealDataUserName: dealData?.userName ?? null,
+        dealDataWithdrawalCommissionAmount: dealData?.withdrawalCommissionAmount ?? null,
+
+        merchantAddress: merchantData.address,
+        merchantCoordinates: merchantData.coordinates,
+        merchantMaxPhone: merchantData.maxPhone ?? false,
+        merchant: merchantData.merchant,
+        merchantCommercialName: merchantData.merchantCommercialName,
+        merchantNumber: merchantData.merchantNumber,
+        merchantPhone: merchantData.merchantPhone,
+        merchantTaxId: merchantData.merchantTaxId ?? '',
+
+        runtimeReferenceInternalId: runtimeReference.id,
+        runtimeReferenceType: runtimeReference.type,
+        // Coerce numeric string fields
+        actualPaymentAmount: t.actualPaymentAmount == null ? null : String(t.actualPaymentAmount),
+        // dealDataAmount: t.dealDataAmount == null ? null : String(t.dealDataAmount),
+        // dealDataAmountIls: t.dealDataAmountIls == null ? null : String(t.dealDataAmountIls),
+      };
+      return transaction;
+    }),
   );
   return { transactions };
 }
 
 export function otsarIlsVars(
   ilsData: OtsarHahayalIlsData[],
-): MutationUploadOtsarHahayalIlsTransactionsArgs {
+): UploadOtsarHahayalIlsTransactionsMutationVariables {
   const transactions = ilsData.flatMap(({ account, accountType, transactions: txns }) =>
     txns.map(t => ({
       accountNumber: Number(account.account),
@@ -855,7 +919,7 @@ export function otsarIlsVars(
 
 export function otsarForeignVars(
   foreignData: ForeignAccountData[],
-): MutationUploadOtsarHahayalForeignTransactionsArgs {
+): UploadOtsarHahayalForeignTransactionsMutationVariables {
   const transactions = foreignData.flatMap(({ metadata, transactions: txns }) =>
     txns.map(t => ({
       account: metadata.account,
@@ -879,7 +943,7 @@ export function otsarForeignVars(
 
 export function otsarCreditCardVars(
   creditCardData: OtsarHahayalCreditCardData[],
-): MutationUploadOtsarHahayalCreditCardTransactionsArgs {
+): UploadOtsarHahayalCreditCardTransactionsMutationVariables {
   const transactions = creditCardData.flatMap(({ card, dealGroup, transactions: txns }) =>
     txns.map(t => ({
       resourceId: card.resourceId,

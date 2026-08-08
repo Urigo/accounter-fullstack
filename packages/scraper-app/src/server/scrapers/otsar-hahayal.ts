@@ -117,7 +117,7 @@ export async function scrapeOtsarHahayal(
           account,
           accountType: ilsResponse.accountType,
           transactions: ilsResponse.transactions.filter(
-            t => t.bfbSource !== '23' && t.bfbSource !== 23,
+            (t: IlsTransaction) => t.bfbSource !== '23' && t.bfbSource !== 23,
           ),
         });
       }

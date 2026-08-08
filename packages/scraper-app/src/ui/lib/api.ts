@@ -1,4 +1,4 @@
-import type { BankAccount, Settings } from '../../server/vault.js';
+import type { AccountRecord, Settings } from '../../server/vault.js';
 import type { RunRecord } from '../../shared/types.js';
 
 export class ApiError extends Error {
@@ -82,11 +82,14 @@ export function saveSettings(patch: Partial<Settings>): Promise<Settings> {
   });
 }
 
-export function fetchAccounts(): Promise<BankAccount[]> {
+/** What `/api/vault/accounts` returns: the stored record plus its source's nickname. */
+export type VaultAccount = AccountRecord & { nickname?: string };
+
+export function fetchAccounts(): Promise<VaultAccount[]> {
   return apiFetch('/api/vault/accounts');
 }
 
-export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promise<BankAccount[]> {
+export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promise<VaultAccount[]> {
   return apiFetch(`/api/vault/accounts/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -94,7 +97,7 @@ export function updateStatus(id: string, status: 'accepted' | 'ignored'): Promis
   });
 }
 
-export function deleteAccount(id: string): Promise<BankAccount[]> {
+export function deleteAccount(id: string): Promise<VaultAccount[]> {
   return apiFetch(`/api/vault/accounts/${id}`, { method: 'DELETE' });
 }
 

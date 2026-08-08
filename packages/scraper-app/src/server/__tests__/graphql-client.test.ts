@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { setupServer } from 'msw/node';
 import { graphql, HttpResponse } from 'msw';
 import { createUploadClient } from '../graphql/client.js';
+import { makeMaxAccount } from './fixtures/max.js';
 
 const MOCK_URL = 'http://localhost:4000/graphql';
 const MOCK_API_KEY = 'test-api-key-123';
@@ -256,22 +257,15 @@ const DISCOUNT_PAYLOAD = [
 ];
 
 const MAX_PAYLOAD = [
-  {
-    accountNumber: '7',
-    txns: [
-      {
-        cardIndex: 7,
-        categoryId: 1,
-        merchantName: 'Store',
-        originalAmount: 200,
-        originalCurrency: 'ILS',
-        purchaseDate: '2024-01-15',
-        uid: 'UID-1',
-        planName: 'regular',
-        planTypeId: 1,
-      },
-    ],
-  },
+  makeMaxAccount('7', [
+    {
+      cardIndex: 7,
+      merchantName: 'Store',
+      originalAmount: 200,
+      purchaseDate: '2024-01-15T00:00:00',
+      uid: 'UID-1',
+    },
+  ]),
 ];
 
 const CURRENCY_RATES_PAYLOAD = [

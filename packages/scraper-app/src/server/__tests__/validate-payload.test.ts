@@ -179,7 +179,13 @@ describe('runner integration — task-error on PayloadValidationError', () => {
       run: async () => {
         // Deliberately pass invalid data to trigger PayloadValidationError
         validatePayload('poalim-ils', { transactions: 'not-an-array' });
-        return { inserted: 0, skipped: 0, insertedIds: [] };
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
       },
     };
 
