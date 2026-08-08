@@ -19,11 +19,12 @@ import {
 } from '@/components/ui/select.js';
 import { BillingCycle, Product, SubscriptionPlan } from '@/gql/graphql.js';
 import { standardBillingCycle, standardPlan } from '@/helpers/index.js';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { Label } from '../ui/label.js';
 import type { ContractRow } from './index.js';
 
 interface Props {
-  table: Table<ContractRow>;
+  table: Table<TableFeaturesConfig, ContractRow>;
 }
 
 export function ContractsFilter({ table }: Props) {

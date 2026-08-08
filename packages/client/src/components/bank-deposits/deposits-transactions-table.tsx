@@ -1,16 +1,10 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useQuery } from 'urql';
-import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
 import { getFragmentData } from '@/gql/fragment-masking.js';
 import { useStableValue } from '@/hooks/use-stable-value.js';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { UserContext } from '@/providers/user-provider.js';
 import {
   Currency,
@@ -116,7 +110,9 @@ export function DepositsTransactionsTable({
     let totalInterest = 0;
     let localCumulativeBalance = 0;
 
-    return sortedTransactions.map(tx => {
+    const rows: DepositTransactionRowType[] = [];
+
+    for (const tx of sortedTransactions) {
       let rate: number | null = null;
       const currencyKey = currencyMap[tx.amount.currency];
       if (currencyKey) {
@@ -135,7 +131,7 @@ export function DepositsTransactionsTable({
         localCumulativeBalance += localAmount;
       }
 
-      return {
+      rows.push({
         ...tx,
         cumulativeBalance,
         localCumulativeBalance,
@@ -143,56 +139,54 @@ export function DepositsTransactionsTable({
         localCurrency,
         totalInterest,
         isInterest,
-      };
-    });
-  }, [data?.deposit, userContext]);
+      });
+    }
+
+    return rows;
+  }, [data, userContext?.context.defaultLocalCurrency]);
 
   // Keep a stable reference across refetches so the table only re-renders when
   // the transactions actually changed, avoiding a "blink" on background refetch.
   const tableData = useStableValue(computedTableData);
 
-  const columnsWithActions: ColumnDef<DepositTransactionRowType>[] = useMemo(() => {
-    const defaultLocalCurrency =
-      (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
+  const columnsWithActions: ColumnDef<TableFeaturesConfig, DepositTransactionRowType>[] =
+    useMemo(() => {
+      const defaultLocalCurrency =
+        (userContext?.context.defaultLocalCurrency as Currency) ?? Currency.Ils;
 
-    const originEqualsLocal =
-      !!data?.deposit?.currency && data.deposit.currency === defaultLocalCurrency;
+      const originEqualsLocal =
+        !!data?.deposit?.currency && data.deposit.currency === defaultLocalCurrency;
 
-    const baseColumns: ColumnDef<DepositTransactionRowType>[] = originEqualsLocal
-      ? columns.filter(c => c.id !== 'amount' && c.id !== 'cumulativeBalance')
-      : columns;
+      const baseColumns: ColumnDef<TableFeaturesConfig, DepositTransactionRowType>[] =
+        originEqualsLocal
+          ? columns.filter(c => c.id !== 'amount' && c.id !== 'cumulativeBalance')
+          : columns;
 
-    const actionColumns: ColumnDef<DepositTransactionRowType>[] = enableReassign
-      ? [
-          {
-            id: 'actions',
-            header: 'Actions',
-            cell: ({ row }) => (
-              <DepositReassignDialog
-                depositId={depositId}
-                chargeId={row.original.chargeId}
-                refetch={refetch}
-              />
-            ),
-          },
-        ]
-      : [];
+      const actionColumns: ColumnDef<TableFeaturesConfig, DepositTransactionRowType>[] =
+        enableReassign
+          ? [
+              {
+                id: 'actions',
+                header: 'Actions',
+                cell: ({ row }) => (
+                  <DepositReassignDialog
+                    depositId={depositId}
+                    chargeId={row.original.chargeId}
+                    refetch={refetch}
+                  />
+                ),
+              },
+            ]
+          : [];
 
-    return [...baseColumns, ...actionColumns];
-  }, [
-    enableReassign,
-    depositId,
-    refetch,
-    data?.deposit?.currency,
-    userContext?.context.defaultLocalCurrency,
-  ]);
+      return [...baseColumns, ...actionColumns];
+    }, [enableReassign, depositId, refetch, data, userContext?.context.defaultLocalCurrency]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: tableData,
     columns: columnsWithActions,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     state: { sorting },
   });
 

@@ -5,14 +5,12 @@ import { useQuery } from 'urql';
 import { Image } from '@mantine/core';
 import {
   flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
   type ColumnDef,
+  type ColumnVisibilityState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   DocumentsScreenDocument,
   type DocumentsFilters as DocumentsFiltersType,
@@ -97,7 +95,10 @@ import { DocumentsFilters } from './documents-filters.js';
   }
 `;
 
-export const columns: ColumnDef<DocumentsScreenQuery['documentsByFilters'][number]>[] = [
+export const columns: ColumnDef<
+  TableFeaturesConfig,
+  DocumentsScreenQuery['documentsByFilters'][number]
+>[] = [
   {
     accessorKey: '__typename',
     header: ({ column }) => (
@@ -290,7 +291,7 @@ export const DocumentsReport = (): ReactElement => {
   }, [uriFilters]);
   const [filter, setFilter] = useState<DocumentsFiltersType | undefined>(initialFilters);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const { setFiltersContext } = useContext(FiltersContext);
 
   const [{ data, fetching }, refetchDocuments] = useQuery({
@@ -308,13 +309,11 @@ export const DocumentsReport = (): ReactElement => {
     }
   }, [filter, refetchDocuments]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: data?.documentsByFilters ?? [],
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,
@@ -322,7 +321,7 @@ export const DocumentsReport = (): ReactElement => {
     },
   });
 
-  const currentPage = table.getState().pagination.pageIndex;
+  const currentPage = table.state.pagination.pageIndex;
 
   useEffect(() => {
     setFiltersContext(

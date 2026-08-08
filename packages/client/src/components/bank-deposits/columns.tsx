@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import type { Currency, DepositTransactionFieldsFragment } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
@@ -57,11 +58,11 @@ export type DepositTransactionRowType = DepositTransactionFieldsFragment & {
   isInterest: boolean;
 };
 
-export const columns: ColumnDef<DepositTransactionRowType>[] = [
+export const columns: ColumnDef<TableFeaturesConfig, DepositTransactionRowType>[] = [
   {
     id: 'date',
     accessorKey: 'eventDate',
-    sortingFn: row => {
+    sortFn: row => {
       return row.original.eventDate ? new Date(row.original.eventDate).getTime() : 0;
     },
     header: ({ column }) => {

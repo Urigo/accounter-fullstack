@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import equal from 'deep-equal';
 import {
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+  useTable,
+  type ColumnVisibilityState,
   type SortingState,
-  type VisibilityState,
 } from '@tanstack/react-table';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
   TableDocumentsRowFieldsFragmentDoc,
   type TableDocumentsRowFieldsFragment,
@@ -79,16 +78,15 @@ export const DocumentsTable = ({
       })),
     [documents, onChange],
   );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
   const limitedColumns = ['date', 'amount', 'vat', 'type', 'serial', 'file'];
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data,
     columns: limited
       ? columns.filter(column => column.id && limitedColumns.includes(column.id))
       : columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     state: {
       sorting,

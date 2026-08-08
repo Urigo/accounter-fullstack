@@ -2,14 +2,8 @@ import { useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   AllSortCodesForScreenDocument,
   type AllSortCodesForScreenQuery,
@@ -37,7 +31,7 @@ type RowType = AllSortCodesForScreenQuery['allSortCodes'][number] & {
   refetchSortCodes: () => void;
 };
 
-const columns: ColumnDef<RowType>[] = [
+const columns: ColumnDef<TableFeaturesConfig, RowType>[] = [
   {
     id: 'key',
     accessorKey: 'key',
@@ -111,14 +105,13 @@ export const SortCodes = (): ReactElement => {
     [data?.allSortCodes, refetchSortCodes],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: sortCodes,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
+        pageIndex: 0,
         pageSize: 100,
       },
     },

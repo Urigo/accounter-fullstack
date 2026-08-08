@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { createColumnHelper } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { ROUTES } from '@/router/routes.js';
 import { VatReportExpensesRowFieldsFragmentDoc } from '../../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/index.js';
@@ -68,9 +69,9 @@ export type ExpensesTableRowType = {
   cumulativeAmount: number;
 };
 
-const columnHelper = createColumnHelper<ExpensesTableRowType>();
+const columnHelper = createColumnHelper<TableFeaturesConfig, ExpensesTableRowType>();
 
-export const columns = [
+export const columns = columnHelper.columns([
   columnHelper.accessor(
     row => {
       const expense = getFragmentData(VatReportExpensesRowFieldsFragmentDoc, row.data);
@@ -362,4 +363,4 @@ export const columns = [
       );
     },
   }),
-];
+]);

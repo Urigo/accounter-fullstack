@@ -1,4 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { Currency } from '../../gql/graphql.js';
 import { FIAT_CURRENCIES } from '../../helpers/index.js';
 import { DataTableColumnHeader } from '../common/index.js';
@@ -14,7 +15,7 @@ import { DateCell } from './cells/date-cell.js';
 /**
  * Base columns that are always visible
  */
-export const getBaseColumns = (): ColumnDef<ExtendedLedger>[] => [
+export const getBaseColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => [
   {
     accessorKey: 'business.name',
     id: 'businessName',
@@ -28,21 +29,21 @@ export const getBaseColumns = (): ColumnDef<ExtendedLedger>[] => [
     id: 'date',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Date" />,
     cell: ({ row }) => <DateCell date={row.original.invoiceDate} />,
-    sortingFn: 'datetime',
+    sortFn: 'datetime',
   },
   {
     accessorKey: 'amount.raw',
     id: 'amount',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amount" />,
     cell: ({ row }) => <AmountCell amount={row.original.amount} />,
-    sortingFn: 'basic',
+    sortFn: 'basic',
   },
   {
     accessorKey: 'ilsBalance',
     id: 'ilsBalance',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Amount Balance" />,
     cell: ({ row }) => <BalanceCell balance={row.original.ilsBalance} currency={Currency.Ils} />,
-    sortingFn: 'basic',
+    sortFn: 'basic',
   },
 ];
 
@@ -50,7 +51,7 @@ export const getBaseColumns = (): ColumnDef<ExtendedLedger>[] => [
  * Generate currency-specific columns (Amount + Balance) for all currencies
  * Columns for inactive currencies will be hidden via initialState
  */
-export const getCurrencyColumns = (): ColumnDef<ExtendedLedger>[] => {
+export const getCurrencyColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => {
   // Generate columns for ALL currencies
   const allCurrencies = Object.values(Currency).filter(currency => currency !== Currency.Ils);
 
@@ -71,7 +72,7 @@ export const getCurrencyColumns = (): ColumnDef<ExtendedLedger>[] => {
         <DataTableColumnHeader column={column} title={`${currency} Amount`} />
       ),
       cell: ({ row }) => <CurrencyAmountCell row={row.original} currency={currency} />,
-      sortingFn: 'basic',
+      sortFn: 'basic',
       // Mark as hideable so users can toggle via column visibility
       enableHiding: true,
     },
@@ -82,7 +83,7 @@ export const getCurrencyColumns = (): ColumnDef<ExtendedLedger>[] => {
         <DataTableColumnHeader column={column} title={`${currency} Balance`} />
       ),
       cell: ({ row }) => <CurrencyBalanceCell row={row.original} currency={currency} />,
-      sortingFn: 'basic',
+      sortFn: 'basic',
       // Mark as hideable so users can toggle via column visibility
       enableHiding: true,
     },
@@ -92,7 +93,7 @@ export const getCurrencyColumns = (): ColumnDef<ExtendedLedger>[] => {
 /**
  * End columns that appear after all currency columns
  */
-export const getEndColumns = (): ColumnDef<ExtendedLedger>[] => [
+export const getEndColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => [
   {
     accessorKey: 'reference',
     id: 'reference',
@@ -119,7 +120,7 @@ export const getEndColumns = (): ColumnDef<ExtendedLedger>[] => [
 /**
  * Generate all columns for the business ledger table
  */
-export const getAllColumns = (): ColumnDef<ExtendedLedger>[] => {
+export const getAllColumns = (): ColumnDef<TableFeaturesConfig, ExtendedLedger>[] => {
   return [...getBaseColumns(), ...getCurrencyColumns(), ...getEndColumns()];
 };
 

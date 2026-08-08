@@ -1,7 +1,13 @@
 import { format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { type ColumnDef, type Row, type Table, type VisibilityState } from '@tanstack/react-table';
+import {
+  type ColumnDef,
+  type ColumnVisibilityState,
+  type Row,
+  type Table,
+} from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { ROUTES } from '../../router/routes.js';
 import { DataTableColumnHeader } from '../common/data-table-column-header.js';
 import { Badge } from '../ui/badge.js';
@@ -17,12 +23,14 @@ function formatDate(value: Date | null): string {
 
 /** Null-safe date sort comparator (missing dates sort first ascending). */
 function sortByDate(field: 'createdAt' | 'updatedAt') {
-  return (a: Row<BusinessTableRow>, b: Row<BusinessTableRow>) =>
-    (a.original[field]?.getTime() ?? 0) - (b.original[field]?.getTime() ?? 0);
+  return (
+    a: Row<TableFeaturesConfig, BusinessTableRow>,
+    b: Row<TableFeaturesConfig, BusinessTableRow>,
+  ) => (a.original[field]?.getTime() ?? 0) - (b.original[field]?.getTime() ?? 0);
 }
 
 /** Usage cells show the count, a spinner while the lazy usage query is in flight, or a dash. */
-function usageCell(value: number | null, table: Table<BusinessTableRow>) {
+function usageCell(value: number | null, table: Table<TableFeaturesConfig, BusinessTableRow>) {
   if (value != null) {
     return value;
   }
@@ -30,7 +38,7 @@ function usageCell(value: number | null, table: Table<BusinessTableRow>) {
   return meta?.usageFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : '—';
 }
 
-export const columns: ColumnDef<BusinessTableRow>[] = [
+export const columns: ColumnDef<TableFeaturesConfig, BusinessTableRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -85,13 +93,13 @@ export const columns: ColumnDef<BusinessTableRow>[] = [
   {
     accessorKey: 'createdAt',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Created" />,
-    sortingFn: sortByDate('createdAt'),
+    sortFn: sortByDate('createdAt'),
     cell: ({ row }) => formatDate(row.original.createdAt),
   },
   {
     accessorKey: 'updatedAt',
     header: ({ column }) => <DataTableColumnHeader column={column} title="Updated" />,
-    sortingFn: sortByDate('updatedAt'),
+    sortFn: sortByDate('updatedAt'),
     cell: ({ row }) => formatDate(row.original.updatedAt),
   },
   // Categorization
@@ -257,7 +265,7 @@ export const COLUMN_GROUPS: { label: string; columns: { id: string; label: strin
 
 // Categorization, Suggestion-defaults and Usage columns are hidden by default; Core, Main
 // and Extension tags are shown.
-export const DEFAULT_COLUMN_VISIBILITY: VisibilityState = {
+export const DEFAULT_COLUMN_VISIBILITY: ColumnVisibilityState = {
   sortCode: false,
   taxCategory: false,
   irsCode: false,
