@@ -7,7 +7,7 @@ import equal from 'deep-equal';
  *
  * Useful for values derived from GraphQL query results: urql returns a fresh
  * `data` object on every (re)fetch, even when the underlying content is
- * identical. Feeding that straight into `useReactTable`/`useMemo` dependencies
+ * identical. Feeding that straight into `useTable`/`useMemo` dependencies
  * forces the consumer to re-render on every background refetch, causing a
  * visible "blink". Wrapping the derived value here keeps the reference stable
  * so downstream renders only happen when the data actually changed.

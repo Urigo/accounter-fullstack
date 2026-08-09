@@ -1,12 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Check, Copy, Edit2, Lock, Trash2, Upload, X } from 'lucide-react';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
+import { createColumnHelper, flexRender, useTable } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button.js';
 import {
   Dialog,
@@ -30,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip.js';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { type Template } from '../utils/types.js';
 
 interface TemplateManagerProps {
@@ -42,7 +37,7 @@ interface TemplateManagerProps {
   onDelete: (template: Template) => void;
 }
 
-const columnHelper = createColumnHelper<Template>();
+const columnHelper = createColumnHelper<TableFeaturesConfig, Template>();
 
 export function TemplateManager({
   open,
@@ -80,173 +75,173 @@ export function TemplateManager({
   }
 
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('name', {
-        header: 'Name',
-        cell: info => {
-          const template = info.row.original;
-          if (editingId === template.id) {
+    () =>
+      columnHelper.columns([
+        columnHelper.accessor('name', {
+          header: 'Name',
+          cell: info => {
+            const template = info.row.original;
+            if (editingId === template.id) {
+              return (
+                <div className="flex items-center gap-1">
+                  <Input
+                    ref={editInputRef}
+                    value={editingName}
+                    onChange={e => setEditingName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') submitEditing(template);
+                      if (e.key === 'Escape') cancelEditing();
+                    }}
+                    className="h-7 text-sm"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="size-7 p-0 text-green-600 hover:text-green-700"
+                    onClick={() => submitEditing(template)}
+                    disabled={!editingName.trim()}
+                  >
+                    <Check className="size-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="size-7 p-0" onClick={cancelEditing}>
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              );
+            }
+            return <span className="font-medium">{info.getValue()}</span>;
+          },
+        }),
+        columnHelper.accessor('lastUpdated', {
+          header: 'Last Updated',
+          cell: info => {
+            const date = info.getValue();
+            return (
+              <span className="text-muted-foreground text-sm">
+                {date.toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </span>
+            );
+          },
+        }),
+        columnHelper.accessor('isLocked', {
+          header: 'Locked',
+          cell: info =>
+            info.getValue() ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Lock className="size-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>This template is locked</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null,
+        }),
+        columnHelper.display({
+          id: 'actions',
+          header: 'Actions',
+          cell: info => {
+            const template = info.row.original;
+            const isEditing = editingId === template.id;
             return (
               <div className="flex items-center gap-1">
-                <Input
-                  ref={editInputRef}
-                  value={editingName}
-                  onChange={e => setEditingName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') submitEditing(template);
-                    if (e.key === 'Escape') cancelEditing();
-                  }}
-                  className="h-7 text-sm"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="size-7 p-0 text-green-600 hover:text-green-700"
-                  onClick={() => submitEditing(template)}
-                  disabled={!editingName.trim()}
-                >
-                  <Check className="size-3.5" />
-                </Button>
-                <Button variant="ghost" size="sm" className="size-7 p-0" onClick={cancelEditing}>
-                  <X className="size-3.5" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 p-0"
+                        onClick={() => {
+                          onLoad(template);
+                          onOpenChange(false);
+                        }}
+                        disabled={isEditing}
+                      >
+                        <Upload className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {template.isLocked ? 'Load template (read-only)' : 'Load template'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 p-0"
+                        onClick={() => startEditing(template)}
+                        disabled={template.isLocked || isEditing}
+                      >
+                        <Edit2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {template.isLocked ? 'Cannot rename locked template' : 'Rename template'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 p-0"
+                        onClick={() => onDuplicate(template)}
+                        disabled={isEditing}
+                      >
+                        <Copy className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Duplicate template</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="size-8 p-0 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(template)}
+                        disabled={template.isLocked || isEditing}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {template.isLocked ? 'Cannot delete locked template' : 'Delete template'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             );
-          }
-          return <span className="font-medium">{info.getValue()}</span>;
-        },
-      }),
-      columnHelper.accessor('lastUpdated', {
-        header: 'Last Updated',
-        cell: info => {
-          const date = info.getValue();
-          return (
-            <span className="text-muted-foreground text-sm">
-              {date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })}
-            </span>
-          );
-        },
-      }),
-      columnHelper.accessor('isLocked', {
-        header: 'Locked',
-        cell: info =>
-          info.getValue() ? (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Lock className="size-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>This template is locked</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ) : null,
-      }),
-      columnHelper.display({
-        id: 'actions',
-        header: 'Actions',
-        cell: info => {
-          const template = info.row.original;
-          const isEditing = editingId === template.id;
-          return (
-            <div className="flex items-center gap-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="size-8 p-0"
-                      onClick={() => {
-                        onLoad(template);
-                        onOpenChange(false);
-                      }}
-                      disabled={isEditing}
-                    >
-                      <Upload className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {template.isLocked ? 'Load template (read-only)' : 'Load template'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="size-8 p-0"
-                      onClick={() => startEditing(template)}
-                      disabled={template.isLocked || isEditing}
-                    >
-                      <Edit2 className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {template.isLocked ? 'Cannot rename locked template' : 'Rename template'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="size-8 p-0"
-                      onClick={() => onDuplicate(template)}
-                      disabled={isEditing}
-                    >
-                      <Copy className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Duplicate template</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="size-8 p-0 text-destructive hover:text-destructive"
-                      onClick={() => onDelete(template)}
-                      disabled={template.isLocked || isEditing}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {template.isLocked ? 'Cannot delete locked template' : 'Delete template'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          );
-        },
-      }),
-    ],
+          },
+        }),
+      ]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [onLoad, onRename, onDuplicate, onDelete, onOpenChange, editingId, editingName],
   );
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: templates,
     columns,
     state: {
       globalFilter,
     },
     onGlobalFilterChange: setGlobalFilter,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   });
 
   return (

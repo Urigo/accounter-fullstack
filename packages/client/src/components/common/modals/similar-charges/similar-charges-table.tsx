@@ -2,14 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { getFragmentData, type FragmentType } from '../../../../gql/fragment-masking.js';
 import { SimilarChargesTableFragmentDoc } from '../../../../gql/graphql.js';
 import { getChargeTypeName } from '../../../../helpers/index.js';
@@ -90,7 +84,7 @@ export type SimilarCharge = {
   miscExpenses: number;
 };
 
-const columns: ColumnDef<SimilarCharge>[] = [
+const columns: ColumnDef<TableFeaturesConfig, SimilarCharge>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -237,12 +231,11 @@ export function SimilarChargesTable({
     }
   }, [data, charges.length, onOpenChange]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: charges,
     columns,
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,

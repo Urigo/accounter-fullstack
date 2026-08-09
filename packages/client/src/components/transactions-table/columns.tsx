@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import type { TransactionForTransactionsTableFieldsFragment } from '../../gql/graphql.js';
 import { ChargeNavigateButton, EditMiniButton, InsertMiscExpenseModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
@@ -56,7 +57,7 @@ export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFrag
   enableChargeLink?: boolean;
 };
 
-export const columns: ColumnDef<TransactionsTableRowType>[] = [
+export const columns: ColumnDef<TableFeaturesConfig, TransactionsTableRowType>[] = [
   {
     accessorKey: 'counterparty.name',
     header: ({ column }) => {
@@ -81,7 +82,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
   },
   {
     accessorKey: 'eventDate',
-    sortingFn: row => {
+    sortFn: row => {
       return 'eventDate' in row.original && row.original.eventDate
         ? new Date(row.original.eventDate).getTime()
         : 0;
@@ -108,7 +109,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
   },
   {
     accessorKey: 'effectiveDate',
-    sortingFn: row => {
+    sortFn: row => {
       return 'effectiveDate' in row.original && row.original.effectiveDate
         ? new Date(row.original.effectiveDate).getTime()
         : 0;
@@ -223,7 +224,7 @@ export const columns: ColumnDef<TransactionsTableRowType>[] = [
   },
 ];
 
-export const actionsColumn: ColumnDef<TransactionsTableRowType> = {
+export const actionsColumn: ColumnDef<TableFeaturesConfig, TransactionsTableRowType> = {
   accessorKey: 'id',
   header: 'Actions',
   cell: ({ row }) => {

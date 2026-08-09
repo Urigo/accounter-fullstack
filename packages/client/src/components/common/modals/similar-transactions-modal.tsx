@@ -4,14 +4,8 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'urql';
-import {
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef, type SortingState } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import { SimilarTransactionsDocument } from '../../../gql/graphql.js';
 import { useUpdateTransactions } from '../../../hooks/use-update-transactions.js';
 import { getAccountTypeLabel } from '../../financial-accounts/utils.js';
@@ -54,7 +48,7 @@ type Transaction = {
   }
 `;
 
-const columns: ColumnDef<Transaction>[] = [
+const columns: ColumnDef<TableFeaturesConfig, Transaction>[] = [
   {
     id: 'select',
     header: ({ table }) => (
@@ -200,12 +194,11 @@ function SimilarTransactionsTable({
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data,
     columns,
     onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,

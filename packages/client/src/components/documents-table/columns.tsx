@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { DocumentType, type TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { CloseDocumentButton, EditMiniButton, PreviewDocumentModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
@@ -84,11 +85,11 @@ export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
   editDocument: () => void;
 };
 
-export const columns: ColumnDef<DocumentsTableRowType>[] = [
+export const columns: ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[] = [
   {
     id: 'date',
     accessorKey: 'date',
-    sortingFn: row => {
+    sortFn: row => {
       return 'date' in row.original && row.original.date
         ? new Date(row.original.date).getTime()
         : 0;

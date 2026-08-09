@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { MoreVertical, RefreshCcwDot, Tags } from 'lucide-react';
 import type { Table } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { useRegenerateLedgerRecords } from '../../hooks/use-regenerate-ledger-records.js';
 import { ConfirmationModal } from '../common/index.js';
 import { Button } from '../ui/button.js';
@@ -14,7 +15,7 @@ import { ChargesBatchTagsDialog } from './charges-batch-tags-dialog.js';
 import type { ChargeRow } from './charges-table.js';
 
 interface Props {
-  table: Table<ChargeRow>;
+  table: Table<TableFeaturesConfig, ChargeRow>;
 }
 
 /**

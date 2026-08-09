@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from 'urql';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
+import { flexRender, useTable, type ColumnDef } from '@tanstack/react-table';
+import { tableFeaturesConfig, type TableFeaturesConfig } from '@/lib/table-features.js';
 import {
   RecentBusinessIssuedDocumentsDocument,
   TableDocumentsRowFieldsFragmentDoc,
@@ -91,12 +92,13 @@ export function RecentBusinessDocs({
     'file',
     'edit',
   ];
-  const table = useReactTable<RowType>({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data: rows,
-    columns: columns.filter(
-      column => column.id && limitedColumns.includes(column.id),
-    ) as ColumnDef<RowType>[],
-    getCoreRowModel: getCoreRowModel(),
+    columns: columns.filter(column => column.id && limitedColumns.includes(column.id)) as ColumnDef<
+      TableFeaturesConfig,
+      RowType
+    >[],
     state: {},
   });
 

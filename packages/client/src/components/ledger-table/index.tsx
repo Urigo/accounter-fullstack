@@ -1,12 +1,5 @@
 import { useMemo, useState, type ReactElement } from 'react';
-import {
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-} from '@tanstack/react-table';
+import { flexRender, useTable, type SortingState } from '@tanstack/react-table';
 import { Pagination } from '@/components/common/index.js';
 import {
   Table,
@@ -22,6 +15,7 @@ import {
 } from '@/gql/graphql.js';
 import { getFragmentData, type FragmentType } from '@/gql/index.js';
 import { EMPTY_UUID } from '@/helpers/consts.js';
+import { tableFeaturesConfig } from '@/lib/table-features.js';
 import { columns } from './columns.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -149,13 +143,11 @@ export const LedgerTable = ({
     return currentRecords;
   }, [ledgerRecordsData, ledgerDiffData, matches]);
 
-  const table = useReactTable({
+  const table = useTable({
+    features: tableFeaturesConfig,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
     },
@@ -215,7 +207,7 @@ export const LedgerTable = ({
       </Table>
       <div className="flex items-center justify-end space-x-2 py-4">
         <Pagination
-          currentPageIndex={table.getState().pagination.pageIndex}
+          currentPageIndex={table.state.pagination.pageIndex}
           totalPages={table.getPageCount()}
           onChange={page => table.setPageIndex(page)}
         />
