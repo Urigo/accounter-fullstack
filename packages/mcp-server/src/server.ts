@@ -90,10 +90,11 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
 };
 
 /**
- * Wall-clock of the last request seen by this process, for the idle-gap marker
- * below. Process-local and best-effort (not synchronized across concurrent
- * requests) — it exists to make idle periods and cold starts visible in the
- * logs, not to be exact.
+ * Monotonic (process-relative, from `performance.now()`) timestamp of the last
+ * request seen by this process, for the idle-gap marker below. Not wall-clock —
+ * only differences within this process are meaningful. Process-local and
+ * best-effort (not synchronized across concurrent requests); it exists to make
+ * idle periods and cold starts visible in the logs, not to be exact.
  */
 let lastRequestAtMs: number | undefined;
 
@@ -136,8 +137,11 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
     logger.info(
       'request completed',
       completionFields(context, res.statusCode, {
-        responseCompleted: res.writableEnded,
-        aborted: !res.writableEnded,
+        // `writableFinished` (fully flushed), not `writableEnded` (end() called):
+        // a client that hangs up after end() but before the flush completes is a
+        // mid-flight disconnect, and must not be logged as completed.
+        responseCompleted: res.writableFinished,
+        aborted: !res.writableFinished,
         uptimeSeconds: Math.round(process.uptime()),
       }),
     );
