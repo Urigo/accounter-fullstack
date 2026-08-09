@@ -1,10 +1,11 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import type { BatchUpdateBusinessInput } from '../../gql/graphql.js';
 import { useBatchUpdateBusinesses } from '../../hooks/use-batch-update-businesses.js';
 import { useAllCountries } from '../../hooks/use-get-countries.js';
-import { useGetTags } from '../../hooks/use-get-tags.js';
+import { useGetTaxCategories } from '../../hooks/use-get-tax-categories.js';
 import { cn } from '../../lib/utils.js';
-import { ComboBox, MultiSelect } from '../common/index.js';
+import { UserContext } from '../../providers/user-provider.js';
+import { ComboBox, SortCodeSelect } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '../ui/dialog.js';
 import { Input } from '../ui/input.js';
 import { Label } from '../ui/label.js';
@@ -21,6 +21,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 interface BatchUpdateBusinessesDialogProps {
   businessIds: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Called after a successful apply, so the caller can refresh the table. */
   onDone: () => void;
 }
 
@@ -38,8 +41,7 @@ type FormState = {
   sortCode: string;
   irsCode: string;
   taxCategory: string;
-  description: string;
-  tags: string[];
+  suggestionDescription: string;
 } & Record<FlagKey, TriState>;
 
 const EMPTY_FORM: FormState = {
@@ -49,8 +51,7 @@ const EMPTY_FORM: FormState = {
   sortCode: '',
   irsCode: '',
   taxCategory: '',
-  description: '',
-  tags: [],
+  suggestionDescription: '',
   isActive: 'unset',
   isReceiptEnough: 'unset',
   isDocumentsOptional: 'unset',
@@ -58,21 +59,18 @@ const EMPTY_FORM: FormState = {
   exemptDealer: 'unset',
 };
 
-// `country` is rendered separately as a searchable ComboBox; the rest are simple inputs.
+// Free-text fields. Country, sort code and tax category are rendered separately as pickers.
 // `fullWidth` fields span both columns on wider screens.
 const FIELDS: {
   key: keyof FormState;
   label: string;
-  placeholder?: string;
   numeric?: boolean;
   fullWidth?: boolean;
 }[] = [
   { key: 'city', label: 'City' },
   { key: 'zipCode', label: 'Zip code' },
-  { key: 'sortCode', label: 'Sort code', numeric: true },
   { key: 'irsCode', label: 'IRS code', numeric: true },
-  { key: 'taxCategory', label: 'Tax category (UUID)', fullWidth: true },
-  { key: 'description', label: 'Suggestion description', fullWidth: true },
+  { key: 'suggestionDescription', label: 'Suggestion description', fullWidth: true },
 ];
 
 // boolean flags rendered as tri-state selects.
@@ -108,16 +106,8 @@ function buildFields(form: FormState): BatchUpdateBusinessInput {
   if (form.taxCategory.trim()) {
     fields.taxCategory = form.taxCategory.trim();
   }
-
-  const suggestions: NonNullable<BatchUpdateBusinessInput['suggestions']> = {};
-  if (form.description.trim()) {
-    suggestions.description = form.description.trim();
-  }
-  if (form.tags.length > 0) {
-    suggestions.tags = form.tags.map(id => ({ id }));
-  }
-  if (Object.keys(suggestions).length > 0) {
-    fields.suggestions = suggestions;
+  if (form.suggestionDescription.trim()) {
+    fields.suggestionDescription = form.suggestionDescription.trim();
   }
 
   for (const { key } of FLAG_FIELDS) {
@@ -129,46 +119,63 @@ function buildFields(form: FormState): BatchUpdateBusinessInput {
   return fields;
 }
 
+/**
+ * Batch-edit the shared fields of the selected businesses: locality (country/city/zip), sort code,
+ * default tax category, IRS code, the suggestion description, and the boolean flags. Only the
+ * fields the user actually fills in are sent, so everything else keeps each business's own value.
+ * Tags are handled separately by {@link BatchUpdateBusinessesTagsDialog}, which needs add/remove
+ * semantics rather than a single shared value.
+ */
 export function BatchUpdateBusinessesDialog({
   businessIds,
+  open,
+  onOpenChange,
   onDone,
 }: BatchUpdateBusinessesDialogProps): ReactElement {
-  const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const { userContext } = useContext(UserContext);
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
   const { countries, fetching: fetchingCountries } = useAllCountries();
-  const { selectableTags, fetching: fetchingTags } = useGetTags();
+  const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
 
   const fields = buildFields(form);
   const isFormEmpty = Object.keys(fields).length === 0;
-  // sortCode/irsCode map to GraphQL Int, so only whole non-negative integers are valid — reject
-  // decimals and scientific notation that Number() would otherwise coerce.
+  // irsCode maps to GraphQL Int, so only whole non-negative integers are valid — reject decimals
+  // and scientific notation that Number() would otherwise coerce. sortCode comes from a picker.
   const hasInvalidNumericFields =
-    (form.sortCode.trim() !== '' && !INTEGER_PATTERN.test(form.sortCode.trim())) ||
-    (form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim()));
+    form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim());
+
+  // Single close path so both the Dialog's own dismissals (overlay/esc/X) and the Cancel button
+  // clear the form before closing.
+  const handleOpenChange = (nextOpen: boolean): void => {
+    if (!nextOpen) {
+      setForm(EMPTY_FORM);
+    }
+    onOpenChange(nextOpen);
+  };
 
   const onSubmit = async (): Promise<void> => {
-    if (Object.keys(fields).length === 0) {
+    if (isFormEmpty || businessIds.length === 0) {
       return;
     }
     const updated = await batchUpdateBusinesses({ businessIds, fields });
     if (updated) {
       setForm(EMPTY_FORM);
-      setOpen(false);
+      onOpenChange(false);
       onDone();
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={businessIds.length === 0}>
-          Batch update{businessIds.length ? ` (${businessIds.length})` : ''}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-2xl">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="flex max-h-[90vh] flex-col sm:max-w-2xl"
+        onClick={event => event.stopPropagation()}
+      >
         <DialogHeader>
-          <DialogTitle>Batch update {businessIds.length} businesses</DialogTitle>
+          <DialogTitle>
+            Batch update {businessIds.length} business{businessIds.length === 1 ? '' : 'es'}
+          </DialogTitle>
           <DialogDescription>
             Only the fields you fill in are applied to every selected business.
           </DialogDescription>
@@ -184,6 +191,27 @@ export function BatchUpdateBusinessesDialog({
               placeholder="Select country"
             />
           </div>
+          <div className="grid gap-1">
+            <Label>Sort code</Label>
+            <SortCodeSelect
+              ownerId={userContext?.context.adminBusinessId}
+              value={form.sortCode || null}
+              onChange={value =>
+                setForm(prev => ({ ...prev, sortCode: value == null ? '' : value.toString() }))
+              }
+              placeholder="Select sort code"
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label>Tax category</Label>
+            <ComboBox
+              data={selectableTaxCategories}
+              value={form.taxCategory || null}
+              onChange={value => setForm(prev => ({ ...prev, taxCategory: value ?? '' }))}
+              disabled={fetchingTaxCategories}
+              placeholder="Select tax category"
+            />
+          </div>
           {FIELDS.map(field => (
             <div key={field.key} className={cn('grid gap-1', field.fullWidth && 'sm:col-span-2')}>
               <Label htmlFor={`batch-${field.key}`}>{field.label}</Label>
@@ -191,22 +219,10 @@ export function BatchUpdateBusinessesDialog({
                 id={`batch-${field.key}`}
                 type={field.numeric ? 'number' : 'text'}
                 value={form[field.key] as string}
-                placeholder={field.placeholder}
                 onChange={event => setForm(prev => ({ ...prev, [field.key]: event.target.value }))}
               />
             </div>
           ))}
-          <div className="grid gap-1 sm:col-span-2">
-            <Label>Tags</Label>
-            <MultiSelect
-              options={selectableTags}
-              onValueChange={value => setForm(prev => ({ ...prev, tags: value }))}
-              defaultValue={form.tags}
-              placeholder="Select tags"
-              variant="default"
-              disabled={fetchingTags}
-            />
-          </div>
           {FLAG_FIELDS.map(flag => (
             <div key={flag.key} className="grid gap-1">
               <Label htmlFor={`batch-${flag.key}`}>{flag.label}</Label>
@@ -229,7 +245,7 @@ export function BatchUpdateBusinessesDialog({
           ))}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button

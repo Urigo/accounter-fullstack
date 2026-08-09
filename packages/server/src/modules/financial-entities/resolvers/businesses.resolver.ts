@@ -7,6 +7,10 @@ import { SortCodesProvider } from '../../sort-codes/providers/sort-codes.provide
 import { TagsProvider } from '../../tags/providers/tags.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
+  applyBatchBusinessTagChanges,
+  applyBatchBusinessUpdate,
+} from '../helpers/batch-update-businesses.helper.js';
+import {
   SuggestionData,
   suggestionDataSchema,
 } from '../helpers/business-suggestion-data-schema.helper.js';
@@ -283,14 +287,19 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
     },
     batchUpdateBusinesses: async (_, { businessIds, fields }, { injector }) => {
       const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
-      // sequential: the external green-invoice sync inside updateSingleBusiness is not behind
-      // the DB mutex, so a concurrent Promise.all would fire those calls in parallel, and a
-      // failure mid-batch should stop rather than leave more partial updates behind
-      const updatedBusinesses: IGetBusinessesByIdsResult[] = [];
-      for (const businessId of businessIds) {
-        updatedBusinesses.push(await updateSingleBusiness(injector, businessId, ownerId, fields));
-      }
-      return updatedBusinesses;
+      return applyBatchBusinessUpdate(injector, businessIds, ownerId, fields);
+    },
+    batchUpdateBusinessesTags: async (
+      _,
+      { businessIds, addTagIds, removeTagIds },
+      { injector },
+    ) => {
+      return applyBatchBusinessTagChanges(
+        injector,
+        businessIds,
+        addTagIds ?? [],
+        removeTagIds ?? [],
+      );
     },
     batchGenerateBusinessesOutOfTransactions: async (_, __, { injector }) => {
       const { ownerId, locality } = await injector
