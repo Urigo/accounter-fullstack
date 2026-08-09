@@ -328,6 +328,10 @@ export const ChargesTable = ({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onExpandedChange: setExpanded,
+    // Rows carry no subRows — the expansion renders a detail panel, not child rows. v9's
+    // `row.toggleExpanded()` bails out unless the row "can expand", which defaults to
+    // `!!row.subRows.length`, so every row must be declared expandable explicitly.
+    getRowCanExpand: () => true,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
