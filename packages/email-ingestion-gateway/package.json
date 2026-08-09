@@ -54,13 +54,13 @@
     "graphql-request": "7.4.0",
     "inline-css": "4.0.3",
     "playwright": "1.62.1",
-    "postal-mime": "2.7.5",
+    "postal-mime": "2.7.6",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@types/inline-css": "3.0.4",
     "@types/node": "25.9.5",
-    "tsx": "4.23.9",
+    "tsx": "4.23.11",
     "typescript": "6.0.3",
     "wrangler": "4.120.0"
   }
