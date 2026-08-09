@@ -332,6 +332,11 @@ export const ChargesTable = ({
     // `row.toggleExpanded()` bails out unless the row "can expand", which defaults to
     // `!!row.subRows.length`, so every row must be declared expandable explicitly.
     getRowCanExpand: () => true,
+    // Refreshing a single charge (`updateCharge`) hands the table a new `data` array, which v9
+    // treats as a row-structure change and answers by resetting `expanded` to the initial state —
+    // collapsing every open charge. Expansion here is a user-driven detail panel keyed by charge
+    // id, so it must survive data refreshes.
+    autoResetExpanded: false,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
