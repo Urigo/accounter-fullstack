@@ -643,7 +643,14 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       c.created_at,
       c.updated_at,
       COALESCE(c.tax_category_id, tcm.tax_category_id) AS tax_category_id,
-      COALESCE(dbc.invoice_event_amount::numeric, dbc.receipt_event_amount::numeric, tbc.event_amount) AS event_amount,
+      COALESCE(
+        CASE
+          WHEN dbc.invoices_count > 0 THEN dbc.js_invoice_event_amount
+          WHEN dbc.receipts_count > 0 THEN dbc.js_receipt_event_amount
+          ELSE dbc.js_proforma_event_amount
+        END::numeric,
+        tbc.event_amount
+      ) AS event_amount,
       tbc.min_event_date AS transactions_min_event_date,
       tbc.max_event_date AS transactions_max_event_date,
       tbc.min_debit_date AS transactions_min_debit_date,
