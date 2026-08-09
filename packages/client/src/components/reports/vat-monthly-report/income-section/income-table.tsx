@@ -90,6 +90,9 @@ export const IncomeTable = ({
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onExpandedChange: setExpanded,
+    // Detail-panel expansion, not sub-rows: v9 refuses to expand a row whose default
+    // `getRowCanExpand` (`!!row.subRows.length`) is false.
+    getRowCanExpand: () => true,
     state: {
       sorting,
       columnVisibility,
