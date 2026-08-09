@@ -7,16 +7,17 @@ import { ConfirmationModal } from '../index.js';
 
 interface Props {
   documentId: string;
+  onChange: () => void;
 }
 
-export function UnlinkDocumentButton({ documentId }: Props): ReactElement {
+export function UnlinkDocumentButton({ documentId, onChange }: Props): ReactElement {
   const { updateDocument } = useUpdateDocument();
 
   function onUnlink(): void {
     updateDocument({
       documentId,
       fields: { chargeId: EMPTY_UUID },
-    });
+    }).then(onChange);
   }
 
   return (

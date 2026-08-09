@@ -6,15 +6,16 @@ import { ConfirmationModal } from '../index.js';
 
 interface Props {
   documentId: string;
+  onChange: () => void;
 }
 
-export function DeleteDocumentButton({ documentId }: Props): ReactElement {
+export function DeleteDocumentButton({ documentId, onChange }: Props): ReactElement {
   const { deleteDocument } = useDeleteDocument();
 
   function onDelete(): void {
     deleteDocument({
       documentId,
-    });
+    }).then(onChange);
   }
 
   return (
