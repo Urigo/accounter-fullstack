@@ -24,12 +24,12 @@
     "graphql": "16.14.2",
     "lodash": "4.18.1",
     "moment": "2.30.1",
-    "pg": "8.22.0",
+    "pg": "8.23.0",
     "uuid": "14.0.1"
   },
   "devDependencies": {
     "@types/lodash": "4.17.25",
-    "@types/pg": "8.20.4",
+    "@types/pg": "8.21.0",
     "@types/uuid": "11.0.0"
   }
 }
