@@ -1,6 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { MoreVertical, PencilLine, Tags } from 'lucide-react';
 import type { Table } from '@tanstack/react-table';
+import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import { Button } from '../ui/button.js';
 import {
   DropdownMenu,
@@ -13,7 +14,7 @@ import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import type { BusinessTableMeta, BusinessTableRow } from './business-rows.js';
 
 interface Props {
-  table: Table<BusinessTableRow>;
+  table: Table<TableFeaturesConfig, BusinessTableRow>;
 }
 
 /**

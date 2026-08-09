@@ -182,7 +182,10 @@ const batchUpdateBusinesses = sql<IBatchUpdateBusinessesQuery>`
   suggestion_data = CASE
     WHEN $suggestionDescription::text IS NULL THEN suggestion_data
     ELSE jsonb_set(
-      COALESCE(suggestion_data, '{}'::jsonb),
+      CASE WHEN jsonb_typeof(suggestion_data) = 'object'
+           THEN suggestion_data
+           ELSE '{}'::jsonb
+      END,
       '{description}',
       to_jsonb($suggestionDescription::text)
     )
@@ -197,17 +200,28 @@ const batchUpdateBusinesses = sql<IBatchUpdateBusinessesQuery>`
 // charge_tags), so the set arithmetic happens in SQL: the current tags minus `removeTagIds`, unioned
 // with `addTagIds`. EXCEPT binds before UNION, so an id in both lists ends up added ("add wins"),
 // matching `applyChargeTagChanges`. Both set operators de-duplicate, so the result is a clean set.
+// The jsonb_typeof guards (same as in `getBusinessByEmail`) keep a malformed/legacy record — a
+// non-object `suggestion_data`, or a `tags` that is not a JSON array — from throwing and taking the
+// whole batch down with it; such a record is treated as having no tags and is rewritten cleanly.
 const batchUpdateBusinessesSuggestionTags = sql<IBatchUpdateBusinessesSuggestionTagsQuery>`
   UPDATE accounter_schema.businesses
   SET
   suggestion_data = jsonb_set(
-    COALESCE(suggestion_data, '{}'::jsonb),
+    CASE WHEN jsonb_typeof(suggestion_data) = 'object'
+         THEN suggestion_data
+         ELSE '{}'::jsonb
+    END,
     '{tags}',
     COALESCE(
       (
         SELECT jsonb_agg(tag_id)
         FROM (
-          SELECT jsonb_array_elements_text(COALESCE(suggestion_data -> 'tags', '[]'::jsonb)) AS tag_id
+          SELECT jsonb_array_elements_text(
+            CASE WHEN jsonb_typeof(suggestion_data -> 'tags') = 'array'
+                 THEN suggestion_data -> 'tags'
+                 ELSE '[]'::jsonb
+            END
+          ) AS tag_id
           EXCEPT
           SELECT unnest($removeTagIds::uuid[])::text
           UNION
