@@ -80,7 +80,34 @@ export function createRequestLogger(context: RequestContext): RequestLogger {
   };
 }
 
-/** Log fields describing request completion, including latency. */
-export function completionFields(context: RequestContext, status: number): Record<string, unknown> {
-  return { status, latencyMs: elapsedMs(context) };
+/**
+ * Extra completion fields the transport supplies from the response/process so a
+ * disconnect is diagnosable after the fact.
+ *
+ * - `responseCompleted` — the response fully finished flushing to the socket
+ *   (`res.writableFinished`, not merely `end()` having been called).
+ * - `aborted` — the connection closed before the response finished flushing,
+ *   i.e. the client hung up mid-flight (the server-side fingerprint of a
+ *   client-side timeout, such as a request abandoned during a cold start).
+ * - `uptimeSeconds` — process uptime at completion; a value that keeps resetting
+ *   to near-zero across requests reveals an instance that is restarting/cold
+ *   starting rather than staying warm.
+ */
+export interface CompletionExtra {
+  responseCompleted?: boolean;
+  aborted?: boolean;
+  uptimeSeconds?: number;
+}
+
+/**
+ * Log fields describing request completion, including latency. `extra` is
+ * spread first so the canonical `status`/`latencyMs` always win — a caller
+ * cannot accidentally emit a completion log with an overridden status.
+ */
+export function completionFields(
+  context: RequestContext,
+  status: number,
+  extra?: CompletionExtra,
+): Record<string, unknown> {
+  return { ...extra, status, latencyMs: elapsedMs(context) };
 }

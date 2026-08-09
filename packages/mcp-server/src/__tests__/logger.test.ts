@@ -85,4 +85,29 @@ describe('field helpers', () => {
     expect(fields.status).toBe(200);
     expect(fields.latencyMs).toBeGreaterThanOrEqual(0);
   });
+
+  it('completionFields merges disconnect/uptime extras when provided', () => {
+    const fields = completionFields(ctx, 499, {
+      responseCompleted: false,
+      aborted: true,
+      uptimeSeconds: 12,
+    });
+    expect(fields).toMatchObject({
+      status: 499,
+      responseCompleted: false,
+      aborted: true,
+      uptimeSeconds: 12,
+    });
+  });
+
+  it('completionFields keeps canonical status/latency even if extra tries to override them', () => {
+    // `extra` is spread first, so a stray `status`/`latencyMs` cannot corrupt
+    // the completion log. (Cast past the typed shape to simulate a bad caller.)
+    const fields = completionFields(ctx, 200, {
+      status: 500,
+      latencyMs: -1,
+    } as unknown as Parameters<typeof completionFields>[2]);
+    expect(fields.status).toBe(200);
+    expect(fields.latencyMs).toBeGreaterThanOrEqual(0);
+  });
 });

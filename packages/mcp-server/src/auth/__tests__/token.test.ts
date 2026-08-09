@@ -104,11 +104,26 @@ describe('verifyAccessTokenWithKey', () => {
     ).rejects.toBeInstanceOf(TokenVerificationError);
   });
 
-  it('rejects an expired token', async () => {
+  it('rejects an expired token and flags it as expired', async () => {
     const token = await sign({ expiresIn: Math.floor(Date.now() / 1000) - 60 });
-    await expect(
-      verifyAccessTokenWithKey(token, publicKey, { issuer: ISSUER, audience: AUDIENCE }),
-    ).rejects.toBeInstanceOf(TokenVerificationError);
+    const error = await verifyAccessTokenWithKey(token, publicKey, {
+      issuer: ISSUER,
+      audience: AUDIENCE,
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(TokenVerificationError);
+    // Expiry is distinguishable from other invalid-token failures so the auth
+    // layer can meter it separately.
+    expect((error as TokenVerificationError).expired).toBe(true);
+  });
+
+  it('does not flag a non-expiry failure (wrong issuer) as expired', async () => {
+    const token = await sign({ issuer: 'https://evil.example/' });
+    const error = await verifyAccessTokenWithKey(token, publicKey, {
+      issuer: ISSUER,
+      audience: AUDIENCE,
+    }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(TokenVerificationError);
+    expect((error as TokenVerificationError).expired).toBe(false);
   });
 
   it('rejects a token signed by a different key', async () => {

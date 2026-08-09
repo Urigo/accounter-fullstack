@@ -284,6 +284,23 @@ async function authenticate(
   const token = extractBearerToken(req);
   if (!token) {
     getMetrics().recordAuthFailure('missing_token');
+    // Log the tokenless 401 too (previously silent). A client re-establishing a
+    // connection probes without a token, gets this 401, then follows the
+    // WWW-Authenticate pointer to re-auth — so a burst of `missing_token` here
+    // is the fingerprint of clients reconnecting, distinct from `expired_token`
+    // (a live token that aged out) or `invalid_token` (a broken token).
+    const context = getRequestContext(req);
+    if (context) {
+      createRequestLogger(context).warn('access token verification failed', {
+        reason: 'missing bearer token',
+        category: 'missing_token',
+      });
+    } else {
+      log('warn', 'access token verification failed', {
+        reason: 'missing bearer token',
+        category: 'missing_token',
+      });
+    }
     sendUnauthorized(res, {
       resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),
     });
@@ -313,15 +330,22 @@ async function authenticate(
     if (!(error instanceof TokenVerificationError) && !(error instanceof IdentityMappingError)) {
       throw error;
     }
-    getMetrics().recordAuthFailure('invalid_token');
+    // Meter expiry separately from other invalid-token failures: an expired
+    // token means the client should have refreshed, whereas a bad
+    // signature/issuer/audience (or an unmappable identity) points at
+    // misconfiguration or abuse. The transport response is identical.
+    const category =
+      error instanceof TokenVerificationError && error.expired ? 'expired_token' : 'invalid_token';
+    getMetrics().recordAuthFailure(category);
     // Log the reason only — never the token.
     const context = getRequestContext(req);
     if (context) {
       createRequestLogger(context).warn('access token verification failed', {
         reason: error.message,
+        category,
       });
     } else {
-      log('warn', 'access token verification failed', { reason: error.message });
+      log('warn', 'access token verification failed', { reason: error.message, category });
     }
     sendUnauthorized(res, {
       resourceMetadataUrl: protectedResourceMetadataUrl(env.server.publicBaseUrl),

@@ -180,7 +180,10 @@ Every request is assigned a `requestId` and a `correlationId` (the latter inheri
 `X-Correlation-Id` header when present, otherwise generated). The correlation id is echoed back on
 the response and propagated upstream via the `X-Correlation-Id` header on every GraphQL call.
 Structured JSON logs are emitted at request start and completion, carrying `requestId`,
-`correlationId`, `method`, `route`, and — on completion — `status` and `latencyMs`. Secrets and
+`correlationId`, `method`, `route`, and — on completion — `status` and `latencyMs`. Completion logs
+also carry `responseCompleted`/`aborted` (a client that hung up mid-response) and `uptimeSeconds`,
+and `request started` carries `msSinceLastRequest` (idle gap; absent on a process's first request) —
+so idle spin-downs, cold starts, and client-side disconnects are visible from the logs. Secrets and
 authorization headers are never logged.
 
 ### Metrics
@@ -193,7 +196,10 @@ process (labels never carry PII — only tool names, outcome classes, and error 
   `authorization_error`, `rate_limited`, `upstream_error`, `timeout_error`, `internal_error`).
 - **`latencyMs`** — a latency histogram with per-bucket (non-cumulative) counts in ms plus an `+Inf`
   overflow bucket, alongside running `count`/`sum` totals.
-- **`authFailuresTotal`** — auth failure counter keyed by reason (`missing_token`, `invalid_token`).
+- **`authFailuresTotal`** — auth failure counter keyed by reason (`missing_token`, `expired_token`,
+  `invalid_token`). `expired_token` (a live token that aged out) is metered separately from
+  `invalid_token` (bad signature/issuer/audience) so "clients should refresh" is distinguishable
+  from "tokens are misconfigured/abused".
 - **`upstreamErrorsTotal`** — upstream failure counter keyed by category.
 - **`rateLimitedTotal`** — total rate-limited requests.
 
