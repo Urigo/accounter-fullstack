@@ -6,7 +6,7 @@ import type {
 } from '../gql/index.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 2: read-only lookups for tags, tax categories, and businesses (spec §8.2).
@@ -65,7 +65,7 @@ function filterSortCap<T extends { name: string; id: string }>(
 // Tags
 // ---------------------------------------------------------------------------
 
-const listTagsInput = z.object({ businessIds: businessIdsInput, nameContains, limit });
+const listTagsInput = z.object({ memberBusinessIds: memberBusinessIdsInput, nameContains, limit });
 type ListTagsInput = z.infer<typeof listTagsInput>;
 
 const LIST_TAGS_QUERY = /* GraphQL */ `
@@ -100,7 +100,7 @@ async function listTagsHandler(
     items: tags,
     itemsKey: 'tags',
     total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} ${count === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
   });
@@ -121,7 +121,7 @@ export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
 // ---------------------------------------------------------------------------
 
 const listTaxCategoriesInput = z.object({
-  businessIds: businessIdsInput,
+  memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active tax categories.'),
   limit,
@@ -167,7 +167,7 @@ async function listTaxCategoriesHandler(
     items: taxCategories,
     itemsKey: 'taxCategories',
     total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} tax ${count === 1 ? 'category' : 'categories'}${
         truncated ? ' (truncated)' : ''
@@ -190,7 +190,7 @@ export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput
 // ---------------------------------------------------------------------------
 
 const listBusinessesInput = z.object({
-  businessIds: businessIdsInput,
+  memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
   limit,
@@ -285,7 +285,7 @@ async function listBusinessesHandler(
     items: businesses,
     itemsKey: 'businesses',
     total: pageInfo?.totalRecords ?? total,
-    extra: { pagination, scope: { businessIds: context.readScope.businessIds } },
+    extra: { pagination, scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (shown, count, truncated) =>
       `Found ${count} ${count === 1 ? 'business' : 'businesses'}; showing ${shown} on page ${
         pagination.page
@@ -294,16 +294,16 @@ async function listBusinessesHandler(
 }
 
 // A dedicated scope clause rather than the shared `SCOPE_DESCRIPTION_SUFFIX`:
-// this tool is the full directory, so "omitting `businessIds` covers every
+// this tool is the full directory, so "omitting `memberBusinessIds` covers every
 // business you belong to" (the shared wording, written for the owner-scoped
 // tags/tax-category lookups) would be wrong here. It still teaches the same
 // convention — optional narrowing, `ownerId`-tagged rows, echoed scope, and the
 // same discovery entry point.
 const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
-  'Scope: omitting `businessIds` returns the whole directory visible to you; passing them narrows to ' +
-  'those owning businesses. Rows are tagged with `ownerId` and the response echoes the effective ' +
-  '`scope.businessIds`. If you have more than one business, call `accounter_list_business_memberships` ' +
-  'first to discover ids.';
+  'Scope: omitting `memberBusinessIds` returns the whole directory visible to you; passing them ' +
+  'narrows to businesses owned by those memberships. Rows are tagged with `ownerId` and the response ' +
+  'echoes the effective `scope.memberBusinessIds`. If you belong to more than one business, call ' +
+  '`accounter_list_business_memberships` first to discover ids.';
 
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,

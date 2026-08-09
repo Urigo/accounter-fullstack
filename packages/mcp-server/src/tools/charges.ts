@@ -10,7 +10,7 @@ import { chargeTypeFromTypename } from './entity-shapes.js';
 import { ToolInputError } from './execute.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 1: read-only charges search/browse (spec §8.2).
@@ -46,7 +46,7 @@ export const MAX_DATE_RANGE_DAYS = 1096; // ~3 years
 export const SEARCH_CHARGES_FILTER_ALIASES = {
   chargesType: 'flow',
   byTags: 'tags',
-  byOwners: 'businessIds',
+  byOwners: 'memberBusinessIds',
   fromAnyDate: 'fromDate',
   toAnyDate: 'toDate',
   fromDate: 'fromMainDate',
@@ -68,7 +68,7 @@ const {
 } = CHARGE_FILTER_SHAPE;
 
 const searchChargesInput = z.object({
-  businessIds: businessIdsInput,
+  memberBusinessIds: memberBusinessIdsInput,
   fromDate: TIMELESS_DATE.optional().describe(
     'Only charges with *any* date (document, transaction event/debit, ledger) on/after this date ' +
       '(YYYY-MM-DD) — the overlap predicate, i.e. "charges active in this period". For the narrower ' +
@@ -223,7 +223,7 @@ const SORT_NEWEST_FIRST = { field: 'DATE', asc: false } as const;
  */
 function buildFilters(
   input: SearchChargesInput,
-  businessIds: readonly string[],
+  memberBusinessIds: readonly string[],
 ): NonNullable<McpSearchChargesQueryVariables['filters']> {
   const {
     flow,
@@ -232,7 +232,7 @@ function buildFilters(
     toDate,
     fromMainDate,
     toMainDate,
-    businessIds: _requestedBusinessIds,
+    memberBusinessIds: _requestedMemberBusinessIds,
     page: _page,
     pageSize: _pageSize,
     ...passThrough
@@ -253,7 +253,7 @@ function buildFilters(
     ...(toMainDate ? { toDate: toMainDate } : {}),
   };
 
-  return buildChargeFilters(filters, businessIds) as NonNullable<
+  return buildChargeFilters(filters, memberBusinessIds) as NonNullable<
     McpSearchChargesQueryVariables['filters']
   >;
 }
@@ -284,7 +284,7 @@ async function handler(
   assertDateRange(input);
 
   const variables: McpSearchChargesQueryVariables = {
-    filters: buildFilters(input, context.readScope.businessIds),
+    filters: buildFilters(input, context.readScope.memberBusinessIds),
     // The tool exposes a 1-based `page`, but upstream `allCharges` is 0-based
     // (it slices `[page * limit, (page + 1) * limit]`), so translate here —
     // otherwise page 1 would skip the first page of results.
@@ -305,12 +305,14 @@ async function handler(
     hasNextPage: (pageInfo.currentPage ?? input.page) < pageInfo.totalPages,
   };
 
-  const scope = { businessIds: context.readScope.businessIds };
+  const scope = { memberBusinessIds: context.readScope.memberBusinessIds };
   // The text content is what the model reads first, so surface a multi-business
   // result there — otherwise a union across businesses looks like a single-
   // business answer until the model inspects `scope` in the structured payload.
   const scopeNote =
-    scope.businessIds.length > 1 ? ` across ${scope.businessIds.length} businesses` : '';
+    scope.memberBusinessIds.length > 1
+      ? ` across ${scope.memberBusinessIds.length} businesses`
+      : '';
 
   return shapeListResult({
     items: charges,

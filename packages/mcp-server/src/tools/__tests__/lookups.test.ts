@@ -5,7 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -17,7 +17,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -281,16 +281,16 @@ describe('lookups — business scoping', () => {
     });
 
     const result = await runTool(tool, client, authContext(['b1', 'b2']), {
-      businessIds: ['b2'],
+      memberBusinessIds: ['b2'],
     });
 
     expect(result.isError).toBeUndefined();
     // The header is the only way these argument-less queries can be narrowed.
     expect(sentHeaders?.['x-business-scope']).toBe('b2');
     const structured = result.structuredContent as Record<string, unknown> & {
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
-    expect(structured.scope).toEqual({ businessIds: ['b2'] });
+    expect(structured.scope).toEqual({ memberBusinessIds: ['b2'] });
     // ownerId passes straight through so rows stay attributable.
     expect((structured[itemsKey] as Array<{ ownerId?: string }>)[0]?.ownerId).toBe('b2');
   });
@@ -301,7 +301,7 @@ describe('lookups — business scoping', () => {
     ['accounter_list_businesses', listBusinessesTool, BUSINESSES],
   ] as const)('%s denies ids outside the caller memberships', async (_name, tool, data) => {
     const result = await runTool(tool, clientReturning(data), authContext(['b1']), {
-      businessIds: ['b9'],
+      memberBusinessIds: ['b9'],
     });
 
     expect(result.isError).toBe(true);

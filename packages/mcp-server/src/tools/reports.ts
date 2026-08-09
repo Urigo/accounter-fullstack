@@ -21,11 +21,11 @@ export const MAX_REPORT_DATE_RANGE_DAYS = 1096; // ~3 years
 export const MAX_REPORT_ROWS = 1000;
 
 const balanceReportInput = z.object({
-  businessId: z
+  memberBusinessId: z
     .string()
     .min(1)
     .describe(
-      'The business (owner) id to report on — must be one of the businesses you belong to. ' +
+      'The business to report on — must be one of the businesses you are a member of. ' +
         'Unlike the list tools this report covers exactly one business, so the id is required. ' +
         'Use accounter_list_business_memberships to discover ids.',
     ),
@@ -78,7 +78,7 @@ async function handler(
   assertDateRange(input);
 
   // Report on the business the caller actually asked for. Deriving the owner
-  // from the scope instead (`readScope.businessIds[0]`) happens to agree today
+  // from the scope instead (`readScope.memberBusinessIds[0]`) happens to agree today
   // only because the policy narrows the scope to exactly this one business — it
   // would silently report on the wrong business the moment the scope can hold
   // more than one entry.
@@ -86,8 +86,8 @@ async function handler(
   // The membership check is defense in depth: the policy has already verified
   // this business is in scope, so a mismatch means the two disagree, and a
   // business-scoped tool must never reach upstream with an unauthorized owner.
-  const ownerId = input.businessId;
-  if (!context.readScope.businessIds.includes(ownerId)) {
+  const ownerId = input.memberBusinessId;
+  if (!context.readScope.memberBusinessIds.includes(ownerId)) {
     throw new ToolInputError('No authorized business in scope for this report');
   }
 
@@ -122,8 +122,8 @@ async function handler(
     total: all.length,
     extra: {
       reportType: input.reportType,
-      businessId: ownerId,
-      scope: { businessIds: context.readScope.businessIds },
+      memberBusinessId: ownerId,
+      scope: { memberBusinessIds: context.readScope.memberBusinessIds },
       period: { fromDate: input.fromDate, toDate: input.toDate },
     },
     summarize: (shown, total) =>

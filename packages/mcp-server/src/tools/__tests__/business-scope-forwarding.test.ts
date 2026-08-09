@@ -15,7 +15,7 @@ import { listTagsTool, listTaxCategoriesTool } from '../lookups.js';
  * drops the scope fails here — which is the whole point of centralizing it.
  */
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -27,7 +27,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -71,7 +71,7 @@ describe('x-business-scope forwarding', () => {
     });
     await executeRegisteredTool({
       tool: searchChargesTool,
-      rawArgs: { businessIds: ['b2'] },
+      rawArgs: { memberBusinessIds: ['b2'] },
       auth: authContext(['b1', 'b2']),
       correlationId: 'c',
       client,

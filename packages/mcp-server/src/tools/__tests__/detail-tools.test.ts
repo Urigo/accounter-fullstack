@@ -18,7 +18,7 @@ import { getTransactionsTool } from '../transaction-details.js';
 const B1 = 'aa000000-0000-4000-8000-000000000001';
 const B2 = 'aa000000-0000-4000-8000-000000000002';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -30,7 +30,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -170,7 +170,7 @@ describe('getChargesTool', () => {
         transactions: Array<{ id: string; account: { name: string }; type: string }>;
         documents: Array<{ id: string; serialNumber: string; fileUrl: string; type: string }>;
       }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     const charge = structured.charges[0]!;
     expect(charge.id).toBe('c1');
@@ -190,7 +190,7 @@ describe('getChargesTool', () => {
       serialNumber: 'INV-1',
       fileUrl: 'https://files/d1.pdf',
     });
-    expect(structured.scope).toEqual({ businessIds: [B1] });
+    expect(structured.scope).toEqual({ memberBusinessIds: [B1] });
   });
 
   it('forwards include flags and charge ids to upstream', async () => {
@@ -488,7 +488,7 @@ describe('getTransactionsTool', () => {
     expect(result.isError).toBeUndefined();
     const structured = result.structuredContent as {
       transactions: Array<{ id: string; chargeId: string; counterparty: { name: string } }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     expect(structured.transactions[0]).toMatchObject({
       id: 'tx1',
@@ -496,7 +496,7 @@ describe('getTransactionsTool', () => {
       direction: 'DEBIT',
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
     });
-    expect(structured.scope).toEqual({ businessIds: [B1, B2] });
+    expect(structured.scope).toEqual({ memberBusinessIds: [B1, B2] });
   });
 
   it('forwards ids to upstream', async () => {

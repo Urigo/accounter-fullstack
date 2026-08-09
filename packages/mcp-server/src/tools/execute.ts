@@ -34,18 +34,21 @@ export { ToolInputError } from '../errors/taxonomy.js';
 
 /**
  * Optional per-tool convention: input fields carrying scope narrowing. Either a
- * `businessIds` array or a singular `businessId` string is honored.
+ * `memberBusinessIds` array or a singular `memberBusinessId` string is honored.
  */
-function requestedBusinessIds(input: unknown): string[] | undefined {
+function requestedMemberBusinessIds(input: unknown): string[] | undefined {
   if (!input || typeof input !== 'object') {
     return undefined;
   }
-  const record = input as { businessIds?: unknown; businessId?: unknown };
-  if (Array.isArray(record.businessIds) && record.businessIds.every(id => typeof id === 'string')) {
-    return record.businessIds as string[];
+  const record = input as { memberBusinessIds?: unknown; memberBusinessId?: unknown };
+  if (
+    Array.isArray(record.memberBusinessIds) &&
+    record.memberBusinessIds.every(id => typeof id === 'string')
+  ) {
+    return record.memberBusinessIds as string[];
   }
-  if (typeof record.businessId === 'string') {
-    return [record.businessId];
+  if (typeof record.memberBusinessId === 'string') {
+    return [record.memberBusinessId];
   }
   return undefined;
 }
@@ -129,7 +132,7 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
   const decision = evaluateToolPolicy({
     policy: tool.policy,
     auth,
-    requestedBusinessIds: requestedBusinessIds(input),
+    requestedMemberBusinessIds: requestedMemberBusinessIds(input),
   });
   if (!decision.allowed) {
     return toToolErrorResult(
@@ -175,7 +178,7 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
     upstream: {
       correlationId,
       authorization,
-      businessScope: decision.readScope.businessIds,
+      businessScope: decision.readScope.memberBusinessIds,
     },
   };
   try {

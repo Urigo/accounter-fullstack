@@ -15,7 +15,8 @@ import type { AuthPrincipal } from './token.js';
 
 /** A single business the user belongs to, with the role they hold in it. */
 export interface BusinessMembership {
-  businessId: string;
+  /** Id of the business this membership is in. */
+  memberBusinessId: string;
   roleId: string;
   /**
    * Human-readable business name, for display in the discovery tool. Absent or
@@ -26,7 +27,8 @@ export interface BusinessMembership {
 
 /** The set of businesses a request is authorized to read from. */
 export interface AuthorizedReadScope {
-  businessIds: string[];
+  /** Ids of the member businesses this request may read from. */
+  memberBusinessIds: string[];
 }
 
 /** Internal auth context derived from a verified access token. */
@@ -63,7 +65,7 @@ export class IdentityMappingError extends Error {
 export function readScopeFromMemberships(
   memberships: readonly BusinessMembership[],
 ): AuthorizedReadScope {
-  return { businessIds: [...new Set(memberships.map(m => m.businessId))] };
+  return { memberBusinessIds: [...new Set(memberships.map(m => m.memberBusinessId))] };
 }
 
 /**
@@ -75,21 +77,21 @@ export function readScopeFromMemberships(
  */
 export function narrowReadScope(
   memberships: readonly BusinessMembership[],
-  requestedBusinessIds: readonly string[],
+  requestedMemberBusinessIds: readonly string[],
 ): AuthorizedReadScope | null {
-  const allowed = new Set(memberships.map(m => m.businessId));
+  const allowed = new Set(memberships.map(m => m.memberBusinessId));
   const seen = new Set<string>();
-  const businessIds: string[] = [];
-  for (const businessId of requestedBusinessIds) {
-    if (!allowed.has(businessId)) {
+  const memberBusinessIds: string[] = [];
+  for (const memberBusinessId of requestedMemberBusinessIds) {
+    if (!allowed.has(memberBusinessId)) {
       return null;
     }
-    if (!seen.has(businessId)) {
-      seen.add(businessId);
-      businessIds.push(businessId);
+    if (!seen.has(memberBusinessId)) {
+      seen.add(memberBusinessId);
+      memberBusinessIds.push(memberBusinessId);
     }
   }
-  return { businessIds };
+  return { memberBusinessIds };
 }
 
 /**
@@ -99,12 +101,12 @@ export function narrowReadScope(
  */
 export function resolveRequestedReadScope(
   context: McpAuthContext,
-  requestedBusinessIds?: readonly string[],
+  requestedMemberBusinessIds?: readonly string[],
 ): AuthorizedReadScope | null {
-  if (!requestedBusinessIds || requestedBusinessIds.length === 0) {
+  if (!requestedMemberBusinessIds || requestedMemberBusinessIds.length === 0) {
     return context.defaultReadScope;
   }
-  return narrowReadScope(context.memberships, requestedBusinessIds);
+  return narrowReadScope(context.memberships, requestedMemberBusinessIds);
 }
 
 /**
@@ -132,6 +134,10 @@ export function coerceMembership(entry: unknown): BusinessMembership | null {
     return null;
   }
   const record = entry as Record<string, unknown>;
+  // Raw payload keys, deliberately NOT renamed: these are the shapes the token
+  // claim and the upstream `myMemberships` row arrive in. Only the internal
+  // field the value is mapped onto carries this package's `memberBusinessId`
+  // vocabulary.
   const businessId = record.businessId ?? record.business_id;
   if (typeof businessId !== 'string' || businessId.length === 0) {
     return null;
@@ -139,7 +145,7 @@ export function coerceMembership(entry: unknown): BusinessMembership | null {
   // The role may be absent (treated as an empty role). But a *present* role of a
   // non-primitive type (object/array/boolean) marks a malformed entry: reject it
   // outright rather than coercing to '' and letting a bad claim still contribute
-  // its businessId to the derived read scope.
+  // its business id to the derived read scope.
   const rawRoleId = record.roleId ?? record.role_id;
   let roleId: string;
   if (rawRoleId === undefined || rawRoleId === null) {
@@ -157,7 +163,7 @@ export function coerceMembership(entry: unknown): BusinessMembership | null {
   // Anything that is not a string is simply treated as "no name".
   const rawBusinessName = record.businessName ?? record.business_name;
   const businessName = typeof rawBusinessName === 'string' ? rawBusinessName : undefined;
-  return { businessId, roleId, businessName };
+  return { memberBusinessId: businessId, roleId, businessName };
 }
 
 /** De-duplicate memberships by business id (first occurrence wins). */
@@ -167,8 +173,8 @@ export function dedupeMemberships(
   const seen = new Set<string>();
   const result: BusinessMembership[] = [];
   for (const membership of memberships) {
-    if (!seen.has(membership.businessId)) {
-      seen.add(membership.businessId);
+    if (!seen.has(membership.memberBusinessId)) {
+      seen.add(membership.memberBusinessId);
       result.push(membership);
     }
   }

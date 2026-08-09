@@ -112,7 +112,7 @@ export const CHARGE_FILTER_SHAPE = {
     .optional()
     .describe(
       'Include only charges involving these businesses as the *counterparty* (the other party). ' +
-        'This is not the owner predicate — narrow owners with `businessIds` / `byOwners`.',
+        'This is not the owner predicate — narrow owners with `memberBusinessIds` / `byOwners`.',
     ),
   byChargeTypes: optionalNonEmptyEnumArray(CHARGE_TYPES)
     .optional()

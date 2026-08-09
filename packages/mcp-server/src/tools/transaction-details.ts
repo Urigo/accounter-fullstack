@@ -10,7 +10,7 @@ import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeTransaction, type RawTransaction } from './entity-shapes.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Detail tool: fetch bank/card transactions by id (spec §8.2).
@@ -100,7 +100,7 @@ const getTransactionsInput = z
     filters: transactionFiltersInput
       .optional()
       .describe('Filter transactions by any supported transactionsByFilters predicate.'),
-    businessIds: businessIdsInput,
+    memberBusinessIds: memberBusinessIdsInput,
   })
   .superRefine((value, context) => {
     const hasIds = value.transactionIds !== undefined && value.transactionIds.length > 0;
@@ -255,7 +255,7 @@ async function handler(
           filters: buildTransactionsFilters(
             input.filters ?? {},
             input.transactionIds,
-            context.readScope.businessIds,
+            context.readScope.memberBusinessIds,
           ),
         };
         const data = await context.client.query<McpSearchTransactionsByFiltersQuery>(
@@ -273,7 +273,7 @@ async function handler(
     items: transactions,
     itemsKey: 'transactions',
     total: transactions.length,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (shown, total) =>
       total === 0
         ? usingIds

@@ -31,8 +31,8 @@ function deny(message: string): PolicyDecision {
 export interface EvaluatePolicyParams {
   policy: ToolAuthPolicy;
   auth: McpAuthContext;
-  /** Optional caller-provided business-scope narrowing (subset of memberships). */
-  requestedBusinessIds?: readonly string[];
+  /** Optional caller-provided scope narrowing (subset of the caller's memberships). */
+  requestedMemberBusinessIds?: readonly string[];
 }
 
 /**
@@ -48,24 +48,24 @@ export interface EvaluatePolicyParams {
  *   non-empty (a caller with no memberships cannot use it).
  */
 export function evaluateToolPolicy(params: EvaluatePolicyParams): PolicyDecision {
-  const { policy, auth, requestedBusinessIds } = params;
+  const { policy, auth, requestedMemberBusinessIds } = params;
 
   // 1. Resolve requested scope as a subset of authorized memberships.
-  const readScope = resolveRequestedReadScope(auth, requestedBusinessIds);
+  const readScope = resolveRequestedReadScope(auth, requestedMemberBusinessIds);
   if (readScope === null) {
     return deny('Requested business scope is outside your authorized memberships');
   }
 
   // 2. Business-scope requirement.
-  if (policy.requiresBusinessScope && readScope.businessIds.length === 0) {
+  if (policy.requiresBusinessScope && readScope.memberBusinessIds.length === 0) {
     return deny('No authorized business scope for this request');
   }
 
   // 3. Role gate (any-of) evaluated against membership roleIds in the resolved scope.
   if (policy.requiredRoles && policy.requiredRoles.length > 0) {
-    const inScope = new Set(readScope.businessIds);
+    const inScope = new Set(readScope.memberBusinessIds);
     const held = new Set(
-      auth.memberships.filter(m => inScope.has(m.businessId)).map(m => m.roleId),
+      auth.memberships.filter(m => inScope.has(m.memberBusinessId)).map(m => m.roleId),
     );
     if (!policy.requiredRoles.some(role => held.has(role))) {
       return deny('Caller is missing a required role for this tool');
@@ -79,7 +79,7 @@ export function evaluateToolPolicy(params: EvaluatePolicyParams): PolicyDecision
 export function authorizeToolCall(
   tool: ToolDefinition,
   auth: McpAuthContext,
-  requestedBusinessIds?: readonly string[],
+  requestedMemberBusinessIds?: readonly string[],
 ): PolicyDecision {
-  return evaluateToolPolicy({ policy: tool.policy, auth, requestedBusinessIds });
+  return evaluateToolPolicy({ policy: tool.policy, auth, requestedMemberBusinessIds });
 }
