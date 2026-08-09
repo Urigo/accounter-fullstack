@@ -53,6 +53,20 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         throw new GraphQLError(message);
       }
     },
+    contractsByFilters: async (_, { filters }, { injector }) => {
+      try {
+        return injector.get(ContractsProvider).getContractsByFilters({
+          adminIds: filters?.adminIds,
+          clientIds: filters?.clientIds,
+          contractIds: filters?.contractIds,
+          isActive: filters?.isActive,
+        });
+      } catch (e) {
+        const message = 'Error fetching contracts by filters';
+        console.error(message, e);
+        throw new GraphQLError(message);
+      }
+    },
   },
   Mutation: {
     createContract: async (_, { input }, { injector }) => {
@@ -122,6 +136,15 @@ export const contractsResolvers: ContractsModule.Resolvers = {
   },
   Contract: {
     id: dbContract => dbContract.id,
+    adminId: dbContract => {
+      // owner_id is NOT NULL in the schema; guard anyway so a row that predates
+      // the backfill surfaces as an explicit error instead of a null in a
+      // non-nullable field.
+      if (!dbContract.owner_id) {
+        throw new GraphQLError(`Contract ${dbContract.id} has no owning admin business`);
+      }
+      return dbContract.owner_id;
+    },
     client: async (dbContract, _, { injector }) => {
       return injector
         .get(ClientsProvider)

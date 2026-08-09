@@ -18,12 +18,13 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of nine read-only tools
+Accounter GraphQL server; a curated registry of eleven read-only tools
 (`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
-`accounter_get_transactions`, `accounter_get_documents`, `accounter_list_tags`,
-`accounter_list_tax_categories`, `accounter_list_businesses`, `accounter_balance_report`) each gated
-by strict input validation, a per-tool authorization policy, and business-scope narrowing forwarded
-upstream as `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
+`accounter_get_transactions`, `accounter_get_documents`, `accounter_get_ledger_records`,
+`accounter_get_contracts`, `accounter_list_tags`, `accounter_list_tax_categories`,
+`accounter_list_businesses`, `accounter_balance_report`) each gated by strict input validation, a
+per-tool authorization policy, and business-scope narrowing forwarded upstream as
+`x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
 propagation, sanitized errors); a unified error taxonomy; per-`tools/call` rate limiting; in-process
 operational metrics (request/outcome counters, a latency histogram, auth-failure counters) exposed
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
@@ -129,6 +130,19 @@ scope, because it _is_ the scope.
   amount, VAT, creditor/debtor, `chargeId`, `file`/`image` links, and `ownerId` (inherited from the
   document's charge). A document whose owning charge falls outside the resolved scope is dropped as
   defense-in-depth on top of RLS.
+- **`accounter_get_ledger_records`** — read-only **double-entry ledger records** search. Filters on
+  the three date axes a record has (`fromInvoiceDate`/`toInvoiceDate`,
+  `fromValueDate`/`toValueDate`, or `fromDate`/`toDate` matching either), on the financial entity in
+  any of the four account slots (`financialEntityIds` plus an optional `financialEntityAccounts`
+  subset of `DEBIT_ACCOUNT_1`, `DEBIT_ACCOUNT_2`, `CREDIT_ACCOUNT_1`, `CREDIT_ACCOUNT_2`), and on
+  `chargeIds`. Each row reports its `ownerId` and `chargeId` alongside the four debit/credit entries
+  (account, amount, local currency amount), so results spanning businesses or charges group without
+  a second call. Date ranges are bounded (≤ 1096 days) and rows capped (≤ 500, default 200) with a
+  `truncated` flag.
+- **`accounter_get_contracts`** — read-only **client billing contracts**. Filters by admin (owner)
+  business (`adminIds`, intersected with the resolved scope), by `clientIds`, by `contractIds`, and
+  by `isActive`. Each row reports its `adminId` plus the client, period, amount, billing cycle,
+  document type, product/plan, and purchase orders.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
   size-capped (≤ 500).

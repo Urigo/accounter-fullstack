@@ -7,6 +7,8 @@ export default gql`
     ledgerRecordsByDates(fromDate: TimelessDate!, toDate: TimelessDate!): [LedgerRecord!]!
       @requiresAuth
     ledgerRecordsByFinancialEntity(financialEntityId: UUID!): [LedgerRecord!]! @requiresAuth
+    " search ledger records by a combination of date, financial entity, owner and charge filters "
+    ledgerRecordsByFilters(filters: LedgerRecordsFilters): [LedgerRecord!]! @requiresAuth
   }
 
   extend type Mutation {
@@ -19,9 +21,47 @@ export default gql`
       @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
+  " the account slots a ledger record holds financial entities in "
+  enum LedgerRecordAccount {
+    DEBIT_ACCOUNT_1
+    DEBIT_ACCOUNT_2
+    CREDIT_ACCOUNT_1
+    CREDIT_ACCOUNT_2
+  }
+
+  " filters for ledger records search "
+  input LedgerRecordsFilters {
+    " only records with invoice date on/after this date "
+    fromInvoiceDate: TimelessDate
+    " only records with invoice date on/before this date "
+    toInvoiceDate: TimelessDate
+    " only records with value date on/after this date "
+    fromValueDate: TimelessDate
+    " only records with value date on/before this date "
+    toValueDate: TimelessDate
+    " only records where the invoice date OR the value date is on/after this date "
+    fromAnyDate: TimelessDate
+    " only records where the invoice date OR the value date is on/before this date "
+    toAnyDate: TimelessDate
+    " only records referencing any of these financial entities "
+    financialEntityIds: [UUID!]
+    " which account slots financialEntityIds are matched against. defaults to all of them "
+    financialEntityAccounts: [LedgerRecordAccount!]
+    " only records owned by any of these businesses "
+    ownerIds: [UUID!]
+    " only records belonging to any of these charges "
+    chargeIds: [UUID!]
+    " cap the number of returned records. defaults to 10000 "
+    limit: Int
+  }
+
   " represent atomic movement of funds "
   type LedgerRecord {
     id: UUID!
+    " the business owning the record "
+    ownerId: UUID
+    " the charge the record belongs to "
+    chargeId: UUID!
     debitAmount1: FinancialAmount
     debitAmount2: FinancialAmount
     creditAmount1: FinancialAmount

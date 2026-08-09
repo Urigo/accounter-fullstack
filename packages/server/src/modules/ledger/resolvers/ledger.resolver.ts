@@ -97,6 +97,19 @@ async function getInvoicePaymentCurrencyDiffErrors(
   }
 }
 
+// Reject an inverted date range before it reaches the DB — an inverted range
+// silently returns zero rows, which reads as "no ledger records" rather than as
+// the caller error it is.
+function assertLedgerDateRange(
+  label: string,
+  from: string | null | undefined,
+  to: string | null | undefined,
+): void {
+  if (from && to && from > to) {
+    throw new GraphQLError(`${label} "from" date must be before or equal to the "to" date`);
+  }
+}
+
 // Max charges regenerated in parallel by `regenerateLedgerRecords`. Keeps large
 // batch selections from saturating the DB connection pool.
 const REGENERATE_LEDGER_CONCURRENCY = 5;
@@ -394,6 +407,31 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
         .get(LedgerProvider)
         .getLedgerRecordsByFinancialEntityIdLoader.load(financialEntityId);
     },
+    ledgerRecordsByFilters: async (_, { filters }, { injector }) => {
+      assertLedgerDateRange('invoice', filters?.fromInvoiceDate, filters?.toInvoiceDate);
+      assertLedgerDateRange('value', filters?.fromValueDate, filters?.toValueDate);
+      assertLedgerDateRange('any', filters?.fromAnyDate, filters?.toAnyDate);
+
+      return await injector
+        .get(LedgerProvider)
+        .getLedgerRecordsByFilters({
+          fromInvoiceDate: filters?.fromInvoiceDate,
+          toInvoiceDate: filters?.toInvoiceDate,
+          fromValueDate: filters?.fromValueDate,
+          toValueDate: filters?.toValueDate,
+          fromAnyDate: filters?.fromAnyDate,
+          toAnyDate: filters?.toAnyDate,
+          financialEntityIds: filters?.financialEntityIds,
+          financialEntityAccounts: filters?.financialEntityAccounts,
+          ownerIds: filters?.ownerIds,
+          chargeIds: filters?.chargeIds,
+          limit: filters?.limit,
+        })
+        .catch(error => {
+          console.error('Failed to fetch ledger records by filters:', error);
+          throw new GraphQLError('Failed to fetch ledger records');
+        });
+    },
   },
   Mutation: {
     regenerateLedgerRecords: async (_, { chargeIds }, context, info) => {
@@ -446,6 +484,8 @@ export const ledgerResolvers: LedgerModule.Resolvers & Pick<Resolvers, 'Generate
   },
   LedgerRecord: {
     id: DbLedgerRecord => DbLedgerRecord.id,
+    ownerId: DbLedgerRecord => DbLedgerRecord.owner_id ?? null,
+    chargeId: DbLedgerRecord => DbLedgerRecord.charge_id,
     debitAmount1: DbLedgerRecord =>
       DbLedgerRecord.debit_foreign_amount1 == null
         ? null
