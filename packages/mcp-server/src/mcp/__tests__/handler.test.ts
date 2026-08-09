@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildAuthContext } from '../../auth/identity.js';
 import { TokenVerificationError } from '../../auth/token.js';
 import { verifyAccessToken } from '../../auth/verifier.js';
+import { getMetrics, resetMetrics } from '../../observability/metrics.js';
 import { dispatchMcpRequest, handleMcpBody, MCP_PROTOCOL_VERSION, mcpHttpHandler } from '../handler.js';
 import type { JsonRpcErrorResponse, JsonRpcSuccess } from '../jsonrpc.js';
 import { JsonRpcErrorCode } from '../jsonrpc.js';
@@ -223,6 +224,44 @@ describe('mcpHttpHandler', () => {
     expect(wwwAuth?.[1]).toContain('error="invalid_token"');
     vi.unstubAllEnvs();
     resetEnvCache();
+  });
+
+  it('records a `missing_token` auth failure when no bearer token is present', async () => {
+    resetMetrics();
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list'), {}), res);
+
+    expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
+    expect(getMetrics().snapshot().authFailuresTotal).toMatchObject({ missing_token: 1 });
+  });
+
+  it('meters an expired token as `expired_token`, distinct from `invalid_token`', async () => {
+    resetMetrics();
+    mockVerify.mockRejectedValue(new TokenVerificationError('token expired', { expired: true }));
+
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list'), { authorization: 'Bearer expired' }), res);
+
+    // Transport response is still a 401 with the standard invalid_token code…
+    expect(res.writeHead).toHaveBeenCalledWith(401, { 'Content-Type': 'application/json' });
+    const wwwAuth = res.setHeader.mock.calls.find(([name]) => name === 'WWW-Authenticate');
+    expect(wwwAuth?.[1]).toContain('error="invalid_token"');
+    // …but the metric is bucketed as expired, not invalid.
+    const failures = getMetrics().snapshot().authFailuresTotal;
+    expect(failures).toMatchObject({ expired_token: 1 });
+    expect(failures.invalid_token ?? 0).toBe(0);
+  });
+
+  it('meters a non-expiry verification failure as `invalid_token`', async () => {
+    resetMetrics();
+    mockVerify.mockRejectedValue(new TokenVerificationError('bad signature'));
+
+    const res = mockRes();
+    await mcpHttpHandler(mockReq(rpc('tools/list'), { authorization: 'Bearer bad' }), res);
+
+    const failures = getMetrics().snapshot().authFailuresTotal;
+    expect(failures).toMatchObject({ invalid_token: 1 });
+    expect(failures.expired_token ?? 0).toBe(0);
   });
 
   it('challenges with 401 + error="invalid_token" when identity mapping fails', async () => {

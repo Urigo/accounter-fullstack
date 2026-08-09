@@ -80,7 +80,29 @@ export function createRequestLogger(context: RequestContext): RequestLogger {
   };
 }
 
+/**
+ * Extra completion fields the transport supplies from the response/process so a
+ * disconnect is diagnosable after the fact.
+ *
+ * - `responseCompleted` — the response was fully written (`res.writableEnded`).
+ * - `aborted` — the connection closed before the response finished, i.e. the
+ *   client hung up mid-flight (the server-side fingerprint of a client-side
+ *   timeout, such as a request abandoned during a cold start).
+ * - `uptimeSeconds` — process uptime at completion; a value that keeps resetting
+ *   to near-zero across requests reveals an instance that is restarting/cold
+ *   starting rather than staying warm.
+ */
+export interface CompletionExtra {
+  responseCompleted?: boolean;
+  aborted?: boolean;
+  uptimeSeconds?: number;
+}
+
 /** Log fields describing request completion, including latency. */
-export function completionFields(context: RequestContext, status: number): Record<string, unknown> {
-  return { status, latencyMs: elapsedMs(context) };
+export function completionFields(
+  context: RequestContext,
+  status: number,
+  extra?: CompletionExtra,
+): Record<string, unknown> {
+  return { status, latencyMs: elapsedMs(context), ...extra };
 }

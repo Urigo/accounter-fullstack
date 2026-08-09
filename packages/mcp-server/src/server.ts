@@ -89,10 +89,27 @@ export const routes: Record<string, Record<string, RouteHandler>> = {
   },
 };
 
+/**
+ * Wall-clock of the last request seen by this process, for the idle-gap marker
+ * below. Process-local and best-effort (not synchronized across concurrent
+ * requests) — it exists to make idle periods and cold starts visible in the
+ * logs, not to be exact.
+ */
+let lastRequestAtMs: number | undefined;
+
 export async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const context = createRequestContext(req);
   setRequestContext(req, context);
   const logger = createRequestLogger(context);
+
+  // Idle-gap marker: how long since this process last saw a request. `undefined`
+  // on the very first request of a process — which, paired with the startup log,
+  // is itself the cold-start signal. A large gap here after a quiet period is
+  // what an idle spin-down + cold start looks like from inside the app.
+  const nowMs = performance.now();
+  const msSinceLastRequest =
+    lastRequestAtMs === undefined ? undefined : Math.round(nowMs - lastRequestAtMs);
+  lastRequestAtMs = nowMs;
 
   // Tag the auto-instrumented incoming HTTP span with the business-level
   // correlation id (and request id) so this MCP trace — and, via `traceparent`
@@ -107,11 +124,23 @@ export async function requestHandler(req: IncomingMessage, res: ServerResponse):
   // Echo the correlation id so callers can tie their logs to ours.
   res.setHeader('X-Correlation-Id', context.correlationId);
 
-  logger.info('request started');
+  logger.info(
+    'request started',
+    msSinceLastRequest === undefined ? undefined : { msSinceLastRequest },
+  );
   // Log completion on `close` (not `finish`) so an aborted/prematurely-closed
   // connection still emits a completion log instead of a silent blind spot.
+  // `aborted`/`responseCompleted` make that distinction explicit, and
+  // `uptimeSeconds` surfaces restart/cold-start churn.
   res.once('close', () => {
-    logger.info('request completed', completionFields(context, res.statusCode));
+    logger.info(
+      'request completed',
+      completionFields(context, res.statusCode, {
+        responseCompleted: res.writableEnded,
+        aborted: !res.writableEnded,
+        uptimeSeconds: Math.round(process.uptime()),
+      }),
+    );
   });
 
   try {
@@ -216,11 +245,15 @@ export function start(): Server {
   process.once('SIGTERM', () => shutdown('SIGTERM'));
 
   server.listen(env.server.port, () => {
+    // `pid` tags this process instance so restarts are distinguishable in
+    // aggregated logs; each `mcp server started` line marks a fresh (cold)
+    // start of the transport.
     log('info', 'mcp server started', {
       service: SERVICE_NAME,
       version: getServiceVersion(),
       port: env.server.port,
       enabled: env.server.enabled,
+      pid: process.pid,
     });
   });
 

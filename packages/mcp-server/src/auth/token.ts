@@ -47,9 +47,20 @@ export class TokenVerificationError extends Error {
   /** RFC 6750 error code surfaced in the WWW-Authenticate challenge. */
   public readonly code = 'invalid_token';
 
-  constructor(message: string) {
+  /**
+   * True when verification failed *specifically because the token expired* (as
+   * opposed to a bad signature, wrong issuer/audience, etc.). The transport
+   * response is identical — RFC 6750 uses `invalid_token` for both — but this
+   * lets the auth layer record an `expired_token` metric distinct from other
+   * `invalid_token` failures, which is the difference between "clients need to
+   * refresh sooner" and "tokens are misconfigured/abused".
+   */
+  public readonly expired: boolean;
+
+  constructor(message: string, options?: { expired?: boolean }) {
     super(message);
     this.name = 'TokenVerificationError';
+    this.expired = options?.expired ?? false;
   }
 }
 
@@ -148,8 +159,12 @@ export async function verifyAccessTokenWithKey(
       throw error;
     }
     if (isTokenValidationError(error)) {
-      // Normalize to a safe, token-free message.
-      throw new TokenVerificationError(error instanceof Error ? error.message : 'invalid token');
+      // Normalize to a safe, token-free message. Preserve whether the failure
+      // was expiry specifically, so the auth layer can meter it separately.
+      const expired = (error as { code?: unknown })?.code === 'ERR_JWT_EXPIRED';
+      throw new TokenVerificationError(error instanceof Error ? error.message : 'invalid token', {
+        expired,
+      });
     }
     // Infrastructure/unexpected error — let it propagate (becomes a 5xx).
     throw error;

@@ -85,4 +85,18 @@ describe('field helpers', () => {
     expect(fields.status).toBe(200);
     expect(fields.latencyMs).toBeGreaterThanOrEqual(0);
   });
+
+  it('completionFields merges disconnect/uptime extras when provided', () => {
+    const fields = completionFields(ctx, 499, {
+      responseCompleted: false,
+      aborted: true,
+      uptimeSeconds: 12,
+    });
+    expect(fields).toMatchObject({
+      status: 499,
+      responseCompleted: false,
+      aborted: true,
+      uptimeSeconds: 12,
+    });
+  });
 });
