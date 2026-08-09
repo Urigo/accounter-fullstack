@@ -248,9 +248,11 @@ export class ContractsProvider {
       isContractIds: isContractIds ? 1 : 0,
       // pgtyped requires a non-empty array for `IN $$list`; the matching `is*`
       // flag short-circuits the predicate, so the placeholder is never compared.
-      adminIds: isAdminIds ? params.adminIds! : [null],
-      clientIds: isClientIds ? params.clientIds! : [null],
-      contractIds: isContractIds ? params.contractIds! : [null],
+      // Spread rather than pass the caller's readonly arrays straight through:
+      // the generated params take mutable arrays.
+      adminIds: isAdminIds ? [...params.adminIds!] : [null],
+      clientIds: isClientIds ? [...params.clientIds!] : [null],
+      contractIds: isContractIds ? [...params.contractIds!] : [null],
       isActive: params.isActive ?? null,
     };
 

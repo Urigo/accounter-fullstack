@@ -379,9 +379,11 @@ export class LedgerProvider {
       isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
       // pgtyped requires a non-empty array for `IN $$list`; the matching `is*`
       // flag short-circuits the predicate, so the placeholder is never compared.
-      chargeIds: isChargeIds ? params.chargeIds! : [null],
-      ownerIds: isOwnerIds ? params.ownerIds! : [null],
-      financialEntityIds: isFinancialEntityIds ? params.financialEntityIds! : [null],
+      // Spread rather than pass the caller's readonly arrays straight through:
+      // the generated params take mutable arrays.
+      chargeIds: isChargeIds ? [...params.chargeIds!] : [null],
+      ownerIds: isOwnerIds ? [...params.ownerIds!] : [null],
+      financialEntityIds: isFinancialEntityIds ? [...params.financialEntityIds!] : [null],
       matchDebit1: accounts.includes('DEBIT_ACCOUNT_1') ? 1 : 0,
       matchDebit2: accounts.includes('DEBIT_ACCOUNT_2') ? 1 : 0,
       matchCredit1: accounts.includes('CREDIT_ACCOUNT_1') ? 1 : 0,

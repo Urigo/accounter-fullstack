@@ -314,7 +314,9 @@ async function handler(
 
   const scope = { memberBusinessIds: context.readScope.memberBusinessIds };
   const scopeNote =
-    scope.memberBusinessIds.length > 1 ? ` across ${scope.memberBusinessIds.length} businesses` : '';
+    scope.memberBusinessIds.length > 1
+      ? ` across ${scope.memberBusinessIds.length} businesses`
+      : '';
 
   return shapeListResult({
     items: records,
