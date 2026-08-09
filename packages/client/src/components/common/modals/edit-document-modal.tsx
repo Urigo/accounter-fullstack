@@ -30,8 +30,8 @@ export const EditDocumentModal = ({ onDone, onChange, documentId }: Props): Reac
             <Tooltip content="Copy ID">
               <CopyToClipboardButton content={documentId} />
             </Tooltip>
-            <UnlinkDocumentButton documentId={documentId} />
-            <DeleteDocumentButton documentId={documentId} />
+            <UnlinkDocumentButton documentId={documentId} onChange={onChange} />
+            <DeleteDocumentButton documentId={documentId} onChange={onChange} />
           </div>
         </div>
       }
