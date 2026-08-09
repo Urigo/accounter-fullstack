@@ -5,7 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { MAX_DATE_RANGE_DAYS, MAX_PAGE_SIZE, searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -17,7 +17,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -133,11 +133,11 @@ describe('searchChargesTool — successful read', () => {
 
     const structured = result.structuredContent as {
       charges: Array<{ ownerId: string | null; ownerName: string | null }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     expect(structured.charges[0]).toMatchObject({ ownerId: 'b1', ownerName: 'Acme' });
     // The response echoes the effective scope, so a silent widening is visible.
-    expect(structured.scope).toEqual({ businessIds: ['b1', 'b2'] });
+    expect(structured.scope).toEqual({ memberBusinessIds: ['b1', 'b2'] });
     // …and the text content — what the model reads first — says so too.
     expect(result.content[0]!.text).toContain('across 2 businesses');
   });
@@ -153,7 +153,7 @@ describe('searchChargesTool — successful read', () => {
   it('narrows the scope to a requested subset', async () => {
     let sentBody: unknown;
     const client = clientReturning(oneCharge, body => (sentBody = body));
-    await run(client, authContext(['b1', 'b2', 'b3']), { businessIds: ['b2'] });
+    await run(client, authContext(['b1', 'b2', 'b3']), { memberBusinessIds: ['b2'] });
     const variables = (sentBody as { variables: { filters: { byOwners: string[] } } }).variables;
     expect(variables.filters.byOwners).toEqual(['b2']);
   });
@@ -443,7 +443,7 @@ describe('searchChargesTool — invalid filters', () => {
 describe('searchChargesTool — scope enforcement', () => {
   it('denies a requested business outside the memberships (AUTHORIZATION_ERROR)', async () => {
     const client = clientReturning(oneCharge);
-    const result = await run(client, authContext(['b1']), { businessIds: ['bX'] });
+    const result = await run(client, authContext(['b1']), { memberBusinessIds: ['bX'] });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });

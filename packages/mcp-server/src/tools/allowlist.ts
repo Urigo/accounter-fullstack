@@ -17,7 +17,7 @@
  * A caveat worth stating loudly (see the note on I1 in the connector todo): when
  * an operator *does* set an allowlist, `accounter_list_business_memberships`
  * should almost always be in it. It is the discovery entry point for business
- * scoping — the model calls it to learn which `businessId` values exist before
+ * scoping — the model calls it to learn which `memberBusinessId` values exist before
  * passing them to the other tools. Omitting it does not degrade gracefully: the remaining tools
  * still work, just with no way to discover a business id. Enforcement here makes
  * an omitted tool genuinely absent (hidden from `tools/list` *and* rejected by

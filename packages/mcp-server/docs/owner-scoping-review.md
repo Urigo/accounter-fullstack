@@ -49,12 +49,12 @@ blank entries would widen rather than narrow.
 Verified unreachable **by construction rather than by guard**:
 
 - `coerceMembership` rejects an empty `businessId` (`src/auth/identity.ts`);
-- `readScopeFromMemberships` maps `membership.businessId` only;
+- `readScopeFromMemberships` maps `membership.memberBusinessId` only;
 - `narrowReadScope` pushes only ids present in the membership set, else returns `null`.
 
-So a blank id cannot reach `readScope.businessIds` and cannot reach the client. This is recorded in
-[`spec.md`](./spec.md) §7.3.1 together with the requirement that any change relaxing membership
-coercion must also make the case fail closed.
+So a blank id cannot reach `readScope.memberBusinessIds` and cannot reach the client. This is
+recorded in [`spec.md`](./spec.md) §7.3.1 together with the requirement that any change relaxing
+membership coercion must also make the case fail closed.
 
 **Option:** a two-line defensive guard in `executeOnce` would remove the dependency on that
 invariant, at the cost of a branch that is dead today.

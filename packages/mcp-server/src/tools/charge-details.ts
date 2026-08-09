@@ -25,7 +25,7 @@ import {
 } from './entity-shapes.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Detail tool: fetch charges by id with their transactions and documents
@@ -61,7 +61,7 @@ const getChargesInput = z
     filters: chargeFiltersInput
       .optional()
       .describe('Filter charges by any supported ChargeFilter predicate.'),
-    businessIds: businessIdsInput,
+    memberBusinessIds: memberBusinessIdsInput,
     // `allCharges` is paginated upstream, and the previous version pinned it to
     // the first page: a filter matching more than `MAX_FILTERED_CHARGES` charges
     // had no way to reach the rest, and nothing said so. Exposed here as the
@@ -415,7 +415,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
           query: CHARGES_QUERY_DOCUMENT,
           operationName: 'McpGetChargesByFilters',
           variables: {
-            filters: buildChargeFilters(input.filters ?? {}, context.readScope.businessIds),
+            filters: buildChargeFilters(input.filters ?? {}, context.readScope.memberBusinessIds),
             // Upstream `allCharges` is 0-based (it slices `[page * limit, …]`),
             // so translate the 1-based input page here.
             page: input.page - 1,
@@ -432,7 +432,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
     : (filteredData?.allCharges.nodes ?? []);
   const requestedChargeIds = hasChargeIds ? new Set(input.chargeIds) : null;
 
-  const scopeIds = new Set(context.readScope.businessIds);
+  const scopeIds = new Set(context.readScope.memberBusinessIds);
   const charges = rawCharges
     .filter(charge => requestedChargeIds === null || requestedChargeIds.has(charge.id))
     // Defense-in-depth owner filter (see `charges.ts`): keep a charge only when
@@ -472,7 +472,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
     itemsKey: 'charges',
     total,
     extra: {
-      scope: { businessIds: context.readScope.businessIds },
+      scope: { memberBusinessIds: context.readScope.memberBusinessIds },
       ...(pagination ? { pagination } : {}),
     },
     summarize: (shown, total) =>

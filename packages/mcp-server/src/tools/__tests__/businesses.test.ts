@@ -43,18 +43,18 @@ const run = (auth: McpAuthContext, client: UpstreamGraphQLClient) =>
   });
 
 interface Structured {
-  businesses: Array<{ businessId: string; name: string | null; role: string }>;
+  businesses: Array<{ memberBusinessId: string; name: string | null; role: string }>;
   returnedCount: number;
   totalCount: number;
 }
 
 describe('listBusinessMembershipsTool', () => {
-  it('lists memberships as {businessId, name, role} without any upstream call', async () => {
+  it('lists memberships as {memberBusinessId, name, role} without any upstream call', async () => {
     const { client, fetchImpl } = neverCalledClient();
     const result = await run(
       authContext([
-        { businessId: 'b1', roleId: 'business_owner', businessName: 'Acme' },
-        { businessId: 'b2', roleId: 'accountant', businessName: 'Beta' },
+        { memberBusinessId: 'b1', roleId: 'business_owner', businessName: 'Acme' },
+        { memberBusinessId: 'b2', roleId: 'accountant', businessName: 'Beta' },
       ]),
       client,
     );
@@ -62,8 +62,8 @@ describe('listBusinessMembershipsTool', () => {
     expect(result.isError).toBeUndefined();
     const structured = result.structuredContent as Structured;
     expect(structured.businesses).toEqual([
-      { businessId: 'b1', name: 'Acme', role: 'business_owner' },
-      { businessId: 'b2', name: 'Beta', role: 'accountant' },
+      { memberBusinessId: 'b1', name: 'Acme', role: 'business_owner' },
+      { memberBusinessId: 'b2', name: 'Beta', role: 'accountant' },
     ]);
     expect(structured.totalCount).toBe(2);
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -73,14 +73,14 @@ describe('listBusinessMembershipsTool', () => {
     const { client } = neverCalledClient();
     const result = await run(
       authContext([
-        { businessId: 'b3', roleId: 'accountant', businessName: 'zebra' },
-        { businessId: 'b1', roleId: 'accountant', businessName: 'Apple' },
-        { businessId: 'b2', roleId: 'accountant', businessName: 'apple' },
+        { memberBusinessId: 'b3', roleId: 'accountant', businessName: 'zebra' },
+        { memberBusinessId: 'b1', roleId: 'accountant', businessName: 'Apple' },
+        { memberBusinessId: 'b2', roleId: 'accountant', businessName: 'apple' },
       ]),
       client,
     );
 
-    const names = (result.structuredContent as Structured).businesses.map(b => [b.name, b.businessId]);
+    const names = (result.structuredContent as Structured).businesses.map(b => [b.name, b.memberBusinessId]);
     expect(names).toEqual([
       ['Apple', 'b1'],
       ['apple', 'b2'],
@@ -92,17 +92,17 @@ describe('listBusinessMembershipsTool', () => {
     const { client } = neverCalledClient();
     const result = await run(
       authContext([
-        { businessId: 'b9', roleId: 'accountant' },
-        { businessId: 'b1', roleId: 'accountant', businessName: 'Named' },
-        { businessId: 'b4', roleId: 'accountant', businessName: null },
+        { memberBusinessId: 'b9', roleId: 'accountant' },
+        { memberBusinessId: 'b1', roleId: 'accountant', businessName: 'Named' },
+        { memberBusinessId: 'b4', roleId: 'accountant', businessName: null },
       ]),
       client,
     );
 
     expect((result.structuredContent as Structured).businesses).toEqual([
-      { businessId: 'b1', name: 'Named', role: 'accountant' },
-      { businessId: 'b4', name: null, role: 'accountant' },
-      { businessId: 'b9', name: null, role: 'accountant' },
+      { memberBusinessId: 'b1', name: 'Named', role: 'accountant' },
+      { memberBusinessId: 'b4', name: null, role: 'accountant' },
+      { memberBusinessId: 'b9', name: null, role: 'accountant' },
     ]);
   });
 
@@ -114,19 +114,19 @@ describe('listBusinessMembershipsTool', () => {
     const { client } = neverCalledClient();
     const result = await run(
       authContext([
-        { businessId: 'b5', roleId: 'accountant', businessName: '   ' },
-        { businessId: 'b2', roleId: 'accountant', businessName: '' },
-        { businessId: 'b3', roleId: 'accountant', businessName: null },
-        { businessId: 'b1', roleId: 'accountant', businessName: 'Real' },
+        { memberBusinessId: 'b5', roleId: 'accountant', businessName: '   ' },
+        { memberBusinessId: 'b2', roleId: 'accountant', businessName: '' },
+        { memberBusinessId: 'b3', roleId: 'accountant', businessName: null },
+        { memberBusinessId: 'b1', roleId: 'accountant', businessName: 'Real' },
       ]),
       client,
     );
 
     expect((result.structuredContent as Structured).businesses).toEqual([
-      { businessId: 'b1', name: 'Real', role: 'accountant' },
-      { businessId: 'b2', name: null, role: 'accountant' },
-      { businessId: 'b3', name: null, role: 'accountant' },
-      { businessId: 'b5', name: null, role: 'accountant' },
+      { memberBusinessId: 'b1', name: 'Real', role: 'accountant' },
+      { memberBusinessId: 'b2', name: null, role: 'accountant' },
+      { memberBusinessId: 'b3', name: null, role: 'accountant' },
+      { memberBusinessId: 'b5', name: null, role: 'accountant' },
     ]);
   });
 

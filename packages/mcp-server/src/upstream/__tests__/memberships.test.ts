@@ -35,8 +35,8 @@ describe('createUpstreamMembershipSource', () => {
     // businessName is carried through for `accounter_list_business_memberships`. A null
     // name maps to `undefined` (i.e. "no name"), never dropping the membership.
     expect(memberships).toEqual([
-      { businessId: 'b1', roleId: 'business_owner', businessName: 'Acme' },
-      { businessId: 'b2', roleId: 'accountant', businessName: undefined },
+      { memberBusinessId: 'b1', roleId: 'business_owner', businessName: 'Acme' },
+      { memberBusinessId: 'b2', roleId: 'accountant', businessName: undefined },
     ]);
   });
 
@@ -80,8 +80,10 @@ describe('createUpstreamMembershipSource', () => {
       correlationId: 'corr-1',
     });
 
+    // The GraphQL rows above keep the upstream `businessId` key; only the
+    // mapped internal shape carries this package's `memberBusinessId`.
     await expect(source(PRINCIPAL)).resolves.toEqual([
-      { businessId: 'b1', roleId: 'business_owner' },
+      { memberBusinessId: 'b1', roleId: 'business_owner' },
     ]);
   });
 

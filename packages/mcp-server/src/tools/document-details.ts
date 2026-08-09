@@ -9,7 +9,7 @@ import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeDocument, type RawDocument } from './entity-shapes.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Detail tool: fetch documents (invoices, receipts, …) by id (spec §8.2).
@@ -57,9 +57,15 @@ export const DOCUMENTS_FILTER_ALIASES = {
 
 export const documentsFiltersInput = z
   .object({
+    // NOT the scope field: this is the upstream `businessIDs` predicate, which
+    // matches documents whose *counterparty* (creditor or debtor) is one of these
+    // businesses. Scope narrowing is `memberBusinessIds`, below.
     businessIds: optionalNonEmptyStringArray(DOCUMENT_FILTER_IDS_CAP)
       .optional()
-      .describe('Include only documents connected to these business ids.'),
+      .describe(
+        'Include only documents whose creditor or debtor is one of these businesses. This is a ' +
+          'counterparty filter — use `memberBusinessIds` to narrow which of your businesses to search.',
+      ),
     ownerIds: optionalNonEmptyStringArray(DOCUMENT_FILTER_IDS_CAP)
       .optional()
       .describe('Include only documents owned by these business ids.'),
@@ -109,7 +115,7 @@ const getDocumentsInput = z
     filters: documentsFiltersInput
       .optional()
       .describe('Filter documents by any supported documentsByFilters predicate.'),
-    businessIds: businessIdsInput,
+    memberBusinessIds: memberBusinessIdsInput,
   })
   .superRefine((value, context) => {
     const hasIds = value.documentIds !== undefined && value.documentIds.length > 0;
@@ -280,13 +286,16 @@ async function handler(
           query: DOCUMENTS_QUERY_DOCUMENT,
           operationName: 'McpSearchDocumentsByFilters',
           variables: {
-            filters: buildDocumentsFilters(input.filters ?? {}, context.readScope.businessIds),
+            filters: buildDocumentsFilters(
+              input.filters ?? {},
+              context.readScope.memberBusinessIds,
+            ),
           } satisfies McpSearchDocumentsByFiltersQueryVariables,
         },
         context.upstream,
       );
 
-  const scopeIds = new Set(context.readScope.businessIds);
+  const scopeIds = new Set(context.readScope.memberBusinessIds);
   const raw = (
     usingIds
       ? (data as McpGetDocumentsQuery).documentsByIds
@@ -308,7 +317,7 @@ async function handler(
     items: documents,
     itemsKey: 'documents',
     total: documents.length,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (shown, total) =>
       total === 0
         ? usingIds

@@ -8,8 +8,8 @@ import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registr
  * The connector is stateless — no `Mcp-Session-Id`, no session store, auth
  * re-derived per request — so there is no "active business" to hang scope on.
  * This tool is the entry point instead: the model enumerates the businesses the
- * caller is a *member of*, then passes the returned ids back as `businessIds` to
- * the business-scoped tools.
+ * caller is a *member of*, then passes the returned ids back as `memberBusinessIds`
+ * to the business-scoped tools.
  *
  * This lists only the caller's memberships (the businesses they can act within),
  * not the full business directory. To browse every business known to the system
@@ -27,7 +27,8 @@ const listBusinessesInput = z.object({});
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
 interface BusinessSummary {
-  businessId: string;
+  /** Id of the member business — the value the other tools take as scope. */
+  memberBusinessId: string;
   name: string | null;
   role: string;
 }
@@ -65,13 +66,17 @@ function byNameThenId(a: BusinessSummary, b: BusinessSummary): number {
     // Exactly one is unnamed — the named one leads.
     return a.name === null ? 1 : -1;
   }
-  return a.businessId < b.businessId ? -1 : a.businessId > b.businessId ? 1 : 0;
+  return a.memberBusinessId < b.memberBusinessId
+    ? -1
+    : a.memberBusinessId > b.memberBusinessId
+      ? 1
+      : 0;
 }
 
 function handler(_input: ListBusinessesInput, context: ToolExecutionContext): ToolResult {
   const businesses = context.auth.memberships
     .map(membership => ({
-      businessId: membership.businessId,
+      memberBusinessId: membership.memberBusinessId,
       name: normalizeName(membership.businessName),
       role: membership.roleId,
     }))
@@ -84,14 +89,14 @@ function handler(_input: ListBusinessesInput, context: ToolExecutionContext): To
     summarize: (shown, total) =>
       total === 0
         ? 'You do not have access to any businesses.'
-        : `You have access to ${total} business(es)${shown < total ? ` (showing ${shown})` : ''}. Pass their businessId values as businessIds to the other tools.`,
+        : `You have access to ${total} business(es)${shown < total ? ` (showing ${shown})` : ''}. Pass their memberBusinessId values as memberBusinessIds to the other tools.`,
   });
 }
 
 export const listBusinessMembershipsTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME,
   description:
-    'List the businesses you are a member of, with your role in each. This is your access/scope discovery entry point — call it first when you may belong to more than one business, then pass the returned `businessId` values as `businessIds` to the other tools. To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
+    'List the businesses you are a member of, with your role in each. This is your access/scope discovery entry point — call it first when you may belong to more than one business, then pass the returned `memberBusinessId` values as `memberBusinessIds` to the other tools. To browse every business known to the system (e.g. counterparties), use `accounter_list_businesses` instead. Read-only; takes no parameters.',
   inputSchema: listBusinessesInput,
   policy: {
     // Deliberately false: a caller with zero memberships should get an empty

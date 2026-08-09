@@ -4,7 +4,7 @@ import type { AuthPrincipal } from '../../auth/token.js';
 import { authorizeToolCall, evaluateToolPolicy } from '../policy.js';
 import type { ToolAuthPolicy, ToolDefinition } from '../registry.js';
 
-function authContext(memberships: Array<{ businessId: string; roleId: string }>): McpAuthContext {
+function authContext(memberships: Array<{ memberBusinessId: string; roleId: string }>): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -19,7 +19,7 @@ function authContext(memberships: Array<{ businessId: string; roleId: string }>)
   return buildAuthContext(principal, memberships);
 }
 
-const M = (businessId: string, roleId = 'accountant') => ({ businessId, roleId });
+const M = (memberBusinessId: string, roleId = 'accountant') => ({ memberBusinessId, roleId });
 
 const scopedPolicy: ToolAuthPolicy = {
   requiresBusinessScope: true,
@@ -32,23 +32,23 @@ describe('evaluateToolPolicy — business scope', () => {
       policy: scopedPolicy,
       auth: authContext([M('b1'), M('b2')]),
     });
-    expect(decision).toEqual({ allowed: true, readScope: { businessIds: ['b1', 'b2'] } });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: ['b1', 'b2'] } });
   });
 
   it('allows a caller-narrowed subset', () => {
     const decision = evaluateToolPolicy({
       policy: scopedPolicy,
       auth: authContext([M('b1'), M('b2'), M('b3')]),
-      requestedBusinessIds: ['b3', 'b1'],
+      requestedMemberBusinessIds: ['b3', 'b1'],
     });
-    expect(decision).toEqual({ allowed: true, readScope: { businessIds: ['b3', 'b1'] } });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: ['b3', 'b1'] } });
   });
 
   it('denies a requested scope outside the memberships', () => {
     const decision = evaluateToolPolicy({
       policy: scopedPolicy,
       auth: authContext([M('b1')]),
-      requestedBusinessIds: ['b1', 'bX'],
+      requestedMemberBusinessIds: ['b1', 'bX'],
     });
     expect(decision.allowed).toBe(false);
     if (!decision.allowed) {
@@ -97,7 +97,7 @@ describe('evaluateToolPolicy — roles', () => {
       policy: { requiresBusinessScope: false, dataClassification: 'public' },
       auth: authContext([]),
     });
-    expect(decision).toEqual({ allowed: true, readScope: { businessIds: [] } });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: [] } });
   });
 });
 
@@ -112,6 +112,6 @@ describe('authorizeToolCall', () => {
     } as unknown as ToolDefinition;
 
     const decision = authorizeToolCall(tool, authContext([M('b1')]), ['b1']);
-    expect(decision).toEqual({ allowed: true, readScope: { businessIds: ['b1'] } });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: ['b1'] } });
   });
 });
