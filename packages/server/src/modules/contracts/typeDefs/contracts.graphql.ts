@@ -6,7 +6,7 @@ export default gql`
     contractsByClient(clientId: UUID!): [Contract!]! @requiresAuth
     contractsByAdmin(adminId: UUID!): [Contract!]! @requiresAuth
     contractsById(id: UUID!): Contract! @requiresAuth
-    " search contracts by admin (owner) business, client, contract id and active state "
+    " search contracts by owning (admin) business, client, contract id and active state "
     contractsByFilters(filters: ContractsFilters): [Contract!]! @requiresAuth
   }
 
@@ -24,8 +24,8 @@ export default gql`
 
   " filters for contracts search "
   input ContractsFilters {
-    " only contracts owned by any of these admin businesses "
-    adminIds: [UUID!]
+    " only contracts owned by any of these (admin) businesses "
+    ownerIds: [UUID!]
     " only contracts belonging to any of these clients "
     clientIds: [UUID!]
     " only these specific contracts "
@@ -37,8 +37,8 @@ export default gql`
   " a client contract "
   type Contract {
     id: UUID!
-    " the admin business owning the contract "
-    adminId: UUID!
+    " the (admin) business owning the contract "
+    ownerId: UUID!
     client: Client!
     purchaseOrders: [String!]!
     startDate: TimelessDate!

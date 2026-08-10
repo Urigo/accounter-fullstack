@@ -140,10 +140,10 @@ scope, because it _is_ the scope.
   a second call. Date ranges are bounded (≤ 1096 days) and rows capped (≤ 500, default 200) with a
   `truncated` flag.
 - **`accounter_get_contracts`** — read-only **client billing contracts**. Filters by `clientIds`, by
-  `contractIds`, and by `isActive`. The admin (owner) axis is the membership axis — a contract is
-  always owned by a business you are a member of — so `memberBusinessIds` doubles as the admin
-  filter and is forwarded as the upstream `filters.adminIds`; there is no separate `adminIds` input
-  to drift from it. Each row reports its `adminId` plus the client, period, amount, billing cycle,
+  `contractIds`, and by `isActive`. The owning ("admin") business axis is the membership axis — a
+  contract is always owned by a business you are a member of — so `memberBusinessIds` doubles as the
+  owner filter and is forwarded as the upstream `filters.ownerIds`; there is no separate owner input
+  to drift from it. Each row reports its `ownerId` plus the client, period, amount, billing cycle,
   document type, product/plan, and purchase orders.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and

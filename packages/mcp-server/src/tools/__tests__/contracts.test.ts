@@ -46,7 +46,7 @@ function run(client: UpstreamGraphQLClient, auth: McpAuthContext, rawArgs: unkno
 
 const contract = {
   id: 'contract-1',
-  adminId: 'b1',
+  ownerId: 'b1',
   isActive: true,
   startDate: '2026-01-01',
   endDate: '2026-12-31',
@@ -61,7 +61,7 @@ const contract = {
 };
 
 describe('getContractsTool — successful read', () => {
-  it('normalizes contracts and reports the owning admin business', async () => {
+  it('normalizes contracts and reports the owning business', async () => {
     const client = clientReturning({ contractsByFilters: [contract] });
     const result = await run(client, authContext(['b1']), {});
 
@@ -74,7 +74,7 @@ describe('getContractsTool — successful read', () => {
     expect(structured.contracts).toEqual([
       {
         id: 'contract-1',
-        adminId: 'b1',
+        ownerId: 'b1',
         client: { id: 'client-1', businessId: 'biz-9', name: 'Acme' },
         isActive: true,
         startDate: '2026-01-01',
@@ -92,7 +92,7 @@ describe('getContractsTool — successful read', () => {
     expect(structured.scope).toEqual({ memberBusinessIds: ['b1'] });
   });
 
-  it('sends the resolved read scope as adminIds', async () => {
+  it('sends the resolved read scope as ownerIds', async () => {
     let body: unknown;
     const client = clientReturning({ contractsByFilters: [] }, captured => {
       body = captured;
@@ -100,7 +100,7 @@ describe('getContractsTool — successful read', () => {
     await run(client, authContext(['b1', 'b2']), {});
 
     const filters = (body as { variables: { filters: Record<string, unknown> } }).variables.filters;
-    expect(filters).toEqual({ adminIds: ['b1', 'b2'] });
+    expect(filters).toEqual({ ownerIds: ['b1', 'b2'] });
   });
 
   it('forwards client, contract and active filters', async () => {
@@ -116,25 +116,25 @@ describe('getContractsTool — successful read', () => {
 
     const filters = (body as { variables: { filters: Record<string, unknown> } }).variables.filters;
     expect(filters).toEqual({
-      adminIds: ['b1'],
+      ownerIds: ['b1'],
       clientIds: ['client-1'],
       contractIds: ['contract-1'],
       isActive: false,
     });
   });
 
-  // The admin axis is narrowed through the scope field, which the policy layer
-  // validates against memberships — so a narrowed scope narrows `adminIds`, and
+  // The owner axis is narrowed through the scope field, which the policy layer
+  // validates against memberships — so a narrowed scope narrows `ownerIds`, and
   // an out-of-scope id is rejected rather than intersected away (see below).
-  it('narrows adminIds when memberBusinessIds narrows the scope', async () => {
+  it('narrows ownerIds when memberBusinessIds narrows the scope', async () => {
     let body: unknown;
     const client = clientReturning({ contractsByFilters: [] }, captured => {
       body = captured;
     });
     await run(client, authContext(['b1', 'b2']), { memberBusinessIds: ['b2'] });
 
-    const filters = (body as { variables: { filters: { adminIds: string[] } } }).variables.filters;
-    expect(filters.adminIds).toEqual(['b2']);
+    const filters = (body as { variables: { filters: { ownerIds: string[] } } }).variables.filters;
+    expect(filters.ownerIds).toEqual(['b2']);
   });
 });
 

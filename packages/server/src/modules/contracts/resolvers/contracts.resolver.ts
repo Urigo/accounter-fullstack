@@ -58,7 +58,7 @@ export const contractsResolvers: ContractsModule.Resolvers = {
         // Awaited inside the `try` on purpose: returning the promise would let a
         // rejection escape the catch below and surface unwrapped.
         return await injector.get(ContractsProvider).getContractsByFilters({
-          adminIds: filters?.adminIds,
+          ownerIds: filters?.ownerIds,
           clientIds: filters?.clientIds,
           contractIds: filters?.contractIds,
           isActive: filters?.isActive,
@@ -138,12 +138,12 @@ export const contractsResolvers: ContractsModule.Resolvers = {
   },
   Contract: {
     id: dbContract => dbContract.id,
-    adminId: dbContract => {
+    ownerId: dbContract => {
       // owner_id is NOT NULL in the schema; guard anyway so a row that predates
       // the backfill surfaces as an explicit error instead of a null in a
       // non-nullable field.
       if (!dbContract.owner_id) {
-        throw new GraphQLError(`Contract ${dbContract.id} has no owning admin business`);
+        throw new GraphQLError(`Contract ${dbContract.id} has no owning business`);
       }
       return dbContract.owner_id;
     },

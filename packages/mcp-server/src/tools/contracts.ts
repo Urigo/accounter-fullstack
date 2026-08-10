@@ -8,17 +8,17 @@ import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.
 /**
  * Read-only client-contracts search.
  *
- * A contract is the billing agreement between an admin business (the owner) and
- * a client. The admin side *is* the membership axis — a contract you can see is
+ * A contract is the billing agreement between an owning ("admin") business and a
+ * client. The owner side *is* the membership axis — a contract you can see is
  * owned by a business you are a member of — so the shared `memberBusinessIds`
- * doubles as the admin filter and maps onto the upstream `filters.adminIds`.
- * There is deliberately no second `adminIds` input: a tool-level field narrowing
- * the same axis as the scope field would need its own intersection rule, and
- * getting that rule wrong silently answers a different question than the one
- * asked. The remaining axes are the client (`clientIds`) and specific contracts
- * (`contractIds`, to re-fetch one a previous answer referenced). Every row
- * reports its `adminId` so a result spanning admin businesses can be grouped
- * without a second call.
+ * doubles as the owner filter and maps onto the upstream `filters.ownerIds`.
+ * There is deliberately no separate owner input on the tool: a second field
+ * narrowing the same axis as the scope field would need its own intersection
+ * rule, and getting that rule wrong silently answers a different question than
+ * the one asked. The remaining axes are the client (`clientIds`) and specific
+ * contracts (`contractIds`, to re-fetch one a previous answer referenced). Every
+ * row reports its `ownerId` so a result spanning owning businesses can be
+ * grouped without a second call.
  */
 
 export const GET_CONTRACTS_TOOL_NAME = 'accounter_get_contracts';
@@ -58,7 +58,7 @@ const GET_CONTRACTS_QUERY = /* GraphQL */ `
   query McpGetContracts($filters: ContractsFilters) {
     contractsByFilters(filters: $filters) {
       id
-      adminId
+      ownerId
       isActive
       startDate
       endDate
@@ -90,8 +90,8 @@ type RawContract = McpGetContractsQuery['contractsByFilters'][number];
 /** Normalized contract shape returned to the caller. */
 export interface NormalizedContract {
   id: string;
-  /** Owning admin business, so multi-business results can be grouped. */
-  adminId: string;
+  /** Owning business, so multi-business results can be grouped. */
+  ownerId: string;
   client: { id: string; businessId: string; name: string };
   isActive: boolean;
   startDate: string;
@@ -108,7 +108,7 @@ export interface NormalizedContract {
 function normalizeContract(contract: RawContract): NormalizedContract {
   return {
     id: contract.id,
-    adminId: contract.adminId,
+    ownerId: contract.ownerId,
     client: {
       id: contract.client.id,
       businessId: contract.client.originalBusiness.id,
@@ -132,13 +132,13 @@ function buildFilters(
   memberBusinessIds: readonly string[],
 ): NonNullable<McpGetContractsQueryVariables['filters']> {
   const filters: NonNullable<McpGetContractsQueryVariables['filters']> = {};
-  // The resolved scope is the admin filter: `memberBusinessIds` has already been
+  // The resolved scope is the owner filter: `memberBusinessIds` has already been
   // validated against the caller's memberships by the policy layer (out-of-scope
   // ids are rejected, never dropped), so it can go straight through as
-  // `adminIds`. Kept as an explicit predicate even though `x-business-scope`
+  // `ownerIds`. Kept as an explicit predicate even though `x-business-scope`
   // narrows via RLS upstream: defense in depth.
   if (memberBusinessIds.length > 0) {
-    filters.adminIds = [...memberBusinessIds];
+    filters.ownerIds = [...memberBusinessIds];
   }
   if (input.clientIds?.length) filters.clientIds = [...input.clientIds];
   if (input.contractIds?.length) filters.contractIds = [...input.contractIds];
@@ -182,7 +182,7 @@ async function handler(
 export const getContractsTool: ToolDefinition<typeof getContractsInput> = {
   name: GET_CONTRACTS_TOOL_NAME,
   description:
-    'List client billing contracts within your authorized businesses. Filter by client, by contract id, and by active state; `memberBusinessIds` narrows to specific admin (owner) businesses, since a contract is always owned by one of yours. Each row reports its `adminId`. Read-only. ' +
+    'List client billing contracts within your authorized businesses. Filter by client, by contract id, and by active state; `memberBusinessIds` narrows to specific owning (admin) businesses, since a contract is always owned by one of yours. Each row reports its `ownerId`. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getContractsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

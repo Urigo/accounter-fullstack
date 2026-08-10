@@ -43,7 +43,7 @@ const getContractsByClientIds = sql<IGetContractsByClientIdsQuery>`
 const getContractsByFilters = sql<IGetContractsByFiltersQuery>`
     SELECT *
     FROM accounter_schema.clients_contracts
-    WHERE ($isAdminIds = 0 OR owner_id IN $$adminIds)
+    WHERE ($isOwnerIds = 0 OR owner_id IN $$ownerIds)
       AND ($isClientIds = 0 OR client_id IN $$clientIds)
       AND ($isContractIds = 0 OR id IN $$contractIds)
       -- a NULL is_active reads as inactive everywhere else (the resolver
@@ -157,7 +157,7 @@ const insertContract = sql<IInsertContractQuery>`
 
 /** Caller-facing filters for {@link ContractsProvider.getContractsByFilters}. */
 export type ContractsFiltersParams = {
-  adminIds?: readonly string[] | null;
+  ownerIds?: readonly string[] | null;
   clientIds?: readonly string[] | null;
   contractIds?: readonly string[] | null;
   isActive?: boolean | null;
@@ -238,19 +238,19 @@ export class ContractsProvider {
   );
 
   public getContractsByFilters(params: ContractsFiltersParams) {
-    const isAdminIds = !!params.adminIds?.filter(Boolean).length;
+    const isOwnerIds = !!params.ownerIds?.filter(Boolean).length;
     const isClientIds = !!params.clientIds?.filter(Boolean).length;
     const isContractIds = !!params.contractIds?.filter(Boolean).length;
 
     const fullParams: IGetContractsByFiltersParams = {
-      isAdminIds: isAdminIds ? 1 : 0,
+      isOwnerIds: isOwnerIds ? 1 : 0,
       isClientIds: isClientIds ? 1 : 0,
       isContractIds: isContractIds ? 1 : 0,
       // pgtyped requires a non-empty array for `IN $$list`; the matching `is*`
       // flag short-circuits the predicate, so the placeholder is never compared.
       // Spread rather than pass the caller's readonly arrays straight through:
       // the generated params take mutable arrays.
-      adminIds: isAdminIds ? [...params.adminIds!] : [null],
+      ownerIds: isOwnerIds ? [...params.ownerIds!] : [null],
       clientIds: isClientIds ? [...params.clientIds!] : [null],
       contractIds: isContractIds ? [...params.contractIds!] : [null],
       isActive: params.isActive ?? null,
