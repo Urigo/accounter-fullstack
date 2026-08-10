@@ -1,4 +1,8 @@
-import { TransactionDirection } from '../../../__generated__/types.js';
+// `TransactionDirection` is imported from its own source rather than from
+// `__generated__/types.js` (which only re-exports it): the generated file is a
+// build artifact, so a *value* import of it makes this module — and every test
+// that reaches it — fail to resolve whenever codegen has not run.
+import { TransactionDirection } from '../../../shared/enums.js';
 import { dateToTimelessDateString, formatFinancialAmount } from '../../../shared/helpers/index.js';
 import { effectiveDateSupplement } from '../helpers/effective-date.helper.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
