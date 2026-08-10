@@ -5,7 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { executeRegisteredTool } from '../execute.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -17,7 +17,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -187,6 +187,57 @@ describe('listBusinessesTool', () => {
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });
 
+  // `allBusinesses(page:, limit:)` used to be left unset, so the directory was
+  // unwalkable past `limit` rows. Pin the forwarding — including the 1-based →
+  // 0-based translation, which is the easy half to get wrong.
+  it('forwards limit and the 0-based page to allBusinesses', async () => {
+    let sentInit: RequestInit | undefined;
+    const client = clientReturning(
+      {
+        allBusinesses: {
+          nodes: [{ id: '1', name: 'apple', ownerId: 'o1', isActive: true }],
+          pageInfo: { totalPages: 4, totalRecords: 7, currentPage: 1, pageSize: 2 },
+        },
+      },
+      init => (sentInit = init),
+    );
+    const result = await runTool(listBusinessesTool, client, authContext(['b1']), {
+      page: 2,
+      limit: 2,
+    });
+
+    const variables = (JSON.parse(sentInit!.body as string) as { variables: Record<string, unknown> })
+      .variables;
+    expect(variables.page).toBe(1);
+    expect(variables.limit).toBe(2);
+
+    // `totalRecords` covers the whole directory, not the page, so the model can
+    // tell how much it has not seen; `pagination` is reported 1-based.
+    const structured = result.structuredContent as {
+      totalCount: number;
+      pagination: { page: number; pageSize: number; totalPages: number; hasNextPage: boolean };
+    };
+    expect(structured.totalCount).toBe(7);
+    expect(structured.pagination).toEqual({
+      page: 2,
+      pageSize: 2,
+      totalPages: 4,
+      hasNextPage: true,
+    });
+  });
+
+  it('requests the first upstream page by default', async () => {
+    let sentInit: RequestInit | undefined;
+    const client = clientReturning(
+      { allBusinesses: { nodes: [] } },
+      init => (sentInit = init),
+    );
+    await runTool(listBusinessesTool, client, authContext(['b1']), {});
+    const variables = (JSON.parse(sentInit!.body as string) as { variables: Record<string, unknown> })
+      .variables;
+    expect(variables.page).toBe(0);
+  });
+
   it('tolerates a null allBusinesses payload', async () => {
     const result = await runTool(
       listBusinessesTool,
@@ -230,16 +281,16 @@ describe('lookups — business scoping', () => {
     });
 
     const result = await runTool(tool, client, authContext(['b1', 'b2']), {
-      businessIds: ['b2'],
+      memberBusinessIds: ['b2'],
     });
 
     expect(result.isError).toBeUndefined();
     // The header is the only way these argument-less queries can be narrowed.
     expect(sentHeaders?.['x-business-scope']).toBe('b2');
     const structured = result.structuredContent as Record<string, unknown> & {
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
-    expect(structured.scope).toEqual({ businessIds: ['b2'] });
+    expect(structured.scope).toEqual({ memberBusinessIds: ['b2'] });
     // ownerId passes straight through so rows stay attributable.
     expect((structured[itemsKey] as Array<{ ownerId?: string }>)[0]?.ownerId).toBe('b2');
   });
@@ -250,7 +301,7 @@ describe('lookups — business scoping', () => {
     ['accounter_list_businesses', listBusinessesTool, BUSINESSES],
   ] as const)('%s denies ids outside the caller memberships', async (_name, tool, data) => {
     const result = await runTool(tool, clientReturning(data), authContext(['b1']), {
-      businessIds: ['b9'],
+      memberBusinessIds: ['b9'],
     });
 
     expect(result.isError).toBe(true);

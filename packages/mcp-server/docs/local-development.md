@@ -125,10 +125,10 @@ Worth checking once from a real client, because a broken scope still returns pla
 — it is just the wrong (wider) set. Ask Claude to run the three steps below and inspect the replies.
 
 1. **Discover** — "list the businesses I have access to". Should return one row per business with
-   `businessId`, `name`, and your role.
-2. **Scope a call** — "list tags for `<businessId>`". In the structured reply, `scope.businessIds`
-   must equal exactly the id you asked for, and every row's `ownerId` must match it. If `scope`
-   contains more ids than you asked for, narrowing is not reaching the server.
+   `memberBusinessId`, `name`, and your role.
+2. **Scope a call** — "list tags for `<memberBusinessId>`". In the structured reply,
+   `scope.memberBusinessIds` must equal exactly the id you asked for, and every row's `ownerId` must
+   match it. If `scope` contains more ids than you asked for, narrowing is not reaching the server.
 3. **Negative check** — ask for a business id you do not belong to (any random UUID). It must come
    back as an error with code `AUTHORIZATION_ERROR`. A successful reply, or an empty-but-successful
    one, means ids are being silently dropped instead of rejected — the failure mode scope validation

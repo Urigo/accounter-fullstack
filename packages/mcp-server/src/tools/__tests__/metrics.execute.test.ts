@@ -7,7 +7,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { SEARCH_CHARGES_TOOL_NAME, searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
 
-function authContext(businessIds: string[] = ['b1']): McpAuthContext {
+function authContext(memberBusinessIds: string[] = ['b1']): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -19,7 +19,7 @@ function authContext(businessIds: string[] = ['b1']): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 

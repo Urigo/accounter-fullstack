@@ -11,7 +11,7 @@ import { toolRegistry } from '../registry-instance.js';
  * hand-listed set, so a tool added later cannot silently regress.
  *
  * Every registered tool that talks upstream must send `x-business-scope` with
- * the resolved ids and echo `scope.businessIds`. Asserting on the outbound HTTP
+ * the resolved ids and echo `scope.memberBusinessIds`. Asserting on the outbound HTTP
  * headers (not the context object) means a handler that hand-builds
  * `{ correlationId, authorization }` and drops the scope fails here.
  */
@@ -31,8 +31,8 @@ const PRINCIPAL: AuthPrincipal = {
 
 function authContext(): McpAuthContext {
   return buildAuthContext(PRINCIPAL, [
-    { businessId: B1, roleId: 'business_owner' },
-    { businessId: B2, roleId: 'business_owner' },
+    { memberBusinessId: B1, roleId: 'business_owner' },
+    { memberBusinessId: B2, roleId: 'business_owner' },
   ]);
 }
 
@@ -77,7 +77,7 @@ function capturingClient() {
 
 /** Minimal valid arguments per tool; everything else is optional. */
 const ARGS_BY_TOOL: Record<string, unknown> = {
-  accounter_balance_report: { businessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
+  accounter_balance_report: { memberBusinessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },
@@ -114,12 +114,12 @@ describe('registry-wide business-scope forwarding', () => {
       }
 
       expect(headersSeen.length, `${name} should call upstream`).toBeGreaterThan(0);
-      // The balance report narrows to its single businessId; the rest keep both.
+      // The balance report narrows to its single memberBusinessId; the rest keep both.
       const expectedScope = name === 'accounter_balance_report' ? [B1] : [B1, B2];
       for (const headers of headersSeen) {
         expect(headers[BUSINESS_SCOPE_HEADER]).toBe(expectedScope.join(','));
       }
-      expect(structured.scope).toEqual({ businessIds: expectedScope });
+      expect(structured.scope).toEqual({ memberBusinessIds: expectedScope });
     },
   );
 });

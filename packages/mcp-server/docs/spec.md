@@ -247,7 +247,7 @@ resolved scope is known and handed to handlers, rather than assembled per handle
 
 Scope handling MUST be visible in the response, not inferred by the caller:
 
-- Every business-scoped tool echoes the effective scope as `scope.businessIds`.
+- Every business-scoped tool echoes the effective scope as `scope.memberBusinessIds`.
 - Every returned row carries its owning business (`ownerId`; charges also carry `ownerName`), so
   results spanning several businesses can be grouped rather than silently merged.
 - Text summaries surface a multi-business result, since the text content is what a model reads

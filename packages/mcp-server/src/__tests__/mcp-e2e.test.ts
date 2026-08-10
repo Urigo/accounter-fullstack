@@ -61,6 +61,9 @@ function upstreamData(query: string, authorization?: string): unknown {
     // to membership roles.)
     if (authorization === 'Bearer owner-token') {
       return {
+        // Upstream payload keys, not the internal shape: `myMemberships` rows
+        // arrive as `businessId` and `coerceMembership` maps them onto the
+        // internal `memberBusinessId`.
         myMemberships: [
           { businessId: AUTHORIZED_BUSINESS, roleId: 'business_owner', businessName: 'Acme Ltd' },
         ],
@@ -74,6 +77,7 @@ function upstreamData(query: string, authorization?: string): unknown {
         nodes: [
           {
             id: 'charge-1',
+            ownerId: AUTHORIZED_BUSINESS,
             userDescription: 'Coffee supplies',
             owner: { id: AUTHORIZED_BUSINESS, name: 'Acme Ltd' },
             totalAmount: { raw: -12.5, formatted: '-12.50', currency: 'ILS' },
@@ -266,14 +270,14 @@ describe('authenticated tool invocation', () => {
     expect(result.isError).toBeUndefined();
     const { charges, scope } = result.structuredContent as {
       charges: Array<{ id: string; ownerId: string | null; ownerName: string | null }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     expect(charges).toHaveLength(1);
     expect(charges[0].id).toBe('charge-1');
     // Rows are owner-tagged and the response echoes the effective scope.
     expect(charges[0].ownerId).toBe(AUTHORIZED_BUSINESS);
     expect(charges[0].ownerName).toBe('Acme Ltd');
-    expect(scope).toEqual({ businessIds: [AUTHORIZED_BUSINESS] });
+    expect(scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
   });
 
   it('forwards x-business-scope on tool calls but never on the membership bootstrap', async () => {
@@ -299,10 +303,10 @@ describe('authenticated tool invocation', () => {
     const result = await callTool('accounter_list_business_memberships', {}, 'owner-token');
 
     const { businesses } = result.structuredContent as {
-      businesses: Array<{ businessId: string; name: string | null; role: string }>;
+      businesses: Array<{ memberBusinessId: string; name: string | null; role: string }>;
     };
     expect(businesses).toEqual([
-      { businessId: AUTHORIZED_BUSINESS, name: 'Acme Ltd', role: 'business_owner' },
+      { memberBusinessId: AUTHORIZED_BUSINESS, name: 'Acme Ltd', role: 'business_owner' },
     ]);
     // Only the membership bootstrap talks upstream; the handler itself is pure.
     expect(forwardedScopes.every(c => c.query.includes('myMemberships'))).toBe(true);
@@ -311,7 +315,7 @@ describe('authenticated tool invocation', () => {
   it('runs a role-gated balance report for a caller who holds the role', async () => {
     const result = await callTool(
       'accounter_balance_report',
-      { businessId: AUTHORIZED_BUSINESS, fromDate: '2026-01-01', toDate: '2026-01-31' },
+      { memberBusinessId: AUTHORIZED_BUSINESS, fromDate: '2026-01-01', toDate: '2026-01-31' },
       'owner-token',
     );
     expect(result.isError).toBeUndefined();
@@ -324,7 +328,7 @@ describe('tenant isolation and authorization', () => {
   it('denies a charges search narrowed to a business outside the memberships', async () => {
     const result = await callTool(
       'accounter_search_charges',
-      { businessIds: ['bb000000-0000-4000-8000-000000000999'] },
+      { memberBusinessIds: ['bb000000-0000-4000-8000-000000000999'] },
       'owner-token',
     );
     expect(result.isError).toBe(true);
@@ -334,7 +338,7 @@ describe('tenant isolation and authorization', () => {
   it('denies a role-gated tool to an authenticated caller without the role', async () => {
     const result = await callTool(
       'accounter_balance_report',
-      { businessId: AUTHORIZED_BUSINESS, fromDate: '2026-01-01', toDate: '2026-01-31' },
+      { memberBusinessId: AUTHORIZED_BUSINESS, fromDate: '2026-01-01', toDate: '2026-01-31' },
       'viewer-token',
     );
     expect(result.isError).toBe(true);

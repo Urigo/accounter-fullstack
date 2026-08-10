@@ -5,7 +5,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { MAX_DATE_RANGE_DAYS, MAX_PAGE_SIZE, searchChargesTool } from '../charges.js';
 import { executeRegisteredTool } from '../execute.js';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -17,7 +17,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -49,6 +49,7 @@ const oneCharge = {
     nodes: [
       {
         id: 'c1',
+        ownerId: 'b1',
         userDescription: 'Coffee',
         totalAmount: { raw: 12.5, formatted: '₪12.50', currency: 'ILS' },
         minEventDate: '2026-01-05',
@@ -70,14 +71,16 @@ describe('searchChargesTool — successful read', () => {
       totalCount: number;
       truncated: boolean;
     };
-    // This fixture omits `owner` on purpose — it predates the field. Owner
-    // tagging must degrade to nulls rather than throwing, so older fixtures and
-    // any upstream that stops returning the field keep working.
+    // This fixture omits `owner` and `__typename` on purpose: the id comes from
+    // the charge's own `ownerId`, so a row stays attributable even when the
+    // nested owner object (which only adds the display name) is absent, and an
+    // unknown `__typename` degrades to `chargeType: null` rather than throwing.
     expect(structured.charges).toEqual([
       {
         id: 'c1',
         description: 'Coffee',
-        ownerId: null,
+        chargeType: null,
+        ownerId: 'b1',
         ownerName: null,
         amount: { value: 12.5, formatted: '₪12.50', currency: 'ILS' },
         date: '2026-01-05',
@@ -88,12 +91,38 @@ describe('searchChargesTool — successful read', () => {
     expect(structured.pagination.hasNextPage).toBe(false);
   });
 
+  it('tags each charge with its type and flow kind', async () => {
+    const client = clientReturning({
+      allCharges: {
+        nodes: [
+          {
+            __typename: 'InternalTransferCharge',
+            id: 'c1',
+            ownerId: 'b1',
+            userDescription: 'Sweep to deposit',
+            owner: { id: 'b1', name: 'Acme' },
+            totalAmount: { raw: -50_000, formatted: '₪-50,000.00', currency: 'ILS' },
+            minEventDate: '2026-01-05',
+          },
+        ],
+        pageInfo: { totalPages: 1, totalRecords: 1, currentPage: 1, pageSize: 25 },
+      },
+    });
+    const result = await run(client, authContext(['b1']), {});
+    const { charges } = result.structuredContent as {
+      charges: Array<{ chargeType: string }>;
+    };
+    // Negative amount, but it is not an expense — the money stayed in-house.
+    expect(charges[0]).toMatchObject({ chargeType: 'INTERNAL' });
+  });
+
   it('tags each charge with its owning business', async () => {
     const client = clientReturning({
       allCharges: {
         nodes: [
           {
             id: 'c1',
+            ownerId: 'b1',
             userDescription: 'Coffee',
             owner: { id: 'b1', name: 'Acme' },
             totalAmount: { raw: 12.5, formatted: '₪12.50', currency: 'ILS' },
@@ -107,11 +136,11 @@ describe('searchChargesTool — successful read', () => {
 
     const structured = result.structuredContent as {
       charges: Array<{ ownerId: string | null; ownerName: string | null }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     expect(structured.charges[0]).toMatchObject({ ownerId: 'b1', ownerName: 'Acme' });
     // The response echoes the effective scope, so a silent widening is visible.
-    expect(structured.scope).toEqual({ businessIds: ['b1', 'b2'] });
+    expect(structured.scope).toEqual({ memberBusinessIds: ['b1', 'b2'] });
     // …and the text content — what the model reads first — says so too.
     expect(result.content[0]!.text).toContain('across 2 businesses');
   });
@@ -127,7 +156,7 @@ describe('searchChargesTool — successful read', () => {
   it('narrows the scope to a requested subset', async () => {
     let sentBody: unknown;
     const client = clientReturning(oneCharge, body => (sentBody = body));
-    await run(client, authContext(['b1', 'b2', 'b3']), { businessIds: ['b2'] });
+    await run(client, authContext(['b1', 'b2', 'b3']), { memberBusinessIds: ['b2'] });
     const variables = (sentBody as { variables: { filters: { byOwners: string[] } } }).variables;
     expect(variables.filters.byOwners).toEqual(['b2']);
   });
@@ -209,6 +238,116 @@ describe('searchChargesTool — successful read', () => {
     await run(client, authContext(['b1']), {});
     const variables = (sentBody as { variables: { page: number } }).variables;
     expect(variables.page).toBe(0);
+  });
+
+  // This tool wrapped 5 of the 23 ChargeFilter fields, so questions like "which
+  // charges are missing an invoice?" or "exclude internal transfers" were simply
+  // unaskable through it even though `allCharges` supports them. Every field the
+  // upstream honors is now reachable; `schema-contract.test.ts` guards the set,
+  // this pins that they actually reach upstream.
+  it('forwards every pass-through ChargeFilter predicate', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    const result = await run(client, authContext(['b1']), {
+      accountantStatus: ['PENDING'],
+      byBusinesses: ['counterparty-1'],
+      byBusinessTrips: ['trip-1'],
+      byChargeTypes: ['COMMON', 'PAYROLL'],
+      freeText: 'coffee',
+      withMissingCounterparty: true,
+      withOpenDocuments: false,
+      withoutDocuments: false,
+      withoutInvoice: true,
+      withoutLedger: false,
+      withoutReceipt: false,
+      withoutTransactions: false,
+    });
+
+    expect(result.isError).toBeUndefined();
+    const { filters } = (sentBody as { variables: { filters: Record<string, unknown> } }).variables;
+    expect(filters).toMatchObject({
+      accountantStatus: ['PENDING'],
+      byBusinesses: ['counterparty-1'],
+      byBusinessTrips: ['trip-1'],
+      byChargeTypes: ['COMMON', 'PAYROLL'],
+      freeText: 'coffee',
+      withMissingCounterparty: true,
+      withOpenDocuments: false,
+      withoutDocuments: false,
+      withoutInvoice: true,
+      withoutLedger: false,
+      withoutReceipt: false,
+      withoutTransactions: false,
+      // Scoping still goes through byOwners, never the counterparty predicate.
+      byOwners: ['b1'],
+    });
+  });
+
+  // `false` is a meaningful predicate ("only charges that DO have an invoice"),
+  // so it must not be dropped the way an absent field is.
+  it('forwards a false boolean flag rather than omitting it', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { withoutInvoice: false });
+    const { filters } = (sentBody as { variables: { filters: Record<string, unknown> } }).variables;
+    expect(filters.withoutInvoice).toBe(false);
+  });
+
+  it('sends the containment pair when asked via fromMainDate/toMainDate', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), {
+      fromMainDate: '2026-06-01',
+      toMainDate: '2026-06-30',
+    });
+    const { filters } = (
+      sentBody as {
+        variables: {
+          filters: { fromDate?: string; toDate?: string; fromAnyDate?: string; toAnyDate?: string };
+        };
+      }
+    ).variables;
+    // The narrow pair upstream, and the overlap pair left alone: the two ask
+    // different questions and must not leak into each other.
+    expect(filters.fromDate).toBe('2026-06-01');
+    expect(filters.toDate).toBe('2026-06-30');
+    expect('fromAnyDate' in filters).toBe(false);
+    expect('toAnyDate' in filters).toBe(false);
+  });
+
+  it('validates the main-date pair too, naming the field the caller used', async () => {
+    const client = clientReturning(oneCharge);
+    const result = await run(client, authContext(['b1']), {
+      fromMainDate: '2026-06-30',
+      toMainDate: '2026-06-01',
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { message: string }).message).toBe(
+      'fromMainDate must be on or before toMainDate',
+    );
+  });
+
+  it('lets a caller-supplied sortBy override the newest-first default', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(oneCharge, body => (sentBody = body));
+    await run(client, authContext(['b1']), { sortBy: { field: 'ABS_AMOUNT', asc: true } });
+    const { filters } = (
+      sentBody as { variables: { filters: { sortBy?: { field: string; asc?: boolean } } } }
+    ).variables;
+    expect(filters.sortBy).toEqual({ field: 'ABS_AMOUNT', asc: true });
+  });
+
+  // `unbalanced` (like `businessTrip` and `byFinancialAccounts`) is accepted by
+  // the upstream input and then ignored — no SQL predicate behind it. Accepting
+  // it here would answer "only unbalanced charges" with the whole table, so it is
+  // rejected instead. Loosen this only together with an upstream implementation.
+  it('rejects ChargeFilter fields upstream accepts but ignores', async () => {
+    const client = clientReturning(oneCharge);
+    for (const field of ['unbalanced', 'businessTrip', 'byFinancialAccounts']) {
+      const result = await run(client, authContext(['b1']), { [field]: true });
+      expect(result.isError).toBe(true);
+      expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    }
   });
 
   it('translates the 1-based page to the upstream 0-based page index', async () => {
@@ -307,7 +446,7 @@ describe('searchChargesTool — invalid filters', () => {
 describe('searchChargesTool — scope enforcement', () => {
   it('denies a requested business outside the memberships (AUTHORIZATION_ERROR)', async () => {
     const client = clientReturning(oneCharge);
-    const result = await run(client, authContext(['b1']), { businessIds: ['bX'] });
+    const result = await run(client, authContext(['b1']), { memberBusinessIds: ['bX'] });
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
   });

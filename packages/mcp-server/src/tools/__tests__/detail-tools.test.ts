@@ -18,7 +18,7 @@ import { getTransactionsTool } from '../transaction-details.js';
 const B1 = 'aa000000-0000-4000-8000-000000000001';
 const B2 = 'aa000000-0000-4000-8000-000000000002';
 
-function authContext(businessIds: string[]): McpAuthContext {
+function authContext(memberBusinessIds: string[]): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -30,7 +30,7 @@ function authContext(businessIds: string[]): McpAuthContext {
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId: 'accountant' })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId: 'accountant' })),
   );
 }
 
@@ -86,6 +86,7 @@ const chargeFixture = {
   chargesByIDs: [
     {
       id: 'c1',
+      ownerId: B1,
       userDescription: 'Coffee supplies',
       owner: { id: B1, name: 'Acme' },
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
@@ -170,7 +171,7 @@ describe('getChargesTool', () => {
         transactions: Array<{ id: string; account: { name: string }; type: string }>;
         documents: Array<{ id: string; serialNumber: string; fileUrl: string; type: string }>;
       }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     const charge = structured.charges[0]!;
     expect(charge.id).toBe('c1');
@@ -190,7 +191,7 @@ describe('getChargesTool', () => {
       serialNumber: 'INV-1',
       fileUrl: 'https://files/d1.pdf',
     });
-    expect(structured.scope).toEqual({ businessIds: [B1] });
+    expect(structured.scope).toEqual({ memberBusinessIds: [B1] });
   });
 
   it('forwards include flags and charge ids to upstream', async () => {
@@ -198,7 +199,7 @@ describe('getChargesTool', () => {
     const client = clientReturning(chargeFixture, body => (sentBody = body));
     await run(getChargesTool, client, authContext([B1]), {
       chargeIds: ['c1', 'c2'],
-      includeDocuments: false,
+      includeTransactions: true,
     });
     const variables = (
       sentBody as {
@@ -210,17 +211,28 @@ describe('getChargesTool', () => {
     expect(variables.includeDocuments).toBe(false);
   });
 
+  // Nesting transactions/documents by default is what forced nearly every call
+  // to spill over the payload budget, so both are opt-in.
+  it('omits nested transactions and documents unless asked', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(chargeFixture, body => (sentBody = body));
+    await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
+    const variables = (
+      sentBody as { variables: { includeTransactions: boolean; includeDocuments: boolean } }
+    ).variables;
+    expect(variables.includeTransactions).toBe(false);
+    expect(variables.includeDocuments).toBe(false);
+  });
+
   it('forwards all available filters to allCharges', async () => {
     let sentBody: unknown;
     const client = clientReturning(filteredChargeFixture, body => (sentBody = body));
     const result = await run(getChargesTool, client, authContext([B1]), {
       filters: {
         accountantStatus: ['APPROVED', 'PENDING'],
-        businessTrip: 'bt1',
         byBusinessTrips: ['bt1', 'bt2'],
         byBusinesses: ['biz1'],
         byChargeTypes: ['COMMON', 'BUSINESS_TRIP'],
-        byFinancialAccounts: ['fa1'],
         byOwners: [B1, B2],
         byTags: ['office', 'vat'],
         chargesType: 'EXPENSE',
@@ -230,7 +242,6 @@ describe('getChargesTool', () => {
         sortBy: { field: 'DATE', asc: false },
         toAnyDate: '2026-01-31',
         toDate: '2026-01-31',
-        unbalanced: true,
         withMissingCounterparty: false,
         withOpenDocuments: true,
         withoutDocuments: false,
@@ -258,11 +269,9 @@ describe('getChargesTool', () => {
 
     expect(variables.filters).toEqual({
       accountantStatus: ['APPROVED', 'PENDING'],
-      businessTrip: 'bt1',
       byBusinessTrips: ['bt1', 'bt2'],
       byBusinesses: ['biz1'],
       byChargeTypes: ['COMMON', 'BUSINESS_TRIP'],
-      byFinancialAccounts: ['fa1'],
       byOwners: [B1],
       byTags: ['office', 'vat'],
       chargesType: 'EXPENSE',
@@ -272,7 +281,6 @@ describe('getChargesTool', () => {
       sortBy: { field: 'DATE', asc: false },
       toAnyDate: '2026-01-31',
       toDate: '2026-01-31',
-      unbalanced: true,
       withMissingCounterparty: false,
       withOpenDocuments: true,
       withoutDocuments: false,
@@ -285,6 +293,61 @@ describe('getChargesTool', () => {
     expect(variables.includeDocuments).toBe(true);
     expect(variables.page).toBe(0);
     expect(variables.limit).toBe(MAX_FILTERED_CHARGES);
+  });
+
+  // The filtered path used to be pinned to upstream page 0, so a filter matching
+  // more than MAX_FILTERED_CHARGES charges had no way to reach the rest.
+  it('forwards the requested page and pageSize to allCharges', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(
+      {
+        allCharges: {
+          nodes: chargeFixture.chargesByIDs,
+          pageInfo: { totalPages: 3, totalRecords: 25 },
+        },
+      },
+      body => (sentBody = body),
+    );
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      filters: { freeText: 'coffee' },
+      page: 2,
+      pageSize: 10,
+    });
+
+    expect(result.isError).toBeUndefined();
+    const variables = (sentBody as { variables: { page: number; limit: number } }).variables;
+    // Upstream slices `[page * limit, …]`, so the 1-based input page is shifted.
+    expect(variables.page).toBe(1);
+    expect(variables.limit).toBe(10);
+
+    const structured = result.structuredContent as {
+      totalCount: number;
+      pagination: { page: number; pageSize: number; totalPages: number; hasNextPage: boolean };
+    };
+    expect(structured.totalCount).toBe(25);
+    expect(structured.pagination).toEqual({
+      page: 2,
+      pageSize: 10,
+      totalPages: 3,
+      hasNextPage: true,
+    });
+  });
+
+  // A by-id fetch returns exactly the ids asked for, so a page number over it
+  // would be meaningless — and would invite the model to "fetch the next page".
+  it('omits pagination when fetching by id', async () => {
+    const client = clientReturning(chargeFixture);
+    const result = await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
+    expect(result.structuredContent).not.toHaveProperty('pagination');
+  });
+
+  it('rejects ChargeFilter fields upstream accepts but ignores', async () => {
+    const client = clientReturning(filteredChargeFixture);
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      filters: { unbalanced: true },
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
   });
 
   it('combines chargeIds with filters and keeps only requested ids', async () => {
@@ -310,6 +373,31 @@ describe('getChargesTool', () => {
     const structured = result.structuredContent as { charges: Array<{ id: string }> };
     expect(structured.charges).toHaveLength(1);
     expect(structured.charges[0]?.id).toBe('c1');
+  });
+
+  it('classifies a charge from its typename', async () => {
+    const client = clientReturning({
+      chargesByIDs: [
+        { ...chargeFixture.chargesByIDs[0], __typename: 'CreditcardBankCharge' },
+        {
+          ...chargeFixture.chargesByIDs[0],
+          id: 'c2',
+          __typename: 'CommonCharge',
+          totalAmount: { raw: 5000, formatted: '₪5,000.00', currency: 'ILS' },
+        },
+      ],
+    });
+    const result = await run(getChargesTool, client, authContext([B1]), {
+      chargeIds: ['c1', 'c2'],
+    });
+    const { charges } = result.structuredContent as {
+      charges: Array<{ chargeType: string | null }>;
+    };
+    // A card settlement moves money between the owner's own accounts.
+    expect(charges[0]).toMatchObject({
+      chargeType: 'CREDITCARD_BANK',
+    });
+    expect(charges[1]).toMatchObject({ chargeType: 'COMMON' });
   });
 
   it('drops a charge whose owner is outside the resolved scope (defense-in-depth)', async () => {
@@ -381,6 +469,7 @@ describe('getTransactionsTool', () => {
         __typename: 'CommonTransaction',
         id: 'tx1',
         chargeId: 'c1',
+        ownerId: B1,
         eventDate: '2026-01-05',
         effectiveDate: '2026-01-06',
         direction: 'DEBIT',
@@ -401,15 +490,16 @@ describe('getTransactionsTool', () => {
     expect(result.isError).toBeUndefined();
     const structured = result.structuredContent as {
       transactions: Array<{ id: string; chargeId: string; counterparty: { name: string } }>;
-      scope: { businessIds: string[] };
+      scope: { memberBusinessIds: string[] };
     };
     expect(structured.transactions[0]).toMatchObject({
       id: 'tx1',
       chargeId: 'c1',
+      ownerId: B1,
       direction: 'DEBIT',
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
     });
-    expect(structured.scope).toEqual({ businessIds: [B1, B2] });
+    expect(structured.scope).toEqual({ memberBusinessIds: [B1, B2] });
   });
 
   it('forwards ids to upstream', async () => {
@@ -418,6 +508,36 @@ describe('getTransactionsTool', () => {
     await run(getTransactionsTool, client, authContext([B1]), { transactionIds: ['tx1', 'tx2'] });
     const variables = (sentBody as { variables: { transactionIDs: string[] } }).variables;
     expect(variables.transactionIDs).toEqual(['tx1', 'tx2']);
+  });
+
+  // The fixtures above hand back `ownerId` whether or not the tool asked for it,
+  // so they cannot catch a dropped selection — against a live server that is the
+  // difference between an owner-tagged row and `ownerId: null` everywhere.
+  it('selects ownerId in the upstream query document', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(fixture, body => (sentBody = body));
+    await run(getTransactionsTool, client, authContext([B1]), { transactionIds: ['tx1'] });
+    expect((sentBody as { query: string }).query).toMatch(/^\s*ownerId$/m);
+  });
+
+  // Defense in depth on top of RLS, matching get_charges / get_documents. It only
+  // became possible once transactions carried an owner at all.
+  it('drops a transaction whose owner is outside the resolved scope', async () => {
+    const client = clientReturning({
+      transactionsByIDs: [
+        { ...fixture.transactionsByIDs[0], id: 'mine', ownerId: B1 },
+        { ...fixture.transactionsByIDs[0], id: 'not-mine', ownerId: 'bb000000-0000-4000-8000-0000000000ff' },
+      ],
+    });
+    const result = await run(getTransactionsTool, client, authContext([B1]), {
+      transactionIds: ['mine', 'not-mine'],
+    });
+    const { transactions, totalCount } = result.structuredContent as {
+      transactions: Array<{ id: string }>;
+      totalCount: number;
+    };
+    expect(transactions.map(t => t.id)).toEqual(['mine']);
+    expect(totalCount).toBe(1);
   });
 
   it('reports no matches for an empty upstream result', async () => {
@@ -456,6 +576,7 @@ describe('getTransactionsTool', () => {
             __typename: 'CommonTransaction',
             id: 'tx2',
             chargeId: 'c2',
+            ownerId: B1,
             eventDate: '2026-02-01',
             effectiveDate: '2026-02-02',
             direction: 'CREDIT',
@@ -575,7 +696,8 @@ describe('getDocumentsTool', () => {
       description: 'Monthly beans',
       file: 'https://files/d1.pdf',
       image: null,
-      charge: { id: 'c1', owner: { id: B1 } },
+      ownerId: B1,
+      charge: { id: 'c1' },
       ...overrides,
     };
   }
@@ -600,6 +722,7 @@ describe('getDocumentsTool', () => {
       type: 'Invoice',
       serialNumber: 'INV-1',
       chargeId: 'c1',
+      ownerId: B1,
       fileUrl: 'https://files/d1.pdf',
     });
     expect(structured.documents[0]!.vat).toEqual({ value: -17, formatted: '₪-17.00', currency: 'ILS' });
@@ -607,18 +730,22 @@ describe('getDocumentsTool', () => {
 
   it('drops a document whose owning charge is outside scope', async () => {
     const client = clientReturning({
-      documentsByIds: [doc({ charge: { id: 'c9', owner: { id: B2 } } })],
+      documentsByIds: [doc({ ownerId: B2, charge: { id: 'c9' } })],
     });
     const result = await run(getDocumentsTool, client, authContext([B1]), { documentIds: ['d1'] });
     expect((result.structuredContent as { documents: unknown[] }).documents).toEqual([]);
     expect(result.content[0]!.text).toMatch(/No documents/);
   });
 
-  it('keeps a document with no resolvable charge owner (RLS already scoped it)', async () => {
+  // A document need not belong to a charge, and its owner does not depend on one:
+  // `chargeId` goes null while `ownerId` still attributes the row.
+  it('keeps a document with no charge and still reports its owner', async () => {
     const client = clientReturning({ documentsByIds: [doc({ charge: null })] });
     const result = await run(getDocumentsTool, client, authContext([B1]), { documentIds: ['d1'] });
-    const structured = result.structuredContent as { documents: Array<{ id: string; chargeId: null }> };
-    expect(structured.documents[0]).toMatchObject({ id: 'd1', chargeId: null });
+    const structured = result.structuredContent as {
+      documents: Array<{ id: string; chargeId: null; ownerId: string }>;
+    };
+    expect(structured.documents[0]).toMatchObject({ id: 'd1', chargeId: null, ownerId: B1 });
   });
 
   it('forwards ids to upstream', async () => {

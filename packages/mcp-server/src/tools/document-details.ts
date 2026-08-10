@@ -9,7 +9,7 @@ import { TIMELESS_DATE } from './dates.js';
 import { MAX_DETAIL_IDS, normalizeDocument, type RawDocument } from './entity-shapes.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Detail tool: fetch documents (invoices, receipts, …) by id (spec §8.2).
@@ -26,7 +26,7 @@ export const GET_DOCUMENTS_TOOL_NAME = 'accounter_get_documents';
 
 const DOCUMENT_FILTER_IDS_CAP = 300;
 
-const DOCUMENT_TYPES = [
+export const DOCUMENT_TYPES = [
   'INVOICE',
   'RECEIPT',
   'INVOICE_RECEIPT',
@@ -43,11 +43,29 @@ function optionalNonEmptyStringArray(max: number) {
   );
 }
 
-const documentsFiltersInput = z
+/**
+ * Upstream `DocumentsFilters` fields exposed under a different name, mapped
+ * `upstream field → tool input field`. The upstream `*IDs` spellings are
+ * camel-cased here to match every other tool input; the schema-contract test
+ * reads this map so a new upstream field cannot go unexposed.
+ */
+export const DOCUMENTS_FILTER_ALIASES = {
+  businessIDs: 'businessIds',
+  ownerIDs: 'ownerIds',
+  chargeIDs: 'chargeIds',
+} as const;
+
+export const documentsFiltersInput = z
   .object({
+    // NOT the scope field: this is the upstream `businessIDs` predicate, which
+    // matches documents whose *counterparty* (creditor or debtor) is one of these
+    // businesses. Scope narrowing is `memberBusinessIds`, below.
     businessIds: optionalNonEmptyStringArray(DOCUMENT_FILTER_IDS_CAP)
       .optional()
-      .describe('Include only documents connected to these business ids.'),
+      .describe(
+        'Include only documents whose creditor or debtor is one of these businesses. This is a ' +
+          'counterparty filter — use `memberBusinessIds` to narrow which of your businesses to search.',
+      ),
     ownerIds: optionalNonEmptyStringArray(DOCUMENT_FILTER_IDS_CAP)
       .optional()
       .describe('Include only documents owned by these business ids.'),
@@ -97,7 +115,7 @@ const getDocumentsInput = z
     filters: documentsFiltersInput
       .optional()
       .describe('Filter documents by any supported documentsByFilters predicate.'),
-    businessIds: businessIdsInput,
+    memberBusinessIds: memberBusinessIdsInput,
   })
   .superRefine((value, context) => {
     const hasIds = value.documentIds !== undefined && value.documentIds.length > 0;
@@ -121,6 +139,7 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
   fragment McpDocumentDetailsFields on Document {
     __typename
     id
+    ownerId
     documentType
     ... on FinancialDocument {
       serialNumber
@@ -193,9 +212,6 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
     image
     charge {
       id
-      owner {
-        id
-      }
     }
   }
 
@@ -268,13 +284,16 @@ async function handler(
           query: DOCUMENTS_QUERY_DOCUMENT,
           operationName: 'McpSearchDocumentsByFilters',
           variables: {
-            filters: buildDocumentsFilters(input.filters ?? {}, context.readScope.businessIds),
+            filters: buildDocumentsFilters(
+              input.filters ?? {},
+              context.readScope.memberBusinessIds,
+            ),
           } satisfies McpSearchDocumentsByFiltersQueryVariables,
         },
         context.upstream,
       );
 
-  const scopeIds = new Set(context.readScope.businessIds);
+  const scopeIds = new Set(context.readScope.memberBusinessIds);
   const raw = (
     usingIds
       ? (data as McpGetDocumentsQuery).documentsByIds
@@ -283,20 +302,18 @@ async function handler(
   const requestedDocumentIds = hasDocumentIds ? new Set(input.documentIds) : null;
   const documents = raw
     .filter(document => requestedDocumentIds === null || requestedDocumentIds.has(document.id))
-    // Defense-in-depth owner filter: keep a document only when its owning
-    // charge's owner is in scope. A document with no resolvable charge/owner is
-    // kept — RLS already returned it, and there is no owner to reject it by.
-    .filter(document => {
-      const ownerId = document.charge?.owner?.id;
-      return ownerId == null || scopeIds.has(ownerId);
-    })
+    // Defense-in-depth owner filter on top of RLS: keep a document only when its
+    // own `ownerId` is in the resolved scope. This reads the document's owner
+    // directly rather than its charge's — a document carries `ownerId: UUID!`
+    // upstream, so the charge join is neither needed nor always present.
+    .filter(document => scopeIds.has(document.ownerId))
     .map(normalizeDocument);
 
   return shapeListResult({
     items: documents,
     itemsKey: 'documents',
     total: documents.length,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (shown, total) =>
       total === 0
         ? usingIds
@@ -309,7 +326,7 @@ async function handler(
 export const getDocumentsTool: ToolDefinition<typeof getDocumentsInput> = {
   name: GET_DOCUMENTS_TOOL_NAME,
   description:
-    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, and file/image links. Read-only. ' +
+    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, file/image links, and the owning business (`ownerId`). Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getDocumentsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

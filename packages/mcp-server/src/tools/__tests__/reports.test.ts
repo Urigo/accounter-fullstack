@@ -9,7 +9,7 @@ import { balanceReportTool, MAX_REPORT_DATE_RANGE_DAYS, MAX_REPORT_ROWS } from '
  * The caller's business role is the membership `roleId` resolved upstream — the
  * token carries identity plus coarse transport scopes only (spec §6.4/§7.1).
  */
-function authContext(businessIds: string[], roleId = 'accountant'): McpAuthContext {
+function authContext(memberBusinessIds: string[], roleId = 'accountant'): McpAuthContext {
   const principal: AuthPrincipal = {
     subject: 'user-1',
     issuer: 'https://tenant.auth0.com/',
@@ -21,7 +21,7 @@ function authContext(businessIds: string[], roleId = 'accountant'): McpAuthConte
   };
   return buildAuthContext(
     principal,
-    businessIds.map(businessId => ({ businessId, roleId })),
+    memberBusinessIds.map(memberBusinessId => ({ memberBusinessId, roleId })),
   );
 }
 
@@ -62,29 +62,29 @@ const run = (client: UpstreamGraphQLClient, auth: McpAuthContext, rawArgs: unkno
     authorization: 'Bearer t',
   });
 
-const validArgs = { businessId: 'b1', fromDate: '2026-01-01', toDate: '2026-03-01' };
+const validArgs = { memberBusinessId: 'b1', fromDate: '2026-01-01', toDate: '2026-03-01' };
 
 describe('balanceReportTool — valid report', () => {
   // Regression guard for the owner source. Driven through the handler directly
   // rather than `executeRegisteredTool`, because the policy narrows `readScope`
-  // to exactly `[input.businessId]` (execute.ts honors the singular field), so
+  // to exactly `[input.memberBusinessId]` (execute.ts honors the singular field), so
   // via the normal path the scope-derived owner and the requested owner always
   // agree and the two are indistinguishable.
   //
   // The bug is therefore latent, not live — but it goes live the moment the
   // resolved scope can hold more than one business, at which point deriving the
-  // owner from `readScope.businessIds[0]` silently reports on the wrong one.
-  it('takes the owner from input.businessId, not from the first id in scope', async () => {
+  // owner from `readScope.memberBusinessIds[0]` silently reports on the wrong one.
+  it('takes the owner from input.memberBusinessId, not from the first id in scope', async () => {
     let sent: unknown;
     const client = clientReturning([row('t1')], body => (sent = body));
     const auth = authContext(['b1', 'b2']);
     const result = await balanceReportTool.handler(
-      { businessId: 'b2', fromDate: '2026-01-01', toDate: '2026-03-01', reportType: 'BALANCE' },
+      { memberBusinessId: 'b2', fromDate: '2026-01-01', toDate: '2026-03-01', reportType: 'BALANCE' },
       {
         auth,
         // Deliberately wider than one business, and ordered so that
-        // `businessIds[0]` is NOT the requested business.
-        readScope: { businessIds: ['b1', 'b2'] },
+        // `memberBusinessIds[0]` is NOT the requested business.
+        readScope: { memberBusinessIds: ['b1', 'b2'] },
         correlationId: 'c',
         client,
         authorization: 'Bearer t',
@@ -94,7 +94,7 @@ describe('balanceReportTool — valid report', () => {
 
     expect(result.isError).toBeUndefined();
     expect((sent as { variables: { ownerId: string } }).variables.ownerId).toBe('b2');
-    expect((result.structuredContent as { businessId: string }).businessId).toBe('b2');
+    expect((result.structuredContent as { memberBusinessId: string }).memberBusinessId).toBe('b2');
   });
 
   it('returns normalized rows scoped to the requested business (ownerId)', async () => {
@@ -107,14 +107,17 @@ describe('balanceReportTool — valid report', () => {
     const structured = result.structuredContent as {
       rows: unknown[];
       totalCount: number;
-      businessId: string;
+      memberBusinessId: string;
     };
-    expect(structured.businessId).toBe('b1');
+    expect(structured.memberBusinessId).toBe('b1');
     expect(structured.totalCount).toBe(1);
     expect(structured.rows).toEqual([
       {
         id: 't1',
         chargeId: 'charge-t1',
+        // The report runs for exactly one business, but the row still names it —
+        // a caller merging reports across their memberships can group by it.
+        ownerId: 'b1',
         date: '2026-01-05',
         isFee: false,
         description: 'x',
@@ -128,7 +131,7 @@ describe('balanceReportTool — invalid range', () => {
   it('rejects an inverted date range', async () => {
     const client = clientReturning([]);
     const result = await run(client, authContext(['b1']), {
-      businessId: 'b1',
+      memberBusinessId: 'b1',
       fromDate: '2026-03-01',
       toDate: '2026-01-01',
     });
@@ -142,7 +145,7 @@ describe('balanceReportTool — invalid range', () => {
     const toMs = Date.UTC(2024, 0, 1) + (MAX_REPORT_DATE_RANGE_DAYS + 1) * 24 * 60 * 60 * 1000;
     const toDate = new Date(toMs).toISOString().slice(0, 10);
     const result = await run(client, authContext(['b1']), {
-      businessId: 'b1',
+      memberBusinessId: 'b1',
       fromDate: '2024-01-01',
       toDate,
     });
@@ -153,7 +156,7 @@ describe('balanceReportTool — invalid range', () => {
   it('rejects a bad date format', async () => {
     const client = clientReturning([]);
     const result = await run(client, authContext(['b1']), {
-      businessId: 'b1',
+      memberBusinessId: 'b1',
       fromDate: '2026/01/01',
       toDate: '2026-02-01',
     });
@@ -166,7 +169,7 @@ describe('balanceReportTool — invalid range', () => {
     // Passes the schema's format regex but is not a real calendar date, so the
     // handler's own Date.parse guard (not zod) must reject it.
     const result = await run(client, authContext(['b1']), {
-      businessId: 'b1',
+      memberBusinessId: 'b1',
       fromDate: '2026-13-01',
       toDate: '2026-03-01',
     });

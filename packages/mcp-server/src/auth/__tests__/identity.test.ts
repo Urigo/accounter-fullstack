@@ -24,12 +24,14 @@ function principal(overrides: Partial<AuthPrincipal> = {}): AuthPrincipal {
   };
 }
 
-const M = (businessId: string, roleId = 'accountant') => ({ businessId, roleId });
+// The internal membership shape. Claim/row *payload* keys stay `businessId` /
+// `business_id` in the fixtures below — those are external and unrenamed.
+const M = (memberBusinessId: string, roleId = 'accountant') => ({ memberBusinessId, roleId });
 
 describe('readScopeFromMemberships', () => {
   it('is every business, de-duplicated and order-preserving', () => {
     expect(readScopeFromMemberships([M('b1'), M('b2'), M('b1')])).toEqual({
-      businessIds: ['b1', 'b2'],
+      memberBusinessIds: ['b1', 'b2'],
     });
   });
 });
@@ -38,7 +40,7 @@ describe('narrowReadScope', () => {
   const memberships = [M('b1'), M('b2'), M('b3')];
 
   it('returns the requested subset (de-duplicated, order preserved)', () => {
-    expect(narrowReadScope(memberships, ['b2', 'b1', 'b2'])).toEqual({ businessIds: ['b2', 'b1'] });
+    expect(narrowReadScope(memberships, ['b2', 'b1', 'b2'])).toEqual({ memberBusinessIds: ['b2', 'b1'] });
   });
 
   it('returns null when any requested id is outside memberships', () => {
@@ -63,13 +65,13 @@ describe('buildAuthContext', () => {
     expect(ctx.email).toBe('a@b.com');
     expect(ctx.roles).toEqual(['read:charges']);
     expect(ctx.memberships).toEqual([M('b1'), M('b2')]);
-    expect(ctx.defaultReadScope).toEqual({ businessIds: ['b1', 'b2'] });
+    expect(ctx.defaultReadScope).toEqual({ memberBusinessIds: ['b1', 'b2'] });
   });
 
   it('accepts a valid user with no memberships (empty scope)', () => {
     const ctx = buildAuthContext(principal(), []);
     expect(ctx.memberships).toEqual([]);
-    expect(ctx.defaultReadScope).toEqual({ businessIds: [] });
+    expect(ctx.defaultReadScope).toEqual({ memberBusinessIds: [] });
   });
 
   it('throws IdentityMappingError when the subject is missing', () => {
@@ -83,12 +85,12 @@ describe('resolveRequestedReadScope', () => {
   const ctx = buildAuthContext(principal(), [M('b1'), M('b2'), M('b3')]);
 
   it('defaults to all memberships when nothing is requested', () => {
-    expect(resolveRequestedReadScope(ctx)).toEqual({ businessIds: ['b1', 'b2', 'b3'] });
-    expect(resolveRequestedReadScope(ctx, [])).toEqual({ businessIds: ['b1', 'b2', 'b3'] });
+    expect(resolveRequestedReadScope(ctx)).toEqual({ memberBusinessIds: ['b1', 'b2', 'b3'] });
+    expect(resolveRequestedReadScope(ctx, [])).toEqual({ memberBusinessIds: ['b1', 'b2', 'b3'] });
   });
 
   it('narrows to a requested subset', () => {
-    expect(resolveRequestedReadScope(ctx, ['b3', 'b1'])).toEqual({ businessIds: ['b3', 'b1'] });
+    expect(resolveRequestedReadScope(ctx, ['b3', 'b1'])).toEqual({ memberBusinessIds: ['b3', 'b1'] });
   });
 
   it('returns null for a requested id outside the memberships', () => {
@@ -126,7 +128,7 @@ describe('membershipsFromClaims', () => {
 
   it('coerces a numeric roleId but rejects entries with object/array roles', () => {
     // A present-but-non-primitive role marks a malformed entry: it is dropped
-    // entirely rather than coerced to '', so its businessId cannot slip into the
+    // entirely rather than coerced to '', so its business id cannot slip into the
     // derived read scope. A missing role is still allowed (empty role).
     expect(
       membershipsFromClaims(
@@ -164,7 +166,7 @@ describe('membershipsFromClaims', () => {
       }),
     );
 
-    expect(memberships.map(m => [m.businessId, m.businessName])).toEqual([
+    expect(memberships.map(m => [m.memberBusinessId, m.businessName])).toEqual([
       ['b1', 'Acme'],
       ['b2', 'Snake Case'],
       ['b3', undefined],
@@ -181,13 +183,13 @@ describe('resolveAuthContext', () => {
     });
     const ctx = await resolveAuthContext(p);
     expect(ctx.memberships).toEqual([M('b1', 'admin')]);
-    expect(ctx.defaultReadScope).toEqual({ businessIds: ['b1'] });
+    expect(ctx.defaultReadScope).toEqual({ memberBusinessIds: ['b1'] });
   });
 
   it('supports an injected async membership source (multi-business)', async () => {
     const ctx = await resolveAuthContext(principal(), async () => [M('b1'), M('b2')]);
-    expect(ctx.defaultReadScope).toEqual({ businessIds: ['b1', 'b2'] });
+    expect(ctx.defaultReadScope).toEqual({ memberBusinessIds: ['b1', 'b2'] });
     // and narrowing works against the resolved memberships
-    expect(resolveRequestedReadScope(ctx, ['b2'])).toEqual({ businessIds: ['b2'] });
+    expect(resolveRequestedReadScope(ctx, ['b2'])).toEqual({ memberBusinessIds: ['b2'] });
   });
 });

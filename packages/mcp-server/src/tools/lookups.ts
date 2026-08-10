@@ -6,7 +6,7 @@ import type {
 } from '../gql/index.js';
 import { shapeListResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
-import { businessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
+import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.js';
 
 /**
  * Tool 2: read-only lookups for tags, tax categories, and businesses (spec §8.2).
@@ -65,7 +65,7 @@ function filterSortCap<T extends { name: string; id: string }>(
 // Tags
 // ---------------------------------------------------------------------------
 
-const listTagsInput = z.object({ businessIds: businessIdsInput, nameContains, limit });
+const listTagsInput = z.object({ memberBusinessIds: memberBusinessIdsInput, nameContains, limit });
 type ListTagsInput = z.infer<typeof listTagsInput>;
 
 const LIST_TAGS_QUERY = /* GraphQL */ `
@@ -100,7 +100,7 @@ async function listTagsHandler(
     items: tags,
     itemsKey: 'tags',
     total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} ${count === 1 ? 'tag' : 'tags'}${truncated ? ' (truncated)' : ''}.`,
   });
@@ -121,7 +121,7 @@ export const listTagsTool: ToolDefinition<typeof listTagsInput> = {
 // ---------------------------------------------------------------------------
 
 const listTaxCategoriesInput = z.object({
-  businessIds: businessIdsInput,
+  memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active tax categories.'),
   limit,
@@ -167,7 +167,7 @@ async function listTaxCategoriesHandler(
     items: taxCategories,
     itemsKey: 'taxCategories',
     total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
+    extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (_shown, count, truncated) =>
       `Found ${count} tax ${count === 1 ? 'category' : 'categories'}${
         truncated ? ' (truncated)' : ''
@@ -190,10 +190,25 @@ export const listTaxCategoriesTool: ToolDefinition<typeof listTaxCategoriesInput
 // ---------------------------------------------------------------------------
 
 const listBusinessesInput = z.object({
-  businessIds: businessIdsInput,
+  memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
   limit,
+  // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
+  // first page made the directory unwalkable past `limit` rows with no way to
+  // tell — the same gap the charge tools had. Exposed 1-based here (upstream is
+  // 0-based) so it matches `page` on every other tool.
+  page: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(1)
+    .describe(
+      '1-based page of the directory, each `limit` rows long. Upstream pages a name-ordered ' +
+        'directory, so `activeOnly`/`nameContains` narrowing happens within the page and a page can ' +
+        'come back short. Read `pagination.totalPages` to walk it.',
+    ),
 });
 type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 
@@ -204,13 +219,19 @@ type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 // English-name predicate (keeping `totalCount` accurate) and owns the
 // deterministic global sort + size cap that all the lookups share.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses($name: String) {
-    allBusinesses(name: $name) {
+  query McpListBusinesses($name: String, $page: Int, $limit: Int) {
+    allBusinesses(name: $name, page: $page, limit: $limit) {
       nodes {
         id
         name
         ownerId
         isActive
+      }
+      pageInfo {
+        totalPages
+        totalRecords
+        currentPage
+        pageSize
       }
     }
   }
@@ -221,7 +242,15 @@ async function listBusinessesHandler(
   context: ToolExecutionContext,
 ): Promise<ToolResult> {
   const data = await context.client.query<McpListBusinessesQuery>(
-    { query: LIST_BUSINESSES_QUERY, variables: { name: input.nameContains ?? null } },
+    {
+      query: LIST_BUSINESSES_QUERY,
+      variables: {
+        name: input.nameContains ?? null,
+        // Upstream slices `[page * limit, (page + 1) * limit]`, so it is 0-based.
+        page: input.page - 1,
+        limit: input.limit,
+      },
+    },
     context.upstream,
   );
 
@@ -237,34 +266,49 @@ async function listBusinessesHandler(
     isActive: business.isActive,
   }));
 
+  // `totalRecords` counts the whole (name-filtered) directory, not just this
+  // page, so report it as the total and let `pagination` say where in it we are.
+  // Never below the rows on hand: `activeOnly` can only shrink a page, and
+  // `shapeListResult` clamps anyway.
+  const pageInfo = data.allBusinesses?.pageInfo;
+  const totalPages = pageInfo?.totalPages ?? 1;
+  const pagination = {
+    // Reported from the request: upstream echoes `currentPage` as the 0-based
+    // index it was given, which would read as an off-by-one page number here.
+    page: input.page,
+    pageSize: input.limit,
+    totalPages,
+    hasNextPage: input.page < totalPages,
+  };
+
   return shapeListResult({
     items: businesses,
     itemsKey: 'businesses',
-    total,
-    extra: { scope: { businessIds: context.readScope.businessIds } },
-    summarize: (_shown, count, truncated) =>
-      `Found ${count} ${count === 1 ? 'business' : 'businesses'}${
-        truncated ? ' (truncated)' : ''
-      }.`,
+    total: pageInfo?.totalRecords ?? total,
+    extra: { pagination, scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
+    summarize: (shown, count, truncated) =>
+      `Found ${count} ${count === 1 ? 'business' : 'businesses'}; showing ${shown} on page ${
+        pagination.page
+      } of ${pagination.totalPages}${truncated ? ' (truncated)' : ''}.`,
   });
 }
 
 // A dedicated scope clause rather than the shared `SCOPE_DESCRIPTION_SUFFIX`:
-// this tool is the full directory, so "omitting `businessIds` covers every
+// this tool is the full directory, so "omitting `memberBusinessIds` covers every
 // business you belong to" (the shared wording, written for the owner-scoped
 // tags/tax-category lookups) would be wrong here. It still teaches the same
 // convention — optional narrowing, `ownerId`-tagged rows, echoed scope, and the
 // same discovery entry point.
 const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
-  'Scope: omitting `businessIds` returns the whole directory visible to you; passing them narrows to ' +
-  'those owning businesses. Rows are tagged with `ownerId` and the response echoes the effective ' +
-  '`scope.businessIds`. If you have more than one business, call `accounter_list_business_memberships` ' +
-  'first to discover ids.';
+  'Scope: omitting `memberBusinessIds` returns the whole directory visible to you; passing them ' +
+  'narrows to businesses owned by those memberships. Rows are tagged with `ownerId` and the response ' +
+  'echoes the effective `scope.memberBusinessIds`. If you belong to more than one business, call ' +
+  '`accounter_list_business_memberships` first to discover ids.';
 
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
+    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listBusinessesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

@@ -57,16 +57,29 @@ a `RATE_LIMIT_ERROR` with `retryAfterMs`. Limits are configured via `MCP_RATE_LI
 Every business-scoped tool follows one convention, so the model learns it once:
 
 - **Discover, then scope.** `accounter_list_business_memberships` returns
-  `{ businessId, name, role }`. Pass those ids back as `businessIds` (or, for the balance report,
-  the singular required `businessId`).
-- **`businessIds` is optional and means "narrow".** Omitting it covers every business the caller
-  belongs to. Any id outside the caller's memberships is **rejected**, never silently dropped.
+  `{ memberBusinessId, name, role }`. Pass those ids back as `memberBusinessIds` (or, for the
+  balance report, the singular required `memberBusinessId`).
+- **The name is the access axis, deliberately.** These are the businesses the caller is a _member
+  of_; they become the upstream `byOwners` / `ownerIDs` owner predicate. They are not the charge
+  filter `byBusinesses` or the documents filter `businessIds`, which are _counterparty_ predicates —
+  a distinction that has already caused one scoping bug
+  ([plan](../../docs/coherent-owner-scoping-for-mcp/plan.md)).
+- **`memberBusinessIds` is optional and means "narrow".** Omitting it covers every business the
+  caller belongs to. Any id outside the caller's memberships is **rejected**, never silently
+  dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
   is the actual enforcement point (see [Identity & tenant scope](#identity--tenant-scope)).
-- **Rows are owner-tagged.** List rows carry `ownerId` (charges also carry `ownerName`), so results
-  spanning several businesses can be grouped rather than silently merged.
-- **The response echoes `scope.businessIds`.** A widened scope is visible in the payload instead of
-  being inferred, and the charges summary text names the business count when it is greater than one.
+- **Every row is owner-tagged.** Charges, transactions, documents, balance rows, tags, tax
+  categories and directory rows all carry `ownerId` (charges also carry `ownerName`), so a result
+  spanning several memberships can be grouped, sorted, and attributed instead of silently merged.
+  Nested rows count: the `transactions` and `documents` inside a charge are tagged too. Transactions
+  get theirs from `Transaction.ownerId` on the GraphQL server (added for this — the type previously
+  had no owner); documents inherit theirs from their charge; balance rows carry the single business
+  the report ran for. `ownerId` is `null` only when there is genuinely nothing to attribute to (a
+  document with no charge), which means "unknown", not "yours".
+- **The response echoes `scope.memberBusinessIds`.** A widened scope is visible in the payload
+  instead of being inferred, and the charges summary text names the business count when it is
+  greater than one.
 
 `accounter_list_business_memberships` is the one exception: it takes no parameters and echoes no
 scope, because it _is_ the scope.
@@ -77,41 +90,64 @@ scope, because it _is_ the scope.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
-  businesses. Optional `businessIds` (subset of memberships), `fromDate`/`toDate` (bounded to 366
-  days), `tags`, `freeText`, and `flow` (`ALL`/`INCOME`/`EXPENSE`), with bounded pagination
-  (`pageSize` ≤ 50). Returns normalized charges — each carrying `ownerId`/`ownerName` — plus
-  pagination metadata and the echoed `scope`. Scoping uses the `byOwners` predicate upstream (the
-  owner), never `byBusinesses` (the counterparty).
-- **`accounter_get_charges`** — read-only charge **detail** by id (1–25 `chargeIds`). Returns each
-  charge with owner, counterparty, amounts (total, VAT, withholding), the full set of dates, tags,
-  and `metadata` counts, plus — by default — its linked `transactions` and `documents` nested inline
-  (toggle with `includeTransactions` / `includeDocuments`). This is the drill-down for
+  businesses. Accepts optional `memberBusinessIds` (subset of memberships) plus **every
+  `ChargeFilter` predicate upstream honors**, flat: `fromDate`/`toDate` (overlap — any
+  document/transaction/ledger date in the window), `fromMainDate`/`toMainDate` (containment on the
+  charge's main date), each bounded to `MAX_DATE_RANGE_DAYS`; `tags`, `freeText`, `flow`
+  (`ALL`/`INCOME`/`EXPENSE`), `byChargeTypes`, `byBusinesses` (counterparty), `byBusinessTrips`,
+  `accountantStatus`, `sortBy`, and the `without*`/`with*` document/transaction/ledger flags — with
+  bounded pagination (`pageSize` ≤ `MAX_PAGE_SIZE`). Returns normalized charges — each carrying
+  `ownerId`/`ownerName` — plus pagination metadata and the echoed `scope`. Scoping uses the
+  `byOwners` predicate upstream (the owner), never `byBusinesses` (the counterparty).
+  `flow`/`tags`/`fromDate`/`toDate` are the tool's historical names for
+  `chargesType`/`byTags`/`fromAnyDate`/`toAnyDate`; see `SEARCH_CHARGES_FILTER_ALIASES`.
+- **`accounter_get_charges`** — read-only charge **detail**, by id (`chargeIds`) or by `filters`
+  (the same shared `ChargeFilter` shape as `accounter_search_charges`, nested), with `page` /
+  `pageSize` over filtered results. Returns each charge with owner, counterparty, amounts (total,
+  VAT, withholding), the full set of dates, tags, and `metadata` counts; linked `transactions` and
+  `documents` are opt-in via `includeTransactions` / `includeDocuments`. This is the drill-down for
   `accounter_search_charges`. A charge whose `owner` falls outside the resolved scope is dropped as
   defense-in-depth on top of RLS.
-- **`accounter_get_transactions`** — read-only bank/card **transactions** by id (1–50
-  `transactionIds`). Each row carries direction, amount, event/effective dates, source description,
-  `isFee`, `chargeId`, counterparty, and account. Scope is enforced upstream by RLS (transactions
-  carry no owner field for a client-side filter).
-- **`accounter_get_documents`** — read-only **documents** by id (1–50 `documentIds`). Each row
-  carries `documentType`, serial number, date, amount, VAT, creditor/debtor, `chargeId`, and
-  `file`/`image` links. A document whose owning charge falls outside the resolved scope is dropped
-  as defense-in-depth on top of RLS.
+
+  Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
+  `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
+  so a field added upstream fails the suite instead of quietly becoming unreachable. Three fields —
+  `businessTrip`, `byFinancialAccounts`, `unbalanced` — are deliberately **not** accepted: upstream
+  takes them and never passes them to the SQL, and a filter that silently matches everything is
+  worse than an absent one (`UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`).
+
+- **`accounter_get_transactions`** — read-only bank/card **transactions**, owner-tagged, by id
+  (`transactionIds`) or by `filters` (every `TransactionsFilters` field: ids, charge ids, owners,
+  event/debit/any date ranges, counterparties, missing-counterparty/info flags, free text). Each row
+  carries direction, amount, event/effective dates, source description, `isFee`, `chargeId`,
+  counterparty, account, and `ownerId`. A transaction whose owner falls outside the resolved scope
+  is dropped as defense-in-depth on top of RLS — possible only since `Transaction.ownerId` was added
+  upstream.
+- **`accounter_get_documents`** — read-only **documents** by id (`documentIds`) or by `filters`
+  (every `DocumentsFilters` field: business/owner/charge ids, date range, type, unmatched,
+  missing-counterparty/info flags, free text). Each row carries `documentType`, serial number, date,
+  amount, VAT, creditor/debtor, `chargeId`, `file`/`image` links, and `ownerId` (inherited from the
+  document's charge). A document whose owning charge falls outside the resolved scope is dropped as
+  defense-in-depth on top of RLS.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
-  `businessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and size-capped (≤
-  500).
+  `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
+  size-capped (≤ 500).
 - **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
-  bookkeeping sort code, active flag), optionally filtered by name, active status, or `businessIds`.
-  Same deterministic sort + cap.
+  bookkeeping sort code, active flag), optionally filtered by name, active status, or
+  `memberBusinessIds`. Same deterministic sort + cap.
 - **`accounter_list_businesses`** — list the full business directory (id, name, `ownerId`, active
   flag) — every business visible to the caller, not just their memberships — optionally filtered by
-  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or `businessIds`.
-  Same deterministic sort + cap. Use `accounter_list_business_memberships` instead for just the
-  caller's own memberships and roles.
+  name (forwarded to the upstream `allBusinesses(name:)` filter), active status, or
+  `memberBusinessIds`, and paginated with `limit` + 1-based `page` (forwarded as the upstream
+  `limit`/`page` args; the response echoes `pagination`). Same deterministic sort + cap. Note that
+  `activeOnly`/`nameContains` narrowing happens within the fetched page, so a page can come back
+  short. Use `accounter_list_business_memberships` instead for just the caller's own memberships and
+  roles.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 366 days), selected by the required singular
-  `businessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
-  `truncated` flag. Rows are not individually owner-tagged — they all share the one owner, which the
-  response reports once alongside the echoed `scope`.
+  `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
+  `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
+  response also reports once alongside the echoed `scope`.
 
 ## Upstream GraphQL client
 
@@ -340,22 +376,22 @@ curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
-# 5. Discover the businesses you can read → [{ businessId, name, role }]
+# 5. Discover the businesses you can read → [{ memberBusinessId, name, role }]
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"accounter_list_business_memberships","arguments":{}}}'
 
 # 6. Authenticated tool call, scoped to one of those ids.
-#    The response echoes scope.businessIds and every row carries ownerId.
+#    The response echoes scope.memberBusinessIds and every row carries ownerId.
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"businessIds":["<businessId from step 5>"]}}}'
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"memberBusinessIds":["<memberBusinessId from step 5>"]}}}'
 
 # 7. Negative check: an id outside your memberships must be REJECTED, not ignored.
 #    Expect isError: true and code AUTHORIZATION_ERROR.
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"businessIds":["00000000-0000-4000-8000-000000000000"]}}}'
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"memberBusinessIds":["00000000-0000-4000-8000-000000000000"]}}}'
 ```
 
 The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mocked) lives in

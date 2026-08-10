@@ -131,6 +131,8 @@ export default gql`
     isFee: Boolean
     " containing charge ID "
     chargeId: UUID!
+    " owning business (financial entity) of this transaction "
+    ownerId: UUID!
   }
 
   " The direction of the transaction "
@@ -155,6 +157,7 @@ export default gql`
     updatedAt: DateTime!
     isFee: Boolean
     chargeId: UUID!
+    ownerId: UUID!
   }
 
   " המרה "
@@ -178,6 +181,7 @@ export default gql`
     updatedAt: DateTime!
     isFee: Boolean
     chargeId: UUID!
+    ownerId: UUID!
   }
 
   " Type pf conversion transaction "

@@ -97,6 +97,8 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    " owning business (financial entity) of this document "
+    ownerId: UUID!
   }
 
   " document that haven't yet been processed"
@@ -108,6 +110,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     " financial metadata that may already be stored on the document even before it is classified as a financial document "
     vat: FinancialAmount
@@ -129,6 +132,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     " financial metadata that may already be stored on the document even though it is classified as a non-financial document "
     vat: FinancialAmount
@@ -175,6 +179,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     serialNumber: String
     date: TimelessDate
@@ -197,6 +202,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     serialNumber: String
     date: TimelessDate
@@ -218,6 +224,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     serialNumber: String
     date: TimelessDate
@@ -234,6 +241,7 @@ export default gql`
     id: UUID!
     image: URL
     file: URL
+    ownerId: UUID!
     documentType: DocumentType
     vat: FinancialAmount
     serialNumber: String
@@ -259,6 +267,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     serialNumber: String
     date: TimelessDate
@@ -280,6 +289,7 @@ export default gql`
     isReviewed: Boolean
     description: String
     remarks: String
+    ownerId: UUID!
 
     serialNumber: String
     date: TimelessDate

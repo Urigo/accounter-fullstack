@@ -14,6 +14,7 @@ import type { ChargesModule } from '../types.js';
 
 export const commonChargeFields: ChargesModule.ChargeResolvers = {
   id: DbCharge => DbCharge.id,
+  ownerId: DbCharge => DbCharge.owner_id,
   vat: async (dbCharge, _, { injector }) => {
     try {
       const { documentsVatAmount, documentsCurrency } = await getChargeDocumentsMeta(

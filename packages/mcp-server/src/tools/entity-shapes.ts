@@ -56,6 +56,7 @@ export interface RawTransaction {
   __typename?: string;
   id: string;
   chargeId: string;
+  ownerId: string;
   eventDate: string;
   effectiveDate?: string | null;
   direction: string;
@@ -69,6 +70,7 @@ export interface RawTransaction {
 export interface NormalizedTransaction {
   id: string;
   chargeId: string;
+  ownerId: string;
   type: string | null;
   direction: string;
   amount: NormalizedAmount | null;
@@ -84,6 +86,7 @@ export function normalizeTransaction(transaction: RawTransaction): NormalizedTra
   return {
     id: transaction.id,
     chargeId: transaction.chargeId,
+    ownerId: transaction.ownerId,
     type: transaction.__typename ?? null,
     direction: transaction.direction,
     amount: normalizeAmount(transaction.amount),
@@ -96,6 +99,43 @@ export function normalizeTransaction(transaction: RawTransaction): NormalizedTra
       ? { id: transaction.account.id, name: transaction.account.name ?? null }
       : null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Charge classification
+// ---------------------------------------------------------------------------
+
+/**
+ * Map a charge's GraphQL `__typename` to a stable `chargeType` token.
+ *
+ * The tokens are deliberately the *same* vocabulary as the upstream
+ * `ChargeFilter.byChargeTypes` enum, so a `chargeType` read off a result row can
+ * be handed straight back as a filter without translation.
+ */
+const CHARGE_TYPE_BY_TYPENAME: Record<string, string> = {
+  CommonCharge: 'COMMON',
+  ConversionCharge: 'CONVERSION',
+  SalaryCharge: 'PAYROLL',
+  InternalTransferCharge: 'INTERNAL',
+  DividendCharge: 'DIVIDEND',
+  BusinessTripCharge: 'BUSINESS_TRIP',
+  MonthlyVatCharge: 'VAT',
+  BankDepositCharge: 'BANK_DEPOSIT',
+  ForeignSecuritiesCharge: 'FOREIGN_SECURITIES',
+  CreditcardBankCharge: 'CREDITCARD_BANK',
+  FinancialCharge: 'FINANCIAL',
+};
+
+/**
+ * Every charge `__typename` this module knows how to classify. Exported so the
+ * schema-contract suite can fail loudly when upstream adds a charge type — the
+ * runtime behavior otherwise degrades silently to `chargeType: null`, which
+ * looks like missing data rather than a stale map.
+ */
+export const KNOWN_CHARGE_TYPENAMES = Object.keys(CHARGE_TYPE_BY_TYPENAME);
+
+export function chargeTypeFromTypename(typename: string | null | undefined): string | null {
+  return typename ? (CHARGE_TYPE_BY_TYPENAME[typename] ?? null) : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,11 +155,13 @@ export interface RawDocument {
   debtor?: RawEntityRef | null;
   file?: string | null;
   image?: string | null;
-  charge?: { id: string; owner?: { id: string } | null } | null;
+  ownerId: string;
+  charge?: { id: string } | null;
 }
 
 export interface NormalizedDocument {
   id: string;
+  ownerId: string;
   type: string | null;
   documentType: string | null;
   serialNumber: string | null;
@@ -137,6 +179,7 @@ export interface NormalizedDocument {
 export function normalizeDocument(document: RawDocument): NormalizedDocument {
   return {
     id: document.id,
+    ownerId: document.ownerId,
     type: document.__typename ?? null,
     documentType: document.documentType ?? null,
     serialNumber: document.serialNumber ?? null,
