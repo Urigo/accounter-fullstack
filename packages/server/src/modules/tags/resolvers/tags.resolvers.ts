@@ -15,10 +15,10 @@ export const tagsResolvers: TagsModule.Resolvers & Pick<Resolvers, 'BatchUpdateC
       allTags: (_, __, { injector }) => injector.get(TagsProvider).getAllTags(),
     },
     Mutation: {
-      addTag: (_, { name }, { injector }) => {
+      addTag: (_, { name, parentId }, { injector }) => {
         return injector
           .get(TagsProvider)
-          .addNewTag({ name })
+          .addNewTag({ name, parentId: !parentId || parentId === EMPTY_UUID ? null : parentId })
           .catch(e => {
             console.error(JSON.stringify(e, null, 2));
             throw new GraphQLError(`Error adding tag "${name}"`);
