@@ -17,6 +17,13 @@ backing those columns are now nullable, and the numeric ones (`dealDataAmount`, 
 fields backing `bit` columns are converted to `1`/`0` via a new `convertBooleanToBit` helper —
 previously a JS boolean was sent to a `bit` column, which Postgres rejects.
 
+A migration drops the matching `NOT NULL` constraints on
+`accounter_schema.max_creditcard_transactions`, so those payloads no longer fail at insert time, and
+updates the insert trigger to keep the two NOT NULL `transactions` columns fed from now-nullable
+sources working: `source_reference` falls back from `arn` to `uid`, and `currency_rate` coalesces to
+its column default of `0`. The MAX deduplication index is rebuilt with `NULLS NOT DISTINCT` so rows
+with a null `arn` or `payment_date` still dedup on `ON CONFLICT`.
+
 Also fixes a few typing gaps in `scraper-app` that surfaced alongside this: the upload client
 derives its result types from the generated mutation types instead of a hand-maintained
 `ScraperUploadResult`, `filterPayload` handles the two `otsar-hahayal` source types instead of
