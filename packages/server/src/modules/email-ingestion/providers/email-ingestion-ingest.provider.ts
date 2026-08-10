@@ -6,12 +6,18 @@ import { DocumentType } from '../../../shared/enums.js';
 import { hashStringToInt } from '../../../shared/helpers/index.js';
 import { CloudinaryProvider } from '../../app-providers/cloudinary.js';
 import { DBProvider } from '../../app-providers/db.provider.js';
+import type {
+  BusinessMatchData,
+  OwnerMatchInfo,
+} from '../../app-providers/helpers/business-matcher.helper.js';
 import {
   getDocumentFromUrlsAndOcrData,
   getOcrData,
+  resolveOwnerSideFromUuids,
   type OcrData,
 } from '../../documents/helpers/upload.helper.js';
 import type { IInsertDocumentsParams } from '../../documents/types.js';
+import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
 import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
@@ -493,15 +499,21 @@ export class EmailIngestionIngestProvider {
 
     // Find the documents new to this tenant under its RLS context (a short read,
     // no network I/O held in a long-lived transaction). In the same tenant-pinned
-    // read, resolve the inputs for the foreign-counterparty VAT-0 fallback — the
-    // counterparty's country and the tenant's admin locality — so
-    // getDocumentFromUrlsAndOcrData never has to reach into the auth-coupled
-    // Businesses/AdminContext providers, whose TenantAwareDBClient throws
-    // "Missing businessId in AuthContext" in this control-plane context. These use
-    // the raw client directly (no pgtyped) so the control-plane read stays
+    // read, resolve the inputs the document pipeline would otherwise fetch through
+    // the auth-coupled Businesses/AdminContext providers, whose TenantAwareDBClient
+    // throws "Missing businessId in AuthContext" in this control-plane context:
+    //   - the tenant's businesses + its locality, feeding the OCR business matcher
+    //     (`matchBusiness` / the LLM match fallback). Without these the matcher gets
+    //     an empty list and every `suggestedIssuer`/`suggestedRecipient` is null, so
+    //     documents from senders not keyed in `suggestion_data.emails` were inserted
+    //     with no creditor/debtor even when the issuer name was extracted perfectly.
+    //   - the tenant's locality for the foreign-counterparty VAT-0 fallback (the
+    //     counterparty's country is read off the businesses list below, once the
+    //     final counterparty is known).
+    // These use the raw client directly (no pgtyped) so the control-plane read stays
     // self-contained; RLS is pinned to the tenant, and the explicit owner_id filter
     // is defense-in-depth.
-    const { newCandidates, vatFallbackContext } = await withTenantContext(
+    const { newCandidates, businesses, owner } = await withTenantContext(
       this.dbProvider.pool,
       tenantId,
       async client => {
@@ -516,25 +528,51 @@ export class EmailIngestionIngestProvider {
           }
         }
 
-        let ctx: { counterpartyCountry: string | null; adminLocality: string | null } | undefined;
-        if (fresh.length > 0 && businessId) {
-          const [countryRes, localityRes] = await Promise.all([
-            client.query<{ country: string | null }>(
-              'SELECT country FROM accounter_schema.businesses WHERE id = $1 AND owner_id = $2 LIMIT 1',
-              [businessId, tenantId],
-            ),
-            client.query<{ locality: string | null }>(
-              'SELECT locality FROM accounter_schema.user_context WHERE owner_id = $1 LIMIT 1',
-              [tenantId],
-            ),
-          ]);
-          ctx = {
-            counterpartyCountry: countryRes.rows[0]?.country ?? null,
-            adminLocality: localityRes.rows[0]?.locality ?? null,
-          };
+        if (fresh.length === 0) {
+          return { newCandidates: fresh, businesses: [], owner: undefined };
         }
 
-        return { newCandidates: fresh, vatFallbackContext: ctx };
+        const [businessesRes, localityRes] = await Promise.all([
+          // `OR b.id = $1` includes the tenant's own business row, which is what
+          // lets resolveOwnerSideFromUuids recognize an owner-side match.
+          client.query<{
+            id: string;
+            name: string | null;
+            hebrew_name: string | null;
+            vat_number: string | null;
+            suggestion_data: unknown;
+            country: string | null;
+          }>(
+            `SELECT b.id, fe.name, b.hebrew_name, b.vat_number, b.suggestion_data, b.country
+               FROM accounter_schema.businesses b
+               INNER JOIN accounter_schema.financial_entities fe USING (id)
+              WHERE b.owner_id = $1 OR b.id = $1`,
+            [tenantId],
+          ),
+          client.query<{ locality: string | null }>(
+            'SELECT locality FROM accounter_schema.user_context WHERE owner_id = $1 LIMIT 1',
+            [tenantId],
+          ),
+        ]);
+
+        // Mirror `fetchBusinessesForMatching` in upload.helper.ts.
+        const matchData: BusinessMatchData[] = businessesRes.rows.map(b => ({
+          id: b.id,
+          name: b.name ?? null,
+          hebrew_name: b.hebrew_name ?? null,
+          vat_number: b.vat_number ?? null,
+          suggestion_data: suggestionDataSchema.safeParse(b.suggestion_data).data ?? null,
+          locality: b.country ?? null,
+        }));
+
+        return {
+          newCandidates: fresh,
+          businesses: matchData,
+          owner: {
+            id: tenantId,
+            locality: localityRes.rows[0]?.locality ?? null,
+          } satisfies OwnerMatchInfo,
+        };
       },
     );
 
@@ -554,13 +592,31 @@ export class EmailIngestionIngestProvider {
           const [{ fileUrl, imageUrl }, ocrData] = await Promise.all([
             this.cloudinaryProvider.uploadInvoiceToCloudinary(dataUri),
             // isSensitive=false → run OCR (Anthropic), as the legacy path does.
-            getOcrData(injector, file, false).catch((): OcrData => ({
+            // The pre-resolved businesses/owner enable the OCR business matcher in
+            // this control-plane context (see the read block above).
+            getOcrData(injector, file, false, { businesses, owner }).catch((): OcrData => ({
               documentType: DocumentType.Unprocessed,
             })),
           ]);
-          // The recognized issuing business is the counterparty (null when none).
+          // The business recognized at control time from the sender address is the
+          // counterparty. It stays authoritative: resolveOwnerSideFromUuids fills
+          // `counterpartyId` only when unset (`??=`), so the OCR name/VAT match acts
+          // as the fallback for mail that arrives via an aggregator/forwarder whose
+          // address is not keyed in any business's `suggestion_data.emails`. The OCR
+          // match is still consulted for `isOwnerIssuer`, which orients the sides.
           if (businessId) {
             ocrData.counterpartyId = businessId;
+          }
+          resolveOwnerSideFromUuids(ocrData, tenantId);
+          if (businessId) {
+            const ocrCounterparty = [ocrData.suggestedIssuer, ocrData.suggestedRecipient].find(
+              id => id != null && id !== tenantId,
+            );
+            if (ocrCounterparty && ocrCounterparty !== businessId) {
+              console.warn(
+                `email ingest: counterparty disagreement (messageId: ${messageId}): grant business ${businessId} kept over OCR match ${ocrCounterparty}`,
+              );
+            }
           }
           const params = await getDocumentFromUrlsAndOcrData(
             injector,
@@ -571,8 +627,15 @@ export class EmailIngestionIngestProvider {
             null,
             fileHash,
             // Pre-resolved above (raw pool, tenant RLS) so the fallback never calls
-            // the auth-coupled providers in this control-plane context.
-            vatFallbackContext,
+            // the auth-coupled providers in this control-plane context. The
+            // counterparty country is taken off the loaded businesses list against
+            // the *final* counterparty — which may have come from the OCR match, not
+            // just the grant.
+            {
+              counterpartyCountry:
+                businesses.find(b => b.id === ocrData.counterpartyId)?.locality ?? null,
+              adminLocality: owner?.locality ?? null,
+            },
           );
           // Mirror the legacy `insertEmailDocuments` resolver, which overrides the
           // OCR-derived remarks with an email identifier. (There it is the email

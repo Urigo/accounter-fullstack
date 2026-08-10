@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BusinessMatchData, OwnerMatchInfo } from './business-matcher.helper.js';
-import { applyForeignCounterpartyVatDefault } from './business-matcher.helper.js';
+import { applyForeignCounterpartyVatDefault, matchBusiness } from './business-matcher.helper.js';
 
 const OWNER_ID = '00000000-0000-0000-0000-000000000001';
 const LOCAL_BIZ_ID = '00000000-0000-0000-0000-000000000002';
@@ -140,5 +140,30 @@ describe('applyForeignCounterpartyVatDefault', () => {
         businesses,
       ),
     ).toBeNull();
+  });
+});
+
+describe('matchBusiness — extracted issuer names', () => {
+  const named = (id: string, name: string, hebrewName: string | null = null) => ({
+    ...business(id, 'Israel'),
+    name,
+    hebrew_name: hebrewName,
+  });
+
+  it('matches a name whose only difference from the stored one is punctuation', () => {
+    // The reported email-ingestion case: OCR extracts "Anthropic, PBC" and a business
+    // stored under exactly that name must match — `normalizeText` strips the comma.
+    const list = [named(LOCAL_BIZ_ID, 'Anthropic, PBC')];
+    expect(matchBusiness('Anthropic, PBC', '', list)).toBe(LOCAL_BIZ_ID);
+    expect(matchBusiness('Anthropic PBC', '', list)).toBe(LOCAL_BIZ_ID);
+    expect(matchBusiness('anthropic, pbc.', '', list)).toBe(LOCAL_BIZ_ID);
+  });
+
+  it('does not match an unrelated single-word name', () => {
+    expect(matchBusiness('Stripe', '', [named(LOCAL_BIZ_ID, 'Anthropic, PBC')])).toBeNull();
+  });
+
+  it('returns null on an empty business list (no matching possible)', () => {
+    expect(matchBusiness('Anthropic, PBC', '123456789', [])).toBeNull();
   });
 });
