@@ -1,5 +1,6 @@
 node_modules/
 dist/
+storybook-static/
 .env*
 **/__generated__/
 **/__tests__/
