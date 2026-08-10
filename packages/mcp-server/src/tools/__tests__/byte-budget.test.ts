@@ -28,7 +28,7 @@ function authContext(): McpAuthContext {
     expiresAt: undefined,
     claims: { sub: 'user-1' },
   };
-  return buildAuthContext(principal, [{ businessId: B1, roleId: 'accountant' }]);
+  return buildAuthContext(principal, [{ memberBusinessId: B1, roleId: 'accountant' }]);
 }
 
 function clientReturning(data: unknown) {

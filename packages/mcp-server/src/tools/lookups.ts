@@ -216,8 +216,15 @@ type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 // server narrows the directory before it is serialized, rather than shipping the
 // whole businesses table on every call. The client-side `filterSortCap` below
 // still runs: upstream matches Hebrew names too, so it re-applies the stricter
-// English-name predicate (keeping `totalCount` accurate) and owns the
-// deterministic global sort + size cap that all the lookups share.
+// English-name predicate and owns the deterministic sort + size cap that all the
+// lookups share.
+//
+// That local pass shapes the *returned rows* only. `totalCount` and `pagination`
+// come from upstream `pageInfo`, which counts the broader upstream name match
+// across the whole directory — so it can exceed the rows on this page, both
+// because later pages exist and because `activeOnly`/the English-name predicate
+// dropped rows from this one. That is the intended reading: the counts describe
+// what upstream holds, `returnedCount` describes what came back.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
   query McpListBusinesses($name: String, $page: Int, $limit: Int) {
     allBusinesses(name: $name, page: $page, limit: $limit) {
@@ -266,10 +273,13 @@ async function listBusinessesHandler(
     isActive: business.isActive,
   }));
 
-  // `totalRecords` counts the whole (name-filtered) directory, not just this
-  // page, so report it as the total and let `pagination` say where in it we are.
-  // Never below the rows on hand: `activeOnly` can only shrink a page, and
-  // `shapeListResult` clamps anyway.
+  // `totalRecords` counts upstream's whole (name-filtered) directory rather than
+  // this page, so report it as the total and let `pagination` say where in that
+  // directory we are; `total` from the local pass is the fallback for an upstream
+  // that returns no `pageInfo`. The upstream count is deliberately *not* narrowed
+  // by the local `activeOnly`/English-name filtering — it would then describe
+  // neither the page nor the directory. `shapeListResult` clamps it up to the
+  // rows on hand, so `totalCount` can never read below `returnedCount`.
   const pageInfo = data.allBusinesses?.pageInfo;
   const totalPages = pageInfo?.totalPages ?? 1;
   const pagination = {
