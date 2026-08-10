@@ -35,8 +35,8 @@ const getTagsByNames = sql<IGetTagsByNamesQuery>`
   WHERE name in $$tagNames;`;
 
 const addNewTag = sql<IAddNewTagQuery>`
-  INSERT INTO accounter_schema.tags (name, owner_id)
-  VALUES ($name, $ownerId)
+  INSERT INTO accounter_schema.tags (name, parent, owner_id)
+  VALUES ($name, $parentId, $ownerId)
   RETURNING *;
 `;
 
@@ -131,6 +131,7 @@ export class TagsProvider {
   }
 
   public clearCache() {
+    this.allTagsCache = null;
     this.getTagByIDLoader.clearAll();
     this.getTagByNameLoader.clearAll();
   }
