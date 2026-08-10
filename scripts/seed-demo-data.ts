@@ -215,6 +215,7 @@ async function seedDemoData() {
                      accounter_schema.business_users,
                      accounter_schema.tags,
                      accounter_schema.tax_categories,
+                     accounter_schema.admin_business_roles,
                      accounter_schema.businesses,
                      accounter_schema.user_context,
                      accounter_schema.financial_entities

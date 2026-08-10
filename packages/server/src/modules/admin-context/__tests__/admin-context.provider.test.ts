@@ -197,4 +197,77 @@ describe('AdminContextProvider', () => {
     expect(result?.defaultLocalCurrency).toBe('EUR');
     expect(dbProvider.query).toHaveBeenCalledTimes(2); // No additional call, using cache
   });
+
+  describe('normalizeContext (data-driven admin_business_roles)', () => {
+    const buildRow = (overrides: Record<string, unknown>) =>
+      ({
+        owner_id: 'owner-1',
+        default_local_currency: 'ILS',
+        default_fiat_currency_for_crypto_conversions: 'USD',
+        ...overrides,
+      }) as unknown as Parameters<AdminContextProvider['normalizeContext']>[0];
+
+    it('derives data-source arrays from the role aggregate columns', () => {
+      const ctx = provider.normalizeContext(
+        buildRow({
+          bank_account_business_ids: ['bank-1', 'bank-2'],
+          credit_card_business_ids: ['card-1'],
+          crypto_wallet_business_ids: ['wallet-1'],
+          foreign_securities_business_id: 'fs-1',
+        }),
+      );
+
+      expect(ctx.financialAccounts.bankAccountIds).toEqual(['bank-1', 'bank-2']);
+      expect(ctx.financialAccounts.creditCardIds).toEqual(['card-1']);
+      expect(ctx.financialAccounts.internalWalletsIds).toEqual(
+        expect.arrayContaining(['bank-1', 'bank-2', 'card-1', 'wallet-1', 'fs-1']),
+      );
+      expect(ctx.financialAccounts.internalWalletsIds).toHaveLength(5);
+    });
+
+    it('derives dividend and VAT-excluded arrays from roles without any hardcoded UUIDs', () => {
+      const ctx = provider.normalizeContext(
+        buildRow({
+          dividend_payment_business_ids: ['div-1'],
+          dividend_withholding_tax_business_id: 'wh-1',
+          vat_excluded_business_ids: ['vat-1', 'tax-1', 'ss-1'],
+        }),
+      );
+
+      expect(ctx.dividends.dividendPaymentBusinessIds).toEqual(['div-1']);
+      expect(ctx.dividends.dividendBusinessIds).toEqual(['wh-1', 'div-1']);
+      expect(ctx.authorities.vatReportExcludedBusinessNames).toEqual(['vat-1', 'tax-1', 'ss-1']);
+      // The previously hardcoded, cross-tenant dividend UUIDs must no longer leak in.
+      expect(ctx.dividends.dividendPaymentBusinessIds).not.toContain(
+        '4bcca705-5b47-41c5-ba26-1e42c69cbf0d',
+      );
+      expect(ctx.dividends.dividendPaymentBusinessIds).not.toContain(
+        '909fbe3c-0419-44ed-817d-ab774e93748a',
+      );
+    });
+
+    it('defaults every role-derived array to empty when the aggregates are absent', () => {
+      const ctx = provider.normalizeContext(buildRow({}));
+
+      expect(ctx.financialAccounts.bankAccountIds).toEqual([]);
+      expect(ctx.financialAccounts.creditCardIds).toEqual([]);
+      expect(ctx.financialAccounts.internalWalletsIds).toEqual([]);
+      expect(ctx.dividends.dividendPaymentBusinessIds).toEqual([]);
+      expect(ctx.dividends.dividendBusinessIds).toEqual([]);
+      expect(ctx.authorities.vatReportExcludedBusinessNames).toEqual([]);
+    });
+
+    it('de-duplicates internal wallets when one business holds multiple roles', () => {
+      const ctx = provider.normalizeContext(
+        buildRow({
+          bank_account_business_ids: ['dup', 'bank-2'],
+          credit_card_business_ids: ['dup'],
+          crypto_wallet_business_ids: ['dup'],
+          foreign_securities_business_id: 'dup',
+        }),
+      );
+
+      expect(ctx.financialAccounts.internalWalletsIds).toEqual(['dup', 'bank-2']);
+    });
+  });
 });
