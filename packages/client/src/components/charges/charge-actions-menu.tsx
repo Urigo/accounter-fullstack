@@ -1,7 +1,17 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, MoreVertical, Trash } from 'lucide-react';
+import {
+  ArrowDownWideNarrow,
+  Edit,
+  FilePlus2,
+  Link,
+  ListPlus,
+  MoreVertical,
+  Trash,
+} from 'lucide-react';
 import { Modal } from '@mantine/core';
 import type { ChargeType } from '@/helpers/index.js';
+import { ROUTES } from '@/router/routes.js';
+import { writeToClipboard } from '../../helpers/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
 import {
@@ -50,6 +60,10 @@ export function ChargeActionsMenu({
 
   const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
+  const onCopyLink = useCallback((): void => {
+    writeToClipboard(`${window.location.origin}${ROUTES.CHARGES.DETAIL(chargeId)}`);
+  }, [chargeId]);
+
   const onDelete = useCallback(async (): Promise<void> => {
     await deleteCharge({
       chargeId,
@@ -80,6 +94,10 @@ export function ChargeActionsMenu({
           <DropdownMenuItem onSelect={() => setEditingCharge(true)}>
             <Edit className="size-4" />
             Edit Charge
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onCopyLink}>
+            <Link className="size-4" />
+            Copy Charge Link
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setConfirmDeleteOpen(true)}>
             <Trash className="size-4" />
