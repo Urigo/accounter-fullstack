@@ -45,6 +45,7 @@ interface ChargesFiltersFormProps {
   filter: ChargeFilter;
   setFilter: (filter: ChargeFilter) => void;
   closeModal: () => void;
+  withDefaultDateRange?: boolean;
 }
 
 const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
@@ -86,6 +87,7 @@ function ChargesFiltersForm({
   filter,
   setFilter,
   closeModal,
+  withDefaultDateRange = true,
 }: ChargesFiltersFormProps): ReactElement {
   const { userContext } = useContext(UserContext);
   const form = useForm<ChargeFilter>({
@@ -97,8 +99,15 @@ function ChargesFiltersForm({
         field: ChargeSortByField.Date,
         asc: false,
       },
-      toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
-      fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
+      // Screens where the date range is optional (e.g. missing-info charges)
+      // start unbounded, so old unresolved charges aren't hidden by a default
+      // "last year" window.
+      ...(withDefaultDateRange
+        ? {
+            toAnyDate: format(new Date(), 'yyyy-MM-dd') as TimelessDateString,
+            fromAnyDate: format(sub(new Date(), { years: 1 }), 'yyyy-MM-dd') as TimelessDateString,
+          }
+        : {}),
       ...filter,
     },
   });
@@ -610,6 +619,7 @@ interface ChargesFiltersProps {
   totalPages?: number;
   setPage: Dispatch<SetStateAction<number>>;
   initiallyOpened?: boolean;
+  withDefaultDateRange?: boolean;
 }
 
 export function ChargesFilters({
@@ -619,6 +629,7 @@ export function ChargesFilters({
   setPage,
   totalPages = 1,
   initiallyOpened = false,
+  withDefaultDateRange = true,
 }: ChargesFiltersProps): ReactElement {
   const [opened, setOpened] = useState(initiallyOpened);
   const [isFiltered, setIsFiltered] = useState(!isObjectEmpty(filter));
@@ -665,6 +676,7 @@ export function ChargesFilters({
             filter={filter}
             setFilter={onSetFilter}
             closeModal={(): void => setOpened(false)}
+            withDefaultDateRange={withDefaultDateRange}
           />
         }
         modalSize="xl"

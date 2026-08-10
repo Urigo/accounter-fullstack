@@ -6,8 +6,11 @@ export default gql`
     chargesByIDs(chargeIDs: [UUID!]!): [Charge!]! @requiresAuth
     allCharges(filters: ChargeFilter, page: Int = 1, limit: Int = 999999): PaginatedCharges!
       @requiresAuth
-    chargesWithMissingRequiredInfo(page: Int = 1, limit: Int = 999999): PaginatedCharges!
-      @requiresAuth
+    chargesWithMissingRequiredInfo(
+      filters: ChargeFilter
+      page: Int = 0
+      limit: Int = 999999
+    ): PaginatedCharges! @requiresAuth
   }
 
   extend type Mutation {
