@@ -84,14 +84,25 @@ runs:
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       id: graphql-cache
       with:
+        # Every `generate:graphql` output must be listed: on an exact cache hit the
+        # generate step is skipped, so anything missing here is simply absent for the
+        # rest of the job. `packages/server/src/__generated__` was missing, which broke
+        # any module value-importing from it (e.g. the `TransactionDirection` enum).
         path: |
           schema.graphql
+          packages/server/src/__generated__
           packages/server/src/modules/**/__generated__
           packages/client/src/gql
+          packages/gmail-listener/src/gql
+          packages/email-ingestion-gateway/src/gql
+          packages/mcp-server/src/gql
+          packages/scraper-app/src/server/gql
         key:
           graphql-codegen-${{ runner.os }}-${{ hashFiles('packages/server/src/modules/**/*.ts',
           'codegen.ts', 'graphql.config.js', 'packages/client/src/**/*.{,c,m}{j,t}s{,x}',
-          'yarn.lock') }}
+          'packages/gmail-listener/src/**/*.ts', 'packages/email-ingestion-gateway/src/**/*.ts',
+          'packages/mcp-server/src/**/*.ts', 'packages/scraper-app/src/**/*.{ts,tsx}', 'yarn.lock')
+          }}
         restore-keys: |
           graphql-codegen-${{ runner.os }}-
 
