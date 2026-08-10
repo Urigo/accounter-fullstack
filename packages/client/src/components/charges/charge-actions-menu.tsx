@@ -1,6 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, Trash } from 'lucide-react';
-import { Burger, Menu, Modal } from '@mantine/core';
+import { ArrowDownWideNarrow, Edit, FilePlus2, ListPlus, MoreVertical, Trash } from 'lucide-react';
+import { Modal } from '@mantine/core';
 import type { ChargeType } from '@/helpers/index.js';
 import { useDeleteCharge } from '../../hooks/use-delete-charge.js';
 import { Depreciation } from '../common/depreciation/index.js';
@@ -13,7 +13,16 @@ import {
   UploadDocumentsModal,
   UploadPayrollFile,
 } from '../common/index.js';
+import { Button } from '../ui/button.js';
 import { Dialog, DialogContent } from '../ui/dialog.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu.js';
 
 interface ChargeActionsMenuProps {
   chargeId: string;
@@ -22,8 +31,6 @@ interface ChargeActionsMenuProps {
   isIncome: boolean;
 }
 
-type ClickEvent = React.MouseEvent<HTMLAnchorElement, MouseEvent>;
-
 export function ChargeActionsMenu({
   chargeId,
   chargeType,
@@ -31,7 +38,7 @@ export function ChargeActionsMenu({
   isIncome,
 }: ChargeActionsMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
-  const [opened, setOpened] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [depreciationOpened, setDepreciationOpened] = useState(false);
   const closeDepreciation = useCallback((): void => setDepreciationOpened(false), []);
   const [miscExpensesOpened, setMiscExpensesOpened] = useState(false);
@@ -43,133 +50,96 @@ export function ChargeActionsMenu({
 
   const [uploadDocumentsOpen, setUploadDocumentsOpen] = useState(false);
 
-  const closeMenu = useCallback((): void => {
-    setOpened(false);
-  }, []);
-
   const onDelete = useCallback(async (): Promise<void> => {
     await deleteCharge({
       chargeId,
     });
     onChange?.();
-    closeMenu();
-  }, [chargeId, deleteCharge, onChange, closeMenu]);
+  }, [chargeId, deleteCharge, onChange]);
 
   return (
     <>
-      <Menu shadow="md" width={200} opened={opened}>
-        <Menu.Target>
-          <Burger
-            opened={opened}
-            onClick={(event): void => {
-              event.stopPropagation();
-              setOpened(o => !o);
-            }}
-          />
-        </Menu.Target>
-
-        <Menu.Dropdown>
-          <Menu.Label>Charge</Menu.Label>
-          <Menu.Item
-            icon={<Edit size={14} />}
-            onClick={() => {
-              setEditingCharge(true);
-              closeMenu();
-            }}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Charge actions"
+            onClick={event => event.stopPropagation()}
           >
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent
+          align="start"
+          className="w-50"
+          onClick={event => event.stopPropagation()}
+        >
+          <DropdownMenuLabel>Charge</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setEditingCharge(true)}>
+            <Edit className="size-4" />
             Edit Charge
-          </Menu.Item>
-          <ConfirmationModal
-            onConfirm={onDelete}
-            title="Are you sure you want to delete this charge?"
-          >
-            <Menu.Item icon={<Trash size={14} />}>Delete Charge</Menu.Item>
-          </ConfirmationModal>
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setConfirmDeleteOpen(true)}>
+            <Trash className="size-4" />
+            Delete Charge
+          </DropdownMenuItem>
 
-          <Menu.Divider />
+          <DropdownMenuSeparator />
 
-          <Menu.Label>Documents</Menu.Label>
+          <DropdownMenuLabel>Documents</DropdownMenuLabel>
 
-          <Menu.Item
-            icon={<ListPlus size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              setInsertingDocument(true);
-              closeMenu();
-            }}
-          >
+          <DropdownMenuItem onSelect={() => setInsertingDocument(true)}>
+            <ListPlus className="size-4" />
             Insert Document
-          </Menu.Item>
-          <Menu.Item
-            icon={<FilePlus2 size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              setUploadDocumentsOpen(true);
-              closeMenu();
-            }}
-          >
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setUploadDocumentsOpen(true)}>
+            <FilePlus2 className="size-4" />
             Upload Documents
-          </Menu.Item>
+          </DropdownMenuItem>
           {isIncome && (
-            <Menu.Item
-              icon={<ListPlus size={14} />}
-              onClick={(event: ClickEvent): void => {
-                event.stopPropagation();
-                setPreviewIssueDocument(true);
-                closeMenu();
-              }}
-            >
+            <DropdownMenuItem onSelect={() => setPreviewIssueDocument(true)}>
+              <ListPlus className="size-4" />
               Issue Document
-            </Menu.Item>
+            </DropdownMenuItem>
           )}
 
-          <Menu.Divider />
+          <DropdownMenuSeparator />
 
-          <Menu.Label>Misc Expenses</Menu.Label>
-          <Menu.Item
-            icon={<ListPlus size={14} />}
-            onClick={(event: ClickEvent): void => {
-              event.stopPropagation();
-              closeMenu();
-              setMiscExpensesOpened(true);
-            }}
-          >
+          <DropdownMenuLabel>Misc Expenses</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setMiscExpensesOpened(true)}>
+            <ListPlus className="size-4" />
             Add expense
-          </Menu.Item>
+          </DropdownMenuItem>
           {chargeType === 'CommonCharge' && (
             <>
-              <Menu.Divider />
-              <Menu.Label>Depreciation</Menu.Label>
-              <Menu.Item
-                icon={<ArrowDownWideNarrow size={14} />}
-                onClick={(event: ClickEvent): void => {
-                  event.stopPropagation();
-                  setDepreciationOpened(true);
-                  closeMenu();
-                }}
-              >
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Depreciation</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => setDepreciationOpened(true)}>
+                <ArrowDownWideNarrow className="size-4" />
                 Depreciation
-              </Menu.Item>
+              </DropdownMenuItem>
             </>
           )}
           {chargeType === 'SalaryCharge' && (
             <>
-              <Menu.Divider />
-              <Menu.Label>Salaries</Menu.Label>
-              <Menu.Item
-                icon={<FilePlus2 size={14} />}
-                onClick={(event: ClickEvent): void => {
-                  event.stopPropagation();
-                  closeMenu();
-                  setUploadSalariesOpened(true);
-                }}
-              >
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Salaries</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => setUploadSalariesOpened(true)}>
+                <FilePlus2 className="size-4" />
                 Payroll file upload
-              </Menu.Item>
+              </DropdownMenuItem>
             </>
           )}
-        </Menu.Dropdown>
-      </Menu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmationModal
+        open={confirmDeleteOpen}
+        setOpen={setConfirmDeleteOpen}
+        onConfirm={onDelete}
+        title="Are you sure you want to delete this charge?"
+      />
       <Modal
         withinPortal
         size="xl"
