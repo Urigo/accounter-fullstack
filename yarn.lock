@@ -4254,6 +4254,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@graphql-tools/mock@npm:9.1.12":
+  version: 9.1.12
+  resolution: "@graphql-tools/mock@npm:9.1.12"
+  dependencies:
+    "@graphql-tools/schema": "npm:^10.0.38"
+    "@graphql-tools/utils": "npm:^11.2.2"
+    fast-json-stable-stringify: "npm:^2.1.0"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    graphql: ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10c0/27aa2ac287973f656f8c1412de4521f755f6e73cd8ec25b23bf54a6ffec9e8152c40f7581f5dd3b664fc342703eb7e2823f5da0e9c247f78b4c3d3a54de3f88d
+  languageName: node
+  linkType: hard
+
 "@graphql-tools/optimize@npm:^2.0.0":
   version: 2.0.0
   resolution: "@graphql-tools/optimize@npm:2.0.0"
@@ -11453,6 +11467,7 @@ __metadata:
     "@graphql-eslint/eslint-plugin": "npm:4.4.1"
     "@graphql-hive/cli": "npm:0.61.3"
     "@graphql-inspector/cli": "npm:6.0.8"
+    "@graphql-tools/mock": "npm:9.1.12"
     "@parcel/watcher": "npm:2.6.0"
     "@pgtyped/cli": "npm:2.4.3"
     "@pgtyped/runtime": "npm:2.4.2"
@@ -11480,6 +11495,7 @@ __metadata:
     glob: "npm:13.0.6"
     globals: "npm:17.9.0"
     graphql: "npm:16.14.2"
+    graphql-yoga: "npm:5.21.2"
     husky: "npm:9.1.7"
     lint-staged: "npm:17.3.0"
     pg: "npm:8.23.0"
@@ -15826,7 +15842,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-json-stable-stringify@npm:^2.0.0":
+"fast-json-stable-stringify@npm:^2.0.0, fast-json-stable-stringify@npm:^2.1.0":
   version: 2.1.0
   resolution: "fast-json-stable-stringify@npm:2.1.0"
   checksum: 10c0/7f081eb0b8a64e0057b3bb03f974b3ef00135fbf36c1c710895cd9300f13c94ba809bb3a81cf4e1b03f6e5285610a61abbd7602d0652de423144dfee5a389c9b
