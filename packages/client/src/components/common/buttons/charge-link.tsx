@@ -10,16 +10,15 @@ export const ChargeLink = ({
   label: string;
 }): ReactElement => {
   return (
-    <Button
-      key={chargeId}
-      variant="link"
-      className="h-auto justify-start p-0"
-      onClick={event => {
-        event.stopPropagation();
-        window.open(ROUTES.CHARGES.DETAIL(chargeId), '_blank', 'noreferrer');
-      }}
-    >
-      {label}
+    <Button key={chargeId} asChild variant="link" className="h-auto justify-start p-0">
+      <a
+        href={ROUTES.CHARGES.DETAIL(chargeId)}
+        target="_blank"
+        rel="noreferrer"
+        onClick={event => event.stopPropagation()}
+      >
+        {label}
+      </a>
     </Button>
   );
 };
