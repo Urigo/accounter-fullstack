@@ -1,41 +1,57 @@
 import { useState, type ReactElement } from 'react';
-import { HandCoins } from 'lucide-react';
-import { Burger, Menu } from '@mantine/core';
+import { HandCoins, MoreVertical } from 'lucide-react';
 import { useCreditShareholdersBusinessTripTnS } from '../../../../hooks/use-credit-shareholders-business-trip-tns.js';
 import { ConfirmationModal } from '../../../common/index.js';
+import { Button } from '../../../ui/button.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '../../../ui/dropdown-menu.js';
 
 interface Props {
   businessTripId: string;
 }
 
 export function BusinessTripToggleMenu({ businessTripId }: Props): ReactElement {
-  const [opened, setOpened] = useState(false);
+  const [confirmCreditOpen, setConfirmCreditOpen] = useState(false);
   const { creditShareholders } = useCreditShareholdersBusinessTripTnS();
 
   return (
-    <Menu shadow="md" width={200} opened={opened}>
-      <Menu.Target>
-        <Burger
-          opened={opened}
-          onClick={(event): void => {
-            event.stopPropagation();
-            setOpened(o => !o);
-          }}
-        />
-      </Menu.Target>
-
-      <Menu.Dropdown>
-        <Menu.Label>Summarize Trip</Menu.Label>
-
-        <ConfirmationModal
-          onConfirm={() => {
-            creditShareholders({ businessTripId });
-          }}
-          title="Credit shareholders with travel and subsistence surplus?"
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Business trip actions"
+            onClick={event => event.stopPropagation()}
+          >
+            <MoreVertical className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="w-50"
+          onClick={event => event.stopPropagation()}
         >
-          <Menu.Item icon={<HandCoins size={14} />}>Credit surplus T&S</Menu.Item>
-        </ConfirmationModal>
-      </Menu.Dropdown>
-    </Menu>
+          <DropdownMenuLabel variant="section">Summarize Trip</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setConfirmCreditOpen(true)}>
+            <HandCoins className="size-4" />
+            Credit surplus T&S
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ConfirmationModal
+        open={confirmCreditOpen}
+        setOpen={setConfirmCreditOpen}
+        onConfirm={() => {
+          creditShareholders({ businessTripId });
+        }}
+        title="Credit shareholders with travel and subsistence surplus?"
+      />
+    </>
   );
 }

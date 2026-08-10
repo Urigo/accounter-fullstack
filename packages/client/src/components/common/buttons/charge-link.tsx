@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
-import { NavLink } from '@mantine/core';
+import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
+import { Button } from '../../ui/button.js';
 
 export const ChargeLink = ({
   chargeId,
@@ -10,13 +11,15 @@ export const ChargeLink = ({
   label: string;
 }): ReactElement => {
   return (
-    <NavLink
-      key={chargeId}
-      label={label}
-      onClick={(event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-        event.stopPropagation();
-        window.open(ROUTES.CHARGES.DETAIL(chargeId), '_blank', 'noreferrer');
-      }}
-    />
+    <Button key={chargeId} asChild variant="link" className="h-auto justify-start p-0">
+      <Link
+        to={ROUTES.CHARGES.DETAIL(chargeId)}
+        target="_blank"
+        rel="noreferrer"
+        onClick={event => event.stopPropagation()}
+      >
+        {label}
+      </Link>
+    </Button>
   );
 };
