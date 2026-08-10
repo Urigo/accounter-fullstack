@@ -30,7 +30,9 @@ function authContext() {
     expiresAt: undefined,
     claims: { sub: 'user-perf' },
   };
-  const memberships: BusinessMembership[] = [{ businessId: BUSINESS, roleId: 'business_owner' }];
+  const memberships: BusinessMembership[] = [
+    { memberBusinessId: BUSINESS, roleId: 'business_owner' },
+  ];
   return buildAuthContext(principal, memberships);
 }
 
