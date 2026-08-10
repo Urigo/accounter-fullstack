@@ -1,15 +1,14 @@
-import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
-import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
 import { MissingInfoChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { ChargesFilters } from '../../charges/charges-filters.js';
-import { MergeChargesButton, Tooltip } from '../../common/index.js';
+import { Tooltip } from '../../common/index.js';
 import { PageLayout } from '../../layout/page-layout.js';
 import { Button } from '../../ui/button.js';
 
@@ -31,7 +30,6 @@ import { Button } from '../../ui/button.js';
 export const MissingInfoCharges = (): ReactElement => {
   const { setFiltersContext } = useContext(FiltersContext);
   const [isAllOpened, setIsAllOpened] = useState<boolean>(false);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const { get } = useUrlQuery();
   const [activePage, setActivePage] = useState(get('page') ? Number(get('page')) : 0);
   const uriFilters = get('chargesFilters');
@@ -50,7 +48,7 @@ export const MissingInfoCharges = (): ReactElement => {
 
   // Unlike All Charges, filters here are optional: the unfiltered list of
   // charges with missing info loads on mount.
-  const [{ data, fetching }, fetchCharges] = useQuery({
+  const [{ data, fetching }] = useQuery({
     query: MissingInfoChargesDocument,
     variables: {
       filters: filter,
@@ -64,25 +62,6 @@ export const MissingInfoCharges = (): ReactElement => {
   // re-render when the data actually changed — avoiding the "blink" when a
   // refetch returns identical results.
   const chargeNodes = useStableValue(data?.chargesWithMissingRequiredInfo?.nodes);
-
-  const resetMergeList = useCallback((): void => {
-    setRowSelection({});
-  }, []);
-
-  // Derive the merge button's input from the row-selection map. Each selected charge gets an
-  // `onChange` that refetches the list, so the table refreshes once a merge completes.
-  const mergeSelectedCharges = useMemo(
-    () =>
-      Object.entries(rowSelection)
-        .filter(([, isSelected]) => isSelected)
-        .map(([id]) => ({
-          id,
-          onChange: (): void => {
-            fetchCharges({ requestPolicy: 'network-only' });
-          },
-        })),
-    [rowSelection, fetchCharges],
-  );
 
   // Only the page count is consumed from the query result here. Depend on it
   // directly (instead of the whole `data`/`fetching`) so the filters bar isn't
@@ -114,7 +93,6 @@ export const MissingInfoCharges = (): ReactElement => {
             )}
           </Button>
         </Tooltip>
-        <MergeChargesButton selected={mergeSelectedCharges} resetMergeList={resetMergeList} />
       </div>,
     );
   }, [
@@ -126,8 +104,6 @@ export const MissingInfoCharges = (): ReactElement => {
     setActivePage,
     setFilter,
     setIsAllOpened,
-    mergeSelectedCharges,
-    resetMergeList,
   ]);
 
   return (
@@ -143,12 +119,7 @@ export const MissingInfoCharges = (): ReactElement => {
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
-          <ChargesTable
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            data={chargeNodes ?? []}
-            isAllOpened={isAllOpened}
-          />
+          <ChargesTable data={chargeNodes ?? []} isAllOpened={isAllOpened} />
         </div>
       )}
     </PageLayout>

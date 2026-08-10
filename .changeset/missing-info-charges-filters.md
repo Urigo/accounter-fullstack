@@ -12,6 +12,8 @@ missing-information switches — with one exception: the date range is optional 
 modal opens with empty From/To dates instead of the "last year" default, and old unresolved charges
 are not hidden.
 
+The merge-charges action was removed from this screen; merging stays available on All Charges.
+
 `chargesWithMissingRequiredInfo` now accepts `filters: ChargeFilter`. The `allCharges` filter,
 sort and pagination logic moved into a shared `fetchFilteredCharges` helper that the missing-info
 query reuses with the missing-info charge ids as an id restriction, so both screens filter, sort
