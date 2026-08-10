@@ -23,20 +23,14 @@ import {
   batchUpdateChargesTags,
   batchUpdateChargesYearsSpread,
 } from '../helpers/batch-update-charges.js';
-import { getChargeType, normalizeDbType } from '../helpers/charge-type.js';
-import {
-  getChargeBusinesses,
-  getChargeDocumentsMeta,
-  getChargeLedgerMeta,
-  getChargeTransactionsMeta,
-  isEnrichedFilteredCharge,
-} from '../helpers/common.helper.js';
+import { getChargeType } from '../helpers/charge-type.js';
+import { getChargeBusinesses, isEnrichedFilteredCharge } from '../helpers/common.helper.js';
 import { deleteCharges } from '../helpers/delete-charges.helper.js';
+import { fetchFilteredCharges } from '../helpers/filtered-charges.helper.js';
 import { mergeChargesExecutor } from '../helpers/merge-charges.helper.js';
 import { ChargeSpreadProvider } from '../providers/charge-spread.provider.js';
 import { ChargesProvider } from '../providers/charges.provider.js';
 import type {
-  accountant_statusArray,
   ChargesModule,
   IBatchUpdateChargesParams,
   IGetChargesByIdsResult,
@@ -172,81 +166,9 @@ export const chargesResolvers: ChargesModule.Resolvers &
       }
     },
     allCharges: async (_, { filters, page, limit }, { injector }) => {
-      // handle sort column
-      let sortColumn: 'event_date' | 'event_amount' | 'abs_event_amount' = 'event_date';
-      switch (filters?.sortBy?.field) {
-        case ChargeSortByField.Amount:
-          sortColumn = 'event_amount';
-          break;
-        case ChargeSortByField.AbsAmount:
-          sortColumn = 'abs_event_amount';
-          break;
-        case ChargeSortByField.Date:
-          sortColumn = 'event_date';
-          break;
-      }
-
-      const charges = await injector
-        .get(ChargesProvider)
-        .getChargesByFilters({
-          ownerIds: filters?.byOwners,
-          // Both date families are forwarded: `fromDate`/`toDate` test the
-          // charge's main date (documents min/max, else transaction event
-          // dates) — containment — while `fromAnyDate`/`toAnyDate` test whether
-          // the charge's span across *all* date sources overlaps the range. The
-          // SQL has always supported both; only the `*AnyDate` pair was wired
-          // up here, so a caller passing `fromDate`/`toDate` (as the MCP charge
-          // tools now can) got an unfiltered result instead of a narrower one.
-          fromDate: filters?.fromDate,
-          toDate: filters?.toDate,
-          fromAnyDate: filters?.fromAnyDate,
-          toAnyDate: filters?.toAnyDate,
-          sortColumn,
-          asc: filters?.sortBy?.asc !== false,
-          chargeType: filters?.chargesType,
-          businessIds: filters?.byBusinesses,
-          businessTripIds: filters?.byBusinessTrips,
-          withMissingCounterparty: filters?.withMissingCounterparty,
-          withoutInvoice: filters?.withoutInvoice,
-          withoutReceipt: filters?.withoutReceipt,
-          withoutDocuments: filters?.withoutDocuments,
-          withOpenDocuments: filters?.withOpenDocuments,
-          withoutTransactions: filters?.withoutTransactions,
-          withoutLedger: filters?.withoutLedger,
-          freeText: filters?.freeText?.trim().toLowerCase(),
-          tags: filters?.byTags,
-          accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
-        })
-        .catch(error => {
-          throw errorSimplifier('Error fetching charges', error);
-        });
-
-      // charge __typename is resolved dynamically, so filter by concrete type post-fetch
-      let filteredCharges = charges;
-      if (filters?.byChargeTypes?.length) {
-        const wantedTypes = new Set<ChargeTypeEnum>(filters.byChargeTypes?.map(normalizeDbType));
-        const chargeTypes = await Promise.all(
-          charges.map(charge =>
-            getChargeType(charge, injector).catch(error => {
-              throw errorSimplifier('Failed to determine charge type', error);
-            }),
-          ),
-        );
-        filteredCharges = charges.filter((_, index) => wantedTypes.has(chargeTypes[index]));
-      }
-
-      const pageCharges = filteredCharges.slice(page * limit, (page + 1) * limit);
-
-      return {
-        __typename: 'PaginatedCharges',
-        nodes: pageCharges,
-        pageInfo: {
-          totalPages: Math.ceil(filteredCharges.length / limit),
-          totalRecords: filteredCharges.length,
-        },
-      };
+      return fetchFilteredCharges(injector, { filters, page, limit });
     },
-    chargesWithMissingRequiredInfo: async (_, { page, limit }, { injector }) => {
+    chargesWithMissingRequiredInfo: async (_, { filters, page, limit }, { injector }) => {
       try {
         const chargeIds = new Set<string>();
         // get by transactions
@@ -285,86 +207,32 @@ export const chargesResolvers: ChargesModule.Resolvers &
             });
           });
 
-        await Promise.all([getByTransactionsPromise, getByDocumentsPromise, getByChargesPromise]);
+        // The read scope is enforced by RLS on every query, but it is also
+        // applied here as the owner filter so the pagination counts below are
+        // computed over the charges this request may actually see.
+        const [readScope] = await Promise.all([
+          injector
+            .get(ScopeProvider)
+            .getReadScope(filters?.byOwners ? [...filters.byOwners] : undefined),
+          getByTransactionsPromise,
+          getByDocumentsPromise,
+          getByChargesPromise,
+        ]);
 
-        const charges = await Promise.all(
-          Array.from(chargeIds).map(async id => {
-            const [
-              charge,
-              { transactionsMinDebitDate, transactionsMinEventDate },
-              { ledgerMinInvoiceDate, ledgerMinValueDate },
-              { documentsMinDate },
-            ] = await Promise.all([
-              injector
-                .get(ChargesProvider)
-                .getChargeByIdLoader.load(id)
-                .then(charge => {
-                  if (!charge) {
-                    throw new GraphQLError(`Charge ID="${id}" not found`);
-                  }
-                  return charge;
-                })
-                .catch(e => {
-                  const message = `Error loading charge ID="${id}"`;
-                  console.error(`${message}: ${e}`);
-                  throw new GraphQLError(message);
-                }),
-              getChargeTransactionsMeta(id, injector),
-              getChargeLedgerMeta(id, injector),
-              getChargeDocumentsMeta(id, injector),
-            ]);
-            return {
-              ...charge,
-              transactionsMinDebitDate,
-              transactionsMinEventDate,
-              ledgerMinInvoiceDate,
-              ledgerMinValueDate,
-              documentsMinDate,
-            };
-          }),
-        );
-
-        const readScope = await injector.get(ScopeProvider).getReadScope();
-
-        const pageCharges = charges
-          .filter(charge => !!charge.owner_id && readScope.includes(charge.owner_id))
-          .sort((chargeA, chargeB) => {
-            const dateA =
-              (
-                chargeA.documentsMinDate ||
-                chargeA.transactionsMinDebitDate ||
-                chargeA.transactionsMinEventDate ||
-                chargeA.ledgerMinValueDate ||
-                chargeA.ledgerMinInvoiceDate
-              )?.getTime() ?? 0;
-            const dateB =
-              (
-                chargeB.documentsMinDate ||
-                chargeB.transactionsMinDebitDate ||
-                chargeB.transactionsMinEventDate ||
-                chargeB.ledgerMinValueDate ||
-                chargeB.ledgerMinInvoiceDate
-              )?.getTime() ?? 0;
-
-            if (dateA > dateB) {
-              return -1;
-            }
-            if (dateA < dateB) {
-              return 1;
-            }
-
-            return chargeA.id.localeCompare(chargeB.id);
-          })
-          .slice(page * limit - limit, page * limit);
-
-        return {
-          __typename: 'PaginatedCharges',
-          nodes: pageCharges,
-          pageInfo: {
-            totalPages: Math.ceil(charges.length / limit),
-            totalRecords: charges.length,
+        // The charge list is narrowed to the missing-info ids, and otherwise
+        // filtered / sorted / paginated exactly like `allCharges`. Unsorted
+        // requests keep this screen's newest-first default (the shared path
+        // would otherwise fall back to ascending).
+        return fetchFilteredCharges(injector, {
+          filters: {
+            ...filters,
+            byOwners: readScope,
+            sortBy: filters?.sortBy ?? { field: ChargeSortByField.Date, asc: false },
           },
-        };
+          page,
+          limit,
+          restrictToIds: Array.from(chargeIds),
+        });
       } catch (error) {
         throw errorSimplifier('Failed to fetch charges with missing required info', error);
       }
