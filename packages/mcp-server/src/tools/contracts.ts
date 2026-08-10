@@ -8,12 +8,17 @@ import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.
 /**
  * Read-only client-contracts search.
  *
- * A contract is the billing agreement between an admin business (the owner —
- * one of *your* businesses) and a client. The two useful axes are therefore the
- * admin side and the client side, and the tool filters on either; `contractIds`
- * is there to re-fetch a specific contract a previous answer referenced. Every
- * row reports its `adminId` so a result spanning admin businesses can be
- * grouped without a second call.
+ * A contract is the billing agreement between an admin business (the owner) and
+ * a client. The admin side *is* the membership axis — a contract you can see is
+ * owned by a business you are a member of — so the shared `memberBusinessIds`
+ * doubles as the admin filter and maps onto the upstream `filters.adminIds`.
+ * There is deliberately no second `adminIds` input: a tool-level field narrowing
+ * the same axis as the scope field would need its own intersection rule, and
+ * getting that rule wrong silently answers a different question than the one
+ * asked. The remaining axes are the client (`clientIds`) and specific contracts
+ * (`contractIds`, to re-fetch one a previous answer referenced). Every row
+ * reports its `adminId` so a result spanning admin businesses can be grouped
+ * without a second call.
  */
 
 export const GET_CONTRACTS_TOOL_NAME = 'accounter_get_contracts';
@@ -31,9 +36,6 @@ const idList = (what: string) =>
 
 const getContractsInput = z.object({
   memberBusinessIds: memberBusinessIdsInput,
-  adminIds: idList(
-    'owned by any of these admin (owner) businesses — must be a subset of the businesses you belong to',
-  ),
   clientIds: idList('belonging to any of these clients'),
   contractIds: idList('with these ids'),
   isActive: z
@@ -130,19 +132,13 @@ function buildFilters(
   memberBusinessIds: readonly string[],
 ): NonNullable<McpGetContractsQueryVariables['filters']> {
   const filters: NonNullable<McpGetContractsQueryVariables['filters']> = {};
-  // Narrow to the admin businesses the caller asked for, intersected with the
-  // resolved read scope. Without the intersection an explicit `adminIds` would
-  // widen the request past the caller's own businesses; the scope is already
-  // enforced upstream, but a business-scoped tool must not send an
-  // unauthorized owner id in the first place.
-  const requested = input.adminIds?.length ? input.adminIds : undefined;
-  const admins = requested
-    ? memberBusinessIds.length > 0
-      ? requested.filter(id => memberBusinessIds.includes(id))
-      : requested
-    : memberBusinessIds;
-  if (admins.length > 0) {
-    filters.adminIds = [...admins];
+  // The resolved scope is the admin filter: `memberBusinessIds` has already been
+  // validated against the caller's memberships by the policy layer (out-of-scope
+  // ids are rejected, never dropped), so it can go straight through as
+  // `adminIds`. Kept as an explicit predicate even though `x-business-scope`
+  // narrows via RLS upstream: defense in depth.
+  if (memberBusinessIds.length > 0) {
+    filters.adminIds = [...memberBusinessIds];
   }
   if (input.clientIds?.length) filters.clientIds = [...input.clientIds];
   if (input.contractIds?.length) filters.contractIds = [...input.contractIds];
@@ -186,7 +182,7 @@ async function handler(
 export const getContractsTool: ToolDefinition<typeof getContractsInput> = {
   name: GET_CONTRACTS_TOOL_NAME,
   description:
-    'List client billing contracts within your authorized businesses. Filter by admin (owner) business, by client, by contract id, and by active state. Each row reports its `adminId`. Read-only. ' +
+    'List client billing contracts within your authorized businesses. Filter by client, by contract id, and by active state; `memberBusinessIds` narrows to specific admin (owner) businesses, since a contract is always owned by one of yours. Each row reports its `adminId`. Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getContractsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

@@ -55,7 +55,9 @@ export const contractsResolvers: ContractsModule.Resolvers = {
     },
     contractsByFilters: async (_, { filters }, { injector }) => {
       try {
-        return injector.get(ContractsProvider).getContractsByFilters({
+        // Awaited inside the `try` on purpose: returning the promise would let a
+        // rejection escape the catch below and surface unwrapped.
+        return await injector.get(ContractsProvider).getContractsByFilters({
           adminIds: filters?.adminIds,
           clientIds: filters?.clientIds,
           contractIds: filters?.contractIds,

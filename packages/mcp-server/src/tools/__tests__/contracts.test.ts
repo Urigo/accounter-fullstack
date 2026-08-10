@@ -92,7 +92,7 @@ describe('getContractsTool — successful read', () => {
     expect(structured.scope).toEqual({ memberBusinessIds: ['b1'] });
   });
 
-  it('defaults adminIds to the resolved read scope', async () => {
+  it('sends the resolved read scope as adminIds', async () => {
     let body: unknown;
     const client = clientReturning({ contractsByFilters: [] }, captured => {
       body = captured;
@@ -123,14 +123,15 @@ describe('getContractsTool — successful read', () => {
     });
   });
 
-  // An explicit `adminIds` must never widen the request past the caller's own
-  // businesses, even though the scope is also enforced upstream.
-  it('intersects an explicit adminIds with the read scope', async () => {
+  // The admin axis is narrowed through the scope field, which the policy layer
+  // validates against memberships — so a narrowed scope narrows `adminIds`, and
+  // an out-of-scope id is rejected rather than intersected away (see below).
+  it('narrows adminIds when memberBusinessIds narrows the scope', async () => {
     let body: unknown;
     const client = clientReturning({ contractsByFilters: [] }, captured => {
       body = captured;
     });
-    await run(client, authContext(['b1', 'b2']), { adminIds: ['b2', 'b3'] });
+    await run(client, authContext(['b1', 'b2']), { memberBusinessIds: ['b2'] });
 
     const filters = (body as { variables: { filters: { adminIds: string[] } } }).variables.filters;
     expect(filters.adminIds).toEqual(['b2']);
