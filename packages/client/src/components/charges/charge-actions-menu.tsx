@@ -76,7 +76,7 @@ export function ChargeActionsMenu({
           className="w-50"
           onClick={event => event.stopPropagation()}
         >
-          <DropdownMenuLabel>Charge</DropdownMenuLabel>
+          <DropdownMenuLabel variant="section">Charge</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => setEditingCharge(true)}>
             <Edit className="size-4" />
             Edit Charge
@@ -88,7 +88,7 @@ export function ChargeActionsMenu({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuLabel>Documents</DropdownMenuLabel>
+          <DropdownMenuLabel variant="section">Documents</DropdownMenuLabel>
 
           <DropdownMenuItem onSelect={() => setInsertingDocument(true)}>
             <ListPlus className="size-4" />
@@ -107,7 +107,7 @@ export function ChargeActionsMenu({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuLabel>Misc Expenses</DropdownMenuLabel>
+          <DropdownMenuLabel variant="section">Misc Expenses</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => setMiscExpensesOpened(true)}>
             <ListPlus className="size-4" />
             Add expense
@@ -115,7 +115,7 @@ export function ChargeActionsMenu({
           {chargeType === 'CommonCharge' && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Depreciation</DropdownMenuLabel>
+              <DropdownMenuLabel variant="section">Depreciation</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setDepreciationOpened(true)}>
                 <ArrowDownWideNarrow className="size-4" />
                 Depreciation
@@ -125,7 +125,7 @@ export function ChargeActionsMenu({
           {chargeType === 'SalaryCharge' && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>Salaries</DropdownMenuLabel>
+              <DropdownMenuLabel variant="section">Salaries</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => setUploadSalariesOpened(true)}>
                 <FilePlus2 className="size-4" />
                 Payroll file upload

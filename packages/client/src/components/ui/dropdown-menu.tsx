@@ -125,15 +125,25 @@ function DropdownMenuRadioItem({
 function DropdownMenuLabel({
   className,
   inset,
+  variant = 'default',
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
   inset?: boolean;
+  /**
+   * `default` renders a prominent label, for content headers such as the signed-in user's details.
+   * `section` renders a muted, smaller heading for a group of menu items.
+   */
+  variant?: 'default' | 'section';
 }) {
   return (
     <DropdownMenuPrimitive.Label
       data-slot="dropdown-menu-label"
       data-inset={inset}
-      className={cn('px-2 py-1.5 text-sm font-medium data-[inset]:pl-8', className)}
+      className={cn(
+        'px-2 py-1.5 text-sm font-medium data-[inset]:pl-8',
+        variant === 'section' && 'text-xs font-normal text-gray-500 dark:text-gray-400',
+        className,
+      )}
       {...props}
     />
   );

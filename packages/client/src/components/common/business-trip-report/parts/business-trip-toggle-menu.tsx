@@ -37,7 +37,7 @@ export function BusinessTripToggleMenu({ businessTripId }: Props): ReactElement 
           className="w-50"
           onClick={event => event.stopPropagation()}
         >
-          <DropdownMenuLabel>Summarize Trip</DropdownMenuLabel>
+          <DropdownMenuLabel variant="section">Summarize Trip</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => setConfirmCreditOpen(true)}>
             <HandCoins className="size-4" />
             Credit surplus T&S
