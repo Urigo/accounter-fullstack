@@ -53,7 +53,11 @@ async function fetchOwnerForMatching(injector: Injector): Promise<OwnerMatchInfo
       .get(AdminContextProvider)
       .getVerifiedAdminContext();
     return { id: ownerId, locality: locality ?? null };
-  } catch {
+  } catch (e) {
+    // Non-fatal: OCR still runs, it just loses the owner locality used for the
+    // foreign-counterparty VAT-0 default. Logged because a silent failure here
+    // silently degrades recognition.
+    console.error('Failed to load owner context for business matching:', e);
     return undefined;
   }
 }
@@ -69,15 +73,33 @@ async function fetchBusinessesForMatching(injector: Injector): Promise<BusinessM
       suggestion_data: suggestionDataSchema.safeParse(b.suggestion_data).data ?? null,
       locality: b.country ?? null,
     }));
-  } catch {
+  } catch (e) {
+    // Non-fatal, but an empty list disables business matching entirely
+    // (`matchBusiness` bails on an empty list and the LLM match fallback is
+    // skipped), so it must not be silent.
+    console.error('Failed to load businesses for business matching:', e);
     return [];
   }
 }
+
+/**
+ * Pre-resolved inputs for the OCR business matching, for callers that cannot use
+ * the auth-coupled `BusinessesProvider` / `AdminContextProvider` loaders — namely
+ * the gateway email-ingestion path, which runs under a control-plane context
+ * where their `TenantAwareDBClient` throws "Missing businessId in AuthContext".
+ */
+export type BusinessMatchContext = {
+  businesses: BusinessMatchData[];
+  owner?: OwnerMatchInfo;
+};
 
 export async function getOcrData(
   injector: Injector,
   file: File | Blob,
   isSensitive: boolean | null = true,
+  // When provided, the businesses/owner fed to the matcher come from here instead
+  // of the auth-coupled loaders. Absent (the default), the loaders are used, as before.
+  matchContext?: BusinessMatchContext,
 ): Promise<OcrData> {
   const validateNumber = (value: unknown): number | undefined => {
     return typeof value === 'number' && !Number.isNaN(value) ? value : undefined;
@@ -95,10 +117,9 @@ export async function getOcrData(
     };
   }
 
-  const [businesses, owner] = await Promise.all([
-    fetchBusinessesForMatching(injector),
-    fetchOwnerForMatching(injector),
-  ]);
+  const [businesses, owner] = matchContext
+    ? [matchContext.businesses, matchContext.owner]
+    : await Promise.all([fetchBusinessesForMatching(injector), fetchOwnerForMatching(injector)]);
   const draft = await injector
     .get(AnthropicProvider)
     .extractInvoiceDetails(file, businesses, owner);
@@ -232,36 +253,54 @@ export async function getDocumentFromUrlsAndOcrData(
   return newDocument;
 }
 
-function resolveOwnerSideFromUuids(ocrData: OcrData, ownerId: string): void {
+/**
+ * Turn the OCR business-match UUIDs (`suggestedIssuer` / `suggestedRecipient`)
+ * into `isOwnerIssuer` + `counterpartyId`. `counterpartyId` is only filled when
+ * unset (`??=`), so a caller that already resolved the counterparty from a
+ * higher-confidence source (e.g. the email-ingestion grant) keeps it.
+ */
+export function resolveOwnerSideFromUuids(ocrData: OcrData, ownerId: string): void {
   const { suggestedIssuer, suggestedRecipient } = ocrData;
   if (suggestedIssuer == null && suggestedRecipient == null) return;
 
+  // The owner on *both* sides is a contradiction (a business cannot transact with
+  // itself), so the match carries no usable information about which side the owner
+  // is on. Bail rather than guess: committing to `isOwnerIssuer` here would flip an
+  // already-resolved counterparty (e.g. the email-ingestion grant's business) onto
+  // the wrong side of the document.
+  if (suggestedIssuer === ownerId && suggestedRecipient === ownerId) return;
+
+  // The counterparty is by definition not the owner. Enforced here rather than at
+  // each assignment so no branch can produce an "owner is its own counterparty"
+  // document, whose sides both collapse onto the owner in `figureOutSides`.
+  const setCounterparty = (id: string | null | undefined): void => {
+    if (id && id !== ownerId) {
+      ocrData.counterpartyId ??= id;
+    }
+  };
+
   if (suggestedIssuer === ownerId) {
     ocrData.isOwnerIssuer = true;
-    if (suggestedRecipient) {
-      ocrData.counterpartyId ??= suggestedRecipient;
-    }
+    setCounterparty(suggestedRecipient);
   } else if (suggestedRecipient === ownerId) {
     ocrData.isOwnerIssuer = false;
-    if (suggestedIssuer) {
-      ocrData.counterpartyId ??= suggestedIssuer;
-    }
+    setCounterparty(suggestedIssuer);
   } else if (suggestedIssuer != null && suggestedRecipient != null) {
     // Both sides matched to non-owner businesses — ambiguous which side the owner is.
     // Preserve the OCR-derived isOwnerIssuer and use it only to pick counterpartyId.
     if (ocrData.isOwnerIssuer === true) {
-      ocrData.counterpartyId ??= suggestedRecipient;
+      setCounterparty(suggestedRecipient);
     } else if (ocrData.isOwnerIssuer === false) {
-      ocrData.counterpartyId ??= suggestedIssuer;
+      setCounterparty(suggestedIssuer);
     }
   } else if (suggestedIssuer != null) {
     // Only issuer matched to a non-owner business → owner must be the recipient side
     ocrData.isOwnerIssuer = false;
-    ocrData.counterpartyId ??= suggestedIssuer;
+    setCounterparty(suggestedIssuer);
   } else if (suggestedRecipient != null) {
     // Only recipient matched to a non-owner business → owner must be the issuer side
     ocrData.isOwnerIssuer = true;
-    ocrData.counterpartyId ??= suggestedRecipient;
+    setCounterparty(suggestedRecipient);
   }
 }
 

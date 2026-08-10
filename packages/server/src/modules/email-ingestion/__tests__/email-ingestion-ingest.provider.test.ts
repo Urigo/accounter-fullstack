@@ -54,6 +54,23 @@ const VALID_GRANT_SELF_ISSUED = {
 
 const DOC_CONTENT_B64 = Buffer.from('%PDF-1.4 fake invoice bytes').toString('base64');
 
+// A row of the tenant-scoped businesses read in prepareDocuments, which feeds the OCR
+// business matcher (and, via `country`, the foreign-counterparty VAT-0 fallback).
+function businessRow(id: string, name: string, country: string | null) {
+  return { id, name, hebrew_name: null, vat_number: null, suggestion_data: null, country };
+}
+
+/**
+ * The two prepare-phase reads that follow the document-by-hash check, in call order:
+ * the tenant's businesses (for business matching) and the tenant's locality.
+ */
+function prepareContextRows(businesses = [businessRow(BUSINESS_ID, 'Vendor Ltd', 'IL')]) {
+  return [
+    { rows: businesses, rowCount: businesses.length },
+    { rows: [{ locality: 'IL' }], rowCount: 1 },
+  ];
+}
+
 const BASE_INPUT = {
   grantJti: JTI,
   idempotencyKey: IDEM_KEY,
@@ -243,8 +260,7 @@ describe('EmailIngestionIngestProvider.performIngest — grant validation', () =
       [
         { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [], rowCount: 0 }, // prepareDocuments: checkDocumentByHash → new candidate
-        { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
-        { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
+        ...prepareContextRows(), // prepareDocuments: businesses + admin locality
         { rows: [{ id: 'q-id' }], rowCount: 1 }, // quarantine insert
         { rows: [idemRow], rowCount: 1 }, // idempotency insert
         { rows: [dedupRow], rowCount: 1 }, // dedup insert
@@ -630,8 +646,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
       [
         { rows: [], rowCount: 0 }, // early idempotency miss
         { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
-        { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
-        { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
+        ...prepareContextRows(), // prepareDocuments: businesses + admin locality
         { rows: [], rowCount: 0 }, // idempotency miss
         { rows: [], rowCount: 0 }, // dedup fingerprint miss
         { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
@@ -660,6 +675,148 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     expect(docInsert?.values).toContain(BUSINESS_ID);
   });
 
+  // `insertIngestDocumentFull` binds creditor_id and debtor_id last, in that order.
+  const sides = (call?: { values: unknown[] }) => ({
+    creditorId: call?.values.at(-2),
+    debtorId: call?.values.at(-1),
+  });
+
+  const insertedRows = [
+    { rows: [], rowCount: 0 }, // idempotency miss
+    { rows: [], rowCount: 0 }, // dedup fingerprint miss
+    { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
+    { rows: [{ id: 'doc-1' }], rowCount: 1 }, // document insert
+    { rows: [idemRow], rowCount: 1 }, // idempotency insert
+    { rows: [dedupRow], rowCount: 1 }, // dedup insert
+  ];
+
+  it("feeds the tenant's businesses and locality to the OCR business matcher", async () => {
+    // Regression: `getOcrData` used to resolve these through the auth-coupled
+    // BusinessesProvider / AdminContextProvider, which throw in this control-plane
+    // context; the bare catch turned that into an empty business list, so every
+    // `suggestedIssuer` came back null and no document was ever matched by name/VAT.
+    extractInvoiceDetails.mockClear();
+
+    const { provider } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      ...prepareContextRows(),
+      ...insertedRows,
+    ]);
+
+    await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(extractInvoiceDetails).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        {
+          id: BUSINESS_ID,
+          name: 'Vendor Ltd',
+          hebrew_name: null,
+          vat_number: null,
+          suggestion_data: null,
+          locality: 'IL',
+        },
+      ],
+      { id: TENANT_ID, locality: 'IL' },
+    );
+  });
+
+  it('attributes the OCR-matched issuer as creditor when the grant recognized no business', async () => {
+    // The reported case: mail forwarded by an aggregator (e.g. wellybox) whose address
+    // is in no business's `suggestion_data.emails`, so control-time recognition yields
+    // no business — but OCR reads the issuer's legal name off the document and matches
+    // it. Before, such documents were inserted with a NULL creditor.
+    const OCR_MATCHED_ID = 'business-uuid-from-ocr';
+    extractInvoiceDetails.mockResolvedValueOnce({
+      type: DocumentType.Invoice,
+      suggestedIssuer: OCR_MATCHED_ID,
+      suggestedRecipient: TENANT_ID,
+    });
+
+    const { provider, dataCalls } = makeProvider(VALID_GRANT, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      ...prepareContextRows([businessRow(OCR_MATCHED_ID, 'Anthropic, PBC', 'US')]),
+      ...insertedRows,
+    ]);
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED });
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(sides(docInsert)).toEqual({ creditorId: OCR_MATCHED_ID, debtorId: TENANT_ID });
+  });
+
+  it('flips the sides when OCR identifies the tenant as the issuer', async () => {
+    // `isOwnerIssuer` was previously never set on this path, so sides were always
+    // creditor=counterparty / debtor=tenant. An owner-issued document must invert.
+    const OCR_MATCHED_ID = 'business-uuid-recipient';
+    extractInvoiceDetails.mockResolvedValueOnce({
+      type: DocumentType.Invoice,
+      suggestedIssuer: TENANT_ID,
+      suggestedRecipient: OCR_MATCHED_ID,
+    });
+
+    const { provider, dataCalls } = makeProvider(VALID_GRANT, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      ...prepareContextRows([businessRow(OCR_MATCHED_ID, 'Client Ltd', 'IL')]),
+      ...insertedRows,
+    ]);
+
+    await provider.performIngest(inputWithContent, ocrInjector);
+
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(sides(docInsert)).toEqual({ creditorId: TENANT_ID, debtorId: OCR_MATCHED_ID });
+  });
+
+  it('keeps the grant-recognized business when the OCR match disagrees, and warns', async () => {
+    // The sender-address match is the higher-confidence signal and stays authoritative;
+    // the disagreement is logged so the precedence can be revisited with real data.
+    const OCR_MATCHED_ID = 'business-uuid-from-ocr';
+    extractInvoiceDetails.mockResolvedValueOnce({
+      type: DocumentType.Invoice,
+      suggestedIssuer: OCR_MATCHED_ID,
+      suggestedRecipient: TENANT_ID,
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      ...prepareContextRows([
+        businessRow(BUSINESS_ID, 'Vendor Ltd', 'IL'),
+        businessRow(OCR_MATCHED_ID, 'Other Vendor', 'IL'),
+      ]),
+      ...insertedRows,
+    ]);
+
+    await provider.performIngest(inputWithContent, ocrInjector);
+
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(sides(docInsert)).toEqual({ creditorId: BUSINESS_ID, debtorId: TENANT_ID });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('counterparty disagreement'));
+    warn.mockRestore();
+  });
+
+  it('inserts with no creditor when neither the grant nor OCR identifies a business', async () => {
+    // No recognition at all must still insert the document (visible and fixable in the
+    // UI) rather than fail the ingest.
+    const { provider, dataCalls } = makeProvider(VALID_GRANT, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
+      ...prepareContextRows([]), // tenant has no businesses
+      ...insertedRows,
+    ]);
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED });
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(sides(docInsert)).toEqual({ creditorId: null, debtorId: TENANT_ID });
+  });
+
   it('resolves foreign-counterparty VAT via the raw pool, not the auth-coupled providers', async () => {
     // Regression: the gateway ingest runs under a control-plane context with no auth
     // session. The foreign-counterparty VAT-0 fallback must read the counterparty
@@ -672,8 +829,8 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
-      { rows: [{ country: 'US' }], rowCount: 1 }, // counterparty country (foreign)
-      { rows: [{ locality: 'IL' }], rowCount: 1 }, // admin locality
+      // counterparty is foreign (US) relative to the tenant locality (IL) below
+      ...prepareContextRows([businessRow(BUSINESS_ID, 'Vendor Inc', 'US')]),
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
       { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
@@ -685,7 +842,11 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const result = await provider.performIngest(inputWithContent, ocrInjector);
 
     expect(result).toMatchObject({ outcome: IngestOutcome.INSERTED, ingestId: 'charge-1' });
-    // The VAT-0 fallback inputs are read via the raw pool…
+    // The fallback actually fired: a NULL extracted VAT resolves to 0 for a foreign
+    // counterparty.
+    const docInsert = dataCalls.find(c => c.text.includes('INTO accounter_schema.documents'));
+    expect(docInsert?.values).toContain(0);
+    // The inputs are read via the raw pool…
     expect(
       dataCalls.some(
         c => c.text.includes('FROM accounter_schema.businesses') && c.text.includes('country'),
@@ -705,8 +866,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
-      { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
-      { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
+      ...prepareContextRows(), // prepareDocuments: businesses + admin locality
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
       { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
@@ -736,8 +896,7 @@ describe('EmailIngestionIngestProvider.performIngest — document persistence', 
     const { provider, dataCalls } = makeProvider(VALID_GRANT_WITH_BUSINESS, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [], rowCount: 0 }, // document-by-hash miss (prepare tx, pre-upload)
-      { rows: [{ country: 'IL' }], rowCount: 1 }, // prepareDocuments: counterparty country (VAT-0 fallback input)
-      { rows: [{ locality: 'IL' }], rowCount: 1 }, // prepareDocuments: admin locality (VAT-0 fallback input)
+      ...prepareContextRows(), // prepareDocuments: businesses + admin locality
       { rows: [], rowCount: 0 }, // idempotency miss
       { rows: [], rowCount: 0 }, // dedup fingerprint miss
       { rows: [{ id: 'charge-1' }], rowCount: 1 }, // charge insert
