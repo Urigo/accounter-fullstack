@@ -31,13 +31,14 @@ export const ExtendedTransactionsCard = ({
   onCloseExtendedTransactions,
 }: ExtendedTransactionsCardProps): ReactElement => {
   const transactionsMeta = periodInfo?.transactions;
+  console.log('periodInfo?.transactions', periodInfo?.transactions);
   const transactionIDs = useMemo(() => {
     if (!transactionsMeta || transactionsMeta.length === 0) {
       return [];
     }
     const spreadList = [...transactionsMeta];
     return spreadList
-      .sort((a, b) => (Math.abs(a.amount.raw) > Math.abs(b.amount.raw) ? -1 : 1))
+      .sort((a, b) => Math.abs(b.amountUsd.raw) - Math.abs(a.amountUsd.raw))
       .map(transaction => transaction.id);
   }, [transactionsMeta]);
 
