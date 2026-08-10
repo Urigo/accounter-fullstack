@@ -5,8 +5,10 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { listBusinessMembershipsTool } from '../businesses.js';
 import { getChargesTool } from '../charge-details.js';
 import { searchChargesTool } from '../charges.js';
+import { getContractsTool } from '../contracts.js';
 import { getDocumentsTool } from '../document-details.js';
 import { executeRegisteredTool } from '../execute.js';
+import { getLedgerRecordsTool } from '../ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
 import { balanceReportTool } from '../reports.js';
@@ -52,6 +54,8 @@ function clientReturning(data: unknown) {
 
 const BUSINESS_SCOPED_TOOLS = [
   searchChargesTool,
+  getLedgerRecordsTool,
+  getContractsTool,
   listTagsTool,
   listTaxCategoriesTool,
   listBusinessesTool,
@@ -62,7 +66,13 @@ const BUSINESS_SCOPED_TOOLS = [
 // suffix (see lookups.ts), so it is deliberately excluded from the shared-suffix
 // assertion below — but still checked for the discovery pointer, the
 // `memberBusinessIds` input, and the echoed scope like the other list tools.
-const MULTI_BUSINESS_TOOLS = [searchChargesTool, listTagsTool, listTaxCategoriesTool];
+const MULTI_BUSINESS_TOOLS = [
+  searchChargesTool,
+  getLedgerRecordsTool,
+  getContractsTool,
+  listTagsTool,
+  listTaxCategoriesTool,
+];
 
 describe('uniform business-scope input', () => {
   it.each(MULTI_BUSINESS_TOOLS.map(tool => [tool.name, tool] as const))(

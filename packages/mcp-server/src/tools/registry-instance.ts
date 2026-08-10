@@ -1,7 +1,9 @@
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
+import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
+import { getLedgerRecordsTool } from './ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
@@ -27,6 +29,10 @@ toolRegistry.register(searchChargesTool);
 toolRegistry.register(getChargesTool);
 toolRegistry.register(getTransactionsTool);
 toolRegistry.register(getDocumentsTool);
+// Ledger records are the accounting layer under a charge, so they follow the
+// charge/transaction/document drill-down rather than sitting with the lookups.
+toolRegistry.register(getLedgerRecordsTool);
+toolRegistry.register(getContractsTool);
 toolRegistry.register(listTagsTool);
 toolRegistry.register(listTaxCategoriesTool);
 // The full business directory sits with the other reference-data lookups.

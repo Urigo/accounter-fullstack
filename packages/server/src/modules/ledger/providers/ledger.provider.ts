@@ -14,6 +14,8 @@ import type {
   IGetLedgerRecordsByChargesIdsQuery,
   IGetLedgerRecordsByDatesParams,
   IGetLedgerRecordsByDatesQuery,
+  IGetLedgerRecordsByFiltersParams,
+  IGetLedgerRecordsByFiltersQuery,
   IGetLedgerRecordsByFinancialEntityIdsQuery,
   IGetLedgerRecordsByIdsQuery,
   IInsertLedgerRecordsParams,
@@ -51,6 +53,35 @@ const getLedgerRecordsByDates = sql<IGetLedgerRecordsByDatesQuery>`
     FROM accounter_schema.ledger_records
     WHERE invoice_date BETWEEN $fromDate AND $toDate
     AND owner_id = $ownerId;`;
+
+const getLedgerRecordsByFilters = sql<IGetLedgerRecordsByFiltersQuery>`
+    SELECT *
+    FROM accounter_schema.ledger_records
+    WHERE ($isChargeIds = 0 OR charge_id IN $$chargeIds)
+      AND ($isOwnerIds = 0 OR owner_id IN $$ownerIds)
+      AND ($isFinancialEntityIds = 0 OR (
+            ($matchDebit1 = 1 AND debit_entity1 IN $$financialEntityIds)
+         OR ($matchDebit2 = 1 AND debit_entity2 IN $$financialEntityIds)
+         OR ($matchCredit1 = 1 AND credit_entity1 IN $$financialEntityIds)
+         OR ($matchCredit2 = 1 AND credit_entity2 IN $$financialEntityIds)
+      ))
+      AND ($fromInvoiceDate::DATE IS NULL OR invoice_date >= $fromInvoiceDate)
+      AND ($toInvoiceDate::DATE IS NULL OR invoice_date <= $toInvoiceDate)
+      AND ($fromValueDate::DATE IS NULL OR value_date >= $fromValueDate)
+      AND ($toValueDate::DATE IS NULL OR value_date <= $toValueDate)
+      -- "any date" matches when *either* date falls inside the requested window,
+      -- so the two bounds must be applied to the same column rather than mixed
+      -- across columns (which would match a record whose invoice date is after
+      -- the window and whose value date is before it).
+      AND (
+        ($fromAnyDate::DATE IS NULL AND $toAnyDate::DATE IS NULL)
+        OR (($fromAnyDate::DATE IS NULL OR invoice_date >= $fromAnyDate)
+            AND ($toAnyDate::DATE IS NULL OR invoice_date <= $toAnyDate))
+        OR (($fromAnyDate::DATE IS NULL OR value_date >= $fromAnyDate)
+            AND ($toAnyDate::DATE IS NULL OR value_date <= $toAnyDate))
+      )
+    ORDER BY invoice_date, value_date, id
+    LIMIT $limit;`;
 
 const getLedgerBalanceToDate = sql<IGetLedgerBalanceToDateQuery>`
     WITH grouped_entities AS (SELECT credit_entity1 AS entity_id, credit_local_amount1 AS amount, invoice_date
@@ -228,6 +259,38 @@ const lockLedgerRecords = sql<ILockLedgerRecordsQuery>`
   RETURNING *
 `;
 
+/**
+ * Fallback cap for a filtered ledger search that names no `limit`. The table is
+ * the largest in the schema, so an unbounded read is a foot-gun — a caller that
+ * genuinely wants more rows asks for them explicitly.
+ */
+export const DEFAULT_LEDGER_RECORDS_LIMIT = 10_000;
+
+/** The account slots a ledger record can reference a financial entity in. */
+export const LEDGER_RECORD_ACCOUNTS = [
+  'DEBIT_ACCOUNT_1',
+  'DEBIT_ACCOUNT_2',
+  'CREDIT_ACCOUNT_1',
+  'CREDIT_ACCOUNT_2',
+] as const;
+
+export type LedgerRecordAccount = (typeof LEDGER_RECORD_ACCOUNTS)[number];
+
+/** Caller-facing filters for {@link LedgerProvider.getLedgerRecordsByFilters}. */
+export type LedgerRecordsFiltersParams = {
+  fromInvoiceDate?: TimelessDateString | null;
+  toInvoiceDate?: TimelessDateString | null;
+  fromValueDate?: TimelessDateString | null;
+  toValueDate?: TimelessDateString | null;
+  fromAnyDate?: TimelessDateString | null;
+  toAnyDate?: TimelessDateString | null;
+  financialEntityIds?: readonly string[] | null;
+  financialEntityAccounts?: readonly LedgerRecordAccount[] | null;
+  ownerIds?: readonly string[] | null;
+  chargeIds?: readonly string[] | null;
+  limit?: number | null;
+};
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -297,6 +360,47 @@ export class LedgerProvider {
   public async getLedgerRecordsByDates(params: IGetLedgerRecordsByDatesParams) {
     const { ownerId } = await this.adminContextProvider.getVerifiedAdminContext();
     return getLedgerRecordsByDates.run(reassureOwnerIdExists(params, ownerId), this.db);
+  }
+
+  public getLedgerRecordsByFilters(params: LedgerRecordsFiltersParams) {
+    const isChargeIds = !!params.chargeIds?.filter(Boolean).length;
+    const isOwnerIds = !!params.ownerIds?.filter(Boolean).length;
+    const isFinancialEntityIds = !!params.financialEntityIds?.filter(Boolean).length;
+
+    // An empty/omitted account list means "any account slot" — narrowing to a
+    // subset is opt-in, so an unspecified filter must not silently match nothing.
+    const accounts = params.financialEntityAccounts?.length
+      ? params.financialEntityAccounts
+      : LEDGER_RECORD_ACCOUNTS;
+
+    const fullParams: IGetLedgerRecordsByFiltersParams = {
+      isChargeIds: isChargeIds ? 1 : 0,
+      isOwnerIds: isOwnerIds ? 1 : 0,
+      isFinancialEntityIds: isFinancialEntityIds ? 1 : 0,
+      // pgtyped requires a non-empty array for `IN $$list`; the matching `is*`
+      // flag short-circuits the predicate, so the placeholder is never compared.
+      // Spread rather than pass the caller's readonly arrays straight through:
+      // the generated params take mutable arrays.
+      chargeIds: isChargeIds ? [...params.chargeIds!] : [null],
+      ownerIds: isOwnerIds ? [...params.ownerIds!] : [null],
+      financialEntityIds: isFinancialEntityIds ? [...params.financialEntityIds!] : [null],
+      matchDebit1: accounts.includes('DEBIT_ACCOUNT_1') ? 1 : 0,
+      matchDebit2: accounts.includes('DEBIT_ACCOUNT_2') ? 1 : 0,
+      matchCredit1: accounts.includes('CREDIT_ACCOUNT_1') ? 1 : 0,
+      matchCredit2: accounts.includes('CREDIT_ACCOUNT_2') ? 1 : 0,
+      fromInvoiceDate: params.fromInvoiceDate ?? null,
+      toInvoiceDate: params.toInvoiceDate ?? null,
+      fromValueDate: params.fromValueDate ?? null,
+      toValueDate: params.toValueDate ?? null,
+      fromAnyDate: params.fromAnyDate ?? null,
+      toAnyDate: params.toAnyDate ?? null,
+      limit: params.limit ?? DEFAULT_LEDGER_RECORDS_LIMIT,
+    };
+
+    return getLedgerRecordsByFilters.run(fullParams, this.db).then(records => {
+      records.map(record => this.getLedgerRecordsByIdLoader.prime(record.id, record));
+      return records;
+    });
   }
 
   public getLedgerBalanceToDate(date: TimelessDateString) {

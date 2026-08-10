@@ -6,6 +6,8 @@ export default gql`
     contractsByClient(clientId: UUID!): [Contract!]! @requiresAuth
     contractsByAdmin(adminId: UUID!): [Contract!]! @requiresAuth
     contractsById(id: UUID!): Contract! @requiresAuth
+    " search contracts by owning (admin) business, client, contract id and active state "
+    contractsByFilters(filters: ContractsFilters): [Contract!]! @requiresAuth
   }
 
   extend type Mutation {
@@ -20,9 +22,23 @@ export default gql`
       @requiresAnyRole(roles: ["business_owner", "accountant"])
   }
 
+  " filters for contracts search "
+  input ContractsFilters {
+    " only contracts owned by any of these (admin) businesses "
+    ownerIds: [UUID!]
+    " only contracts belonging to any of these clients "
+    clientIds: [UUID!]
+    " only these specific contracts "
+    contractIds: [UUID!]
+    " restrict to active (true) or inactive (false) contracts. omit for both "
+    isActive: Boolean
+  }
+
   " a client contract "
   type Contract {
     id: UUID!
+    " the (admin) business owning the contract "
+    ownerId: UUID!
     client: Client!
     purchaseOrders: [String!]!
     startDate: TimelessDate!

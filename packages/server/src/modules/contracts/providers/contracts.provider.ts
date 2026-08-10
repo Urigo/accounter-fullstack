@@ -11,6 +11,8 @@ import type {
   IGetAllOpenContractsResult,
   IGetContractsByAdminBusinessIdsQuery,
   IGetContractsByClientIdsQuery,
+  IGetContractsByFiltersParams,
+  IGetContractsByFiltersQuery,
   IGetContractsByIdsQuery,
   IInsertContractParams,
   IInsertContractQuery,
@@ -37,6 +39,18 @@ const getContractsByClientIds = sql<IGetContractsByClientIdsQuery>`
     SELECT *
     FROM accounter_schema.clients_contracts
     WHERE client_id IN $$clientIds;`;
+
+const getContractsByFilters = sql<IGetContractsByFiltersQuery>`
+    SELECT *
+    FROM accounter_schema.clients_contracts
+    WHERE ($isOwnerIds = 0 OR owner_id IN $$ownerIds)
+      AND ($isClientIds = 0 OR client_id IN $$clientIds)
+      AND ($isContractIds = 0 OR id IN $$contractIds)
+      -- a NULL is_active reads as inactive everywhere else (the resolver
+      -- returns is_active ?? false), so fold it in rather than dropping those
+      -- rows from an isActive: false search.
+      AND ($isActive::BOOLEAN IS NULL OR COALESCE(is_active, FALSE) = $isActive)
+    ORDER BY start_date DESC, id;`;
 
 const deleteContract = sql<IDeleteContractQuery>`
     DELETE FROM accounter_schema.clients_contracts
@@ -141,6 +155,14 @@ const insertContract = sql<IInsertContractQuery>`
           $ownerId)
         RETURNING *;`;
 
+/** Caller-facing filters for {@link ContractsProvider.getContractsByFilters}. */
+export type ContractsFiltersParams = {
+  ownerIds?: readonly string[] | null;
+  clientIds?: readonly string[] | null;
+  contractIds?: readonly string[] | null;
+  isActive?: boolean | null;
+};
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -214,6 +236,31 @@ export class ContractsProvider {
   public getContractsByClientIdLoader = new DataLoader((ids: readonly string[]) =>
     this.contractsByClients(ids),
   );
+
+  public getContractsByFilters(params: ContractsFiltersParams) {
+    const isOwnerIds = !!params.ownerIds?.filter(Boolean).length;
+    const isClientIds = !!params.clientIds?.filter(Boolean).length;
+    const isContractIds = !!params.contractIds?.filter(Boolean).length;
+
+    const fullParams: IGetContractsByFiltersParams = {
+      isOwnerIds: isOwnerIds ? 1 : 0,
+      isClientIds: isClientIds ? 1 : 0,
+      isContractIds: isContractIds ? 1 : 0,
+      // pgtyped requires a non-empty array for `IN $$list`; the matching `is*`
+      // flag short-circuits the predicate, so the placeholder is never compared.
+      // Spread rather than pass the caller's readonly arrays straight through:
+      // the generated params take mutable arrays.
+      ownerIds: isOwnerIds ? [...params.ownerIds!] : [null],
+      clientIds: isClientIds ? [...params.clientIds!] : [null],
+      contractIds: isContractIds ? [...params.contractIds!] : [null],
+      isActive: params.isActive ?? null,
+    };
+
+    return getContractsByFilters.run(fullParams, this.db).then(contracts => {
+      contracts.map(contract => this.getContractsByIdLoader.prime(contract.id, contract));
+      return contracts;
+    });
+  }
 
   public async createContract(params: IInsertContractParams) {
     const businessId = await this.getBusinessId();
