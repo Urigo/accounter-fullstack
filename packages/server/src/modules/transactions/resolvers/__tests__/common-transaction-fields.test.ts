@@ -30,13 +30,25 @@ function contextWithTransaction(row: Record<string, unknown>) {
   return { context: { injector } as never, load };
 }
 
+/**
+ * The generated `Resolver` type is a union of a plain function and a
+ * `{ resolve }` object, so a registered field cannot be called directly. Unwrap
+ * whichever form it is rather than casting the union away, which would let a
+ * resolver silently change shape without this test noticing.
+ */
+function resolveOwnerId(transactionId: string, context: unknown): Promise<unknown> {
+  const resolver = commonTransactionFields.ownerId;
+  const resolve = typeof resolver === 'function' ? resolver : resolver!.resolve;
+  return (
+    resolve as (parent: unknown, args: unknown, context: unknown, info: unknown) => Promise<unknown>
+  )(transactionId, {}, context, {});
+}
+
 describe('Transaction.ownerId', () => {
   it('resolves the owner from the transaction row', async () => {
     const { context, load } = contextWithTransaction({ id: 'tx1', owner_id: OWNER });
 
-    const ownerId = await commonTransactionFields.ownerId!('tx1' as never, {}, context, {} as never);
-
-    expect(ownerId).toBe(OWNER);
+    expect(await resolveOwnerId('tx1', context)).toBe(OWNER);
     expect(load).toHaveBeenCalledWith('tx1');
   });
 
@@ -45,7 +57,7 @@ describe('Transaction.ownerId', () => {
   it('reads through the shared loader exactly once', async () => {
     const { context, load } = contextWithTransaction({ id: 'tx1', owner_id: OWNER });
 
-    await commonTransactionFields.ownerId!('tx1' as never, {}, context, {} as never);
+    await resolveOwnerId('tx1', context);
 
     expect(load).toHaveBeenCalledTimes(1);
   });
