@@ -29,5 +29,10 @@ document's `remarks`, then discarded, even when a business with exactly that nam
 - `isOwnerIssuer` can now be set on this path, so an OCR-identified owner-issued document gets
   `creditor = tenant, debtor = counterparty` instead of the previous unconditional orientation.
 - The failed business/owner loads are now logged instead of being swallowed silently.
+- `resolveOwnerSideFromUuids` no longer lets the owner become its own counterparty. An OCR result
+  naming the owner on both sides used to be written into `counterpartyId`, collapsing both document
+  sides onto the owner (`creditor === debtor`); such a contradictory match is now treated as carrying
+  no side information, so it can't invert an already-resolved counterparty either. This also fixes
+  the manual-upload path, which shared the helper.
 
 Forward-only: documents already inserted with a null creditor are not backfilled.

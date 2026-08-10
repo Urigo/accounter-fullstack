@@ -263,32 +263,44 @@ export function resolveOwnerSideFromUuids(ocrData: OcrData, ownerId: string): vo
   const { suggestedIssuer, suggestedRecipient } = ocrData;
   if (suggestedIssuer == null && suggestedRecipient == null) return;
 
+  // The owner on *both* sides is a contradiction (a business cannot transact with
+  // itself), so the match carries no usable information about which side the owner
+  // is on. Bail rather than guess: committing to `isOwnerIssuer` here would flip an
+  // already-resolved counterparty (e.g. the email-ingestion grant's business) onto
+  // the wrong side of the document.
+  if (suggestedIssuer === ownerId && suggestedRecipient === ownerId) return;
+
+  // The counterparty is by definition not the owner. Enforced here rather than at
+  // each assignment so no branch can produce an "owner is its own counterparty"
+  // document, whose sides both collapse onto the owner in `figureOutSides`.
+  const setCounterparty = (id: string | null | undefined): void => {
+    if (id && id !== ownerId) {
+      ocrData.counterpartyId ??= id;
+    }
+  };
+
   if (suggestedIssuer === ownerId) {
     ocrData.isOwnerIssuer = true;
-    if (suggestedRecipient) {
-      ocrData.counterpartyId ??= suggestedRecipient;
-    }
+    setCounterparty(suggestedRecipient);
   } else if (suggestedRecipient === ownerId) {
     ocrData.isOwnerIssuer = false;
-    if (suggestedIssuer) {
-      ocrData.counterpartyId ??= suggestedIssuer;
-    }
+    setCounterparty(suggestedIssuer);
   } else if (suggestedIssuer != null && suggestedRecipient != null) {
     // Both sides matched to non-owner businesses — ambiguous which side the owner is.
     // Preserve the OCR-derived isOwnerIssuer and use it only to pick counterpartyId.
     if (ocrData.isOwnerIssuer === true) {
-      ocrData.counterpartyId ??= suggestedRecipient;
+      setCounterparty(suggestedRecipient);
     } else if (ocrData.isOwnerIssuer === false) {
-      ocrData.counterpartyId ??= suggestedIssuer;
+      setCounterparty(suggestedIssuer);
     }
   } else if (suggestedIssuer != null) {
     // Only issuer matched to a non-owner business → owner must be the recipient side
     ocrData.isOwnerIssuer = false;
-    ocrData.counterpartyId ??= suggestedIssuer;
+    setCounterparty(suggestedIssuer);
   } else if (suggestedRecipient != null) {
     // Only recipient matched to a non-owner business → owner must be the issuer side
     ocrData.isOwnerIssuer = true;
-    ocrData.counterpartyId ??= suggestedRecipient;
+    setCounterparty(suggestedRecipient);
   }
 }
 
