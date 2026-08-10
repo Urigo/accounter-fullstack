@@ -346,7 +346,7 @@ export function validateMaxTransactions(
     issuerId: t.issuerId,
     merchantAddress: t.merchantAddress,
     merchantCoordinates: t.merchantCoordinates,
-    merchantMaxPhone: convertBooleanToBit(t.merchantMaxPhone, false) as unknown as boolean,
+    merchantMaxPhone: convertBooleanToBit(t.merchantMaxPhone, true) as unknown as boolean,
     merchant: t.merchant,
     merchantCommercialName: t.merchantCommercialName,
     merchantNumber: t.merchantNumber,
