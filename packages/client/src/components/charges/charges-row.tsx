@@ -83,13 +83,19 @@ export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
       {row.getIsExpanded() && (
         <TableRow>
           <TableCell colSpan={row.getVisibleCells().length}>
-            <Card className="w-full shadow-lg">
-              <ChargeExtendedInfo
-                chargeID={row.original.id}
-                onChange={fetchCharge}
-                fetching={fetching}
-              />
-            </Card>
+            {/* `w-0 min-w-full` keeps the (wide) extended info from contributing to the
+                outer table's intrinsic width — it renders at the row's width, its nested
+                tables wrap their cells, and anything still too wide scrolls in here
+                instead of stretching the page sideways. */}
+            <div className="w-0 min-w-full overflow-x-auto [&_th]:whitespace-normal [&_td]:whitespace-normal">
+              <Card className="w-full shadow-lg">
+                <ChargeExtendedInfo
+                  chargeID={row.original.id}
+                  onChange={fetchCharge}
+                  fetching={fetching}
+                />
+              </Card>
+            </div>
           </TableCell>
         </TableRow>
       )}

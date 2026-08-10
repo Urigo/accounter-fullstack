@@ -363,14 +363,17 @@ export const ChargesTable = ({
 
   return (
     <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
-      <div className="flex flex-col gap-2 w-auto max-w-fit">
+      <div className="flex flex-col gap-2 w-full">
         {showExport && (
           <div className="flex justify-end">
             <DownloadChargesCsv chargeIds={exportIds} />
           </div>
         )}
-        <div className="overflow-hidden rounded-md border w-auto max-w-fit [&>div]:w-auto [&>div]:max-w-fit">
-          <Table className="w-auto max-w-fit">
+        <div className="overflow-hidden rounded-md border w-full">
+          {/* Cells wrap (overriding the ui table's nowrap, and the nowrap of the sort
+              buttons in the headers) so the table fits the viewport instead of forcing
+              the page to scroll sideways. */}
+          <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_th_button]:whitespace-normal">
             <TableHeader>
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id}>
@@ -385,7 +388,7 @@ export const ChargesTable = ({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody className="w-auto max-w-fit">
+            <TableBody>
               {table.getRowModel().rows?.length ? (
                 table
                   .getRowModel()
