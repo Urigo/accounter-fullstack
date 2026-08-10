@@ -40,6 +40,7 @@ export default gql`
   " financial charge "
   type FinancialCharge implements Charge {
     id: UUID!
+    ownerId: UUID!
     type: ChargeType!
     vat: FinancialAmount
     withholdingTax: FinancialAmount

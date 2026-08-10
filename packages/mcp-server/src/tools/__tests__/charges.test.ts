@@ -49,6 +49,7 @@ const oneCharge = {
     nodes: [
       {
         id: 'c1',
+        ownerId: 'b1',
         userDescription: 'Coffee',
         totalAmount: { raw: 12.5, formatted: '₪12.50', currency: 'ILS' },
         minEventDate: '2026-01-05',
@@ -70,16 +71,16 @@ describe('searchChargesTool — successful read', () => {
       totalCount: number;
       truncated: boolean;
     };
-    // This fixture omits `owner` and `__typename` on purpose — it predates both
-    // fields. Owner tagging and charge classification must degrade to
-    // nulls/`unknown` rather than throwing, so older fixtures and any upstream
-    // that stops returning a field keep working.
+    // This fixture omits `owner` and `__typename` on purpose: the id comes from
+    // the charge's own `ownerId`, so a row stays attributable even when the
+    // nested owner object (which only adds the display name) is absent, and an
+    // unknown `__typename` degrades to `chargeType: null` rather than throwing.
     expect(structured.charges).toEqual([
       {
         id: 'c1',
         description: 'Coffee',
         chargeType: null,
-        ownerId: null,
+        ownerId: 'b1',
         ownerName: null,
         amount: { value: 12.5, formatted: '₪12.50', currency: 'ILS' },
         date: '2026-01-05',
@@ -97,6 +98,7 @@ describe('searchChargesTool — successful read', () => {
           {
             __typename: 'InternalTransferCharge',
             id: 'c1',
+            ownerId: 'b1',
             userDescription: 'Sweep to deposit',
             owner: { id: 'b1', name: 'Acme' },
             totalAmount: { raw: -50_000, formatted: '₪-50,000.00', currency: 'ILS' },
@@ -120,6 +122,7 @@ describe('searchChargesTool — successful read', () => {
         nodes: [
           {
             id: 'c1',
+            ownerId: 'b1',
             userDescription: 'Coffee',
             owner: { id: 'b1', name: 'Acme' },
             totalAmount: { raw: 12.5, formatted: '₪12.50', currency: 'ILS' },

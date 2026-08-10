@@ -48,6 +48,7 @@ export const commonDocumentsFields: DocumentsModule.DocumentResolvers = {
   documentType: documentRoot => normalizeDocumentType(documentRoot.type),
   description: documentRoot => documentRoot.description,
   remarks: documentRoot => documentRoot.remarks,
+  ownerId: documentRoot => documentRoot.owner_id,
 };
 
 export const commonFinancialDocumentsFields:

@@ -56,6 +56,7 @@ export interface RawTransaction {
   __typename?: string;
   id: string;
   chargeId: string;
+  ownerId: string;
   eventDate: string;
   effectiveDate?: string | null;
   direction: string;
@@ -69,6 +70,7 @@ export interface RawTransaction {
 export interface NormalizedTransaction {
   id: string;
   chargeId: string;
+  ownerId: string;
   type: string | null;
   direction: string;
   amount: NormalizedAmount | null;
@@ -84,6 +86,7 @@ export function normalizeTransaction(transaction: RawTransaction): NormalizedTra
   return {
     id: transaction.id,
     chargeId: transaction.chargeId,
+    ownerId: transaction.ownerId,
     type: transaction.__typename ?? null,
     direction: transaction.direction,
     amount: normalizeAmount(transaction.amount),
@@ -152,11 +155,13 @@ export interface RawDocument {
   debtor?: RawEntityRef | null;
   file?: string | null;
   image?: string | null;
-  charge?: { id: string; owner?: { id: string } | null } | null;
+  ownerId: string;
+  charge?: { id: string } | null;
 }
 
 export interface NormalizedDocument {
   id: string;
+  ownerId: string;
   type: string | null;
   documentType: string | null;
   serialNumber: string | null;
@@ -174,6 +179,7 @@ export interface NormalizedDocument {
 export function normalizeDocument(document: RawDocument): NormalizedDocument {
   return {
     id: document.id,
+    ownerId: document.ownerId,
     type: document.__typename ?? null,
     documentType: document.documentType ?? null,
     serialNumber: document.serialNumber ?? null,

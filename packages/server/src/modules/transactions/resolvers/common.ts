@@ -79,6 +79,11 @@ export const commonTransactionFields: TransactionsModule.TransactionResolvers = 
       .get(TransactionsProvider)
       .transactionByIdLoader.load(transactionId)
       .then(res => res.charge_id),
+  ownerId: async (transactionId, __dirname, { injector }) =>
+    injector
+      .get(TransactionsProvider)
+      .transactionByIdLoader.load(transactionId)
+      .then(res => res.owner_id),
 };
 
 export const commonChargeFields: TransactionsModule.ChargeResolvers = {

@@ -86,6 +86,7 @@ const chargeFixture = {
   chargesByIDs: [
     {
       id: 'c1',
+      ownerId: B1,
       userDescription: 'Coffee supplies',
       owner: { id: B1, name: 'Acme' },
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
@@ -468,6 +469,7 @@ describe('getTransactionsTool', () => {
         __typename: 'CommonTransaction',
         id: 'tx1',
         chargeId: 'c1',
+        ownerId: B1,
         eventDate: '2026-01-05',
         effectiveDate: '2026-01-06',
         direction: 'DEBIT',
@@ -493,6 +495,7 @@ describe('getTransactionsTool', () => {
     expect(structured.transactions[0]).toMatchObject({
       id: 'tx1',
       chargeId: 'c1',
+      ownerId: B1,
       direction: 'DEBIT',
       counterparty: { id: 'cp1', name: 'Beans Ltd' },
     });
@@ -505,6 +508,36 @@ describe('getTransactionsTool', () => {
     await run(getTransactionsTool, client, authContext([B1]), { transactionIds: ['tx1', 'tx2'] });
     const variables = (sentBody as { variables: { transactionIDs: string[] } }).variables;
     expect(variables.transactionIDs).toEqual(['tx1', 'tx2']);
+  });
+
+  // The fixtures above hand back `ownerId` whether or not the tool asked for it,
+  // so they cannot catch a dropped selection — against a live server that is the
+  // difference between an owner-tagged row and `ownerId: null` everywhere.
+  it('selects ownerId in the upstream query document', async () => {
+    let sentBody: unknown;
+    const client = clientReturning(fixture, body => (sentBody = body));
+    await run(getTransactionsTool, client, authContext([B1]), { transactionIds: ['tx1'] });
+    expect((sentBody as { query: string }).query).toMatch(/^\s*ownerId$/m);
+  });
+
+  // Defense in depth on top of RLS, matching get_charges / get_documents. It only
+  // became possible once transactions carried an owner at all.
+  it('drops a transaction whose owner is outside the resolved scope', async () => {
+    const client = clientReturning({
+      transactionsByIDs: [
+        { ...fixture.transactionsByIDs[0], id: 'mine', ownerId: B1 },
+        { ...fixture.transactionsByIDs[0], id: 'not-mine', ownerId: 'bb000000-0000-4000-8000-0000000000ff' },
+      ],
+    });
+    const result = await run(getTransactionsTool, client, authContext([B1]), {
+      transactionIds: ['mine', 'not-mine'],
+    });
+    const { transactions, totalCount } = result.structuredContent as {
+      transactions: Array<{ id: string }>;
+      totalCount: number;
+    };
+    expect(transactions.map(t => t.id)).toEqual(['mine']);
+    expect(totalCount).toBe(1);
   });
 
   it('reports no matches for an empty upstream result', async () => {
@@ -543,6 +576,7 @@ describe('getTransactionsTool', () => {
             __typename: 'CommonTransaction',
             id: 'tx2',
             chargeId: 'c2',
+            ownerId: B1,
             eventDate: '2026-02-01',
             effectiveDate: '2026-02-02',
             direction: 'CREDIT',
@@ -662,7 +696,8 @@ describe('getDocumentsTool', () => {
       description: 'Monthly beans',
       file: 'https://files/d1.pdf',
       image: null,
-      charge: { id: 'c1', owner: { id: B1 } },
+      ownerId: B1,
+      charge: { id: 'c1' },
       ...overrides,
     };
   }
@@ -687,6 +722,7 @@ describe('getDocumentsTool', () => {
       type: 'Invoice',
       serialNumber: 'INV-1',
       chargeId: 'c1',
+      ownerId: B1,
       fileUrl: 'https://files/d1.pdf',
     });
     expect(structured.documents[0]!.vat).toEqual({ value: -17, formatted: '₪-17.00', currency: 'ILS' });
@@ -694,18 +730,22 @@ describe('getDocumentsTool', () => {
 
   it('drops a document whose owning charge is outside scope', async () => {
     const client = clientReturning({
-      documentsByIds: [doc({ charge: { id: 'c9', owner: { id: B2 } } })],
+      documentsByIds: [doc({ ownerId: B2, charge: { id: 'c9' } })],
     });
     const result = await run(getDocumentsTool, client, authContext([B1]), { documentIds: ['d1'] });
     expect((result.structuredContent as { documents: unknown[] }).documents).toEqual([]);
     expect(result.content[0]!.text).toMatch(/No documents/);
   });
 
-  it('keeps a document with no resolvable charge owner (RLS already scoped it)', async () => {
+  // A document need not belong to a charge, and its owner does not depend on one:
+  // `chargeId` goes null while `ownerId` still attributes the row.
+  it('keeps a document with no charge and still reports its owner', async () => {
     const client = clientReturning({ documentsByIds: [doc({ charge: null })] });
     const result = await run(getDocumentsTool, client, authContext([B1]), { documentIds: ['d1'] });
-    const structured = result.structuredContent as { documents: Array<{ id: string; chargeId: null }> };
-    expect(structured.documents[0]).toMatchObject({ id: 'd1', chargeId: null });
+    const structured = result.structuredContent as {
+      documents: Array<{ id: string; chargeId: null; ownerId: string }>;
+    };
+    expect(structured.documents[0]).toMatchObject({ id: 'd1', chargeId: null, ownerId: B1 });
   });
 
   it('forwards ids to upstream', async () => {

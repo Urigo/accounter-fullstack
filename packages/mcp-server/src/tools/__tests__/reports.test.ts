@@ -115,6 +115,9 @@ describe('balanceReportTool — valid report', () => {
       {
         id: 't1',
         chargeId: 'charge-t1',
+        // The report runs for exactly one business, but the row still names it —
+        // a caller merging reports across their memberships can group by it.
+        ownerId: 'b1',
         date: '2026-01-05',
         isFee: false,
         description: 'x',

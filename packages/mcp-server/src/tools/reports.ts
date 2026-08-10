@@ -106,6 +106,7 @@ async function handler(
   const rows = all.slice(0, MAX_REPORT_ROWS).map(row => ({
     id: row.id,
     chargeId: row.chargeId,
+    ownerId,
     date: row.date,
     isFee: row.isFee,
     description: row.description,
@@ -136,7 +137,7 @@ async function handler(
 export const balanceReportTool: ToolDefinition<typeof balanceReportInput> = {
   name: BALANCE_REPORT_TOOL_NAME,
   description:
-    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Requires business owner or accountant role. ' +
+    'Generate a read-only balance report (transactions) for one of your businesses over a bounded date range. Every row carries the owning business as `ownerId`. Requires business owner or accountant role. ' +
     SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: balanceReportInput,
   policy: {

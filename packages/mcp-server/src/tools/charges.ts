@@ -108,6 +108,7 @@ const SEARCH_CHARGES_QUERY = /* GraphQL */ `
       nodes {
         __typename
         id
+        ownerId
         userDescription
         owner {
           id
@@ -264,7 +265,7 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
     description: charge.userDescription,
     chargeType: chargeTypeFromTypename(charge.__typename),
     // Optional chaining: fixtures predating owner selection omit the field.
-    ownerId: charge.owner?.id ?? null,
+    ownerId: charge.ownerId,
     ownerName: charge.owner?.name ?? null,
     amount: charge.totalAmount
       ? {

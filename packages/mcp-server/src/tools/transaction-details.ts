@@ -19,9 +19,9 @@ import { memberBusinessIdsInput, SCOPE_DESCRIPTION_SUFFIX } from './scope-input.
  * upstream RLS (the resolved read scope travels as `x-business-scope` on
  * `context.upstream`), so an id outside the caller's businesses simply resolves
  * to nothing — the response never carries a transaction the caller may not read.
- * Transactions expose no owner field of their own, so — unlike `get_charges`
- * and `get_documents` — there is no post-fetch owner filter to apply here; RLS
- * is the sole scope boundary.
+ * Since upstream `Transaction.ownerId` exists, this tool also applies the same
+ * defense-in-depth owner filter as `get_charges` / `get_documents`, and every
+ * returned row carries its `ownerId` so a multi-business result can be grouped.
  */
 
 export const GET_TRANSACTIONS_TOOL_NAME = 'accounter_get_transactions';
@@ -125,6 +125,7 @@ const TRANSACTIONS_QUERY_DOCUMENT = /* GraphQL */ `
     __typename
     id
     chargeId
+    ownerId
     eventDate
     effectiveDate
     direction
@@ -269,10 +270,17 @@ async function handler(
         return (data.transactionsByFilters ?? []).map(raw => normalizeTransaction(raw));
       })();
 
+  // Defense-in-depth owner filter on top of RLS, mirroring `charges.ts` and
+  // `document-details.ts`: keep a transaction only when its owner is in the
+  // resolved read scope. `Transaction.ownerId` is `UUID!` upstream, so every row
+  // has one to check.
+  const scopeIds = new Set(context.readScope.memberBusinessIds);
+  const inScope = transactions.filter(transaction => scopeIds.has(transaction.ownerId));
+
   return shapeListResult({
-    items: transactions,
+    items: inScope,
     itemsKey: 'transactions',
-    total: transactions.length,
+    total: inScope.length,
     extra: { scope: { memberBusinessIds: context.readScope.memberBusinessIds } },
     summarize: (shown, total) =>
       total === 0
@@ -286,7 +294,7 @@ async function handler(
 export const getTransactionsTool: ToolDefinition<typeof getTransactionsInput> = {
   name: GET_TRANSACTIONS_TOOL_NAME,
   description:
-    'Fetch bank/card transactions either by id or by filters (owners, charge ids, date ranges, counterparties, missing-info flags, and free-text), with amount, dates, direction, counterparty, and account. Read-only. ' +
+    'Fetch bank/card transactions either by id or by filters (owners, charge ids, date ranges, counterparties, missing-info flags, and free-text), with amount, dates, direction, counterparty, account, and the owning business (`ownerId`). Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getTransactionsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

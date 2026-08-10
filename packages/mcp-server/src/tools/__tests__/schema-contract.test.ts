@@ -93,6 +93,31 @@ describe('generated schema contract', () => {
     expect([...typenames].sort()).toEqual([...KNOWN_CHARGE_TYPENAMES].sort());
   });
 
+  /**
+   * Every row a tool returns must name its owning business, or a caller with
+   * several memberships cannot group a merged result. Transactions were the hole:
+   * the type had no owner at all, so `accounter_get_transactions` returned rows
+   * that could not be attributed. `Transaction.ownerId` was added upstream for
+   * exactly this, and it is non-null — a nullable field would push the problem
+   * back onto the caller.
+   */
+  it('Transaction exposes a non-null ownerId', () => {
+    expect(loadSchema()).toMatch(/^interface Transaction \{[^}]*ownerId: UUID!/m);
+  });
+
+  // The interface being right is not enough: `transactionsByIDs` resolves to the
+  // concrete types, so a missing field there would 404 the selection at runtime.
+  it('every Transaction implementation exposes ownerId', () => {
+    const schema = loadSchema();
+    const implementations = [...schema.matchAll(/^type (\w+) implements Transaction\b/gm)].map(
+      match => match[1]!,
+    );
+    expect(implementations.length).toBeGreaterThan(0);
+    for (const name of implementations) {
+      expect(typeBlock(schema, name)).toContain('ownerId: UUID!');
+    }
+  });
+
   // Transactions carry `amountLocal`/`exchangeRate` derived from these fields.
   it('Transaction exposes eventExchangeRates', () => {
     expect(loadSchema()).toMatch(/^interface Transaction \{[^}]*eventExchangeRates: ExchangeRates/m);

@@ -3,11 +3,14 @@ import { buildAuthContext, type McpAuthContext } from '../../auth/identity.js';
 import type { AuthPrincipal } from '../../auth/token.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { listBusinessMembershipsTool } from '../businesses.js';
+import { getChargesTool } from '../charge-details.js';
 import { searchChargesTool } from '../charges.js';
+import { getDocumentsTool } from '../document-details.js';
 import { executeRegisteredTool } from '../execute.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
 import { balanceReportTool } from '../reports.js';
+import { getTransactionsTool } from '../transaction-details.js';
 import {
   SCOPE_DESCRIPTION_SUFFIX,
   SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX,
@@ -211,6 +214,169 @@ describe('echoed effective scope', () => {
     expect(structured.memberBusinessId).toBe('b2');
     // The singular memberBusinessId narrows the scope, so the echo confirms it.
     expect(structured.scope).toEqual({ memberBusinessIds: ['b2'] });
+  });
+
+  /**
+   * Owner tagging, across **every** row-producing tool.
+   *
+   * A caller with more than one membership gets a single merged list back, and
+   * without a per-row owner there is no way to group, sort, or attribute it —
+   * the ids on the rows are charge/transaction/document ids, not business ones.
+   * The lookups and charges carried `ownerId` from the start; transactions,
+   * documents and balance rows did not, which is what this locks in:
+   *
+   * - transactions: from the upstream `Transaction.ownerId` field, added for this
+   * - documents: from the owner on the document's charge
+   * - balance rows: the single business the report ran for
+   *
+   * Fixtures deliberately name a *different* owner per tool so a row echoing a
+   * constant, or the scope leaking in as a default, still fails.
+   */
+  const OWNER_TAGGED = [
+    [
+      searchChargesTool,
+      {},
+      {
+        allCharges: {
+          nodes: [
+            {
+              id: 'c1',
+              ownerId: 'b1',
+              userDescription: 'x',
+              owner: { id: 'b1', name: 'Acme' },
+              totalAmount: null,
+              minEventDate: '2026-01-05',
+            },
+          ],
+          pageInfo: { totalPages: 1, totalRecords: 1, currentPage: 1, pageSize: 10 },
+        },
+      },
+      'charges',
+      'b1',
+    ],
+    [
+      getChargesTool,
+      { chargeIds: ['c1'] },
+      { chargesByIDs: [{ id: 'c1', ownerId: 'b2', owner: { id: 'b2', name: 'Beta' }, tags: [] }] },
+      'charges',
+      'b2',
+    ],
+    [
+      getTransactionsTool,
+      { transactionIds: ['t1'] },
+      {
+        transactionsByIDs: [
+          {
+            id: 't1',
+            chargeId: 'c1',
+            ownerId: 'b1',
+            eventDate: '2026-01-05',
+            direction: 'DEBIT',
+            sourceDescription: 'x',
+          },
+        ],
+      },
+      'transactions',
+      'b1',
+    ],
+    [
+      getDocumentsTool,
+      { documentIds: ['d1'] },
+      { documentsByIds: [{ id: 'd1', ownerId: 'b2', charge: { id: 'c1' } }] },
+      'documents',
+      'b2',
+    ],
+  ] as const;
+
+  it.each(OWNER_TAGGED.map(([tool, args, data, key, owner]) => [tool.name, tool, args, data, key, owner] as const))(
+    '%s tags every row with its ownerId',
+    async (_name, tool, rawArgs, data, itemsKey, expectedOwner) => {
+      const result = await executeRegisteredTool({
+        tool,
+        rawArgs,
+        auth: authContext(['b1', 'b2']),
+        correlationId: 'c',
+        client: clientReturning(data),
+        authorization: 'Bearer t',
+      });
+
+      expect(result.isError).toBeUndefined();
+      const rows = (result.structuredContent as Record<string, unknown>)[itemsKey] as Array<{
+        ownerId?: string | null;
+      }>;
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.ownerId).toBe(expectedOwner);
+    },
+  );
+
+  it('balance report rows carry the reported business as ownerId', async () => {
+    const result = await executeRegisteredTool({
+      tool: balanceReportTool,
+      rawArgs: { memberBusinessId: 'b2', fromDate: '2026-01-01', toDate: '2026-03-01' },
+      auth: authContext(['b1', 'b2']),
+      correlationId: 'c',
+      client: clientReturning({
+        transactionsForBalanceReport: [
+          {
+            id: 't1',
+            chargeId: 'c1',
+            date: '2026-01-05',
+            isFee: false,
+            description: 'x',
+            amount: { raw: 10, formatted: '10', currency: 'ILS' },
+          },
+        ],
+      }),
+      authorization: 'Bearer t',
+    });
+
+    const rows = (result.structuredContent as { rows: Array<{ ownerId?: string }> }).rows;
+    expect(rows[0]?.ownerId).toBe('b2');
+  });
+
+  // The nested children of a charge are rows too: a model reading them out of a
+  // multi-business charge list must be able to attribute them without walking
+  // back up to the parent.
+  it('charge-nested transactions and documents carry ownerId', async () => {
+    const result = await executeRegisteredTool({
+      tool: getChargesTool,
+      rawArgs: { chargeIds: ['c1'], includeTransactions: true, includeDocuments: true },
+      auth: authContext(['b1', 'b2']),
+      correlationId: 'c',
+      client: clientReturning({
+        chargesByIDs: [
+          {
+            id: 'c1',
+            ownerId: 'b2',
+            owner: { id: 'b2', name: 'Beta' },
+            tags: [],
+            transactions: [
+              {
+                id: 't1',
+                chargeId: 'c1',
+                ownerId: 'b2',
+                eventDate: '2026-01-05',
+                direction: 'DEBIT',
+                sourceDescription: 'x',
+              },
+            ],
+            additionalDocuments: [{ id: 'd1', ownerId: 'b2', charge: { id: 'c1' } }],
+          },
+        ],
+      }),
+      authorization: 'Bearer t',
+    });
+
+    const charge = (
+      result.structuredContent as {
+        charges: Array<{
+          transactions: Array<{ ownerId?: string | null }>;
+          documents: Array<{ ownerId?: string | null }>;
+        }>;
+      }
+    ).charges[0]!;
+    expect(charge.transactions[0]?.ownerId).toBe('b2');
+    expect(charge.documents[0]?.ownerId).toBe('b2');
   });
 
   // Discovery is the scope; echoing one would be circular.

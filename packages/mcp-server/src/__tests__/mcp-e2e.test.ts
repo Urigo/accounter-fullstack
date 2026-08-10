@@ -77,6 +77,7 @@ function upstreamData(query: string, authorization?: string): unknown {
         nodes: [
           {
             id: 'charge-1',
+            ownerId: AUTHORIZED_BUSINESS,
             userDescription: 'Coffee supplies',
             owner: { id: AUTHORIZED_BUSINESS, name: 'Acme Ltd' },
             totalAmount: { raw: -12.5, formatted: '-12.50', currency: 'ILS' },

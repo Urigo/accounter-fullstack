@@ -123,6 +123,7 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     __typename
     id
     chargeId
+    ownerId
     eventDate
     effectiveDate
     direction
@@ -146,6 +147,7 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
   fragment McpChargeDetailDocumentFields on Document {
     __typename
     id
+    ownerId
     documentType
     ... on FinancialDocument {
       serialNumber
@@ -218,15 +220,13 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     image
     charge {
       id
-      owner {
-        id
-      }
     }
   }
 
   fragment McpChargeDetailFields on Charge {
     __typename
     id
+    ownerId
     userDescription
     owner {
       id
@@ -329,7 +329,7 @@ interface NormalizedCharge {
   description: string | null;
   /** Same vocabulary as `filters.byChargeTypes`, so it can be fed back as a filter. */
   chargeType: string | null;
-  ownerId: string | null;
+  ownerId: string;
   ownerName: string | null;
   counterparty: { id: string; name: string | null } | null;
   totalAmount: ReturnType<typeof normalizeAmount>;
@@ -355,7 +355,7 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
     id: charge.id,
     description: charge.userDescription ?? null,
     chargeType: chargeTypeFromTypename(charge.__typename),
-    ownerId: owner?.id ?? null,
+    ownerId: charge.ownerId,
     ownerName: owner?.name ?? null,
     counterparty: normalizeEntity(charge.counterparty),
     totalAmount: normalizeAmount(charge.totalAmount),
@@ -439,8 +439,8 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
     // its owner is in the resolved read scope. A charge with no resolvable owner
     // is kept — RLS already returned it and there is no owner to reject it by.
     .filter(charge => {
-      const ownerId = charge.owner?.id;
-      return ownerId == null || scopeIds.has(ownerId);
+      const ownerId = charge.ownerId;
+      return scopeIds.has(ownerId);
     })
     .map(normalizeCharge);
 

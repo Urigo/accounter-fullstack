@@ -139,6 +139,7 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
   fragment McpDocumentDetailsFields on Document {
     __typename
     id
+    ownerId
     documentType
     ... on FinancialDocument {
       serialNumber
@@ -211,9 +212,6 @@ const DOCUMENTS_QUERY_DOCUMENT = /* GraphQL */ `
     image
     charge {
       id
-      owner {
-        id
-      }
     }
   }
 
@@ -304,13 +302,11 @@ async function handler(
   const requestedDocumentIds = hasDocumentIds ? new Set(input.documentIds) : null;
   const documents = raw
     .filter(document => requestedDocumentIds === null || requestedDocumentIds.has(document.id))
-    // Defense-in-depth owner filter: keep a document only when its owning
-    // charge's owner is in scope. A document with no resolvable charge/owner is
-    // kept — RLS already returned it, and there is no owner to reject it by.
-    .filter(document => {
-      const ownerId = document.charge?.owner?.id;
-      return ownerId == null || scopeIds.has(ownerId);
-    })
+    // Defense-in-depth owner filter on top of RLS: keep a document only when its
+    // own `ownerId` is in the resolved scope. This reads the document's owner
+    // directly rather than its charge's — a document carries `ownerId: UUID!`
+    // upstream, so the charge join is neither needed nor always present.
+    .filter(document => scopeIds.has(document.ownerId))
     .map(normalizeDocument);
 
   return shapeListResult({
@@ -330,7 +326,7 @@ async function handler(
 export const getDocumentsTool: ToolDefinition<typeof getDocumentsInput> = {
   name: GET_DOCUMENTS_TOOL_NAME,
   description:
-    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, and file/image links. Read-only. ' +
+    'Fetch documents (invoices, receipts, credit invoices, …) either by id or by filters (owners, charge ids, date range, type, unmatched/missing-info flags, and free-text), with type, serial number, date, amount, VAT, creditor/debtor, file/image links, and the owning business (`ownerId`). Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getDocumentsInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

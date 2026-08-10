@@ -69,8 +69,14 @@ Every business-scoped tool follows one convention, so the model learns it once:
   dropped.
 - **The resolved scope is forwarded upstream** as `x-business-scope`, so RLS on the Accounter server
   is the actual enforcement point (see [Identity & tenant scope](#identity--tenant-scope)).
-- **Rows are owner-tagged.** List rows carry `ownerId` (charges also carry `ownerName`), so results
-  spanning several businesses can be grouped rather than silently merged.
+- **Every row is owner-tagged.** Charges, transactions, documents, balance rows, tags, tax
+  categories and directory rows all carry `ownerId` (charges also carry `ownerName`), so a result
+  spanning several memberships can be grouped, sorted, and attributed instead of silently merged.
+  Nested rows count: the `transactions` and `documents` inside a charge are tagged too. Transactions
+  get theirs from `Transaction.ownerId` on the GraphQL server (added for this — the type previously
+  had no owner); documents inherit theirs from their charge; balance rows carry the single business
+  the report ran for. `ownerId` is `null` only when there is genuinely nothing to attribute to (a
+  document with no charge), which means "unknown", not "yours".
 - **The response echoes `scope.memberBusinessIds`.** A widened scope is visible in the payload
   instead of being inferred, and the charges summary text names the business count when it is
   greater than one.
@@ -110,16 +116,19 @@ scope, because it _is_ the scope.
   takes them and never passes them to the SQL, and a filter that silently matches everything is
   worse than an absent one (`UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`).
 
-- **`accounter_get_transactions`** — read-only bank/card **transactions** by id (`transactionIds`)
-  or by `filters` (every `TransactionsFilters` field: ids, charge ids, owners, event/debit/any date
-  ranges, counterparties, missing-counterparty/info flags, free text). Each row carries direction,
-  amount, event/effective dates, source description, `isFee`, `chargeId`, counterparty, and account.
-  Scope is enforced upstream by RLS (transactions carry no owner field for a client-side filter).
+- **`accounter_get_transactions`** — read-only bank/card **transactions**, owner-tagged, by id
+  (`transactionIds`) or by `filters` (every `TransactionsFilters` field: ids, charge ids, owners,
+  event/debit/any date ranges, counterparties, missing-counterparty/info flags, free text). Each row
+  carries direction, amount, event/effective dates, source description, `isFee`, `chargeId`,
+  counterparty, account, and `ownerId`. A transaction whose owner falls outside the resolved scope
+  is dropped as defense-in-depth on top of RLS — possible only since `Transaction.ownerId` was added
+  upstream.
 - **`accounter_get_documents`** — read-only **documents** by id (`documentIds`) or by `filters`
   (every `DocumentsFilters` field: business/owner/charge ids, date range, type, unmatched,
   missing-counterparty/info flags, free text). Each row carries `documentType`, serial number, date,
-  amount, VAT, creditor/debtor, `chargeId`, and `file`/`image` links. A document whose owning charge
-  falls outside the resolved scope is dropped as defense-in-depth on top of RLS.
+  amount, VAT, creditor/debtor, `chargeId`, `file`/`image` links, and `ownerId` (inherited from the
+  document's charge). A document whose owning charge falls outside the resolved scope is dropped as
+  defense-in-depth on top of RLS.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
   size-capped (≤ 500).
@@ -137,8 +146,8 @@ scope, because it _is_ the scope.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
   your businesses over a bounded date range (≤ 366 days), selected by the required singular
   `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
-  `truncated` flag. Rows are not individually owner-tagged — they all share the one owner, which the
-  response reports once alongside the echoed `scope`.
+  `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
+  response also reports once alongside the echoed `scope`.
 
 ## Upstream GraphQL client
 
