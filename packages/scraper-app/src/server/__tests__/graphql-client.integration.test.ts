@@ -11,15 +11,19 @@
 
 import { config } from 'dotenv';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createUploadClient } from '../graphql/client.js';
-import type { UploadResult } from '../graphql/mutations.js';
+import type { HapoalimILSTransactions } from '@accounter/modern-poalim-scraper';
+import { createUploadClient, type ScraperUploadResult } from '../graphql/client.js';
 
 config({ path: ['../../.env', '.env'] });
 
 const SERVER_URL = process.env['ACCOUNTER_SERVER_URL'] ?? 'http://localhost:4000/graphql';
 const API_KEY = process.env['SCRAPER_API_KEY'] ?? '';
 
-const FIXTURE_TX = {
+const FIXTURE_TX: HapoalimILSTransactions = {
+  comments: [],
+  message: [],
+  numItemsPerPage: 1,
+  pdfUrl: '',
   transactions: [
     {
       activityDescription: 'Integration test deposit',
@@ -32,7 +36,7 @@ const FIXTURE_TX = {
       currentBalance: 0,
       referenceNumber: 9999999,
       referenceCatenatedNumber: 0,
-      valueDate: '2099-12-31',
+      valueDate: 20991231,
       formattedValueDate: '31/12/2099',
       eventActivityTypeCode: 1,
       internalLinkCode: 0,
@@ -40,7 +44,7 @@ const FIXTURE_TX = {
       dataGroupCode: 0,
       expandedEventDate: '20991231',
       executingBranchNumber: 600,
-      eventId: '9999999',
+      eventId: 9999999,
       differentDateIndication: 'N',
       tableNumber: 0,
       recordNumber: 0,
@@ -48,15 +52,40 @@ const FIXTURE_TX = {
       contraBranchNumber: 0,
       contraAccountNumber: 0,
       contraAccountTypeCode: 0,
-      marketingOfferContext: false,
-      commentExistenceSwitch: false,
-      fieldDescDisplaySwitch: false,
+      marketingOfferContext: 0,
+      commentExistenceSwitch: 0,
+      fieldDescDisplaySwitch: 0,
+      activityDescriptionIncludeValueDate: null,
+      beneficiaryDetailsData: null,
+      comment: null,
+      details: null,
+      englishActionDesc: null,
+      formattedOriginalEventCreateDate: null,
+      offerActivityContext: null,
+      pfmDetails: null,
+      rejectedDataEventPertainingIndication: '',
+      textCode: 0,
+      displayCreditAccountDetails: 0,
+      displayRTGSIncomingTrsDetails: 0,
+      formattedEventAmount: '1.00',
+      formattedCurrentBalance: '0.00',
     },
   ],
   retrievalTransactionData: {
     accountNumber: 999999,
-    branchNumber: 600,
+    balanceAmountDisplayIndication: 'Y',
     bankNumber: 12,
+    branchNumber: 600,
+    eventCounter: 1,
+    formattedRetrievalEndDate: '31/12/2099',
+    formattedRetrievalMaxDate: '31/12/2099',
+    formattedRetrievalMinDate: '31/12/2099',
+    formattedRetrievalStartDate: '31/12/2099',
+    joinPfm: false,
+    retrievalEndDate: 20991231,
+    retrievalMaxDate: 20991231,
+    retrievalMinDate: 20991231,
+    retrievalStartDate: 20991231,
   },
 };
 
@@ -82,7 +111,7 @@ describe.skipIf(!API_KEY)('GraphQL upload client — live server integration', (
   });
 
   it('uploadPoalimIlsTransactions: inserts 1 on first call', async () => {
-    const result: UploadResult = await client.uploadPoalimIls(FIXTURE_TX);
+    const result: ScraperUploadResult = await client.uploadPoalimIls(FIXTURE_TX);
     expect(result.inserted).toBe(1);
     expect(result.skipped).toBe(0);
     expect(result.insertedIds).toHaveLength(1);
@@ -90,7 +119,7 @@ describe.skipIf(!API_KEY)('GraphQL upload client — live server integration', (
   });
 
   it('uploadPoalimIlsTransactions: skips 1 on second call (ON CONFLICT)', async () => {
-    const result: UploadResult = await client.uploadPoalimIls(FIXTURE_TX);
+    const result: ScraperUploadResult = await client.uploadPoalimIls(FIXTURE_TX);
     expect(result.inserted).toBe(0);
     expect(result.skipped).toBe(1);
     expect(result.insertedIds).toHaveLength(0);
