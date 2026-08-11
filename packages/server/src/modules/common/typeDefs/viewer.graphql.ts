@@ -6,13 +6,13 @@ export default gql`
     viewer: Viewer
   }
 
-  " provisioning state of the calling identity "
+  " provisioning state of the calling identity; membership decides first, so a linked caller is ACTIVE regardless of email verification, and the other states describe why an unlinked caller cannot be matched to a business yet "
   enum ViewerStatus {
     " linked to at least one business; the app is usable "
     ACTIVE
-    " authenticated, but the identity provider has not verified the email address yet "
+    " not linked, and the email address is unverified — so it cannot be matched to an invitation "
     EMAIL_UNVERIFIED
-    " authenticated and verified, but not linked to any business "
+    " not linked, with a verified email; awaiting an invitation "
     NO_WORKSPACE
   }
 
