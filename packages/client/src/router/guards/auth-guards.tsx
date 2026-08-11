@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { PageSkeleton } from '../../components/layout/page-skeleton.js';
+import { useViewer } from '../../hooks/use-viewer.js';
 import { ROUTES } from '../routes.js';
 
 type GuardProps = {
@@ -15,7 +16,11 @@ export function ProtectedRoute({ children }: GuardProps): ReactElement {
     return children;
   }
 
-  return <Auth0ProtectedRoute>{children}</Auth0ProtectedRoute>;
+  return (
+    <Auth0ProtectedRoute>
+      <OnboardingGuard>{children}</OnboardingGuard>
+    </Auth0ProtectedRoute>
+  );
 }
 
 function Auth0ProtectedRoute({ children }: GuardProps): ReactElement {
@@ -34,6 +39,31 @@ function Auth0ProtectedRoute({ children }: GuardProps): ReactElement {
         state={{ returnTo: location.pathname + location.search + location.hash }}
       />
     );
+  }
+
+  return children;
+}
+
+/**
+ * Keeps an authenticated-but-unprovisioned user off the app shell.
+ *
+ * Being signed in to Auth0 is not enough to use Accounter — the identity must be
+ * linked to at least one business. Without this guard such a user renders the
+ * dashboard over queries that all fail, with no explanation and no way forward.
+ *
+ * Renders children on a query error rather than trapping the user on /welcome:
+ * a network blip should not look like a missing workspace, and every underlying
+ * screen handles its own failures.
+ */
+export function OnboardingGuard({ children }: GuardProps): ReactElement {
+  const { fetching, error, viewer } = useViewer();
+
+  if (fetching) {
+    return <PageSkeleton />;
+  }
+
+  if (!error && viewer && viewer.status !== 'ACTIVE') {
+    return <Navigate to={ROUTES.WELCOME} replace />;
   }
 
   return children;

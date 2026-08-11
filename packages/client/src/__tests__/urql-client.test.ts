@@ -140,6 +140,18 @@ describe('URQL auth exchange hardening', () => {
     expect(authConfig.didAuthError(forbiddenError)).toBe(false);
   });
 
+  it('does not treat ONBOARDING_REQUIRED as an auth error', async () => {
+    const { authConfig } = await initializeAuth(async () => null);
+
+    // The token is valid — the account just has no workspace. Refreshing it
+    // cannot help, and doing so drags the user through a pointless re-login.
+    const onboardingError = {
+      graphQLErrors: [{ extensions: { code: 'ONBOARDING_REQUIRED' } }],
+    };
+
+    expect(authConfig.didAuthError(onboardingError)).toBe(false);
+  });
+
   it('does not eagerly trigger auth refresh before a server auth error', async () => {
     const { authConfig } = await initializeAuth(async () => null);
 

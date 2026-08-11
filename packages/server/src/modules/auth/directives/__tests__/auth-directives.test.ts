@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { AuthContextProvider } from '../../providers/auth-context.provider.js';
 import { authDirectiveTransformer } from '../auth-directives.js';
 
-function createUnitYoga(roleId: string | null) {
+type JwtIdentity = { auth0UserId: string; email: string | null; emailVerified: boolean } | null;
+
+function createUnitYoga(roleId: string | null, jwtIdentity: JwtIdentity = null) {
   const testModule = createModule({
     id: 'auth-directive-unit-test',
     typeDefs: [
@@ -46,6 +48,7 @@ function createUnitYoga(roleId: string | null) {
               tenant: { businessId: 'biz-1' },
             };
           },
+          getJwtIdentity: async () => jwtIdentity,
         }),
         scope: Scope.Operation,
       },
@@ -76,6 +79,7 @@ function createUnitYoga(roleId: string | null) {
                 tenant: { businessId: 'biz-1' },
               };
             },
+            getJwtIdentity: async () => jwtIdentity,
           };
         },
       },
@@ -107,6 +111,29 @@ describe('authDirectiveTransformer', () => {
 
     expect(result.data).toBeNull();
     expect(result.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
+  });
+
+  it('@requiresAuth throws ONBOARDING_REQUIRED when the JWT is valid but unlinked', async () => {
+    const yoga = createUnitYoga(null, {
+      auth0UserId: 'auth0|new-user',
+      email: 'new@example.com',
+      emailVerified: true,
+    });
+    const result = await execute(yoga, '{ secure }');
+
+    expect(result.data).toBeNull();
+    expect(result.errors?.[0]?.extensions?.code).toBe('ONBOARDING_REQUIRED');
+  });
+
+  it('@requiresAnyRole throws ONBOARDING_REQUIRED when the JWT is valid but unlinked', async () => {
+    const yoga = createUnitYoga(null, {
+      auth0UserId: 'auth0|new-user',
+      email: 'new@example.com',
+      emailVerified: true,
+    });
+    const result = await execute(yoga, '{ ownerOrAccountant }');
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('ONBOARDING_REQUIRED');
   });
 
   it('@requiresRole passes when role matches', async () => {

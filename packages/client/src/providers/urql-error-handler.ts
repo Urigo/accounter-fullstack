@@ -17,6 +17,12 @@ export function handleUrqlError(result: OperationResult) {
     const graphqlError = result.error.graphQLErrors[0];
     const { message } = graphqlError;
 
+    // An unprovisioned account fails every guarded operation at once. The
+    // /welcome screen explains it; a toast per failed query would only be noise.
+    if (graphqlError.extensions?.code === 'ONBOARDING_REQUIRED') {
+      return;
+    }
+
     // Show toast for common GraphQL errors
     console.error('GraphQL Error:', graphqlError);
     toast.error('Operation Error', {
