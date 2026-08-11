@@ -70,6 +70,21 @@ describe('viewer resolver', () => {
     });
   });
 
+  it('keeps a linked member ACTIVE even when their email is unverified', async () => {
+    // Membership decides: the API already serves this caller's data, so routing
+    // them to /welcome would lock out a working account over a claim that is not
+    // enforced anywhere else.
+    const { result } = await runResolver(
+      {
+        authType: 'jwt',
+        user: { email: 'member@example.com', emailVerified: false },
+      } as unknown as AuthContextValue,
+      null,
+    );
+
+    expect(result).toMatchObject({ status: 'ACTIVE', emailVerified: false });
+  });
+
   it('returns null when the request carries no valid credentials', async () => {
     const { result } = await runResolver(null, null);
 

@@ -5,6 +5,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { useLogout } from '../../hooks/use-logout.js';
 import { useViewer } from '../../hooks/use-viewer.js';
 import { ROUTES } from '../../router/routes.js';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert.js';
 import { Button } from '../ui/button.js';
 
 /**
@@ -16,7 +17,7 @@ import { Button } from '../ui/button.js';
  * dashboard buried under failing queries.
  */
 export function WelcomePage(): ReactElement {
-  const { fetching, viewer } = useViewer();
+  const { fetching, error, viewer } = useViewer();
   const { isAuthenticated, isLoading } = useAuth0();
   const handleLogout = useLogout();
   const navigate = useNavigate();
@@ -39,6 +40,30 @@ export function WelcomePage(): ReactElement {
 
   if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} replace />;
+  }
+
+  // Provisioning state is unknown when the query fails, so say that rather than
+  // asserting the user has no workspace — a network blip is not an entitlement.
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen px-4">
+        <div className="max-w-md space-y-6">
+          <Alert variant="destructive">
+            <AlertTitle>Could not check your account</AlertTitle>
+            <AlertDescription>
+              We could not reach the server to see which businesses you belong to. Check your
+              connection and try again.
+            </AlertDescription>
+          </Alert>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => window.location.reload()}>Try again</Button>
+            <Button variant="outline" onClick={handleLogout}>
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const isEmailUnverified = viewer?.status === 'EMAIL_UNVERIFIED';
