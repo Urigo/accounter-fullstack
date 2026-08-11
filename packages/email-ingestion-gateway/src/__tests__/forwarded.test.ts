@@ -114,6 +114,38 @@ describe('parseForwardedBlocks', () => {
     expect(parseForwardedBlocks(text, '')[0].subject).toBeUndefined();
   });
 
+  // Gmail pads quoted blocks with `&#8239;` (narrow no-break space) and zero-width
+  // characters. Decoding them literally leaves invisible passengers inside addresses
+  // and display names, which then stop matching and stop comparing equal.
+  it('folds invisible and non-breaking entities out of the flattened HTML', () => {
+    const html = [
+      '<div>---------- Forwarded message ---------<br>',
+      'From: <strong>Vendor&#8203; Ltd</strong> &lt;<a href="mailto:billing@vendor.example">billing&#8203;@vendor.example</a>&gt;<br>',
+      'Date: Wed, Jul 29, 2026 at 7:23&#8239;AM<br>',
+      'Subject: Your&#160;receipt<br>',
+      '</div>',
+    ].join('');
+
+    const [block] = parseForwardedBlocks('', html);
+    expect(block.from).toBe('billing@vendor.example');
+    expect(block.fromDisplayName).toBe('Vendor Ltd');
+    expect(block.date).toBe('Wed, Jul 29, 2026 at 7:23 AM');
+    expect(block.subject).toBe('Your receipt');
+    // No stray invisible or non-breaking characters survive anywhere.
+    expect(JSON.stringify(block)).not.toMatch(/[\u00a0\u200b-\u200d\u202f\u2060\ufeff]/);
+  });
+
+  it('leaves a malformed or out-of-range numeric entity alone instead of throwing', () => {
+    const text = [
+      '---------- Forwarded message ---------',
+      'From: Vendor <billing@vendor.example>',
+      'Subject: 100&#99999999; &#notanentity; &amp; done',
+    ].join('\n');
+
+    expect(() => parseForwardedBlocks(text, '')).not.toThrow();
+    expect(parseForwardedBlocks(text, '')[0].from).toBe('billing@vendor.example');
+  });
+
   it('returns nothing when there is no forwarded block', () => {
     expect(parseForwardedBlocks('Just a normal email.', '<p>Just a normal email.</p>')).toEqual([]);
     expect(parseForwardedBlocks('', '')).toEqual([]);

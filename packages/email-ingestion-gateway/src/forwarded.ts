@@ -258,6 +258,25 @@ const NAMED_ENTITIES: Record<string, string> = {
   nbsp: ' ',
 };
 
+// Invisible and non-breaking characters Gmail sprinkles through quoted blocks —
+// `&#8239;` before AM/PM, `&#8203;`/`&#65279;` as layout padding. Decoding them
+// literally leaves characters that look like nothing but are not a plain space, which
+// is how an address picks up an invisible passenger and stops matching `EMAIL_RE`, or
+// a display name stops comparing equal to the tenant's own business name. Fold the
+// space-like ones to a real space and drop the zero-width ones entirely.
+const ZERO_WIDTH_CODE_POINTS = new Set([0x20_0b, 0x20_0c, 0x20_0d, 0x20_60, 0xfe_ff]);
+const SPACE_LIKE_CODE_POINTS = new Set([0x00_a0, 0x20_2f, 0x20_5f, 0x20_07, 0x30_00]);
+
+function decodeCodePoint(codePoint: number): string {
+  if (ZERO_WIDTH_CODE_POINTS.has(codePoint)) {
+    return '';
+  }
+  if (SPACE_LIKE_CODE_POINTS.has(codePoint)) {
+    return ' ';
+  }
+  return String.fromCodePoint(codePoint);
+}
+
 function decodeEntities(value: string): string {
   return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity: string) => {
     if (entity.startsWith('#')) {
@@ -265,9 +284,11 @@ function decodeEntities(value: string): string {
         entity[1]?.toLowerCase() === 'x'
           ? Number.parseInt(entity.slice(2), 16)
           : Number.parseInt(entity.slice(1), 10);
-      // Zero-width and narrow no-break spaces are common in Gmail's quoted blocks
-      // (e.g. `&#8239;` before AM/PM) and must not become literal odd characters.
-      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : match;
+      // Reject values outside the Unicode range before fromCodePoint, which throws
+      // on them — a malformed entity must not take down the whole parse.
+      return Number.isFinite(codePoint) && codePoint >= 0 && codePoint <= 0x10_ff_ff
+        ? decodeCodePoint(codePoint)
+        : match;
     }
     return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
   });

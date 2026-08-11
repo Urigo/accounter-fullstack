@@ -379,7 +379,20 @@ export class EmailIngestionControlProvider {
       } satisfies TenantMailContext;
     });
 
-    this.mailContextCache.set(tenantId, { context, expiresAt: Date.now() + MAIL_CONTEXT_TTL_MS });
+    const now = Date.now();
+    // Drop everything already expired before inserting. This provider is a
+    // process-lifetime singleton, so without a sweep the map would retain an entry per
+    // tenant that ever received mail — a slow leak that grows with tenant count and
+    // never shrinks. The sweep is O(entries) but only runs on a cache miss (at most
+    // once per tenant per TTL), and the map is bounded by the number of tenants
+    // actively receiving mail within one TTL window.
+    for (const [key, entry] of this.mailContextCache) {
+      if (entry.expiresAt <= now) {
+        this.mailContextCache.delete(key);
+      }
+    }
+
+    this.mailContextCache.set(tenantId, { context, expiresAt: now + MAIL_CONTEXT_TTL_MS });
     return context;
   }
 
