@@ -409,7 +409,7 @@ __metadata:
     googleapis: "npm:174.0.1"
     graphql: "npm:16.14.2"
     graphql-modules: "npm:3.1.2"
-    graphql-scalars: "npm:1.25.0"
+    graphql-scalars: "npm:1.26.0"
     graphql-yoga: "npm:5.21.2"
     iconv-lite: "npm:0.7.3"
     inline-css: "npm:4.0.3"
@@ -17985,7 +17985,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graphql-scalars@npm:1.25.0, graphql-scalars@npm:^1.22.4, graphql-scalars@npm:^1.25.0":
+"graphql-scalars@npm:1.26.0":
+  version: 1.26.0
+  resolution: "graphql-scalars@npm:1.26.0"
+  dependencies:
+    tslib: "npm:^2.5.0"
+  peerDependencies:
+    graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: 10c0/75b2973add44e12a324aad49e2ace3fb3415bf375385f37f6035220980b3aed28e60f96b2ed765dbf40951b36ddc94d3e75c9382a75791844bd447015998815d
+  languageName: node
+  linkType: hard
+
+"graphql-scalars@npm:^1.22.4, graphql-scalars@npm:^1.25.0":
   version: 1.25.0
   resolution: "graphql-scalars@npm:1.25.0"
   dependencies:
