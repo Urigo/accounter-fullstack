@@ -2,6 +2,7 @@ import { useEffect, type ReactElement } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useClaimInvitation } from '../../hooks/use-claim-invitation.js';
 import { useLogout } from '../../hooks/use-logout.js';
 import { useViewer } from '../../hooks/use-viewer.js';
 import { ROUTES } from '../../router/routes.js';
@@ -15,6 +16,9 @@ import { Button } from '../ui/button.js';
  * who signed up directly, whose invitation expired before they accepted, or who
  * was removed from their last business. It replaces what used to be an empty
  * dashboard buried under failing queries.
+ *
+ * When an invitation is waiting for the caller's verified email, this is also
+ * where they claim it — the emailed link is no longer the only way in.
  */
 export function WelcomePage(): ReactElement {
   const { isAuthenticated, isLoading } = useAuth0();
@@ -22,7 +26,10 @@ export function WelcomePage(): ReactElement {
   // Auth0 keeps an unauthenticated visitor from spending a request to learn
   // nothing, and keeps an authenticated one from asking before their token is
   // attached — which would answer "no workspace" for a perfectly good account.
-  const { fetching, error, viewer } = useViewer({ pause: isLoading || !isAuthenticated });
+  const { fetching, error, viewer, refreshViewer } = useViewer({
+    pause: isLoading || !isAuthenticated,
+  });
+  const { fetching: claiming, claimInvitation } = useClaimInvitation();
   const handleLogout = useLogout();
   const navigate = useNavigate();
 
@@ -71,13 +78,28 @@ export function WelcomePage(): ReactElement {
   }
 
   const isEmailUnverified = viewer?.status === 'EMAIL_UNVERIFIED';
+  const pendingInvitations = viewer?.pendingInvitations ?? [];
+
+  const handleClaim = async (invitationId: string) => {
+    const result = await claimInvitation(invitationId);
+    if (result?.success) {
+      // The membership is what makes the app usable, so re-read the viewer
+      // before navigating; the guard would bounce us straight back otherwise.
+      refreshViewer();
+      navigate(ROUTES.HOME, { replace: true });
+    }
+  };
 
   return (
     <div className="flex items-center justify-center h-screen px-4">
       <div className="text-center max-w-md space-y-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">
-            {isEmailUnverified ? 'Verify your email' : 'No workspace yet'}
+            {isEmailUnverified
+              ? 'Verify your email'
+              : pendingInvitations.length > 0
+                ? "You've been invited"
+                : 'No workspace yet'}
           </h1>
           {viewer?.email ? (
             <p className="text-sm text-muted-foreground">Signed in as {viewer.email}</p>
@@ -89,6 +111,34 @@ export function WelcomePage(): ReactElement {
             We sent a verification link to your email address. Open it, then reload this page to
             continue.
           </p>
+        ) : pendingInvitations.length > 0 ? (
+          <>
+            <p className="text-muted-foreground">
+              {pendingInvitations.length === 1
+                ? 'An invitation is waiting for your email address. Accept it to get started.'
+                : 'These invitations are waiting for your email address. Accept one to get started.'}
+            </p>
+            <ul className="space-y-2">
+              {pendingInvitations.map(invitation => (
+                <li
+                  key={invitation.id}
+                  className="flex items-center justify-between gap-4 rounded-md border p-3 text-left"
+                >
+                  <div>
+                    <p className="font-medium">{invitation.businessName ?? 'Unnamed business'}</p>
+                    <p className="text-sm text-muted-foreground">as {invitation.role}</p>
+                  </div>
+                  <Button
+                    onClick={() => void handleClaim(invitation.id)}
+                    disabled={claiming}
+                    className="shrink-0"
+                  >
+                    Accept
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </>
         ) : (
           <p className="text-muted-foreground">
             Accounter is invitation-only. Your account is not linked to any business yet — ask an
@@ -98,7 +148,12 @@ export function WelcomePage(): ReactElement {
         )}
 
         <div className="flex gap-2 justify-center">
-          <Button onClick={() => window.location.reload()}>Check again</Button>
+          <Button
+            variant={pendingInvitations.length > 0 ? 'outline' : 'default'}
+            onClick={refreshViewer}
+          >
+            Check again
+          </Button>
           <Button variant="outline" onClick={handleLogout}>
             Sign out
           </Button>
