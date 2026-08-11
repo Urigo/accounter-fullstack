@@ -41,16 +41,16 @@ if (!authContext?.user) {
 
 That single error code drives three separate client behaviours, all wrong here:
 
-| Client site                                             | Reaction                                                                  | Why it's wrong                                                       |
-| ------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `providers/urql.tsx:234` `didAuthError`                  | classifies it as a token problem → `refreshAuth`                          | the token is perfectly valid; refreshing changes nothing              |
-| `providers/urql.tsx:256` `requestInteractiveReauth`      | may open the session-expiry modal / Auth0 popup                           | user is asked to sign in again, then lands in the same state          |
-| `providers/urql-error-handler.ts:22`                     | `toast.error('Operation Error', …)` per failed operation                  | a wall of "Authentication required" toasts                            |
+| Client site                                         | Reaction                                                 | Why it's wrong                                               |
+| --------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| `providers/urql.tsx:234` `didAuthError`             | classifies it as a token problem → `refreshAuth`         | the token is perfectly valid; refreshing changes nothing     |
+| `providers/urql.tsx:256` `requestInteractiveReauth` | may open the session-expiry modal / Auth0 popup          | user is asked to sign in again, then lands in the same state |
+| `providers/urql-error-handler.ts:22`                | `toast.error('Operation Error', …)` per failed operation | a wall of "Authentication required" toasts                   |
 
 Meanwhile `UserProvider` (`providers/user-provider.tsx:130`) gets no `data`, leaves `userContext` at
 `null`, and still renders `children` — so `ProtectedRoute` (`router/guards/auth-guards.tsx:29`)
-passes (Auth0 says authenticated) and the dashboard shell renders empty over a failing query
-storm. There is **no** screen, message, or exit ramp for this state.
+passes (Auth0 says authenticated) and the dashboard shell renders empty over a failing query storm.
+There is **no** screen, message, or exit ramp for this state.
 
 ### 1.4 The only real ways to get provisioned today
 
@@ -60,7 +60,7 @@ storm. There is **no** screen, message, or exit ramp for this state.
 - **Super-admin bootstrap** — `bootstrapNewClient`, gated inside the provider by
   `requireSuperAdmin()` (`modules/onboarding/providers/admin-onboarding.provider.ts:89`).
 
-Both are out-of-band. A user who signs up directly, or who signs up first and *then* looks for the
+Both are out-of-band. A user who signs up directly, or who signs up first and _then_ looks for the
 invitation email, has no in-app path forward.
 
 ---
@@ -72,9 +72,9 @@ invitation email, has no in-app path forward.
 2. **The client has no notion of a provisioning state.** `ProtectedRoute` checks Auth0 only; the app
    assumes every authenticated user has ≥1 membership.
 3. **Invitations are reachable only via the emailed token.** A verified-email match against a
-   *pending* invitation is never attempted — only against already-accepted ones.
-4. **Public signup is enabled but leads nowhere.** Either it should be closed, or it should lead
-   somewhere.
+   _pending_ invitation is never attempted — only against already-accepted ones.
+4. **Public signup is enabled but leads nowhere.** Accounter is an invitation-only product, so
+   signup should be closed at Auth0 — and until it is, the app must handle the users it produces.
 
 ---
 
@@ -83,12 +83,12 @@ invitation email, has no in-app path forward.
 An authenticated user with zero memberships lands on a dedicated **`/welcome`** screen, never on a
 broken dashboard. The screen branches on the real reason:
 
-| State                        | Screen                                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| Email not verified           | "Verify your email" + resend + re-check button                                |
-| Pending invitation(s) found  | "You've been invited to *Acme Ltd*" → one-click Accept (no token needed)      |
-| Nothing pending              | "No workspace yet" → request access / create a workspace (if enabled) / sign out |
-| Membership exists            | normal app (no change)                                                        |
+| State                       | Screen                                                                   |
+| --------------------------- | ------------------------------------------------------------------------ |
+| Email not verified          | "Verify your email" + resend + re-check button                           |
+| Pending invitation(s) found | "You've been invited to _Acme Ltd_" → one-click Accept (no token needed) |
+| Nothing pending             | "Accounter is invitation-only" → how to request access / sign out        |
+| Membership exists           | normal app (no change)                                                   |
 
 No toasts, no reauth modal, no empty dashboard, and always a way out (sign out / switch account).
 
@@ -111,13 +111,16 @@ No toasts, no reauth modal, no empty dashboard, and always a way out (sign out /
   `getJwtIdentity()` alone:
 
   ```graphql
-  enum ViewerStatus { ACTIVE, EMAIL_UNVERIFIED, NO_WORKSPACE }
+  enum ViewerStatus {
+    ACTIVE
+    EMAIL_UNVERIFIED
+    NO_WORKSPACE
+  }
 
   type Viewer {
     email: String
     emailVerified: Boolean!
     status: ViewerStatus!
-    canSelfServeOnboard: Boolean!
   }
 
   extend type Query {
@@ -143,16 +146,17 @@ No toasts, no reauth modal, no empty dashboard, and always a way out (sign out /
 - `UserProvider` — treat "authenticated, no context" as a first-class state rather than silently
   rendering children with `userContext: null`.
 
-After Phase 0 the dead end is still a dead end, but it is an *explained* one instead of a broken
+After Phase 0 the dead end is still a dead end, but it is an _explained_ one instead of a broken
 app. Phases 1–2 open the exits.
 
 ### Phase 1 — Claim pending invitations without the email link
 
 **Server**
 
-- Extend `viewer` with `pendingInvitations: [PendingInvitation!]!` — `{ id, businessId, businessName, role, expiresAt }` —
-  selected by `LOWER(email) = LOWER($jwtEmail) AND accepted_at IS NULL AND expires_at > NOW()`, and
-  **only** when `email_verified` is true in the JWT.
+- Extend `viewer` with `pendingInvitations: [PendingInvitation!]!` —
+  `{ id, businessId, businessName, role, expiresAt }` — selected by
+  `LOWER(email) = LOWER($jwtEmail) AND accepted_at IS NULL AND expires_at > NOW()`, and **only**
+  when `email_verified` is true in the JWT.
 - Add `claimInvitation(invitationId: ID!): AcceptInvitationPayload!` (un-guarded like
   `acceptInvitation`), reusing `AcceptInvitationsProvider`'s existing insert/accept logic. It must
   re-assert the verified-email match server-side — the id alone is not authorisation.
@@ -165,37 +169,40 @@ app. Phases 1–2 open the exits.
 This alone resolves the most common real-world case: the user signed up before (or instead of)
 clicking the emailed link.
 
-### Phase 2 — Self-serve workspace creation (feature-flagged)
+### Phase 2 — Close public signup at Auth0
 
-Only if the product wants open signup. Add
-`createOwnWorkspace(input: CreateOwnWorkspaceInput!): BootstrapClientResult!` behind an env flag
-(`ALLOW_SELF_SERVE_ONBOARDING`), reusing `AdminOnboardingProvider.bootstrapNewClient`'s business +
-`admin_context` creation, but:
+**Decided: Accounter stays invitation-only. There is no self-serve workspace creation.**
 
-- drop the `requireSuperAdmin()` call for this entry point (keep it for `bootstrapNewClient`);
-- link the **caller** directly as `business_owner` in `business_users` instead of minting an
-  invitation token;
-- rate-limit per Auth0 subject, and require `email_verified`, to stop workspace spam.
+Disable sign-ups on the Auth0 database connection (Authentication → Database → _Disable Sign Ups_).
+The invitation flow already pre-creates (blocked) Auth0 users
+(`migrations/.../create-invitations-apikeys-tables.ts` header), so invited users can still register
+and set a password; only uninvited strangers are turned away, at Auth0, before they ever reach the
+app. Record the setting in `docs/user-authentication-plan/auth0-setup.md` and the operations
+runbook.
 
-`viewer.canSelfServeOnboard` drives whether `/welcome` shows the "Create a workspace" form.
+Phases 0 and 1 are still required after this, and are not merely defensive:
 
-### Phase 3 — Decide the signup policy (product call, ~15 min of config)
+- accounts created **before** the connection is locked down still exist and still land in the
+  no-membership state;
+- an invited user whose invitation has **expired or been revoked** before they accept has a valid
+  Auth0 identity and no membership — a permanent, reachable state under invitation-only;
+- social/enterprise connections (if any are ever enabled) do not honour the database connection's
+  signup switch;
+- a user removed from their last business (`removeBusinessUser`) lands in exactly this state.
 
-If self-serve is *not* wanted, disable sign-ups on the Auth0 database connection. The invitation
-flow already pre-creates (blocked) Auth0 users
-(`migrations/.../create-invitations-apikeys-tables.ts` header), so invited users can still register.
-Public signup then fails at Auth0 with a clear message and never reaches the app. Update
-`docs/user-authentication-plan/auth0-setup.md` either way.
+So the Auth0 switch narrows the funnel; it does not remove the state. `/welcome` remains the
+terminal screen for it, and its "nothing pending" branch should say the product is invitation-only
+and point at how to request access — not offer a workspace-creation form.
 
-**Recommendation:** Phase 0 + Phase 1 unconditionally — they are correctness fixes and are useful
-under any product direction. Then choose Phase 2 *or* Phase 3, not both.
+**Sequence:** Phase 0 → Phase 1 → Phase 2. Do the config change last, so the app already handles
+gracefully the accounts that exist by then.
 
 ---
 
 ## 5. Security notes
 
 - `viewer` and `claimInvitation` stay outside `@requiresAuth` by necessity (the user has no auth
-  *context* yet), so both must verify the JWT via `getJwtIdentity()` themselves and expose nothing
+  _context_ yet), so both must verify the JWT via `getJwtIdentity()` themselves and expose nothing
   beyond the caller's own claims. Never trust a client-supplied email.
 - Gate every invitation match on `email_verified === true`; otherwise an attacker signs up with a
   victim's address and claims their invitation. This mirrors the existing rule at
@@ -218,13 +225,12 @@ under any product direction. Then choose Phase 2 *or* Phase 3, not both.
 
 **Server** — `modules/auth/directives/auth-directives.ts`,
 `modules/auth/providers/auth-context.provider.ts` (expose the "identity without tenant" case),
-`modules/common/typeDefs/user-context.graphql.ts` + new `viewer` resolver,
-`modules/auth/{typeDefs,resolvers,providers}` for `claimInvitation`, and
-`modules/onboarding/*` for Phase 2.
+`modules/common/typeDefs/user-context.graphql.ts` + new `viewer` resolver, and
+`modules/auth/{typeDefs,resolvers,providers}` for `claimInvitation`.
 
-**Client** — `providers/urql.tsx`, `providers/urql-error-handler.ts`,
-`providers/user-provider.tsx`, `router/guards/auth-guards.tsx`, `router/routes.ts`,
-`router/config.tsx`, `components/screens/auth-callback.tsx`, new
-`components/screens/welcome.tsx`, new hooks under `src/hooks/`.
+**Client** — `providers/urql.tsx`, `providers/urql-error-handler.ts`, `providers/user-provider.tsx`,
+`router/guards/auth-guards.tsx`, `router/routes.ts`, `router/config.tsx`,
+`components/screens/auth-callback.tsx`, new `components/screens/welcome.tsx`, new hooks under
+`src/hooks/`.
 
 Run `yarn generate` after the schema changes, then `yarn lint`.
