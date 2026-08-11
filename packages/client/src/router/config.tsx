@@ -206,6 +206,9 @@ const AcceptInvitationPage = lazy(() =>
     default: m.AcceptInvitationPage,
   })),
 );
+const WelcomePage = lazy(() =>
+  import('../components/screens/welcome.js').then(m => ({ default: m.WelcomePage })),
+);
 
 /**
  * Helper to wrap components with Suspense
@@ -252,6 +255,15 @@ export const routes: RouteObject[] = [
         element: withSuspense(AcceptInvitationPage),
         handle: {
           title: 'Accept Invitation',
+        },
+      },
+      // Authenticated but not linked to a business: outside the dashboard shell,
+      // so it must not sit under ProtectedRoute (its guard redirects here).
+      {
+        path: ROUTES.WELCOME,
+        element: withSuspense(WelcomePage),
+        handle: {
+          title: 'Welcome',
         },
       },
 

@@ -8,18 +8,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProtectedRoute, PublicOnlyGuard } from '../../router/guards/auth-guards.js';
 import { ROUTES } from '../../router/routes.js';
 
-const { useAuth0Mock } = vi.hoisted(() => ({
+const { useAuth0Mock, useViewerMock } = vi.hoisted(() => ({
   useAuth0Mock: vi.fn(),
+  useViewerMock: vi.fn(),
 }));
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
 }));
 
+// ProtectedRoute composes OnboardingGuard, which queries `viewer` through urql.
+// Stubbing the hook keeps these cases about auth state alone.
+vi.mock('../../hooks/use-viewer.js', () => ({
+  useViewer: useViewerMock,
+}));
+
+const ACTIVE_VIEWER = {
+  fetching: false,
+  error: undefined,
+  viewer: { email: 'member@example.com', emailVerified: true, status: 'ACTIVE' },
+};
+
 type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
 };
+
+type ViewerState = typeof ACTIVE_VIEWER | Record<string, unknown>;
 
 (
   globalThis as typeof globalThis & {
@@ -27,14 +42,23 @@ type AuthState = {
   }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-async function renderProtectedPath(pathname: string, authState: AuthState) {
+async function renderProtectedPath(
+  pathname: string,
+  authState: AuthState,
+  viewerState: ViewerState = ACTIVE_VIEWER,
+) {
   useAuth0Mock.mockReturnValue(authState);
+  useViewerMock.mockReturnValue(viewerState);
 
   const router = createMemoryRouter(
     [
       {
         path: ROUTES.LOGIN,
         element: React.createElement('div', null, 'Login Page'),
+      },
+      {
+        path: ROUTES.WELCOME,
+        element: React.createElement('div', null, 'Welcome Page'),
       },
       {
         path: ROUTES.CHARGES.ROOT,
@@ -163,6 +187,59 @@ describe('ProtectedRoute', () => {
     // Protected content is not rendered while loading
     expect(html).not.toContain('Charges Page');
     expect(router.state.location.pathname).not.toBe(ROUTES.LOGIN);
+    await cleanup();
+  });
+});
+
+describe('OnboardingGuard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const authenticated = { isAuthenticated: true, isLoading: false };
+
+  it('redirects an authenticated user with no workspace to /welcome', async () => {
+    const { router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
+      fetching: false,
+      error: undefined,
+      viewer: { email: 'new@example.com', emailVerified: true, status: 'NO_WORKSPACE' },
+    });
+
+    expect(router.state.location.pathname).toBe(ROUTES.WELCOME);
+    await cleanup();
+  });
+
+  it('redirects an unverified-email user to /welcome', async () => {
+    const { router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
+      fetching: false,
+      error: undefined,
+      viewer: { email: 'new@example.com', emailVerified: false, status: 'EMAIL_UNVERIFIED' },
+    });
+
+    expect(router.state.location.pathname).toBe(ROUTES.WELCOME);
+    await cleanup();
+  });
+
+  it('holds the app shell back while the viewer query is in flight', async () => {
+    const { html, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
+      fetching: true,
+      error: undefined,
+      viewer: null,
+    });
+
+    expect(html).not.toContain('Charges Page');
+    await cleanup();
+  });
+
+  it('renders the app on a viewer query error rather than trapping the user', async () => {
+    const { html, router, cleanup } = await renderProtectedPath(ROUTES.CHARGES.ROOT, authenticated, {
+      fetching: false,
+      error: new Error('network down'),
+      viewer: null,
+    });
+
+    expect(router.state.location.pathname).toBe(ROUTES.CHARGES.ROOT);
+    expect(html).toContain('Charges Page');
     await cleanup();
   });
 });

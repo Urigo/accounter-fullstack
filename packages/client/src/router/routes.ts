@@ -68,6 +68,7 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   AUTH_CALLBACK: '/auth/callback',
+  WELCOME: '/welcome',
   ACCEPT_INVITATION: (token = ':token') => `/accept-invitation/${token}`,
   NETWORK_ERROR: '/network-error',
 

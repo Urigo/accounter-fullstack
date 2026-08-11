@@ -139,6 +139,20 @@ export function authDirectiveTransformer(schema: GraphQLSchema): GraphQLSchema {
           const authContext = await authProvider.getAuthContext();
 
           if (!authContext?.user) {
+            // A valid Auth0 identity that maps to no local membership is not an
+            // authentication failure — refreshing the token can never fix it.
+            // Report it distinctly so the client routes to onboarding instead of
+            // looping through a token refresh / re-login prompt.
+            // Optional call: the injector hands back whatever is registered for
+            // the token, and partial test doubles of this provider are common.
+            const identity = await authProvider.getJwtIdentity?.();
+
+            if (identity) {
+              throw new GraphQLError('No workspace is linked to this account', {
+                extensions: { code: 'ONBOARDING_REQUIRED' },
+              });
+            }
+
             throw new GraphQLError('Authentication required', {
               extensions: { code: 'UNAUTHENTICATED' },
             });
