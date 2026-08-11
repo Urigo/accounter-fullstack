@@ -1,0 +1,45 @@
+References: <30010842.20260731063521.6a6c4229ed48f1.18526044@notifications8.mailtrain.example>
+In-Reply-To: <30010842.20260731063521.6a6c4229ed48f1.18526044@notifications8.mailtrain.example>
+From: Alice Cohen <alice@tenant.example>
+To: acme-k61td2@accounter.tax
+Subject: Fwd: Mailtrain Tax Invoice
+Date: Fri, 31 Jul 2026 09:41:00 +0300
+Message-ID: <forwarded-relayed-newsletter@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="0000000000007588f6065848bc81"
+
+--0000000000007588f6065848bc81
+Content-Type: text/plain; charset="UTF-8"
+
+---------- Forwarded message ---------
+From: 'No Reply - Mailtrain' via Account Payables <payables@tenant.example>
+Date: Fri, Jul 31, 2026 at 9:35 AM
+Subject: Mailtrain Tax Invoice
+To: <payables@tenant.example>
+
+
+Your order was processed on July 31, 2026 for tax invoice MC26589141.
+
+Processed on July 31, 2026 08:35 AM GMT.
+Monthly plan $130.00
+
+Issued to
+ACME SOFTWARE PRODUCTS LTD
+payables@tenant.example
+
+--0000000000007588f6065848bc81
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr"><br><br><div class="gmail_quote">
+<div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>
+From: <strong>&#39;No Reply - Mailtrain&#39; via Account Payables</strong> &lt;<a href="mailto:payables@tenant.example">payables@tenant.example</a>&gt;<br>
+Date: Fri, Jul 31, 2026 at 9:35&#8239;AM<br>
+Subject: Mailtrain Tax Invoice<br>
+To: &lt;<a href="mailto:payables@tenant.example">payables@tenant.example</a>&gt;<br>
+</div><br>
+<p>Your order was processed on July 31, 2026 for tax invoice MC26589141.</p>
+<p><a href="https://billing.mailtrain.example/invoice/MC26589141">View your invoice</a></p>
+<p>Issued to<br>ACME SOFTWARE PRODUCTS LTD<br>payables@tenant.example</p>
+</div></div>
+
+--0000000000007588f6065848bc81--

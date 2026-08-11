@@ -20,22 +20,23 @@ gateway.
 
 ## Module map (`src/`)
 
-| File                   | Responsibility                                                                                |
-| ---------------------- | --------------------------------------------------------------------------------------------- |
-| `index.ts`             | HTTP server, routing, correlation-id setup, prod kill-switch on missing secret.               |
-| `worker.ts`            | Cloudflare `email()` handler: sign + POST, health-probe fallback to forward.                  |
-| `webhook.ts`           | `/webhook` handler: flag gate → header validation → body read → verify → parse → orchestrate. |
-| `verifier.ts`          | Authenticity: IP allowlist, timestamp window, HMAC-SHA256, in-memory nonce replay store.      |
-| `mime-extractor.ts`    | `postal-mime` parsing → documents + sender evidence + body; size/count/depth guards.          |
-| `orchestrator.ts`      | control → treatment → ingest sequence; the core flow.                                         |
-| `treatment.ts`         | Build the final document set: attachment filter + body→PDF + internal-link fetch.             |
-| `link-fetcher.ts`      | Fetch documents behind configured links, with SSRF hardening.                                 |
-| `html-to-pdf.ts`       | Render HTML body → PDF via headless Chromium (JS disabled), shared browser instance.          |
-| `server-client.ts`     | GraphQL client for `requestIngestControl` / `ingestEmail`, with timeouts + retries.           |
-| `environment.ts`       | `zod`-validated env; exits on invalid config.                                                 |
-| `contracts.ts`         | `IngestOutcome` / `IngestReasonCode` constants (duplicated from server, parity-tested).       |
-| `logger.ts`            | Structured JSON logging + correlation-id generation.                                          |
-| `graphql/mutations.ts` | The two GraphQL mutation documents the client sends.                                          |
+| File                   | Responsibility                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| `index.ts`             | HTTP server, routing, correlation-id setup, prod kill-switch on missing secret.                     |
+| `worker.ts`            | Cloudflare `email()` handler: sign + POST, health-probe fallback to forward.                        |
+| `webhook.ts`           | `/webhook` handler: flag gate → header validation → body read → verify → parse → orchestrate.       |
+| `verifier.ts`          | Authenticity: IP allowlist, timestamp window, HMAC-SHA256, in-memory nonce replay store.            |
+| `mime-extractor.ts`    | `postal-mime` parsing → documents + sender evidence + body; size/count/depth guards.                |
+| `forwarded.ts`         | Structural parsing of quoted `---------- Forwarded message ---------` blocks (nested, text + HTML). |
+| `orchestrator.ts`      | control → treatment → ingest sequence; the core flow.                                               |
+| `treatment.ts`         | Build the final document set: attachment filter + body→PDF + internal-link fetch.                   |
+| `link-fetcher.ts`      | Fetch documents behind configured links, with SSRF hardening.                                       |
+| `html-to-pdf.ts`       | Render HTML body → PDF via headless Chromium (JS disabled), shared browser instance.                |
+| `server-client.ts`     | GraphQL client for `requestIngestControl` / `ingestEmail`, with timeouts + retries.                 |
+| `environment.ts`       | `zod`-validated env; exits on invalid config.                                                       |
+| `contracts.ts`         | `IngestOutcome` / `IngestReasonCode` constants (duplicated from server, parity-tested).             |
+| `logger.ts`            | Structured JSON logging + correlation-id generation.                                                |
+| `graphql/mutations.ts` | The two GraphQL mutation documents the client sends.                                                |
 
 ## Conventions
 
@@ -95,6 +96,12 @@ yarn test --project unit packages/email-ingestion-gateway
 Tests live in `src/__tests__/`. When adding behavior, inject stubs via the `*Deps` interfaces rather
 than reaching for global mocks; follow the existing suites (`orchestrator.test.ts`,
 `webhook.test.ts`, `worker-pipe.integration.test.ts`).
+
+`src/__tests__/fixtures/*.eml` are **hand-authored** with fictional addresses, one per real-world
+header shape (Google-Group relay, invoice-platform relay, nested manual forward, RFC 2047 Hebrew
+encoded-words). `example-docs/` is git-ignored: it holds real captured messages with real vendor
+addresses, DKIM signatures and real invoice PDFs. Use it locally with `inspect:eml` (add `--json` to
+get the exact `senderEvidence` payload sent to `requestIngestControl`), never in a committed test.
 
 ## Commands
 

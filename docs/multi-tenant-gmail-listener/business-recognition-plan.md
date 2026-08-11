@@ -251,3 +251,83 @@ Medium-large.
       ingest provider tests)
 - [x] Update `data-flow.md` / `architecture-plan.md`
 - [ ] Deprecate legacy `businessEmailConfig` / `insertEmailDocuments` after cutover
+
+---
+
+## Follow-up: email classification (forwarded / relayed / self-issued)
+
+The issuer-selection policy above (`selectIssuerEmail` / `selectIssuerCandidates` /
+`isSelfIssuedSenderEvidence`) held for mail sent straight to the tenant, but collapsed on the two
+shapes that actually dominate real inboxes. Both were traced against real `.eml` samples:
+
+- **Manually forwarded mail.** A hand forward rewrites `From` to the forwarder, drops the original
+  `Reply-To`, and sets no `X-Original-*`. When the quoted headers are themselves a mailing-list
+  rewrite, _every_ recoverable address belongs to the tenant — so recognition matched the tenant's
+  own business, and ingest withheld the document as self-issued. A forwarded Mailchimp invoice was
+  indistinguishable from a genuine self-issued one.
+- **Self-issued mail.** Detection worked only because `INVOICE_ISSUING_PROVIDER_EMAILS` hard-coded
+  `ap@the-guild.dev`, one specific tenant's forwarding group. No other tenant had any detection.
+
+### What replaced it
+
+`helpers/email-ingestion-classify.helper.ts` — a single `classifyEmail(evidence, tenantContext)`
+that returns `{ kind, issuerCandidates, forwarder, issuerNameHint }`. Kind, first match wins:
+
+| #   | condition                                                             | kind          |
+| --- | --------------------------------------------------------------------- | ------------- |
+| 1   | a quoted forwarded block exists, or `From` is a person at the tenant  | `FORWARDED`   |
+| 2   | the sender's display name is one of the tenant's own business names   | `SELF_ISSUED` |
+| 3   | came through an invoice platform **and** an external address survives | `RELAYED`     |
+| 4   | came through an invoice platform and none does                        | `SELF_ISSUED` |
+| 5   | a mailing-list marker or a `'X' via Y` display name is present        | `RELAYED`     |
+| 6   | otherwise                                                             | `DIRECT`      |
+
+Rule 1 outranking rule 4 is the crux: a person deliberately forwarding into the ingest alias signals
+intent to ingest, whereas self-issued confirmations always arrive by automatic relay, never by hand.
+
+Candidates are tiered (innermost quoted `From` → `Reply-To` → `X-Original-From` → `From` → body
+`mailto:` links, with invoice-platform addresses held back to last) and the tenant's own addresses,
+its mailing-list addresses and the forwarder are excluded at every tier. `issuerNameHint` carries
+the sender's display name for the case where a list rewrite leaves no usable address at all — that
+is what the name-based `matchBusiness` fallback and, ultimately, OCR work from.
+
+The gateway gained `src/forwarded.ts` (structural parsing of nested quoted blocks, across both the
+text and HTML parts) and ships `fromDisplayName`, `originalSender`, `listId`, `listAddresses` and
+`forwardedBlocks` as additive sender evidence. It holds no tenant knowledge.
+
+### Tenant configuration
+
+`EmailIngestionControlProvider.loadTenantMailContext` (60 s TTL cache) derives the tenant's own
+addresses from its active ingest aliases plus the emails registered on its **own** business row —
+deliberately `b.id = tenant`, not `b.owner_id = tenant`, since the latter is every counterparty in
+the workspace. Colleagues who are registered nowhere are covered by explicit config on the tenant's
+own `suggestion_data`:
+
+```jsonc
+{ "emailIngestion": { "ownDomains": ["the-guild.dev"], "extraPlatformSenders": [] } }
+```
+
+**Rollout order.** `ap@the-guild.dev` is still in `GLOBAL_INVOICE_PLATFORM_SENDERS` so behavior is
+unchanged before that config exists. Populate `emailIngestion.ownDomains` for the-guild tenant,
+verify against production mail, _then_ remove the entry.
+
+### Outcome
+
+Self-issued mail is now `IngestOutcome.IGNORED` (recorded with reason `SELF_ISSUED`, inspectable and
+reprocessable) rather than `QUARANTINED`, so routine self-issued copies stop filling the operator
+triage queue. The signal is `email_ingestion_grants.classification`, bound at control time; grants
+issued before that column fall back to the old `business_id = owner_id` comparison.
+
+### Checklist
+
+- [x] Server: `classifyEmail` replaces the issuer-selection trio
+- [x] Server: `loadTenantMailContext` + `emailIngestion` config in the suggestion-data schema
+- [x] Server: `IngestOutcome.IGNORED`; ingest keys off the grant classification
+- [x] Migration: `email_ingestion_grants.classification`
+- [x] Gateway: `forwarded.ts` + additive sender-evidence fields; treatment skips `SELF_ISSUED`
+- [x] Fixtures: hand-authored `.eml` per header shape; `example-docs/` git-ignored
+- [ ] Populate per-tenant `emailIngestion.ownDomains`, then drop `ap@the-guild.dev` from the global
+      platform list
+- [ ] Fetch link-only documents for unrecognized senders (three real samples carry no attachment —
+      the invoice is behind a body link, and link config is only returned once a business is
+      recognized)

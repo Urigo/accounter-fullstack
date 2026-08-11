@@ -218,6 +218,7 @@ function controlSuccess(businessEmailConfig: BusinessEmailConfig | null): Contro
       auditId: 'audit-ctrl',
       grant: GRANT,
       businessEmailConfig,
+      classification: 'DIRECT',
     },
   };
 }

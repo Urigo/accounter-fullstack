@@ -33,7 +33,7 @@ export type OrchestrateResult =
   | {
       success: true;
       tenantId: string;
-      outcome: 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED';
+      outcome: 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED' | 'IGNORED';
       ingestId: string | null | undefined;
       existingIngestId: string | null | undefined;
       auditId: string;
@@ -101,6 +101,7 @@ export async function orchestrate(
     config: decision.businessEmailConfig,
     body: input.body,
     attachments: input.attachments,
+    classification: decision.classification,
     correlationId,
   });
 
@@ -111,6 +112,7 @@ export async function orchestrate(
       tenantId: decision.tenantId,
       documentCount: finalDocuments.length,
       businessId: decision.businessEmailConfig?.businessId ?? null,
+      classification: decision.classification,
     },
     correlationId,
   );

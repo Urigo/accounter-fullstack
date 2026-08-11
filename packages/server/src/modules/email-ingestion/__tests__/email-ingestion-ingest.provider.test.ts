@@ -7,6 +7,7 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { EmailIngestionIngestProvider } from '../providers/email-ingestion-ingest.provider.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
+import { EmailKind } from '../helpers/email-ingestion-classify.helper.js';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -26,7 +27,14 @@ const BUSINESS_ID = 'business-uuid-x';
 
 const VALID_GRANT = {
   valid: true as const,
-  grant: { jti: JTI, tenantId: TENANT_ID, action: 'ingest', expiresAt: FUTURE, businessId: null },
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
+    businessId: null,
+    classification: EmailKind.DIRECT,
+  },
 };
 
 const VALID_GRANT_WITH_BUSINESS = {
@@ -37,10 +45,12 @@ const VALID_GRANT_WITH_BUSINESS = {
     action: 'ingest',
     expiresAt: FUTURE,
     businessId: BUSINESS_ID,
+    classification: EmailKind.DIRECT,
   },
 };
 
-// Self-issued: the grant's issuing business is the tenant's own business.
+// Self-issued: the control step classified the email as a copy of a document the
+// tenant issued itself.
 const VALID_GRANT_SELF_ISSUED = {
   valid: true as const,
   grant: {
@@ -48,7 +58,37 @@ const VALID_GRANT_SELF_ISSUED = {
     tenantId: TENANT_ID,
     action: 'ingest',
     expiresAt: FUTURE,
+    businessId: null,
+    classification: EmailKind.SELF_ISSUED,
+  },
+};
+
+// A grant issued before the classification column existed: ingest falls back to the
+// old `businessId === tenantId` inference so in-flight grants keep working.
+const LEGACY_GRANT_SELF_ISSUED = {
+  valid: true as const,
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
     businessId: TENANT_ID,
+    classification: null,
+  },
+};
+
+// A manual forward whose only recoverable addresses belonged to the tenant. The old
+// inference bound the tenant as its own issuer and withheld the document; the
+// classification keeps it on the normal path.
+const VALID_GRANT_FORWARDED = {
+  valid: true as const,
+  grant: {
+    jti: JTI,
+    tenantId: TENANT_ID,
+    action: 'ingest',
+    expiresAt: FUTURE,
+    businessId: null,
+    classification: EmailKind.FORWARDED,
   },
 };
 
@@ -327,7 +367,7 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     id: 'idem-row',
     idempotency_key: IDEM_KEY,
     owner_id: TENANT_ID,
-    outcome: IngestOutcome.QUARANTINED,
+    outcome: IngestOutcome.IGNORED,
     ingest_id: null,
     audit_id: 'audit-self',
     created_at: NOW,
@@ -336,7 +376,7 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     id: 'dedup-row',
     owner_id: TENANT_ID,
     fingerprint: 'fp',
-    outcome: IngestOutcome.QUARANTINED,
+    outcome: IngestOutcome.IGNORED,
     ingest_id: null,
     correlation_id: CORR_ID,
     created_at: NOW,
@@ -354,7 +394,7 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     ],
   };
 
-  it('returns QUARANTINED with SELF_ISSUED when the issuer is the tenant own business', async () => {
+  it('returns IGNORED with SELF_ISSUED when control classified the email as self-issued', async () => {
     const { provider, uploadInvoiceToCloudinary, dataCalls } = makeProvider(VALID_GRANT_SELF_ISSUED, [
       { rows: [], rowCount: 0 }, // early idempotency miss
       { rows: [quarantineRow], rowCount: 1 }, // quarantine insert
@@ -365,21 +405,21 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     const result = await provider.performIngest(inputWithContent, ocrInjector);
 
     expect(result).toMatchObject({
-      outcome: IngestOutcome.QUARANTINED,
+      outcome: IngestOutcome.IGNORED,
       reasonCode: IngestReasonCode.SELF_ISSUED,
     });
     // No document work (upload/OCR run together in prepareDocuments) and no
-    // charge/document rows are written — the email is quarantined, not inserted.
+    // charge/document rows are written — the email is skipped, not inserted.
     expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.charges'))).toBe(false);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.documents'))).toBe(false);
-    // A quarantine row is recorded so the misclassification is never silent.
+    // An audit row is still recorded, so the decision stays inspectable.
     expect(
       dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine')),
     ).toBe(true);
   });
 
-  it('persists quarantine + idempotency + dedup so a retry short-circuits, without dedup lookup query', async () => {
+  it('persists audit + idempotency + dedup so a retry short-circuits, without dedup lookup query', async () => {
     const { provider, validateAndConsumeGrant, dataCalls, dataQueries } = makeProvider(
       VALID_GRANT_SELF_ISSUED,
       [
@@ -393,14 +433,47 @@ describe('EmailIngestionIngestProvider.performIngest — self-issued', () => {
     await provider.performIngest(BASE_INPUT, ocrInjector);
 
     // The grant IS validated/consumed; the self-issued check then short-circuits
-    // before any dedup lookup, charge or document insert — but records the
-    // quarantine row plus the idempotency key + dedup fingerprint so retries
-    // short-circuit at the early idempotency check.
+    // before any dedup lookup, charge or document insert — but records the audit
+    // row plus the idempotency key + dedup fingerprint so retries short-circuit
+    // at the early idempotency check.
     expect(validateAndConsumeGrant).toHaveBeenCalled();
-    expect(dataQueries).toHaveLength(4); // early idem lookup + quarantine insert + idem insert + dedup insert
+    expect(dataQueries).toHaveLength(4); // early idem lookup + audit insert + idem insert + dedup insert
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_quarantine'))).toBe(true);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_idempotency_keys'))).toBe(true);
     expect(dataCalls.some(c => c.text.includes('INTO accounter_schema.email_ingestion_dedup_fingerprints'))).toBe(true);
+  });
+
+  it('falls back to businessId === tenantId for a grant issued before the classification column', async () => {
+    const { provider, uploadInvoiceToCloudinary } = makeProvider(LEGACY_GRANT_SELF_ISSUED, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [quarantineRow], rowCount: 1 }, // audit insert
+      { rows: [idemRow], rowCount: 1 }, // idempotency insert
+      { rows: [dedupRow], rowCount: 1 }, // dedup insert
+    ]);
+
+    const result = await provider.performIngest(inputWithContent, ocrInjector);
+
+    expect(result).toMatchObject({
+      outcome: IngestOutcome.IGNORED,
+      reasonCode: IngestReasonCode.SELF_ISSUED,
+    });
+    expect(uploadInvoiceToCloudinary).not.toHaveBeenCalled();
+  });
+
+  // The regression this whole change exists for: a supplier invoice forwarded in by
+  // a colleague used to resolve to the tenant's own business and be withheld.
+  it('does not skip a FORWARDED email, even though no business was recognized', async () => {
+    const { provider, uploadInvoiceToCloudinary } = makeProvider(VALID_GRANT_FORWARDED, [
+      { rows: [], rowCount: 0 }, // early idempotency miss
+      { rows: [], rowCount: 0 }, // document hash dedup miss
+      { rows: [], rowCount: 0 }, // businesses for matching
+      { rows: [], rowCount: 0 }, // user_context locality
+    ]);
+
+    await provider.performIngest(inputWithContent, ocrInjector).catch(() => undefined);
+
+    // It reached document preparation instead of short-circuiting.
+    expect(uploadInvoiceToCloudinary).toHaveBeenCalled();
   });
 });
 

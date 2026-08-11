@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DBProvider } from '../../app-providers/db.provider.js';
 import { emailMatchesPattern } from '../../financial-entities/helpers/email-pattern.helper.js';
+import {
+  EmailKind,
+  type EmailClassification,
+} from '../helpers/email-ingestion-classify.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 // ---------------------------------------------------------------------------
@@ -288,10 +292,15 @@ describe('EmailIngestionControlProvider.recognizeBusiness', () => {
 });
 
 // ---------------------------------------------------------------------------
-// recognizeBusinessFromEvidence
+// recognizeBusinessFromClassification
 // ---------------------------------------------------------------------------
 
-describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
+describe('EmailIngestionControlProvider.recognizeBusinessFromClassification', () => {
+  /** Build a classification carrying just the candidate list under test. */
+  function candidates(issuerCandidates: string[]): EmailClassification {
+    return { kind: EmailKind.DIRECT, issuerCandidates, forwarder: null, issuerNameHint: null };
+  }
+
   // Mock the businesses lookup to match a single email (case-insensitively),
   // mirroring the real lower()-based SQL.
   function dbMatchingEmail(target: string, row: Record<string, unknown>) {
@@ -316,10 +325,12 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'Gil Gardosh <gil@the-guild.dev>',
-      issuerCandidates: ['ap@the-guild.dev', 'noreply@notify.cloudflare.com'],
-    });
+    // The classifier has already dropped the forwarder and the tenant's own group,
+    // so only the real issuer reaches the lookup.
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['noreply@notify.cloudflare.com']),
+    );
 
     expect(result.businessId).toBe('cloudflare-biz');
     expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
@@ -347,9 +358,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'qr45uf@cloudflare.com',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['qr45uf@cloudflare.com']),
+    );
 
     expect(result.businessId).toBe('cloudflare-biz');
     expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
@@ -362,9 +374,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'VENDOR@ACME.COM',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['vendor@acme.com']),
+    );
 
     expect(result.businessId).toBe('biz-1');
   });
@@ -373,9 +386,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'nobody@nowhere.com',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['nobody@nowhere.com']),
+    );
 
     expect(result).toEqual({ businessId: null, config: {} });
   });
@@ -386,10 +400,99 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     const db = { pool: { query, connect } } as unknown as DBProvider;
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', undefined);
+    const result = await provider.recognizeBusinessFromClassification('tenant-1', candidates([]));
 
     expect(result).toEqual({ businessId: null, config: {} });
     expect(query).not.toHaveBeenCalled();
     expect(connect).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadTenantMailContext
+// ---------------------------------------------------------------------------
+
+describe('EmailIngestionControlProvider.loadTenantMailContext', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  /** Serves the two reads the loader issues: active aliases, then the own business row. */
+  function makeContextDb(ownBusiness: Record<string, unknown> | null = null) {
+    return makeDbProvider(sql => {
+      if (sql.includes('email_ingestion_alias_routing')) {
+        return { rows: [{ alias: 'tenant-alias@accounter.tax' }], rowCount: 1 };
+      }
+      if (sql.includes('accounter_schema.businesses')) {
+        return ownBusiness ? { rows: [ownBusiness], rowCount: 1 } : { rows: [], rowCount: 0 };
+      }
+      return { rows: [], rowCount: 0 };
+    });
+  }
+
+  it('derives own addresses, names, domains and platform senders', async () => {
+    const db = makeContextDb({
+      name: 'Acme Ltd',
+      hebrew_name: 'אקמה',
+      suggestion_data: {
+        emails: ['billing@tenant.example'],
+        emailIngestion: {
+          ownDomains: ['Tenant.Example'],
+          extraPlatformSenders: ['relay@platform.example'],
+        },
+      },
+    });
+    const provider = new EmailIngestionControlProvider(db);
+
+    const ctx = await provider.loadTenantMailContext('tenant-1');
+
+    expect([...ctx.ownAddresses].sort()).toEqual([
+      'billing@tenant.example',
+      'tenant-alias@accounter.tax',
+    ]);
+    expect([...ctx.ownDomains]).toEqual(['tenant.example']);
+    expect(ctx.ownNames).toEqual(['Acme Ltd', 'אקמה']);
+    expect(ctx.invoicePlatformSenders.has('relay@platform.example')).toBe(true);
+    expect(ctx.invoicePlatformSenders.has('notify@morning.co')).toBe(true);
+  });
+
+  it('caches within the TTL and refreshes after it', async () => {
+    const db = makeContextDb();
+    const provider = new EmailIngestionControlProvider(db);
+    const query = (db.pool as unknown as { query: ReturnType<typeof vi.fn> }).query;
+
+    await provider.loadTenantMailContext('tenant-1');
+    const afterFirst = query.mock.calls.length;
+
+    await provider.loadTenantMailContext('tenant-1');
+    expect(query.mock.calls.length).toBe(afterFirst); // served from cache
+
+    vi.advanceTimersByTime(61_000);
+    await provider.loadTenantMailContext('tenant-1');
+    expect(query.mock.calls.length).toBeGreaterThan(afterFirst);
+  });
+
+  // The provider is a process-lifetime singleton, so without a sweep the cache would
+  // retain an entry for every tenant that ever received mail.
+  it('evicts expired entries so the cache cannot grow without bound', async () => {
+    const db = makeContextDb();
+    const provider = new EmailIngestionControlProvider(db);
+    const cache = (
+      provider as unknown as { mailContextCache: Map<string, unknown> }
+    ).mailContextCache;
+
+    for (const tenant of ['tenant-1', 'tenant-2', 'tenant-3']) {
+      await provider.loadTenantMailContext(tenant);
+    }
+    expect(cache.size).toBe(3);
+
+    // Every existing entry is now stale; loading a fourth tenant sweeps them out.
+    vi.advanceTimersByTime(61_000);
+    await provider.loadTenantMailContext('tenant-4');
+
+    expect([...cache.keys()]).toEqual(['tenant-4']);
   });
 });

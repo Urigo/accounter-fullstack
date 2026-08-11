@@ -11,10 +11,11 @@ describe('IngestOutcome', () => {
     expect(IngestOutcome.DUPLICATE).toBe('duplicate');
     expect(IngestOutcome.QUARANTINED).toBe('quarantined');
     expect(IngestOutcome.REJECTED).toBe('rejected');
+    expect(IngestOutcome.IGNORED).toBe('ignored');
   });
 
-  it('has exactly four outcomes', () => {
-    expect(Object.keys(IngestOutcome)).toHaveLength(4);
+  it('has exactly five outcomes', () => {
+    expect(Object.keys(IngestOutcome)).toHaveLength(5);
   });
 
   it('all values are non-empty strings', () => {

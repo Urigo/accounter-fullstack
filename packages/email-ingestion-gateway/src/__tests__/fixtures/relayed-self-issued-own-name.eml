@@ -1,0 +1,32 @@
+Delivered-To: alice@tenant.example
+Return-Path: <payables+bncBCUNFB7OLMINRIGH2MDBUBATOLS7S@tenant.example>
+From: "'ACME SOFTWARE PRODUCTS LTD' via Account Payables" <payables@tenant.example>
+To: payables@tenant.example
+Reply-To: payables@tenant.example
+Subject: Proforma Invoice 40511 - ACME SOFTWARE PRODUCTS LTD
+Date: Wed, 29 Jul 2026 10:12:00 +0300
+Message-ID: <relayed-self-issued-own-name@morning.co>
+MIME-Version: 1.0
+X-Original-Sender: notify@morning.co
+X-Original-From: ACME SOFTWARE PRODUCTS LTD <notify@morning.co>
+Precedence: list
+Mailing-list: list payables@tenant.example; contact payables+owners@tenant.example
+List-ID: <payables.tenant.example>
+X-Google-Group-Id: 603038252699
+List-Post: <https://groups.google.com/a/tenant.example/group/payables/post>, <mailto:payables@tenant.example>
+Content-Type: multipart/mixed; boundary=mk3-59441a844bd84a8bae59893bd50ab78a
+
+--mk3-59441a844bd84a8bae59893bd50ab78a
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+<div dir="ltr"><p>Proforma invoice 40511 issued by ACME SOFTWARE PRODUCTS LTD is attached.</p></div>
+
+--mk3-59441a844bd84a8bae59893bd50ab78a
+Content-Type: application/pdf; name=40511.pdf
+Content-Disposition: attachment; filename=40511.pdf
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZz4+ZW5kb2JqCkFjbWUgcHJvZm9ybWEgNDA1MTEKJSVFT0YK
+
+--mk3-59441a844bd84a8bae59893bd50ab78a--

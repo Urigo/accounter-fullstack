@@ -19,12 +19,15 @@ import {
 import type { IInsertDocumentsParams } from '../../documents/types.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestOutcome, IngestReasonCode } from '../contracts.js';
+import { EmailKind } from '../helpers/email-ingestion-classify.helper.js';
 import { computeDedupFingerprint } from '../helpers/email-ingestion-dedup.helper.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   ICheckDedupFingerprintForIngestQuery,
   ICheckDocumentByHashForIngestQuery,
   ICheckIdempotencyKeyForIngestQuery,
+  IGetBusinessesForIngestMatchingQuery,
+  IGetOwnerLocalityForIngestQuery,
   IInsertDedupFingerprintForIngestQuery,
   IInsertIdempotencyKeyForIngestQuery,
   IInsertIngestChargeQuery,
@@ -91,6 +94,30 @@ const insertQuarantineForIngest = sql<IInsertQuarantineForIngestQuery>`
     (reason_code, tenant_candidate, message_id, raw_message_hash, correlation_id)
   VALUES ($reasonCode, $tenantCandidate, $messageId, $rawMessageHash, $correlationId)
   RETURNING id
+`;
+
+// The tenant's businesses, feeding the OCR business matcher. `OR b.id = $ownerId`
+// includes the tenant's own row, which is what lets resolveOwnerSideFromUuids
+// recognize an owner-side match. Read here on a tenant-pinned client rather than via
+// BusinessesProvider, whose TenantAwareDBClient throws "Missing businessId in
+// AuthContext" in this control-plane context; the explicit owner filter is defense in
+// depth on top of RLS.
+const getBusinessesForIngestMatching = sql<IGetBusinessesForIngestMatchingQuery>`
+  SELECT b.id, fe.name, b.hebrew_name, b.vat_number, b.suggestion_data, b.country
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      ON fe.id = b.id
+   WHERE b.owner_id = $ownerId
+      OR b.id = $ownerId
+`;
+
+// The tenant's locality, for the foreign-counterparty VAT-0 fallback. Read here for
+// the same reason as above (AdminContextProvider is auth-coupled).
+const getOwnerLocalityForIngest = sql<IGetOwnerLocalityForIngestQuery>`
+  SELECT locality
+    FROM accounter_schema.user_context
+   WHERE owner_id = $ownerId
+   LIMIT 1
 `;
 
 const checkDocumentByHashForIngest = sql<ICheckDocumentByHashForIngestQuery>`
@@ -194,7 +221,11 @@ export type IngestResult =
       existingIngestId: string | null;
       auditId: string;
     }
-  | { outcome: typeof IngestOutcome.QUARANTINED; auditId: string; reasonCode: string }
+  | {
+      outcome: typeof IngestOutcome.QUARANTINED | typeof IngestOutcome.IGNORED;
+      auditId: string;
+      reasonCode: string;
+    }
   | { outcome: typeof IngestOutcome.REJECTED; reasonCode: string };
 
 // ---------------------------------------------------------------------------
@@ -280,20 +311,27 @@ export class EmailIngestionIngestProvider {
     const corrId = correlationId ?? randomUUID();
     const fingerprint = computeDedupFingerprint(tenantId, rawMessageHash);
 
-    // Self-issued short-circuit: the recognized issuing business is the tenant's
-    // own business. The canonical case is a confirmation of an invoice the tenant
-    // issued itself (e.g. via Morning/greeninvoice), whose document already exists
-    // from creation — so we must not re-insert it. But the same signal also fires
-    // when a real supplier invoice reaches the tenant through its own forwarding
-    // group and no external issuer could be recognized (the issuer heuristic
-    // collapses onto the forwarder/tenant). Silently dropping those (the previous
-    // DUPLICATE behavior) lost the document with no trace. Instead QUARANTINE
-    // before any upload/OCR/insert: recorded, visible, and reprocessable, so a
-    // misclassification is never silent data loss, while a genuine self-issued
-    // duplicate is still not inserted. Consume the grant and persist the quarantine
-    // row + idempotency key + dedup fingerprint in one transaction so a gateway
+    // Self-issued short-circuit: a copy of a document the tenant issued itself (e.g.
+    // via Morning/greeninvoice), whose document already exists from creation — so we
+    // must not re-insert it. Skip before any upload/OCR/insert.
+    //
+    // The signal is the classification bound at control time, not `businessId ===
+    // tenantId`. That older inference conflated genuine self-issued mail with a real
+    // supplier invoice forwarded in by a colleague, whose every recoverable address
+    // belonged to the tenant and so matched the tenant's own business; those were
+    // wrongly withheld. Grants issued before the column existed carry no
+    // classification, so the old comparison stays as the fallback.
+    //
+    // Recorded as IGNORED rather than QUARANTINED: the audit row keeps the decision
+    // visible and reprocessable, but routine self-issued mail is not an operational
+    // failure and must not fill the triage queue. Consume the grant and persist the
+    // audit row + idempotency key + dedup fingerprint in one transaction so a gateway
     // retry short-circuits at the early idempotency check.
-    if (businessId === tenantId) {
+    const selfIssued =
+      grantResult.grant.classification === EmailKind.SELF_ISSUED ||
+      (grantResult.grant.classification === null && businessId === tenantId);
+
+    if (selfIssued) {
       return withTenantContext(this.dbProvider.pool, tenantId, async client => {
         const consumed = await this.controlProvider.validateAndConsumeGrant(
           { jti: grantJti, tenantId, messageId, rawMessageHash },
@@ -303,7 +341,8 @@ export class EmailIngestionIngestProvider {
           return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
         }
 
-        return this.recordQuarantine(client, {
+        return this.recordNonInsert(client, {
+          outcome: IngestOutcome.IGNORED,
           reasonCode: IngestReasonCode.SELF_ISSUED,
           tenantId,
           messageId,
@@ -354,7 +393,8 @@ export class EmailIngestionIngestProvider {
         if (!consumed.valid) {
           return { outcome: IngestOutcome.REJECTED, reasonCode: consumed.reason };
         }
-        return this.recordQuarantine(client, {
+        return this.recordNonInsert(client, {
+          outcome: IngestOutcome.QUARANTINED,
           reasonCode: IngestReasonCode.UPLOAD_FAILED,
           tenantId,
           messageId,
@@ -412,7 +452,8 @@ export class EmailIngestionIngestProvider {
 
       // 4. Quarantine if no documents were extracted.
       if (extractedDocuments.length === 0) {
-        return this.recordQuarantine(client, {
+        return this.recordNonInsert(client, {
+          outcome: IngestOutcome.QUARANTINED,
           reasonCode: IngestReasonCode.NO_DOCUMENTS,
           tenantId,
           messageId,
@@ -532,31 +573,13 @@ export class EmailIngestionIngestProvider {
           return { newCandidates: fresh, businesses: [], owner: undefined };
         }
 
-        const [businessesRes, localityRes] = await Promise.all([
-          // `OR b.id = $1` includes the tenant's own business row, which is what
-          // lets resolveOwnerSideFromUuids recognize an owner-side match.
-          client.query<{
-            id: string;
-            name: string | null;
-            hebrew_name: string | null;
-            vat_number: string | null;
-            suggestion_data: unknown;
-            country: string | null;
-          }>(
-            `SELECT b.id, fe.name, b.hebrew_name, b.vat_number, b.suggestion_data, b.country
-               FROM accounter_schema.businesses b
-               INNER JOIN accounter_schema.financial_entities fe USING (id)
-              WHERE b.owner_id = $1 OR b.id = $1`,
-            [tenantId],
-          ),
-          client.query<{ locality: string | null }>(
-            'SELECT locality FROM accounter_schema.user_context WHERE owner_id = $1 LIMIT 1',
-            [tenantId],
-          ),
+        const [businessRows, localityRows] = await Promise.all([
+          getBusinessesForIngestMatching.run({ ownerId: tenantId }, client),
+          getOwnerLocalityForIngest.run({ ownerId: tenantId }, client),
         ]);
 
         // Mirror `fetchBusinessesForMatching` in upload.helper.ts.
-        const matchData: BusinessMatchData[] = businessesRes.rows.map(b => ({
+        const matchData: BusinessMatchData[] = businessRows.map(b => ({
           id: b.id,
           name: b.name ?? null,
           hebrew_name: b.hebrew_name ?? null,
@@ -570,7 +593,7 @@ export class EmailIngestionIngestProvider {
           businesses: matchData,
           owner: {
             id: tenantId,
-            locality: localityRes.rows[0]?.locality ?? null,
+            locality: localityRows[0]?.locality ?? null,
           } satisfies OwnerMatchInfo,
         };
       },
@@ -655,14 +678,19 @@ export class EmailIngestionIngestProvider {
   }
 
   /**
-   * Record a QUARANTINE outcome inside the caller's tenant-pinned write transaction:
-   * insert the quarantine row and persist the idempotency key + dedup fingerprint
-   * (so a re-delivery short-circuits) under a single audit id. Shared by the
-   * NO_DOCUMENTS (empty set) and UPLOAD_FAILED (preparation error) paths.
+   * Record a non-insert outcome inside the caller's tenant-pinned write transaction:
+   * insert the audit row and persist the idempotency key + dedup fingerprint (so a
+   * re-delivery short-circuits) under a single audit id.
+   *
+   * The row always lands in the quarantine table — it is the module's durable record
+   * of "an email arrived and was not inserted", and the reprocessing workflow reads
+   * from it. `outcome` is what distinguishes a failure needing triage (QUARANTINED:
+   * NO_DOCUMENTS, UPLOAD_FAILED) from a deliberate skip (IGNORED: SELF_ISSUED).
    */
-  private async recordQuarantine(
+  private async recordNonInsert(
     client: PoolClient,
     args: {
+      outcome: typeof IngestOutcome.QUARANTINED | typeof IngestOutcome.IGNORED;
       reasonCode: IngestReasonCode;
       tenantId: string;
       messageId: string;
@@ -673,6 +701,7 @@ export class EmailIngestionIngestProvider {
     },
   ): Promise<IngestResult> {
     const {
+      outcome,
       reasonCode,
       tenantId,
       messageId,
@@ -692,14 +721,14 @@ export class EmailIngestionIngestProvider {
       idempotencyKey,
       tenantId,
       fingerprint,
-      outcome: IngestOutcome.QUARANTINED,
+      outcome,
       ingestId: null,
       auditId,
       correlationId,
       client,
     });
 
-    return { outcome: IngestOutcome.QUARANTINED, auditId, reasonCode };
+    return { outcome, auditId, reasonCode };
   }
 
   /**

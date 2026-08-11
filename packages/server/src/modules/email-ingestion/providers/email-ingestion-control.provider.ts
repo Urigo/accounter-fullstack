@@ -9,15 +9,20 @@ import {
 } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { IngestReasonCode } from '../contracts.js';
 import {
-  selectIssuerCandidates,
-  type SenderEvidence,
-} from '../helpers/email-ingestion-issuer.helper.js';
+  EmailKind,
+  GLOBAL_INVOICE_PLATFORM_SENDERS,
+  normalizeEmail,
+  type EmailClassification,
+  type TenantMailContext,
+} from '../helpers/email-ingestion-classify.helper.js';
 import { withTenantContext } from '../helpers/email-ingestion-tenant-context.helper.js';
 import type {
   IConsumeGrantByJtiQuery,
+  IGetActiveAliasesForTenantQuery,
   IGetAliasByAliasQuery,
   IGetBusinessByEmailForIngestQuery,
   IGetGrantByJtiForValidationQuery,
+  IGetTenantOwnBusinessForIngestQuery,
   IInsertIngestGrantQuery,
 } from '../types.js';
 
@@ -35,9 +40,9 @@ const getAliasByAlias = sql<IGetAliasByAliasQuery>`
 
 const insertIngestGrant = sql<IInsertIngestGrantQuery>`
   INSERT INTO accounter_schema.email_ingestion_grants
-    (jti, owner_id, message_id, raw_message_hash, action, expires_at, business_id)
-  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt, $businessId)
-  RETURNING id, jti, owner_id, action, expires_at, business_id
+    (jti, owner_id, message_id, raw_message_hash, action, expires_at, business_id, classification)
+  VALUES ($jti, $ownerId, $messageId, $rawMessageHash, $action, $expiresAt, $businessId, $classification)
+  RETURNING id, jti, owner_id, action, expires_at, business_id, classification
 `;
 
 // Resolve the issuing business by a sender email listed in its
@@ -76,8 +81,31 @@ const getBusinessByEmailForIngest = sql<IGetBusinessByEmailForIngestQuery>`
    LIMIT 1
 `;
 
+// The tenant's own inbound addresses. Scoped by an explicit owner_id filter because
+// the alias_routing table's select policy is USING (TRUE) — alias resolution has to
+// work before any tenant context exists — so RLS does not constrain this read.
+const getActiveAliasesForTenant = sql<IGetActiveAliasesForTenantQuery>`
+  SELECT alias
+    FROM accounter_schema.email_ingestion_alias_routing
+   WHERE owner_id = $ownerId
+     AND is_active = TRUE
+`;
+
+// The tenant's *own* business row — deliberately `b.id = $tenantId` and not
+// `b.owner_id = $tenantId`: the latter returns every business in the workspace,
+// including every counterparty, whose addresses must stay eligible for issuer
+// recognition. Supplies the tenant's own names and its emailIngestion config.
+const getTenantOwnBusinessForIngest = sql<IGetTenantOwnBusinessForIngestQuery>`
+  SELECT fe.name, b.hebrew_name, b.suggestion_data
+    FROM accounter_schema.businesses b
+    INNER JOIN accounter_schema.financial_entities fe
+      ON fe.id = b.id
+   WHERE b.id = $tenantId
+   LIMIT 1
+`;
+
 const getGrantByJtiForValidation = sql<IGetGrantByJtiForValidationQuery>`
-  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at, business_id
+  SELECT id, jti, owner_id, message_id, raw_message_hash, action, expires_at, consumed_at, business_id, classification
     FROM accounter_schema.email_ingestion_grants
    WHERE jti = $jti
    LIMIT 1
@@ -118,6 +146,8 @@ export type IssueGrantInput = {
   correlationId?: string;
   /** Recognized issuing business, bound into the grant for the ingest step. */
   businessId?: string | null;
+  /** How the email was classified, bound into the grant for the ingest step. */
+  classification?: EmailKind | null;
 };
 
 export type BusinessRecognitionResult = {
@@ -149,6 +179,14 @@ function parseEmailListenerConfig(business: {
   return parsed.data.emailListener ?? {};
 }
 
+/**
+ * How long a tenant's mail context is reused. Control runs once per inbound email
+ * against a 3 s gateway timeout, and the underlying data (aliases, the tenant's own
+ * business row) changes on human timescales — so a short cache keeps a DB round-trip
+ * off the hot path without making config edits feel stuck.
+ */
+const MAIL_CONTEXT_TTL_MS = 60_000;
+
 export type ValidateGrantInput = {
   jti: string;
   tenantId: string;
@@ -163,6 +201,8 @@ export type ValidatedGrant = {
   expiresAt: Date;
   /** Recognized issuing business bound at control time; null when unrecognized. */
   businessId: string | null;
+  /** Classification bound at control time; null on grants issued before it existed. */
+  classification: EmailKind | null;
 };
 
 export type GrantValidationResult =
@@ -181,6 +221,9 @@ export type GrantValidationResult =
   global: true,
 })
 export class EmailIngestionControlProvider {
+  /** Per-tenant mail context, see {@link MAIL_CONTEXT_TTL_MS}. */
+  private mailContextCache = new Map<string, { context: TenantMailContext; expiresAt: number }>();
+
   constructor(private dbProvider: DBProvider) {}
 
   /**
@@ -213,7 +256,7 @@ export class EmailIngestionControlProvider {
     const decisionId = randomUUID();
     const auditId = randomUUID();
 
-    const { tenantId, messageId, rawMessageHash, expiresAt, businessId } = input;
+    const { tenantId, messageId, rawMessageHash, expiresAt, businessId, classification } = input;
 
     const rows = await withTenantContext(this.dbProvider.pool, tenantId, client =>
       insertIngestGrant.run(
@@ -225,6 +268,7 @@ export class EmailIngestionControlProvider {
           action: 'ingest',
           expiresAt,
           businessId: businessId ?? null,
+          classification: classification ?? null,
         },
         client,
       ),
@@ -265,26 +309,91 @@ export class EmailIngestionControlProvider {
   }
 
   /**
-   * Recognize the issuing business from the full sender evidence, trying each
-   * candidate address (in {@link selectIssuerCandidates} priority order) until
-   * one matches a business. This is the path the resolver uses: it tolerates
-   * **manually forwarded** mail, where the real issuer is only a quoted-header
-   * address in the body while the live `From`/`Reply-To` belong to the
-   * forwarder. Runs the candidate lookups inside a single tenant-pinned
-   * transaction.
+   * Recognize the issuing business from a {@link classifyEmail} result, trying each
+   * candidate address in priority order until one matches. This is the path the
+   * resolver uses: the classifier has already removed the tenant's own addresses,
+   * its mailing-list addresses and the forwarder, so **manually forwarded** mail
+   * resolves to the real issuer rather than to the tenant itself. Runs every lookup
+   * inside a single tenant-pinned transaction.
    */
-  async recognizeBusinessFromEvidence(
+  async recognizeBusinessFromClassification(
     tenantId: string,
-    evidence: SenderEvidence | null | undefined,
+    classification: EmailClassification,
   ): Promise<BusinessRecognitionResult> {
-    const candidates = selectIssuerCandidates(evidence);
-    if (candidates.length === 0) {
+    if (classification.issuerCandidates.length === 0) {
       return { businessId: null, config: {} };
     }
 
     return withTenantContext(this.dbProvider.pool, tenantId, client =>
-      this.lookupBusinessByEmails(client, candidates),
+      this.lookupBusinessByEmails(client, classification.issuerCandidates),
     );
+  }
+
+  /**
+   * Assemble the tenant-scoped facts {@link classifyEmail} needs. Cached briefly —
+   * see {@link MAIL_CONTEXT_TTL_MS}.
+   *
+   * "Own addresses" are deliberately narrow: the tenant's active ingest aliases plus
+   * the emails registered on its **own** business row. Every other business in the
+   * workspace shares `owner_id` with the tenant but is a *counterparty* — treating
+   * their addresses as the tenant's would exclude every supplier from recognition.
+   * Colleagues who are not registered anywhere are covered by `ownDomains` config.
+   */
+  async loadTenantMailContext(tenantId: string): Promise<TenantMailContext> {
+    const cached = this.mailContextCache.get(tenantId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.context;
+    }
+
+    const context = await withTenantContext(this.dbProvider.pool, tenantId, async client => {
+      const [aliasRows, ownRows] = await Promise.all([
+        getActiveAliasesForTenant.run({ ownerId: tenantId }, client),
+        getTenantOwnBusinessForIngest.run({ tenantId }, client),
+      ]);
+
+      const own = ownRows[0];
+      const suggestionData = own?.suggestion_data
+        ? suggestionDataSchema.safeParse(own.suggestion_data).data
+        : undefined;
+      const config = suggestionData?.emailIngestion ?? {};
+
+      const ownAddresses = new Set<string>();
+      for (const raw of [...aliasRows.map(row => row.alias), ...(suggestionData?.emails ?? [])]) {
+        // Wildcard patterns (`*@vendor.com`) are meaningful to the business lookup
+        // but not as literal own-addresses; ownDomains is the lever for a whole domain.
+        const email = normalizeEmail(raw);
+        if (email) {
+          ownAddresses.add(email);
+        }
+      }
+
+      return {
+        ownAddresses,
+        ownDomains: new Set((config.ownDomains ?? []).map(domain => domain.trim().toLowerCase())),
+        ownNames: [own?.name, own?.hebrew_name].filter((name): name is string => !!name),
+        invoicePlatformSenders: new Set(
+          [...GLOBAL_INVOICE_PLATFORM_SENDERS, ...(config.extraPlatformSenders ?? [])]
+            .map(sender => normalizeEmail(sender))
+            .filter((sender): sender is string => sender !== undefined),
+        ),
+      } satisfies TenantMailContext;
+    });
+
+    const now = Date.now();
+    // Drop everything already expired before inserting. This provider is a
+    // process-lifetime singleton, so without a sweep the map would retain an entry per
+    // tenant that ever received mail — a slow leak that grows with tenant count and
+    // never shrinks. The sweep is O(entries) but only runs on a cache miss (at most
+    // once per tenant per TTL), and the map is bounded by the number of tenants
+    // actively receiving mail within one TTL window.
+    for (const [key, entry] of this.mailContextCache) {
+      if (entry.expiresAt <= now) {
+        this.mailContextCache.delete(key);
+      }
+    }
+
+    this.mailContextCache.set(tenantId, { context, expiresAt: now + MAIL_CONTEXT_TTL_MS });
+    return context;
   }
 
   /** Return the first business whose suggestion_data.emails matches a candidate. */
@@ -409,7 +518,18 @@ export class EmailIngestionControlProvider {
         action: grant.action,
         expiresAt: grant.expires_at,
         businessId: grant.business_id ?? null,
+        classification: toEmailKind(grant.classification),
       },
     };
   }
+}
+
+/**
+ * Narrow the grant's stored classification to {@link EmailKind}. Returns null for a
+ * grant issued before the column existed (or one carrying an unrecognized value), so
+ * ingest falls back to its previous behavior rather than trusting a bad string.
+ */
+function toEmailKind(value: string | null | undefined): EmailKind | null {
+  const kinds: readonly string[] = Object.values(EmailKind);
+  return value && kinds.includes(value) ? (value as EmailKind) : null;
 }

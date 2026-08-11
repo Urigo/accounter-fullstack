@@ -1,0 +1,26 @@
+Delivered-To: alice@tenant.example
+Return-Path: <payables+bncBCUNFB7OLMILHJ7I2MDBUBCLLVUAE@tenant.example>
+From: =?UTF-8?B?J9eh16TXpyDXkdeT15nXp9eUINeR16Ii154nIHZpYSBBY2NvdW50IFBheWFibGVz?=
+	<payables@tenant.example>
+To: payables@tenant.example
+Reply-To: office@supplier-heb.example
+Subject: =?UTF-8?B?15fXqdeR15XXoNeZ16og157XoSAvINen15HXnNeUIDg1NyAtINeh16TXpyDXkdeT15nXp9eUINeR16Ii154=?=
+Date: Tue, 28 Jul 2026 11:02:00 +0300
+Message-ID: <relayed-provider-invoice-hebrew@morning.co>
+MIME-Version: 1.0
+X-Original-Sender: notify@morning.co
+X-Original-From: =?UTF-8?B?16HXpNenINeR15PXmden15Qg15HXoiLXng==?=
+	<notify@morning.co>
+Precedence: list
+Mailing-list: list payables@tenant.example; contact payables+owners@tenant.example
+List-ID: <payables.tenant.example>
+X-Google-Group-Id: 603038252699
+List-Post: <https://groups.google.com/a/tenant.example/group/payables/post>, <mailto:payables@tenant.example>
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: base64
+
+PGRpdiBkaXI9InJ0bCI+CjxwPteh16TXpyDXkdeT15nXp9eUINeR16Ii154g15TXoNek15nX
+pyDXoteR15XXqNeaINeX16nXkdeV16DXmdeqINee16EgLyDXp9eR15zXlC48L3A+CjxwPtee
+16HXnteaIDg1NyAmbWlkZG90OyDXodeUItebIDEsMTcwLjAwINepIteXPC9wPgo8cD48YSBo
+cmVmPSJodHRwczovL2FwcC5tb3JuaW5nLmNvL2FwaS92MS9kb2N1bWVudHMvZG93bmxvYWQv
+ZGVmNDU2Ij7Xptek15nXmdeUINeR157Xodee15o8L2E+PC9wPgo8L2Rpdj4K
