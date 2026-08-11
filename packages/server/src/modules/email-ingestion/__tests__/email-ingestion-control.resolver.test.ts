@@ -3,6 +3,7 @@ import type { Injector } from 'graphql-modules';
 import { GraphQLError } from 'graphql';
 import { emailIngestionControlResolver } from '../resolvers/email-ingestion-control.resolver.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
+import { EmailKind } from '../helpers/email-ingestion-classify.helper.js';
 
 // ---------------------------------------------------------------------------
 // Mock helpers
@@ -29,10 +30,22 @@ const mockGrant = {
   auditId: 'audit-uuid',
 };
 
+// The tenant under test: its own group and one colleague's domain, so the
+// classifier can tell the tenant's own addresses from an issuer's.
+const mailContext = {
+  ownAddresses: new Set(['invoice@tenant.example.com', 'group@tenant.example']),
+  ownDomains: new Set(['tenant.example']),
+  ownNames: ['Tenant Ltd'],
+  invoicePlatformSenders: new Set(['notify@morning.co']),
+};
+
 function makeInjector(overrides: Partial<EmailIngestionControlProvider> = {}): Injector {
   const controlProvider: Partial<EmailIngestionControlProvider> = {
     resolveAlias: vi.fn().mockResolvedValue({ found: true, tenantId: 'tenant-uuid-1' }),
-    recognizeBusinessFromEvidence: vi.fn().mockResolvedValue({ businessId: null, config: {} }),
+    loadTenantMailContext: vi.fn().mockResolvedValue(mailContext),
+    recognizeBusinessFromClassification: vi
+      .fn()
+      .mockResolvedValue({ businessId: null, config: {} }),
     issueGrant: vi.fn().mockResolvedValue(mockGrant),
     ...overrides,
   };
@@ -149,7 +162,7 @@ describe('Mutation.requestIngestControl', () => {
   });
 
   it('recognizes the issuer from senderEvidence and returns the business config', async () => {
-    const recognizeBusinessFromEvidence = vi.fn().mockResolvedValue({
+    const recognizeBusinessFromClassification = vi.fn().mockResolvedValue({
       businessId: 'biz-1',
       config: {
         emailBody: true,
@@ -157,7 +170,7 @@ describe('Mutation.requestIngestControl', () => {
         internalEmailLinks: ['https://acme.com/inv'],
       },
     });
-    const injector = makeInjector({ recognizeBusinessFromEvidence });
+    const injector = makeInjector({ recognizeBusinessFromClassification });
 
     const result = await resolver(
       {} as never,
@@ -166,9 +179,10 @@ describe('Mutation.requestIngestControl', () => {
       {} as never,
     );
 
-    expect(recognizeBusinessFromEvidence).toHaveBeenCalledWith('tenant-uuid-1', {
-      from: 'vendor@acme.com',
-    });
+    expect(recognizeBusinessFromClassification).toHaveBeenCalledWith(
+      'tenant-uuid-1',
+      expect.objectContaining({ issuerCandidates: ['vendor@acme.com'] }),
+    );
     expect(result).toMatchObject({
       businessEmailConfig: {
         businessId: 'biz-1',
@@ -193,10 +207,10 @@ describe('Mutation.requestIngestControl', () => {
 
   it('binds the recognized businessId into the issued grant', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
-    const recognizeBusinessFromEvidence = vi
+    const recognizeBusinessFromClassification = vi
       .fn()
       .mockResolvedValue({ businessId: 'biz-7', config: {} });
-    const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
+    const injector = makeInjector({ issueGrant, recognizeBusinessFromClassification });
 
     await resolver(
       {} as never,
@@ -208,24 +222,23 @@ describe('Mutation.requestIngestControl', () => {
     expect(issueGrant.mock.calls[0][0].businessId).toBe('biz-7');
   });
 
-  it('binds the tenant own business and returns no config for a self-issued email', async () => {
+  it('marks a self-issued email SELF_ISSUED, binds no business and skips recognition', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
-    // No external business is recognized (only provider addresses), but
-    // self-issued detection binds the tenant as the issuer so ingest skips it.
-    const recognizeBusinessFromEvidence = vi
-      .fn()
-      .mockResolvedValue({ businessId: null, config: {} });
-    const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
+    const recognizeBusinessFromClassification = vi.fn();
+    const injector = makeInjector({ issueGrant, recognizeBusinessFromClassification });
 
     const result = await resolver(
       {} as never,
       {
         input: {
           ...baseInput,
+          // Relayed by the tenant's invoicing platform with no external address
+          // anywhere — a copy of a document the tenant issued itself.
           senderEvidence: {
-            from: 'ap@the-guild.dev',
+            from: 'group@tenant.example',
             replyTo: 'notify@morning.co',
-            originalFrom: 'notify@morning.co',
+            originalSender: 'notify@morning.co',
+            listAddresses: ['group@tenant.example'],
           },
         },
       },
@@ -233,22 +246,27 @@ describe('Mutation.requestIngestControl', () => {
       {} as never,
     );
 
-    // The tenant's own business is bound as the grant's issuer.
-    expect(issueGrant.mock.calls[0][0].businessId).toBe('tenant-uuid-1');
-    // and no treatment config is returned (the email is skipped at ingest).
-    expect((result as { businessEmailConfig: unknown }).businessEmailConfig).toBeNull();
+    expect(issueGrant.mock.calls[0][0]).toMatchObject({
+      businessId: null,
+      classification: EmailKind.SELF_ISSUED,
+    });
+    // Recognition is skipped entirely — there is nothing to attribute.
+    expect(recognizeBusinessFromClassification).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      businessEmailConfig: null,
+      classification: EmailKind.SELF_ISSUED,
+    });
   });
 
-  it('binds a recognized external business even when the evidence would self-issue', async () => {
+  it('attributes a supplier invoice relayed through the tenant own group to the supplier', async () => {
     const issueGrant = vi.fn().mockResolvedValue(mockGrant);
-    // A real supplier is recognized from a body-harvested candidate, but the live
-    // From collapses onto the tenant's own forwarding group — which the
-    // single-address self-issued heuristic would otherwise flag as self-issued.
-    // Recognition must win: the invoice is attributed to the supplier, not dropped.
-    const recognizeBusinessFromEvidence = vi
+    // The live From is the tenant's own forwarding group, which the old
+    // single-address heuristic flagged as self-issued and dropped. The group address
+    // is now excluded from candidacy, so the supplier behind it is what gets matched.
+    const recognizeBusinessFromClassification = vi
       .fn()
       .mockResolvedValue({ businessId: 'biz-vendor', config: { attachments: ['PDF'] } });
-    const injector = makeInjector({ issueGrant, recognizeBusinessFromEvidence });
+    const injector = makeInjector({ issueGrant, recognizeBusinessFromClassification });
 
     const result = await resolver(
       {} as never,
@@ -257,6 +275,7 @@ describe('Mutation.requestIngestControl', () => {
           ...baseInput,
           senderEvidence: {
             from: 'group@tenant.example',
+            listAddresses: ['group@tenant.example'],
             issuerCandidates: ['group@tenant.example', 'billing@vendor.example'],
           },
         },
@@ -265,6 +284,10 @@ describe('Mutation.requestIngestControl', () => {
       {} as never,
     );
 
+    expect(recognizeBusinessFromClassification).toHaveBeenCalledWith(
+      'tenant-uuid-1',
+      expect.objectContaining({ issuerCandidates: ['billing@vendor.example'] }),
+    );
     // The recognized external business is bound — not the tenant.
     expect(issueGrant.mock.calls[0][0].businessId).toBe('biz-vendor');
     // and its treatment config is returned so the gateway does the document work.

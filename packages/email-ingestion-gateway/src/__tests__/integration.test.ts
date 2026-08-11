@@ -110,6 +110,7 @@ const CONTROL_SUCCESS: ControlResult = {
     auditId: 'audit-ctrl-001',
     grant: GRANT,
     businessEmailConfig: null,
+    classification: 'DIRECT',
   },
 };
 

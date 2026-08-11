@@ -20,6 +20,7 @@ export const REQUEST_INGEST_CONTROL_MUTATION = /* GraphQL */ `
           emailBody
           attachments
         }
+        classification
       }
       ... on CommonError {
         message

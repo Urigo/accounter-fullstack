@@ -433,13 +433,15 @@ describe('extractFromMime — senderEvidence', () => {
     expect(result.senderEvidence.originalFrom).toBe('original@sender.com');
   });
 
-  it('captures X-Original-Sender header (fallback when X-Original-From absent)', async () => {
+  it('captures X-Original-Sender separately from X-Original-From', async () => {
     const mime = makeMultipartMime({
+      originalFrom: 'Vendor Ltd <billing@vendor.com>',
       originalSender: 'orig-sender@vendor.com',
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
     });
     const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
-    expect(result.senderEvidence.originalFrom).toBe('orig-sender@vendor.com');
+    expect(result.senderEvidence.originalFrom).toBe('Vendor Ltd <billing@vendor.com>');
+    expect(result.senderEvidence.originalSender).toBe('orig-sender@vendor.com');
   });
 
   it('returns undefined for absent optional headers', async () => {

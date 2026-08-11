@@ -10,6 +10,7 @@ export const IngestOutcome = {
   DUPLICATE: 'duplicate',
   QUARANTINED: 'quarantined',
   REJECTED: 'rejected',
+  IGNORED: 'ignored',
 } as const;
 
 export type IngestOutcome = (typeof IngestOutcome)[keyof typeof IngestOutcome];
@@ -25,12 +26,12 @@ export const IngestReasonCode = {
   OVERSIZE_MESSAGE: 'OVERSIZE_MESSAGE',
   TIMEOUT: 'TIMEOUT',
   TRANSIENT_UPSTREAM: 'TRANSIENT_UPSTREAM',
-  // Self-issued document: the recognized issuer is the tenant's own business —
-  // typically a confirmation email for an invoice the tenant issued itself (e.g.
-  // via Morning/greeninvoice), whose document already exists from creation. The
-  // email is not inserted; it is QUARANTINED (recorded, visible, reprocessable)
-  // rather than dropped, because the same signal can also fire on a real supplier
-  // invoice that collapsed onto the tenant's own forwarding address.
+  // Self-issued document: a copy of an invoice the tenant issued itself (e.g. via
+  // Morning/greeninvoice), whose document already exists from creation. The email
+  // is IGNORED — recorded and inspectable, but not inserted and not counted as a
+  // failure. The classification comes from the server's control step, which
+  // distinguishes it from a forwarded supplier invoice whose addresses all happened
+  // to belong to the tenant; that case used to land here and be dropped.
   SELF_ISSUED: 'SELF_ISSUED',
   // Document preparation failed on the server (e.g. Cloudinary upload error)
   // after the email was accepted. The email is QUARANTINED (recorded, retryable

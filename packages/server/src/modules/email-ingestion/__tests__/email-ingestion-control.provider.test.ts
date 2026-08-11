@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DBProvider } from '../../app-providers/db.provider.js';
 import { emailMatchesPattern } from '../../financial-entities/helpers/email-pattern.helper.js';
+import {
+  EmailKind,
+  type EmailClassification,
+} from '../helpers/email-ingestion-classify.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 // ---------------------------------------------------------------------------
@@ -288,10 +292,15 @@ describe('EmailIngestionControlProvider.recognizeBusiness', () => {
 });
 
 // ---------------------------------------------------------------------------
-// recognizeBusinessFromEvidence
+// recognizeBusinessFromClassification
 // ---------------------------------------------------------------------------
 
-describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
+describe('EmailIngestionControlProvider.recognizeBusinessFromClassification', () => {
+  /** Build a classification carrying just the candidate list under test. */
+  function candidates(issuerCandidates: string[]): EmailClassification {
+    return { kind: EmailKind.DIRECT, issuerCandidates, forwarder: null, issuerNameHint: null };
+  }
+
   // Mock the businesses lookup to match a single email (case-insensitively),
   // mirroring the real lower()-based SQL.
   function dbMatchingEmail(target: string, row: Record<string, unknown>) {
@@ -316,10 +325,12 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'Gil Gardosh <gil@the-guild.dev>',
-      issuerCandidates: ['ap@the-guild.dev', 'noreply@notify.cloudflare.com'],
-    });
+    // The classifier has already dropped the forwarder and the tenant's own group,
+    // so only the real issuer reaches the lookup.
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['noreply@notify.cloudflare.com']),
+    );
 
     expect(result.businessId).toBe('cloudflare-biz');
     expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
@@ -347,9 +358,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'qr45uf@cloudflare.com',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['qr45uf@cloudflare.com']),
+    );
 
     expect(result.businessId).toBe('cloudflare-biz');
     expect(result.config).toEqual({ emailBody: false, attachments: ['PDF'] });
@@ -362,9 +374,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     });
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'VENDOR@ACME.COM',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['vendor@acme.com']),
+    );
 
     expect(result.businessId).toBe('biz-1');
   });
@@ -373,9 +386,10 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     const db = makeDbProvider(() => ({ rows: [], rowCount: 0 }));
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', {
-      from: 'nobody@nowhere.com',
-    });
+    const result = await provider.recognizeBusinessFromClassification(
+      'tenant-1',
+      candidates(['nobody@nowhere.com']),
+    );
 
     expect(result).toEqual({ businessId: null, config: {} });
   });
@@ -386,7 +400,7 @@ describe('EmailIngestionControlProvider.recognizeBusinessFromEvidence', () => {
     const db = { pool: { query, connect } } as unknown as DBProvider;
     const provider = new EmailIngestionControlProvider(db);
 
-    const result = await provider.recognizeBusinessFromEvidence('tenant-1', undefined);
+    const result = await provider.recognizeBusinessFromClassification('tenant-1', candidates([]));
 
     expect(result).toEqual({ businessId: null, config: {} });
     expect(query).not.toHaveBeenCalled();

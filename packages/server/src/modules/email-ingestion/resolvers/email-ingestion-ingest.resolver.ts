@@ -7,6 +7,7 @@ const OUTCOME_MAP: Record<IngestOutcome, EmailIngestionModule.IngestOutcome> = {
   [IngestOutcome.DUPLICATE]: 'DUPLICATE',
   [IngestOutcome.QUARANTINED]: 'QUARANTINED',
   [IngestOutcome.REJECTED]: 'REJECTED',
+  [IngestOutcome.IGNORED]: 'IGNORED',
 };
 
 const ingestEmail: EmailIngestionModule.MutationResolvers['ingestEmail'] = async (

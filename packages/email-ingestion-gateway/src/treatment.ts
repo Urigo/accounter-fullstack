@@ -2,7 +2,7 @@ import { renderHtmlToPdf } from './html-to-pdf.js';
 import { fetchInternalLinkDocuments } from './link-fetcher.js';
 import { log } from './logger.js';
 import type { ExtractedDocument } from './mime-extractor.js';
-import type { BusinessEmailConfig } from './server-client.js';
+import type { BusinessEmailConfig, EmailClassificationKind } from './server-client.js';
 
 export interface TreatmentInput {
   /** Recognized business config from control; null when no business matched. */
@@ -11,6 +11,8 @@ export interface TreatmentInput {
   body: string;
   /** Raw attachment documents extracted from the MIME message. */
   attachments: ExtractedDocument[];
+  /** How the server classified the email; decides whether extra work is worth doing. */
+  classification?: EmailClassificationKind;
   correlationId?: string;
 }
 
@@ -42,6 +44,7 @@ function attachmentType(mimeType: string): string | null {
  * email body and raw attachments — the gateway treatment step (ported from the
  * legacy gmail-listener `handleMessage`):
  *
+ *  0. produce nothing at all for a `SELF_ISSUED` email — it will not be inserted;
  *  1. keep attachments allowed by `config.attachments` (all, when unset);
  *  2. render the body to a PDF when no business is recognized **or**
  *     `config.emailBody === true`;
@@ -55,8 +58,15 @@ export async function applyTreatment(
   input: TreatmentInput,
   deps: TreatmentDeps = defaultDeps,
 ): Promise<ExtractedDocument[]> {
-  const { config, body, attachments, correlationId } = input;
+  const { config, body, attachments, classification, correlationId } = input;
   const out: ExtractedDocument[] = [];
+
+  // A self-issued email is never inserted, so every step below would be thrown away.
+  // Returning early skips a Chromium render per message and, more importantly, stops
+  // the gateway fetching whatever sits behind the links in it.
+  if (classification === 'SELF_ISSUED') {
+    return out;
+  }
 
   // 1. Attachment filter — keep all when the business sets no allowlist.
   // Normalize to upper-case so the comparison stays robust even though the

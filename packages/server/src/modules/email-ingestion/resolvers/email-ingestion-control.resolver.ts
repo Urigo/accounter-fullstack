@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import type { MutationResolvers } from '../../../__generated__/types.js';
-import { isSelfIssuedSenderEvidence } from '../helpers/email-ingestion-issuer.helper.js';
+import { classifyEmail, EmailKind } from '../helpers/email-ingestion-classify.helper.js';
 import { EmailIngestionControlProvider } from '../providers/email-ingestion-control.provider.js';
 
 const GRANT_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -22,39 +22,27 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
       };
     }
 
-    // Recognize the issuing business from sender evidence, then bind it into the
-    // grant so the ingest step can attribute documents without trusting input.
-    // Tries every candidate address (incl. quoted forwarded-header addresses) so
-    // manually forwarded mail still resolves to the real issuer.
-    const { businessId, config } = await control.recognizeBusinessFromEvidence(
-      aliasResult.tenantId,
-      input.senderEvidence ?? undefined,
-    );
+    // Classify the email before recognizing anything. The classifier owns the two
+    // decisions: whether this is a copy of a
+    // document the tenant issued itself, and which addresses may identify an issuer.
+    // Crucially it strips the tenant's own addresses, its mailing-list addresses and
+    // the forwarder from candidacy — without that, a supplier invoice forwarded in by
+    // a colleague matched the tenant's *own* business and was dropped as self-issued.
+    const mailContext = await control.loadTenantMailContext(aliasResult.tenantId);
+    const classification = classifyEmail(input.senderEvidence ?? undefined, mailContext);
 
-    // A positive *external* recognition wins over the self-issued heuristic: if a
-    // real counterparty business (anything other than the tenant itself) matched a
-    // sender-evidence address, attribute the documents to it and skip the
-    // self-issued check entirely. Without this, a supplier invoice that reaches the
-    // tenant through its own forwarding group — which rewrites the quoted `From` to
-    // a forwarder address and so collapses the single-address self-issued heuristic
-    // onto that forwarder — would be wrongly bound to the tenant and dropped at
-    // ingest, even though recognition had already identified the real supplier.
+    // A self-issued document is never attributed to a counterparty, and the lookup
+    // would have nothing to work with anyway (the classifier returns no candidates).
+    const { businessId, config } =
+      classification.kind === EmailKind.SELF_ISSUED
+        ? { businessId: null, config: {} }
+        : await control.recognizeBusinessFromClassification(aliasResult.tenantId, classification);
+
+    // Recognition is address-based, so it never returns the tenant itself once own
+    // addresses are excluded. Guard anyway: binding the tenant as its own
+    // counterparty is exactly the misattribution this change removes.
     const externalBusinessId =
       businessId && businessId !== aliasResult.tenantId ? businessId : null;
-
-    // Self-issued detection (fallback, only when no external issuer was found):
-    // confirmation emails for invoices the tenant issued through its own invoicing
-    // platform (e.g. Morning/greeninvoice). Binding the tenant's own business as the
-    // issuer lets the ingest step recognize it and skip it (see
-    // EmailIngestionIngestProvider.performIngest). Mirrors the legacy gmail-listener
-    // self-issued skip. The recipient alias is passed as the tenant's own inbound
-    // address so a mailing-list forward that rewrites `From` into that alias is
-    // still recognized as self — keeping the check tenant-agnostic.
-    const selfIssued =
-      externalBusinessId === null &&
-      isSelfIssuedSenderEvidence(input.senderEvidence ?? undefined, [input.recipientAlias]);
-    const issuingBusinessId =
-      externalBusinessId ?? (selfIssued ? aliasResult.tenantId : businessId);
 
     const expiresAt = new Date(Date.now() + GRANT_TTL_MS);
     const grant = await control.issueGrant({
@@ -63,7 +51,8 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
       rawMessageHash: input.rawMessageHash,
       expiresAt,
       correlationId: input.correlationId ?? undefined,
-      businessId: issuingBusinessId,
+      businessId: externalBusinessId,
+      classification: classification.kind,
     });
 
     return {
@@ -79,14 +68,11 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
         action: grant.action,
         expiresAt: grant.expiresAt.toISOString(),
       },
-      // null signals "no business recognized" → gateway applies default
-      // treatment. We return config only for a recognized external business.
-      // When none is recognized the email is not inserted at ingest — a
-      // self-issued/tenant-matched email is QUARANTINED (recorded and
-      // reprocessable, never silently dropped; see
-      // EmailIngestionIngestProvider.performIngest) — so we return no treatment
-      // config either, sparing the gateway needless document work (link-fetch /
-      // body→PDF) for a document that will not be inserted.
+      // null signals "no business recognized" → gateway applies default treatment.
+      // We return config only for a recognized external business; unrecognized mail
+      // still yields documents (body→PDF) so the ingest step's OCR business matcher
+      // gets something to work with, which is how forwarded mail with no usable
+      // sender address is attributed.
       businessEmailConfig: externalBusinessId
         ? {
             businessId: externalBusinessId,
@@ -95,6 +81,9 @@ const requestIngestControl: MutationResolvers['requestIngestControl'] = async (
             attachments: config.attachments ?? null,
           }
         : null,
+      // Lets the gateway skip work that would be thrown away — notably body→PDF for
+      // a self-issued email, which is never inserted.
+      classification: classification.kind,
     };
   } catch (err) {
     throw new GraphQLError('Failed to process ingest control request', {

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import PostalMime, { type Address } from 'postal-mime';
+import PostalMime, { decodeWords, type Address } from 'postal-mime';
 import { IngestReasonCode } from './contracts.js';
+import { parseForwardedBlocks, type ForwardedBlock } from './forwarded.js';
 
 export const MAX_RAW_MIME_BYTES = 25 * 1024 * 1024; // 25 MB
 export const MAX_ATTACHMENT_COUNT = 10;
@@ -15,13 +16,30 @@ export interface ExtractedDocument {
   sha256: string;
 }
 
+/**
+ * Structural facts about who sent the message and how it reached the tenant.
+ *
+ * Everything here is derived from the MIME message alone — the gateway has no tenant
+ * knowledge. Deciding which of these addresses identifies the issuing business, and
+ * which belong to the tenant itself, is the server's `classifyEmail` policy.
+ */
 export interface SenderEvidence {
   from: string | undefined;
+  /** From display name, RFC 2047-decoded. Names the issuer when the address does not. */
+  fromDisplayName: string | undefined;
   replyTo: string | undefined;
-  /** X-Original-From or X-Original-Sender */
+  /** X-Original-From */
   originalFrom: string | undefined;
+  /** X-Original-Sender — the relaying platform, when the message came through one. */
+  originalSender: string | undefined;
   /** X-Forwarded-To or Envelope-To */
   forwardedTo: string | undefined;
+  /** List-ID / Mailing-list marker, set when the message came through a mailing list. */
+  listId: string | undefined;
+  /** Addresses identifying the mailing list itself, from List-Post / Mailing-list. */
+  listAddresses: string[];
+  /** Quoted forwarded-header blocks recovered from the body, outermost first. */
+  forwardedBlocks: ForwardedBlock[];
   /**
    * Addresses parsed from `From: <mailto:…>` links in the (HTML) body, in
    * document order. The server applies the issuer-selection policy over these
@@ -113,9 +131,20 @@ export async function extractFromMime(rawMime: Buffer): Promise<ExtractionResult
     body,
     senderEvidence: {
       from: formatAddress(email.from),
+      fromDisplayName: email.from?.name?.trim() || undefined,
       replyTo: formatAddress(email.replyTo?.[0]),
-      originalFrom: headerValue(email.headers, 'x-original-from', 'x-original-sender'),
+      // Kept as separate fields: X-Original-From is the original *author* (often a
+      // display name only), X-Original-Sender the relaying platform. Reading them as
+      // one "first non-empty" value let the author shadow the platform, losing the
+      // single most reliable signal that a message came through an invoice provider.
+      originalFrom: headerValue(email.headers, 'x-original-from'),
+      originalSender: headerValue(email.headers, 'x-original-sender'),
       forwardedTo: headerValue(email.headers, 'x-forwarded-to', 'envelope-to'),
+      listId: headerValue(email.headers, 'list-id', 'mailing-list', 'x-google-group-id'),
+      listAddresses: extractListAddresses(email.headers),
+      // Parse both parts: the text alternative carries the cleanest forwarded block,
+      // but plenty of forwards are HTML-only.
+      forwardedBlocks: parseForwardedBlocks(email.text ?? '', email.html ?? ''),
       issuerCandidates: extractIssuerCandidates(body),
     },
     documents,
@@ -174,7 +203,10 @@ function formatAddress(addr: Address | undefined): string | undefined {
   return address || name || undefined;
 }
 
-/** First non-empty value among the given (case-insensitive) header names. */
+/**
+ * First non-empty value among the given (case-insensitive) header names, RFC
+ * 2047-decoded so a non-ASCII display name is readable rather than an encoded-word.
+ */
 function headerValue(
   headers: Array<{ key: string; value: string }>,
   ...names: string[]
@@ -182,9 +214,39 @@ function headerValue(
   for (const name of names) {
     const lower = name.toLowerCase();
     const found = headers.find(header => header.key.toLowerCase() === lower);
-    if (found?.value) return found.value;
+    if (found?.value) {
+      try {
+        return decodeWords(found.value);
+      } catch {
+        return found.value;
+      }
+    }
   }
   return undefined;
+}
+
+// A mailing list identifies itself across several headers, none of which is
+// guaranteed: `Mailing-list: list <addr>; contact <addr>`, `List-Post: <mailto:addr>`,
+// `List-ID: <name.domain>`. Collecting the addresses lets the server exclude the
+// tenant's own group from issuer candidacy structurally — without it, a list rewrite
+// of `From` looks like an ordinary external sender.
+// Deliberately excludes Delivered-To: that is the recipient's own mailbox, not the
+// list. Treating it as a list address would make a person's manual forward look like
+// a relay and stop the forwarder being recognized as one.
+const LIST_HEADER_NAMES = ['list-post', 'list-id', 'mailing-list'];
+const ADDRESS_IN_HEADER_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+
+function extractListAddresses(headers: Array<{ key: string; value: string }>): string[] {
+  const found = new Set<string>();
+  for (const header of headers) {
+    if (!LIST_HEADER_NAMES.includes(header.key.toLowerCase())) {
+      continue;
+    }
+    for (const match of header.value.matchAll(ADDRESS_IN_HEADER_RE)) {
+      found.add(match[0].toLowerCase());
+    }
+  }
+  return [...found];
 }
 
 // Forwarded mail carries the real issuer inside a quoted header block — the

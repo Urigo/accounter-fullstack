@@ -1,0 +1,32 @@
+Delivered-To: alice@tenant.example
+Return-Path: <payables+bncBCUNFB7OLMIILXGH2MDBUBB4B2JMK@tenant.example>
+From: "'Supplier One Ltd' via Account Payables" <payables@tenant.example>
+To: payables@tenant.example
+Reply-To: office@supplier-one.example
+Subject: Tax Invoice / Receipt 857 - Supplier One Ltd
+Date: Mon, 27 Jul 2026 08:14:00 +0300
+Message-ID: <relayed-provider-invoice@morning.co>
+MIME-Version: 1.0
+X-Original-Sender: notify@morning.co
+X-Original-From: Supplier One Ltd <notify@morning.co>
+Precedence: list
+Mailing-list: list payables@tenant.example; contact payables+owners@tenant.example
+List-ID: <payables.tenant.example>
+X-Google-Group-Id: 603038252699
+List-Post: <https://groups.google.com/a/tenant.example/group/payables/post>, <mailto:payables@tenant.example>
+List-Help: <https://groups.google.com/support/>, <mailto:payables+help@tenant.example>
+List-Unsubscribe: <mailto:googlegroups-manage+603038252699+unsubscribe@googlegroups.com>
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">
+<p>Supplier One Ltd issued you a tax invoice / receipt.</p>
+<p>Document 857 &middot; Total 1,170.00 ILS</p>
+<p><a href=3D"https://app.morning.co/api/v1/documents/download/abc123">View =
+the document</a></p>
+<hr>
+<p style=3D"font-size:11px;color:#888">You received this message because yo=
+u are subscribed to the Google Groups "Account Payables" group.<br>
+To unsubscribe, send an email to <a href=3D"mailto:payables+unsubscribe@ten=
+ant.example">payables+unsubscribe@tenant.example</a>.</p>
+</div>

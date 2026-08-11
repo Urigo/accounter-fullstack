@@ -1,0 +1,75 @@
+References: <0100019fab6488ca-35e7aeae-eb71-4591-80f1-25f2a754e18d-000000@email.amazonses.example>
+In-Reply-To: <CAERLjvMaBHbDY44KSoN6YGr-UFUSa5jF5F_rmxHgS4E=oHBcpg@mail.gmail.com>
+From: Alice Cohen <alice@tenant.example>
+To: acme-k61td2@accounter.tax
+Subject: Fwd: Your receipt from Podcastly #2354-5175
+Date: Wed, 29 Jul 2026 07:31:00 +0300
+Message-ID: <forwarded-nested-provider@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="00000000000037e3a9065839b82c"
+
+--00000000000037e3a9065839b82c
+Content-Type: multipart/alternative; boundary="00000000000037e3a7065839b82a"
+
+--00000000000037e3a7065839b82a
+Content-Type: text/plain; charset="UTF-8"
+
+---------- Forwarded message ---------
+From: Bob Levi <bob@tenant.example>
+Date: Wed, Jul 29, 2026 at 7:23 AM
+Subject: Fwd: Your receipt from Podcastly #2354-5175
+To: Account Payables <payables@tenant.example>
+
+
+
+
+---------- Forwarded message ---------
+From: Podcastly <invoice+statements+acct_1TESTACCT@stripe.example>
+Date: Wed, 29 Jul 2026 at 4:02
+Subject: Your receipt from Podcastly #2354-5175
+To: <bob@tenant.example>
+
+
+Your receipt from Podcastly #2354-5175
+
+Amount paid $19.00 on July 29, 2026.
+Questions? Contact support@podcastly.example
+
+--00000000000037e3a7065839b82a
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr"><br><br><div class="gmail_quote">
+<div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>
+From: <strong>Bob Levi</strong> &lt;<a href="mailto:bob@tenant.example">bob@tenant.example</a>&gt;<br>
+Date: Wed, Jul 29, 2026 at 7:23&#8239;AM<br>
+Subject: Fwd: Your receipt from Podcastly #2354-5175<br>
+To: Account Payables &lt;<a href="mailto:payables@tenant.example">payables@tenant.example</a>&gt;<br>
+</div><br><br>
+<div class="gmail_quote">
+<div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>
+From: <strong>Podcastly</strong> &lt;<a href="mailto:invoice+statements+acct_1TESTACCT@stripe.example">invoice+statements+acct_1TESTACCT@stripe.example</a>&gt;<br>
+Date: Wed, 29 Jul 2026 at 4:02<br>
+Subject: Your receipt from Podcastly #2354-5175<br>
+To: &lt;<a href="mailto:bob@tenant.example">bob@tenant.example</a>&gt;<br>
+</div><br>
+<p>Amount paid $19.00 on July 29, 2026.</p>
+<p>Questions? Contact <a href="mailto:support@podcastly.example">support@podcastly.example</a></p>
+</div></div></div>
+
+--00000000000037e3a7065839b82a--
+
+--00000000000037e3a9065839b82c
+Content-Type: application/pdf; name="Invoice-13E5B011-0023.pdf"
+Content-Disposition: attachment; filename="Invoice-13E5B011-0023.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZz4+ZW5kb2JqClBvZGNhc3RseSBpbnZvaWNlIElOLTAwMjMKJSVFT0YK
+
+--00000000000037e3a9065839b82c
+Content-Type: application/pdf; name="Receipt-2354-5175.pdf"
+Content-Disposition: attachment; filename="Receipt-2354-5175.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZz4+ZW5kb2JqClBvZGNhc3RseSByZWNlaXB0IDIzNTQtNTE3NQolJUVPRgo=
+
+--00000000000037e3a9065839b82c--

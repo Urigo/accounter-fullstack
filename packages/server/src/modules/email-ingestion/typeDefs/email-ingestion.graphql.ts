@@ -69,14 +69,48 @@ export default gql`
   input SenderEvidenceInput {
     " From header address "
     from: String
+    " From header display name, RFC 2047-decoded "
+    fromDisplayName: String
     " Reply-To header address "
     replyTo: String
-    " X-Original-From / X-Original-Sender address "
+    " X-Original-From address "
     originalFrom: String
+    " X-Original-Sender address — the relaying platform, when the message came through one "
+    originalSender: String
     " X-Forwarded-To / Envelope-To address "
     forwardedTo: String
+    " List-ID / Mailing-list marker, set when the message came through a mailing list "
+    listId: String
+    " Addresses identifying the mailing list itself (List-Post, Mailing-list, …) "
+    listAddresses: [String!]
+    " Quoted forwarded-header blocks recovered from the body, outermost first "
+    forwardedBlocks: [ForwardedBlockInput!]
     " Sender addresses parsed from mailto links in the email body, in document order "
     issuerCandidates: [String!]
+  }
+
+  " A quoted \`---------- Forwarded message ---------\` header block found in the email body "
+  input ForwardedBlockInput {
+    " From address of the quoted block "
+    from: String
+    " From display name of the quoted block, RFC 2047-decoded "
+    fromDisplayName: String
+    " To addresses of the quoted block "
+    to: [String!]
+    " Subject of the quoted block "
+    subject: String
+  }
+
+  " How the control step classified an incoming email "
+  enum EmailClassificationKind {
+    " Sent straight to the tenant by the issuer "
+    DIRECT
+    " Reached the tenant through a mailing list or an invoice-issuing platform "
+    RELAYED
+    " Manually forwarded into the ingest alias by a person at the tenant "
+    FORWARDED
+    " A copy of a document the tenant itself issued — not ingested "
+    SELF_ISSUED
   }
 
   " Short-lived single-use ingest grant "
@@ -97,6 +131,8 @@ export default gql`
     grant: IngestGrant!
     " The recognized issuing business and its email-processing config; null when no business matched "
     businessEmailConfig: BusinessEmailConfig
+    " How the email was classified; lets the gateway skip pointless treatment work "
+    classification: EmailClassificationKind!
   }
 
   " Result of a requestIngestControl mutation: either a decision with a grant or an error "
@@ -108,6 +144,8 @@ export default gql`
     DUPLICATE
     QUARANTINED
     REJECTED
+    " Deliberately not ingested (e.g. a self-issued document); recorded, not a failure "
+    IGNORED
   }
 
   " Successful (or idempotent) result of an ingestEmail operation "

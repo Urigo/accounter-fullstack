@@ -1,0 +1,39 @@
+References: <17bc3600-efe4-4834-b8c5-8dc684c357c1@mtasv.example>
+In-Reply-To: <17bc3600-efe4-4834-b8c5-8dc684c357c1@mtasv.example>
+From: Alice Cohen <alice@tenant.example>
+To: acme-k61td2@accounter.tax
+Subject: Fwd: Your screenly receipt
+Date: Fri, 31 Jul 2026 10:05:00 +0300
+Message-ID: <forwarded-relayed-reseller@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="0000000000004d64810655db7a16"
+
+--0000000000004d64810655db7a16
+Content-Type: text/plain; charset="UTF-8"
+
+---------- Forwarded message ---------
+From: 'screenly (via Paddle.example)' via Account Payables <payables@tenant.example>
+Date: Fri, Jul 31, 2026 at 9:58 AM
+Subject: Your screenly receipt
+To: <payables@tenant.example>
+
+
+Thanks for your purchase. Your receipt is available online.
+
+Need help? Contact help@paddle.example
+
+--0000000000004d64810655db7a16
+Content-Type: text/html; charset="UTF-8"
+
+<div dir="ltr"><br><br><div class="gmail_quote">
+<div dir="ltr" class="gmail_attr">---------- Forwarded message ---------<br>
+From: <strong>&#39;screenly (via Paddle.example)&#39; via Account Payables</strong> &lt;<a href="mailto:payables@tenant.example">payables@tenant.example</a>&gt;<br>
+Date: Fri, Jul 31, 2026 at 9:58&#8239;AM<br>
+Subject: Your screenly receipt<br>
+To: &lt;<a href="mailto:payables@tenant.example">payables@tenant.example</a>&gt;<br>
+</div><br>
+<p>Thanks for your purchase. <a href="https://my.paddle.example/receipt/98211">View your receipt</a>.</p>
+<p>Need help? Contact <a href="mailto:help@paddle.example">help@paddle.example</a></p>
+</div></div>
+
+--0000000000004d64810655db7a16--

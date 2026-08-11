@@ -21,14 +21,30 @@ export const INGEST_MAX_RETRIES = 1;
 // Domain types (public API)
 // ---------------------------------------------------------------------------
 
-/** Candidate sender addresses for server-side issuer/business recognition. */
+/** A quoted forwarded-header block recovered from the body. */
+export interface ControlForwardedBlock {
+  from?: string;
+  fromDisplayName?: string;
+  to?: string[];
+  subject?: string;
+}
+
+/** Structural sender evidence for server-side classification / business recognition. */
 export interface ControlSenderEvidence {
   from?: string;
+  fromDisplayName?: string;
   replyTo?: string;
   originalFrom?: string;
+  originalSender?: string;
   forwardedTo?: string;
+  listId?: string;
+  listAddresses?: string[];
+  forwardedBlocks?: ControlForwardedBlock[];
   issuerCandidates?: string[];
 }
+
+/** How the server classified the email; drives what treatment is worth doing. */
+export type EmailClassificationKind = 'DIRECT' | 'RELAYED' | 'FORWARDED' | 'SELF_ISSUED';
 
 export interface ControlInput {
   recipientAlias: string;
@@ -64,6 +80,7 @@ export interface ControlDecision {
   grant: GrantData;
   /** Recognized issuing business + its treatment config; null when unrecognized. */
   businessEmailConfig: BusinessEmailConfig | null;
+  classification: EmailClassificationKind;
 }
 
 export type ControlResult =
@@ -105,7 +122,7 @@ export interface IngestInput {
 export type IngestResult =
   | {
       success: true;
-      outcome: 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED';
+      outcome: 'INSERTED' | 'DUPLICATE' | 'QUARANTINED' | 'REJECTED' | 'IGNORED';
       ingestId: string | null | undefined;
       existingIngestId: string | null | undefined;
       auditId: string;
@@ -229,6 +246,7 @@ export class ServerClient {
                 attachments: cfg.attachments ?? null,
               }
             : null,
+          classification: result.classification,
         },
       };
     } catch (err) {

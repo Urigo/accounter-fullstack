@@ -38,6 +38,7 @@ const CONTROL_SUCCESS: ControlResult = {
     auditId: 'audit-control-001',
     grant: GRANT,
     businessEmailConfig: null,
+    classification: 'DIRECT',
   },
 };
 
