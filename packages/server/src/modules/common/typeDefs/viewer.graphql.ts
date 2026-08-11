@@ -21,5 +21,16 @@ export default gql`
     email: String
     emailVerified: Boolean!
     status: ViewerStatus!
+    " unaccepted, unexpired invitations addressed to the caller's verified email; always empty when the email is unverified "
+    pendingInvitations: [PendingInvitation!]!
+  }
+
+  " an invitation waiting to be claimed by the calling identity "
+  type PendingInvitation {
+    id: UUID!
+    businessId: UUID!
+    businessName: String
+    role: String!
+    expiresAt: DateTime!
   }
 `;
