@@ -27,10 +27,11 @@ import {
 
 type Props = {
   updateCharge: (charge: ChargeRowType) => void;
+  removeCharge: (chargeId: string) => void;
   row: Row<TableFeaturesConfig, ChargeRowType>;
 };
 
-export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
+export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElement => {
   const [{ data: newData, fetching }, fetchCharge] = useQuery({
     query: RefetchChargeForChargesTableDocument,
     pause: true,
@@ -62,6 +63,9 @@ export const ChargeRow = ({ row, updateCharge }: Props): ReactElement => {
   // charge after an edit.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
   row.original.onChange = fetchCharge;
+  // Same threading for the delete path — the row is dropped from the table instead of refetched.
+  // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
+  row.original.onDelete = () => removeCharge(row.original.id);
 
   return (
     <>

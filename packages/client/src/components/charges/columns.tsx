@@ -130,6 +130,7 @@ export const columns: ColumnDef<TableFeaturesConfig, ChargeRow>[] = [
             chargeId={row.original.id}
             chargeType={row.original.type}
             onChange={row.original.onChange}
+            onDelete={row.original.onDelete}
             isIncome={(row.original.amount?.value ?? 0) > 0}
           />
           <Tooltip content="Expand info">

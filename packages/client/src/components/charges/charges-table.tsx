@@ -112,6 +112,8 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
 export interface ChargeRow {
   id: string;
   onChange: () => void;
+  /** Drops this charge's row from the table after it was deleted on the server. */
+  onDelete: () => void;
   type: ChargeType;
   date?: DateProps;
   amount?: AmountProps['amount'];
@@ -139,6 +141,7 @@ export function convertChargeFragmentToTableRow(
   return {
     id: fragmentData.id,
     onChange: () => {},
+    onDelete: () => {},
     type: fragmentData.__typename as ChargeType,
     date: getDateProps({
       minDebitDate: fragmentData.minDebitDate,
@@ -307,6 +310,23 @@ export const ChargesTable = ({
     setCharges(old => old.map(row => (row.id === updatedCharge.id ? updatedCharge : row)));
   }, []);
 
+  // Drop a deleted charge's row from the table. The charge no longer exists on the server, so
+  // refetching it (the usual `onChange` path) would only fail and leave a stale row behind.
+  // Its selection entry goes with it, so batch actions can't target a deleted charge.
+  const removeCharge = useCallback(
+    (chargeId: string) => {
+      setCharges(old => old.filter(row => row.id !== chargeId));
+      setRowSelection(old => {
+        if (!(chargeId in old)) {
+          return old;
+        }
+        const { [chargeId]: _removed, ...rest } = old;
+        return rest;
+      });
+    },
+    [setRowSelection],
+  );
+
   // Update charges when data changes
   useEffect(() => {
     setCharges(
@@ -392,7 +412,14 @@ export const ChargesTable = ({
               {table.getRowModel().rows?.length ? (
                 table
                   .getRowModel()
-                  .rows.map(row => <ChargeRow key={row.id} row={row} updateCharge={updateCharge} />)
+                  .rows.map(row => (
+                    <ChargeRow
+                      key={row.id}
+                      row={row}
+                      updateCharge={updateCharge}
+                      removeCharge={removeCharge}
+                    />
+                  ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">

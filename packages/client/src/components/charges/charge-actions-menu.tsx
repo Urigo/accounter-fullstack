@@ -38,6 +38,12 @@ interface ChargeActionsMenuProps {
   chargeId: string;
   chargeType: ChargeType;
   onChange?: () => void;
+  /**
+   * Called after the charge was successfully deleted. Hosts that list charges should use it to drop
+   * the charge from their list — falling back to `onChange` would refetch a charge that no longer
+   * exists.
+   */
+  onDelete?: () => void;
   isIncome: boolean;
 }
 
@@ -45,6 +51,7 @@ export function ChargeActionsMenu({
   chargeId,
   chargeType,
   onChange,
+  onDelete,
   isIncome,
 }: ChargeActionsMenuProps): ReactElement {
   const { deleteCharge } = useDeleteCharge();
@@ -64,12 +71,17 @@ export function ChargeActionsMenu({
     writeToClipboard(`${window.location.origin}${ROUTES.CHARGES.DETAIL(chargeId)}`);
   }, [chargeId]);
 
-  const onDelete = useCallback(async (): Promise<void> => {
-    await deleteCharge({
+  const handleDelete = useCallback(async (): Promise<void> => {
+    const deleted = await deleteCharge({
       chargeId,
     });
+    if (deleted && onDelete) {
+      // The charge is gone — let the host remove it rather than refetch it.
+      onDelete();
+      return;
+    }
     onChange?.();
-  }, [chargeId, deleteCharge, onChange]);
+  }, [chargeId, deleteCharge, onChange, onDelete]);
 
   return (
     <>
@@ -155,7 +167,7 @@ export function ChargeActionsMenu({
       <ConfirmationModal
         open={confirmDeleteOpen}
         setOpen={setConfirmDeleteOpen}
-        onConfirm={onDelete}
+        onConfirm={handleDelete}
         title="Are you sure you want to delete this charge?"
       />
       <Modal
