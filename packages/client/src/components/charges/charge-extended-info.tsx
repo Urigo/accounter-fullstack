@@ -12,6 +12,7 @@ import {
   DocumentsGalleryFieldsFragmentDoc,
   ExchangeRatesInfoFragmentDoc,
   FetchChargeDocument,
+  ForeignSecuritiesChargeInfoFragmentDoc,
   TableDocumentsFieldsFragmentDoc,
   TableMiscExpensesFieldsFragmentDoc,
   TableSalariesFieldsFragmentDoc,
@@ -38,6 +39,7 @@ import { ChargeMatches } from './extended-info/charge-matches.js';
 import { ConversionInfo } from './extended-info/conversion-info.js';
 import { CreditcardTransactionsInfo } from './extended-info/creditcard-transactions-info.js';
 import { ExchangeRates } from './extended-info/exchange-rates.js';
+import { ForeignSecuritiesInfo } from './extended-info/foreign-securities-info.js';
 import { ChargeMiscExpensesTable } from './extended-info/misc-expenses.js';
 import { SalariesTable } from './extended-info/salaries-info.js';
 
@@ -75,6 +77,7 @@ import { SalariesTable } from './extended-info/salaries-info.js';
     ...ChargeTableTransactionsFields @defer
     ...ConversionChargeInfo @defer
     ...CreditcardBankChargeInfo @defer
+    ...ForeignSecuritiesChargeInfo @defer
     ...TableSalariesFields @defer
     ... on BusinessTripCharge {
       businessTrip {
@@ -329,6 +332,17 @@ export function ChargeExtendedInfo({
     [charge, chargeType],
   );
 
+  const foreignSecuritiesAreReady = useMemo(
+    () =>
+      chargeType === 'ForeignSecuritiesCharge' &&
+      isFragmentReady(
+        ChargeExpansionFieldsFragmentDoc,
+        ForeignSecuritiesChargeInfoFragmentDoc,
+        charge,
+      ),
+    [charge, chargeType],
+  );
+
   return (
     <div className="flex flex-col gap-5">
       {isFragmentReady(
@@ -464,6 +478,21 @@ export function ChargeExtendedInfo({
                     <CreditcardTransactionsInfo
                       chargeProps={
                         charge as FragmentType<typeof CreditcardBankChargeInfoFragmentDoc>
+                      }
+                    />
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {chargeType === 'ForeignSecuritiesCharge' && (
+              <AccordionItem value="foreignSecurities">
+                <AccordionTrigger>Foreign Securities</AccordionTrigger>
+                <AccordionContent>
+                  {foreignSecuritiesAreReady && (
+                    <ForeignSecuritiesInfo
+                      chargeProps={
+                        charge as FragmentType<typeof ForeignSecuritiesChargeInfoFragmentDoc>
                       }
                     />
                   )}

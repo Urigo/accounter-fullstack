@@ -33,6 +33,7 @@ import { emailIngestionModule } from './modules/email-ingestion/index.js';
 import { exchangeRatesModule } from './modules/exchange-rates/index.js';
 import { financialAccountsModule } from './modules/financial-accounts/index.js';
 import { financialEntitiesModule } from './modules/financial-entities/index.js';
+import { foreignSecuritiesModule } from './modules/foreign-securities/index.js';
 import { greenInvoiceModule } from './modules/green-invoice/index.js';
 import { ledgerModule } from './modules/ledger/index.js';
 import { miscExpensesModule } from './modules/misc-expenses/index.js';
@@ -94,6 +95,7 @@ export async function createGraphQLApp(env: Environment, pool: pg.Pool) {
       providerCredentialsModule,
       contractsModule,
       bankDepositsModule,
+      foreignSecuritiesModule,
       adminContextModule,
       annualAuditModule,
       emailIngestionModule,
