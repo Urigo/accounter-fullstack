@@ -8,6 +8,7 @@ export type PoalimSource = {
   password: string;
   options?: {
     isBusinessAccount?: boolean;
+    fetchSecurities?: boolean;
     acceptedAccountNumbers?: string[];
     acceptedBranchNumbers?: string[];
     ignoredAccountNumbers?: string[];

@@ -201,14 +201,14 @@ export const TaskAccountTxnsFetchingSchema = z.object({
   type: z.literal('task-account-txns-fetching'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift']),
+  txnType: z.enum(['ils', 'foreign', 'swift', 'securities']),
 });
 
 export const TaskAccountTxnsUploadingSchema = z.object({
   type: z.literal('task-account-txns-uploading'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift']),
+  txnType: z.enum(['ils', 'foreign', 'swift', 'securities']),
   count: z.number(),
 });
 
@@ -216,7 +216,7 @@ export const TaskAccountTxnsDoneSchema = z.object({
   type: z.literal('task-account-txns-done'),
   sourceId: z.string(),
   accountId: z.string(),
-  txnType: z.enum(['ils', 'foreign', 'swift']),
+  txnType: z.enum(['ils', 'foreign', 'swift', 'securities']),
   inserted: z.number(),
   skipped: z.number(),
 });

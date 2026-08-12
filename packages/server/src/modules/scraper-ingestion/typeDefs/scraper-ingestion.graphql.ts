@@ -140,6 +140,34 @@ export default gql`
     valueDate: String!
   }
 
+  # ── Poalim Securities ───────────────────────────────────────────────────────
+
+  " Static reference info for a single security held in a Poalim portfolio account (no holdings or balances) "
+  input PoalimSecurityInput {
+    accountNumber: Int!
+    allowedOrderDirection: String
+    asOfDate: String!
+    bankNumber: Int!
+    branchNumber: Int!
+    contractType: String
+    creationEquityNum: String
+    currencyCode: String!
+    engName: String!
+    engSymbol: String
+    equitySubType: Int!
+    equityType: Int!
+    exchange: String!
+    expirationDate: String
+    hebName: String!
+    hebSymbol: String
+    isEtf: Boolean
+    isForeign: Boolean!
+    itemType: String!
+    securityKey: String!
+    stockType: String
+    symbol: String
+  }
+
   # ── Poalim Swift ────────────────────────────────────────────────────────────
 
   " Input for a Poalim SWIFT international wire transfer "
@@ -578,6 +606,9 @@ export default gql`
     ): ScraperUploadResult! @requiresRole(role: "scraper")
 
     uploadPoalimSwiftTransactions(swifts: [PoalimSwiftTransactionInput!]!): ScraperUploadResult!
+      @requiresRole(role: "scraper")
+
+    uploadPoalimSecurities(securities: [PoalimSecurityInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")
 
     uploadIsracardTransactions(transactions: [IsracardTransactionInput!]!): ScraperUploadResult!

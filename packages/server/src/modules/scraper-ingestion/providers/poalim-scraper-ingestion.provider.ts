@@ -6,15 +6,18 @@ import type {
   InsertedTransactionSummary,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
+  PoalimSecurityInput,
   PoalimSwiftTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import {
   validatePoalimForeignTransactions,
   validatePoalimIlsTransactions,
+  validatePoalimSecurities,
   validatePoalimSwiftTransactions,
 } from '../helpers/validators.helper.js';
 import type {
@@ -22,6 +25,8 @@ import type {
   IFetchPoalimForeignByKeysResult,
   IFetchPoalimIlsByKeysQuery,
   IFetchPoalimIlsByKeysResult,
+  IFetchPoalimSecuritiesByKeysQuery,
+  IFetchPoalimSecuritiesByKeysResult,
   IFetchPoalimSwiftByIdsQuery,
   IFetchPoalimSwiftByIdsResult,
   IUploadPoalimForeignTransactionsParams,
@@ -30,6 +35,9 @@ import type {
   IUploadPoalimIlsTransactionsParams,
   IUploadPoalimIlsTransactionsQuery,
   IUploadPoalimIlsTransactionsResult,
+  IUploadPoalimSecuritiesParams,
+  IUploadPoalimSecuritiesQuery,
+  IUploadPoalimSecuritiesResult,
   IUploadPoalimSwiftTransactionsParams,
   IUploadPoalimSwiftTransactionsQuery,
   IUploadPoalimSwiftTransactionsResult,
@@ -244,6 +252,93 @@ const fetchPoalimSwiftByIds = sql<IFetchPoalimSwiftByIdsQuery>`
   FROM accounter_schema.poalim_swift_account_transactions
   WHERE transfer_catenated_id = ANY($transferCatenatedIds!)
 
+`;
+
+const fetchPoalimSecuritiesByKeys = sql<IFetchPoalimSecuritiesByKeysQuery>`
+  SELECT
+    id,
+    bank_number,
+    branch_number,
+    account_number,
+    as_of_date,
+    security_key,
+    eng_name,
+    heb_name,
+    item_type,
+    is_etf,
+    is_foreign,
+    currency_code,
+    exchange,
+    equity_type,
+    allowed_order_direction,
+    equity_sub_type,
+    eng_symbol,
+    heb_symbol,
+    symbol,
+    expiration_date,
+    stock_type,
+    creation_equity_num,
+    contract_type
+  FROM accounter_schema.poalim_securities
+  WHERE bank_number = ANY($bankNumbers!)
+    AND branch_number = ANY($branchNumbers!)
+    AND account_number = ANY($accountNumbers!)
+    AND security_key = ANY($securityKeys!)
+`;
+
+const uploadPoalimSecurities = sql<IUploadPoalimSecuritiesQuery>`
+  INSERT INTO accounter_schema.poalim_securities (
+    bank_number,
+    branch_number,
+    account_number,
+    as_of_date,
+    security_key,
+    eng_name,
+    heb_name,
+    item_type,
+    is_etf,
+    is_foreign,
+    currency_code,
+    exchange,
+    equity_type,
+    allowed_order_direction,
+    equity_sub_type,
+    eng_symbol,
+    heb_symbol,
+    symbol,
+    expiration_date,
+    stock_type,
+    creation_equity_num,
+    contract_type,
+    owner_id
+  )
+  VALUES $$securities(
+    bankNumber,
+    branchNumber,
+    accountNumber,
+    asOfDate,
+    securityKey,
+    engName,
+    hebName,
+    itemType,
+    isEtf,
+    isForeign,
+    currencyCode,
+    exchange,
+    equityType,
+    allowedOrderDirection,
+    equitySubType,
+    engSymbol,
+    hebSymbol,
+    symbol,
+    expirationDate,
+    stockType,
+    creationEquityNum,
+    contractType,
+    ownerId
+  )
+  ON CONFLICT (owner_id, bank_number, branch_number, account_number, security_key) DO NOTHING
+  RETURNING id, bank_number, branch_number, account_number, security_key, eng_name, as_of_date;
 `;
 
 const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuery>`
@@ -609,12 +704,76 @@ function diffPoalimSwiftRow(
   return changed;
 }
 
+/**
+ * as_of_date is deliberately absent: it changes on every scrape and would flag
+ * every row as changed. Only the security's own attributes are compared.
+ */
+const POALIM_SECURITIES_DIFF_FIELDS: Array<{
+  key: keyof IFetchPoalimSecuritiesByKeysResult;
+  incoming: (
+    s: IUploadPoalimSecuritiesParams['securities'][number],
+  ) => string | number | boolean | null;
+}> = [
+  { key: 'eng_name', incoming: s => s.engName ?? null },
+  { key: 'heb_name', incoming: s => s.hebName ?? null },
+  { key: 'item_type', incoming: s => s.itemType ?? null },
+  { key: 'is_etf', incoming: s => s.isEtf ?? null },
+  { key: 'is_foreign', incoming: s => s.isForeign ?? null },
+  { key: 'currency_code', incoming: s => s.currencyCode ?? null },
+  { key: 'exchange', incoming: s => s.exchange ?? null },
+  { key: 'equity_type', incoming: s => s.equityType ?? null },
+  { key: 'allowed_order_direction', incoming: s => s.allowedOrderDirection ?? null },
+  { key: 'equity_sub_type', incoming: s => s.equitySubType ?? null },
+  { key: 'eng_symbol', incoming: s => s.engSymbol ?? null },
+  { key: 'heb_symbol', incoming: s => s.hebSymbol ?? null },
+  { key: 'symbol', incoming: s => s.symbol ?? null },
+  { key: 'expiration_date', incoming: s => s.expirationDate ?? null },
+  { key: 'stock_type', incoming: s => s.stockType ?? null },
+  { key: 'creation_equity_num', incoming: s => s.creationEquityNum ?? null },
+  { key: 'contract_type', incoming: s => s.contractType ?? null },
+];
+
+const POALIM_SECURITIES_NUMERIC_FIELDS: (keyof IFetchPoalimSecuritiesByKeysResult)[] = [
+  'equity_type',
+  'equity_sub_type',
+] as const;
+
+function diffPoalimSecurityRow(
+  existing: IFetchPoalimSecuritiesByKeysResult,
+  incoming: IUploadPoalimSecuritiesParams['securities'][number],
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of POALIM_SECURITIES_DIFF_FIELDS) {
+    const isNumberField = POALIM_SECURITIES_NUMERIC_FIELDS.includes(key);
+    const oldValue = formatValue(existing[key], isNumberField);
+    const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
 })
 export class PoalimScraperIngestionProvider {
-  constructor(private db: TenantAwareDBClient) {}
+  private businessIdCache: string | null = null;
+
+  constructor(
+    private db: TenantAwareDBClient,
+    private authContextProvider: AuthContextProvider,
+  ) {}
+
+  private async getBusinessId() {
+    if (this.businessIdCache !== null) {
+      return this.businessIdCache;
+    }
+    const authContext = await this.authContextProvider.getAuthContext();
+    this.businessIdCache = authContext?.tenant.businessId ?? null;
+    return this.businessIdCache;
+  }
 
   async uploadPoalimIlsTransactions(
     transactions: readonly PoalimIlsTransactionInput[],
@@ -830,6 +989,109 @@ export class PoalimScraperIngestionProvider {
       };
     } catch (error) {
       console.error('Error uploading Poalim SWIFT transactions:', error);
+      throw error;
+    }
+  }
+
+  async uploadPoalimSecurities(
+    securities: readonly PoalimSecurityInput[],
+  ): Promise<ScraperUploadResult> {
+    try {
+      if (securities.length === 0)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
+
+      const businessId = await this.getBusinessId();
+      if (!businessId) {
+        // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+        // tenant context the insert would fail deep inside Postgres with an opaque error.
+        throw new Error(
+          'Cannot upload Poalim securities: no business context found in the auth context',
+        );
+      }
+      const validated = validatePoalimSecurities(securities).map(s => ({
+        ...s,
+        ownerId: businessId,
+      }));
+
+      const bankNumbers = validated
+        .map(s => s.bankNumber ?? null)
+        .filter((n): n is number => n !== null);
+      const branchNumbers = validated
+        .map(s => s.branchNumber ?? null)
+        .filter((n): n is number => n !== null);
+      const accountNumbers = validated
+        .map(s => s.accountNumber ?? null)
+        .filter((n): n is number => n !== null);
+      const securityKeys = validated
+        .map(s => s.securityKey ?? null)
+        .filter((k): k is string => k !== null);
+
+      const existing = await fetchPoalimSecuritiesByKeys.run(
+        { bankNumbers, branchNumbers, accountNumbers, securityKeys },
+        this.db,
+      );
+
+      type SecurityKey = `${string}_${string}_${string}_${string}`;
+      const securityKeyOf = (
+        bank: number | null | void,
+        branch: number | null | void,
+        account: number | null | void,
+        key: string | null | void,
+      ): SecurityKey => `${bank}_${branch}_${account}_${key}`;
+
+      const existingByKey = new Map<SecurityKey, IFetchPoalimSecuritiesByKeysResult>();
+      for (const row of existing) {
+        existingByKey.set(
+          securityKeyOf(row.bank_number, row.branch_number, row.account_number, row.security_key),
+          row,
+        );
+      }
+
+      const result: IUploadPoalimSecuritiesResult[] = await uploadPoalimSecurities.run(
+        { securities: validated },
+        this.db,
+      );
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+      const insertedIdSet = new Set(insertedIds);
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.as_of_date ? dateToTimelessDateString(r.as_of_date) : null,
+        description: r.eng_name ?? null,
+        amount: null,
+        account: `${r.branch_number}-${r.account_number}`,
+      }));
+
+      const changedTransactions: ChangedTransaction[] = [];
+      for (const s of validated) {
+        const existingRow = existingByKey.get(
+          securityKeyOf(s.bankNumber, s.branchNumber, s.accountNumber, s.securityKey),
+        );
+        if (existingRow && !insertedIdSet.has(existingRow.id)) {
+          const changedFields = diffPoalimSecurityRow(existingRow, s);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: existingRow.id, changedFields });
+          }
+        }
+      }
+
+      return {
+        inserted: insertedIds.length,
+        skipped: securities.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    } catch (error) {
+      console.error('Error uploading Poalim securities:', error);
       throw error;
     }
   }

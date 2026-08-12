@@ -14,12 +14,14 @@ import {
   UploadOtsarHahayalIlsTransactionsMutationVariables,
   UploadPoalimForeignTransactionsMutationVariables,
   UploadPoalimIlsTransactionsMutationVariables,
+  UploadPoalimSecuritiesMutationVariables,
   UploadPoalimSwiftTransactionsMutationVariables,
 } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -237,6 +239,31 @@ export const UPLOAD_MAX = /* GraphQL */ `
 export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
   mutation UploadCurrencyRates($rates: [CurrencyRateInput!]!) {
     uploadCurrencyRates(rates: $rates) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_POALIM_SECURITIES = /* GraphQL */ `
+  mutation UploadPoalimSecurities($securities: [PoalimSecurityInput!]!) {
+    uploadPoalimSecurities(securities: $securities) {
       inserted
       skipped
       insertedIds
@@ -610,6 +637,50 @@ export function poalimSwiftVars(
     swiftRegulatoryReporting77B: findPoalimSwiftElement(s.details, ':77B:', true),
   }));
   return { swifts } as UploadPoalimSwiftTransactionsMutationVariables;
+}
+
+/**
+ * Flattens `View.Meta.Security[]` into one input row per security, stamping the
+ * account coordinates (the response body carries none — the account is only in
+ * the request URL) and the shared `-AsOfDate`.
+ */
+export function poalimSecuritiesVars(
+  payload: PoalimSecuritiesPayload,
+  bankAccount: {
+    bankNumber: number;
+    branchNumber: number;
+    accountNumber: number;
+  },
+): UploadPoalimSecuritiesMutationVariables {
+  const asOfDate = payload.View.Meta['-AsOfDate'];
+  const securities = payload.View.Meta.Security.map(s => ({
+    bankNumber: bankAccount.bankNumber,
+    branchNumber: bankAccount.branchNumber,
+    accountNumber: bankAccount.accountNumber,
+    asOfDate,
+
+    securityKey: s['-Key'],
+    engName: s.EngName,
+    hebName: s.HebName,
+    itemType: s.ItemType,
+    isEtf: s.IsEtf ?? null,
+    isForeign: s.IsForeign,
+    currencyCode: s.CurrencyCode,
+    exchange: s.Exchange,
+    equityType: s.EquityType,
+    allowedOrderDirection: s.AllowedOrderDirection ?? null,
+    equitySubType: s.EquitySubType,
+    engSymbol: s.EngSymbol ?? null,
+    hebSymbol: s.HebSymbol ?? null,
+    symbol: s.Symbol ?? null,
+    expirationDate: s.ExpirationDate ?? null,
+    stockType: s.StockType ?? null,
+    creationEquityNum: s.CreationEquityNum ?? null,
+    contractType: s.ContractType ?? null,
+  }));
+  // No `as` cast: the payload schema types every field it reads, so this
+  // mapping is checked against PoalimSecurityInput rather than asserted.
+  return { securities } satisfies UploadPoalimSecuritiesMutationVariables;
 }
 
 function transformIsracardAmexTransaction(

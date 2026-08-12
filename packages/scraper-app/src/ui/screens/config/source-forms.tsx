@@ -105,6 +105,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
     userCode: initial.userCode ?? '',
     password: initial.password ?? '',
     isBusinessAccount: initial.options?.isBusinessAccount ?? false,
+    fetchSecurities: initial.options?.fetchSecurities ?? false,
     acceptedAccountNumbers: fromList(initial.options?.acceptedAccountNumbers),
     acceptedBranchNumbers: fromList(initial.options?.acceptedBranchNumbers),
     ignoredAccountNumbers: fromList(initial.options?.ignoredAccountNumbers),
@@ -121,6 +122,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
         e.preventDefault();
         const opts = {
           isBusinessAccount: fields.isBusinessAccount ?? false,
+          fetchSecurities: fields.fetchSecurities ?? false,
           acceptedAccountNumbers: toList(fields.acceptedAccountNumbers),
           acceptedBranchNumbers: toList(fields.acceptedBranchNumbers),
           ignoredAccountNumbers: toList(fields.ignoredAccountNumbers),
@@ -153,6 +155,16 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
             onChange={e => setFields(f => ({ ...f, isBusinessAccount: e.target.checked }))}
           />
           Business account
+        </label>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={fields.fetchSecurities}
+            onChange={e => setFields(f => ({ ...f, fetchSecurities: e.target.checked }))}
+          />
+          Fetch foreign securities
         </label>
       </div>
       <ListField

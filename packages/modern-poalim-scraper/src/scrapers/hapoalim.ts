@@ -1,6 +1,14 @@
-import inquirer from 'inquirer';
+import { closeSync, openSync } from 'node:fs';
+import { createInterface } from 'node:readline/promises';
+import type { Readable, Writable } from 'node:stream';
+import { ReadStream, WriteStream } from 'node:tty';
 import type { Page } from 'puppeteer';
-import { fetchGetWithinPage, fetchPoalimXSRFWithinPage } from '../utils/fetch.js';
+import {
+  captureMytradeSession,
+  fetchGetWithinPage,
+  fetchPoalimMytradeWithinPage,
+  fetchPoalimXSRFWithinPage,
+} from '../utils/fetch.js';
 import {
   HapoalimAccountDataSchema,
   type HapoalimAccountData,
@@ -26,6 +34,10 @@ import {
   type HapoalimILSTransactions,
 } from '../zod-schemas/hapoalim-ils-checking-transactions-schema.js';
 import {
+  HapoalimSecuritiesSchema,
+  type HapoalimSecurities,
+} from '../zod-schemas/hapoalim-securities-schema.js';
+import {
   SwiftTransactionSchema,
   type SwiftTransaction,
 } from '../zod-schemas/swift-transaction-schema.js';
@@ -47,6 +59,47 @@ declare namespace window {
   };
 }
 
+/**
+ * Reads a line from the user.
+ *
+ * `process.stdin` is only usable when the process was started with an
+ * interactive stdin. Launched from an IDE run/debug console, from a wrapper
+ * that pipes stdin, or with stdin redirected, nothing you type ever reaches
+ * this process and the prompt hangs forever. In that case read the
+ * controlling terminal (`/dev/tty`) directly instead.
+ */
+async function promptInput(message: string): Promise<string> {
+  let input: Readable = process.stdin;
+  let output: Writable = process.stdout;
+  const fds: number[] = [];
+
+  if (!process.stdin.isTTY) {
+    try {
+      const inFd = openSync('/dev/tty', 'r');
+      const outFd = openSync('/dev/tty', 'w');
+      fds.push(inFd, outFd);
+      input = new ReadStream(inFd);
+      output = new WriteStream(outFd);
+      console.warn('stdin is not a TTY — reading the prompt from /dev/tty instead.');
+    } catch {
+      console.warn(
+        'stdin is not a TTY and /dev/tty is unavailable. ' +
+          'Run this script directly in a terminal, or pass an `otpCallback`.',
+      );
+    }
+  }
+
+  const rl = createInterface({ input, output, terminal: true });
+  try {
+    return (await rl.question(`${message} `)).trim();
+  } finally {
+    rl.close();
+    for (const fd of fds) {
+      closeSync(fd);
+    }
+  }
+}
+
 async function businessLogin(
   credentials: HapoalimCredentials,
   page: Page,
@@ -60,18 +113,17 @@ async function businessLogin(
   await page.type('#user-code', credentials.userCode);
   await page.type('#password', credentials.password);
 
-  page.click('.submit-btn');
+  await page.click('.submit-btn');
+
+  // wait for the OTP screen before asking for the code, so the input is there
+  // by the time we type it in
+  await page.waitForSelector('input[formcontrolname="code"]', { timeout: 30_000 });
 
   let otp: string;
   if (otpCallback) {
     otp = await otpCallback();
   } else {
-    const answers = await inquirer.prompt<{ SMSPassword: string }>({
-      type: 'input',
-      name: 'SMSPassword',
-      message: 'Enter the code you got in SMS:',
-    });
-    otp = answers.SMSPassword;
+    otp = await promptInput('Enter the code you got in SMS:');
   }
 
   await page.type('input[formcontrolname="code"]', otp);
@@ -112,12 +164,7 @@ async function replacePassword(
   if (otpCallback) {
     newPassword = await otpCallback();
   } else {
-    const answers = await inquirer.prompt<{ newPassword: string }>({
-      type: 'input',
-      name: 'newPassword',
-      message: 'Enter your new wanted password:',
-    });
-    newPassword = answers.newPassword;
+    newPassword = await promptInput('Enter your new wanted password:');
   }
 
   await page.type('[name="oldpassword"]', previousCredentials.password);
@@ -446,6 +493,108 @@ export async function hapoalim(
       }
 
       return { data: await getDepositsFunction, isValid: null };
+    },
+    /**
+     * Static securities reference info from the "mytrade" portfolio app.
+     * Live balances and open orders in the same response are ignored.
+     *
+     * Unlike every other Poalim endpoint this one addresses the account as
+     * `branch-account` (no bank number), and is only served to callers running
+     * on the mytrade SPA's own page — so the request is issued from a
+     * short-lived sibling tab sharing the logged-in browser context.
+     */
+    getSecurities: async (account: {
+      bankNumber: number;
+      branchNumber: number;
+      accountNumber: number;
+    }): Promise<{
+      data: HapoalimSecurities | null;
+      isValid: boolean | null;
+      errors?: unknown;
+    }> => {
+      const tradeAccountNumber = `${account.branchNumber}-${account.accountNumber}`;
+      const fields = [
+        'EngName',
+        'EngSymbol',
+        'HebName',
+        'HebSymbol',
+        'Symbol',
+        'ExpirationDate',
+        'ItemType',
+        'StockType',
+        'IsEtf',
+        'IsForeign',
+        'CurrencyCode',
+        'Exchange',
+        'CreationEquityNum',
+        'EquityType',
+        'ContractType',
+        'AllowedOrderDirection',
+        'EquitySubType',
+      ].join(',');
+      const securitiesUrl = `${apiSiteUrl}/mytrade/api/v2/json2/account/view?account=${tradeAccountNumber}&fields=${fields}`;
+
+      const tradePage = await page.browser().newPage();
+      let data: HapoalimSecurities | null;
+      try {
+        // The session key is minted server-side when the SPA boots, so listen
+        // for it before navigating and reuse it — see captureMytradeSession.
+        const sessionPromise = captureMytradeSession(tradePage);
+        // Same origin as every other call; only the REST context is dropped,
+        // since the SPA is served from the site root rather than under it.
+        await tradePage.goto(`${new URL(apiSiteUrl).origin}/mytrade/app`, {
+          waitUntil: 'networkidle2',
+        });
+        const mytradeSession = await sessionPromise;
+        data = await fetchPoalimMytradeWithinPage<HapoalimSecurities>(
+          tradePage,
+          securitiesUrl,
+          mytradeSession,
+        );
+      } finally {
+        await tradePage.close();
+      }
+
+      if (!options?.validateSchema) {
+        return { data, isValid: null };
+      }
+
+      if (!data) {
+        console.log(`No securities data found for account ${tradeAccountNumber}`);
+        return { data, isValid: true };
+      }
+
+      if (
+        (data as unknown as Record<string, unknown>)['messageCode'] === 0 &&
+        (data as unknown as Record<string, unknown>)['severity'] === 'E'
+      ) {
+        return {
+          data,
+          errors: 'Data seems unreachable. Is the account active?',
+          isValid: false,
+        };
+      }
+
+      // e.g. { Exception: { "-ExceptionType": "InvalidSessionException", Message, SessionKey } }
+      const exception = (data as unknown as Record<string, Record<string, string> | undefined>)[
+        'Exception'
+      ];
+      if (exception) {
+        return {
+          data,
+          errors: `Poalim mytrade error${
+            exception['-ExceptionType'] ? ` (${exception['-ExceptionType']})` : ''
+          }: ${exception['Message'] ?? 'unknown'}`,
+          isValid: false,
+        };
+      }
+
+      const validation = HapoalimSecuritiesSchema.safeParse(data);
+      return {
+        data: validation.data ?? null,
+        isValid: validation.success,
+        errors: validation.success ? null : validation.error.issues,
+      };
     },
   };
 }

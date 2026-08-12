@@ -7,6 +7,7 @@ import {
   MaxTransactionInput,
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
+  PoalimSecurityInput,
   PoalimSwiftTransactionInput,
 } from '../../../__generated__/types.js';
 import {
@@ -18,6 +19,7 @@ import {
   IUploadMaxTransactionsParams,
   IUploadPoalimForeignTransactionsParams,
   IUploadPoalimIlsTransactionsParams,
+  IUploadPoalimSecuritiesParams,
   IUploadPoalimSwiftTransactionsParams,
 } from '../types.js';
 
@@ -183,6 +185,36 @@ export function validatePoalimSwiftTransactions(
     swiftSendersCharges71F: t.swiftSendersCharges71F,
     swiftSendersToReceiverInformation72: t.swiftSendersToReceiverInformation72,
     swiftRegulatoryReporting77B: t.swiftRegulatoryReporting77B,
+  }));
+}
+
+/** ownerId is not derivable from the input — the provider stamps it from the auth context. */
+export function validatePoalimSecurities(
+  securities: readonly PoalimSecurityInput[],
+): Omit<IUploadPoalimSecuritiesParams['securities'][number], 'ownerId'>[] {
+  return securities.map(s => ({
+    bankNumber: s.bankNumber,
+    branchNumber: s.branchNumber,
+    accountNumber: s.accountNumber,
+    asOfDate: s.asOfDate,
+    securityKey: s.securityKey,
+    engName: s.engName,
+    hebName: s.hebName,
+    itemType: s.itemType,
+    isEtf: s.isEtf,
+    isForeign: s.isForeign,
+    currencyCode: s.currencyCode,
+    exchange: s.exchange,
+    equityType: s.equityType,
+    allowedOrderDirection: s.allowedOrderDirection,
+    equitySubType: s.equitySubType,
+    engSymbol: s.engSymbol,
+    hebSymbol: s.hebSymbol,
+    symbol: s.symbol,
+    expirationDate: s.expirationDate,
+    stockType: s.stockType,
+    creationEquityNum: s.creationEquityNum,
+    contractType: s.contractType,
   }));
 }
 

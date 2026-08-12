@@ -45,6 +45,7 @@ export type AccountStep = {
   ils?: TxnTypeState;
   foreign?: TxnTypeState;
   swift?: TxnTypeState;
+  securities?: TxnTypeState;
 };
 
 export type TaskState = {

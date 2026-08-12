@@ -195,6 +195,8 @@ import migration_2026_07_07T13_00_00_extend_deel_table from './actions/2026-07-0
 import migration_2026_07_08T17_00_00_poalim_ils_trigger_fix from './actions/2026-07-08T17-00-00.poalim-ils-trigger-fix.js';
 import migration_2026_08_01T10_00_00_extended_tags_owner_id from './actions/2026-08-01T10-00-00.extended-tags-owner-id.js';
 import migration_2026_08_11T10_00_00_add_email_ingestion_grant_classification from './actions/2026-08-11T10-00-00.add-email-ingestion-grant-classification.js';
+import migration_2026_08_11T12_00_00_add_poalim_securities_table from './actions/2026-08-11T12-00-00.add-poalim-securities-table.js';
+import migration_2026_08_12T10_00_00_poalim_securities_tenant_scoped_dedup from './actions/2026-08-12T10-00-00.poalim-securities-tenant-scoped-dedup.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -394,6 +396,8 @@ export const MIGRATIONS = [
   migration_2026_07_08T17_00_00_poalim_ils_trigger_fix,
   migration_2026_08_01T10_00_00_extended_tags_owner_id,
   migration_2026_08_11T10_00_00_add_email_ingestion_grant_classification,
+  migration_2026_08_11T12_00_00_add_poalim_securities_table,
+  migration_2026_08_12T10_00_00_poalim_securities_tenant_scoped_dedup,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;

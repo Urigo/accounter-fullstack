@@ -30,6 +30,7 @@ export const PoalimAccountSchema = z.object({
   options: z
     .object({
       isBusinessAccount: z.boolean().optional(),
+      fetchSecurities: z.boolean().optional(),
       acceptedAccountNumbers: z.array(z.string()).optional(),
       acceptedBranchNumbers: z.array(z.string()).optional(),
       ignoredAccountNumbers: z.array(z.string()).optional(),
