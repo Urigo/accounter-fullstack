@@ -32,7 +32,9 @@ export class ForeignSecuritiesProvider {
 
   private async batchSecuritiesByKeys(securityKeys: readonly string[]) {
     const securities = await getSecuritiesByKeys.run({ securityKeys: [...securityKeys] }, this.db);
-    return securityKeys.map(key => securities.find(s => s.security_key === key) ?? null);
+    // DISTINCT ON in the query guarantees one row per key, so a plain Map is enough.
+    const securityByKey = new Map(securities.map(security => [security.security_key, security]));
+    return securityKeys.map(key => securityByKey.get(key) ?? null);
   }
 
   public securityByKeyLoader = new DataLoader((keys: readonly string[]) =>
