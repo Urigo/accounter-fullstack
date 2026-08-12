@@ -1,3 +1,4 @@
+import { normalizeNumericReference } from '../../../shared/helpers/numeric-reference.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import type { IGetReferenceMergeCandidatesResult } from '../types.js';
 
@@ -11,7 +12,6 @@ const FEE_ASSOCIATION_MAX_DAYS = 7;
 const AUXILIARY_COMPONENT_MAX_RATIO = 0.02;
 const RECURRING_PAYMENT_MAX_RELATIVE_AMOUNT_DIFF = 0.1;
 const EMBEDDED_REFERENCE_MIN_DIGITS = 8;
-const NORMALIZED_REFERENCE_MIN_DIGITS = 6;
 
 type CandidateWithCharge = {
   transaction: IGetReferenceMergeCandidatesResult;
@@ -174,20 +174,6 @@ function getEmbeddedReferenceAliases(candidate: IGetReferenceMergeCandidatesResu
   }
 
   return references;
-}
-
-function normalizeNumericReference(value: string) {
-  const digitsOnly = value.replace(/\D+/g, '');
-  if (digitsOnly.length < NORMALIZED_REFERENCE_MIN_DIGITS) {
-    return null;
-  }
-
-  const withoutLeadingZeros = digitsOnly.replace(/^0+/, '');
-  if (withoutLeadingZeros.length < NORMALIZED_REFERENCE_MIN_DIGITS) {
-    return null;
-  }
-
-  return withoutLeadingZeros;
 }
 
 function getConnectedCandidateClusters(candidates: CandidateWithCharge[]): CandidateWithCharge[][] {
