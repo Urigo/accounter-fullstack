@@ -37,7 +37,8 @@ export const PoalimSecuritiesPayloadSchema = z
         Meta: z
           .object({
             '-AsOfDate': z.string(),
-            Security: z.array(SecurityItemSchema),
+            // Accounts with no securities portfolio omit this entirely.
+            Security: z.array(SecurityItemSchema).default([]),
           })
           .loose(),
       })

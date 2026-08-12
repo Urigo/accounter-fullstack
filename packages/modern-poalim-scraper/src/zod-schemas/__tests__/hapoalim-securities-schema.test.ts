@@ -69,6 +69,20 @@ describe('HapoalimSecuritiesSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  // Accounts with no securities portfolio omit Security entirely.
+  it('normalises a missing Security array to [] rather than failing', () => {
+    const result = HapoalimSecuritiesSchema.safeParse({
+      View: { Meta: { '-AsOfDate': '2024-01-15T17:14:14.1886720+02:00' } },
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.View.Meta.Security).toEqual([]);
+  });
+
+  it('still requires -AsOfDate when Security is absent', () => {
+    const result = HapoalimSecuritiesSchema.safeParse({ View: { Meta: {} } });
+    expect(result.success).toBe(false);
+  });
+
   it('preserves unmodelled View siblings (Account, Orders) rather than rejecting them', () => {
     const result = HapoalimSecuritiesSchema.safeParse(
       response([equity], { Account: { OnlineValue: 1 }, Orders: { Rezef: { Order: [] } } }),

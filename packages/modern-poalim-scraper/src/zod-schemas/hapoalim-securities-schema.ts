@@ -39,7 +39,9 @@ export const HapoalimSecuritiesSchema = z.looseObject({
   View: z.looseObject({
     Meta: z.strictObject({
       '-AsOfDate': z.string(),
-      Security: z.array(PoalimSecuritySchema),
+      // Omitted entirely for accounts with no securities portfolio — that is an
+      // empty portfolio, not a malformed response, so normalise it to [].
+      Security: z.array(PoalimSecuritySchema).default([]),
     }),
   }),
 });

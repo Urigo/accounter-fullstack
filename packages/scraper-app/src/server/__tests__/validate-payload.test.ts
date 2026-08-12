@@ -92,6 +92,13 @@ describe('validatePayload — valid fixtures', () => {
     expect(result.View.Meta.Security[0]?.['-Key']).toBe('1234567');
   });
 
+  it('defaults a missing Security array to [] (account with no portfolio)', () => {
+    const result = validatePayload('poalim-securities', {
+      View: { Meta: { '-AsOfDate': '2024-01-15T10:00:00.000+02:00' } },
+    });
+    expect(result.View.Meta.Security).toEqual([]);
+  });
+
   it('rejects a poalim-securities payload with no Meta', () => {
     expect(() => validatePayload('poalim-securities', { View: { Account: {} } })).toThrow();
   });
