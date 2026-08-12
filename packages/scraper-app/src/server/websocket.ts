@@ -405,6 +405,36 @@ function buildTask(
               insertedTransactions.push(...(rs.insertedTransactions ?? []));
               changedTransactions.push(...(rs.changedTransactions ?? []));
             }
+
+            const securitiesPayload = accountData.securities;
+            if (securitiesPayload) {
+              // Static reference rows — no TODAY/FUTURE pending filter applies.
+              const securitiesCount = securitiesPayload.View.Meta.Security.length;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'securities',
+                count: securitiesCount,
+              });
+              const rsec = await uploadClient.uploadPoalimSecurities(
+                securitiesPayload,
+                accountData.bankAccount,
+              );
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'securities',
+                inserted: rsec.inserted,
+                skipped: rsec.skipped,
+              });
+              totalInserted += rsec.inserted;
+              totalSkipped += rsec.skipped;
+              allIds.push(...rsec.insertedIds);
+              insertedTransactions.push(...(rsec.insertedTransactions ?? []));
+              changedTransactions.push(...(rsec.changedTransactions ?? []));
+            }
           }
           return {
             inserted: totalInserted,

@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
 /**
- * Asserts only what the vars mapper reads off `View.Meta`. The scraper already
- * validates the full response; this is the narrower contract this app depends on.
+ * Asserts every field the vars mapper reads off `View.Meta`. This must stay in
+ * step with `poalimSecuritiesVars` — the object is `.loose()`, so anything left
+ * out here is typed `unknown` and reaches the mutation completely unchecked.
+ *
  * `View.Account` (live balances) and `View.Orders` are deliberately ignored.
  */
 const SecurityItemSchema = z
@@ -11,11 +13,20 @@ const SecurityItemSchema = z
     EngName: z.string(),
     HebName: z.string(),
     ItemType: z.string(),
+    IsEtf: z.boolean().nullable(),
     IsForeign: z.boolean(),
     CurrencyCode: z.string(),
     Exchange: z.string(),
     EquityType: z.number(),
+    AllowedOrderDirection: z.string().nullable(),
     EquitySubType: z.number(),
+    EngSymbol: z.string().nullable(),
+    HebSymbol: z.string().nullable(),
+    Symbol: z.string().nullable(),
+    ExpirationDate: z.string().nullable(),
+    StockType: z.string().nullable(),
+    CreationEquityNum: z.string().nullable(),
+    ContractType: z.string().nullable(),
   })
   .loose();
 

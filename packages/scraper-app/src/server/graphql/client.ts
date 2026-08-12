@@ -10,6 +10,7 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
+import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -28,6 +29,7 @@ import {
   otsarIlsVars,
   poalimForeignVars,
   poalimIlsVars,
+  poalimSecuritiesVars,
   poalimSwiftVars,
   UPLOAD_AMEX,
   UPLOAD_CAL,
@@ -40,6 +42,7 @@ import {
   UPLOAD_OTSAR_ILS,
   UPLOAD_POALIM_FOREIGN,
   UPLOAD_POALIM_ILS,
+  UPLOAD_POALIM_SECURITIES,
   UPLOAD_POALIM_SWIFT,
 } from './mutations.js';
 
@@ -95,6 +98,17 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
         UPLOAD_POALIM_SWIFT,
         poalimSwiftVars(payload, bankAccount),
         'uploadPoalimSwiftTransactions',
+      );
+    },
+
+    async uploadPoalimSecurities(
+      payload: PoalimSecuritiesPayload,
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
+    ): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_POALIM_SECURITIES,
+        poalimSecuritiesVars(payload, bankAccount),
+        'uploadPoalimSecurities',
       );
     },
 
