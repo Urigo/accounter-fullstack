@@ -50,6 +50,43 @@ describe('validatePayload — valid fixtures', () => {
     expect(result.swiftsList).toHaveLength(0);
   });
 
+  it('accepts a minimal poalim-securities payload', () => {
+    const result = validatePayload('poalim-securities', {
+      View: { Meta: { '-AsOfDate': '2024-01-15T10:00:00.000+02:00', Security: [] } },
+    });
+    expect(result.View.Meta.Security).toHaveLength(0);
+  });
+
+  it('accepts a poalim-securities payload alongside unmodelled View siblings', () => {
+    const result = validatePayload('poalim-securities', {
+      View: {
+        Account: { OnlineValue: 1 },
+        Orders: { Rezef: { Order: [] } },
+        Meta: {
+          '-AsOfDate': '2024-01-15T10:00:00.000+02:00',
+          Security: [
+            {
+              '-Key': '1234567',
+              EngName: 'Example Corp',
+              HebName: 'אקזמפל',
+              ItemType: 'Equity',
+              IsForeign: true,
+              CurrencyCode: 'USD',
+              Exchange: 'NYQ',
+              EquityType: 1,
+              EquitySubType: 1,
+            },
+          ],
+        },
+      },
+    });
+    expect(result.View.Meta.Security[0]?.['-Key']).toBe('1234567');
+  });
+
+  it('rejects a poalim-securities payload with no Meta', () => {
+    expect(() => validatePayload('poalim-securities', { View: { Account: {} } })).toThrow();
+  });
+
   it('accepts a minimal isracard payload', () => {
     const result = validatePayload('isracard', {
       Header: { Status: '1', Message: null },

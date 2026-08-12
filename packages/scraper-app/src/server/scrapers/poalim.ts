@@ -14,6 +14,7 @@ import { registerDiscoveredAccounts } from '../account-discovery.js';
 import { checkAccounts } from '../check-accounts.js';
 import { effectiveSet } from '../filter-payload.js';
 import type { OtpManager } from '../otp-manager.js';
+import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
 import { BlockedError } from '../scrape-runner.js';
 import { validatePayload } from '../validate-payload.js';
 import { getVault } from '../vault-store.js';
@@ -77,6 +78,7 @@ export async function scrapePoalim(
     ils: HapoalimILSTransactions | null;
     foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
     swift: DecoratedSwiftTransactions | null;
+    securities: PoalimSecuritiesPayload | null;
     bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
   }[]
 > {
@@ -190,15 +192,18 @@ export async function scrapePoalim(
       ils: HapoalimILSTransactions | null;
       foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
       swift: DecoratedSwiftTransactions | null;
+      securities: PoalimSecuritiesPayload | null;
       bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
     }[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
+    const fetchSecurities = creds.options?.fetchSecurities ?? false;
 
     for (const account of filteredAccounts) {
       let ils: HapoalimILSTransactions | null = null;
       let foreign:
         HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null = null;
       let swift: DecoratedSwiftTransactions | null = null;
+      let securities: PoalimSecuritiesPayload | null = null;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
@@ -270,7 +275,30 @@ export async function scrapePoalim(
         }
         swift = { ...validated, swiftsList: decoratedSwiftsList };
       }
-      accountsData.push({ ils, foreign, swift, bankAccount: accountRef });
+
+      if (fetchSecurities) {
+        emit({
+          type: 'task-account-txns-fetching',
+          sourceId: creds.id,
+          accountId,
+          txnType: 'securities',
+        });
+        const {
+          data: securitiesData,
+          isValid: securitiesValid,
+          errors: securitiesErrors,
+        } = await scraper.getSecurities(accountRef);
+        if (securitiesValid === false) {
+          throw new Error(
+            `Poalim securities failed schema validation for account ${accountId}: ${describeValidationError(securitiesErrors)}`,
+          );
+        }
+        if (securitiesData) {
+          securities = validatePayload('poalim-securities', securitiesData);
+        }
+      }
+
+      accountsData.push({ ils, foreign, swift, securities, bankAccount: accountRef });
     }
 
     return accountsData;

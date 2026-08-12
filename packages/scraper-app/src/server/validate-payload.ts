@@ -18,12 +18,15 @@ import { MaxPayloadSchema } from './payload-schemas/max.schema.js';
 import type { MaxPayload } from './payload-schemas/max.schema.js';
 import { PoalimForeignPayloadSchema } from './payload-schemas/poalim-foreign.schema.js';
 import { PoalimIlsPayloadSchema } from './payload-schemas/poalim-ils.schema.js';
+import { PoalimSecuritiesPayloadSchema } from './payload-schemas/poalim-securities.schema.js';
+import type { PoalimSecuritiesPayload } from './payload-schemas/poalim-securities.schema.js';
 import { PoalimSwiftPayloadSchema } from './payload-schemas/poalim-swift.schema.js';
 
 export type PayloadType =
   | 'poalim-ils'
   | 'poalim-foreign'
   | 'poalim-swift'
+  | 'poalim-securities'
   | 'isracard'
   | 'amex'
   | 'cal'
@@ -35,6 +38,7 @@ type PayloadMap = {
   'poalim-ils': HapoalimILSTransactions;
   'poalim-foreign': HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness;
   'poalim-swift': SwiftTransactions;
+  'poalim-securities': PoalimSecuritiesPayload;
   isracard: IsracardCardsTransactionsList;
   amex: IsracardCardsTransactionsList;
   cal: CalPayload;
@@ -59,6 +63,7 @@ const schemas: Record<PayloadType, z.ZodType<any>> = {
   'poalim-ils': PoalimIlsPayloadSchema,
   'poalim-foreign': PoalimForeignPayloadSchema,
   'poalim-swift': PoalimSwiftPayloadSchema,
+  'poalim-securities': PoalimSecuritiesPayloadSchema,
   isracard: IsracardPayloadSchema,
   amex: AmexPayloadSchema,
   cal: CalPayloadSchema,
