@@ -337,7 +337,7 @@ const uploadPoalimSecurities = sql<IUploadPoalimSecuritiesQuery>`
     contractType,
     ownerId
   )
-  ON CONFLICT (bank_number, branch_number, account_number, security_key) DO NOTHING
+  ON CONFLICT (owner_id, bank_number, branch_number, account_number, security_key) DO NOTHING
   RETURNING id, bank_number, branch_number, account_number, security_key, eng_name, as_of_date;
 `;
 
@@ -1007,6 +1007,13 @@ export class PoalimScraperIngestionProvider {
         };
 
       const businessId = await this.getBusinessId();
+      if (!businessId) {
+        // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+        // tenant context the insert would fail deep inside Postgres with an opaque error.
+        throw new Error(
+          'Cannot upload Poalim securities: no business context found in the auth context',
+        );
+      }
       const validated = validatePoalimSecurities(securities).map(s => ({
         ...s,
         ownerId: businessId,
