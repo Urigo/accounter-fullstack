@@ -290,12 +290,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@accounter/modern-poalim-scraper@workspace:packages/modern-poalim-scraper"
   dependencies:
-    "@types/inquirer": "npm:9.0.10"
     "@types/node-fetch": "npm:2.6.13"
     "@types/uuid": "npm:11.0.0"
     concurrently: "npm:10.0.4"
     date-fns: "npm:4.4.0"
-    inquirer: "npm:14.0.2"
     node-fetch: "npm:3.3.2"
     node-xlsx: "npm:0.24.0"
     nodemon: "npm:3.1.14"
@@ -5373,7 +5371,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@inquirer/prompts@npm:^8.3.2, @inquirer/prompts@npm:^8.5.2":
+"@inquirer/prompts@npm:^8.3.2":
   version: 8.5.2
   resolution: "@inquirer/prompts@npm:8.5.2"
   dependencies:
@@ -11240,16 +11238,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/inquirer@npm:9.0.10":
-  version: 9.0.10
-  resolution: "@types/inquirer@npm:9.0.10"
-  dependencies:
-    "@types/through": "npm:*"
-    rxjs: "npm:^7.2.0"
-  checksum: 10c0/60381c394f83d3233aea45af106d0c05e34344f2b765c048d32214726f79174eeb42b160bf602c9d9c1258bd263fbd14e384a8b4b07813662b525fe56f95b7c1
-  languageName: node
-  linkType: hard
-
 "@types/is-empty@npm:^1.0.0":
   version: 1.2.3
   resolution: "@types/is-empty@npm:1.2.3"
@@ -11529,15 +11517,6 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/d2914f8e9b5b998e4275ec5f0130cba1c2fb47e75616b5c125a65ef6c1db2f1dc3f978c7900693856a15d72bbb4f4e94f805537a4ecb6dc126c64415d31c0590
-  languageName: node
-  linkType: hard
-
-"@types/through@npm:*":
-  version: 0.0.33
-  resolution: "@types/through@npm:0.0.33"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/6a8edd7f40cd7e197318e86310a40e568cddd380609dde59b30d5cc6c5f8276ddc698905eac4b3b429eb39f2e8ee326bc20dc6e95a2cdc41c4d3fc9a1ebd4929
   languageName: node
   linkType: hard
 
@@ -18704,25 +18683,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inquirer@npm:14.0.2":
-  version: 14.0.2
-  resolution: "inquirer@npm:14.0.2"
-  dependencies:
-    "@inquirer/ansi": "npm:^2.0.7"
-    "@inquirer/core": "npm:^11.2.1"
-    "@inquirer/prompts": "npm:^8.5.2"
-    "@inquirer/type": "npm:^4.0.7"
-    mute-stream: "npm:^3.0.0"
-    run-async: "npm:^4.0.6"
-  peerDependencies:
-    "@types/node": ">=18"
-  peerDependenciesMeta:
-    "@types/node":
-      optional: true
-  checksum: 10c0/31ec80b7d599dcb19568540d694865b1da116f701b75503a23ed38189d96fca70eb1fb6ccb1dbd994f6f79d407d51dc1a94d06dcef5370644ce736792414781b
-  languageName: node
-  linkType: hard
-
 "internal-slot@npm:^1.1.0":
   version: 1.1.0
   resolution: "internal-slot@npm:1.1.0"
@@ -25165,13 +25125,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"run-async@npm:^4.0.6":
-  version: 4.0.6
-  resolution: "run-async@npm:4.0.6"
-  checksum: 10c0/3e512c689d356238a06a59839deddeb09aec23bc66f780fe970fcf12b64bfc00c6880e9530ea22b8cf88a927145561f5a43343d8be87166e849ec0daaa3d4cf4
-  languageName: node
-  linkType: hard
-
 "run-parallel@npm:^1.1.9":
   version: 1.2.0
   resolution: "run-parallel@npm:1.2.0"
@@ -25181,7 +25134,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rxjs@npm:7.8.2, rxjs@npm:^7.2.0":
+"rxjs@npm:7.8.2":
   version: 7.8.2
   resolution: "rxjs@npm:7.8.2"
   dependencies:
