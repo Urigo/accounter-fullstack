@@ -17,8 +17,12 @@ import { Button } from '../ui/button.js';
  * dashboard buried under failing queries.
  */
 export function WelcomePage(): ReactElement {
-  const { fetching, error, viewer } = useViewer();
   const { isAuthenticated, isLoading } = useAuth0();
+  // This route is public, so it can be opened without a session. Waiting for
+  // Auth0 keeps an unauthenticated visitor from spending a request to learn
+  // nothing, and keeps an authenticated one from asking before their token is
+  // attached — which would answer "no workspace" for a perfectly good account.
+  const { fetching, error, viewer } = useViewer({ pause: isLoading || !isAuthenticated });
   const handleLogout = useLogout();
   const navigate = useNavigate();
 

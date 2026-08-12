@@ -32,8 +32,11 @@ vi.mock('../../../hooks/use-logout.js', () => ({
   }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-async function renderWelcome(viewerState: Record<string, unknown>) {
-  useAuth0Mock.mockReturnValue({ isAuthenticated: true, isLoading: false });
+async function renderWelcome(
+  viewerState: Record<string, unknown>,
+  authState = { isAuthenticated: true, isLoading: false },
+) {
+  useAuth0Mock.mockReturnValue(authState);
   useViewerMock.mockReturnValue(viewerState);
   useLogoutMock.mockReturnValue(vi.fn());
 
@@ -41,6 +44,7 @@ async function renderWelcome(viewerState: Record<string, unknown>) {
     [
       { path: ROUTES.WELCOME, element: React.createElement(WelcomePage) },
       { path: ROUTES.HOME, element: React.createElement('div', null, 'Home Page') },
+      { path: ROUTES.LOGIN, element: React.createElement('div', null, 'Login Page') },
     ],
     { initialEntries: [ROUTES.WELCOME] },
   );
@@ -105,6 +109,30 @@ describe('WelcomePage', () => {
 
     expect(html).toContain('Could not check your account');
     expect(html).not.toContain('No workspace yet');
+    await cleanup();
+  });
+
+  it('sends an unauthenticated visitor to login without querying the viewer', async () => {
+    // /welcome is a public route, so it can be opened with no session at all.
+    const { router, cleanup } = await renderWelcome(
+      { fetching: false, error: undefined, viewer: null },
+      { isAuthenticated: false, isLoading: false },
+    );
+
+    expect(useViewerMock).toHaveBeenCalledWith({ pause: true });
+    expect(router.state.location.pathname).toBe(ROUTES.LOGIN);
+    await cleanup();
+  });
+
+  it('holds the viewer query until Auth0 has resolved', async () => {
+    // Asking before the token is attached would answer "no workspace" for a
+    // perfectly good account.
+    const { cleanup } = await renderWelcome(
+      { fetching: false, error: undefined, viewer: null },
+      { isAuthenticated: false, isLoading: true },
+    );
+
+    expect(useViewerMock).toHaveBeenCalledWith({ pause: true });
     await cleanup();
   });
 

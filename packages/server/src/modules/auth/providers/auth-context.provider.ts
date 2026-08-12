@@ -444,6 +444,10 @@ export class AuthContextProvider {
 
       if (!auth0UserId) {
         console.error('AuthContext: Missing sub claim in JWT');
+        // Share the verdict with getJwtIdentity(): a token with no `sub` is
+        // identity-less there too, and re-verifying it would reach the same
+        // conclusion at the cost of a second signature check.
+        this.jwtIdentity ??= Promise.resolve(null);
         this.handlingAuth = null;
         this.cachedContext = null;
         return null;
@@ -453,6 +457,16 @@ export class AuthContextProvider {
       const jwtEmailVerifiedClaim = payload['email_verified'];
       const jwtEmail = typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null;
       const jwtEmailVerified = jwtEmailVerifiedClaim === true;
+
+      // Hand this verification to getJwtIdentity(). The auth directives call
+      // getAuthContext() first and only fall back to getJwtIdentity() when it
+      // yields no user, which is exactly the unprovisioned case — without this,
+      // every such request would verify the same signature twice.
+      this.jwtIdentity ??= Promise.resolve({
+        auth0UserId,
+        email: jwtEmail,
+        emailVerified: jwtEmailVerified,
+      });
 
       // 3. Map to local user and business (with verified-email fallback relinking).
       const userContext = await this.mapAuth0UserToLocal(auth0UserId, jwtEmail, jwtEmailVerified);

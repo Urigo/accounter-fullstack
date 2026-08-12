@@ -88,6 +88,36 @@ describe('AuthContextProvider', () => {
       expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
     });
 
+    it('reuses the verification getAuthContext already performed', async () => {
+      // The auth directives always call getAuthContext() first and only fall
+      // back to getJwtIdentity() when it yields no user — the unprovisioned
+      // case. Verifying the same signature twice per request would be pure waste.
+      vi.mocked(jose.jwtVerify).mockResolvedValue({
+        payload: { sub: 'auth0|unlinked', email: 'new@example.com', email_verified: true },
+      } as any);
+      // No membership rows: this is the identity that has no auth context.
+      mockDBProvider.query.mockResolvedValue({ rowCount: 0, rows: [] });
+
+      const context = await identityProvider.getAuthContext();
+      const identity = await identityProvider.getJwtIdentity();
+
+      expect(context).toBeNull();
+      expect(identity).toEqual({
+        auth0UserId: 'auth0|unlinked',
+        email: 'new@example.com',
+        emailVerified: true,
+      });
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not re-verify a token that carries no sub claim', async () => {
+      vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: { email: 'new@example.com' } } as any);
+
+      expect(await identityProvider.getAuthContext()).toBeNull();
+      expect(await identityProvider.getJwtIdentity()).toBeNull();
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+
     it('verifies once when concurrent callers race', async () => {
       vi.mocked(jose.jwtVerify).mockResolvedValue({
         payload: { sub: 'auth0|123', email: 'test@example.com', email_verified: true },
