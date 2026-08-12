@@ -54,6 +54,85 @@ describe('AuthContextProvider', () => {
     expect(result).toBeNull();
   });
 
+  describe('getJwtIdentity', () => {
+    // The JWKS cache in the provider module is global and keyed by domain, and
+    // `vi.clearAllMocks()` does not clear it. Using a domain of our own keeps
+    // these cases from warming the entry other tests assert on.
+    let identityProvider: AuthContextProvider;
+
+    beforeEach(() => {
+      identityProvider = new AuthContextProvider(
+        { auth0: { domain: 'jwt-identity.auth0.com', audience: 'test-audience' } } as any,
+        mockRawAuth,
+        mockDBProvider,
+      );
+    });
+
+    it('verifies the JWT once per operation across repeated calls', async () => {
+      // The auth directives call this on every guarded field that fails to
+      // resolve a context, so an unprovisioned user's multi-field query would
+      // otherwise re-verify the same token once per field.
+      vi.mocked(jose.jwtVerify).mockResolvedValue({
+        payload: { sub: 'auth0|123', email: 'test@example.com', email_verified: true },
+      } as any);
+
+      const first = await identityProvider.getJwtIdentity();
+      const second = await identityProvider.getJwtIdentity();
+
+      expect(first).toEqual({
+        auth0UserId: 'auth0|123',
+        email: 'test@example.com',
+        emailVerified: true,
+      });
+      expect(second).toEqual(first);
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+
+    it('reuses the verification getAuthContext already performed', async () => {
+      // The auth directives always call getAuthContext() first and only fall
+      // back to getJwtIdentity() when it yields no user — the unprovisioned
+      // case. Verifying the same signature twice per request would be pure waste.
+      vi.mocked(jose.jwtVerify).mockResolvedValue({
+        payload: { sub: 'auth0|unlinked', email: 'new@example.com', email_verified: true },
+      } as any);
+      // No membership rows: this is the identity that has no auth context.
+      mockDBProvider.query.mockResolvedValue({ rowCount: 0, rows: [] });
+
+      const context = await identityProvider.getAuthContext();
+      const identity = await identityProvider.getJwtIdentity();
+
+      expect(context).toBeNull();
+      expect(identity).toEqual({
+        auth0UserId: 'auth0|unlinked',
+        email: 'new@example.com',
+        emailVerified: true,
+      });
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not re-verify a token that carries no sub claim', async () => {
+      vi.mocked(jose.jwtVerify).mockResolvedValue({ payload: { email: 'new@example.com' } } as any);
+
+      expect(await identityProvider.getAuthContext()).toBeNull();
+      expect(await identityProvider.getJwtIdentity()).toBeNull();
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+
+    it('verifies once when concurrent callers race', async () => {
+      vi.mocked(jose.jwtVerify).mockResolvedValue({
+        payload: { sub: 'auth0|123', email: 'test@example.com', email_verified: true },
+      } as any);
+
+      const [first, second] = await Promise.all([
+        identityProvider.getJwtIdentity(),
+        identityProvider.getJwtIdentity(),
+      ]);
+
+      expect(second).toEqual(first);
+      expect(jose.jwtVerify).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('JWT Verification', () => {
     it('should verify JWT and return context if valid', async () => {
        const mockPayload = {

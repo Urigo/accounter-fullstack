@@ -19,6 +19,12 @@ const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 
 type QueryableDB = Pick<DBProvider, 'query'>;
 
+type JwtIdentity = {
+  auth0UserId: string;
+  email: string | null;
+  emailVerified: boolean;
+};
+
 export async function handleDevBypassAuth(
   db: QueryableDB,
   userId: string,
@@ -84,6 +90,7 @@ export async function handleDevBypassAuth(
 export class AuthContextProvider {
   private cachedContext: AuthContext | null | undefined = undefined;
   private handlingAuth: Promise<AuthContext | null> | null = null;
+  private jwtIdentity: Promise<JwtIdentity | null> | null = null;
 
   constructor(
     @Inject(ENVIRONMENT) private env: Environment,
@@ -91,11 +98,21 @@ export class AuthContextProvider {
     @Inject(DBProvider) private db: DBProvider,
   ) {}
 
-  public async getJwtIdentity(): Promise<{
-    auth0UserId: string;
-    email: string | null;
-    emailVerified: boolean;
-  } | null> {
+  /**
+   * The verified identity behind this request's JWT, or null.
+   *
+   * Memoized for the operation: the auth directives call this on every guarded
+   * field that fails to resolve an auth context, so an unprovisioned user with a
+   * multi-field query would otherwise pay for one `jwtVerify` per field. Caching
+   * the promise (not the value) also collapses concurrent field resolution into a
+   * single verification. Safe because `rawAuth` is fixed for the operation.
+   */
+  public getJwtIdentity(): Promise<JwtIdentity | null> {
+    this.jwtIdentity ??= this.resolveJwtIdentity();
+    return this.jwtIdentity;
+  }
+
+  private async resolveJwtIdentity(): Promise<JwtIdentity | null> {
     const token = this.rawAuth.token;
     if (this.rawAuth.authType !== 'jwt' || !token) {
       return null;
@@ -427,6 +444,10 @@ export class AuthContextProvider {
 
       if (!auth0UserId) {
         console.error('AuthContext: Missing sub claim in JWT');
+        // Share the verdict with getJwtIdentity(): a token with no `sub` is
+        // identity-less there too, and re-verifying it would reach the same
+        // conclusion at the cost of a second signature check.
+        this.jwtIdentity ??= Promise.resolve(null);
         this.handlingAuth = null;
         this.cachedContext = null;
         return null;
@@ -436,6 +457,16 @@ export class AuthContextProvider {
       const jwtEmailVerifiedClaim = payload['email_verified'];
       const jwtEmail = typeof jwtEmailClaim === 'string' ? jwtEmailClaim : null;
       const jwtEmailVerified = jwtEmailVerifiedClaim === true;
+
+      // Hand this verification to getJwtIdentity(). The auth directives call
+      // getAuthContext() first and only fall back to getJwtIdentity() when it
+      // yields no user, which is exactly the unprovisioned case — without this,
+      // every such request would verify the same signature twice.
+      this.jwtIdentity ??= Promise.resolve({
+        auth0UserId,
+        email: jwtEmail,
+        emailVerified: jwtEmailVerified,
+      });
 
       // 3. Map to local user and business (with verified-email fallback relinking).
       const userContext = await this.mapAuth0UserToLocal(auth0UserId, jwtEmail, jwtEmailVerified);
