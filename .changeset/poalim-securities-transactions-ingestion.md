@@ -63,6 +63,14 @@ collide). Re-scrapes are no-ops and restated values are reported through the sha
 `changedTransactions` result. Like `poalim_securities`, these rows are not cash movements: no insert
 trigger, no `transactions_raw_list` wiring.
 
+The date columns are `DATE`, matching every other `poalim_*` table. The bank sends calendar dates
+dressed as instants — always midnight, carrying the Israel offset of that date — so storing them as
+`TIMESTAMPTZ` (as the first cut did, fixed by migration
+`2026-08-14T10-00-00.poalim-securities-transactions-calendar-dates`) put the stored instant at 21:00
+or 22:00 UTC the day before, and anything rendering it outside Israel time reported the wrong day.
+For the same reason the ingestion provider compares and queries these as calendar dates rather than
+converting through `Date`, which would shift the day on any server not running on Israel time.
+
 `scraper-app` fetches and uploads both securities feeds under the existing per-source option (now
 labelled "Fetch securities portfolio (info + activity)"), with separate progress columns for each.
 

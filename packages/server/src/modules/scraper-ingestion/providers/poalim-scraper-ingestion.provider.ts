@@ -11,7 +11,9 @@ import type {
   PoalimSwiftTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
+import { TIMELESS_DATE_REGEX } from '../../../shared/constants.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
+import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 import { formatValue } from '../helpers/utils.helper.js';
@@ -1056,10 +1058,28 @@ const POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS: (keyof IFetchPoalimSecuriti
   ] as const;
 
 /**
+ * Takes the calendar date off one of the bank's timestamps.
+ *
+ * The strings are `2024-01-15T00:00:00.0000000+02:00` — a calendar date dressed as an
+ * instant, with the Israel offset of that date. Postgres reads the leading date when
+ * casting one into a DATE column, so this must too: converting through `Date` would
+ * shift the day for any server not running on Israel time.
+ *
+ * Anything whose leading ten characters are not a real calendar date is passed through
+ * untouched — including the bank's `0001-01-01` no-execution sentinel, which is outside
+ * the range `TIMELESS_DATE_REGEX` accepts — so Postgres reports it rather than this
+ * helper inventing a date.
+ */
+function toCalendarDate(value: string): TimelessDateString | string {
+  const candidate = value.slice(0, 10);
+  return TIMELESS_DATE_REGEX.test(candidate) ? (candidate as TimelessDateString) : value;
+}
+
+/**
  * The executions response carries no per-row id, so identity is the natural key the
  * dedup index is built on. Existing rows come back from pg as `Date`/`string`
- * (NUMERIC) while incoming rows are ISO strings and JS numbers, so both sides are
- * normalised to the same canonical form before being joined into a key.
+ * (NUMERIC) while incoming rows are the bank's date strings and JS numbers, so both
+ * sides are normalised to the same canonical form before being joined into a key.
  */
 function securityTransactionKeyOf(row: {
   bank_number?: number | null | void;
@@ -1095,8 +1115,11 @@ function securityTransactionKeyOf(row: {
 }): string {
   const date = (value: Date | string | null | void) => {
     if (value == null) return '';
-    const parsed = value instanceof Date ? value : new Date(value);
-    return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+    // Calendar dates, not instants: the columns are DATE, and the bank's strings
+    // are midnight with the Israel offset of that date. Comparing them as instants
+    // would put an incoming "2024-01-15T00:00:00+02:00" an hour or two before the
+    // stored day and never match the row it belongs to.
+    return value instanceof Date ? dateToTimelessDateString(value) : toCalendarDate(value);
   };
   const num = (value: number | string | null | void) =>
     value == null ? '' : String(Number(value));
@@ -1513,9 +1536,12 @@ export class PoalimScraperIngestionProvider {
       const securities = validated
         .map(t => t.security ?? null)
         .filter((s): s is string => s !== null);
+      // Passed as calendar-date strings rather than `Date`s: a `Date` is serialised
+      // as a UTC instant, which lands on the previous day once Postgres casts it to
+      // the DATE column and would match nothing.
       const tradeDates = validated
-        .map(t => (t.tradeDate ? new Date(t.tradeDate) : null))
-        .filter((d): d is Date => d !== null);
+        .map(t => (t.tradeDate ? toCalendarDate(String(t.tradeDate)) : null))
+        .filter((d): d is TimelessDateString | string => d !== null);
 
       // Coarse fetch on the indexed prefix of the dedup key; the full key — which
       // includes nullable corporate-action dates — is matched in memory below.

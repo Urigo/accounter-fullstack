@@ -198,6 +198,7 @@ import migration_2026_08_11T10_00_00_add_email_ingestion_grant_classification fr
 import migration_2026_08_11T12_00_00_add_poalim_securities_table from './actions/2026-08-11T12-00-00.add-poalim-securities-table.js';
 import migration_2026_08_12T10_00_00_poalim_securities_tenant_scoped_dedup from './actions/2026-08-12T10-00-00.poalim-securities-tenant-scoped-dedup.js';
 import migration_2026_08_13T12_00_00_add_poalim_securities_transactions_table from './actions/2026-08-13T12-00-00.add-poalim-securities-transactions-table.js';
+import migration_2026_08_14T10_00_00_poalim_securities_transactions_calendar_dates from './actions/2026-08-14T10-00-00.poalim-securities-transactions-calendar-dates.js';
 import { runMigrations } from './pg-migrator.js';
 
 export const MIGRATIONS = [
@@ -400,6 +401,7 @@ export const MIGRATIONS = [
   migration_2026_08_11T12_00_00_add_poalim_securities_table,
   migration_2026_08_12T10_00_00_poalim_securities_tenant_scoped_dedup,
   migration_2026_08_13T12_00_00_add_poalim_securities_transactions_table,
+  migration_2026_08_14T10_00_00_poalim_securities_transactions_calendar_dates,
 ] as const;
 
 export const LATEST_MIGRATION_NAME = MIGRATIONS[MIGRATIONS.length - 1]?.name;
