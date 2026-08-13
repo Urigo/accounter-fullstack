@@ -83,8 +83,12 @@ export function WelcomePage(): ReactElement {
   const handleClaim = async (invitationId: string) => {
     const result = await claimInvitation(invitationId);
     if (result?.success) {
-      // The membership is what makes the app usable, so re-read the viewer
-      // before navigating; the guard would bounce us straight back otherwise.
+      // The membership now exists server-side, so the stale NO_WORKSPACE answer
+      // must not outlive this navigation. Today OnboardingGuard re-queries on
+      // mount anyway — the urql client is built without a cache exchange, so
+      // nothing is served from cache — but that is a property of the client
+      // setup, not of this flow, and a cache exchange would silently reintroduce
+      // the bounce. Invalidating explicitly keeps the flow correct either way.
       refreshViewer();
       navigate(ROUTES.HOME, { replace: true });
     }
@@ -126,7 +130,7 @@ export function WelcomePage(): ReactElement {
                 >
                   <div>
                     <p className="font-medium">{invitation.businessName ?? 'Unnamed business'}</p>
-                    <p className="text-sm text-muted-foreground">as {invitation.role}</p>
+                    <p className="text-sm text-muted-foreground">as {invitation.roleId}</p>
                   </div>
                   <Button
                     onClick={() => void handleClaim(invitation.id)}

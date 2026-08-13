@@ -109,7 +109,7 @@ describe('viewer resolver', () => {
       id: 'inv-1',
       businessId: 'biz-1',
       businessName: 'Acme Ltd',
-      role: 'employee',
+      roleId: 'employee',
       expiresAt: new Date('2030-01-01T00:00:00Z'),
     };
 
@@ -136,7 +136,7 @@ describe('viewer resolver', () => {
           id: 'inv-1',
           businessId: 'biz-1',
           businessName: 'Acme Ltd',
-          role: 'employee',
+          roleId: 'employee',
           expiresAt: new Date('2030-01-01T00:00:00Z'),
         },
       ],

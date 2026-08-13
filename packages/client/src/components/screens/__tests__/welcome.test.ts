@@ -170,7 +170,7 @@ describe('WelcomePage', () => {
             id: 'inv-1',
             businessId: 'biz-1',
             businessName: 'Acme Ltd',
-            role: 'employee',
+            roleId: 'employee',
             expiresAt: '2030-01-01T00:00:00.000Z',
           },
         ],
@@ -199,7 +199,7 @@ describe('WelcomePage', () => {
             id: 'inv-1',
             businessId: 'biz-1',
             businessName: 'Acme Ltd',
-            role: 'employee',
+            roleId: 'employee',
             expiresAt: '2030-01-01T00:00:00.000Z',
           },
         ],
@@ -215,8 +215,7 @@ describe('WelcomePage', () => {
     });
 
     expect(claimInvitationMock).toHaveBeenCalledWith('inv-1');
-    // The membership only exists server-side, so the viewer must be re-read
-    // before navigating or the guard would bounce us straight back here.
+    // The stale NO_WORKSPACE answer must not outlive the navigation.
     expect(refreshViewerMock).toHaveBeenCalled();
     expect(router.state.location.pathname).toBe(ROUTES.HOME);
     await cleanup();
