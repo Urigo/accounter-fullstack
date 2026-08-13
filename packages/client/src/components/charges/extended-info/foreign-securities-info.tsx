@@ -50,15 +50,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
           settlementDate
           tradeType
           transactionType
+          paymentType
           quantity
           tradePrice
-          netValueTradeCurrency
-          netValueNis
-          tradeCurrency
-          tradeCommissionValueTradeCurrency
-          managementFeesValueTradeCurrency
-          israelTaxValue
-          paymentType
+          netValue {
+            formatted
+          }
+          tradeCommission {
+            formatted
+          }
+          managementFees {
+            formatted
+          }
+          israelTaxValue {
+            formatted
+          }
         }
       }
     }
@@ -208,17 +214,19 @@ const SecurityTransactionsTable = ({
   ) : null;
 };
 
-/** Numerics arrive as decimal strings (Postgres numeric); format without re-rounding blindly. */
-const formatNumeric = (value: string | null | undefined, digits = 2): string => {
-  if (value == null) {
-    return '';
-  }
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? value : formatStringifyAmount(parsed, digits);
-};
+const formatNumber = (value: number | null | undefined, digits = 2): string =>
+  value == null ? '' : formatStringifyAmount(value, digits);
 
 const formatDate = (value: string | Date | null | undefined): string =>
   value ? new Date(value).toLocaleDateString() : '';
+
+/** The bank's enum values read better as words than as SCREAMING_SNAKE_CASE. */
+const humanizeEnum = (value: string): string =>
+  value
+    .toLowerCase()
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 
 const SecurityExecutionsTable = ({
   executions,
@@ -243,35 +251,31 @@ const SecurityExecutionsTable = ({
         <TableBody>
           {executions.map(execution => (
             <TableRow key={execution.id}>
-              <TableCell>{formatDate(execution.tradeDate)}</TableCell>
-              <TableCell>{formatDate(execution.valueDate ?? execution.settlementDate)}</TableCell>
+              <TableCell className="whitespace-nowrap">{formatDate(execution.tradeDate)}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                {formatDate(execution.valueDate ?? execution.settlementDate)}
+              </TableCell>
               <TableCell>
                 <div className="flex flex-row flex-wrap items-center gap-1">
-                  <Badge variant="secondary">{execution.tradeType}</Badge>
+                  <Badge variant="secondary">{humanizeEnum(execution.tradeType)}</Badge>
                   {execution.transactionType !== execution.tradeType && (
-                    <Badge variant="outline">{execution.transactionType}</Badge>
+                    <Badge variant="outline">{humanizeEnum(execution.transactionType)}</Badge>
                   )}
                   {execution.paymentType && (
-                    <Badge variant="outline">{execution.paymentType}</Badge>
+                    <Badge variant="outline">{humanizeEnum(execution.paymentType)}</Badge>
                   )}
                 </div>
               </TableCell>
               {/* Quantities can be fractional for ETFs and mutual funds. */}
-              <TableCell>{formatNumeric(execution.quantity, 4)}</TableCell>
-              <TableCell>{formatNumeric(execution.tradePrice, 4)}</TableCell>
+              <TableCell>{formatNumber(execution.quantity, 4)}</TableCell>
+              <TableCell>{formatNumber(execution.tradePrice, 4)}</TableCell>
+              <TableCell className="whitespace-nowrap">{execution.netValue?.formatted}</TableCell>
               <TableCell className="whitespace-nowrap">
-                {formatNumeric(execution.netValueTradeCurrency ?? execution.netValueNis)}{' '}
-                <span className="text-gray-500">
-                  {execution.netValueTradeCurrency ? (execution.tradeCurrency ?? '') : 'ILS'}
-                </span>
+                {(execution.tradeCommission ?? execution.managementFees)?.formatted}
               </TableCell>
-              <TableCell>
-                {formatNumeric(
-                  execution.tradeCommissionValueTradeCurrency ??
-                    execution.managementFeesValueTradeCurrency,
-                )}
+              <TableCell className="whitespace-nowrap">
+                {execution.israelTaxValue?.formatted}
               </TableCell>
-              <TableCell>{formatNumeric(execution.israelTaxValue)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

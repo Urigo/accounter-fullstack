@@ -33,6 +33,43 @@ export enum Currency {
   Usdc = 'USDC',
 }
 
+/**
+ * The bank's own vocabularies for a securities execution, mirrored from the closed enums the
+ * scraper validates against (`TRADE_TYPES`, `TRANSACTION_TYPES`, `PAYMENT_TYPES` in
+ * `packages/modern-poalim-scraper/src/zod-schemas/hapoalim-securities-transactions-schema.ts`).
+ * The Hebrew → enum translation lives in
+ * `modules/foreign-securities/helpers/security-execution-enums.helper.ts`.
+ */
+export enum SecurityTradeType {
+  Buy = 'BUY',
+  DividendPayment = 'DIVIDEND_PAYMENT',
+  InterestPayment = 'INTEREST_PAYMENT',
+  Redemption = 'REDEMPTION',
+  Sell = 'SELL',
+  StockDistribution = 'STOCK_DISTRIBUTION',
+  TransferIn = 'TRANSFER_IN',
+  TransferInTwoSided = 'TRANSFER_IN_TWO_SIDED',
+  TransferOut = 'TRANSFER_OUT',
+  TransferOutTwoSided = 'TRANSFER_OUT_TWO_SIDED',
+}
+
+export enum SecurityTransactionType {
+  Buy = 'BUY',
+  PaymentsAndCorporateActions = 'PAYMENTS_AND_CORPORATE_ACTIONS',
+  Sell = 'SELL',
+  Transfers = 'TRANSFERS',
+}
+
+export enum SecurityPaymentType {
+  CompulsoryTenderOffer = 'COMPULSORY_TENDER_OFFER',
+  Dividend = 'DIVIDEND',
+  DividendInKind = 'DIVIDEND_IN_KIND',
+  Expiration = 'EXPIRATION',
+  Interest = 'INTEREST',
+  Redemption = 'REDEMPTION',
+  ShareConsolidation = 'SHARE_CONSOLIDATION',
+}
+
 export enum DocumentType {
   CreditInvoice = 'CREDIT_INVOICE',
   Invoice = 'INVOICE',

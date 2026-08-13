@@ -167,14 +167,16 @@ async function insertExecution({
   accountNumber = ACCOUNT_NUMBER,
   security,
   tradeDate = '2024-03-10',
-  tradeType = 'Buy',
+  tradeType = 'קניה',
   netValueTradeCurrency = '1000.00',
 }: ExecutionFixture) {
+  // trade_type/transaction_type carry the bank's own Hebrew vocabulary; on a plain buy or sale
+  // the two agree (an invariant the scraper's zod schema enforces).
   await pool.query(
     `INSERT INTO accounter_schema.poalim_securities_transactions (
        owner_id, bank_number, branch_number, account_number, security, trade_date,
        trade_type, transaction_type, nv, trade_price, net_value_trade_currency, trade_currency
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Trade', 10, 100, $8, 'USD')`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, 10, 100, $8, 'דולר ארה"ב')`,
     [
       ownerId,
       BANK_NUMBER,
@@ -378,7 +380,7 @@ describe('getChargeSecurities — matched executions', () => {
     const securities = await provider.getChargeSecurities(CHARGE_ID);
 
     expect(securities[0].executions).toHaveLength(1);
-    expect(securities[0].executions[0].trade_type).toBe('Buy');
+    expect(securities[0].executions[0].trade_type).toBe('קניה');
     expect(securities[0].executions[0].net_value_trade_currency).toBe('1000.00');
   });
 
@@ -388,7 +390,7 @@ describe('getChargeSecurities — matched executions', () => {
     await insertExecution({
       security: '5129523',
       netValueTradeCurrency: '2500.50',
-      tradeType: 'Sell',
+      tradeType: 'מכירה',
     });
     const provider = createProvider([
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523', amount: '2500.50' },

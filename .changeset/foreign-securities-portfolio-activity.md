@@ -22,5 +22,16 @@ attach all of them to every cash movement; a candidate in the window that matche
 dropped rather than shown as a maybe.
 
 Schema: `ChargeSecurity.executions: [SecurityExecution!]!` and a new `SecurityExecution` type
-exposing a curated ~20-field subset of the ~100 source columns. Numeric values are `String` — the
-source columns are Postgres `numeric` and a `Float` would lose precision on quantities and prices.
+exposing a curated subset of the ~100 source columns, normalized to the codebase's own vocabulary
+rather than the bank's:
+
+- dates are `TimelessDate` (the columns are `DATE`), quantities and prices are `Float`;
+- every amount is a `FinancialAmount` built with `formatFinancialAmount` — trade-currency values
+  carry the execution's own currency, the bank's NIS-suffixed columns carry `Currency.Ils`;
+- `formatCurrency` now recognizes the securities feed's Hebrew currency labels (`שקל חדש`,
+  `דולר ארה"ב`);
+- `tradeType`, `transactionType` and `paymentType` are GraphQL enums mirroring the closed
+  vocabularies the scraper already validates against (`TRADE_TYPES`, `TRANSACTION_TYPES`,
+  `PAYMENT_TYPES` in `hapoalim-securities-transactions-schema.ts`). A value the scraper accepts but
+  the translation map does not know about raises a named error pointing at both definitions, rather
+  than being silently dropped.

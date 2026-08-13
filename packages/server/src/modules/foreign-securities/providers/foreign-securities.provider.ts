@@ -63,7 +63,6 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     net_value_settlement_currency,
     net_value_nis,
     trade_currency,
-    settlement_currency,
     trade_commission_value_trade_currency,
     management_fees_value_trade_currency,
     israe_tax_value,
@@ -71,8 +70,7 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     real_profit_loss_nis,
     payment_type,
     symbol,
-    isin,
-    order_type
+    isin
   FROM accounter_schema.poalim_securities_transactions
   WHERE security = ANY($securities!)
     AND bank_number = ANY($bankNumbers!)
