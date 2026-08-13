@@ -2,9 +2,23 @@ import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
+import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
+import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import {
+  DEFAULT_DATE_WINDOW_DAYS,
+  matchSecurityExecutions,
+  type AccountTuple,
+  type MatchableTransaction,
+} from '../helpers/match-security-executions.helper.js';
 import { extractSecurityKeys } from '../helpers/security-key.helper.js';
-import type { ChargeSecurityProto, IGetSecuritiesByKeysQuery, SecurityRow } from '../types.js';
+import type {
+  ChargeSecurityProto,
+  IGetSecuritiesByKeysQuery,
+  IGetSecurityExecutionsQuery,
+  SecurityExecutionRow,
+  SecurityRow,
+} from '../types.js';
 
 /**
  * No owner_id predicate: accounter_schema.poalim_securities is FORCE RLS with a
@@ -20,6 +34,59 @@ const getSecuritiesByKeys = sql<IGetSecuritiesByKeysQuery>`
   WHERE security_key = ANY($securityKeys!)
   ORDER BY security_key, as_of_date DESC;`;
 
+/**
+ * A coarse prefilter, not the match itself: the ANY(...) predicates form a cross-product over
+ * the charge's keys and accounts, and the date range spans every transaction on the charge.
+ * `matchSecurityExecutions` does the exact per-row pairing in memory — same shape as
+ * `fetchPoalimSecuritiesTransactionsByKeys` in the ingestion provider.
+ *
+ * Tenant scoping is RLS again (FORCE ROW LEVEL SECURITY + tenant_isolation), hence no
+ * owner_id predicate.
+ */
+const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
+  SELECT
+    id,
+    security,
+    bank_number,
+    branch_number,
+    account_number,
+    trade_date,
+    value_date,
+    settlement_date,
+    payment_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    trade_gross_value_trade_currency,
+    net_value_trade_currency,
+    net_value_settlement_currency,
+    net_value_nis,
+    trade_currency,
+    settlement_currency,
+    trade_commission_value_trade_currency,
+    management_fees_value_trade_currency,
+    israe_tax_value,
+    nominal_profit_loss_nis,
+    real_profit_loss_nis,
+    payment_type,
+    symbol,
+    isin,
+    order_type
+  FROM accounter_schema.poalim_securities_transactions
+  WHERE security = ANY($securities!)
+    AND bank_number = ANY($bankNumbers!)
+    AND branch_number = ANY($branchNumbers!)
+    AND account_number = ANY($accountNumbers!)
+    AND (
+      trade_date BETWEEN $fromDate! AND $toDate!
+      OR value_date BETWEEN $fromDate! AND $toDate!
+      OR settlement_date BETWEEN $fromDate! AND $toDate!
+      OR payment_date BETWEEN $fromDate! AND $toDate!
+    );`;
+
+const MS_PER_DAY = 86_400_000;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -28,6 +95,8 @@ export class ForeignSecuritiesProvider {
   constructor(
     private db: TenantAwareDBClient,
     private transactionsProvider: TransactionsProvider,
+    private financialAccountsProvider: FinancialAccountsProvider,
+    private financialBankAccountsProvider: FinancialBankAccountsProvider,
   ) {}
 
   private async batchSecuritiesByKeys(securityKeys: readonly string[]) {
@@ -40,6 +109,85 @@ export class ForeignSecuritiesProvider {
   public securityByKeyLoader = new DataLoader((keys: readonly string[]) =>
     this.batchSecuritiesByKeys(keys),
   );
+
+  /**
+   * The Poalim identity (bank/branch/account) of each account the given transactions touch.
+   * `financial_accounts.account_number` is text while the poalim_* tables store it as an
+   * integer, so non-numeric account numbers (and non-bank accounts, which have no
+   * financial_bank_accounts row) simply drop out — they can never match an execution.
+   */
+  private async getAccountTuples(
+    accountIds: readonly string[],
+  ): Promise<Map<string, AccountTuple>> {
+    const tuples = new Map<string, AccountTuple>();
+
+    await Promise.all(
+      accountIds.map(async accountId => {
+        const [account, bankAccount] = await Promise.all([
+          this.financialAccountsProvider.getFinancialAccountByAccountIDLoader.load(accountId),
+          this.financialBankAccountsProvider.getFinancialBankAccountByIdLoader.load(accountId),
+        ]);
+        if (!account || !bankAccount) {
+          return;
+        }
+
+        const accountNumber = Number(account.account_number);
+        if (!Number.isInteger(accountNumber)) {
+          return;
+        }
+
+        tuples.set(accountId, {
+          bankNumber: bankAccount.bank_number,
+          branchNumber: bankAccount.branch_number,
+          accountNumber,
+        });
+      }),
+    );
+
+    return tuples;
+  }
+
+  /**
+   * Ingested portfolio executions matched to the charge's transactions, grouped by security
+   * key. Returns an empty map when the charge touches no resolvable Poalim account, so a
+   * charge whose accounts predate the bank-account backfill degrades to "no activity" rather
+   * than erroring.
+   */
+  private async getMatchedExecutions(
+    transactions: readonly MatchableTransaction[],
+    securityKeys: readonly string[],
+  ): Promise<Map<string, SecurityExecutionRow[]>> {
+    const accountTuples = await this.getAccountTuples([
+      ...new Set(transactions.map(transaction => transaction.account_id)),
+    ]);
+    if (accountTuples.size === 0) {
+      return new Map();
+    }
+
+    const dates = transactions.flatMap(transaction =>
+      [transaction.event_date, transaction.debit_date_override ?? transaction.debit_date]
+        .filter((date): date is Date => date != null)
+        .map(date => date.getTime()),
+    );
+    if (dates.length === 0) {
+      return new Map();
+    }
+
+    const tuples = [...accountTuples.values()];
+    const candidates = await getSecurityExecutions.run(
+      {
+        securities: [...securityKeys],
+        bankNumbers: [...new Set(tuples.map(tuple => tuple.bankNumber))],
+        branchNumbers: [...new Set(tuples.map(tuple => tuple.branchNumber))],
+        accountNumbers: [...new Set(tuples.map(tuple => tuple.accountNumber))],
+        fromDate: new Date(Math.min(...dates) - DEFAULT_DATE_WINDOW_DAYS * MS_PER_DAY),
+        toDate: new Date(Math.max(...dates) + DEFAULT_DATE_WINDOW_DAYS * MS_PER_DAY),
+      },
+      this.db,
+    );
+
+    return matchSecurityExecutions(transactions, candidates, accountTuples);
+  }
 
   /**
    * The securities a charge's transactions reference, keyed off the security key each
@@ -67,7 +215,10 @@ export class ForeignSecuritiesProvider {
     }
 
     const keys = [...transactionIdsByKey.keys()].sort();
-    const details = await this.securityByKeyLoader.loadMany(keys);
+    const [details, executionsByKey] = await Promise.all([
+      this.securityByKeyLoader.loadMany(keys),
+      this.getMatchedExecutions(transactions, keys),
+    ]);
 
     return keys.map((key, index) => {
       const detail = details[index];
@@ -78,6 +229,7 @@ export class ForeignSecuritiesProvider {
         // the same as "not ingested" so one bad key can't blank the whole section.
         details: detail instanceof Error ? null : (detail as SecurityRow | null),
         transactionIds: transactionIdsByKey.get(key) ?? [],
+        executions: executionsByKey.get(key) ?? [],
       };
     });
   }

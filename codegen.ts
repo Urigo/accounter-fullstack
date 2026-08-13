@@ -155,6 +155,7 @@ const config: CodegenConfig = {
           Salary: '../modules/salaries/types.js#IGetAllSalaryRecordsResult',
           SalaryCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           Security: '../modules/foreign-securities/types.js#SecurityRow',
+          SecurityExecution: '../modules/foreign-securities/types.js#SecurityExecutionRow',
           Shaam6111Report: '../modules/reports/types.js#Shaam6111ReportProto',
           SortCode: '../modules/sort-codes/types.js#IGetSortCodesByIdsResult',
           Tag: '../modules/tags/types.js#IGetAllTagsResult',

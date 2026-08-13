@@ -6,6 +6,8 @@ import { dropRlsRole, ensureRlsRole, runAsRlsRole } from '../../../../__tests__/
 import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
+import type { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
+import type { FinancialBankAccountsProvider } from '../../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { ForeignSecuritiesProvider } from '../foreign-securities.provider.js';
 
@@ -17,6 +19,11 @@ const TEST_OWNER_ID = '00000000-0000-0000-0000-0000000006ec';
 const OTHER_OWNER_ID = '00000000-0000-0000-0000-0000000006ed';
 
 const CHARGE_ID = '00000000-0000-0000-0000-00000000c001';
+
+const ACCOUNT_ID = '00000000-0000-0000-0000-00000000a001';
+const BANK_NUMBER = 12;
+const BRANCH_NUMBER = 615;
+const ACCOUNT_NUMBER = 100000;
 
 function createMockAuthContextProvider(businessId: string): AuthContextProvider {
   return {
@@ -38,29 +45,80 @@ function createMockAuthContextProvider(businessId: string): AuthContextProvider 
   } as unknown as AuthContextProvider;
 }
 
+type StubTransaction = {
+  id: string;
+  source_description: string | null;
+  amount?: string;
+  event_date?: Date;
+  debit_date?: Date | null;
+  debit_date_override?: Date | null;
+  account_id?: string;
+};
+
 /**
- * The provider reads only `id` and `source_description` off each transaction. Stubbing the
- * loader keeps these cases focused on the DB-dependent behaviour (RLS scoping and the
- * freshest-row pick) instead of seeding the financial_accounts → transactions_raw_list →
- * transactions FK chain, none of which this code touches.
+ * The provider reads only the identity, description, account and date/amount fields off each
+ * transaction. Stubbing the loader keeps these cases focused on the DB-dependent behaviour
+ * (RLS scoping, the freshest-row pick, execution matching) instead of seeding the
+ * financial_accounts → transactions_raw_list → transactions FK chain.
  */
-function createStubTransactionsProvider(
-  transactions: Array<{ id: string; source_description: string | null }>,
-): TransactionsProvider {
+function createStubTransactionsProvider(transactions: StubTransaction[]): TransactionsProvider {
   return {
     transactionsByChargeIDLoader: {
-      load: (_chargeId: string) => Promise.resolve(transactions),
+      load: (_chargeId: string) =>
+        Promise.resolve(
+          transactions.map(transaction => ({
+            amount: '-1000.00',
+            event_date: new Date('2024-03-10T00:00:00'),
+            debit_date: null,
+            debit_date_override: null,
+            account_id: ACCOUNT_ID,
+            ...transaction,
+          })),
+        ),
     },
   } as unknown as TransactionsProvider;
 }
 
+/**
+ * The account lookups are pure id → row maps in the real providers; stubbing them keeps this
+ * suite off the financial_accounts fixtures while still exercising the tuple resolution
+ * (text account_number → integer) the provider does.
+ */
+function createStubFinancialAccountsProvider(accountNumber = String(ACCOUNT_NUMBER)) {
+  return {
+    getFinancialAccountByAccountIDLoader: {
+      load: (id: string) =>
+        Promise.resolve(id === ACCOUNT_ID ? { id, account_number: accountNumber } : undefined),
+    },
+  } as unknown as FinancialAccountsProvider;
+}
+
+function createStubFinancialBankAccountsProvider() {
+  return {
+    getFinancialBankAccountByIdLoader: {
+      load: (id: string) =>
+        Promise.resolve(
+          id === ACCOUNT_ID
+            ? { id, bank_number: BANK_NUMBER, branch_number: BRANCH_NUMBER }
+            : undefined,
+        ),
+    },
+  } as unknown as FinancialBankAccountsProvider;
+}
+
 function createProvider(
-  transactions: Array<{ id: string; source_description: string | null }>,
+  transactions: StubTransaction[],
   businessId = TEST_OWNER_ID,
+  accountNumber?: string,
 ) {
   const authContextProvider = createMockAuthContextProvider(businessId);
   const dbClient = new TenantAwareDBClient(new DBProvider(pool), authContextProvider);
-  return new ForeignSecuritiesProvider(dbClient, createStubTransactionsProvider(transactions));
+  return new ForeignSecuritiesProvider(
+    dbClient,
+    createStubTransactionsProvider(transactions),
+    createStubFinancialAccountsProvider(accountNumber),
+    createStubFinancialBankAccountsProvider(),
+  );
 }
 
 type SecurityFixture = {
@@ -92,6 +150,44 @@ async function insertSecurity({
   );
 }
 
+type ExecutionFixture = {
+  ownerId?: string;
+  branchNumber?: number;
+  accountNumber?: number;
+  security: string;
+  tradeDate?: string;
+  tradeType?: string;
+  netValueTradeCurrency?: string;
+};
+
+// Synthetic values only — never lifted from a real bank capture.
+async function insertExecution({
+  ownerId = TEST_OWNER_ID,
+  branchNumber = BRANCH_NUMBER,
+  accountNumber = ACCOUNT_NUMBER,
+  security,
+  tradeDate = '2024-03-10',
+  tradeType = 'Buy',
+  netValueTradeCurrency = '1000.00',
+}: ExecutionFixture) {
+  await pool.query(
+    `INSERT INTO accounter_schema.poalim_securities_transactions (
+       owner_id, bank_number, branch_number, account_number, security, trade_date,
+       trade_type, transaction_type, nv, trade_price, net_value_trade_currency, trade_currency
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Trade', 10, 100, $8, 'USD')`,
+    [
+      ownerId,
+      BANK_NUMBER,
+      branchNumber,
+      accountNumber,
+      security,
+      tradeDate,
+      tradeType,
+      netValueTradeCurrency,
+    ],
+  );
+}
+
 beforeAll(async () => {
   pool = await connectTestDb();
   await runMigrationsIfNeeded(pool);
@@ -111,12 +207,17 @@ beforeAll(async () => {
     );
   }
 
-  await ensureRlsRole(pool, { grants: [{ table: 'poalim_securities', privileges: 'SELECT' }] });
+  await ensureRlsRole(pool, {
+    grants: [
+      { table: 'poalim_securities', privileges: 'SELECT' },
+      { table: 'poalim_securities_transactions', privileges: 'SELECT' },
+    ],
+  });
 });
 
 afterAll(async () => {
   await dropRlsRole(pool);
-  // poalim_securities rows cascade with the owning business.
+  // poalim_securities and poalim_securities_transactions rows cascade with the owning business.
   for (const ownerId of [TEST_OWNER_ID, OTHER_OWNER_ID]) {
     await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [ownerId]);
     await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [ownerId]);
@@ -127,7 +228,18 @@ afterAll(async () => {
 
 // DELETE rather than TRUNCATE CASCADE: TRUNCATE takes ACCESS EXCLUSIVE locks that deadlock
 // against concurrently-running integration suites.
-beforeEach(() => pool.query('DELETE FROM accounter_schema.poalim_securities'));
+// Scoped to this suite's owners: the poalim_* tables are shared with the concurrently-running
+// scraper-ingestion suite, and an unqualified DELETE wipes its fixtures mid-test.
+beforeEach(async () => {
+  const owners = [TEST_OWNER_ID, OTHER_OWNER_ID];
+  await pool.query('DELETE FROM accounter_schema.poalim_securities WHERE owner_id = ANY($1)', [
+    owners,
+  ]);
+  await pool.query(
+    'DELETE FROM accounter_schema.poalim_securities_transactions WHERE owner_id = ANY($1)',
+    [owners],
+  );
+});
 
 describe('getChargeSecurities', () => {
   it('resolves a key from a transaction description to its ingested security', async () => {
@@ -242,6 +354,113 @@ describe('getChargeSecurities', () => {
         const result = await client.query(
           `SELECT security_key FROM accounter_schema.poalim_securities
            WHERE security_key = ANY($1)`,
+          [['5129523']],
+        );
+        return result.rows;
+      });
+
+      expect(rows).toEqual([]);
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  });
+});
+
+describe('getChargeSecurities — matched executions', () => {
+  it('attaches the execution behind the charge transaction', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523', netValueTradeCurrency: '1000.00' });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
+    ]);
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions).toHaveLength(1);
+    expect(securities[0].executions[0].trade_type).toBe('Buy');
+    expect(securities[0].executions[0].net_value_trade_currency).toBe('1000.00');
+  });
+
+  it('picks the same-day execution whose amount matches the transaction', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523', netValueTradeCurrency: '1000.00' });
+    await insertExecution({
+      security: '5129523',
+      netValueTradeCurrency: '2500.50',
+      tradeType: 'Sell',
+    });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז מכירה 0005129523', amount: '2500.50' },
+    ]);
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions.map(e => e.net_value_trade_currency)).toEqual(['2500.50']);
+  });
+
+  it('excludes an execution booked in another account', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523', accountNumber: 100001 });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
+    ]);
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions).toEqual([]);
+  });
+
+  it('excludes an execution whose amount does not match', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523', netValueTradeCurrency: '4321.00' });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
+    ]);
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions).toEqual([]);
+  });
+
+  it('excludes an execution far outside the transaction date window', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523', tradeDate: '2024-01-05' });
+    const provider = createProvider([
+      { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
+    ]);
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions).toEqual([]);
+  });
+
+  it('returns no executions when the account number is not a Poalim integer', async () => {
+    await insertSecurity({ securityKey: '5129523' });
+    await insertExecution({ security: '5129523' });
+    const provider = createProvider(
+      [{ id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' }],
+      TEST_OWNER_ID,
+      'IL12-3456',
+    );
+
+    const securities = await provider.getChargeSecurities(CHARGE_ID);
+
+    expect(securities[0].executions).toEqual([]);
+  });
+
+  it("does not expose another tenant's executions under the tenant_isolation policy", async () => {
+    await insertExecution({ ownerId: OTHER_OWNER_ID, security: '5129523' });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [TEST_OWNER_ID]);
+
+      const rows = await runAsRlsRole(client, async () => {
+        const result = await client.query(
+          `SELECT security FROM accounter_schema.poalim_securities_transactions
+           WHERE security = ANY($1)`,
           [['5129523']],
         );
         return result.rows;

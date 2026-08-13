@@ -15,6 +15,42 @@ export default gql`
     details: Security
     " The charge's transactions whose description carries this key "
     transactions: [Transaction!]!
+    " Ingested portfolio executions matched to those transactions by account, date and amount "
+    executions: [SecurityExecution!]!
+  }
+
+  " A single executed action in a Poalim securities portfolio, matched to a charge transaction. Numeric values are strings: the source columns are Postgres numeric, and a Float would lose precision on quantities and prices "
+  type SecurityExecution {
+    id: UUID!
+    " Trade (execution) date "
+    tradeDate: DateTime!
+    valueDate: DateTime
+    settlementDate: DateTime
+    " Set for corporate actions such as dividends "
+    paymentDate: DateTime
+    " Direction, as reported by the bank "
+    tradeType: String!
+    transactionType: String!
+    " Quantity — source field NV "
+    quantity: String
+    tradePrice: String
+    tradeGrossValueTradeCurrency: String
+    netValueTradeCurrency: String
+    netValueSettlementCurrency: String
+    netValueNis: String
+    " Kept as free strings, not the Currency enum, for source fidelity "
+    tradeCurrency: String
+    settlementCurrency: String
+    tradeCommissionValueTradeCurrency: String
+    managementFeesValueTradeCurrency: String
+    " Source column israe_tax_value — the missing letter is the bank's "
+    israelTaxValue: String
+    nominalProfitLossNis: String
+    realProfitLossNis: String
+    paymentType: String
+    symbol: String
+    isin: String
+    orderType: String
   }
 
   " Static reference details of a security held in a Poalim trading account "
