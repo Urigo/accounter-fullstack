@@ -50,7 +50,7 @@
   "devDependencies": {
     "@0no-co/graphqlsp": "1.17.5",
     "@changesets/changelog-github": "1.0.0",
-    "@changesets/cli": "2.31.1",
+    "@changesets/cli": "3.0.0",
     "@eslint/compat": "2.1.0",
     "@eslint/eslintrc": "3.3.6",
     "@eslint/js": "10.0.1",
