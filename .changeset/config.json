@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
+  "$schema": "https://unpkg.com/@changesets/config@4.0.0/schema.json",
   "changelog": ["@changesets/changelog-github", { "repo": "urigo/accounter-fullstack" }],
   "commit": false,
   "fixed": [],
@@ -8,6 +8,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": ["@accounter-helper/*"],
+  "privatePackages": { "version": true, "tag": false },
   "snapshot": {
     "useCalculatedVersion": true,
     "prereleaseTemplate": "{tag}-{datetime}-{commit}"
