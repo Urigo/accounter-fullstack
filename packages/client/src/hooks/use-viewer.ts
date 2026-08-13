@@ -12,7 +12,7 @@ import { ViewerDocument, type ViewerQuery } from '../gql/graphql.js';
         id
         businessId
         businessName
-        role
+        roleId
         expiresAt
       }
     }

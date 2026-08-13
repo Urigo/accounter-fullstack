@@ -30,7 +30,7 @@ export default gql`
     id: UUID!
     businessId: UUID!
     businessName: String
-    role: String!
+    roleId: String!
     expiresAt: DateTime!
   }
 `;

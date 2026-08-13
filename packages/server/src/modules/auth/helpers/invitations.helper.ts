@@ -93,6 +93,19 @@ export function invalidTokenError(): GraphQLError {
   });
 }
 
+/**
+ * The claim path's rejection: no token is involved there, so the message must not
+ * mention one. It deliberately keeps the TOKEN_INVALID code and stays vague about
+ * which precondition failed — an unverified email, a wrong recipient, an expired
+ * or already-accepted invitation, or an id that never existed all report the same
+ * thing, so the mutation cannot be used to probe for invitation ids.
+ */
+export function unavailableInvitationError(): GraphQLError {
+  return new GraphQLError('This invitation is not available for your account', {
+    extensions: { code: 'TOKEN_INVALID' },
+  });
+}
+
 export function expiredTokenError(): GraphQLError {
   return new GraphQLError('Invitation token expired', {
     extensions: { code: 'TOKEN_EXPIRED' },

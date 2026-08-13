@@ -9,6 +9,7 @@ import {
   expiredTokenError,
   invalidTokenError,
   mapAuth0Error,
+  unavailableInvitationError,
 } from '../helpers/invitations.helper.js';
 import type {
   IGetInvitationByIdForAcceptanceQuery,
@@ -149,7 +150,7 @@ export class AcceptInvitationsProvider {
     identity: { auth0UserId: string; email: string | null; emailVerified: boolean },
   ) {
     if (!identity.emailVerified || !identity.email) {
-      throw invalidTokenError();
+      throw unavailableInvitationError();
     }
 
     const client = await this.dbProvider.pool.connect();
@@ -166,7 +167,7 @@ export class AcceptInvitationsProvider {
         // Pending, unexpired invitations are the only claimable ones. Anything
         // else (accepted, expired, unknown id) is reported identically so the
         // mutation cannot be used to probe for invitation ids.
-        throw invalidTokenError();
+        throw unavailableInvitationError();
       }
 
       const result = await this.finalizeAcceptance(

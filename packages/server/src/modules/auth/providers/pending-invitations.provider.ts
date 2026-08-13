@@ -5,7 +5,7 @@ export type PendingInvitation = {
   id: string;
   businessId: string;
   businessName: string | null;
-  role: string;
+  roleId: string;
   expiresAt: Date;
 };
 
@@ -55,7 +55,7 @@ export class PendingInvitationsProvider {
       id: row.id,
       businessId: row.business_id,
       businessName: row.business_name,
-      role: row.role_id,
+      roleId: row.role_id,
       expiresAt: row.expires_at,
     }));
   }
