@@ -265,7 +265,7 @@ describe('uploadPoalimSecurities', () => {
     bankNumber: 12,
     branchNumber: 615,
     accountNumber: 100000,
-    asOfDate: '2024-01-15T10:00:00.000+02:00',
+    asOfDate: '2024-01-15T10:00:00.1886720+02:00',
     securityKey: '1234567',
     engName: 'Example Corp',
     hebName: 'אקזמפל',
@@ -333,7 +333,7 @@ describe('uploadPoalimSecurities', () => {
   it('does not report a change when only asOfDate moves', async () => {
     await provider.uploadPoalimSecurities([baseSecurity]);
     const result = await provider.uploadPoalimSecurities([
-      { ...baseSecurity, asOfDate: '2024-06-30T10:00:00.000+03:00' },
+      { ...baseSecurity, asOfDate: '2024-06-30T10:00:00.1886720+03:00' },
     ]);
     expect(result.changedTransactions).toEqual([]);
   });
@@ -373,15 +373,17 @@ describe('uploadPoalimSecurities', () => {
 describe('uploadPoalimSecuritiesTransactions', () => {
   beforeEach(() => truncate('poalim_securities_transactions'));
 
-  // Synthetic values only — never lifted from a real bank capture.
+  // Synthetic values only — never lifted from a real bank capture. Timestamps keep
+  // the bank's .NET round-trip shape (7 fractional digits, Israel offset, and the
+  // offset-less 0001-01-01 sentinel) so the fixtures exercise the real input format.
   const baseTransaction: PoalimSecurityTransactionInput = {
     bankNumber: 12,
     branchNumber: 615,
     accountNumber: 100000,
     security: '1234567',
-    tradeDate: '2024-01-15T00:00:00.000+02:00',
-    valueDate: '2024-01-16T00:00:00.000+02:00',
-    settlementDate: '2024-01-17T00:00:00.000+02:00',
+    tradeDate: '2024-01-15T00:00:00.0000000+02:00',
+    valueDate: '2024-01-16T00:00:00.0000000+02:00',
+    settlementDate: '2024-01-17T00:00:00.0000000+02:00',
     tradeType: 'קניה',
     transactionType: 'קניה',
     nv: 10,
@@ -408,8 +410,8 @@ describe('uploadPoalimSecuritiesTransactions', () => {
     capitalTaxValueSettlementCurrency: 0,
     isCancelTransaction: 'לא',
     isJumbo: false,
-    executionDate: '0001-01-01T00:00:00.000Z',
-    lastTranactionDate: '2024-01-15T00:00:00.000+02:00',
+    executionDate: '0001-01-01T00:00:00.0000000',
+    lastTranactionDate: '2024-01-15T00:00:00.0000000+02:00',
     peymentPecentage: 0,
     tradeCurrnecyRate: 1,
     fundPlusAccumulatedInerestValue: 1000,
@@ -422,8 +424,8 @@ describe('uploadPoalimSecuritiesTransactions', () => {
     tradeType: 'דבידנד תשלום',
     transactionType: 'תשלומים ואירועי חברה',
     paymentType: 'דיבידנד',
-    paymentDate: '2024-02-05T00:00:00.000+02:00',
-    exDate: '2024-01-30T00:00:00.000+02:00',
+    paymentDate: '2024-02-05T00:00:00.0000000+02:00',
+    exDate: '2024-01-30T00:00:00.0000000+02:00',
     nv: 0,
     tradePrice: 0,
     netValueTradeCurrency: 22.5,
