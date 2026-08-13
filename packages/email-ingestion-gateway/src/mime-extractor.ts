@@ -131,7 +131,9 @@ export async function extractFromMime(rawMime: Buffer): Promise<ExtractionResult
     body,
     senderEvidence: {
       from: formatAddress(email.from),
-      fromDisplayName: email.from?.name?.trim() || undefined,
+      fromDisplayName: unfold(email.from?.name) || undefined,
+      // postal-mime v3 returns address lists in document order (v2 reversed them),
+      // so [0] is the header's first — i.e. primary — Reply-To address.
       replyTo: formatAddress(email.replyTo?.[0]),
       // Kept as separate fields: X-Original-From is the original *author* (often a
       // display name only), X-Original-Sender the relaying platform. Reading them as
@@ -194,10 +196,25 @@ function toBuffer(content: ArrayBuffer | Uint8Array | string): Buffer {
   return Buffer.from(new Uint8Array(content));
 }
 
+/**
+ * Collapse every whitespace run to a single space and trim.
+ *
+ * Header folding (RFC 5322) inserts `CRLF` + a space **or tab** at arbitrary points in
+ * a long header, and postal-mime v3 unfolds by dropping only the `CRLF` — so the fold's
+ * tab (or run of spaces) survives inside the value and inside display names parsed out
+ * of it. v2 collapsed those runs itself; everything reading this evidence assumes single
+ * spaces (`splitViaDisplayName` looks for a literal `' via '`, the server compares display
+ * names against the tenant's own business names), so normalize here rather than teaching
+ * every consumer about folding.
+ */
+function unfold(value: string | null | undefined): string {
+  return value ? value.replaceAll(/\s+/g, ' ').trim() : '';
+}
+
 /** Render a parsed address as `Name <addr>` (or just the address / display name). */
 function formatAddress(addr: Address | undefined): string | undefined {
   if (!addr) return undefined;
-  const name = addr.name?.trim();
+  const name = unfold(addr.name);
   const address = addr.address?.trim();
   if (name && address) return `${name} <${address}>`;
   return address || name || undefined;
@@ -213,12 +230,15 @@ function headerValue(
 ): string | undefined {
   for (const name of names) {
     const lower = name.toLowerCase();
+    // First occurrence wins, matching postal-mime v3's own duplicate-header resolution
+    // for single-value headers such as `subject` / `from`.
     const found = headers.find(header => header.key.toLowerCase() === lower);
-    if (found?.value) {
+    const value = unfold(found?.value);
+    if (value) {
       try {
-        return decodeWords(found.value);
+        return decodeWords(value);
       } catch {
-        return found.value;
+        return value;
       }
     }
   }
