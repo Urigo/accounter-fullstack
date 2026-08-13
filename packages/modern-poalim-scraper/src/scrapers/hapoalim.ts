@@ -34,9 +34,14 @@ import {
   type HapoalimILSTransactions,
 } from '../zod-schemas/hapoalim-ils-checking-transactions-schema.js';
 import {
-  HapoalimSecuritiesSchema,
-  type HapoalimSecurities,
-} from '../zod-schemas/hapoalim-securities-schema.js';
+  HapoalimSecuritiesInfoSchema,
+  type HapoalimSecuritiesInfo,
+} from '../zod-schemas/hapoalim-securities-info-schema.js';
+import {
+  describeSecuritiesTransactionsError,
+  HapoalimSecuritiesTransactionsSchema,
+  type HapoalimSecuritiesTransactions,
+} from '../zod-schemas/hapoalim-securities-transactions-schema.js';
 import {
   SwiftTransactionSchema,
   type SwiftTransaction,
@@ -221,6 +226,59 @@ export async function hapoalim(
   const startDateString = startDate.toISOString().substr(0, 10).replace(/-/g, '');
   const endDateString = new Date().toISOString().substr(0, 10).replace(/-/g, '');
   // TODO: https://www.npmjs.com/package/node-fetch-cookies
+
+  /** The mytrade API takes its date range as ddMMyyyy, unlike the yyyyMMdd used elsewhere. */
+  const toMytradeDateString = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${date.getFullYear()}`;
+
+  /**
+   * Runs a "mytrade" API call from a short-lived sibling tab.
+   *
+   * That API is only served to callers running on the mytrade SPA's own page, and
+   * the session key it wants is minted server-side when the SPA boots — so the tab
+   * has to load the SPA and the key has to be listened for before navigating (see
+   * captureMytradeSession). Both securities endpoints need this, so it lives here.
+   */
+  async function fetchFromMytrade<TResult>(
+    url: string,
+    method: 'GET' | 'POST',
+  ): Promise<TResult | null> {
+    const tradePage = await page.browser().newPage();
+    try {
+      const sessionPromise = captureMytradeSession(tradePage);
+      // Same origin as every other call; only the REST context is dropped, since the
+      // SPA is served from the site root rather than under it.
+      await tradePage.goto(`${new URL(apiSiteUrl).origin}/mytrade/app`, {
+        waitUntil: 'networkidle2',
+      });
+      const mytradeSession = await sessionPromise;
+      return await fetchPoalimMytradeWithinPage<TResult>(tradePage, url, mytradeSession, method);
+    } finally {
+      await tradePage.close();
+    }
+  }
+
+  /**
+   * mytrade signals failure in the response body rather than by status code, in two
+   * shapes. Returns a human-readable message, or null when the payload looks healthy.
+   */
+  function describeMytradeError(data: unknown): string | null {
+    const record = data as Record<string, unknown>;
+
+    if (record['messageCode'] === 0 && record['severity'] === 'E') {
+      return 'Data seems unreachable. Is the account active?';
+    }
+
+    // e.g. { Exception: { "-ExceptionType": "InvalidSessionException", Message, SessionKey } }
+    const exception = record['Exception'] as Record<string, string> | undefined;
+    if (exception) {
+      return `Poalim mytrade error${
+        exception['-ExceptionType'] ? ` (${exception['-ExceptionType']})` : ''
+      }: ${exception['Message'] ?? 'unknown'}`;
+    }
+
+    return null;
+  }
 
   return {
     getAccountsData: async (): Promise<{
@@ -498,17 +556,19 @@ export async function hapoalim(
      * Static securities reference info from the "mytrade" portfolio app.
      * Live balances and open orders in the same response are ignored.
      *
+     * For the activity inside the portfolio see `getSecuritiesTransactions`.
+     *
      * Unlike every other Poalim endpoint this one addresses the account as
      * `branch-account` (no bank number), and is only served to callers running
      * on the mytrade SPA's own page — so the request is issued from a
      * short-lived sibling tab sharing the logged-in browser context.
      */
-    getSecurities: async (account: {
+    getSecuritiesInfo: async (account: {
       bankNumber: number;
       branchNumber: number;
       accountNumber: number;
     }): Promise<{
-      data: HapoalimSecurities | null;
+      data: HapoalimSecuritiesInfo | null;
       isValid: boolean | null;
       errors?: unknown;
     }> => {
@@ -534,66 +594,82 @@ export async function hapoalim(
       ].join(',');
       const securitiesUrl = `${apiSiteUrl}/mytrade/api/v2/json2/account/view?account=${tradeAccountNumber}&fields=${fields}`;
 
-      const tradePage = await page.browser().newPage();
-      let data: HapoalimSecurities | null;
-      try {
-        // The session key is minted server-side when the SPA boots, so listen
-        // for it before navigating and reuse it — see captureMytradeSession.
-        const sessionPromise = captureMytradeSession(tradePage);
-        // Same origin as every other call; only the REST context is dropped,
-        // since the SPA is served from the site root rather than under it.
-        await tradePage.goto(`${new URL(apiSiteUrl).origin}/mytrade/app`, {
-          waitUntil: 'networkidle2',
-        });
-        const mytradeSession = await sessionPromise;
-        data = await fetchPoalimMytradeWithinPage<HapoalimSecurities>(
-          tradePage,
-          securitiesUrl,
-          mytradeSession,
-        );
-      } finally {
-        await tradePage.close();
-      }
+      const data = await fetchFromMytrade<HapoalimSecuritiesInfo>(securitiesUrl, 'POST');
 
       if (!options?.validateSchema) {
         return { data, isValid: null };
       }
 
       if (!data) {
-        console.log(`No securities data found for account ${tradeAccountNumber}`);
+        console.log(`No securities info found for account ${tradeAccountNumber}`);
         return { data, isValid: true };
       }
 
-      if (
-        (data as unknown as Record<string, unknown>)['messageCode'] === 0 &&
-        (data as unknown as Record<string, unknown>)['severity'] === 'E'
-      ) {
-        return {
-          data,
-          errors: 'Data seems unreachable. Is the account active?',
-          isValid: false,
-        };
+      const error = describeMytradeError(data);
+      if (error) {
+        return { data, errors: error, isValid: false };
       }
 
-      // e.g. { Exception: { "-ExceptionType": "InvalidSessionException", Message, SessionKey } }
-      const exception = (data as unknown as Record<string, Record<string, string> | undefined>)[
-        'Exception'
-      ];
-      if (exception) {
-        return {
-          data,
-          errors: `Poalim mytrade error${
-            exception['-ExceptionType'] ? ` (${exception['-ExceptionType']})` : ''
-          }: ${exception['Message'] ?? 'unknown'}`,
-          isValid: false,
-        };
-      }
-
-      const validation = HapoalimSecuritiesSchema.safeParse(data);
+      const validation = HapoalimSecuritiesInfoSchema.safeParse(data);
       return {
         data: validation.data ?? null,
         isValid: validation.success,
         errors: validation.success ? null : validation.error.issues,
+      };
+    },
+    /**
+     * Executed activity inside the securities portfolio — buys, sells, dividend
+     * and interest payments, redemptions and other corporate actions — from the
+     * "mytrade" order executions history.
+     *
+     * Complements `getSecuritiesInfo`, which returns the static reference info
+     * for the same portfolio. Same account addressing and same sibling-tab
+     * mechanics; this endpoint is a GET and takes a ddMMyyyy date range, which
+     * defaults to the scraper's configured `duration` window.
+     */
+    getSecuritiesTransactions: async (
+      account: {
+        bankNumber: number;
+        branchNumber: number;
+        accountNumber: number;
+      },
+      range?: { fromDate: Date; toDate: Date },
+    ): Promise<{
+      data: HapoalimSecuritiesTransactions | null;
+      isValid: boolean | null;
+      errors?: unknown;
+    }> => {
+      const tradeAccountNumber = `${account.branchNumber}-${account.accountNumber}`;
+      const fromDate = toMytradeDateString(range?.fromDate ?? startDate);
+      const toDate = toMytradeDateString(range?.toDate ?? now);
+      const executionsUrl = `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}&fromDate=${fromDate}&toDate=${toDate}`;
+
+      const data = await fetchFromMytrade<HapoalimSecuritiesTransactions>(executionsUrl, 'GET');
+
+      if (!options?.validateSchema) {
+        return { data, isValid: null };
+      }
+
+      if (!data) {
+        console.log(`No securities transactions found for account ${tradeAccountNumber}`);
+        return { data, isValid: true };
+      }
+
+      const error = describeMytradeError(data);
+      if (error) {
+        return { data, errors: error, isValid: false };
+      }
+
+      const validation = HapoalimSecuritiesTransactionsSchema.safeParse(data);
+      return {
+        data: validation.data ?? null,
+        isValid: validation.success,
+        // The schema is strict enough that a raw issue list is unreadable: it
+        // points at Account.Execution.37.TradeType without saying which row that
+        // is. The helper names the security and trade date per issue.
+        errors: validation.success
+          ? null
+          : describeSecuritiesTransactionsError(data, validation.error),
       };
     },
   };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HapoalimSecuritiesSchema } from '../hapoalim-securities-schema.js';
+import { HapoalimSecuritiesInfoSchema } from '../hapoalim-securities-info-schema.js';
 
 // Synthetic fixtures only — never lifted from a real bank capture.
 const equity = {
@@ -51,27 +51,27 @@ function response(securities: unknown[], extra: Record<string, unknown> = {}) {
   };
 }
 
-describe('HapoalimSecuritiesSchema', () => {
+describe('HapoalimSecuritiesInfoSchema', () => {
   it('accepts a fully-populated security', () => {
-    const result = HapoalimSecuritiesSchema.safeParse(response([equity]));
+    const result = HapoalimSecuritiesInfoSchema.safeParse(response([equity]));
     expect(result.success).toBe(true);
     expect(result.data?.View.Meta.Security).toHaveLength(1);
   });
 
   it('accepts nulls on every nullable field', () => {
-    const result = HapoalimSecuritiesSchema.safeParse(response([fund]));
+    const result = HapoalimSecuritiesInfoSchema.safeParse(response([fund]));
     expect(result.success).toBe(true);
     expect(result.data?.View.Meta.Security[0]?.AllowedOrderDirection).toBeNull();
   });
 
   it('accepts an empty securities list', () => {
-    const result = HapoalimSecuritiesSchema.safeParse(response([]));
+    const result = HapoalimSecuritiesInfoSchema.safeParse(response([]));
     expect(result.success).toBe(true);
   });
 
   // Accounts with no securities portfolio omit Security entirely.
   it('normalises a missing Security array to [] rather than failing', () => {
-    const result = HapoalimSecuritiesSchema.safeParse({
+    const result = HapoalimSecuritiesInfoSchema.safeParse({
       View: { Meta: { '-AsOfDate': '2024-01-15T17:14:14.1886720+02:00' } },
     });
     expect(result.success).toBe(true);
@@ -79,12 +79,12 @@ describe('HapoalimSecuritiesSchema', () => {
   });
 
   it('still requires -AsOfDate when Security is absent', () => {
-    const result = HapoalimSecuritiesSchema.safeParse({ View: { Meta: {} } });
+    const result = HapoalimSecuritiesInfoSchema.safeParse({ View: { Meta: {} } });
     expect(result.success).toBe(false);
   });
 
   it('preserves unmodelled View siblings (Account, Orders) rather than rejecting them', () => {
-    const result = HapoalimSecuritiesSchema.safeParse(
+    const result = HapoalimSecuritiesInfoSchema.safeParse(
       response([equity], { Account: { OnlineValue: 1 }, Orders: { Rezef: { Order: [] } } }),
     );
     expect(result.success).toBe(true);
@@ -93,7 +93,7 @@ describe('HapoalimSecuritiesSchema', () => {
   });
 
   it('rejects an unknown key on a security, so bank-side additions surface', () => {
-    const result = HapoalimSecuritiesSchema.safeParse(
+    const result = HapoalimSecuritiesInfoSchema.safeParse(
       response([{ ...equity, SomeNewBankField: 'x' }]),
     );
     expect(result.success).toBe(false);
@@ -101,12 +101,12 @@ describe('HapoalimSecuritiesSchema', () => {
 
   it('rejects a security missing a required field', () => {
     const { EngName: _dropped, ...withoutEngName } = equity;
-    const result = HapoalimSecuritiesSchema.safeParse(response([withoutEngName]));
+    const result = HapoalimSecuritiesInfoSchema.safeParse(response([withoutEngName]));
     expect(result.success).toBe(false);
   });
 
   it('rejects a response without Meta', () => {
-    const result = HapoalimSecuritiesSchema.safeParse({ View: { Account: {} } });
+    const result = HapoalimSecuritiesInfoSchema.safeParse({ View: { Account: {} } });
     expect(result.success).toBe(false);
   });
 });

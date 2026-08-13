@@ -8,7 +8,7 @@ import { z } from 'zod';
  * omitted. `expirationDate`, `creationEquityNum` and `contractType` were null in
  * every observed row, so they are typed permissively rather than as `z.null()`.
  */
-const PoalimSecuritySchema = z.strictObject({
+const PoalimSecurityInfoSchema = z.strictObject({
   '-Key': z.string(),
   EngName: z.string(),
   HebName: z.string(),
@@ -34,17 +34,17 @@ const PoalimSecuritySchema = z.strictObject({
  * `View.Orders` are intentionally left loose — accounter does not consume them,
  * and pinning them down would make the schema churn on every bank-side change.
  */
-export const HapoalimSecuritiesSchema = z.looseObject({
+export const HapoalimSecuritiesInfoSchema = z.looseObject({
   // Account / Orders intentionally unmodelled
   View: z.looseObject({
     Meta: z.strictObject({
       '-AsOfDate': z.string(),
       // Omitted entirely for accounts with no securities portfolio — that is an
       // empty portfolio, not a malformed response, so normalise it to [].
-      Security: z.array(PoalimSecuritySchema).default([]),
+      Security: z.array(PoalimSecurityInfoSchema).default([]),
     }),
   }),
 });
 
-export type HapoalimSecurities = z.infer<typeof HapoalimSecuritiesSchema>;
-export type PoalimSecurity = z.infer<typeof PoalimSecuritySchema>;
+export type HapoalimSecuritiesInfo = z.infer<typeof HapoalimSecuritiesInfoSchema>;
+export type PoalimSecurityInfo = z.infer<typeof PoalimSecurityInfoSchema>;

@@ -7,10 +7,18 @@ const MessageItemSchema = z
   })
   .strict();
 
+/**
+ * Informational banners the bank attaches to the response ("balances shown are
+ * indicative", and so on). Nothing downstream reads them, and the bank adds new
+ * codes freely — account 615-466803 returned six unlisted ones — so enumerating
+ * them only ever fails the scrape over text we ignore. Kept loose for the same
+ * reason `hapoalim-deposits-schema` does.
+ */
 const MetadataMessagesItemSchema = z
   .object({
     messageCode: z.union([
       z.literal(330),
+      z.literal(11_003),
       z.literal(11_024),
       z.literal(11_038),
       z.literal(11_039),

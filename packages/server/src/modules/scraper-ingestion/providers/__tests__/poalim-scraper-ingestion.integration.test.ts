@@ -7,6 +7,7 @@ import type {
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
   PoalimSecurityInput,
+  PoalimSecurityTransactionInput,
   PoalimSwiftTransactionInput,
 } from '../../../../__generated__/types.js';
 import { Currency } from '../../../../shared/enums.js';
@@ -24,7 +25,7 @@ const TRIGGER_TABLES = [
   'poalim_swift_account_transactions',
 ];
 
-// poalim_securities carries a real owner_id FK, so the tenant this suite acts as
+// poalim_securities and poalim_securities_transactions carry a real owner_id FK, so the tenant this suite acts as
 // must exist in accounter_schema.businesses. Seeded in beforeAll, removed in afterAll.
 const TEST_OWNER_ID = '00000000-0000-0000-0000-0000000005ec';
 
@@ -81,7 +82,7 @@ afterAll(async () => {
   for (const table of TRIGGER_TABLES) {
     await pool.query(`ALTER TABLE accounter_schema.${table} ENABLE TRIGGER ALL`);
   }
-  // Drop the seeded tenant; poalim_securities rows cascade with it.
+  // Drop the seeded tenant; poalim_securities* rows cascade with it.
   await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [TEST_OWNER_ID]);
   await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [
     TEST_OWNER_ID,
@@ -264,7 +265,7 @@ describe('uploadPoalimSecurities', () => {
     bankNumber: 12,
     branchNumber: 615,
     accountNumber: 100000,
-    asOfDate: '2024-01-15T10:00:00.000+02:00',
+    asOfDate: '2024-01-15T10:00:00.1886720+02:00',
     securityKey: '1234567',
     engName: 'Example Corp',
     hebName: 'אקזמפל',
@@ -332,7 +333,7 @@ describe('uploadPoalimSecurities', () => {
   it('does not report a change when only asOfDate moves', async () => {
     await provider.uploadPoalimSecurities([baseSecurity]);
     const result = await provider.uploadPoalimSecurities([
-      { ...baseSecurity, asOfDate: '2024-06-30T10:00:00.000+03:00' },
+      { ...baseSecurity, asOfDate: '2024-06-30T10:00:00.1886720+03:00' },
     ]);
     expect(result.changedTransactions).toEqual([]);
   });
@@ -357,6 +358,166 @@ describe('uploadPoalimSecurities', () => {
 
   it('returns empty result for empty input', async () => {
     const result = await provider.uploadPoalimSecurities([]);
+    expect(result).toEqual({
+      inserted: 0,
+      skipped: 0,
+      insertedIds: [],
+      changedTransactions: [],
+      insertedTransactions: [],
+    });
+  });
+});
+
+// ── Poalim Securities Transactions ────────────────────────────────────────────
+
+describe('uploadPoalimSecuritiesTransactions', () => {
+  beforeEach(() => truncate('poalim_securities_transactions'));
+
+  // Synthetic values only — never lifted from a real bank capture. Timestamps keep
+  // the bank's .NET round-trip shape (7 fractional digits, Israel offset, and the
+  // offset-less 0001-01-01 sentinel) so the fixtures exercise the real input format.
+  const baseTransaction: PoalimSecurityTransactionInput = {
+    bankNumber: 12,
+    branchNumber: 615,
+    accountNumber: 100000,
+    security: '1234567',
+    tradeDate: '2024-01-15T00:00:00.0000000+02:00',
+    valueDate: '2024-01-16T00:00:00.0000000+02:00',
+    settlementDate: '2024-01-17T00:00:00.0000000+02:00',
+    tradeType: 'קניה',
+    transactionType: 'קניה',
+    nv: 10,
+    tradePrice: 100,
+    netValueTradeCurrency: -1000,
+    paymentType: null,
+    paymentDate: null,
+    exDate: null,
+    cancelDate: null,
+    isin: 'US0000000001',
+    symbol: 'EXMP',
+    engName: 'EXAMPLE CORP',
+    hebName: 'אקזמפל',
+    securityGroup: 'מניות ניע"ז',
+    tradeCurrency: 'דולר ארה"ב',
+    settlementCurrency: 'דולר ארה"ב',
+    tradeGrossValueTradeCurrency: 1000,
+    tradeGrossValueNis: 3700,
+    netValueNis: -3.7,
+    netValueSettlementCurrency: -1000,
+    tradeCommissionValueNis: 3.7,
+    israeTaxValue: 0,
+    foreignTaxValueSettlementCurrency: 0,
+    capitalTaxValueSettlementCurrency: 0,
+    isCancelTransaction: 'לא',
+    isJumbo: false,
+    executionDate: '0001-01-01T00:00:00.0000000',
+    lastTranactionDate: '2024-01-15T00:00:00.0000000+02:00',
+    peymentPecentage: 0,
+    tradeCurrnecyRate: 1,
+    fundPlusAccumulatedInerestValue: 1000,
+  };
+
+  // A dividend payment on the same security and trade date: the corporate-action
+  // fields are what separate it from the trade above.
+  const dividend: PoalimSecurityTransactionInput = {
+    ...baseTransaction,
+    tradeType: 'דבידנד תשלום',
+    transactionType: 'תשלומים ואירועי חברה',
+    paymentType: 'דיבידנד',
+    paymentDate: '2024-02-05T00:00:00.0000000+02:00',
+    exDate: '2024-01-30T00:00:00.0000000+02:00',
+    nv: 0,
+    tradePrice: 0,
+    netValueTradeCurrency: 22.5,
+  };
+
+  it('inserts new executions', async () => {
+    const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction, dividend]);
+    expect(result.inserted).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(result.insertedIds).toHaveLength(2);
+    expect(result.changedTransactions).toEqual([]);
+  });
+
+  it('stamps owner_id from the auth context', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const { rows } = await pool.query(
+      'SELECT owner_id FROM accounter_schema.poalim_securities_transactions WHERE security = $1',
+      [baseTransaction.security],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].owner_id).toBe(TEST_OWNER_ID);
+  });
+
+  it('is idempotent — re-uploading the same executions inserts nothing', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction, dividend]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction, dividend]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(2);
+    expect(result.insertedIds).toHaveLength(0);
+    expect(result.changedTransactions).toEqual([]);
+  });
+
+  // The corporate-action dates are part of the dedup key and are null on a trade,
+  // so the unique index has to treat those nulls as equal.
+  it('deduplicates rows whose key includes null corporate-action dates', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('treats two same-day executions on one security as distinct rows', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([
+      { ...baseTransaction, nv: 5, tradePrice: 101, netValueTradeCurrency: -505 },
+    ]);
+    expect(result.inserted).toBe(1);
+  });
+
+  it('treats the same execution on a different account as a distinct row', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([
+      { ...baseTransaction, accountNumber: 200000 },
+    ]);
+    expect(result.inserted).toBe(1);
+  });
+
+  it('reports restated values on an existing execution', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([
+      { ...baseTransaction, tradeGrossValueNis: 3750, isCancelTransaction: 'כן' },
+    ]);
+
+    expect(result.inserted).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.changedTransactions).toHaveLength(1);
+    expect(result.changedTransactions[0].changedFields).toEqual(
+      expect.arrayContaining([
+        { field: 'trade_gross_value_nis', oldValue: '3700', newValue: '3750' },
+        { field: 'is_cancel_transaction', oldValue: 'לא', newValue: 'כן' },
+      ]),
+    );
+  });
+
+  it('summarises inserted rows with the trade date, type and account', async () => {
+    const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    expect(result.insertedTransactions[0]).toMatchObject({
+      date: '2024-01-15',
+      description: 'קניה — EXAMPLE CORP',
+      account: '615-100000',
+    });
+  });
+
+  it('returns correct counts for mixed new and duplicate', async () => {
+    await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+    const result = await provider.uploadPoalimSecuritiesTransactions([baseTransaction, dividend]);
+    expect(result.inserted).toBe(1);
+    expect(result.skipped).toBe(1);
+  });
+
+  it('returns empty result for empty input', async () => {
+    const result = await provider.uploadPoalimSecuritiesTransactions([]);
     expect(result).toEqual({
       inserted: 0,
       skipped: 0,

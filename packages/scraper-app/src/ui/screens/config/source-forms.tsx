@@ -164,7 +164,7 @@ export function PoalimForm({ initial = {}, onSave, onCancel }: PoalimFormProps):
             checked={fields.fetchSecurities}
             onChange={e => setFields(f => ({ ...f, fetchSecurities: e.target.checked }))}
           />
-          Fetch foreign securities
+          Fetch securities portfolio (info + activity)
         </label>
       </div>
       <ListField

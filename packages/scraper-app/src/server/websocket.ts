@@ -406,26 +406,26 @@ function buildTask(
               changedTransactions.push(...(rs.changedTransactions ?? []));
             }
 
-            const securitiesPayload = accountData.securities;
-            if (securitiesPayload) {
+            const securitiesInfoPayload = accountData.securitiesInfo;
+            if (securitiesInfoPayload) {
               // Static reference rows — no TODAY/FUTURE pending filter applies.
-              const securitiesCount = securitiesPayload.View.Meta.Security.length;
+              const securitiesCount = securitiesInfoPayload.View.Meta.Security.length;
               emit({
                 type: 'task-account-txns-uploading',
                 sourceId: src.id,
                 accountId,
-                txnType: 'securities',
+                txnType: 'securitiesInfo',
                 count: securitiesCount,
               });
-              const rsec = await uploadClient.uploadPoalimSecurities(
-                securitiesPayload,
+              const rsec = await uploadClient.uploadPoalimSecuritiesInfo(
+                securitiesInfoPayload,
                 accountData.bankAccount,
               );
               emit({
                 type: 'task-account-txns-done',
                 sourceId: src.id,
                 accountId,
-                txnType: 'securities',
+                txnType: 'securitiesInfo',
                 inserted: rsec.inserted,
                 skipped: rsec.skipped,
               });
@@ -434,6 +434,36 @@ function buildTask(
               allIds.push(...rsec.insertedIds);
               insertedTransactions.push(...(rsec.insertedTransactions ?? []));
               changedTransactions.push(...(rsec.changedTransactions ?? []));
+            }
+
+            const securitiesTransactionsPayload = accountData.securitiesTransactions;
+            if (securitiesTransactionsPayload) {
+              // Executions are settled by definition — nothing pending to filter out.
+              const executionsCount = securitiesTransactionsPayload.Account.Execution.length;
+              emit({
+                type: 'task-account-txns-uploading',
+                sourceId: src.id,
+                accountId,
+                txnType: 'securitiesTransactions',
+                count: executionsCount,
+              });
+              const rsectxn = await uploadClient.uploadPoalimSecuritiesTransactions(
+                securitiesTransactionsPayload,
+                accountData.bankAccount,
+              );
+              emit({
+                type: 'task-account-txns-done',
+                sourceId: src.id,
+                accountId,
+                txnType: 'securitiesTransactions',
+                inserted: rsectxn.inserted,
+                skipped: rsectxn.skipped,
+              });
+              totalInserted += rsectxn.inserted;
+              totalSkipped += rsectxn.skipped;
+              allIds.push(...rsectxn.insertedIds);
+              insertedTransactions.push(...(rsectxn.insertedTransactions ?? []));
+              changedTransactions.push(...(rsectxn.changedTransactions ?? []));
             }
           }
           return {
