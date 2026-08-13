@@ -444,6 +444,81 @@ describe('extractFromMime — senderEvidence', () => {
     expect(result.senderEvidence.originalSender).toBe('orig-sender@vendor.com');
   });
 
+  // postal-mime v3 unfolds long headers by dropping the CRLF only, leaving the fold's
+  // space/tab inside the value (v2 collapsed every whitespace run itself). Everything
+  // downstream — the server's `' via '` split, its display-name comparison against the
+  // tenant's own business names — assumes single spaces, so the extractor normalizes.
+  it('collapses the whitespace RFC 5322 folding leaves in header values', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'X-Original-From: "Vendor Ltd" via',
+        '\tAccount Payables <billing@vendor.com>',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.originalFrom).toBe(
+      '"Vendor Ltd" via Account Payables <billing@vendor.com>',
+    );
+  });
+
+  it('collapses folding whitespace inside the From display name', async () => {
+    const mime = Buffer.from(
+      [
+        'From: "Vendor Ltd" via',
+        '\tAccount Payables <group@tenant.example>',
+        'To: invoices@example.com',
+        'Subject: Test',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.fromDisplayName).toBe('Vendor Ltd via Account Payables');
+    expect(result.senderEvidence.from).toBe('Vendor Ltd via Account Payables <group@tenant.example>');
+  });
+
+  it('takes the first Reply-To address as the primary one', async () => {
+    const mime = makeMultipartMime({
+      replyTo: 'primary@vendor.com, secondary@vendor.com',
+      attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
+    });
+    const result = (await extractFromMime(mime)) as { success: true; senderEvidence: SenderEvidence };
+    expect(result.senderEvidence.replyTo).toBe('primary@vendor.com');
+  });
+
+  it('resolves a duplicated single-value header to its first occurrence', async () => {
+    const mime = Buffer.from(
+      [
+        'From: sender@example.com',
+        'To: invoices@example.com',
+        'Subject: First',
+        'Subject: Second',
+        'X-Original-Sender: first@vendor.com',
+        'X-Original-Sender: second@vendor.com',
+        'Content-Type: text/plain',
+        '',
+        'body',
+      ].join('\r\n'),
+      'utf8',
+    );
+    const result = (await extractFromMime(mime)) as {
+      success: true;
+      subject: string;
+      senderEvidence: SenderEvidence;
+    };
+    expect(result.subject).toBe('First');
+    expect(result.senderEvidence.originalSender).toBe('first@vendor.com');
+  });
+
   it('returns undefined for absent optional headers', async () => {
     const mime = makeMultipartMime({
       attachments: [{ filename: 'a.pdf', mimeType: 'application/pdf', content: fakePdf() }],
