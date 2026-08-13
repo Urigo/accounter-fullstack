@@ -90,7 +90,7 @@
     "eslint-plugin-sonarjs": "4.2.0",
     "eslint-plugin-unicorn": "73.0.0",
     "glob": "13.0.6",
-    "globals": "17.9.0",
+    "globals": "17.11.0",
     "graphql": "16.14.2",
     "graphql-yoga": "5.21.2",
     "husky": "9.1.7",
