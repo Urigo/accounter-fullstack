@@ -133,11 +133,15 @@ export function captureMytradeSession(page: Page, timeoutMs = 30_000): Promise<M
  * the Poalim REST surface: it wants the XSRF token like everything else, plus
  * the SPA's server-issued `session` key, and is called with an empty body
  * rather than `{}`.
+ *
+ * The method is per-endpoint: `account/view` is a POST, while the order
+ * executions history is a GET (sending it as POST returns nothing).
  */
 export async function fetchPoalimMytradeWithinPage<TResult>(
   page: Page,
   url: string,
   mytradeSession: MytradeSession,
+  method: 'GET' | 'POST' = 'POST',
 ): Promise<TResult | null> {
   const xsrfToken = await getXsrfToken(page);
   const headers: Record<string, string> = {};
@@ -151,10 +155,10 @@ export async function fetchPoalimMytradeWithinPage<TResult>(
   headers['Content-Type'] = 'application/json; charset=utf-8';
 
   return page.evaluate(
-    (url, headers) => {
+    (url, headers, method) => {
       return new Promise<TResult | null>((resolve, reject) => {
         fetch(url, {
-          method: 'POST',
+          method,
           credentials: 'include',
           headers: new Headers(headers),
         })
@@ -172,6 +176,7 @@ export async function fetchPoalimMytradeWithinPage<TResult>(
     },
     url,
     headers,
+    method,
   );
 }
 

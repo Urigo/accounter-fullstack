@@ -18,6 +18,9 @@ export const scraperIngestionResolvers: ScraperIngestionModule.Resolvers = {
     uploadPoalimSecurities: (_, { securities }, { injector }) =>
       injector.get(PoalimScraperIngestionProvider).uploadPoalimSecurities(securities),
 
+    uploadPoalimSecuritiesTransactions: (_, { transactions }, { injector }) =>
+      injector.get(PoalimScraperIngestionProvider).uploadPoalimSecuritiesTransactions(transactions),
+
     uploadIsracardTransactions: (_, { transactions }, { injector }) =>
       injector.get(IsracardAmexScraperIngestionProvider).uploadIsracardTransactions(transactions),
 

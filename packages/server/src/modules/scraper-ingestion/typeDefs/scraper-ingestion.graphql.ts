@@ -168,6 +168,101 @@ export default gql`
     symbol: String
   }
 
+  # ── Poalim Securities Transactions ──────────────────────────────────────────
+
+  # Field names mirror the bank's own, misspellings included (israeTaxValue,
+  # peymentPecentage, tradeCurrnecyRate, lastTranactionDate,
+  # fundPlusAccumulatedInerestValue), so the mapping stays mechanical.
+  " A single executed activity inside a Poalim securities portfolio — buy, sell, dividend or interest payment, redemption or other corporate action "
+  input PoalimSecurityTransactionInput {
+    accountName: String
+    accountNumber: Int!
+    accumulatedInterest: Float
+    agentCommissionValueTradeCurrency: Float
+    bankNumber: Int!
+    branchNumber: Int!
+    cancelDate: String
+    capitalTaxPercent: Float
+    capitalTaxValueSettlementCurrency: Float
+    commissionsCurrency: String
+    engName: String
+    engNameFull: String
+    exDate: String
+    exDateBalance: Float
+    exchangeCountry: String
+    executedNv: Float
+    executingBranch: String
+    executionDate: String
+    expiryDate: String
+    financialAccountBranch: String
+    financialAccountNumber: String
+    foreignTaxPercent: Float
+    foreignTaxValueSettlementCurrency: Float
+    fundPlusAccumulatedInerestValue: Float
+    hebName: String
+    hebNameFull: String
+    impliedAssetMult: Float
+    isCancelTransaction: String
+    isJumbo: Boolean
+    isTradable: String
+    isUsEquity: String
+    isin: String
+    israeTaxValue: Float
+    israelTaxPercent: Float
+    israelTaxValueByPaymentsSettlementCurrency: Float
+    issueCurrency: String
+    issueCurrencyToTradeCurrencyRate: Float
+    issuerCountry: String
+    issuerCountryCode: String
+    issuerExchange: String
+    lastTranactionDate: String
+    managementFeesPercent: Float
+    managementFeesValueNis: Float
+    managementFeesValueTradeCurrency: Float
+    netValueNis: Float
+    netValueSettlementCurrency: Float
+    netValueTradeCurrency: Float
+    nominalProfitLossLinkage: Float
+    nominalProfitLossNis: Float
+    nv: Float
+    orderOrigin: String
+    orderSubject: String
+    orderType: String
+    orderedNv: Float
+    orderedValue: Float
+    paymentCurrency: String
+    paymentDate: String
+    paymentLinkingValue: Float
+    paymentName: String
+    paymentType: String
+    personalCurrencyRate: Float
+    peymentPecentage: Float
+    postActionDeductionBalance: Float
+    postDeductionTaxValueNis: Float
+    previousActionsDeductions: Float
+    realProfitLossNis: Float
+    security: String!
+    securityGroup: String
+    securitySubGroup: String
+    settlementCurrency: String
+    settlementDate: String
+    settlementPrice: Float
+    symbol: String
+    symbolOsi: String
+    tradeCommissionPercent: Float
+    tradeCommissionValueNis: Float
+    tradeCommissionValueTradeCurrency: Float
+    tradeCurrency: String
+    tradeCurrnecyRate: Float
+    tradeDate: String!
+    tradeGrossValueNis: Float
+    tradeGrossValueTradeCurrency: Float
+    tradePrice: Float
+    tradeType: String!
+    transactionType: String!
+    valueDate: String
+  }
+
   # ── Poalim Swift ────────────────────────────────────────────────────────────
 
   " Input for a Poalim SWIFT international wire transfer "
@@ -610,6 +705,10 @@ export default gql`
 
     uploadPoalimSecurities(securities: [PoalimSecurityInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")
+
+    uploadPoalimSecuritiesTransactions(
+      transactions: [PoalimSecurityTransactionInput!]!
+    ): ScraperUploadResult! @requiresRole(role: "scraper")
 
     uploadIsracardTransactions(transactions: [IsracardTransactionInput!]!): ScraperUploadResult!
       @requiresRole(role: "scraper")

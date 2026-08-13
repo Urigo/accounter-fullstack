@@ -7,6 +7,7 @@ import type {
   PoalimForeignTransactionInput,
   PoalimIlsTransactionInput,
   PoalimSecurityInput,
+  PoalimSecurityTransactionInput,
   PoalimSwiftTransactionInput,
   ScraperUploadResult,
 } from '../../../__generated__/types.js';
@@ -18,6 +19,7 @@ import {
   validatePoalimForeignTransactions,
   validatePoalimIlsTransactions,
   validatePoalimSecurities,
+  validatePoalimSecuritiesTransactions,
   validatePoalimSwiftTransactions,
 } from '../helpers/validators.helper.js';
 import type {
@@ -27,6 +29,8 @@ import type {
   IFetchPoalimIlsByKeysResult,
   IFetchPoalimSecuritiesByKeysQuery,
   IFetchPoalimSecuritiesByKeysResult,
+  IFetchPoalimSecuritiesTransactionsByKeysQuery,
+  IFetchPoalimSecuritiesTransactionsByKeysResult,
   IFetchPoalimSwiftByIdsQuery,
   IFetchPoalimSwiftByIdsResult,
   IUploadPoalimForeignTransactionsParams,
@@ -38,6 +42,9 @@ import type {
   IUploadPoalimSecuritiesParams,
   IUploadPoalimSecuritiesQuery,
   IUploadPoalimSecuritiesResult,
+  IUploadPoalimSecuritiesTransactionsParams,
+  IUploadPoalimSecuritiesTransactionsQuery,
+  IUploadPoalimSecuritiesTransactionsResult,
   IUploadPoalimSwiftTransactionsParams,
   IUploadPoalimSwiftTransactionsQuery,
   IUploadPoalimSwiftTransactionsResult,
@@ -339,6 +346,250 @@ const uploadPoalimSecurities = sql<IUploadPoalimSecuritiesQuery>`
   )
   ON CONFLICT (owner_id, bank_number, branch_number, account_number, security_key) DO NOTHING
   RETURNING id, bank_number, branch_number, account_number, security_key, eng_name, as_of_date;
+`;
+
+const fetchPoalimSecuritiesTransactionsByKeys = sql<IFetchPoalimSecuritiesTransactionsByKeysQuery>`
+  SELECT
+    id,
+    bank_number,
+    branch_number,
+    account_number,
+    security,
+    trade_date,
+    value_date,
+    settlement_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    net_value_trade_currency,
+    payment_type,
+    payment_date,
+    ex_date,
+    cancel_date,
+    isin,
+    symbol,
+    eng_name,
+    heb_name,
+    security_group,
+    trade_currency,
+    settlement_currency,
+    trade_gross_value_trade_currency,
+    trade_gross_value_nis,
+    net_value_nis,
+    net_value_settlement_currency,
+    trade_commission_value_nis,
+    israe_tax_value,
+    foreign_tax_value_settlement_currency,
+    capital_tax_value_settlement_currency,
+    is_cancel_transaction
+  FROM accounter_schema.poalim_securities_transactions
+  WHERE bank_number = ANY($bankNumbers!)
+    AND branch_number = ANY($branchNumbers!)
+    AND account_number = ANY($accountNumbers!)
+    AND security = ANY($securities!)
+    AND trade_date = ANY($tradeDates!)
+`;
+
+const uploadPoalimSecuritiesTransactions = sql<IUploadPoalimSecuritiesTransactionsQuery>`
+  INSERT INTO accounter_schema.poalim_securities_transactions (
+    owner_id,
+    bank_number,
+    branch_number,
+    account_number,
+    security,
+    trade_date,
+    value_date,
+    settlement_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    net_value_trade_currency,
+    payment_type,
+    payment_date,
+    ex_date,
+    cancel_date,
+    isin,
+    symbol,
+    symbol_osi,
+    eng_name,
+    heb_name,
+    eng_name_full,
+    heb_name_full,
+    security_group,
+    security_sub_group,
+    issue_currency,
+    issuer_country,
+    issuer_country_code,
+    issuer_exchange,
+    exchange_country,
+    is_tradable,
+    is_us_equity,
+    is_jumbo,
+    implied_asset_mult,
+    expiry_date,
+    trade_currency,
+    settlement_currency,
+    commissions_currency,
+    payment_currency,
+    trade_gross_value_trade_currency,
+    trade_gross_value_nis,
+    net_value_nis,
+    net_value_settlement_currency,
+    settlement_price,
+    trade_commission_percent,
+    trade_commission_value_nis,
+    trade_commission_value_trade_currency,
+    agent_commission_value_trade_currency,
+    management_fees_percent,
+    management_fees_value_nis,
+    management_fees_value_trade_currency,
+    israe_tax_value,
+    israel_tax_percent,
+    israel_tax_value_by_payments_settlement_currency,
+    foreign_tax_percent,
+    foreign_tax_value_settlement_currency,
+    capital_tax_percent,
+    capital_tax_value_settlement_currency,
+    post_deduction_tax_value_nis,
+    previous_actions_deductions,
+    post_action_deduction_balance,
+    nominal_profit_loss_nis,
+    nominal_profit_loss_linkage,
+    real_profit_loss_nis,
+    accumulated_interest,
+    fund_plus_accumulated_inerest_value,
+    peyment_pecentage,
+    payment_linking_value,
+    ex_date_balance,
+    issue_currency_to_trade_currency_rate,
+    trade_currnecy_rate,
+    personal_currency_rate,
+    payment_name,
+    order_origin,
+    order_type,
+    order_subject,
+    ordered_nv,
+    executed_nv,
+    ordered_value,
+    execution_date,
+    last_tranaction_date,
+    is_cancel_transaction,
+    executing_branch,
+    financial_account_branch,
+    financial_account_number,
+    account_name
+  )
+  VALUES $$transactions(
+    ownerId,
+    bankNumber,
+    branchNumber,
+    accountNumber,
+    security,
+    tradeDate,
+    valueDate,
+    settlementDate,
+    tradeType,
+    transactionType,
+    nv,
+    tradePrice,
+    netValueTradeCurrency,
+    paymentType,
+    paymentDate,
+    exDate,
+    cancelDate,
+    isin,
+    symbol,
+    symbolOsi,
+    engName,
+    hebName,
+    engNameFull,
+    hebNameFull,
+    securityGroup,
+    securitySubGroup,
+    issueCurrency,
+    issuerCountry,
+    issuerCountryCode,
+    issuerExchange,
+    exchangeCountry,
+    isTradable,
+    isUsEquity,
+    isJumbo,
+    impliedAssetMult,
+    expiryDate,
+    tradeCurrency,
+    settlementCurrency,
+    commissionsCurrency,
+    paymentCurrency,
+    tradeGrossValueTradeCurrency,
+    tradeGrossValueNis,
+    netValueNis,
+    netValueSettlementCurrency,
+    settlementPrice,
+    tradeCommissionPercent,
+    tradeCommissionValueNis,
+    tradeCommissionValueTradeCurrency,
+    agentCommissionValueTradeCurrency,
+    managementFeesPercent,
+    managementFeesValueNis,
+    managementFeesValueTradeCurrency,
+    israeTaxValue,
+    israelTaxPercent,
+    israelTaxValueByPaymentsSettlementCurrency,
+    foreignTaxPercent,
+    foreignTaxValueSettlementCurrency,
+    capitalTaxPercent,
+    capitalTaxValueSettlementCurrency,
+    postDeductionTaxValueNis,
+    previousActionsDeductions,
+    postActionDeductionBalance,
+    nominalProfitLossNis,
+    nominalProfitLossLinkage,
+    realProfitLossNis,
+    accumulatedInterest,
+    fundPlusAccumulatedInerestValue,
+    peymentPecentage,
+    paymentLinkingValue,
+    exDateBalance,
+    issueCurrencyToTradeCurrencyRate,
+    tradeCurrnecyRate,
+    personalCurrencyRate,
+    paymentName,
+    orderOrigin,
+    orderType,
+    orderSubject,
+    orderedNv,
+    executedNv,
+    orderedValue,
+    executionDate,
+    lastTranactionDate,
+    isCancelTransaction,
+    executingBranch,
+    financialAccountBranch,
+    financialAccountNumber,
+    accountName
+  )
+  ON CONFLICT (
+    owner_id,
+    bank_number,
+    branch_number,
+    account_number,
+    security,
+    trade_date,
+    value_date,
+    settlement_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    net_value_trade_currency,
+    payment_type,
+    payment_date,
+    ex_date,
+    cancel_date
+  ) DO NOTHING
+  RETURNING id, trade_date, trade_type, eng_name, net_value_trade_currency, branch_number, account_number;
 `;
 
 const uploadPoalimForeignTransactions = sql<IUploadPoalimForeignTransactionsQuery>`
@@ -754,6 +1005,139 @@ function diffPoalimSecurityRow(
   return changed;
 }
 
+/**
+ * Only the fields that are *not* part of the dedup key can differ on a matched row —
+ * everything in the key is, by definition, identical. These are the descriptive and
+ * monetary fields the bank could restate after the fact.
+ */
+const POALIM_SECURITIES_TRANSACTIONS_DIFF_FIELDS: Array<{
+  key: keyof IFetchPoalimSecuritiesTransactionsByKeysResult;
+  incoming: (
+    t: IUploadPoalimSecuritiesTransactionsParams['transactions'][number],
+  ) => string | number | boolean | null;
+}> = [
+  { key: 'isin', incoming: t => t.isin ?? null },
+  { key: 'symbol', incoming: t => t.symbol ?? null },
+  { key: 'eng_name', incoming: t => t.engName ?? null },
+  { key: 'heb_name', incoming: t => t.hebName ?? null },
+  { key: 'security_group', incoming: t => t.securityGroup ?? null },
+  { key: 'trade_currency', incoming: t => t.tradeCurrency ?? null },
+  { key: 'settlement_currency', incoming: t => t.settlementCurrency ?? null },
+  {
+    key: 'trade_gross_value_trade_currency',
+    incoming: t => t.tradeGrossValueTradeCurrency ?? null,
+  },
+  { key: 'trade_gross_value_nis', incoming: t => t.tradeGrossValueNis ?? null },
+  { key: 'net_value_nis', incoming: t => t.netValueNis ?? null },
+  { key: 'net_value_settlement_currency', incoming: t => t.netValueSettlementCurrency ?? null },
+  { key: 'trade_commission_value_nis', incoming: t => t.tradeCommissionValueNis ?? null },
+  { key: 'israe_tax_value', incoming: t => t.israeTaxValue ?? null },
+  {
+    key: 'foreign_tax_value_settlement_currency',
+    incoming: t => t.foreignTaxValueSettlementCurrency ?? null,
+  },
+  {
+    key: 'capital_tax_value_settlement_currency',
+    incoming: t => t.capitalTaxValueSettlementCurrency ?? null,
+  },
+  { key: 'is_cancel_transaction', incoming: t => t.isCancelTransaction ?? null },
+];
+
+const POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS: (keyof IFetchPoalimSecuritiesTransactionsByKeysResult)[] =
+  [
+    'trade_gross_value_trade_currency',
+    'trade_gross_value_nis',
+    'net_value_nis',
+    'net_value_settlement_currency',
+    'trade_commission_value_nis',
+    'israe_tax_value',
+    'foreign_tax_value_settlement_currency',
+    'capital_tax_value_settlement_currency',
+  ] as const;
+
+/**
+ * The executions response carries no per-row id, so identity is the natural key the
+ * dedup index is built on. Existing rows come back from pg as `Date`/`string`
+ * (NUMERIC) while incoming rows are ISO strings and JS numbers, so both sides are
+ * normalised to the same canonical form before being joined into a key.
+ */
+function securityTransactionKeyOf(row: {
+  bank_number?: number | null | void;
+  bankNumber?: number | null | void;
+  branch_number?: number | null | void;
+  branchNumber?: number | null | void;
+  account_number?: number | null | void;
+  accountNumber?: number | null | void;
+  security?: string | null | void;
+  trade_date?: Date | string | null | void;
+  tradeDate?: Date | string | null | void;
+  value_date?: Date | string | null | void;
+  valueDate?: Date | string | null | void;
+  settlement_date?: Date | string | null | void;
+  settlementDate?: Date | string | null | void;
+  trade_type?: string | null | void;
+  tradeType?: string | null | void;
+  transaction_type?: string | null | void;
+  transactionType?: string | null | void;
+  nv?: number | string | null | void;
+  trade_price?: number | string | null | void;
+  tradePrice?: number | string | null | void;
+  net_value_trade_currency?: number | string | null | void;
+  netValueTradeCurrency?: number | string | null | void;
+  payment_type?: string | null | void;
+  paymentType?: string | null | void;
+  payment_date?: Date | string | null | void;
+  paymentDate?: Date | string | null | void;
+  ex_date?: Date | string | null | void;
+  exDate?: Date | string | null | void;
+  cancel_date?: Date | string | null | void;
+  cancelDate?: Date | string | null | void;
+}): string {
+  const date = (value: Date | string | null | void) => {
+    if (value == null) return '';
+    const parsed = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toISOString();
+  };
+  const num = (value: number | string | null | void) =>
+    value == null ? '' : String(Number(value));
+  const text = (value: string | null | void) => value ?? '';
+
+  return [
+    row.bank_number ?? row.bankNumber,
+    row.branch_number ?? row.branchNumber,
+    row.account_number ?? row.accountNumber,
+    text(row.security),
+    date(row.trade_date ?? row.tradeDate),
+    date(row.value_date ?? row.valueDate),
+    date(row.settlement_date ?? row.settlementDate),
+    text(row.trade_type ?? row.tradeType),
+    text(row.transaction_type ?? row.transactionType),
+    num(row.nv),
+    num(row.trade_price ?? row.tradePrice),
+    num(row.net_value_trade_currency ?? row.netValueTradeCurrency),
+    text(row.payment_type ?? row.paymentType),
+    date(row.payment_date ?? row.paymentDate),
+    date(row.ex_date ?? row.exDate),
+    date(row.cancel_date ?? row.cancelDate),
+  ].join('|');
+}
+
+function diffPoalimSecurityTransactionRow(
+  existing: IFetchPoalimSecuritiesTransactionsByKeysResult,
+  incoming: IUploadPoalimSecuritiesTransactionsParams['transactions'][number],
+): ChangedField[] {
+  const changed: ChangedField[] = [];
+  for (const { key, incoming: getIncoming } of POALIM_SECURITIES_TRANSACTIONS_DIFF_FIELDS) {
+    const isNumberField = POALIM_SECURITIES_TRANSACTIONS_NUMERIC_FIELDS.includes(key);
+    const oldValue = formatValue(existing[key], isNumberField);
+    const newValue = formatValue(getIncoming(incoming), isNumberField);
+    if (oldValue !== newValue) {
+      changed.push({ field: key, oldValue, newValue });
+    }
+  }
+  return changed;
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -1092,6 +1476,94 @@ export class PoalimScraperIngestionProvider {
       };
     } catch (error) {
       console.error('Error uploading Poalim securities:', error);
+      throw error;
+    }
+  }
+
+  async uploadPoalimSecuritiesTransactions(
+    transactions: readonly PoalimSecurityTransactionInput[],
+  ): Promise<ScraperUploadResult> {
+    try {
+      if (transactions.length === 0)
+        return {
+          inserted: 0,
+          skipped: 0,
+          insertedIds: [],
+          insertedTransactions: [],
+          changedTransactions: [],
+        };
+
+      const businessId = await this.getBusinessId();
+      if (!businessId) {
+        // owner_id is NOT NULL and drives the table's RLS WITH CHECK clause: without a
+        // tenant context the insert would fail deep inside Postgres with an opaque error.
+        throw new Error(
+          'Cannot upload Poalim securities transactions: no business context found in the auth context',
+        );
+      }
+      const validated = validatePoalimSecuritiesTransactions(transactions).map(t => ({
+        ...t,
+        ownerId: businessId,
+      }));
+
+      const isNumber = (value: number | null | void): value is number => typeof value === 'number';
+      const bankNumbers = validated.map(t => t.bankNumber).filter(isNumber);
+      const branchNumbers = validated.map(t => t.branchNumber).filter(isNumber);
+      const accountNumbers = validated.map(t => t.accountNumber).filter(isNumber);
+      const securities = validated
+        .map(t => t.security ?? null)
+        .filter((s): s is string => s !== null);
+      const tradeDates = validated
+        .map(t => (t.tradeDate ? new Date(t.tradeDate) : null))
+        .filter((d): d is Date => d !== null);
+
+      // Coarse fetch on the indexed prefix of the dedup key; the full key — which
+      // includes nullable corporate-action dates — is matched in memory below.
+      const existing = await fetchPoalimSecuritiesTransactionsByKeys.run(
+        { bankNumbers, branchNumbers, accountNumbers, securities, tradeDates },
+        this.db,
+      );
+
+      const existingByKey = new Map<string, IFetchPoalimSecuritiesTransactionsByKeysResult>();
+      for (const row of existing) {
+        existingByKey.set(securityTransactionKeyOf(row), row);
+      }
+
+      const result: IUploadPoalimSecuritiesTransactionsResult[] =
+        await uploadPoalimSecuritiesTransactions.run({ transactions: validated }, this.db);
+      const insertedIds = result
+        .map(r => r.id)
+        .filter((id): id is string => typeof id === 'string');
+      const insertedIdSet = new Set(insertedIds);
+
+      const insertedTransactions: InsertedTransactionSummary[] = result.map(r => ({
+        id: r.id,
+        date: r.trade_date ? dateToTimelessDateString(r.trade_date) : null,
+        description: [r.trade_type, r.eng_name].filter(Boolean).join(' — ') || null,
+        amount: r.net_value_trade_currency == null ? null : String(r.net_value_trade_currency),
+        account: `${r.branch_number}-${r.account_number}`,
+      }));
+
+      const changedTransactions: ChangedTransaction[] = [];
+      for (const t of validated) {
+        const existingRow = existingByKey.get(securityTransactionKeyOf(t));
+        if (existingRow && !insertedIdSet.has(existingRow.id)) {
+          const changedFields = diffPoalimSecurityTransactionRow(existingRow, t);
+          if (changedFields.length > 0) {
+            changedTransactions.push({ id: existingRow.id, changedFields });
+          }
+        }
+      }
+
+      return {
+        inserted: insertedIds.length,
+        skipped: transactions.length - insertedIds.length,
+        insertedIds,
+        insertedTransactions,
+        changedTransactions,
+      };
+    } catch (error) {
+      console.error('Error uploading Poalim securities transactions:', error);
       throw error;
     }
   }

@@ -14,7 +14,8 @@ import { registerDiscoveredAccounts } from '../account-discovery.js';
 import { checkAccounts } from '../check-accounts.js';
 import { effectiveSet } from '../filter-payload.js';
 import type { OtpManager } from '../otp-manager.js';
-import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
+import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
+import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import { BlockedError } from '../scrape-runner.js';
 import { validatePayload } from '../validate-payload.js';
 import { getVault } from '../vault-store.js';
@@ -78,7 +79,8 @@ export async function scrapePoalim(
     ils: HapoalimILSTransactions | null;
     foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
     swift: DecoratedSwiftTransactions | null;
-    securities: PoalimSecuritiesPayload | null;
+    securitiesInfo: PoalimSecuritiesInfoPayload | null;
+    securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
     bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
   }[]
 > {
@@ -192,7 +194,8 @@ export async function scrapePoalim(
       ils: HapoalimILSTransactions | null;
       foreign: HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null;
       swift: DecoratedSwiftTransactions | null;
-      securities: PoalimSecuritiesPayload | null;
+      securitiesInfo: PoalimSecuritiesInfoPayload | null;
+      securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
       bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
     }[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
@@ -203,7 +206,8 @@ export async function scrapePoalim(
       let foreign:
         HapoalimForeignTransactionsPersonal | HapoalimForeignTransactionsBusiness | null = null;
       let swift: DecoratedSwiftTransactions | null = null;
-      let securities: PoalimSecuritiesPayload | null = null;
+      let securitiesInfo: PoalimSecuritiesInfoPayload | null = null;
+      let securitiesTransactions: PoalimSecuritiesTransactionsPayload | null = null;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
@@ -281,24 +285,57 @@ export async function scrapePoalim(
           type: 'task-account-txns-fetching',
           sourceId: creds.id,
           accountId,
-          txnType: 'securities',
+          txnType: 'securitiesInfo',
         });
         const {
-          data: securitiesData,
-          isValid: securitiesValid,
-          errors: securitiesErrors,
-        } = await scraper.getSecurities(accountRef);
-        if (securitiesValid === false) {
+          data: securitiesInfoData,
+          isValid: securitiesInfoValid,
+          errors: securitiesInfoErrors,
+        } = await scraper.getSecuritiesInfo(accountRef);
+        if (securitiesInfoValid === false) {
           throw new Error(
-            `Poalim securities failed schema validation for account ${accountId}: ${describeValidationError(securitiesErrors)}`,
+            `Poalim securities info failed schema validation for account ${accountId}: ${describeValidationError(securitiesInfoErrors)}`,
           );
         }
-        if (securitiesData) {
-          securities = validatePayload('poalim-securities', securitiesData);
+        if (securitiesInfoData) {
+          securitiesInfo = validatePayload('poalim-securities-info', securitiesInfoData);
+        }
+
+        emit({
+          type: 'task-account-txns-fetching',
+          sourceId: creds.id,
+          accountId,
+          txnType: 'securitiesTransactions',
+        });
+        const {
+          data: securitiesTransactionsData,
+          isValid: securitiesTransactionsValid,
+          errors: securitiesTransactionsErrors,
+        } = await scraper.getSecuritiesTransactions(accountRef, {
+          fromDate: dateFrom,
+          toDate: dateTo,
+        });
+        if (securitiesTransactionsValid === false) {
+          throw new Error(
+            `Poalim securities transactions failed schema validation for account ${accountId}: ${describeValidationError(securitiesTransactionsErrors)}`,
+          );
+        }
+        if (securitiesTransactionsData) {
+          securitiesTransactions = validatePayload(
+            'poalim-securities-transactions',
+            securitiesTransactionsData,
+          );
         }
       }
 
-      accountsData.push({ ils, foreign, swift, securities, bankAccount: accountRef });
+      accountsData.push({
+        ils,
+        foreign,
+        swift,
+        securitiesInfo,
+        securitiesTransactions,
+        bankAccount: accountRef,
+      });
     }
 
     return accountsData;

@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 /**
  * Asserts every field the vars mapper reads off `View.Meta`. This must stay in
- * step with `poalimSecuritiesVars` — the object is `.loose()`, so anything left
+ * step with `poalimSecuritiesInfoVars` — the object is `.loose()`, so anything left
  * out here is typed `unknown` and reaches the mutation completely unchecked.
  *
  * `View.Account` (live balances) and `View.Orders` are deliberately ignored.
  */
-const SecurityItemSchema = z
+const SecurityInfoItemSchema = z
   .object({
     '-Key': z.string(),
     EngName: z.string(),
@@ -30,7 +30,7 @@ const SecurityItemSchema = z
   })
   .loose();
 
-export const PoalimSecuritiesPayloadSchema = z
+export const PoalimSecuritiesInfoPayloadSchema = z
   .object({
     View: z
       .object({
@@ -38,7 +38,7 @@ export const PoalimSecuritiesPayloadSchema = z
           .object({
             '-AsOfDate': z.string(),
             // Accounts with no securities portfolio omit this entirely.
-            Security: z.array(SecurityItemSchema).default([]),
+            Security: z.array(SecurityInfoItemSchema).default([]),
           })
           .loose(),
       })
@@ -46,4 +46,4 @@ export const PoalimSecuritiesPayloadSchema = z
   })
   .loose();
 
-export type PoalimSecuritiesPayload = z.infer<typeof PoalimSecuritiesPayloadSchema>;
+export type PoalimSecuritiesInfoPayload = z.infer<typeof PoalimSecuritiesInfoPayloadSchema>;

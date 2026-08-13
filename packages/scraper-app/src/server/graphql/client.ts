@@ -10,7 +10,8 @@ import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
-import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
+import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
+import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -29,7 +30,8 @@ import {
   otsarIlsVars,
   poalimForeignVars,
   poalimIlsVars,
-  poalimSecuritiesVars,
+  poalimSecuritiesInfoVars,
+  poalimSecuritiesTransactionsVars,
   poalimSwiftVars,
   UPLOAD_AMEX,
   UPLOAD_CAL,
@@ -43,6 +45,7 @@ import {
   UPLOAD_POALIM_FOREIGN,
   UPLOAD_POALIM_ILS,
   UPLOAD_POALIM_SECURITIES,
+  UPLOAD_POALIM_SECURITIES_TRANSACTIONS,
   UPLOAD_POALIM_SWIFT,
 } from './mutations.js';
 
@@ -101,14 +104,25 @@ export function createUploadClient(serverUrl: string, apiKey: string) {
       );
     },
 
-    async uploadPoalimSecurities(
-      payload: PoalimSecuritiesPayload,
+    async uploadPoalimSecuritiesInfo(
+      payload: PoalimSecuritiesInfoPayload,
       bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
     ): Promise<ScraperUploadResult> {
       return request(
         UPLOAD_POALIM_SECURITIES,
-        poalimSecuritiesVars(payload, bankAccount),
+        poalimSecuritiesInfoVars(payload, bankAccount),
         'uploadPoalimSecurities',
+      );
+    },
+
+    async uploadPoalimSecuritiesTransactions(
+      payload: PoalimSecuritiesTransactionsPayload,
+      bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number },
+    ): Promise<ScraperUploadResult> {
+      return request(
+        UPLOAD_POALIM_SECURITIES_TRANSACTIONS,
+        poalimSecuritiesTransactionsVars(payload, bankAccount),
+        'uploadPoalimSecuritiesTransactions',
       );
     },
 

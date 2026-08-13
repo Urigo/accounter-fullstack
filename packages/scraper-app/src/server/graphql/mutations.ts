@@ -15,13 +15,15 @@ import {
   UploadPoalimForeignTransactionsMutationVariables,
   UploadPoalimIlsTransactionsMutationVariables,
   UploadPoalimSecuritiesMutationVariables,
+  UploadPoalimSecuritiesTransactionsMutationVariables,
   UploadPoalimSwiftTransactionsMutationVariables,
 } from '../gql/index.js';
 import type { CalPayload } from '../payload-schemas/cal.schema.js';
 import type { CurrencyRatesPayload } from '../payload-schemas/currency-rates.schema.js';
 import type { DiscountPayload } from '../payload-schemas/discount.schema.js';
 import type { MaxPayload } from '../payload-schemas/max.schema.js';
-import type { PoalimSecuritiesPayload } from '../payload-schemas/poalim-securities.schema.js';
+import type { PoalimSecuritiesInfoPayload } from '../payload-schemas/poalim-securities-info.schema.js';
+import type { PoalimSecuritiesTransactionsPayload } from '../payload-schemas/poalim-securities-transactions.schema.js';
 import type {
   ForeignAccountData,
   OtsarHahayalCreditCardData,
@@ -264,6 +266,31 @@ export const UPLOAD_CURRENCY_RATES = /* GraphQL */ `
 export const UPLOAD_POALIM_SECURITIES = /* GraphQL */ `
   mutation UploadPoalimSecurities($securities: [PoalimSecurityInput!]!) {
     uploadPoalimSecurities(securities: $securities) {
+      inserted
+      skipped
+      insertedIds
+      insertedTransactions {
+        id
+        date
+        description
+        amount
+        account
+      }
+      changedTransactions {
+        id
+        changedFields {
+          field
+          oldValue
+          newValue
+        }
+      }
+    }
+  }
+`;
+
+export const UPLOAD_POALIM_SECURITIES_TRANSACTIONS = /* GraphQL */ `
+  mutation UploadPoalimSecuritiesTransactions($transactions: [PoalimSecurityTransactionInput!]!) {
+    uploadPoalimSecuritiesTransactions(transactions: $transactions) {
       inserted
       skipped
       insertedIds
@@ -644,8 +671,8 @@ export function poalimSwiftVars(
  * account coordinates (the response body carries none — the account is only in
  * the request URL) and the shared `-AsOfDate`.
  */
-export function poalimSecuritiesVars(
-  payload: PoalimSecuritiesPayload,
+export function poalimSecuritiesInfoVars(
+  payload: PoalimSecuritiesInfoPayload,
   bankAccount: {
     bankNumber: number;
     branchNumber: number;
@@ -681,6 +708,121 @@ export function poalimSecuritiesVars(
   // No `as` cast: the payload schema types every field it reads, so this
   // mapping is checked against PoalimSecurityInput rather than asserted.
   return { securities } satisfies UploadPoalimSecuritiesMutationVariables;
+}
+
+/**
+ * Flattens `Account.Execution[]` into one input row per executed activity,
+ * stamping the account coordinates. The rows do carry `Branch`/`Account`, but the
+ * requested account is used instead so these always agree with the other Poalim
+ * uploads (and with the dedup key on the server side).
+ *
+ * Field names are the bank's own, misspellings included.
+ */
+export function poalimSecuritiesTransactionsVars(
+  payload: PoalimSecuritiesTransactionsPayload,
+  bankAccount: {
+    bankNumber: number;
+    branchNumber: number;
+    accountNumber: number;
+  },
+): UploadPoalimSecuritiesTransactionsMutationVariables {
+  const transactions = payload.Account.Execution.map(t => ({
+    bankNumber: bankAccount.bankNumber,
+    branchNumber: bankAccount.branchNumber,
+    accountNumber: bankAccount.accountNumber,
+
+    security: t.Security,
+    tradeDate: t.TradeDate,
+    valueDate: t.ValueDate ?? null,
+    settlementDate: t.SettlementDate ?? null,
+    tradeType: t.TradeType,
+    transactionType: t.TransactionType,
+    nv: t.NV ?? null,
+    tradePrice: t.TradePrice ?? null,
+    netValueTradeCurrency: t.NetValueTradeCurrency ?? null,
+    paymentType: t.PaymentType ?? null,
+    paymentDate: t.PaymentDate ?? null,
+    exDate: t.ExDate ?? null,
+    cancelDate: t.CancelDate ?? null,
+
+    accountName: t.AccountName ?? null,
+    executingBranch: t.ExecutingBranch ?? null,
+    financialAccountBranch: t.FinancialAccountBranch ?? null,
+    financialAccountNumber: t.FinancialAccountNumber ?? null,
+
+    isin: t.ISIN ?? null,
+    symbol: t.Symbol ?? null,
+    symbolOsi: t.SymbolOSI ?? null,
+    engName: t.EngName ?? null,
+    hebName: t.HebName ?? null,
+    engNameFull: t.EngNameFull ?? null,
+    hebNameFull: t.HebNameFull ?? null,
+    securityGroup: t.SecurityGroup ?? null,
+    securitySubGroup: t.SecuritySubGroup ?? null,
+    issueCurrency: t.IssueCurrency ?? null,
+    issuerCountry: t.IssuerCountry ?? null,
+    issuerCountryCode: t.IssuerCountryCode ?? null,
+    issuerExchange: t.IssuerExchange ?? null,
+    exchangeCountry: t.ExchangeCountry ?? null,
+    isTradable: t.IsTradable ?? null,
+    isUsEquity: t.IsUSEquity ?? null,
+    isJumbo: t.IsJumbo ?? null,
+    impliedAssetMult: t.ImpliedAssetMult ?? null,
+    expiryDate: t.ExpiryDate ?? null,
+
+    tradeCurrency: t.TradeCurrency ?? null,
+    settlementCurrency: t.SettlementCurrency ?? null,
+    commissionsCurrency: t.CommissionsCurrency ?? null,
+    paymentCurrency: t.PaymentCurrency ?? null,
+    tradeGrossValueTradeCurrency: t.TradeGrossValueTradeCurrency ?? null,
+    tradeGrossValueNis: t.TradeGrossValueNIS ?? null,
+    netValueNis: t.NetValueNIS ?? null,
+    netValueSettlementCurrency: t.NetValueSettlementCurrency ?? null,
+    settlementPrice: t.SettlementPrice ?? null,
+    tradeCommissionPercent: t.TradeCommissionPercent ?? null,
+    tradeCommissionValueNis: t.TradeCommissionValueNIS ?? null,
+    tradeCommissionValueTradeCurrency: t.TradeCommissionValueTradeCurrency ?? null,
+    agentCommissionValueTradeCurrency: t.AgentCommissionValueTradeCurrency ?? null,
+    managementFeesPercent: t.ManagementFeesPercent ?? null,
+    managementFeesValueNis: t.ManagementFeesValueNIS ?? null,
+    managementFeesValueTradeCurrency: t.ManagementFeesValueTradeCurrency ?? null,
+    israeTaxValue: t.IsraeTaxValue ?? null,
+    israelTaxPercent: t.IsraelTaxPercent ?? null,
+    israelTaxValueByPaymentsSettlementCurrency:
+      t.IsraelTaxValueByPaymentsSettlementCurrency ?? null,
+    foreignTaxPercent: t.ForeignTaxPercent ?? null,
+    foreignTaxValueSettlementCurrency: t.ForeignTaxValueSettlementCurrency ?? null,
+    capitalTaxPercent: t.CapitalTaxPercent ?? null,
+    capitalTaxValueSettlementCurrency: t.CapitalTaxValueSettlementCurrency ?? null,
+    postDeductionTaxValueNis: t.PostDeductionTaxValueNIS ?? null,
+    previousActionsDeductions: t.PreviousActionsDeductions ?? null,
+    postActionDeductionBalance: t.PostActionDeductionBalance ?? null,
+    nominalProfitLossNis: t.NominalProfitLossNIS ?? null,
+    nominalProfitLossLinkage: t.NominalProfitLossLinkage ?? null,
+    realProfitLossNis: t.RealProfitLossNIS ?? null,
+    accumulatedInterest: t.AccumulatedInterest ?? null,
+    fundPlusAccumulatedInerestValue: t.FundPlusAccumulatedInerestValue ?? null,
+    peymentPecentage: t.PeymentPecentage ?? null,
+    paymentLinkingValue: t.PaymentLinkingValue ?? null,
+    exDateBalance: t.ExDateBalance ?? null,
+    issueCurrencyToTradeCurrencyRate: t.IssueCurrencyToTradeCurrencyRate ?? null,
+    tradeCurrnecyRate: t.TradeCurrnecyRate ?? null,
+    personalCurrencyRate: t.PersonalCurrencyRate ?? null,
+
+    paymentName: t.PaymentName ?? null,
+    orderOrigin: t.OrderOrigin ?? null,
+    orderType: t.OrderType ?? null,
+    orderSubject: t.OrderSubject ?? null,
+    orderedNv: t.OrderedNV ?? null,
+    executedNv: t.ExecutedNV ?? null,
+    orderedValue: t.OrderedValue ?? null,
+    executionDate: t.ExecutionDate ?? null,
+    lastTranactionDate: t.LastTranactionDate ?? null,
+    isCancelTransaction: t.IsCancelTransaction ?? null,
+  }));
+  // No `as` cast: the payload schema types every field it reads, so this
+  // mapping is checked against PoalimSecurityTransactionInput rather than asserted.
+  return { transactions } satisfies UploadPoalimSecuritiesTransactionsMutationVariables;
 }
 
 function transformIsracardAmexTransaction(
