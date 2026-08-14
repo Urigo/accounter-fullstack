@@ -86,7 +86,7 @@ jobs:
         id: changesets-stable
         uses: dotansimha/changesets-action@2eb8e159b258a2144d8553f527fa015a8893dfe2
         with:
-          publish: 'yarn changeset publish'
+          publish: 'yarn changeset:publish'
           version: 'yarn changeset version'
           commit: 'chore(release): update monorepo packages versions'
           title: 'Upcoming Release Changes'
