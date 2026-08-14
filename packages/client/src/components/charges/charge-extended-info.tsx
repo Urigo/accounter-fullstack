@@ -130,12 +130,19 @@ import { SalariesTable } from './extended-info/salaries-info.js';
 interface Props {
   chargeID: string;
   onChange?: () => void;
+  /**
+   * Called when a mutation inside the expansion emptied this charge and the server deleted it.
+   * Consumers should drop the charge from their list — refetching it would fail, since
+   * `Query.charge` throws for a deleted id, leaving a stale "shadow charge" on screen.
+   */
+  onChargeDeleted?: (chargeId: string) => void;
   fetching: boolean;
 }
 
 export function ChargeExtendedInfo({
   chargeID,
   onChange = (): void => void 0,
+  onChargeDeleted,
   fetching: parentFetching,
 }: Props): ReactElement {
   const [accordionItems, setAccordionItems] = useState<string[]>([]);
@@ -176,6 +183,24 @@ export function ChargeExtendedInfo({
     }
     onChange();
   }, [batch, refetchExtensionInfo, onChange]);
+
+  // The charge itself was deleted (it was emptied by removing its last document): never refetch it
+  // — `Query.charge` throws for a deleted id, so the refetch yields no data and the consumer keeps
+  // rendering the stale row. Hand the deletion to the consumer instead, and in batch mode fall back
+  // to re-running the shared query so the charge drops out of the batch.
+  const onExtendedChargeDeleted = useCallback(
+    (deletedChargeId: string) => {
+      if (onChargeDeleted) {
+        onChargeDeleted(deletedChargeId);
+        return;
+      }
+      if (batch.active) {
+        batch.refetch();
+      }
+      onChange();
+    },
+    [batch, onChange, onChargeDeleted],
+  );
 
   useEffect(() => {
     const incoming = incomingCharge;
@@ -449,6 +474,7 @@ export function ChargeExtendedInfo({
                           ?.additionalDocuments
                       }
                       onChange={onExtendedChange}
+                      onChargeDeleted={onExtendedChargeDeleted}
                     />
                   )}
                 </AccordionContent>
@@ -545,7 +571,11 @@ export function ChargeExtendedInfo({
           {galleryIsReady && (
             <Box maw="1/6">
               <Collapse in={opened} transitionDuration={500} transitionTimingFunction="linear">
-                <DocumentsGallery chargeProps={charge} onChange={onExtendedChange} />
+                <DocumentsGallery
+                  chargeProps={charge}
+                  onChange={onExtendedChange}
+                  onChargeDeleted={onExtendedChargeDeleted}
+                />
               </Collapse>
             </Box>
           )}

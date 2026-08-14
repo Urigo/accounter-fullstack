@@ -20,6 +20,7 @@ import { handleCommonErrors } from '../helpers/error-handling.js';
         document {
           id
         }
+        deletedChargeId
       }
     }
   }

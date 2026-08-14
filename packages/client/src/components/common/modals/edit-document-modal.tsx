@@ -12,9 +12,16 @@ interface Props {
   documentId?: string;
   onDone: () => void;
   onChange: () => void;
+  /** Called when removing the document emptied its charge and the server deleted the charge too. */
+  onChargeDeleted?: (chargeId: string) => void;
 }
 
-export const EditDocumentModal = ({ onDone, onChange, documentId }: Props): ReactElement | null => {
+export const EditDocumentModal = ({
+  onDone,
+  onChange,
+  onChargeDeleted,
+  documentId,
+}: Props): ReactElement | null => {
   if (!documentId) return null;
   return (
     <PopUpDrawer
@@ -30,8 +37,18 @@ export const EditDocumentModal = ({ onDone, onChange, documentId }: Props): Reac
             <Tooltip content="Copy ID">
               <CopyToClipboardButton content={documentId} />
             </Tooltip>
-            <UnlinkDocumentButton documentId={documentId} onChange={onChange} />
-            <DeleteDocumentButton documentId={documentId} onChange={onChange} />
+            <UnlinkDocumentButton
+              documentId={documentId}
+              onChange={onChange}
+              onDone={onDone}
+              onChargeDeleted={onChargeDeleted}
+            />
+            <DeleteDocumentButton
+              documentId={documentId}
+              onChange={onChange}
+              onDone={onDone}
+              onChargeDeleted={onChargeDeleted}
+            />
           </div>
         </div>
       }

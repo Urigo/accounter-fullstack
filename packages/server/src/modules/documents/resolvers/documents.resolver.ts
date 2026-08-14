@@ -214,6 +214,9 @@ export const documentsResolvers: DocumentsModule.Resolvers &
     },
     updateDocument: async (_, { fields, documentId }, { injector }) => {
       let postUpdateActions = async (): Promise<void> => void 0;
+      // set when the former charge is emptied by this update and therefore deleted, so the
+      // client can drop its row instead of refetching a charge that no longer exists
+      let deletedChargeId: string | null = null;
 
       try {
         let chargeId: string | undefined = undefined;
@@ -262,6 +265,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
               postUpdateActions = async () => {
                 try {
                   await deleteCharges([charge.id], injector);
+                  deletedChargeId = charge.id;
                 } catch (e) {
                   if (e instanceof GraphQLError) {
                     throw e;
@@ -320,6 +324,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
 
         return {
           document: res[0],
+          deletedChargeId,
         };
       } catch (e) {
         if (e instanceof GraphQLError) {
@@ -342,6 +347,7 @@ export const documentsResolvers: DocumentsModule.Resolvers &
         const res = await injector.get(DocumentsProvider).deleteDocument({ documentId });
         if (res.length === 1) {
           await degradeChargesAccountantApproval(injector, [document.charge_id]);
+          let deletedChargeId: string | null = null;
           if (document.charge_id) {
             const [charge, transactions, documents] = await Promise.all([
               injector.get(ChargesProvider).getChargeByIdLoader.load(document.charge_id),
@@ -352,9 +358,14 @@ export const documentsResolvers: DocumentsModule.Resolvers &
             ]);
             if (charge && documents.length === 0 && transactions.length === 0) {
               await deleteCharges([charge.id], injector);
+              deletedChargeId = charge.id;
             }
           }
-          return true;
+          return {
+            success: true,
+            chargeId: document.charge_id ?? null,
+            deletedChargeId,
+          };
         }
         throw new GraphQLError(
           res.length === 0

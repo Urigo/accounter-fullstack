@@ -96,6 +96,7 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
                 <ChargeExtendedInfo
                   chargeID={row.original.id}
                   onChange={fetchCharge}
+                  onChargeDeleted={removeCharge}
                   fetching={fetching}
                 />
               </Card>

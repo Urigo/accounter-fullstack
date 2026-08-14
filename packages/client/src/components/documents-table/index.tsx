@@ -19,12 +19,15 @@ import { columns, type DocumentsTableRowType } from './columns.js';
 type Props = {
   documentsProps: FragmentType<typeof TableDocumentsRowFieldsFragmentDoc>[];
   onChange?: () => void;
+  /** Called when removing a document emptied its charge and the server deleted the charge too. */
+  onChargeDeleted?: (chargeId: string) => void;
   limited?: boolean;
 };
 
 export const DocumentsTable = ({
   documentsProps,
   onChange,
+  onChargeDeleted,
   limited = false,
 }: Props): ReactElement => {
   const [editDocumentId, setEditDocumentId] = useState<string | undefined>(undefined);
@@ -134,6 +137,7 @@ export const DocumentsTable = ({
         documentId={editDocumentId}
         onDone={(): void => setEditDocumentId(undefined)}
         onChange={() => onChange?.()}
+        onChargeDeleted={onChargeDeleted}
       />
     </>
   );
