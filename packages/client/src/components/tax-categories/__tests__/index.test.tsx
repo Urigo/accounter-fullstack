@@ -3,7 +3,7 @@
 import { useState, type ReactElement } from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { FiltersContext } from '../../../providers/filters-context.js';
 import { TaxCategories } from '../index.js';
 
@@ -63,6 +63,7 @@ function Harness(): ReactElement {
 describe('TaxCategories screen', () => {
   let container: HTMLDivElement;
   let root: Root;
+  let consoleError: MockInstance<typeof console.error>;
 
   beforeEach(() => {
     renderCount = 0;
@@ -71,6 +72,9 @@ describe('TaxCategories screen', () => {
       { data: { taxCategories }, fetching: false, error: undefined },
       refetchMock,
     ]);
+    // Set up (and tear down) in the hooks so a failing assertion cannot leak the
+    // spy into later tests.
+    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     container = document.createElement('div');
     document.body.append(container);
     root = createRoot(container);
@@ -79,6 +83,7 @@ describe('TaxCategories screen', () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+    consoleError.mockRestore();
   });
 
   // Regression: the footer effect used to depend on the `useTable` handle and on
@@ -86,8 +91,6 @@ describe('TaxCategories screen', () => {
   // effect re-ran forever against the parent's `setFiltersContext` state, and
   // React bailed out with "Maximum update depth exceeded" (minified error #185).
   it('renders without exceeding the maximum update depth', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
     expect(() => {
       act(() => root.render(<Harness />));
     }).not.toThrow();
@@ -96,7 +99,6 @@ describe('TaxCategories screen', () => {
       call.some(arg => String(arg).includes('Maximum update depth exceeded')),
     );
     expect(loopErrors).toHaveLength(0);
-    consoleError.mockRestore();
 
     expect(renderCount).toBeLessThan(MAX_RENDERS);
     expect(container.textContent).toContain('Tax Categories (45)');
