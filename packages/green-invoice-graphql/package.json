@@ -67,7 +67,7 @@
     "path": "0.12.7"
   },
   "devDependencies": {
-    "@graphql-mesh/cli": "0.101.2",
+    "@graphql-mesh/cli": "0.103.0",
     "@types/mime-types": "3.0.1",
     "bob-the-bundler": "7.0.1",
     "mime-types": "3.0.2",
