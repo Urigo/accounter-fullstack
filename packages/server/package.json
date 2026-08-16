@@ -44,7 +44,7 @@
     "@envelop/graphql-modules": "9.1.1",
     "@google-cloud/pubsub": "6.0.0",
     "@graphql-hive/yoga": "0.49.1",
-    "@graphql-tools/utils": "11.2.2",
+    "@graphql-tools/utils": "12.0.0",
     "@graphql-yoga/plugin-defer-stream": "3.21.2",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/auto-instrumentations-node": "0.79.0",
