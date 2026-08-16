@@ -318,7 +318,7 @@ __metadata:
     "@graphql-mesh/json-schema": "npm:0.112.0"
     "@graphql-mesh/runtime": "npm:0.107.1"
     "@graphql-mesh/store": "npm:0.105.1"
-    "@graphql-mesh/transform-rename": "npm:0.106.1"
+    "@graphql-mesh/transform-rename": "npm:0.108.0"
     "@graphql-mesh/types": "npm:0.105.1"
     "@graphql-mesh/utils": "npm:0.105.1"
     graphql: "npm:16.14.2"
@@ -3855,12 +3855,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/transform-rename@npm:0.106.1":
-  version: 0.106.1
-  resolution: "@graphql-mesh/transform-rename@npm:0.106.1"
+"@graphql-mesh/transform-rename@npm:0.108.0":
+  version: 0.108.0
+  resolution: "@graphql-mesh/transform-rename@npm:0.108.0"
   dependencies:
-    "@graphql-mesh/types": "npm:^0.105.1"
-    "@graphql-mesh/utils": "npm:^0.105.1"
+    "@graphql-mesh/types": "npm:^0.107.0"
+    "@graphql-mesh/utils": "npm:^0.107.0"
     "@graphql-tools/delegate": "npm:^12.1.1"
     "@graphql-tools/utils": "npm:^11.2.2"
     "@graphql-tools/wrap": "npm:^11.1.21"
@@ -3868,7 +3868,7 @@ __metadata:
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/6d6faccc4033682b7b15fd1488ec40c4211adceae9ff96f3ec224fbbcde8ebd7f1961bb22fc5fb0ae4357694e91818463997466de4fef5c2b66c0c9e036c3039
+  checksum: 10c0/515601a1fa3ae122e2fc5caa43bc06b44ce21e8eed158def248d718a2de6b34d8623a17f6eda225477ab3c5f56201d98c4eb2870839d792c90f32d451d9d62fe
   languageName: node
   linkType: hard
 
