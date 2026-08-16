@@ -212,7 +212,7 @@ __metadata:
     "@graphql-mesh/json-schema": "npm:0.112.0"
     "@graphql-mesh/runtime": "npm:0.107.1"
     "@graphql-mesh/store": "npm:0.105.1"
-    "@graphql-mesh/types": "npm:0.105.1"
+    "@graphql-mesh/types": "npm:0.107.0"
     "@graphql-mesh/utils": "npm:0.105.1"
     "@types/mime-types": "npm:3.0.1"
     bob-the-bundler: "npm:7.0.1"
@@ -235,7 +235,7 @@ __metadata:
     "@graphql-mesh/runtime": "npm:0.107.1"
     "@graphql-mesh/store": "npm:0.105.1"
     "@graphql-mesh/transform-resolvers-composition": "npm:0.107.0"
-    "@graphql-mesh/types": "npm:0.105.1"
+    "@graphql-mesh/types": "npm:0.107.0"
     "@graphql-mesh/utils": "npm:0.105.1"
     graphql: "npm:16.14.2"
     tsup: "npm:8.5.1"
@@ -319,7 +319,7 @@ __metadata:
     "@graphql-mesh/runtime": "npm:0.107.1"
     "@graphql-mesh/store": "npm:0.105.1"
     "@graphql-mesh/transform-rename": "npm:0.108.0"
-    "@graphql-mesh/types": "npm:0.105.1"
+    "@graphql-mesh/types": "npm:0.107.0"
     "@graphql-mesh/utils": "npm:0.105.1"
     graphql: "npm:16.14.2"
     path: "npm:0.12.7"
@@ -3887,9 +3887,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/types@npm:0.105.1, @graphql-mesh/types@npm:^0.105.0, @graphql-mesh/types@npm:^0.105.1":
-  version: 0.105.1
-  resolution: "@graphql-mesh/types@npm:0.105.1"
+"@graphql-mesh/types@npm:0.107.0, @graphql-mesh/types@npm:^0.107.0":
+  version: 0.107.0
+  resolution: "@graphql-mesh/types@npm:0.107.0"
   dependencies:
     "@graphql-hive/pubsub": "npm:^2.2.1"
     "@graphql-tools/batch-delegate": "npm:^10.0.29"
@@ -3901,7 +3901,7 @@ __metadata:
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/dd2aa463c0c65adcc92bba3b61aa64d2b9361c5ae2d0a1b156055d565352f8e86d1a05eae5c2a8ebe9fc450a6c54f5ccb53bc6d4f7452de81032f2112af5ae4d
+  checksum: 10c0/a1947c2012a2124affeb27c0739d9e12b51924787e30e38e026fd09b70d731ecae9fcda73e0b4cfbd0181fc9cb18e990cd32026c3eb5e2f8fafebf42e849da90
   languageName: node
   linkType: hard
 
@@ -3923,9 +3923,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/types@npm:^0.107.0":
-  version: 0.107.0
-  resolution: "@graphql-mesh/types@npm:0.107.0"
+"@graphql-mesh/types@npm:^0.105.0, @graphql-mesh/types@npm:^0.105.1":
+  version: 0.105.1
+  resolution: "@graphql-mesh/types@npm:0.105.1"
   dependencies:
     "@graphql-hive/pubsub": "npm:^2.2.1"
     "@graphql-tools/batch-delegate": "npm:^10.0.29"
@@ -3937,7 +3937,7 @@ __metadata:
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/a1947c2012a2124affeb27c0739d9e12b51924787e30e38e026fd09b70d731ecae9fcda73e0b4cfbd0181fc9cb18e990cd32026c3eb5e2f8fafebf42e849da90
+  checksum: 10c0/dd2aa463c0c65adcc92bba3b61aa64d2b9361c5ae2d0a1b156055d565352f8e86d1a05eae5c2a8ebe9fc450a6c54f5ccb53bc6d4f7452de81032f2112af5ae4d
   languageName: node
   linkType: hard
 
