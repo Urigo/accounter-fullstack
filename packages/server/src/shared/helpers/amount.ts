@@ -65,6 +65,12 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Sek;
     case 'ILS':
       return Currency.Ils;
+    // The Poalim securities feed spells its currencies out in Hebrew — see CURRENCIES in
+    // packages/modern-poalim-scraper/src/zod-schemas/hapoalim-securities-transactions-schema.ts
+    case 'שקל חדש':
+      return Currency.Ils;
+    case 'דולר ארה"ב':
+      return Currency.Usd;
     case 'GRT':
       return Currency.Grt;
     case 'USDC':

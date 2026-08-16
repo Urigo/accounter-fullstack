@@ -101,6 +101,15 @@ async function truncate(table: string) {
   await pool.query(`DELETE FROM accounter_schema.${table}`);
 }
 
+/**
+ * The poalim_securities* tables are also written by the foreign-securities suite, which runs
+ * concurrently — an unqualified DELETE there wipes its fixtures mid-test (and vice versa).
+ * Everything this suite inserts belongs to TEST_OWNER_ID, so scoping the cleanup is enough.
+ */
+async function truncateOwned(table: string) {
+  await pool.query(`DELETE FROM accounter_schema.${table} WHERE owner_id = $1`, [TEST_OWNER_ID]);
+}
+
 // ── Poalim ILS ────────────────────────────────────────────────────────────────
 
 describe('uploadPoalimIlsTransactions', () => {
@@ -258,7 +267,7 @@ describe('uploadPoalimSwiftTransactions', () => {
 // ── Poalim Securities ─────────────────────────────────────────────────────────
 
 describe('uploadPoalimSecurities', () => {
-  beforeEach(() => truncate('poalim_securities'));
+  beforeEach(() => truncateOwned('poalim_securities'));
 
   // Synthetic values only — never lifted from a real bank capture.
   const baseSecurity: PoalimSecurityInput = {
@@ -371,7 +380,7 @@ describe('uploadPoalimSecurities', () => {
 // ── Poalim Securities Transactions ────────────────────────────────────────────
 
 describe('uploadPoalimSecuritiesTransactions', () => {
-  beforeEach(() => truncate('poalim_securities_transactions'));
+  beforeEach(() => truncateOwned('poalim_securities_transactions'));
 
   // Synthetic values only — never lifted from a real bank capture. Timestamps keep
   // the bank's .NET round-trip shape (7 fractional digits, Israel offset, and the

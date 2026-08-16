@@ -15,6 +15,74 @@ export default gql`
     details: Security
     " The charge's transactions whose description carries this key "
     transactions: [Transaction!]!
+    " Ingested portfolio executions matched to those transactions by account, date and amount "
+    executions: [SecurityExecution!]!
+  }
+
+  " A single executed action in a Poalim securities portfolio, matched to a charge transaction "
+  type SecurityExecution {
+    id: UUID!
+    " Trade (execution) date "
+    tradeDate: TimelessDate!
+    valueDate: TimelessDate
+    settlementDate: TimelessDate
+    " Set for corporate actions such as dividends "
+    paymentDate: TimelessDate
+    tradeType: SecurityTradeType!
+    transactionType: SecurityTransactionType!
+    " Set for corporate actions such as dividends "
+    paymentType: SecurityPaymentType
+    " Nominal value — source field NV. Fractional for ETFs and mutual funds "
+    quantity: Float
+    " Price per unit, in the trade currency "
+    tradePrice: Float
+    " Value before commissions and taxes "
+    tradeGrossValue: FinancialAmount
+    " Net cash effect of the execution, in the trade currency "
+    netValue: FinancialAmount
+    " The same net effect in ILS, as the bank reports it "
+    netValueIls: FinancialAmount
+    tradeCommission: FinancialAmount
+    managementFees: FinancialAmount
+    " Source column israe_tax_value — the missing letter is the bank's. Reported in ILS, like its NIS-suffixed siblings "
+    israelTaxValue: FinancialAmount
+    nominalProfitLoss: FinancialAmount
+    realProfitLoss: FinancialAmount
+    symbol: String
+    isin: String
+  }
+
+  " Direction of a securities execution, as the bank files it "
+  enum SecurityTradeType {
+    BUY
+    SELL
+    DIVIDEND_PAYMENT
+    INTEREST_PAYMENT
+    REDEMPTION
+    STOCK_DISTRIBUTION
+    TRANSFER_IN
+    TRANSFER_OUT
+    TRANSFER_IN_TWO_SIDED
+    TRANSFER_OUT_TWO_SIDED
+  }
+
+  " The bucket the bank files an execution under; coarser than SecurityTradeType "
+  enum SecurityTransactionType {
+    BUY
+    SELL
+    PAYMENTS_AND_CORPORATE_ACTIONS
+    TRANSFERS
+  }
+
+  " The corporate action behind a payment execution "
+  enum SecurityPaymentType {
+    DIVIDEND
+    DIVIDEND_IN_KIND
+    INTEREST
+    REDEMPTION
+    EXPIRATION
+    SHARE_CONSOLIDATION
+    COMPULSORY_TENDER_OFFER
   }
 
   " Static reference details of a security held in a Poalim trading account "
