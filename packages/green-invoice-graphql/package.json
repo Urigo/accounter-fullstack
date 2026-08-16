@@ -60,7 +60,7 @@
     "@graphql-mesh/http": "0.109.0",
     "@graphql-mesh/json-schema": "0.112.0",
     "@graphql-mesh/runtime": "0.107.1",
-    "@graphql-mesh/store": "0.105.1",
+    "@graphql-mesh/store": "0.107.0",
     "@graphql-mesh/types": "0.107.0",
     "@graphql-mesh/utils": "0.105.1",
     "graphql": "16.14.2",
