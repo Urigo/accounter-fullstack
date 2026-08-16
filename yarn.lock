@@ -3715,7 +3715,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/runtime@npm:0.107.1, @graphql-mesh/runtime@npm:^0.107.1":
+"@graphql-mesh/runtime@npm:0.107.1":
   version: 0.107.1
   resolution: "@graphql-mesh/runtime@npm:0.107.1"
   dependencies:
