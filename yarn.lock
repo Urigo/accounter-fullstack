@@ -17,16 +17,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@0no-co/graphqlsp@npm:1.17.3":
-  version: 1.17.3
-  resolution: "@0no-co/graphqlsp@npm:1.17.3"
+"@0no-co/graphqlsp@npm:1.17.4":
+  version: 1.17.4
+  resolution: "@0no-co/graphqlsp@npm:1.17.4"
   dependencies:
-    "@gql.tada/internal": "npm:^1.2.0"
+    "@gql.tada/internal": "npm:^1.2.1"
     graphql: "npm:^15.5.0 || ^16.0.0 || ^17.0.0"
   peerDependencies:
     graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
     typescript: ^5.0.0 || ^6.0.0
-  checksum: 10c0/fa0f2d74275827e1c8aee36e07aaa0d86138b9f450e3e06e51be05cd507a95c1f7e7f603eaf611f6defdb2634f19acd0c2be16c222eff4802c67916ca77d4d7d
+  checksum: 10c0/a5a4351b05689d44457c046096c98892e7ece9fdbe158c1aad7b73e1e4874cae083ee78ca9aa2969e49dd7a0dea0dbc84de93ed27fc3dd682b1abcb3ed9bc91b
   languageName: node
   linkType: hard
 
@@ -68,7 +68,7 @@ __metadata:
   resolution: "@accounter/client@workspace:packages/client"
   dependencies:
     "@atlaskit/pragmatic-drag-and-drop": "npm:3.0.0"
-    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.0"
+    "@atlaskit/pragmatic-drag-and-drop-hitbox": "npm:2.0.1"
     "@auth0/auth0-react": "npm:2.24.0"
     "@emotion/react": "npm:11.14.0"
     "@emotion/styled": "npm:11.14.1"
@@ -81,7 +81,7 @@ __metadata:
     "@minoru/react-dnd-treeview": "npm:3.5.4"
     "@mui/material": "npm:9.3.1"
     "@mui/x-charts": "npm:8.29.2"
-    "@storybook/react-vite": "npm:10.5.7"
+    "@storybook/react-vite": "npm:10.5.8"
     "@tailwindcss/vite": "npm:4.3.3"
     "@tanstack/react-query": "npm:5.101.4"
     "@tanstack/react-table": "npm:9.1.2"
@@ -98,7 +98,7 @@ __metadata:
     cmdk: "npm:1.1.1"
     csv-parse: "npm:7.0.2"
     date-fns: "npm:4.4.0"
-    dayjs: "npm:1.11.21"
+    dayjs: "npm:1.11.22"
     decimal.js: "npm:10.6.0"
     deep-equal: "npm:2.2.3"
     dotenv: "npm:17.4.2"
@@ -106,7 +106,7 @@ __metadata:
     fast-myers-diff: "npm:3.2.0"
     graphql: "npm:16.14.2"
     happy-dom: "npm:20.11.2"
-    html2canvas-pro: "npm:2.3.7"
+    html2canvas-pro: "npm:2.3.8"
     iconv-lite: "npm:0.7.3"
     json-bigint-patch: "npm:0.0.9"
     lucide-react: "npm:1.31.0"
@@ -117,14 +117,14 @@ __metadata:
     react-day-picker: "npm:10.0.1"
     react-dnd: "npm:16.0.1"
     react-dom: "npm:19.2.8"
-    react-error-boundary: "npm:6.1.2"
+    react-error-boundary: "npm:6.1.3"
     react-hook-form: "npm:7.85.0"
     react-number-format: "npm:5.4.5"
     react-router-dom: "npm:7.18.2"
     react-to-pdf: "npm:3.2.2"
     recharts: "npm:3.10.1"
     sonner: "npm:2.0.8"
-    storybook: "npm:10.5.7"
+    storybook: "npm:10.5.8"
     tailwind-merge: "npm:3.6.0"
     tailwindcss: "npm:4.3.3"
     tailwindcss-animate: "npm:1.0.7"
@@ -278,7 +278,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.43.0"
     "@types/node": "npm:25.9.5"
     dotenv: "npm:17.4.2"
-    jose: "npm:6.2.8"
+    jose: "npm:6.2.9"
     tsx: "npm:4.23.12"
     typescript: "npm:6.0.3"
     vitest: "npm:4.1.10"
@@ -292,7 +292,7 @@ __metadata:
   dependencies:
     "@types/node-fetch": "npm:2.6.13"
     "@types/uuid": "npm:11.0.0"
-    concurrently: "npm:10.0.4"
+    concurrently: "npm:10.0.5"
     date-fns: "npm:4.4.0"
     node-fetch: "npm:3.3.2"
     node-xlsx: "npm:0.24.0"
@@ -371,12 +371,12 @@ __metadata:
     "@accounter/pcn874-generator": "workspace:^"
     "@accounter/shaam-uniform-format-generator": "workspace:^"
     "@accounter/shaam6111-generator": "workspace:^"
-    "@ai-sdk/anthropic": "npm:4.0.38"
+    "@ai-sdk/anthropic": "npm:4.0.39"
     "@envelop/core": "npm:5.5.1"
     "@envelop/generic-auth": "npm:11.1.1"
     "@envelop/graphql-modules": "npm:9.1.1"
-    "@google-cloud/pubsub": "npm:6.0.0"
-    "@graphql-hive/yoga": "npm:0.49.1"
+    "@google-cloud/pubsub": "npm:6.0.1"
+    "@graphql-hive/yoga": "npm:0.49.3"
     "@graphql-tools/utils": "npm:11.2.2"
     "@graphql-yoga/plugin-defer-stream": "npm:3.21.2"
     "@opentelemetry/api": "npm:1.9.1"
@@ -394,7 +394,7 @@ __metadata:
     "@types/node": "npm:25.9.5"
     "@types/pg": "npm:8.21.0"
     "@whatwg-node/fetch": "npm:0.10.13"
-    ai: "npm:7.0.64"
+    ai: "npm:7.0.66"
     async-mutex: "npm:0.5.0"
     auth0: "npm:6.2.0"
     basic-auth: "npm:3.0.0"
@@ -411,7 +411,7 @@ __metadata:
     graphql-yoga: "npm:5.21.2"
     iconv-lite: "npm:0.7.3"
     inline-css: "npm:4.0.3"
-    jose: "npm:6.2.8"
+    jose: "npm:6.2.9"
     json-bigint-patch: "npm:0.0.9"
     node-cache: "npm:5.1.2"
     node-xlsx: "npm:0.24.0"
@@ -423,7 +423,7 @@ __metadata:
     rimraf: "npm:6.1.3"
     slonik: "npm:49.10.9"
     strip-indent: "npm:4.1.1"
-    tsc-alias: "npm:1.9.0"
+    tsc-alias: "npm:1.9.1"
     tsx: "npm:4.23.12"
     typescript: "npm:6.0.3"
     zod: "npm:4.4.3"
@@ -461,28 +461,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/anthropic@npm:4.0.38":
-  version: 4.0.38
-  resolution: "@ai-sdk/anthropic@npm:4.0.38"
+"@ai-sdk/anthropic@npm:4.0.39":
+  version: 4.0.39
+  resolution: "@ai-sdk/anthropic@npm:4.0.39"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.7"
     "@ai-sdk/provider-utils": "npm:5.0.27"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/cf2a6763ae850c2b7826f31f528b4d02f8a2d6fda20fc902fab853315093a111eb9c4156ec89aa7d6697a597fe5740f6b5bd61f3613581a5934317a69de788aa
+  checksum: 10c0/5c656c23cbf3759d2e526b35f26ad77e5c2c3995ebcf88b7d469f791261121d7a290e65d460fae5597948670ec994bf271cfd2661fb69d18448fec0b17a74af6
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:4.0.51":
-  version: 4.0.51
-  resolution: "@ai-sdk/gateway@npm:4.0.51"
+"@ai-sdk/gateway@npm:4.0.52":
+  version: 4.0.52
+  resolution: "@ai-sdk/gateway@npm:4.0.52"
   dependencies:
     "@ai-sdk/provider": "npm:4.0.7"
     "@ai-sdk/provider-utils": "npm:5.0.27"
     "@vercel/oidc": "npm:3.2.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/a8abd0b34430dc3b90300c031a857917916c892ebef78bcb472690ae7612f895749e0114be0d4e181f98695bbca81ebea6d6c8ef1652004d52a1dbb7e85b0a23
+  checksum: 10c0/60a12920066afa5a485b4d78a75120696417efde66b4082fe45ca4d4cd1a1cb1ae961fa9367d7a1a92ffab224da817d7b0a20edb2982c43c7a48319209076f9f
   languageName: node
   linkType: hard
 
@@ -552,17 +552,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.0"
+"@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.1":
+  version: 2.0.1
+  resolution: "@atlaskit/pragmatic-drag-and-drop-hitbox@npm:2.0.1"
   dependencies:
-    "@atlaskit/pragmatic-drag-and-drop": "npm:^2.0.0"
+    "@atlaskit/pragmatic-drag-and-drop": "npm:^3.0.0"
     "@babel/runtime": "npm:^7.0.0"
-  checksum: 10c0/6aebd689bceb4f8d998580632d51daa2d5e8d4c288295b51fa4f4f03312aea7cd8ce54010d0797350f7c08d00b56aff4c065e3c85c227b44f9939c8d738cf589
+  checksum: 10c0/f0adb0f58007ce3b2a7b694a90f3717c8d479a139e85bf2cd37b3344f33f1007600f3c831eca218573ffa30cba3c9341dcd018fa37e38bd003e99f2145abce5e
   languageName: node
   linkType: hard
 
-"@atlaskit/pragmatic-drag-and-drop@npm:3.0.0":
+"@atlaskit/pragmatic-drag-and-drop@npm:3.0.0, @atlaskit/pragmatic-drag-and-drop@npm:^3.0.0":
   version: 3.0.0
   resolution: "@atlaskit/pragmatic-drag-and-drop@npm:3.0.0"
   dependencies:
@@ -570,17 +570,6 @@ __metadata:
     bind-event-listener: "npm:^3.0.0"
     raf-schd: "npm:^4.0.3"
   checksum: 10c0/7d760cfdf642522f5d85b3bb808e6c6e795b283933625f84ab6ec656c86d0845df5e8749d61528fb51a6aa0770b8b34230dc11edcf0abbb603240f233bfa23e2
-  languageName: node
-  linkType: hard
-
-"@atlaskit/pragmatic-drag-and-drop@npm:^2.0.0":
-  version: 2.0.1
-  resolution: "@atlaskit/pragmatic-drag-and-drop@npm:2.0.1"
-  dependencies:
-    "@babel/runtime": "npm:^7.0.0"
-    bind-event-listener: "npm:^3.0.0"
-    raf-schd: "npm:^4.0.3"
-  checksum: 10c0/3e1890c34ab0457befbc21fd4119d68eef3b7a73ac5369442072e20e375e1fcfa2cc3a32d5e68f63595902f446aa27eb3111b85c5886e1ebd6308ccada886db6
   languageName: node
   linkType: hard
 
@@ -2387,28 +2376,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/paginator@npm:^6.0.0":
-  version: 6.1.0
-  resolution: "@google-cloud/paginator@npm:6.1.0"
-  dependencies:
-    extend: "npm:^3.0.2"
-  checksum: 10c0/0b16cd5a8f13290bebde960aed43f1eaadc6817b52d4ee57cbcafdfd567863d1c8f63e5f93c30cf3871bc71aa24e041f1903b1de014deeb35b341f364955ac8c
-  languageName: node
-  linkType: hard
-
 "@google-cloud/paginator@npm:^7.0.0":
   version: 7.0.1
   resolution: "@google-cloud/paginator@npm:7.0.1"
   dependencies:
     extend: "npm:^3.0.2"
   checksum: 10c0/1d6826c68e6a10585e96ab9249c23b798732c63247ae29f1c228ba5a8aa84b32a89ba16bc30bd0c58283de9c90b62da4e43c1dc7c39d5025617c154635f49f67
-  languageName: node
-  linkType: hard
-
-"@google-cloud/precise-date@npm:^5.0.0":
-  version: 5.2.0
-  resolution: "@google-cloud/precise-date@npm:5.2.0"
-  checksum: 10c0/c61912caa220b4487d7b0863bbce296f8ee42c84b10ec8aa4d1faef648d2b32ea790bc8408d59841b530194b64f3f48d0ae143007852beea57a3fd9eb74517ad
   languageName: node
   linkType: hard
 
@@ -2419,24 +2392,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/projectify@npm:^5.0.0":
-  version: 5.2.0
-  resolution: "@google-cloud/projectify@npm:5.2.0"
-  checksum: 10c0/77fa431a8b68ba88e5ce17e5d50a5db99b1d6b1b26c9f83196038c39ba8d35aad0dcf6788d78ef1bba6cb802c37ecbec83c2a2151ab5687c491a485c54f85674
-  languageName: node
-  linkType: hard
-
 "@google-cloud/projectify@npm:^6.0.0":
   version: 6.0.1
   resolution: "@google-cloud/projectify@npm:6.0.1"
   checksum: 10c0/d4550e26632c76fa0ce40405cb7e24b4325c639797af84a45ce0df6d2a2d3433876a48b8dd35b783c9f2d50c37815c02691e536550be329328965aa7d40d9860
-  languageName: node
-  linkType: hard
-
-"@google-cloud/promisify@npm:^5.0.0":
-  version: 5.1.0
-  resolution: "@google-cloud/promisify@npm:5.1.0"
-  checksum: 10c0/ed60e724efcd47e35c2a47dd226ea9791b0afcedd963a70f0ac072bbd9e82b72fd06e528242fd505d2de9743178aca76e11e2bea42bd435b020fa8d0f44ee5c2
   languageName: node
   linkType: hard
 
@@ -2447,47 +2406,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@google-cloud/pubsub-api@npm:^0.2.1":
-  version: 0.2.1
-  resolution: "@google-cloud/pubsub-api@npm:0.2.1"
-  dependencies:
-    google-gax: "npm:^5.0.7"
-  checksum: 10c0/d7591f35c0793467dc4c3773b30f2165dddfe74e14b5d263ba20b997bb2431b759f3527bf1dad63783fd0698701ce6f11200b636696e2f234c3f920507ed1622
-  languageName: node
-  linkType: hard
-
 "@google-cloud/pubsub-api@npm:^0.3.0":
   version: 0.3.0
   resolution: "@google-cloud/pubsub-api@npm:0.3.0"
   dependencies:
     google-gax: "npm:^6.0.0"
   checksum: 10c0/b2f9dc4edc95e3345fae32112d06dddfd6232ef493cf282eb39f3d4ab80498ae78ce683c0b9115485efef2b465923f55491c486391207da1365d733681686b64
-  languageName: node
-  linkType: hard
-
-"@google-cloud/pubsub@npm:6.0.0":
-  version: 6.0.0
-  resolution: "@google-cloud/pubsub@npm:6.0.0"
-  dependencies:
-    "@google-cloud/paginator": "npm:^6.0.0"
-    "@google-cloud/precise-date": "npm:^5.0.0"
-    "@google-cloud/projectify": "npm:^5.0.0"
-    "@google-cloud/promisify": "npm:^5.0.0"
-    "@google-cloud/pubsub-api": "npm:^0.2.1"
-    "@opentelemetry/api": "npm:~1.9.0"
-    "@opentelemetry/core": "npm:^1.30.1"
-    "@opentelemetry/semantic-conventions": "npm:~1.39.0"
-    arrify: "npm:^2.0.0"
-    extend: "npm:^3.0.2"
-    google-auth-library: "npm:^10.5.0"
-    google-gax: "npm:^5.0.5"
-    google-logging-utils: "npm:^1.1.3"
-    heap-js: "npm:^2.6.0"
-    is-stream-ended: "npm:^0.1.4"
-    lodash.snakecase: "npm:^4.1.1"
-    long: "npm:^5.3.1"
-    p-defer: "npm:^3.0.0"
-  checksum: 10c0/6051fd0eb0f10a580d20a96383e0cf668bcaa76ab433b40954eb2f3433bea8d244d3728b7204ed808192dca8512659fbbff5ad778bd75ab1f20044b6b3bbd5b1
   languageName: node
   linkType: hard
 
@@ -2517,7 +2441,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gql.tada/internal@npm:^1.2.0":
+"@gql.tada/internal@npm:^1.2.1":
   version: 1.2.2
   resolution: "@gql.tada/internal@npm:1.2.2"
   dependencies:
@@ -3075,25 +2999,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/core@npm:0.22.1":
-  version: 0.22.1
-  resolution: "@graphql-hive/core@npm:0.22.1"
-  dependencies:
-    "@graphql-hive/logger": "npm:^1.1.0"
-    "@graphql-hive/signal": "npm:^2.0.0"
-    "@graphql-tools/utils": "npm:^10.0.0"
-    "@whatwg-node/fetch": "npm:^0.10.13"
-    async-retry: "npm:^1.3.3"
-    events: "npm:^3.3.0"
-    js-md5: "npm:0.8.3"
-    lodash.sortby: "npm:^4.7.0"
-    tiny-lru: "npm:^11.4.7"
-  peerDependencies:
-    graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
-  checksum: 10c0/27dd876df2a12b06f090370f940aceb2adbb166d33445f0a03b48ab5aaf1b892c60778cd278228ada11ed5dc3c79910e2fab5bf924e25213154dbe3bb975dcdd
-  languageName: node
-  linkType: hard
-
 "@graphql-hive/core@npm:0.22.3":
   version: 0.22.3
   resolution: "@graphql-hive/core@npm:0.22.3"
@@ -3167,17 +3072,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-hive/yoga@npm:0.49.1":
-  version: 0.49.1
-  resolution: "@graphql-hive/yoga@npm:0.49.1"
+"@graphql-hive/yoga@npm:0.49.3":
+  version: 0.49.3
+  resolution: "@graphql-hive/yoga@npm:0.49.3"
   dependencies:
-    "@graphql-hive/core": "npm:0.22.1"
+    "@graphql-hive/core": "npm:0.22.3"
     "@graphql-hive/logger": "npm:^1.1.0"
     "@graphql-yoga/plugin-persisted-operations": "npm:^3.9.0"
   peerDependencies:
     graphql: ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     graphql-yoga: ^5.10.8
-  checksum: 10c0/d202dc2cc67a16ffa290f6a99961c1893775d863b4c2934b739eae95d1a8cb27359c885b3c9756ed4f46786885a59b9a1cafaa6fd3f7f5e6f068a570a8a38f43
+  checksum: 10c0/5a8ddc7d2aba643ef22ac8b550e059118511513adcd466ffd5179f534c84ac9604ef9a16a43e480aa62205b0070df7725ac432d379a704505f99f8b98a9b930f
   languageName: node
   linkType: hard
 
@@ -6980,17 +6885,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/core@npm:^1.30.1":
-  version: 1.30.1
-  resolution: "@opentelemetry/core@npm:1.30.1"
-  dependencies:
-    "@opentelemetry/semantic-conventions": "npm:1.28.0"
-  peerDependencies:
-    "@opentelemetry/api": ">=1.0.0 <1.10.0"
-  checksum: 10c0/4c25ba50a6137c2ba9ca563fb269378f3c9ca6fd1b3f15dbb6eff78eebf5656f281997cbb7be8e51c01649fd6ad091083fcd8a42dd9b5dfac907dc06d7cfa092
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/exporter-logs-otlp-grpc@npm:0.221.0":
   version: 0.221.0
   resolution: "@opentelemetry/exporter-logs-otlp-grpc@npm:0.221.0"
@@ -7925,13 +7819,6 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ">=1.3.0 <1.10.0"
   checksum: 10c0/8f22a90d197cc6eec8dc3b5a6f81aa7118726052ebcad44948d1e9b146ec897c710f449c73dbda3ce7c580aca17c8c84976928048bb3e1e1428a229b931ede2e
-  languageName: node
-  linkType: hard
-
-"@opentelemetry/semantic-conventions@npm:1.28.0":
-  version: 1.28.0
-  resolution: "@opentelemetry/semantic-conventions@npm:1.28.0"
-  checksum: 10c0/deb8a0f744198071e70fea27143cf7c9f7ecb7e4d7b619488c917834ea09b31543c1c2bcea4ec5f3cf68797f0ef3549609c14e859013d9376400ac1499c2b9cb
   languageName: node
   linkType: hard
 
@@ -10688,28 +10575,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/builder-vite@npm:10.5.7":
-  version: 10.5.7
-  resolution: "@storybook/builder-vite@npm:10.5.7"
+"@storybook/builder-vite@npm:10.5.8":
+  version: 10.5.8
+  resolution: "@storybook/builder-vite@npm:10.5.8"
   dependencies:
-    "@storybook/csf-plugin": "npm:10.5.7"
+    "@storybook/csf-plugin": "npm:10.5.8"
     ts-dedent: "npm:^2.0.0"
   peerDependencies:
-    storybook: ^10.5.7
+    storybook: ^10.5.8
     vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
-  checksum: 10c0/b80a3ca236ed8482c712eea2a87b6f7352714283ac195fcf107e20f4e2f1c0a084c13f8ec72578bbc357664c63082f53c6c79d90342eba4bcc40b177234bfdb4
+  checksum: 10c0/cad826e9b173e786e36546c961d0b381f8a7b708107be86778b1d0d84b6ae5d7e8ad2feeb3ab4845c1af53fed6f729489616202c1d27254552c40a85f2df1ef0
   languageName: node
   linkType: hard
 
-"@storybook/csf-plugin@npm:10.5.7":
-  version: 10.5.7
-  resolution: "@storybook/csf-plugin@npm:10.5.7"
+"@storybook/csf-plugin@npm:10.5.8":
+  version: 10.5.8
+  resolution: "@storybook/csf-plugin@npm:10.5.8"
   dependencies:
     unplugin: "npm:^2.3.5"
   peerDependencies:
     esbuild: "*"
     rollup: "*"
-    storybook: ^10.5.7
+    storybook: ^10.5.8
     vite: "*"
     webpack: "*"
   peerDependenciesMeta:
@@ -10721,7 +10608,7 @@ __metadata:
       optional: true
     webpack:
       optional: true
-  checksum: 10c0/4810090f209c0615d75d94954bc5a2bac29fbb5a83a1167037569d52a4ba9cd74526dd757a19ede396b3f130b7a85cd8471b0e35e401248338291c48adad1cc0
+  checksum: 10c0/9bf0961e69f0ab481f9122eb6f545c0b1f1ec84fe31d21d32a792f3a4f87029580db3d75df0705aaa23ca5be240fc8a080a6d12a194a9a460e6218a4eb395318
   languageName: node
   linkType: hard
 
@@ -10741,32 +10628,32 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/react-dom-shim@npm:10.5.7":
-  version: 10.5.7
-  resolution: "@storybook/react-dom-shim@npm:10.5.7"
+"@storybook/react-dom-shim@npm:10.5.8":
+  version: 10.5.8
+  resolution: "@storybook/react-dom-shim@npm:10.5.8"
   peerDependencies:
     "@types/react": ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     "@types/react-dom": ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    storybook: ^10.5.7
+    storybook: ^10.5.8
   peerDependenciesMeta:
     "@types/react":
       optional: true
     "@types/react-dom":
       optional: true
-  checksum: 10c0/587f66a4d54263e6aaa95be1bdd9544359f72e307afd8e9dca7e5356594438a266e52b8700771f3fd6fa43ee86c88f7544823051c9c18e0d92bcb24d1cc055dc
+  checksum: 10c0/9f39797d905046a9e58c276824c8c0e5d6ed06b977799fe6f9ae82601dbb621ce59b953ce63e123253736a1852e2ca29d14167f5070fb03ae0c37bbf2a84503f
   languageName: node
   linkType: hard
 
-"@storybook/react-vite@npm:10.5.7":
-  version: 10.5.7
-  resolution: "@storybook/react-vite@npm:10.5.7"
+"@storybook/react-vite@npm:10.5.8":
+  version: 10.5.8
+  resolution: "@storybook/react-vite@npm:10.5.8"
   dependencies:
     "@joshwooding/vite-plugin-react-docgen-typescript": "npm:^0.7.0"
     "@rollup/pluginutils": "npm:^5.0.2"
-    "@storybook/builder-vite": "npm:10.5.7"
-    "@storybook/react": "npm:10.5.7"
+    "@storybook/builder-vite": "npm:10.5.8"
+    "@storybook/react": "npm:10.5.8"
     empathic: "npm:^2.0.0"
     magic-string: "npm:^0.30.0"
     react-docgen: "npm:^8.0.2"
@@ -10775,22 +10662,22 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    storybook: ^10.5.7
+    storybook: ^10.5.8
     typescript: ">= 4.9.x"
     vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10c0/c4a7725e55eb0fe6be5fb3c56411bee8d71286f714c14137be7dac279752df5311d0f6455a03b8df5962335332955115000e3b848d019b4e1e10b31fa5656129
+  checksum: 10c0/882d4e0d1b5ac2669683282d18a5dc03de9e334222a94d6217c5518fb744f16773fd58bdd40a126caf7c62eb5dff16d094413261e73f68e227c3931848e72f31
   languageName: node
   linkType: hard
 
-"@storybook/react@npm:10.5.7":
-  version: 10.5.7
-  resolution: "@storybook/react@npm:10.5.7"
+"@storybook/react@npm:10.5.8":
+  version: 10.5.8
+  resolution: "@storybook/react@npm:10.5.8"
   dependencies:
     "@storybook/global": "npm:^5.0.0"
-    "@storybook/react-dom-shim": "npm:10.5.7"
+    "@storybook/react-dom-shim": "npm:10.5.8"
     react-docgen: "npm:^8.0.2"
     react-docgen-typescript: "npm:^2.2.2"
   peerDependencies:
@@ -10798,7 +10685,7 @@ __metadata:
     "@types/react-dom": ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    storybook: ^10.5.7
+    storybook: ^10.5.8
     typescript: ">= 4.9.x"
   peerDependenciesMeta:
     "@types/react":
@@ -10807,7 +10694,7 @@ __metadata:
       optional: true
     typescript:
       optional: true
-  checksum: 10c0/8dbd360365c9c2379a71c2a6ed33acb65512df44c8e62a46e86ebe4c6d32097219d65603f86b3bd1501942bca1f88f347bf09ed307bd2bc59c4b56604bc48a82
+  checksum: 10c0/72851d80bcbe5da7a1d5b5f465115d05cc35fcbfb24c8d7e3af914e7abf48a4e9244e1b12d6f6ee81a4552bcd8fa7e693029712f74b6019b3668fd1fa7492bdf
   languageName: node
   linkType: hard
 
@@ -12522,7 +12409,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "accounter-monorepo@workspace:."
   dependencies:
-    "@0no-co/graphqlsp": "npm:1.17.3"
+    "@0no-co/graphqlsp": "npm:1.17.4"
     "@changesets/changelog-github": "npm:1.0.0"
     "@changesets/cli": "npm:2.31.1"
     "@eslint/compat": "npm:2.1.0"
@@ -12550,7 +12437,7 @@ __metadata:
     "@typescript-eslint/parser": "npm:8.67.0"
     "@vitest/coverage-v8": "npm:4.1.10"
     bob-the-bundler: "npm:7.0.1"
-    concurrently: "npm:10.0.4"
+    concurrently: "npm:10.0.5"
     dotenv: "npm:17.4.2"
     eslint: "npm:10.8.1"
     eslint-config-flat-gitignore: "npm:2.3.0"
@@ -12614,16 +12501,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:7.0.64":
-  version: 7.0.64
-  resolution: "ai@npm:7.0.64"
+"ai@npm:7.0.66":
+  version: 7.0.66
+  resolution: "ai@npm:7.0.66"
   dependencies:
-    "@ai-sdk/gateway": "npm:4.0.51"
+    "@ai-sdk/gateway": "npm:4.0.52"
     "@ai-sdk/provider": "npm:4.0.7"
     "@ai-sdk/provider-utils": "npm:5.0.27"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/ffd7cbf3841881ab72c8c7c47578714f3164e0e26d2fa602e6e079ae29375ca65032f7d2a4f5081ad2132b9e240552a694ef05a3495bd25a418ea888864373fa
+  checksum: 10c0/a43e9316a6c24aff7a93b938a9d5840c2322e997f5793b4526feda0f6125944d36dea08a52b92ee85b45b1e9ac4a014b5ef5be0b3caae65a1902b20fa3b49451
   languageName: node
   linkType: hard
 
@@ -14394,9 +14281,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"concurrently@npm:10.0.4":
-  version: 10.0.4
-  resolution: "concurrently@npm:10.0.4"
+"concurrently@npm:10.0.5":
+  version: 10.0.5
+  resolution: "concurrently@npm:10.0.5"
   dependencies:
     chalk: "npm:5.6.2"
     rxjs: "npm:7.8.2"
@@ -14407,7 +14294,7 @@ __metadata:
   bin:
     conc: dist/bin/index.js
     concurrently: dist/bin/index.js
-  checksum: 10c0/8f4c1380541230425350cba407df59728532728105a1575cba3d9fae97e13621b905cde0f03f22f26be21505544b3b1e10a45080db27330bb1891495c019a8df
+  checksum: 10c0/2e66ece2f2a016b4f8b175f88f67d84bbedc8eff864310d37fe8c82e58459a40cfe69c5f0fe8ce9fc97f028157d7adb1c71629433e305e95f447a7840e417ad9
   languageName: node
   linkType: hard
 
@@ -14899,7 +14786,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dayjs@npm:1.11.21, dayjs@npm:^1.11.21":
+"dayjs@npm:1.11.22":
+  version: 1.11.22
+  resolution: "dayjs@npm:1.11.22"
+  checksum: 10c0/b9e5a807f21e323359ded3ae28e60d6fa0e760f021a1bb271becb336e11e42d796e00a4c1a690c6d233034a260ef9c72d94d30b02ffa721857d2144b750ca7c6
+  languageName: node
+  linkType: hard
+
+"dayjs@npm:^1.11.21":
   version: 1.11.21
   resolution: "dayjs@npm:1.11.21"
   checksum: 10c0/bd97dfdc4bfea3c66268635690313828b386faa040fbc1f829ff42a2bd748b72c9d9b3c8f9616ce9e61fcb78923f1461a462c969c54b1084458ae1b715898fb0
@@ -17681,17 +17575,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"gcp-metadata@npm:8.1.2":
-  version: 8.1.2
-  resolution: "gcp-metadata@npm:8.1.2"
-  dependencies:
-    gaxios: "npm:^7.0.0"
-    google-logging-utils: "npm:^1.0.0"
-    json-bigint: "npm:^1.0.0"
-  checksum: 10c0/15a61231a9410dc11c2828d2c9fdc8b0a939f1af746195c44edc6f2ffea0acab52cef3a7b9828069a36fd5d68bda730f7328a415fe42a01258f6e249dfba6908
-  languageName: node
-  linkType: hard
-
 "gcp-metadata@npm:^8.0.0":
   version: 8.1.4
   resolution: "gcp-metadata@npm:8.1.4"
@@ -17996,20 +17879,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^10.5.0":
-  version: 10.9.1
-  resolution: "google-auth-library@npm:10.9.1"
-  dependencies:
-    base64-js: "npm:^1.3.0"
-    ecdsa-sig-formatter: "npm:^1.0.11"
-    gaxios: "npm:^7.1.4"
-    gcp-metadata: "npm:8.1.2"
-    google-logging-utils: "npm:1.1.3"
-    jws: "npm:^4.0.0"
-  checksum: 10c0/46babe840d295ad94044bdba763bd41b10dc50d60f00e3e7b441465db171dc54c8f33ba44212db40e84aba3a72c23d642fa5a807e778e60049ad7d860d100680
-  languageName: node
-  linkType: hard
-
 "google-auth-library@npm:^11.0.0":
   version: 11.0.2
   resolution: "google-auth-library@npm:11.0.2"
@@ -18021,25 +17890,6 @@ __metadata:
     google-logging-utils: "npm:^2.0.0"
     jws: "npm:^4.0.0"
   checksum: 10c0/2da32dc52c4148d6cdea0ddf9ee00da8b7d5903054d36b45cc2023bf4a4e0ea7ec057521499bf189a605d225a2ca9c513d5cf9e5e76f6478dddcbc4d93833f8c
-  languageName: node
-  linkType: hard
-
-"google-gax@npm:^5.0.5, google-gax@npm:^5.0.7":
-  version: 5.0.8
-  resolution: "google-gax@npm:5.0.8"
-  dependencies:
-    "@grpc/grpc-js": "npm:^1.12.6"
-    "@grpc/proto-loader": "npm:^0.8.0"
-    duplexify: "npm:^4.1.3"
-    google-auth-library: "npm:10.5.0"
-    google-logging-utils: "npm:1.1.3"
-    node-fetch: "npm:^3.3.2"
-    object-hash: "npm:^3.0.0"
-    proto3-json-serializer: "npm:3.0.4"
-    protobufjs: "npm:^7.5.4"
-    retry-request: "npm:^8.0.2"
-    rimraf: "npm:^5.0.1"
-  checksum: 10c0/dbeed0a959c7628393888e2b6da19767e265b803b19f92b5c35b3e776c123e359673da8b832387958012c70956c01f5bb8b19468405531cb7e2dd9aa28088fb7
   languageName: node
   linkType: hard
 
@@ -18068,7 +17918,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-logging-utils@npm:^1.0.0, google-logging-utils@npm:^1.1.3":
+"google-logging-utils@npm:^1.0.0":
   version: 1.2.0
   resolution: "google-logging-utils@npm:1.2.0"
   checksum: 10c0/a5bceaa13ef6ed7e84a4dd96d8acb5ca895c7777a35629921096c53b1740518d3a8aa35d808697488ecf0416f2e72d462148ecbbbec34a805b5eacc136171a53
@@ -18613,13 +18463,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html2canvas-pro@npm:2.3.7":
-  version: 2.3.7
-  resolution: "html2canvas-pro@npm:2.3.7"
+"html2canvas-pro@npm:2.3.8":
+  version: 2.3.8
+  resolution: "html2canvas-pro@npm:2.3.8"
   dependencies:
     css-line-break: "npm:^2.1.0"
     text-segmentation: "npm:^1.0.3"
-  checksum: 10c0/397d6fb81169c345d93f0670f09a42d8a09d164245329d01e2880b614d44746a83c26a788837f24c75c0c79cec34a198c7ab064aa61bdff476a6c7ac258f12b8
+  checksum: 10c0/60b7f6593e2261206cadaf0ae3d0375c2e0c8ea86fede19121bf8708f8099e32b6669cf6a67179716a5f5df3eae243fa814cbcd496c408701cc4021a6af059a6
   languageName: node
   linkType: hard
 
@@ -19810,10 +19660,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:6.2.8":
-  version: 6.2.8
-  resolution: "jose@npm:6.2.8"
-  checksum: 10c0/fe4c6a7197a1adab2251b000c1eaaa8b40b6cb7cfbef43dbc9e959dacd43bf2532827b2d5e0f4069731da79d26e4d9e4368ccb26559a42a884b3fe036927e6e1
+"jose@npm:6.2.9":
+  version: 6.2.9
+  resolution: "jose@npm:6.2.9"
+  checksum: 10c0/fc6d79b11fdd5cc1393bccd644533b3e2445fd8eb2468066eb23c01ed7f6b41deca710e8aabe9379a382cca7920740900c7f610bdf0be4ff5e7ee44412730d4c
   languageName: node
   linkType: hard
 
@@ -23791,15 +23641,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"proto3-json-serializer@npm:3.0.4":
-  version: 3.0.4
-  resolution: "proto3-json-serializer@npm:3.0.4"
-  dependencies:
-    protobufjs: "npm:^7.4.0"
-  checksum: 10c0/59150d5e6b396e00c0374e71eb4ebd6f33acd4212c0ad2acdda12181b08f923b733559d74ad78455085223efe24168d4d42887a8b8f15f7663f20debe5796081
-  languageName: node
-  linkType: hard
-
 "proto3-json-serializer@npm:^4.0.0":
   version: 4.0.2
   resolution: "proto3-json-serializer@npm:4.0.2"
@@ -23809,7 +23650,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^7.4.0, protobufjs@npm:^7.5.4, protobufjs@npm:^7.5.5":
+"protobufjs@npm:^7.5.4, protobufjs@npm:^7.5.5":
   version: 7.6.5
   resolution: "protobufjs@npm:7.6.5"
   dependencies:
@@ -24365,12 +24206,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-error-boundary@npm:6.1.2":
-  version: 6.1.2
-  resolution: "react-error-boundary@npm:6.1.2"
+"react-error-boundary@npm:6.1.3":
+  version: 6.1.3
+  resolution: "react-error-boundary@npm:6.1.3"
   peerDependencies:
+    "@types/react": ^18.0.0 || ^19.0.0
     react: ^18.0.0 || ^19.0.0
-  checksum: 10c0/592205d5bbf6f5bad792c8e5f68ec781775bb4abd2e96585f7b45016b3ed8f2697569d16bb3c0df95e2ef7c334be163c8477af9c511ec91c3984fdfbed9d186d
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/67e75beaf264dd0193a8fcdc2a93d1c9b25a2e1a6ca1aadc09d8526e0b7380aa490a48b6aebd398fe92772fba9521bf25d1734ff4655b716fb7548a573911ccb
   languageName: node
   linkType: hard
 
@@ -25107,16 +24952,6 @@ __metadata:
   version: 0.5.0
   resolution: "ret@npm:0.5.0"
   checksum: 10c0/220868b194f87bf1998e32e409086eec6b39e860c052bf267f8ad4d0131706a9773d45fd3f91acfb1a7c928fce002b694ab86fdba90bc8d4b8df68fa8645c5cc
-  languageName: node
-  linkType: hard
-
-"retry-request@npm:^8.0.2":
-  version: 8.0.4
-  resolution: "retry-request@npm:8.0.4"
-  dependencies:
-    extend: "npm:^3.0.2"
-    teeny-request: "npm:^10.0.0"
-  checksum: 10c0/b215cb986c30e12fccd163f819cd8c185344387ef6c5e55ef1d20e23b72f619dde6506c1cfd89d94b0bbba56658ea621ad6be769acedb43ef11710eeccf7758f
   languageName: node
   linkType: hard
 
@@ -26322,9 +26157,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"storybook@npm:10.5.7":
-  version: 10.5.7
-  resolution: "storybook@npm:10.5.7"
+"storybook@npm:10.5.8":
+  version: 10.5.8
+  resolution: "storybook@npm:10.5.8"
   dependencies:
     "@storybook/global": "npm:^5.0.0"
     "@storybook/icons": "npm:^2.0.2"
@@ -26356,7 +26191,7 @@ __metadata:
       optional: true
   bin:
     storybook: ./dist/bin/dispatcher.js
-  checksum: 10c0/01554ee06435b0404759b7d90b56eaa24cd4b139b80b089a8621a45b4692f56cbca0f24222b9d9a46087891f9e513fe3a333744e2a40dc600cf2cad1d6a35fb3
+  checksum: 10c0/f98d04ddef82fadf0447de2fab05d372dfc980a7c156d3452ae9547cac93a179f7bca3a67b8d0a26a59a180365fd0d658d04079951f1595bc71df44e3bbb4d80
   languageName: node
   linkType: hard
 
@@ -26951,18 +26786,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"teeny-request@npm:^10.0.0":
-  version: 10.1.4
-  resolution: "teeny-request@npm:10.1.4"
-  dependencies:
-    http-proxy-agent: "npm:^7.0.0"
-    https-proxy-agent: "npm:^7.0.1"
-    node-fetch: "npm:^3.3.2"
-    stream-events: "npm:^1.0.5"
-  checksum: 10c0/18b5228feff52a011f601a394bb65f3f2b66e3818618b78de1df80761506e359f4252328f6672763804414041a383ea5a31cc8ccd6dc258c170eb1eaa52c5822
-  languageName: node
-  linkType: hard
-
 "teeny-request@npm:^11.0.0":
   version: 11.0.1
   resolution: "teeny-request@npm:11.0.1"
@@ -27285,9 +27108,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsc-alias@npm:1.9.0":
-  version: 1.9.0
-  resolution: "tsc-alias@npm:1.9.0"
+"tsc-alias@npm:1.9.1":
+  version: 1.9.1
+  resolution: "tsc-alias@npm:1.9.1"
   dependencies:
     chokidar: "npm:^3.5.3"
     commander: "npm:^9.0.0"
@@ -27298,7 +27121,7 @@ __metadata:
     plimit-lit: "npm:^1.2.6"
   bin:
     tsc-alias: dist/bin/index.js
-  checksum: 10c0/229ef236f4ccd3145cbb7a003b805e5c1de7ecfb563ffe88ecccb7c0c596fb4d2baf06706b8ee0b66017141beb3e8505a1e6b5e5b1c8cd7a87a640cf13b40e41
+  checksum: 10c0/b696508a671fdcd3e10fe6d88a64da77397811dbb7fd701623b8def2ae41f0cb7b39607de403873f072088dea8c6c10fc88ea3e65b6bb8a69635c9d61a935f77
   languageName: node
   linkType: hard
 
