@@ -189,7 +189,12 @@ export const YearlyLedgerReport = (): ReactElement => {
     },
   });
 
-  const currentPage = table.state.pagination.pageIndex;
+  // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
+  // the effect would re-run on every render, and setting the filters context re-renders this
+  // screen, looping forever ("Maximum update depth exceeded"). Depend instead on the pagination
+  // primitives the bar actually reads.
+  const { pageIndex, pageSize } = table.state.pagination;
+  const pageCount = table.getPageCount();
 
   useEffect(() => {
     setFiltersContext(
@@ -209,7 +214,7 @@ export const YearlyLedgerReport = (): ReactElement => {
         </div>
       </div>,
     );
-  }, [year, fetching, setFiltersContext, reportData, table, currentPage]);
+  }, [year, fetching, setFiltersContext, reportData, pageIndex, pageSize, pageCount]);
 
   return (
     <PageLayout title="Yearly Ledger Report">

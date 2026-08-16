@@ -321,7 +321,12 @@ export const DocumentsReport = (): ReactElement => {
     },
   });
 
-  const currentPage = table.state.pagination.pageIndex;
+  // `useTable` hands back a fresh object on every render, so it must not be an effect dependency:
+  // the effect would re-run on every render, and setting the filters context re-renders this
+  // screen, looping forever ("Maximum update depth exceeded"). Depend instead on the pagination
+  // primitives the bar actually reads.
+  const { pageIndex, pageSize } = table.state.pagination;
+  const pageCount = table.getPageCount();
 
   useEffect(() => {
     setFiltersContext(
@@ -330,7 +335,7 @@ export const DocumentsReport = (): ReactElement => {
         <DocumentsFilters filter={filter} setFilter={setFilter} initiallyOpened={!filter} />
       </div>,
     );
-  }, [table, fetching, filter, setFiltersContext, setFilter, initialFilters, currentPage]);
+  }, [fetching, filter, setFiltersContext, setFilter, pageIndex, pageSize, pageCount]);
 
   return (
     <PageLayout

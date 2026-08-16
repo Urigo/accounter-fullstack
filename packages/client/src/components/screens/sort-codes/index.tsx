@@ -117,7 +117,12 @@ export const SortCodes = (): ReactElement => {
     },
   });
 
-  const pagination = table.getPageOptions();
+  // `useTable` hands back a fresh object on every render and `getPageOptions()` a fresh array, so
+  // neither can be an effect dependency: the effect would re-run on every render, and setting the
+  // filters context re-renders this screen, looping forever ("Maximum update depth exceeded").
+  // The pagination bar only reads these primitives, so depend on them instead.
+  const { pageIndex, pageSize } = table.state.pagination;
+  const pageCount = table.getPageCount();
 
   useEffect(() => {
     setFiltersContext(
@@ -125,7 +130,7 @@ export const SortCodes = (): ReactElement => {
         <DataTablePagination table={table} />
       </div>,
     );
-  }, [setFiltersContext, table, pagination]);
+  }, [setFiltersContext, pageIndex, pageSize, pageCount]);
 
   useEffect(() => {
     if (error) {
