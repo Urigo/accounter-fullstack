@@ -275,7 +275,6 @@ export const documentsResolvers: DocumentsModule.Resolvers &
                     `Failed to delete the empty former charge ID="${charge.id}"`,
                   );
                 }
-                return postUpdateActions();
               };
             }
           }
