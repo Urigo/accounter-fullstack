@@ -15,18 +15,31 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Core**: `server` (GraphQL API), `client` (React SPA), `migrations` (Postgres DDL/DML)
 - **Scrapers**: `modern-poalim-scraper`, `etana-scraper`, `etherscan-scraper`, `kraken-scraper`,
   `israeli-vat-scraper`
-- **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
-  app-providers)
+- **Integrations**: `green-invoice-graphql` (frozen — see below), `hashavshevet-mesh`,
+  `payper-mesh`, `deel` (via server app-providers)
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
   pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
-  `shaam-uniform-format-generator` <<<<<<< HEAD
+  `shaam-uniform-format-generator`
 - **Tools**: `scraper-app` (local scrape web app — Fastify server + React UI; replaces
   `scraper-local-app`)
 - **Deprecated**: `scraper-local-app` (legacy CLI scrape runner; superseded by `scraper-app` — kept
   only for rollback until `scraper-app` is fully in production use), `gmail-listener` (legacy
   single-inbox email listener; superseded by `email-ingestion-gateway` — kept only for rollback
   during cutover), `old-accounter` (excluded from workspaces)
+
+## Frozen packages
+
+`green-invoice-graphql`, `scraper-local-app` and `old-accounter` are frozen: **no dependency
+upgrades** (Renovate is disabled for them in `renovate.json`), **not part of the monorepo build**,
+and **not published or deployed**. Do not bump their dependencies or add them back to build scripts.
+
+- `green-invoice-graphql` is frozen but **not dead** — `server` imports it and compiles it from
+  source (`paths`/`include` in `packages/server/tsconfig.json`). Its `build` script runs only the
+  GraphQL-Mesh codegen that compile depends on; it emits no bundle and is no longer published to npm
+  (last published version: `0.8.6`).
+- `scraper-local-app` and `old-accounter` have no dependents. Build them by hand
+  (`yarn workspace <name> build`) if a rollback ever needs them.
 
 Package-specific conventions live in `packages/<name>/CLAUDE.md` (loaded on demand when you work in
 that package).

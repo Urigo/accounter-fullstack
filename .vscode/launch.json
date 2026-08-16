@@ -7,8 +7,8 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
-      "program": "${workspaceFolder}/old-accounter/dist/old-accounter/src/index.js",
+      "name": "Launch Server",
+      "program": "${workspaceFolder}/packages/server/dist/server/src/index.js",
       "console": "integratedTerminal",
       "runtimeArgs": []
     }

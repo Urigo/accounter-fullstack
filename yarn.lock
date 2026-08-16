@@ -215,7 +215,6 @@ __metadata:
     "@graphql-mesh/types": "npm:0.105.1"
     "@graphql-mesh/utils": "npm:0.105.1"
     "@types/mime-types": "npm:3.0.1"
-    bob-the-bundler: "npm:7.0.1"
     graphql: "npm:16.14.2"
     mime-types: "npm:3.0.2"
     path: "npm:0.12.7"

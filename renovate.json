@@ -53,6 +53,15 @@
     {
       "groupName": "prettier",
       "matchPackageNames": ["prettier", "@theguild/prettier-config"]
+    },
+    {
+      "description": "Frozen/retired packages - no dependency upgrades. Keep last: rules are applied in order and this must win over the broad rules above.",
+      "matchFileNames": [
+        "packages/green-invoice-graphql/package.json",
+        "packages/old-accounter/package.json",
+        "packages/scraper-local-app/package.json"
+      ],
+      "enabled": false
     }
   ],
   "dockerfile": {
