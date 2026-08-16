@@ -1,4 +1,4 @@
-import { useContext, useEffect, type ReactElement } from 'react';
+import { useContext, useEffect, useMemo, type ReactElement } from 'react';
 import { ArrowUpDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
@@ -79,7 +79,7 @@ export const TaxCategories = (): ReactElement => {
   });
   const { setFiltersContext } = useContext(FiltersContext);
 
-  const taxCategories = data?.taxCategories ?? [];
+  const taxCategories = useMemo(() => data?.taxCategories ?? [], [data?.taxCategories]);
 
   const table = useTable({
     features: tableFeaturesConfig,
@@ -93,7 +93,12 @@ export const TaxCategories = (): ReactElement => {
     },
   });
 
-  const pagination = table.getPageOptions();
+  // `useTable` hands back a fresh object on every render and `getPageOptions()` a fresh array, so
+  // neither can be an effect dependency: the effect would re-run on every render, and setting the
+  // filters context re-renders this screen, looping forever ("Maximum update depth exceeded").
+  // The pagination bar only reads these primitives, so depend on them instead.
+  const { pageIndex, pageSize } = table.state.pagination;
+  const pageCount = table.getPageCount();
 
   useEffect(() => {
     setFiltersContext(
@@ -103,7 +108,7 @@ export const TaxCategories = (): ReactElement => {
         </div>
       </div>,
     );
-  }, [setFiltersContext, table, pagination]);
+  }, [setFiltersContext, pageIndex, pageSize, pageCount]);
 
   useEffect(() => {
     if (error) {
