@@ -213,7 +213,7 @@ __metadata:
     "@graphql-mesh/runtime": "npm:0.107.1"
     "@graphql-mesh/store": "npm:0.105.1"
     "@graphql-mesh/types": "npm:0.107.0"
-    "@graphql-mesh/utils": "npm:0.105.1"
+    "@graphql-mesh/utils": "npm:0.107.0"
     "@types/mime-types": "npm:3.0.1"
     bob-the-bundler: "npm:7.0.1"
     graphql: "npm:16.14.2"
@@ -236,7 +236,7 @@ __metadata:
     "@graphql-mesh/store": "npm:0.105.1"
     "@graphql-mesh/transform-resolvers-composition": "npm:0.107.0"
     "@graphql-mesh/types": "npm:0.107.0"
-    "@graphql-mesh/utils": "npm:0.105.1"
+    "@graphql-mesh/utils": "npm:0.107.0"
     graphql: "npm:16.14.2"
     tsup: "npm:8.5.1"
   languageName: unknown
@@ -320,7 +320,7 @@ __metadata:
     "@graphql-mesh/store": "npm:0.105.1"
     "@graphql-mesh/transform-rename": "npm:0.108.0"
     "@graphql-mesh/types": "npm:0.107.0"
-    "@graphql-mesh/utils": "npm:0.105.1"
+    "@graphql-mesh/utils": "npm:0.107.0"
     graphql: "npm:16.14.2"
     path: "npm:0.12.7"
   languageName: unknown
@@ -3715,7 +3715,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/runtime@npm:0.107.1, @graphql-mesh/runtime@npm:^0.107.1":
+"@graphql-mesh/runtime@npm:0.107.1":
   version: 0.107.1
   resolution: "@graphql-mesh/runtime@npm:0.107.1"
   dependencies:
@@ -3941,14 +3941,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/utils@npm:0.105.1, @graphql-mesh/utils@npm:^0.105.1":
-  version: 0.105.1
-  resolution: "@graphql-mesh/utils@npm:0.105.1"
+"@graphql-mesh/utils@npm:0.107.0, @graphql-mesh/utils@npm:^0.107.0":
+  version: 0.107.0
+  resolution: "@graphql-mesh/utils@npm:0.107.0"
   dependencies:
     "@envelop/instrumentation": "npm:^1.0.0"
     "@graphql-mesh/cross-helpers": "npm:^0.4.16"
     "@graphql-mesh/string-interpolation": "npm:^0.5.18"
-    "@graphql-mesh/types": "npm:^0.105.1"
+    "@graphql-mesh/types": "npm:^0.107.0"
     "@graphql-tools/batch-delegate": "npm:^10.0.29"
     "@graphql-tools/delegate": "npm:^12.1.1"
     "@graphql-tools/utils": "npm:^11.2.2"
@@ -3957,14 +3957,14 @@ __metadata:
     "@whatwg-node/fetch": "npm:^0.10.6"
     "@whatwg-node/promise-helpers": "npm:^1.2.0"
     dset: "npm:^3.1.2"
-    js-yaml: "npm:^4.3.0"
+    js-yaml: "npm:^4.3.1"
     lodash.get: "npm:^4.4.2"
     lodash.topath: "npm:^4.5.2"
     tiny-lru: "npm:^13.0.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/e9a0e83ccd9e510b96f8fb61bc95d6fe672e71d9d1f2726c2d1a1acb8533ad22e973dd3955fb2f8611868ef90a83e7f480ce6c8f5c2ce573b6476ac7ed1ac43f
+  checksum: 10c0/535993624249a3132c1e204c919de7fc35b94b97ce4fe711815ac45f5cc517abd5f5ddcc57c69904bf1962fd8aae009a540643e04a1a8704bacb1514a71e3bb3
   languageName: node
   linkType: hard
 
@@ -3995,14 +3995,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@graphql-mesh/utils@npm:^0.107.0":
-  version: 0.107.0
-  resolution: "@graphql-mesh/utils@npm:0.107.0"
+"@graphql-mesh/utils@npm:^0.105.1":
+  version: 0.105.1
+  resolution: "@graphql-mesh/utils@npm:0.105.1"
   dependencies:
     "@envelop/instrumentation": "npm:^1.0.0"
     "@graphql-mesh/cross-helpers": "npm:^0.4.16"
     "@graphql-mesh/string-interpolation": "npm:^0.5.18"
-    "@graphql-mesh/types": "npm:^0.107.0"
+    "@graphql-mesh/types": "npm:^0.105.1"
     "@graphql-tools/batch-delegate": "npm:^10.0.29"
     "@graphql-tools/delegate": "npm:^12.1.1"
     "@graphql-tools/utils": "npm:^11.2.2"
@@ -4011,14 +4011,14 @@ __metadata:
     "@whatwg-node/fetch": "npm:^0.10.6"
     "@whatwg-node/promise-helpers": "npm:^1.2.0"
     dset: "npm:^3.1.2"
-    js-yaml: "npm:^4.3.1"
+    js-yaml: "npm:^4.3.0"
     lodash.get: "npm:^4.4.2"
     lodash.topath: "npm:^4.5.2"
     tiny-lru: "npm:^13.0.0"
     tslib: "npm:^2.4.0"
   peerDependencies:
     graphql: "*"
-  checksum: 10c0/535993624249a3132c1e204c919de7fc35b94b97ce4fe711815ac45f5cc517abd5f5ddcc57c69904bf1962fd8aae009a540643e04a1a8704bacb1514a71e3bb3
+  checksum: 10c0/e9a0e83ccd9e510b96f8fb61bc95d6fe672e71d9d1f2726c2d1a1acb8533ad22e973dd3955fb2f8611868ef90a83e7f480ce6c8f5c2ce573b6476ac7ed1ac43f
   languageName: node
   linkType: hard
 
