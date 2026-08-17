@@ -16,7 +16,7 @@
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
     "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server --include @accounter/scraper-app --include @accounter/mcp-server --include @accounter/email-ingestion-gateway run build",
-    "build:tools": "yarn workspaces foreach --all --parallel --include @accounter/etana-scraper --include @accounter/etherscan-scraper --include @accounter/hashavshevet-mesh --include @accounter/israeli-vat-scraper --include @accounter/kraken-scraper --include @accounter/payper-mesh --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --include @accounter/etana-scraper --include @accounter/etherscan-scraper --include @accounter/green-invoice-graphql --include @accounter/hashavshevet-mesh --include @accounter/israeli-vat-scraper --include @accounter/kraken-scraper --include @accounter/payper-mesh --include @accounter/pcn874-generator --include @accounter/shaam-uniform-format-generator --include @accounter/shaam6111-generator run build",
     "db:migrate": "yarn migration:run",
     "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",
