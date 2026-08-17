@@ -15,10 +15,11 @@ maintenance traffic — no dependency upgrades, no monorepo build participation,
   `gmail-listener` is still covered by root `yarn generate`, which keeps its GraphQL client under
   `src/gql/` in sync so the package stays typecheckable.
 - **Publishing**: `gmail-listener` is now `private` with no `publishConfig` and no `prepublishOnly`,
-  so it is no longer released to npm; `0.1.2` remains the last published version. Changesets gets
-  `privatePackages: { version: false, tag: false }` so its version stays pinned there. Nothing in
-  the workspace depends on it, so no dependency range is affected. Stale auto-generated
-  `@accounter_gmail-listener-*-dependencies` changesets are removed.
+  so it is no longer released to npm; `0.1.2` remains the last published version. `changeset
+  publish` skips private packages, so no changesets config change is needed — it still gets local
+  version bumps and changelog entries, which are harmless because nothing depends on it and nothing
+  publishes it. Stale auto-generated `@accounter_gmail-listener-*-dependencies` changesets are
+  removed.
 - Frozen status is documented in each package README (`old-accounter` gains one) and in a new
   "Frozen packages" section in the root `CLAUDE.md`. Also fixed a stray merge-conflict marker in
   that file and a stale `old-accounter` path in `.vscode/launch.json`.

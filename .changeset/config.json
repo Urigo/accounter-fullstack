@@ -8,7 +8,6 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": ["@accounter-helper/*"],
-  "privatePackages": { "version": false, "tag": false },
   "snapshot": {
     "useCalculatedVersion": true,
     "prereleaseTemplate": "{tag}-{datetime}-{commit}"
