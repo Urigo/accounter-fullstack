@@ -1,9 +1,13 @@
-import { useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Loader2, PanelTopClose, PanelTopOpen } from 'lucide-react';
 import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { MissingInfoChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
+import {
+  MissingInfoChargesDocument,
+  type ChargeFilter,
+  type ChargeSortBy,
+} from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -45,6 +49,11 @@ export const MissingInfoCharges = (): ReactElement => {
     return undefined;
   }, [uriFilters]);
   const [filter, setFilter] = useState<ChargeFilter | undefined>(initialFilters);
+
+  // Server-side sort, so it lives on this screen's filter rather than in the table.
+  const setSortBy = useCallback((sortBy: ChargeSortBy): void => {
+    setFilter(current => ({ ...current, sortBy }));
+  }, []);
 
   // Unlike All Charges, filters here are optional: the unfiltered list of
   // charges with missing info loads on mount.
@@ -119,7 +128,11 @@ export const MissingInfoCharges = (): ReactElement => {
         // (the stale rows stay visible underneath instead of blinking away).
         <div className="relative">
           <LoadingOverlay visible={fetching} overlayBlur={1} />
-          <ChargesTable data={chargeNodes ?? []} isAllOpened={isAllOpened} />
+          <ChargesTable
+            data={chargeNodes ?? []}
+            isAllOpened={isAllOpened}
+            sort={{ value: filter?.sortBy, onChange: setSortBy }}
+          />
         </div>
       )}
     </PageLayout>

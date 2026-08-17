@@ -32,6 +32,13 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
       padding={0}
       maxFiles={Infinity}
       loading={uploading}
+      // Mantine puts `pointer-events: none` on its inner wrapper so the root can capture the click
+      // that opens a file dialog. With `activateOnClick={false}` there is no such click to capture,
+      // and the side effect is that nothing inside the dropzone is interactive — which went unnoticed
+      // while this only ever wrapped inert count text. It now wraps a whole charge record, whose
+      // checkbox, menus, links and expand button all need to be clickable. Drop detection is
+      // unaffected: it rides on the root's drag events.
+      styles={{ inner: { pointerEvents: 'auto' } }}
       sx={() => ({
         border: 0,
         cursor: 'default',
