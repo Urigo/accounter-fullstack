@@ -16,6 +16,13 @@ import type { ChargeRow } from './charges-table.js';
 
 interface Props {
   table: Table<TableFeaturesConfig, ChargeRow>;
+  /**
+   * Refreshes the given charges. Goes through `ChargesTable`'s refetch registry rather than calling a
+   * handler hung off each row, which silently did nothing for selected charges that were not
+   * currently rendered — `getSelectedRowModel()` is built from the core row model and so is not
+   * limited to the paginated rows on screen.
+   */
+  onRefreshCharges?: (chargeIds: string[]) => void;
 }
 
 /**
@@ -24,7 +31,7 @@ interface Props {
  * {@link RegenerateLedgerRecordsButton}, confirmation modal included) and "Change tags" (add/remove
  * tags across all selected charges), each in a single request.
  */
-export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
+export function ChargesBatchActionsMenu({ table, onRefreshCharges }: Props): ReactElement {
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -33,11 +40,9 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
   const selectedCount = rows.length;
   const selectedIds = rows.map(row => row.original.id);
 
-  // Refresh each selected row so the table reflects the applied change.
+  // Refresh each selected charge so the list reflects the applied change.
   function refreshSelected(): void {
-    for (const row of rows) {
-      row.original.onChange();
-    }
+    onRefreshCharges?.(selectedIds);
   }
 
   function onRegenerate(): void {

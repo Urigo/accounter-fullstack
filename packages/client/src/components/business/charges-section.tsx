@@ -98,13 +98,12 @@ export function ChargesSection({ businessId }: Props) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border">
-          <ChargesTable
-            data={charges}
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-          />
-        </div>
+        {/* No border wrapper: the record list draws its own, and two nested ones read as a seam. */}
+        <ChargesTable
+          data={charges}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+        />
       </CardContent>
     </Card>
   );
