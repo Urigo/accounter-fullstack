@@ -57,7 +57,8 @@
     {
       "description": "Frozen/retired packages - no dependency upgrades. Keep last: rules are applied in order and this must win over the broad rules above.",
       "matchFileNames": [
-        "packages/green-invoice-graphql/package.json",
+        "packages/gmail-listener/package.json",
+        "packages/gmail-listener/DockerFile",
         "packages/old-accounter/package.json",
         "packages/scraper-local-app/package.json"
       ],

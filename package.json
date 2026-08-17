@@ -16,7 +16,7 @@
   "scripts": {
     "build": "yarn generate && yarn build:tools && yarn build:main",
     "build:main": "yarn workspaces foreach --all --parallel --include @accounter/client --include @accounter/server --include @accounter/scraper-app run build",
-    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter-helper/scraper-local-app --exclude accounter-monorepo run build",
+    "build:tools": "yarn workspaces foreach --all --parallel --exclude @accounter/client --exclude @accounter/gmail-listener --exclude @accounter-helper/scraper-local-app --exclude accounter-monorepo run build",
     "db:migrate": "yarn migration:run",
     "encrypt-password": "node scripts/encrypt-password.mjs",
     "generate": "concurrently -c blue,green -n GraphQL,SQL \"yarn generate:graphql\" \"yarn generate:sql\"",

@@ -15,8 +15,8 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Core**: `server` (GraphQL API), `client` (React SPA), `migrations` (Postgres DDL/DML)
 - **Scrapers**: `modern-poalim-scraper`, `etana-scraper`, `etherscan-scraper`, `kraken-scraper`,
   `israeli-vat-scraper`
-- **Integrations**: `green-invoice-graphql` (frozen — see below), `hashavshevet-mesh`,
-  `payper-mesh`, `deel` (via server app-providers)
+- **Integrations**: `green-invoice-graphql`, `hashavshevet-mesh`, `payper-mesh`, `deel` (via server
+  app-providers)
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
   pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
@@ -30,16 +30,15 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 
 ## Frozen packages
 
-`green-invoice-graphql`, `scraper-local-app` and `old-accounter` are frozen: **no dependency
-upgrades** (Renovate is disabled for them in `renovate.json`), **not part of the monorepo build**,
-and **not published or deployed**. Do not bump their dependencies or add them back to build scripts.
+`gmail-listener`, `scraper-local-app` and `old-accounter` are frozen: **no dependency upgrades**
+(Renovate is disabled for them in `renovate.json`), **not part of the monorepo build**, and **not
+published or deployed**. Do not bump their dependencies or add them back to build scripts.
 
-- `green-invoice-graphql` is frozen but **not dead** — `server` imports it and compiles it from
-  source (`paths`/`include` in `packages/server/tsconfig.json`). Its `build` script runs only the
-  GraphQL-Mesh codegen that compile depends on; it emits no bundle and is no longer published to npm
-  (last published version: `0.8.6`).
-- `scraper-local-app` and `old-accounter` have no dependents. Build them by hand
+- All three have no dependents and no source imports anywhere. Build them by hand
   (`yarn workspace <name> build`) if a rollback ever needs them.
+- `gmail-listener` is still covered by root `yarn generate` (it has its own GraphQL client under
+  `src/gql/`), so it stays typecheckable for a rollback. Its server-side GraphQL surface lives in
+  `packages/server/src/modules/email-ingestion` behind a deprecated re-export shim.
 
 Package-specific conventions live in `packages/<name>/CLAUDE.md` (loaded on demand when you work in
 that package).

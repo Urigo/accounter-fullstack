@@ -2,7 +2,7 @@
   "name": "@accounter/green-invoice-graphql",
   "version": "0.8.6",
   "type": "module",
-  "description": "[FROZEN - no longer published to npm; built from source by @accounter/server] Graphql proxy for Green Invoice API",
+  "description": "Graphql proxy for Green Invoice API",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Urigo/accounter-fullstack.git",
@@ -14,10 +14,29 @@
   },
   "author": "Gil Gardosh <gilgardosh@gmail.com>",
   "license": "MIT",
-  "private": true,
   "engines": {
     "node": "^20.0.0 || >= 22"
   },
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/typings/index.d.cts",
+        "default": "./dist/cjs/index.js"
+      },
+      "import": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "default": {
+        "types": "./dist/typings/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "typings": "dist/typings/index.d.ts",
   "keywords": [
     "green invoice",
     "greeninvoice",
@@ -28,9 +47,12 @@
     "mesh"
   ],
   "scripts": {
-    "build": "yarn generate",
+    "build": "yarn generate && bob build",
     "dev": "node --import ../../scripts/register-esm.js ./src/index.ts",
-    "generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && node ../../scripts/mesh-artifacts-rename.mjs"
+    "generate": "rimraf .mesh src/.mesh src/mesh-artifacts && mesh build --dir ./src  && node ../../scripts/mesh-artifacts-rename.mjs",
+    "prepublish": "yarn build",
+    "start": "node ./dist",
+    "test": "node --import ../../scripts/register-esm.js ./dist/esm/dev-tests/e2e.js"
   },
   "dependencies": {
     "@graphql-mesh/config": "0.109.1",
@@ -47,7 +69,23 @@
   "devDependencies": {
     "@graphql-mesh/cli": "0.101.2",
     "@types/mime-types": "3.0.1",
+    "bob-the-bundler": "7.0.1",
     "mime-types": "3.0.2",
     "rimraf": "6.1.3"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
+  "bob": {
+    "build": {
+      "copy": [
+        "json-schemas",
+        "src/mesh-artifacts/**/*.graphql"
+      ]
+    }
+  },
+  "typescript": {
+    "definition": "dist/typings/index.d.ts"
   }
 }
