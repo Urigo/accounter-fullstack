@@ -6,6 +6,11 @@
 > GraphQL surface (`businessEmailConfig`, `insertEmailDocuments`) is `@deprecated` and will be
 > removed once the cutover is complete. New work should target the gateway — see
 > [`docs/multi-tenant-gmail-listener/`](../../docs/multi-tenant-gmail-listener).
+>
+> It is frozen: no dependency upgrades, no longer part of the monorepo build, and no longer
+> published to npm (the last published version is `0.1.2`). To build or run it for a rollback,
+> invoke it directly: `yarn workspace @accounter/gmail-listener build`, then `... start` or the
+> `docker:build` / `docker:run` scripts.
 
 A service that watches a Gmail inbox, extracts financial documents from matching emails, and sends
 them to the Accounter server through GraphQL.

@@ -5,6 +5,10 @@
 > scrapes Israeli bank accounts and uploads transactions to your Accounter server. It is kept only
 > for rollback until `scraper-app` is fully in production use, and receives no new features. New
 > work should target `scraper-app` — see its [README](../scraper-app/README.md).
+>
+> It is no longer part of the monorepo build and receives no dependency upgrades. To build or run it
+> for a rollback, invoke it directly: `yarn workspace @accounter-helper/scraper-local-app build` (or
+> `yarn scrape` from the repo root, which builds and starts it).
 
 The **Scraper Local App** is a sub-package of the **Accounter Fullstack** mono-repo. It is designed
 to handle data scraping tasks locally, enabling users to extract and process personal

@@ -20,13 +20,25 @@ Yarn Berry (v4) monorepo with 18 packages under `packages/`:
 - **Email ingestion**: `email-ingestion-gateway` (v2 multi-tenant Cloudflare→gateway→server email
   pipeline)
 - **Generators**: `pcn874-generator`, `opcn1214-generator`, `shaam6111-generator`,
-  `shaam-uniform-format-generator` <<<<<<< HEAD
+  `shaam-uniform-format-generator`
 - **Tools**: `scraper-app` (local scrape web app — Fastify server + React UI; replaces
   `scraper-local-app`)
 - **Deprecated**: `scraper-local-app` (legacy CLI scrape runner; superseded by `scraper-app` — kept
   only for rollback until `scraper-app` is fully in production use), `gmail-listener` (legacy
   single-inbox email listener; superseded by `email-ingestion-gateway` — kept only for rollback
   during cutover), `old-accounter` (excluded from workspaces)
+
+## Frozen packages
+
+`gmail-listener`, `scraper-local-app` and `old-accounter` are frozen: **no dependency upgrades**
+(Renovate is disabled for them in `renovate.json`), **not part of the monorepo build**, and **not
+published or deployed**. Do not bump their dependencies or add them back to build scripts.
+
+- All three have no dependents and no source imports anywhere. Build them by hand
+  (`yarn workspace <name> build`) if a rollback ever needs them.
+- `gmail-listener` is still covered by root `yarn generate` (it has its own GraphQL client under
+  `src/gql/`), so it stays typecheckable for a rollback. Its server-side GraphQL surface lives in
+  `packages/server/src/modules/email-ingestion` behind a deprecated re-export shim.
 
 Package-specific conventions live in `packages/<name>/CLAUDE.md` (loaded on demand when you work in
 that package).
