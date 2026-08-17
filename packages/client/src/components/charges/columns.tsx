@@ -50,6 +50,9 @@ export const columns: ColumnDef<TableFeaturesConfig, ChargeRow>[] = [
           chargeId={row.original.id}
           value={row.original.accountantApproval}
           onChange={row.original.onChange}
+          // Once the accountant status is set, the charge is handled — collapse its detail panel so
+          // the table returns to the next charge that still needs attention.
+          onStatusChange={() => row.toggleExpanded(false)}
         />
       </div>
     ),
