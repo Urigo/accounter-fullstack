@@ -103,9 +103,14 @@ describe('charges table row refetch', () => {
     });
   }
 
-  /** The green "confirm suggestion" mini button rendered next to a missing-info cell. */
+  /**
+   * The "accept suggestion" control rendered beside a suggested description or tags. Matched on its
+   * accessible name rather than a colour class: the record's accept button replaced the old
+   * `ConfirmMiniButton`, and a name is what the affordance actually promises a user.
+   */
   function confirmButtons(): HTMLElement[] {
-    return [...container.querySelectorAll<HTMLElement>('button.text-green-500')];
+    // Description reads `Accept suggested description "..."`, tags `Accept N suggested tag(s)`.
+    return [...container.querySelectorAll<HTMLElement>('[aria-label^="Accept"]')];
   }
 
   async function click(element: HTMLElement): Promise<void> {

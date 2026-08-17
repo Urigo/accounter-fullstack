@@ -4,7 +4,11 @@ import { useQuery } from 'urql';
 import { Loader, Progress, ThemeIcon } from '@mantine/core';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { encodeFilters, ROUTES } from '@/router/routes.js';
-import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
+import {
+  ChargesLedgerValidationDocument,
+  type ChargeFilter,
+  type ChargeSortBy,
+} from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
 import { ChargesFilters } from './charges/charges-filters.js';
@@ -84,6 +88,11 @@ export const ChargesLedgerValidation = (): ReactElement => {
     },
     [setFilter],
   );
+
+  // Server-side sort, so it lives on this screen's filter rather than in the table.
+  const setSortBy = useCallback((sortBy: ChargeSortBy): void => {
+    setFilter(current => ({ ...current, sortBy }));
+  }, []);
 
   useEffect(() => {
     if (filter) {
@@ -166,6 +175,7 @@ export const ChargesLedgerValidation = (): ReactElement => {
               []
             }
             isAllOpened={isAllOpened}
+            sort={{ value: filter?.sortBy, onChange: setSortBy }}
           />
           <div className="flex flex-row justify-center my-2">
             {progress > 0 && progress < 100 && <Loader />}

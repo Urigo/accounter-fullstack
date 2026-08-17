@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import {
-  flexRender,
   useTable,
-  type ColumnFiltersState,
   type ExpandedState,
   type OnChangeFn,
   type RowSelectionState,
@@ -10,30 +8,26 @@ import {
 } from '@tanstack/react-table';
 import { tableFeaturesConfig } from '@/lib/table-features.js';
 import {
-  AccountantStatus,
   ChargeForChargesTableFieldsFragmentDoc,
   ChargesTableSuggestionsFieldsFragmentDoc,
-  MissingChargeInfo,
+  type AccountantStatus,
   type ChargeForChargesTableFieldsFragment,
+  type ChargeSortBy,
+  type Currency,
+  type LedgerValidationStatus,
+  type MissingChargeInfo,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import type { ChargeType } from '../../helpers/index.js';
 import { useStableValue } from '../../hooks/use-stable-value.js';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import type { AmountProps } from './cells/amount.js';
-import type { BusinessTripProps } from './cells/business-trip.js';
-import type { CounterpartyProps } from './cells/counterparty.js';
-import { getDateProps, type DateProps } from './cells/date.js';
-import type { DescriptionProps } from './cells/description.js';
-import type { MoreInfoProps } from './cells/more-info.js';
-import type { TagsProps } from './cells/tags.js';
-import type { TaxCategoryProps } from './cells/tax-category.js';
-import type { VatProps } from './cells/vat.js';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../ui/empty.js';
+import { getChargeDates, type ChargeDates } from './charge-dates.js';
+import { ChargeRecord } from './charge-record.js';
+import type { SuggestedTag } from './charge-suggestion-field.js';
 import { BatchChargesExtendedInfoProvider } from './charges-extended-info-loader.js';
-import { ChargeRow } from './charges-row.js';
+import { ChargesToolbar } from './charges-toolbar.js';
 import { columns } from './columns.js';
-import { DownloadChargesCsv } from './download-charges-csv.js';
-import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './utils.js';
+import { useChargeDensity } from './use-charge-density.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -110,21 +104,44 @@ import { shouldHaveCounterparty, shouldHaveTaxCategory, shouldHaveVat } from './
   }
 `;
 
+/**
+ * A charge, flattened for display. Deliberately shaped as plain data rather than as props for
+ * particular components — the old shape nested values under `counterparty.counterparty.name` and
+ * `description.value` purely to spread into cell components that no longer exist.
+ *
+ * Note what is *not* here: any judgement about whether a field should be shown. That belongs to the
+ * spec matrix in `charge-fields.ts`, keyed on `type`, so the record's shape is a pure function of the
+ * charge type rather than of whichever fields happened to arrive.
+ */
 export interface ChargeRow {
   id: string;
-  onChange: () => void;
-  /** Drops this charge's row from the table after it was deleted on the server. */
-  onDelete: () => void;
   type: ChargeType;
-  date?: DateProps;
-  amount?: AmountProps['amount'];
-  vat?: Omit<VatProps, 'isError'>;
-  counterparty?: CounterpartyProps;
-  description: Omit<DescriptionProps, 'onChange'>;
-  tags: Omit<TagsProps, 'onChange'>;
-  taxCategory?: TaxCategoryProps;
-  businessTrip?: BusinessTripProps;
-  moreInfo: MoreInfoProps;
+  dates?: ChargeDates;
+  amount?: {
+    value: number;
+    currency: Currency;
+    /** Only `CreditcardBankCharge` validates its amount. */
+    shouldValidate: boolean;
+    isValid?: boolean;
+  };
+  vat?: { value?: number; currency?: Currency };
+  counterparty?: { id: string; name: string };
+  description?: string;
+  suggestedDescription?: string;
+  tags: SuggestedTag[];
+  suggestedTags: SuggestedTag[];
+  taxCategory?: { id: string; name: string };
+  businessTrip?: { id: string; name: string };
+  counts: {
+    transactions: number;
+    documents: number;
+    ledger: number;
+    miscExpenses: number;
+    /** Absent until the deferred patch arrives — see `ledgerState`. */
+    invalidLedger?: LedgerValidationStatus;
+  };
+  /** Server-reported, unfiltered. Consumers narrow it through the matrix. */
+  missingInfo: MissingChargeInfo[];
   accountantApproval: AccountantStatus;
 }
 
@@ -139,12 +156,19 @@ export function convertChargeFragmentToTableRow(
     // can't distribute over — the runtime is an identity unwrap either way
     fragmentData as FragmentType<typeof ChargesTableSuggestionsFieldsFragmentDoc>,
   )?.missingInfoSuggestions;
+  const type = fragmentData.__typename as ChargeType;
+  const isCreditcardBank = fragmentData.__typename === 'CreditcardBankCharge';
+
+  const toTag = (tag: { id: string; name: string; namePath?: string[] | null }): SuggestedTag => ({
+    id: tag.id,
+    name: tag.name,
+    namePath: tag.namePath ?? undefined,
+  });
+
   return {
     id: fragmentData.id,
-    onChange: () => {},
-    onDelete: () => {},
-    type: fragmentData.__typename as ChargeType,
-    date: getDateProps({
+    type,
+    dates: getChargeDates({
       minDebitDate: fragmentData.minDebitDate,
       minEventDate: fragmentData.minEventDate,
       minDocumentsDate: fragmentData.minDocumentsDate,
@@ -156,95 +180,39 @@ export function convertChargeFragmentToTableRow(
       ? {
           value: fragmentData.totalAmount.raw,
           currency: fragmentData.totalAmount.currency,
-          shouldValidate: fragmentData.__typename === 'CreditcardBankCharge',
-          isValid:
-            fragmentData.__typename === 'CreditcardBankCharge'
-              ? fragmentData.validCreditCardAmount
-              : undefined,
+          shouldValidate: isCreditcardBank,
+          isValid: isCreditcardBank ? fragmentData.validCreditCardAmount : undefined,
         }
       : undefined,
-    vat: shouldHaveVat(fragmentData.__typename)
-      ? {
-          value: fragmentData.vat?.raw,
-          currency: fragmentData.totalAmount?.currency,
-          missingInfo: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Vat),
-          amountValue: fragmentData.totalAmount?.raw,
-        }
-      : undefined,
-    counterparty: shouldHaveCounterparty(fragmentData.__typename)
-      ? {
-          counterparty: fragmentData.counterparty
-            ? {
-                name: fragmentData.counterparty.name,
-                id: fragmentData.counterparty.id,
-              }
-            : undefined,
-          type: fragmentData.__typename as ChargeType,
-          isMissing: fragmentData.validationData?.missingInfo.includes(
-            MissingChargeInfo.Counterparty,
-          ),
-        }
-      : undefined,
-    description: {
-      chargeId: fragmentData.id,
-      value: fragmentData.userDescription?.trim() ?? undefined,
-      isMissing: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Description),
-      suggestedDescription: missingInfoSuggestions?.description?.trim() ?? undefined,
+    // No `shouldHaveVat` / `shouldHaveCounterparty` / `shouldHaveTaxCategory` gating here any more.
+    // Those helpers duplicated per-type rules that had already drifted from the server's, and the
+    // spec matrix is now the single authority on what each type displays.
+    vat: {
+      value: fragmentData.vat?.raw,
+      currency: fragmentData.totalAmount?.currency,
     },
-    tags: {
-      chargeId: fragmentData.id,
-      tags: fragmentData.tags.map(tag => ({
-        id: tag.id,
-        name: tag.name,
-        namePath: tag.namePath ?? undefined,
-      })),
-      suggestedTags:
-        missingInfoSuggestions?.tags.map(tag => ({
-          id: tag.id,
-          name: tag.name,
-          namePath: tag.namePath ?? undefined,
-        })) ?? [],
-      isMissing: fragmentData.validationData?.missingInfo.includes(MissingChargeInfo.Tags),
-    },
-    taxCategory: shouldHaveTaxCategory(fragmentData.__typename)
-      ? {
-          taxCategory: fragmentData.taxCategory
-            ? {
-                id: fragmentData.taxCategory.id,
-                name: fragmentData.taxCategory.name,
-              }
-            : undefined,
-          isMissing: fragmentData.validationData?.missingInfo.includes(
-            MissingChargeInfo.TaxCategory,
-          ),
-        }
+    counterparty: fragmentData.counterparty
+      ? { id: fragmentData.counterparty.id, name: fragmentData.counterparty.name }
+      : undefined,
+    description: fragmentData.userDescription?.trim() ?? undefined,
+    suggestedDescription: missingInfoSuggestions?.description?.trim() ?? undefined,
+    tags: fragmentData.tags.map(toTag),
+    suggestedTags: missingInfoSuggestions?.tags.map(toTag) ?? [],
+    taxCategory: fragmentData.taxCategory
+      ? { id: fragmentData.taxCategory.id, name: fragmentData.taxCategory.name }
       : undefined,
     businessTrip:
       'businessTrip' in fragmentData && fragmentData.businessTrip
-        ? {
-            id: fragmentData.businessTrip.id,
-            name: fragmentData.businessTrip.name,
-          }
+        ? { id: fragmentData.businessTrip.id, name: fragmentData.businessTrip.name }
         : undefined,
-    moreInfo: {
-      chargeId: fragmentData.id,
-      type: fragmentData.__typename as ChargeType,
-      isTransactionsMissing: fragmentData.validationData?.missingInfo.includes(
-        MissingChargeInfo.Transactions,
-      ),
-      isDocumentsMissing: fragmentData.validationData?.missingInfo.includes(
-        MissingChargeInfo.Documents,
-      ),
-      info: fragmentData.metadata
-        ? {
-            transactionsCount: fragmentData.metadata.transactionsCount,
-            documentsCount: fragmentData.metadata.documentsCount,
-            ledgerCount: fragmentData.metadata.ledgerCount,
-            miscExpensesCount: fragmentData.metadata.miscExpensesCount,
-            invalidLedger: fragmentData.metadata.invalidLedger,
-          }
-        : undefined,
+    counts: {
+      transactions: fragmentData.metadata?.transactionsCount ?? 0,
+      documents: fragmentData.metadata?.documentsCount ?? 0,
+      ledger: fragmentData.metadata?.ledgerCount ?? 0,
+      miscExpenses: fragmentData.metadata?.miscExpensesCount ?? 0,
+      invalidLedger: fragmentData.metadata?.invalidLedger,
     },
+    missingInfo: fragmentData.validationData?.missingInfo ?? [],
     accountantApproval: fragmentData.accountantApproval,
   };
 }
@@ -272,6 +240,21 @@ interface Props {
    * Defaults to hidden. Exports the selected rows when a selection is active, otherwise all rows.
    */
   showExport?: boolean;
+  /**
+   * Binds the toolbar's sort menu to the screen's server-side `sortBy` filter, so sorting covers the
+   * whole result set rather than just the loaded page. Only screens that own a `ChargeFilter` can
+   * supply this; when it is omitted the toolbar falls back to sorting the charges already loaded,
+   * which is the correct behavior for the short embedded lists (business page, VAT report sections).
+   */
+  sort?: {
+    value?: ChargeSortBy | null;
+    onChange: (next: ChargeSortBy) => void;
+  };
+  /**
+   * Suppresses the list toolbar. Set on the single-charge screen, where select-all, a charge count,
+   * batch actions and export are all list affordances applied to a list of one.
+   */
+  hideToolbar?: boolean;
 }
 
 export const ChargesTable = ({
@@ -280,10 +263,12 @@ export const ChargesTable = ({
   onRowSelectionChange,
   isAllOpened = false,
   showExport = false,
+  sort,
+  hideToolbar = false,
 }: Props): ReactElement => {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+  const [density, setDensity] = useChargeDensity();
   const [expanded, setExpanded] = useState<ExpandedState>({});
 
   // Drive the whole-table expansion from the `isAllOpened` flag. `expanded === true` is
@@ -304,9 +289,31 @@ export const ChargesTable = ({
 
   const [charges, setCharges] = useState<ChargeRow[]>([]);
 
-  // Update a charge by its stable id (carried on the updated row). Matching on id (rather than row
-  // index) keeps the update correct when the table is sorted, filtered, or paginated. Memoized so
-  // the reference stays stable — `ChargeRow` lists it in a `useEffect` dependency array.
+  /**
+   * Per-charge refetch handlers, registered by each mounted record.
+   *
+   * This replaces writing `row.original.onChange = fetchCharge` during render. That worked, but it
+   * made the handler a property of state that `setCharges` rebuilt on every `data` change — so a
+   * memoized record would have held the no-op placeholder the converter set, and under `@stream`
+   * (the ledger-validation screen) `data` changes on every patch. It also silently no-op'd for
+   * selected charges that were not currently rendered, which is how batch "refresh selected" could
+   * appear to succeed while doing nothing.
+   */
+  const refetchers = useRef(new Map<string, () => void>());
+  const registerRefetch = useCallback((chargeId: string, refetch: () => void) => {
+    refetchers.current.set(chargeId, refetch);
+    return () => {
+      refetchers.current.delete(chargeId);
+    };
+  }, []);
+  const refreshCharges = useCallback((chargeIds: string[]) => {
+    for (const chargeId of chargeIds) {
+      refetchers.current.get(chargeId)?.();
+    }
+  }, []);
+
+  // Update a charge by its stable id. Matching on id (rather than row index) keeps the update
+  // correct when the list is sorted, filtered, or paginated.
   const updateCharge = useCallback((updatedCharge: ChargeRow) => {
     setCharges(old => old.map(row => (row.id === updatedCharge.id ? updatedCharge : row)));
   }, []);
@@ -355,7 +362,6 @@ export const ChargesTable = ({
     // sorting/filtering and shareable between tables when selection is controlled.
     getRowId: row => row.id,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onExpandedChange: setExpanded,
     // Rows carry no subRows — the expansion renders a detail panel, not child rows. v9's
     // `row.toggleExpanded()` bails out unless the row "can expand", which defaults to
@@ -366,19 +372,25 @@ export const ChargesTable = ({
     // collapsing every open charge. Expansion here is a user-driven detail panel keyed by charge
     // id, so it must survive data refreshes.
     autoResetExpanded: false,
+    // When the screen sorts server-side, suppress the client-side sort entirely: the toolbar orders
+    // every matching charge, whereas tanstack would only reorder the charges already loaded — so
+    // "sort by Amount" would surface the largest charge *on this page*, not overall.
+    enableSorting: !sort,
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
-      columnFilters,
       rowSelection,
       expanded,
     },
     initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: 100,
-      },
+      // Every screen paginates server-side (`page`/`limit` on the query), so the list must render
+      // whatever it was handed. `rowPaginationFeature` is registered in the shared feature set, and
+      // `getRowModel()` sits at the end of a pipeline that ends in pagination — so leaving this
+      // unset would silently truncate to tanstack's default of 10 rows, and the previous value of
+      // 100 hid everything past row 100 on the two screens that fetch without a limit
+      // (ledger validation streams, and the VAT report sections are unbounded).
+      pagination: { pageIndex: 0, pageSize: Number.MAX_SAFE_INTEGER },
     },
   });
 
@@ -387,58 +399,60 @@ export const ChargesTable = ({
   const chargeIds = useMemo(() => charges.map(charge => charge.id), [charges]);
 
   // Export the active selection when one exists, otherwise every charge currently in the table.
-  const selectedIds = Object.keys(rowSelection).filter(id => rowSelection[id]);
+  // Intersected with this table's own charges: the VAT report shares one selection map across three
+  // tables, so an unfiltered selection would leak the other tables' charges into this export.
+  const selectedIds = Object.keys(rowSelection).filter(
+    id => rowSelection[id] && chargeIds.includes(id),
+  );
   const exportIds = selectedIds.length > 0 ? selectedIds : chargeIds;
+
+  const { rows } = table.getRowModel();
 
   return (
     <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
       <div className="flex flex-col gap-2 w-full">
-        {showExport && (
-          <div className="flex justify-end">
-            <DownloadChargesCsv chargeIds={exportIds} />
-          </div>
+        {!hideToolbar && (
+          <ChargesToolbar
+            table={table}
+            showExport={showExport}
+            exportIds={exportIds}
+            sort={sort}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            onRefreshCharges={refreshCharges}
+            density={density}
+            onDensityChange={setDensity}
+          />
         )}
-        <div className="overflow-hidden rounded-md border w-full">
-          {/* Cells wrap (overriding the ui table's nowrap, and the nowrap of the sort
-              buttons in the headers) so the table fits the viewport instead of forcing
-              the page to scroll sideways. */}
-          <Table className="[&_th]:whitespace-normal [&_td]:whitespace-normal [&_th_button]:whitespace-normal">
-            <TableHeader>
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map(header => (
-                    <TableHead key={header.id} colSpan={header.colSpan}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                  <TableHead />
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table
-                  .getRowModel()
-                  .rows.map(row => (
-                    <ChargeRow
-                      key={row.id}
-                      row={row}
-                      updateCharge={updateCharge}
-                      removeCharge={removeCharge}
-                    />
-                  ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {rows.length ? (
+          // A list, not a grid: the record's fields stack and vary per charge type, so table
+          // semantics (and `role="grid"`, which would promise arrow-key cell navigation) would
+          // misdescribe it. Alignment across records comes from the shared grid inside each record.
+          <ul className="w-full divide-y rounded-md border">
+            {rows.map(row => (
+              <ChargeRecord
+                key={row.id}
+                row={row.original}
+                isSelected={row.getIsSelected()}
+                isExpanded={row.getIsExpanded()}
+                density={density}
+                onSelectedChange={selected => row.toggleSelected(selected)}
+                onToggleExpanded={() => row.toggleExpanded()}
+                onCollapse={() => row.toggleExpanded(false)}
+                registerRefetch={registerRefetch}
+                updateCharge={updateCharge}
+                removeCharge={removeCharge}
+              />
+            ))}
+          </ul>
+        ) : (
+          <Empty className="rounded-md border">
+            <EmptyHeader>
+              <EmptyTitle>No charges</EmptyTitle>
+              <EmptyDescription>Nothing matches the current filters.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
       </div>
     </BatchChargesExtendedInfoProvider>
   );

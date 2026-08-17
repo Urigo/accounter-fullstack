@@ -1,7 +1,19 @@
-import { type ReactElement } from 'react';
-import { format } from 'date-fns';
+/**
+ * A charge has three date families — documents, events and debits — each with a min and a max. The
+ * record shows one primary date plus, when the charge actually spans a range, the outer bounds.
+ *
+ * Extracted from the old `cells/date.tsx` so the logic survives the presentational cell's removal.
+ */
+export type ChargeDates = {
+  /** The date shown as the charge's own. */
+  date?: Date;
+  /** Earliest date across every source, for the range line. */
+  mostMinDate?: Date;
+  /** Latest date across every source, for the range line. */
+  mostMaxDate?: Date;
+};
 
-export function getDateProps({
+export function getChargeDates({
   minDebitDate,
   minEventDate,
   minDocumentsDate,
@@ -17,7 +29,7 @@ export function getDateProps({
   maxDebitDate: string | Date | null;
   maxEventDate: string | Date | null;
   maxDocumentsDate: string | Date | null;
-}): DateProps | undefined {
+}): ChargeDates | undefined {
   if (!minDocumentsDate && !minEventDate && !minDebitDate) {
     return undefined;
   }
@@ -30,6 +42,7 @@ export function getDateProps({
   const mostMinDate = minTimestamps.length > 0 ? new Date(Math.min(...minTimestamps)) : undefined;
   const mostMaxDate = maxTimestamps.length > 0 ? new Date(Math.max(...maxTimestamps)) : undefined;
 
+  // Documents date wins, then event, then debit — the charge's most meaningful date first.
   const displayDate = minDocumentsDate || minEventDate || minDebitDate;
 
   return {
@@ -39,21 +52,11 @@ export function getDateProps({
   };
 }
 
-export type DateProps = {
-  date?: Date;
-  mostMinDate?: Date;
-  mostMaxDate?: Date;
-};
-
-export const DateCell = ({ date, mostMinDate, mostMaxDate }: DateProps): ReactElement => {
+/** Whether the charge spans more than a single day, and so has a range worth showing. */
+export function hasDateRange(dates: ChargeDates | undefined): boolean {
   return (
-    <>
-      <div>{date && format(date, 'dd/MM/yy')}</div>
-      {mostMinDate && mostMaxDate && mostMinDate.getTime() !== mostMaxDate.getTime() ? (
-        <div className="text-xs text-gray-500">
-          ({format(mostMinDate, 'dd/MM/yy')} - {format(mostMaxDate, 'dd/MM/yy')})
-        </div>
-      ) : null}
-    </>
+    !!dates?.mostMinDate &&
+    !!dates.mostMaxDate &&
+    dates.mostMinDate.getTime() !== dates.mostMaxDate.getTime()
   );
-};
+}

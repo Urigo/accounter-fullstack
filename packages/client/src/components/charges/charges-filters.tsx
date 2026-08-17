@@ -48,20 +48,11 @@ interface ChargesFiltersFormProps {
   withDefaultDateRange?: boolean;
 }
 
-const fieldsToSort: { label: string; value: ChargeSortByField }[] = [
-  {
-    value: ChargeSortByField.AbsAmount,
-    label: 'Abs Amount',
-  },
-  {
-    value: ChargeSortByField.Amount,
-    label: 'Amount',
-  },
-  {
-    value: ChargeSortByField.Date,
-    label: 'Date',
-  },
-];
+/**
+ * Sort applied when a filter carries none. Shared by `defaultValues` and `onSubmit` — the sort field
+ * itself now lives in the list toolbar, not in this form.
+ */
+const DEFAULT_SORT_BY = { field: ChargeSortByField.Date, asc: false };
 
 export const chargesTypeFilterOptions: Array<{ label: string; value: ChargeFilterType }> = [
   { label: 'All', value: ChargeFilterType.All },
@@ -95,10 +86,7 @@ function ChargesFiltersForm({
       byOwners: userContext?.context.adminBusinessId
         ? [userContext.context.adminBusinessId]
         : undefined,
-      sortBy: {
-        field: ChargeSortByField.Date,
-        asc: false,
-      },
+      sortBy: DEFAULT_SORT_BY,
       // Screens where the date range is optional (e.g. missing-info charges)
       // start unbounded, so old unresolved charges aren't hidden by a default
       // "last year" window.
@@ -111,36 +99,23 @@ function ChargesFiltersForm({
       ...filter,
     },
   });
-  const { control, handleSubmit, watch } = form;
-  const [asc, setAsc] = useState(filter.sortBy?.asc ?? false);
-  const [enableAsc, setEnableAsc] = useState(!!filter.sortBy?.field);
+  const { control, handleSubmit } = form;
   const { selectableFinancialEntities: financialEntities, fetching: financialEntitiesFetching } =
     useGetFinancialEntities();
   const { selectableTags: tags, fetching: tagsFetching } = useGetTags();
   const { selectableBusinessTrips: businessTrips, fetching: businessTripsFetching } =
     useGetBusinessTrips();
 
-  const sortByField = watch('sortBy.field');
-
-  useEffect(() => {
-    if (sortByField && !enableAsc) {
-      setEnableAsc(true);
-    } else if (!sortByField && enableAsc) {
-      setEnableAsc(false);
-    }
-  }, [sortByField, enableAsc]);
-
   const onSubmit: SubmitHandler<ChargeFilter> = data => {
-    if (asc != null && data.sortBy?.field) {
-      data.sortBy.asc = asc;
-    }
-    setFilter(data);
+    // `sortBy` is no longer a field in this form, but react-hook-form still surfaces it in `data`
+    // from `defaultValues` — so submitting a filter change would silently reset whatever sort the
+    // toolbar had applied. Carry the live value through explicitly instead.
+    setFilter({ ...data, sortBy: filter.sortBy ?? DEFAULT_SORT_BY });
     closeModal();
   };
 
   function clearFilter(): void {
-    setFilter({});
-    setAsc(false);
+    setFilter({ sortBy: DEFAULT_SORT_BY });
     closeModal();
   }
 
@@ -339,39 +314,6 @@ function ChargesFiltersForm({
                       maxDropdownHeight={160}
                       searchable
                       withinPortal
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="sortBy.field"
-              control={control}
-              defaultValue={filter.sortBy?.field ?? ChargeSortByField.Date}
-              render={({ field }): ReactElement => (
-                <FormItem className="h-min">
-                  <FormLabel>Field to sort by</FormLabel>
-                  <FormControl>
-                    <Select
-                      {...field}
-                      data={fieldsToSort}
-                      placeholder="Scroll to see all options"
-                      maxDropdownHeight={160}
-                      searchable
-                      rightSectionProps={{ style: { width: '5rem' } }}
-                      withinPortal
-                      rightSection={
-                        <div className="flex flex-row items-center gap-1">
-                          <Switch
-                            defaultChecked={filter.sortBy?.asc ?? false}
-                            checked={asc ?? false}
-                            disabled={!enableAsc}
-                            onCheckedChange={setAsc}
-                          />
-                          <span className="text-xs">{asc ? 'ASC' : 'DESC'}</span>
-                        </div>
-                      }
                     />
                   </FormControl>
                   <FormMessage />

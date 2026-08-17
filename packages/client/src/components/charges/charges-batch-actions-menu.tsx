@@ -16,6 +16,13 @@ import type { ChargeRow } from './charges-table.js';
 
 interface Props {
   table: Table<TableFeaturesConfig, ChargeRow>;
+  /**
+   * Refreshes the given charges. Goes through `ChargesTable`'s refetch registry rather than calling a
+   * handler hung off each row, which silently did nothing for selected charges that were not
+   * currently rendered — `getSelectedRowModel()` is built from the core row model and so is not
+   * limited to the paginated rows on screen.
+   */
+  onRefreshCharges?: (chargeIds: string[]) => void;
 }
 
 /**
@@ -24,7 +31,7 @@ interface Props {
  * {@link RegenerateLedgerRecordsButton}, confirmation modal included) and "Change tags" (add/remove
  * tags across all selected charges), each in a single request.
  */
-export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
+export function ChargesBatchActionsMenu({ table, onRefreshCharges }: Props): ReactElement {
   const { regenerateLedgerRecords } = useRegenerateLedgerRecords();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -33,14 +40,11 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
   const selectedCount = rows.length;
   const selectedIds = rows.map(row => row.original.id);
 
-  // Refresh each selected row so the table reflects the applied change. The rows are re-read from
-  // the table rather than closed over: this runs after an awaited mutation, by which point a row
-  // refreshed in the meantime has been swapped for a new object and the captured one's `onChange`
-  // is an inert stub.
+  // Refresh each selected charge so the list reflects the applied change. The ids are re-read from
+  // the table rather than closed over (#4239): this runs after an awaited mutation, by which point
+  // the selection may have moved on, and the captured list would refresh the wrong charges.
   function refreshSelected(): void {
-    for (const row of table.getSelectedRowModel().rows) {
-      row.original.onChange();
-    }
+    onRefreshCharges?.(table.getSelectedRowModel().rows.map(row => row.original.id));
   }
 
   function onRegenerate(): void {
