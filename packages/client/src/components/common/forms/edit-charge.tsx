@@ -90,7 +90,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
   const onChargeSubmit: SubmitHandler<UpdateChargeInput> = async data => {
     const dataToUpdate = relevantDataPicker(data, dirtyChargeFields as MakeBoolean<typeof data>);
     if (dataToUpdate && Object.keys(dataToUpdate).length > 0) {
-      await updateCharge({
+      const updated = await updateCharge({
         chargeId: charge.id,
         fields: {
           ...dataToUpdate,
@@ -99,6 +99,14 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
             : undefined,
         },
       });
+      if (!updated) {
+        // The update failed (the hook has already reported it) — leave the form open and untouched.
+        return;
+      }
+      // Tell the host the charge changed as soon as it actually did. This used to be deferred to
+      // the similar-charges follow-up below, so editing a description or tags — the two most common
+      // edits — left the host showing pre-edit data whenever that dialog resolved without closing.
+      onChange();
       if (dataToUpdate.tags?.length || dataToUpdate.userDescription) {
         const nonSimilarData: {
           tagIds?: { id: string }[];
@@ -128,7 +136,6 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
         setSimilarChargesOpen(true);
       } else {
         close();
-        onChange?.();
       }
     }
   };
@@ -389,10 +396,7 @@ export const EditCharge = ({ charge, close, onChange }: Props): ReactElement => 
         description={similarChargesData?.description}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
-        onClose={() => {
-          close();
-          onChange?.();
-        }}
+        onClose={close}
         showChargesWithExistingSuggestions
       />
     </>

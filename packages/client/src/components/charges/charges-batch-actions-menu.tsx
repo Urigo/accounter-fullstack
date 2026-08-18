@@ -33,9 +33,12 @@ export function ChargesBatchActionsMenu({ table }: Props): ReactElement {
   const selectedCount = rows.length;
   const selectedIds = rows.map(row => row.original.id);
 
-  // Refresh each selected row so the table reflects the applied change.
+  // Refresh each selected row so the table reflects the applied change. The rows are re-read from
+  // the table rather than closed over: this runs after an awaited mutation, by which point a row
+  // refreshed in the meantime has been swapped for a new object and the captured one's `onChange`
+  // is an inert stub.
   function refreshSelected(): void {
-    for (const row of rows) {
+    for (const row of table.getSelectedRowModel().rows) {
       row.original.onChange();
     }
   }
