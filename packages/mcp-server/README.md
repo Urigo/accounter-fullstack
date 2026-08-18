@@ -18,7 +18,7 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of eleven read-only tools
+Accounter GraphQL server; a curated registry of twelve read-only tools
 (`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
 `accounter_get_transactions`, `accounter_get_documents`, `accounter_get_ledger_records`,
 `accounter_get_contracts`, `accounter_list_tags`, `accounter_list_tax_categories`,
@@ -90,6 +90,21 @@ scope, because it _is_ the scope.
   businesses last. Pure: memberships are already on the auth context, so it makes no upstream call.
   A caller with no memberships gets an empty list, not an error. This is the scope-discovery entry
   point; to browse the full business directory use `accounter_list_businesses`.
+- **`accounter_explain_terminology`** — the connector's **glossary**: what charges, transactions,
+  documents, ledger records, businesses and tax categories actually mean in Accounter, including the
+  distinctions that are not inferable from the schema (a charge is an aggregate, not a bank charge;
+  `byOwners` is the owner predicate while `byBusinesses` is the counterparty one; `INTERNAL` and
+  `CONVERSION` charges double-count in spend totals; ledger slot 2 is the VAT split; only _business_
+  entities are required to balance). Called with no arguments it returns a one-line index of every
+  term; `terms` looks up specific ones (matching canonical names, enum tokens, GraphQL type names
+  and field names, case- and separator-insensitive, with a substring fallback) and `topics` returns
+  a whole area in full. An unmatched term is reported under `unmatched` with suggestions rather than
+  failing the call. Like discovery it is **pure** — static content, no upstream call, no
+  `x-business-scope` — and unlike every other tool it needs **no business scope** at all
+  (`requiresBusinessScope: false`, `dataClassification: 'public'`), so a caller with zero
+  memberships can still read it. Content is pinned to the package's own enum constants by
+  `terminology-contract.test.ts`, so a charge type added upstream fails the suite instead of quietly
+  going undefined.
 - **`accounter_search_charges`** — read-only charges search/browse within the caller's authorized
   businesses. Accepts optional `memberBusinessIds` (subset of memberships) plus **every
   `ChargeFilter` predicate upstream honors**, flat: `fromDate`/`toDate` (overlap — any
@@ -429,8 +444,8 @@ The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mo
 
 Phase 1 is intentionally **read-only** and single-purpose:
 
-- Only the four read-only tools above are exposed; there is no generic "run any query" surface and
-  **no mutations/subscriptions** (the upstream client refuses them).
+- Only the read-only tools above are exposed; there is no generic "run any query" surface and **no
+  mutations/subscriptions** (the upstream client refuses them).
 - Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
   payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
   rather than streamed in full.
