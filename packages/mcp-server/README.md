@@ -269,12 +269,38 @@ process (labels never carry PII — only tool names, outcome classes, and error 
   from "tokens are misconfigured/abused".
 - **`upstreamErrorsTotal`** — upstream failure counter keyed by category.
 - **`rateLimitedTotal`** — total rate-limited requests.
+- **`labeledTotals`** — tool-contributed usage counters, keyed by counter name then label (see
+  [Usage logging](#usage-logging)). Distinct labels per counter are capped, with new labels beyond
+  the cap folded into `__other__`, because some labels derive from caller input.
 
 A snapshot is exposed at `GET /metrics`:
 
 ```bash
 curl http://localhost:3100/metrics
 ```
+
+### Usage logging
+
+Operational telemetry answers "is it healthy"; usage telemetry answers "what are callers trying to
+do". Every completed tool call emits exactly one structured log line tagged `event: "tool_call"` —
+including calls rejected by validation, policy, or the rate limiter — carrying `tool`, `outcome`,
+`latencyMs`, `userId`, `correlationId`, `businessScopeSize`, and result-size fields. The
+request-level logs cannot carry this: every MCP call is the same `POST /mcp`.
+
+A tool can enrich its own line through the optional `observe` hook on its `ToolDefinition`
+(`src/tools/registry.ts`). The hook is pure, guarded against throwing, and deliberately separate
+from `ToolResult` — `tools/call` returns the result object verbatim as the JSON-RPC payload, so
+anything attached there would be sent to the caller. Tool-supplied fields are merged _beneath_ the
+canonical ones, so a tool cannot misreport its own name, outcome, or caller.
+
+`accounter_explain_terminology` uses it to record what callers ask the glossary — `requestedTerms`
+(verbatim), `matchedTerms` (canonical), `missedTerms`, `requestedTopics` and `glossaryMode` — plus
+the `glossary_term_requests`, `glossary_term_misses` and `glossary_mode` label counters. What a
+caller looks up is the clearest available read on the vocabulary they arrived with, and
+`missedTerms` is a self-maintaining backlog of glossary entries to write.
+
+See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 for the full field reference
+and the `jq` extraction recipes (most-requested terms, missing terms, tool popularity).
 
 ### Tracing (OpenTelemetry → Grafana Tempo)
 

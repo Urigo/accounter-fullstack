@@ -28,9 +28,37 @@ Labels never carry PII — only tool names, outcome classes, and error categorie
 | `authFailuresTotal`   | counter by reason (`missing_token`, `expired_token`, `invalid_token`) | `expired_token` = live tokens aging out (clients should refresh); `invalid_token` = bad signature/issuer/audience → misconfig or abuse; a burst of `missing_token` = clients reconnecting (tokenless probes). |
 | `upstreamErrorsTotal` | counter by category                                                   | Sustained `TIMEOUT_ERROR`/`UPSTREAM_ERROR` → upstream health issue.                                                                                                                                           |
 | `rateLimitedTotal`    | counter                                                               | Sustained growth → limits too tight or a hot client.                                                                                                                                                          |
+| `labeledTotals`       | counter keyed `<counter> -> <label>`                                  | Tool-contributed usage counters (see below). `__other__` growing means a counter hit its label cap.                                                                                                           |
 
 Baseline latency targets and the load profile are captured by
 `packages/mcp-server/src/__tests__/perf.test.ts` (`yarn workspace @accounter/mcp-server benchmark`).
+
+### 2.1 Usage counters (`labeledTotals`)
+
+Tools contribute low-cardinality label counters through their `observe` hook. These answer product
+questions about how the connector is actually being used, not operational ones:
+
+| Counter                  | Label                           | Answers                                                        |
+| ------------------------ | ------------------------------- | -------------------------------------------------------------- |
+| `glossary_term_requests` | canonical glossary term         | Which terminology callers look up most (≤62 labels).           |
+| `glossary_term_misses`   | folded, 40-char-clipped request | Terms callers asked for that the glossary does not define yet. |
+| `glossary_mode`          | `index` \| `full`               | Browse-the-index-first vs. direct lookup.                      |
+
+```bash
+curl -s "$MCP_BASE_URL/metrics" | jq '.labeledTotals'
+```
+
+Two caveats before you read anything into these numbers:
+
+- **Per process, and reset on restart.** These are in-memory counters, so a redeploy or a spin-down
+  zeroes them and a multi-instance deployment splits them. Treat them as a live sample; the log
+  stream is the durable record.
+- **`/metrics` is unauthenticated, while calling a tool requires a valid token.**
+  `glossary_term_misses` labels are therefore caller-supplied text that is publicly readable. They
+  are folded, clipped to 40 characters, and capped at `MAX_COUNTER_LABELS` distinct labels per
+  counter (further new labels land in `__other__`), which bounds this to junk vocabulary rather than
+  data — the glossary tool is classified `public` and touches no customer data. Worth closing when
+  `/metrics` gets gated.
 
 ## 3. Logs
 
@@ -67,6 +95,63 @@ Useful queries (adapt to your log backend):
 - **Slow requests**: completion logs where `latencyMs` exceeds your target.
 - **Unexpected tool errors**: `message == "unexpected error during tool execution"` (carries `tool`,
   `correlationId`, and the sanitized error) — these map to `INTERNAL_ERROR` for callers.
+
+### 3.1 Tool-call usage logs (`event: "tool_call"`)
+
+Every completed tool call emits exactly one line with `event: "tool_call"` — including calls
+rejected by validation, policy, or the rate limiter, which never reach a handler. This is the only
+per-tool record: every MCP call is the same `POST /mcp`, so the
+`request started`/`request completed` pair cannot tell one tool from another.
+
+`event` is the stable discriminator to select on; prefer it over matching the free-text `message`.
+
+Common fields:
+
+| Field                                        | Meaning                                                                          |
+| -------------------------------------------- | -------------------------------------------------------------------------------- |
+| `tool`                                       | Registered tool name.                                                            |
+| `outcome`                                    | Same label set as the `requestsTotal` metric (`success`, `validation_error`, …). |
+| `latencyMs`                                  | End-to-end time inside the executor.                                             |
+| `userId`                                     | Auth0 subject of the caller.                                                     |
+| `correlationId`                              | Ties the call to its request and to the upstream GraphQL hop.                    |
+| `businessScopeSize`                          | Number of businesses in the resolved read scope; absent when no handler ran.     |
+| `returnedCount` / `totalCount` / `truncated` | Result size, for any tool using the shared list shaping.                         |
+
+Glossary-specific fields (`accounter_explain_terminology`), which are the readable signal of what a
+caller was trying to do before they knew how to ask for data:
+
+| Field                | Meaning                                                                         |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `glossaryMode`       | `index` (asked what exists) or `full` (asked what something means).             |
+| `requestedTerms`     | Verbatim spellings the caller used, e.g. `valueDate`.                           |
+| `matchedTerms`       | Canonical terms those resolved to, e.g. `value-date`.                           |
+| `missedTerms`        | Requested terms the glossary does not define — the backlog of entries to write. |
+| `requestedTopics`    | Topics asked for in full.                                                       |
+| `requestedTermCount` | Number of terms explicitly named (`0` in index mode and for topic-only calls).  |
+
+Note that terms pulled in by `topics` are deliberately **not** counted as requested — a
+`topics: ["charge"]` call returns every charge entry, and crediting each one would turn
+"most-requested term" into a measure of topic breadth.
+
+Extraction recipes (pipe your platform's log stream in; `jq -c` on a file works the same):
+
+```bash
+# Most-requested glossary terms
+jq -r 'select(.event=="tool_call") | .matchedTerms // [] | .[]' logs.jsonl \
+  | sort | uniq -c | sort -rn
+
+# Terms callers asked for that the glossary is missing — the content backlog
+jq -r 'select(.event=="tool_call") | .missedTerms // [] | .[]' logs.jsonl \
+  | sort | uniq -c | sort -rn
+
+# Which tool a caller reached for after a glossary lookup, in order
+jq -r 'select(.event=="tool_call") | [.userId, .tool, (.matchedTerms // [] | join(","))] | @tsv' \
+  logs.jsonl
+
+# Tool popularity and error rate
+jq -r 'select(.event=="tool_call") | "\(.tool)\t\(.outcome)"' logs.jsonl \
+  | sort | uniq -c | sort -rn
+```
 
 ## 4. Incident playbooks
 

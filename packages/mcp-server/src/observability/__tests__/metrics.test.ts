@@ -3,8 +3,10 @@ import type { McpErrorCode } from '../../errors/taxonomy.js';
 import {
   getMetrics,
   LATENCY_BUCKETS_MS,
+  MAX_COUNTER_LABELS,
   Metrics,
   outcomeForCode,
+  OVERFLOW_LABEL,
   resetMetrics,
   type RequestOutcome,
 } from '../metrics.js';
@@ -103,6 +105,61 @@ describe('Metrics', () => {
     expect(snapshot.latencyMs.count).toBe(0);
     expect(snapshot.latencyMs.sum).toBe(0);
     expect(snapshot.latencyMs.buckets['+Inf']).toBe(0);
+    expect(snapshot.labeledTotals).toEqual({});
+  });
+});
+
+describe('Metrics.recordLabeled', () => {
+  it('counts labels per counter, keeping counters independent', () => {
+    const metrics = new Metrics();
+    metrics.recordLabeled('glossary_term_requests', 'charge');
+    metrics.recordLabeled('glossary_term_requests', 'charge');
+    metrics.recordLabeled('glossary_term_requests', 'ledger-record');
+    metrics.recordLabeled('glossary_mode', 'full');
+
+    expect(metrics.snapshot().labeledTotals).toEqual({
+      glossary_term_requests: { charge: 2, 'ledger-record': 1 },
+      glossary_mode: { full: 1 },
+    });
+  });
+
+  it('omits counters that were never touched', () => {
+    expect(new Metrics().snapshot().labeledTotals).toEqual({});
+  });
+
+  it('folds new labels into the overflow bucket once the cap is reached', () => {
+    const metrics = new Metrics();
+    for (let i = 0; i < MAX_COUNTER_LABELS; i += 1) {
+      metrics.recordLabeled('misses', `term-${i}`);
+    }
+    metrics.recordLabeled('misses', 'one-too-many');
+    metrics.recordLabeled('misses', 'another-one');
+
+    const labels = metrics.snapshot().labeledTotals.misses;
+    // Labels are caller-derived, so the map must not grow past the cap (+ the
+    // overflow bucket itself) no matter what a caller sends.
+    expect(Object.keys(labels)).toHaveLength(MAX_COUNTER_LABELS + 1);
+    expect(labels[OVERFLOW_LABEL]).toBe(2);
+    expect(labels['one-too-many']).toBeUndefined();
+  });
+
+  it('keeps counting labels it already tracks after the cap is reached', () => {
+    const metrics = new Metrics();
+    for (let i = 0; i < MAX_COUNTER_LABELS; i += 1) {
+      metrics.recordLabeled('misses', `term-${i}`);
+    }
+    metrics.recordLabeled('misses', 'overflowing');
+    metrics.recordLabeled('misses', 'term-0');
+
+    // The top-N that matters stays accurate; only unseen labels are collapsed.
+    expect(metrics.snapshot().labeledTotals.misses['term-0']).toBe(2);
+  });
+
+  it('is cleared by reset', () => {
+    const metrics = new Metrics();
+    metrics.recordLabeled('misses', 'frobnicator');
+    metrics.reset();
+    expect(metrics.snapshot().labeledTotals).toEqual({});
   });
 });
 

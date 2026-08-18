@@ -120,3 +120,29 @@ export function shapeListResult<T>(params: ShapeListParams<T>): ToolResult {
     structuredContent: structured,
   };
 }
+
+/**
+ * Result-size fields for the usage log, pulled off a shaped result.
+ *
+ * Every list-producing tool builds its payload with {@link shapeListResult}, so
+ * these three keys are a shared shape rather than a per-tool convention — the
+ * executor can log how much a call actually returned without any tool opting in.
+ * Returns an empty object for a result that is not list-shaped (an error result,
+ * or a tool that builds its own structured content).
+ */
+export function listShapeFields(result: ToolResult): Record<string, unknown> {
+  const structured = result.structuredContent;
+  if (!structured || typeof structured !== 'object') {
+    return {};
+  }
+  const { returnedCount, totalCount, truncated } = structured as {
+    returnedCount?: unknown;
+    totalCount?: unknown;
+    truncated?: unknown;
+  };
+  const fields: Record<string, unknown> = {};
+  if (typeof returnedCount === 'number') fields.returnedCount = returnedCount;
+  if (typeof totalCount === 'number') fields.totalCount = totalCount;
+  if (typeof truncated === 'boolean') fields.truncated = truncated;
+  return fields;
+}
