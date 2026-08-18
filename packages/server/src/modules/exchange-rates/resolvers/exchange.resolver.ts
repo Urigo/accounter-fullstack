@@ -146,7 +146,8 @@ export const exchangeResolvers: ExchangeRatesModule.Resolvers = {
       }
 
       if (!rate) {
-        throw new GraphQLError(`Couldn't find any rate for charge ID="${dbCharge.id}"`);
+        console.log(`Couldn't find any source conversion rate for charge ID="${dbCharge.id}"`);
+        return null;
       }
 
       return {
