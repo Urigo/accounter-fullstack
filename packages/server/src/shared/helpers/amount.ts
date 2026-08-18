@@ -71,6 +71,10 @@ export function formatCurrency<T extends boolean = false>(
       return Currency.Ils;
     case 'דולר ארה"ב':
       return Currency.Usd;
+    case 'לירה שטרלינג':
+      return Currency.Gbp;
+    case 'ין יפני':
+      return Currency.Jpy;
     case 'GRT':
       return Currency.Grt;
     case 'USDC':

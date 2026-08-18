@@ -146,7 +146,19 @@ const PAYMENT_TYPES = [
   'הצעת רכש כפויה',
 ] as const;
 
-const CURRENCIES = ['שקל חדש', 'דולר ארה"ב'] as const;
+/**
+ * The bank spells currencies out in Hebrew. Every value here must also be
+ * mapped in `formatCurrency` (`packages/server/src/shared/helpers/amount.ts`),
+ * which turns the label into a `Currency` when the executions are read back —
+ * widening this list alone only moves the failure downstream.
+ */
+const CURRENCIES = [
+  'שקל חדש', // ILS
+  'דולר ארה"ב', // USD
+  'אירו', // EUR
+  'לירה שטרלינג', // GBP
+  'ין יפני', // JPY
+] as const;
 
 const SECURITY_GROUPS = [
   'מניות ניע"ז',
