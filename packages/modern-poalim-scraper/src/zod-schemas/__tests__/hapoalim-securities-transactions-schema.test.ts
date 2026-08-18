@@ -516,7 +516,8 @@ describe('describeSecuritiesTransactionsError', () => {
     const message = failureFor(Array.from({ length: 12 }, () => ({ ...buy, NV: -1 })));
     expect(message).toContain('Account.Execution.0.NV');
     expect(message).toContain('(×12)');
-    expect(message).toContain('12 issues of 1 distinct kind');
+    expect(message).toContain('12 issues of 1 distinct kind ');
+    expect(message).not.toContain('1 distinct kinds');
     expect(message).not.toContain('more distinct');
   });
 
@@ -530,6 +531,8 @@ describe('describeSecuritiesTransactionsError', () => {
     const payload = response(rows);
     const result = HapoalimSecuritiesTransactionsSchema.safeParse(payload);
     const message = describeSecuritiesTransactionsError(payload, result.error!, 2);
+    // With nothing grouped, the count of kinds adds nothing over the count of issues.
+    expect(message).not.toContain('distinct kinds');
     expect(message).toContain('…and 2 more distinct issues.');
   });
 
@@ -543,6 +546,7 @@ describe('describeSecuritiesTransactionsError', () => {
     const payload = response(rows);
     const result = HapoalimSecuritiesTransactionsSchema.safeParse(payload);
     const message = describeSecuritiesTransactionsError(payload, result.error!, 3);
+    expect(message).toContain('21 issues of 2 distinct kinds');
     expect(message).toContain('NV');
     expect(message).toContain('TradePrice');
   });

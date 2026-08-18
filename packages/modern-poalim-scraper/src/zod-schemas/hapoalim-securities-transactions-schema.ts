@@ -549,7 +549,10 @@ export function describeSecuritiesTransactionsError(
         ? issue.message.slice(field.length + 2)
         : issue.message;
 
-    const key = `${groupPath} ${message}`;
+    // Joined on \u241F — the printable "unit separator" glyph, not a control
+    // character: it cannot occur in a field path or a Zod message, so no pair of
+    // different (path, message) values can collide on one key.
+    const key = `${groupPath}\u241F${message}`;
     const existing = groups.get(key);
     if (existing) {
       existing.count += 1;
@@ -564,7 +567,9 @@ export function describeSecuritiesTransactionsError(
   const summary =
     `Poalim securities transactions did not match the expected response shape ` +
     `(${error.issues.length} issue${error.issues.length === 1 ? '' : 's'}${
-      grouped.length === error.issues.length ? '' : ` of ${grouped.length} distinct kinds`
+      grouped.length === error.issues.length
+        ? ''
+        : ` of ${grouped.length} distinct kind${grouped.length === 1 ? '' : 's'}`
     }${
       executions
         ? ` across ${executions.length} execution${executions.length === 1 ? '' : 's'}`

@@ -104,6 +104,12 @@ const sameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+/** A local `Date` as `YYYY-MM-DD`, for messages — `toISOString` would shift the day. */
+const toLocalDay = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+
 /** `YYYY-MM-DD` back to a local `Date`, so the day survives the round trip. */
 function dayToLocalDate(day: string): Date {
   const [year, month, date] = day.split('-').map(Number);
@@ -111,15 +117,23 @@ function dayToLocalDate(day: string): Date {
 }
 
 export type FetchAllExecutionsResult<TPage extends RawExecutionsPage> = {
-  /** The first response, kept whole: it carries the envelope (and any error). */
+  /** The first response, kept whole: it carries the envelope the merge builds on. */
   firstPage: TPage | null;
+  /**
+   * The error payload that ended the walk-back, from whichever round produced it.
+   * Set means the window was only partly fetched, so `executions` is incomplete and
+   * the caller must report this rather than the merged result — a later round
+   * failing is just as fatal as the first one failing.
+   */
+  failedPage: TPage | null;
   /** Every distinct execution across the rounds, newest first. */
   executions: unknown[];
   /** How many requests were issued. */
   rounds: number;
   /**
-   * Set when the walk-back gave up with a full page in hand — the window holds
-   * more executions than were fetched. Already logged; carried for callers.
+   * Set when the walk-back stopped with the window still unfinished and no error
+   * payload to blame — a full page it could not get past, the round cap, or a round
+   * that came back with nothing. Already logged; carried for callers.
    */
   truncated?: string | undefined;
 };
@@ -128,10 +142,12 @@ export type FetchAllExecutionsResult<TPage extends RawExecutionsPage> = {
  * Requests the window repeatedly, pulling its ceiling back over the oldest day
  * each full page reached, and returns the merged, deduplicated executions.
  *
- * Stops on a short page (the window is exhausted), on a page that could not be
- * read (null or an error payload — the caller surfaces it from `firstPage`), when
- * the ceiling can no longer move (a single day holding a full page), and at
- * {@link MYTRADE_EXECUTIONS_MAX_ROUNDS} rounds.
+ * Stops on a short page (the window is exhausted), on a page that could not be read
+ * (an error payload lands in `failedPage`, a null response in `truncated`), when the
+ * ceiling can no longer move (a single day holding a full page), and at
+ * {@link MYTRADE_EXECUTIONS_MAX_ROUNDS} rounds. Every outcome other than the short
+ * page leaves a reason in `failedPage` or `truncated`: a caller that ignores both
+ * cannot tell a complete window from a partial one.
  */
 export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
   fromDate,
@@ -149,6 +165,7 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
   warn?: (message: string) => void;
 }): Promise<FetchAllExecutionsResult<TPage>> {
   let firstPage: TPage | null = null;
+  let failedPage: TPage | null = null;
   const executions: unknown[] = [];
   const seen = new Set<string>();
   let ceiling = toDate;
@@ -160,12 +177,22 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
     const page = await fetchPage({ fromDate, toDate: ceiling });
     firstPage ??= page;
     if (!page) {
+      // Round 1 returning nothing is the ordinary "no portfolio activity" answer;
+      // a later round is a window left half-fetched, which has to be said out loud.
+      if (round > 1) {
+        truncated =
+          `Securities executions for ${label} stopped after round ${round - 1}: the next request ` +
+          `came back with nothing, so the window before ${toLocalDay(ceiling)} was not fetched ` +
+          `(stopped at ${executions.length} executions).`;
+        warn(truncated);
+      }
       break;
     }
 
-    // An error payload carries no executions; the caller surfaces it from the
-    // first page, so there is nothing to gain from another round.
+    // An error payload carries no executions. It is kept whatever round it arrives
+    // on: after a good first page it would otherwise look like a finished walk-back.
     if (isErrorPage(page)) {
+      failedPage = page;
       break;
     }
 
@@ -220,5 +247,5 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
     ceiling = nextCeiling;
   }
 
-  return { firstPage, executions, rounds, truncated };
+  return { firstPage, failedPage, executions, rounds, truncated };
 }

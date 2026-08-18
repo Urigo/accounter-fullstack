@@ -46,6 +46,9 @@ function fullPageEndingOn(endDay: string, prefix: string) {
 
 const window = { fromDate: new Date(2024, 0, 1), toDate: new Date(2024, 11, 31) };
 
+/** mytrade signals failure in the body; the scraper passes an equivalent predicate. */
+const isException = (candidate: unknown) => 'Exception' in (candidate as Record<string, unknown>);
+
 describe('fetchAllExecutions', () => {
   it('does not ask for a second page when the first is short', async () => {
     const fetchPage = vi.fn().mockResolvedValue(page([execution('1234567', '2024-06-01')]));
@@ -159,6 +162,8 @@ describe('fetchAllExecutions', () => {
     expect(fetchPage).toHaveBeenCalledTimes(1);
     expect(result.firstPage).toBeNull();
     expect(result.executions).toEqual([]);
+    // Nothing on round 1 is the ordinary "no activity" answer, not a partial fetch.
+    expect(result.truncated).toBeUndefined();
   });
 
   it('stops on an error payload without swallowing it', async () => {
@@ -168,12 +173,52 @@ describe('fetchAllExecutions', () => {
     const result = await fetchAllExecutions({
       ...window,
       fetchPage,
-      isErrorPage: candidate => 'Exception' in (candidate as Record<string, unknown>),
+      isErrorPage: isException,
     });
 
     expect(fetchPage).toHaveBeenCalledTimes(1);
     expect(result.firstPage).toBe(errorPage);
+    expect(result.failedPage).toBe(errorPage);
     expect(result.executions).toEqual([]);
+  });
+
+  // A session that expires mid-walk-back leaves the window half-fetched; reporting
+  // only the first page would make that look like a finished job.
+  it('reports an error payload that arrives after a good page', async () => {
+    const errorPage = { Exception: { Message: 'InvalidSessionException' } };
+    const good = page(fullPageEndingOn('2024-06-01', 'e'));
+    const fetchPage = vi.fn().mockResolvedValueOnce(good).mockResolvedValueOnce(errorPage);
+
+    const result = await fetchAllExecutions({ ...window, fetchPage, isErrorPage: isException });
+
+    expect(fetchPage).toHaveBeenCalledTimes(2);
+    expect(result.firstPage).toBe(good);
+    expect(result.failedPage).toBe(errorPage);
+    expect(result.executions).toHaveLength(MYTRADE_EXECUTIONS_PAGE_SIZE);
+  });
+
+  it('says so when a later round comes back with nothing', async () => {
+    const fetchPage = vi
+      .fn()
+      .mockResolvedValueOnce(page(fullPageEndingOn('2024-06-01', 'f')))
+      .mockResolvedValueOnce(null);
+    const warn = vi.fn();
+
+    const result = await fetchAllExecutions({ ...window, fetchPage, warn });
+
+    expect(result.failedPage).toBeNull();
+    expect(result.truncated).toContain('came back with nothing');
+    expect(result.truncated).toContain('2024-01-04');
+    expect(warn).toHaveBeenCalledWith(result.truncated);
+  });
+
+  it('leaves no reason behind when the window is fetched whole', async () => {
+    const fetchPage = vi.fn().mockResolvedValue(page([execution('1234567', '2024-06-01')]));
+
+    const result = await fetchAllExecutions({ ...window, fetchPage });
+
+    expect(result.failedPage).toBeNull();
+    expect(result.truncated).toBeUndefined();
   });
 
   it('treats a response with no Execution list as an empty page', async () => {

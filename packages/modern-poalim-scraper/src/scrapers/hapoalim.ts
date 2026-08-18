@@ -648,18 +648,19 @@ export async function hapoalim(
     }> => {
       const tradeAccountNumber = `${account.branchNumber}-${account.accountNumber}`;
 
-      const { firstPage, executions } = await fetchAllExecutions<HapoalimSecuritiesTransactions>({
-        fromDate: range?.fromDate ?? startDate,
-        toDate: range?.toDate ?? now,
-        label: `account ${tradeAccountNumber}`,
-        isErrorPage: page => describeMytradeError(page) !== null,
-        fetchPage: ({ fromDate, toDate }) =>
-          fetchFromMytrade<HapoalimSecuritiesTransactions>(
-            `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}` +
-              `&fromDate=${toMytradeDateString(fromDate)}&toDate=${toMytradeDateString(toDate)}`,
-            'GET',
-          ),
-      });
+      const { firstPage, failedPage, executions } =
+        await fetchAllExecutions<HapoalimSecuritiesTransactions>({
+          fromDate: range?.fromDate ?? startDate,
+          toDate: range?.toDate ?? now,
+          label: `account ${tradeAccountNumber}`,
+          isErrorPage: page => describeMytradeError(page) !== null,
+          fetchPage: ({ fromDate, toDate }) =>
+            fetchFromMytrade<HapoalimSecuritiesTransactions>(
+              `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}` +
+                `&fromDate=${toMytradeDateString(fromDate)}&toDate=${toMytradeDateString(toDate)}`,
+              'GET',
+            ),
+        });
 
       // Every round answers the same shape, so the first page carries the response
       // envelope (`PageState`) and the merged executions replace its own. A page
@@ -682,9 +683,12 @@ export async function hapoalim(
         return { data, isValid: true };
       }
 
-      const error = describeMytradeError(firstPage);
+      // A failed round is reported whichever round it was: the walk-back only got
+      // part of the window, so the merged executions must not pass as the whole of it.
+      const reportedPage = failedPage ?? firstPage;
+      const error = describeMytradeError(reportedPage);
       if (error) {
-        return { data: firstPage, errors: error, isValid: false };
+        return { data: reportedPage, errors: error, isValid: false };
       }
 
       const validation = HapoalimSecuritiesTransactionsSchema.safeParse(data);
