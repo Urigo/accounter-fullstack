@@ -148,7 +148,19 @@ const PAYMENT_TYPES = [
   'הצעת רכש כפויה',
 ] as const;
 
-const CURRENCIES = ['שקל חדש', 'דולר ארה"ב'] as const;
+/**
+ * The bank spells currencies out in Hebrew. Every value here must also be
+ * mapped in `formatCurrency` (`packages/server/src/shared/helpers/amount.ts`),
+ * which turns the label into a `Currency` when the executions are read back —
+ * widening this list alone only moves the failure downstream.
+ */
+const CURRENCIES = [
+  'שקל חדש', // ILS
+  'דולר ארה"ב', // USD
+  'אירו', // EUR
+  'לירה שטרלינג', // GBP
+  'ין יפני', // JPY
+] as const;
 
 const SECURITY_GROUPS = [
   'מניות ניע"ז',
@@ -496,8 +508,13 @@ export type PoalimSecurityTransaction = z.infer<typeof PoalimSecurityTransaction
  *
  * The raw issue list points at `Account.Execution.37.TradeType`, which says
  * nothing about *which* execution row that is. This walks back into the parsed
- * input to name the security and trade date alongside each issue, and collapses
- * the long tail so one bank-side change does not print 150 near-identical lines.
+ * input to name the security and trade date alongside each issue.
+ *
+ * Issues are grouped by field and message before the list is truncated: one
+ * bank-side change hits every affected row, so printing the first N raw issues
+ * used to spend the whole budget on one repeated complaint and hide the rest
+ * behind "…and 33 more". Grouping keeps every *distinct* problem visible, with
+ * a representative row and an occurrence count.
  */
 export function describeSecuritiesTransactionsError(
   input: unknown,
@@ -506,11 +523,17 @@ export function describeSecuritiesTransactionsError(
 ): string {
   const executions = (input as { Account?: { Execution?: unknown[] } } | null)?.Account?.Execution;
 
-  const lines = error.issues.map(issue => {
+  const groups = new Map<string, { line: string; count: number }>();
+
+  for (const issue of error.issues) {
     const path = issue.path.join('.');
     const [root, list, indexKey] = issue.path;
     let context = '';
+    // The row index is what differs between repeats of the same problem, so the
+    // field path is stripped of it for grouping and the row named in the text.
+    let groupPath = path;
     if (root === 'Account' && list === 'Execution' && typeof indexKey === 'number') {
+      groupPath = ['Account', 'Execution', '*', ...issue.path.slice(3)].join('.');
       const row = executions?.[indexKey] as Record<string, unknown> | undefined;
       if (row) {
         context = ` [security ${String(row['Security'] ?? '?')}, traded ${String(
@@ -525,20 +548,40 @@ export function describeSecuritiesTransactionsError(
       typeof field === 'string' && issue.message.startsWith(`${field}: `)
         ? issue.message.slice(field.length + 2)
         : issue.message;
-    return `${path || '(root)'}: ${message}${context}`;
-  });
 
-  const shown = lines.slice(0, maxIssues);
-  const omitted = lines.length - shown.length;
+    // Joined on \u241F — the printable "unit separator" glyph, not a control
+    // character: it cannot occur in a field path or a Zod message, so no pair of
+    // different (path, message) values can collide on one key.
+    const key = `${groupPath}\u241F${message}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      groups.set(key, { line: `${path || '(root)'}: ${message}${context}`, count: 1 });
+    }
+  }
+
+  const grouped = [...groups.values()];
+  const shown = grouped.slice(0, maxIssues);
+  const omitted = grouped.length - shown.length;
   const summary =
     `Poalim securities transactions did not match the expected response shape ` +
-    `(${lines.length} issue${lines.length === 1 ? '' : 's'}${
+    `(${error.issues.length} issue${error.issues.length === 1 ? '' : 's'}${
+      grouped.length === error.issues.length
+        ? ''
+        : ` of ${grouped.length} distinct kind${grouped.length === 1 ? '' : 's'}`
+    }${
       executions
         ? ` across ${executions.length} execution${executions.length === 1 ? '' : 's'}`
         : ''
     }).`;
 
-  return [summary, ...shown.map(line => `  - ${line}`)]
-    .concat(omitted > 0 ? [`  …and ${omitted} more.`] : [])
+  return [
+    summary,
+    ...shown.map(({ line, count }) => `  - ${line}${count > 1 ? ` (×${count})` : ''}`),
+  ]
+    .concat(
+      omitted > 0 ? [`  …and ${omitted} more distinct issue${omitted === 1 ? '' : 's'}.`] : [],
+    )
     .join('\n');
 }

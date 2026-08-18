@@ -296,7 +296,7 @@ describe('HapoalimSecuritiesTransactionsSchema', () => {
   // ── closed vocabularies ────────────────────────────────────────────────────
 
   it.each([
-    ['TradeCurrency', 'אירו'],
+    ['TradeCurrency', 'פרנק שוויצרי'],
     ['TransactionType', 'העברה'],
     ['TradeType', 'שינוי'],
     ['PaymentType', 'בונוס'],
@@ -444,6 +444,29 @@ describe('HapoalimSecuritiesTransactionsSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  // The portfolio holds non-US listings; the bank quotes those in their own
+  // currency, spelled out in Hebrew.
+  it.each(['אירו', 'לירה שטרלינג', 'ין יפני'])('accepts an execution priced in %s', currency => {
+    const result = HapoalimSecuritiesTransactionsSchema.safeParse(
+      response([
+        {
+          ...buy,
+          IssueCurrency: currency,
+          TradeCurrency: currency,
+          SettlementCurrency: currency,
+          ISIN: 'GB0000000001',
+          SymbolOSI: 'EXMP LN',
+          IssuerCountryCode: 'GB',
+          IssuerCountry: 'אנגליה',
+          ExchangeCountry: 'אנגליה',
+          IssuerExchange: 'LSE',
+          IsUSEquity: 'לא',
+        },
+      ]),
+    );
+    expect(result.success).toBe(true);
+  });
+
   it('rejects a cross-currency settlement', () => {
     const result = HapoalimSecuritiesTransactionsSchema.safeParse(
       response([{ ...buy, SettlementCurrency: 'שקל חדש' }]),
@@ -489,14 +512,42 @@ describe('describeSecuritiesTransactionsError', () => {
     expect(message).not.toContain('NV: NV:');
   });
 
-  it('caps the list and says how many were omitted', () => {
-    const message = describeSecuritiesTransactionsError(
-      response(Array.from({ length: 12 }, () => ({ ...buy, NV: -1 }))),
-      HapoalimSecuritiesTransactionsSchema.safeParse(
-        response(Array.from({ length: 12 }, () => ({ ...buy, NV: -1 }))),
-      ).error!,
-      3,
-    );
-    expect(message).toContain('…and 9 more.');
+  it('collapses the same problem across rows into one counted line', () => {
+    const message = failureFor(Array.from({ length: 12 }, () => ({ ...buy, NV: -1 })));
+    expect(message).toContain('Account.Execution.0.NV');
+    expect(message).toContain('(×12)');
+    expect(message).toContain('12 issues of 1 distinct kind ');
+    expect(message).not.toContain('1 distinct kinds');
+    expect(message).not.toContain('more distinct');
+  });
+
+  it('caps the list by distinct issue, not by row, and says how many were omitted', () => {
+    const rows = [
+      { ...buy, NV: -1 },
+      { ...buy, TradePrice: -1 },
+      { ...buy, TradeGrossValueNIS: -1 },
+      { ...buy, AccumulatedInterest: -1 },
+    ];
+    const payload = response(rows);
+    const result = HapoalimSecuritiesTransactionsSchema.safeParse(payload);
+    const message = describeSecuritiesTransactionsError(payload, result.error!, 2);
+    // With nothing grouped, the count of kinds adds nothing over the count of issues.
+    expect(message).not.toContain('distinct kinds');
+    expect(message).toContain('…and 2 more distinct issues.');
+  });
+
+  // One repeated bank-side change used to fill the whole list and hide every
+  // other problem behind "…and N more".
+  it('keeps a lone distinct issue visible next to a repeated one', () => {
+    const rows = [
+      ...Array.from({ length: 20 }, () => ({ ...buy, NV: -1 })),
+      { ...buy, TradePrice: -1 },
+    ];
+    const payload = response(rows);
+    const result = HapoalimSecuritiesTransactionsSchema.safeParse(payload);
+    const message = describeSecuritiesTransactionsError(payload, result.error!, 3);
+    expect(message).toContain('21 issues of 2 distinct kinds');
+    expect(message).toContain('NV');
+    expect(message).toContain('TradePrice');
   });
 });

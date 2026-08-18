@@ -281,7 +281,10 @@ describe('validatePayload — valid fixtures', () => {
   });
 
   it.each([
-    ['an unknown currency', { TradeCurrency: 'אירו', SettlementCurrency: 'אירו' }],
+    [
+      'an unknown currency',
+      { TradeCurrency: 'פרנק שוויצרי', SettlementCurrency: 'פרנק שוויצרי' },
+    ],
     ['an unknown transaction type', { TransactionType: 'העברה' }],
     ['a malformed ISIN', { ISIN: 'US123' }],
     ['a malformed timestamp', { TradeDate: '2024-01-15' }],
@@ -299,6 +302,30 @@ describe('validatePayload — valid fixtures', () => {
         Account: { Execution: [{ ...MINIMAL_EXECUTION, ...overrides }] },
       }),
     ).toThrow(PayloadValidationError);
+  });
+
+  // Non-US listings are quoted in their own currency, spelled out in Hebrew.
+  it.each(['אירו', 'לירה שטרלינג', 'ין יפני'])('accepts an execution priced in %s', currency => {
+    const result = validatePayload('poalim-securities-transactions', {
+      Account: {
+        Execution: [
+          {
+            ...MINIMAL_EXECUTION,
+            IssueCurrency: currency,
+            TradeCurrency: currency,
+            SettlementCurrency: currency,
+            ISIN: 'GB0000000001',
+            SymbolOSI: 'EXMP LN',
+            IssuerCountry: 'אנגליה',
+            IssuerCountryCode: 'GB',
+            IssuerExchange: 'LSE',
+            ExchangeCountry: 'אנגליה',
+            IsUSEquity: 'לא',
+          },
+        ],
+      },
+    });
+    expect(result.Account.Execution[0]?.TradeCurrency).toBe(currency);
   });
 
   it('accepts a two-sided deposit transfer under the העברות category', () => {
@@ -321,14 +348,14 @@ describe('validatePayload — valid fixtures', () => {
   it('reports the failing field, the value and the fix', () => {
     try {
       validatePayload('poalim-securities-transactions', {
-        Account: { Execution: [{ ...MINIMAL_EXECUTION, TradeCurrency: 'אירו' }] },
+        Account: { Execution: [{ ...MINIMAL_EXECUTION, TradeCurrency: 'פרנק שוויצרי' }] },
       });
       expect.unreachable('expected the payload to be rejected');
     } catch (error) {
       const { message } = error as PayloadValidationError;
       expect(message).toContain('poalim-securities-transactions');
       expect(message).toContain('Account.Execution.0.TradeCurrency');
-      expect(message).toContain('"אירו"');
+      expect(message).toContain('"פרנק שוויצרי"');
       expect(message).toContain('Known values are');
       // The path already names the field; the message must not repeat it.
       expect(message).not.toContain('TradeCurrency: TradeCurrency:');

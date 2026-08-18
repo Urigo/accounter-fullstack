@@ -50,6 +50,7 @@ import {
   SwiftTransactionsSchema,
   type SwiftTransactions,
 } from '../zod-schemas/swift-transactions-schema.js';
+import { fetchAllExecutions } from './hapoalim-securities-paging.js';
 
 type ForeignTransactionsSchema<T extends boolean> = T extends true
   ? HapoalimForeignTransactionsBusiness
@@ -626,6 +627,12 @@ export async function hapoalim(
      * for the same portfolio. Same account addressing and same sibling-tab
      * mechanics; this endpoint is a GET and takes a ddMMyyyy date range, which
      * defaults to the scraper's configured `duration` window.
+     *
+     * The endpoint caps a response at 150 executions and returns the most recent
+     * ones, with no flag saying it truncated — so a full page is requested again
+     * with the window's ceiling pulled back to the oldest day that page reached,
+     * until a short page proves the window is exhausted. The pages are merged into
+     * one response, deduplicated on the ceiling day the rounds share.
      */
     getSecuritiesTransactions: async (
       account: {
@@ -640,11 +647,32 @@ export async function hapoalim(
       errors?: unknown;
     }> => {
       const tradeAccountNumber = `${account.branchNumber}-${account.accountNumber}`;
-      const fromDate = toMytradeDateString(range?.fromDate ?? startDate);
-      const toDate = toMytradeDateString(range?.toDate ?? now);
-      const executionsUrl = `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}&fromDate=${fromDate}&toDate=${toDate}`;
 
-      const data = await fetchFromMytrade<HapoalimSecuritiesTransactions>(executionsUrl, 'GET');
+      const { firstPage, failedPage, executions } =
+        await fetchAllExecutions<HapoalimSecuritiesTransactions>({
+          fromDate: range?.fromDate ?? startDate,
+          toDate: range?.toDate ?? now,
+          label: `account ${tradeAccountNumber}`,
+          isErrorPage: page => describeMytradeError(page) !== null,
+          fetchPage: ({ fromDate, toDate }) =>
+            fetchFromMytrade<HapoalimSecuritiesTransactions>(
+              `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}` +
+                `&fromDate=${toMytradeDateString(fromDate)}&toDate=${toMytradeDateString(toDate)}`,
+              'GET',
+            ),
+        });
+
+      // Every round answers the same shape, so the first page carries the response
+      // envelope (`PageState`) and the merged executions replace its own. A page
+      // with no `Account` at all — an error payload — is passed through verbatim,
+      // for the error branches below to report on.
+      const data =
+        firstPage && 'Account' in firstPage
+          ? ({
+              ...firstPage,
+              Account: { ...firstPage.Account, Execution: executions },
+            } as HapoalimSecuritiesTransactions)
+          : firstPage;
 
       if (!options?.validateSchema) {
         return { data, isValid: null };
@@ -655,9 +683,12 @@ export async function hapoalim(
         return { data, isValid: true };
       }
 
-      const error = describeMytradeError(data);
+      // A failed round is reported whichever round it was: the walk-back only got
+      // part of the window, so the merged executions must not pass as the whole of it.
+      const reportedPage = failedPage ?? firstPage;
+      const error = describeMytradeError(reportedPage);
       if (error) {
-        return { data, errors: error, isValid: false };
+        return { data: reportedPage, errors: error, isValid: false };
       }
 
       const validation = HapoalimSecuritiesTransactionsSchema.safeParse(data);
