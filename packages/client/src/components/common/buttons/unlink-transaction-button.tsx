@@ -7,16 +7,19 @@ import { ConfirmationModal } from '../index.js';
 
 interface Props {
   transactionId: string;
+  /** Called after the transaction was detached, so the (now transaction-less) charge can reload. */
+  onChange?: () => void;
 }
 
-export function UnlinkTransactionButton({ transactionId }: Props): ReactElement {
+export function UnlinkTransactionButton({ transactionId, onChange }: Props): ReactElement {
   const { updateTransaction } = useUpdateTransaction();
 
-  function onUnlink(): void {
-    updateTransaction({
+  async function onUnlink(): Promise<void> {
+    await updateTransaction({
       transactionId,
       fields: { chargeId: EMPTY_UUID },
     });
+    onChange?.();
   }
 
   return (

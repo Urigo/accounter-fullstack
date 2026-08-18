@@ -231,7 +231,13 @@ type Props = {
   chargeId?: string;
   documentId?: string;
   documentType?: DocumentType;
+  /**
+   * Hands the edited draft back instead of issuing it (see {@link GenerateDocument}). Pass
+   * `onIssued` — not this — to be notified when a document was actually issued.
+   */
   onDone?: (draft: PreviewDocumentInput) => void;
+  /** Called once a document was successfully issued, so hosts can refresh the affected charge. */
+  onIssued?: () => void;
   trigger?: ReactElement;
 } & Omit<ComponentProps<typeof GenerateDocument>, 'onClose'>;
 
@@ -243,6 +249,7 @@ export function PreviewDocumentModal({
   documentId,
   documentType,
   onDone,
+  onIssued,
   trigger,
   ...props
 }: Props): ReactElement {
@@ -370,6 +377,7 @@ export function PreviewDocumentModal({
                   }
                 : undefined
             }
+            onIssued={onIssued}
             onClose={() => setOpen(false)}
             chargeId={chargeId}
           />

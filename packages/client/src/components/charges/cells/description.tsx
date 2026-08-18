@@ -19,19 +19,30 @@ export const Description = ({
   onChange,
 }: DescriptionProps): ReactElement => {
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
+  // The description the similar-charges follow-up compares against, captured when it was applied.
+  // Reading it off the props instead would make the criteria vanish the moment `onChange` below
+  // refreshes the row (the suggestion is gone once accepted), closing the dialog immediately.
+  const [appliedDescription, setAppliedDescription] = useState<string | undefined>(undefined);
   const { updateCharge, fetching } = useUpdateCharge();
 
   const updateUserDescription = useCallback(
     async (value?: string) => {
       if (value !== undefined) {
-        await updateCharge({
+        const updated = await updateCharge({
           chargeId,
           fields: { userDescription: value },
         });
+        if (!updated) {
+          return;
+        }
+        // Refresh the row on the mutation itself. Hanging it off the follow-up dialog's close made
+        // the update invisible whenever that dialog resolved without closing.
+        onChange();
+        setAppliedDescription(value);
         setSimilarChargesOpen(true);
       }
     },
-    [chargeId, updateCharge],
+    [chargeId, updateCharge, onChange],
   );
 
   const cellText = useMemo(() => {
@@ -68,10 +79,9 @@ export const Description = ({
 
       <SimilarChargesByIdModal
         chargeId={chargeId}
-        description={suggestedDescription ?? undefined}
+        description={appliedDescription}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
-        onClose={onChange}
       />
     </>
   );

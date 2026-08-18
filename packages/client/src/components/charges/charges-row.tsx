@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactElement } from 'react';
+import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
 import { useQuery } from 'urql';
 import { flexRender, type Row } from '@tanstack/react-table';
 import {
@@ -40,6 +40,19 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
     },
   });
 
+  // The handler every action in (and under) this row calls once it has mutated the charge.
+  //  * `network-only` — this always runs right after a mutation, so a replayed/cached result would
+  //    silently re-apply the pre-mutation charge. Mirrors `ChargeExtendedInfo`'s refetch.
+  //  * argument-swallowing — `onChange` is handed to plain callbacks and DOM handlers alike;
+  //    forwarding their argument would land it in urql's `OperationContext`.
+  const refetchCharge = useCallback((): void => {
+    fetchCharge({ requestPolicy: 'network-only' });
+  }, [fetchCharge]);
+
+  const dropCharge = useCallback((): void => {
+    removeCharge(row.original.id);
+  }, [removeCharge, row.original.id]);
+
   const originalStringified = useMemo(() => JSON.stringify(row.original), [row.original]);
   const newRow = useMemo(
     () =>
@@ -60,12 +73,14 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
 
   // react-table's row model is mutated in place to thread this row's refetch
   // handler onto `row.original.onChange`, which the cells read to reload the
-  // charge after an edit.
+  // charge after an edit. `updateCharge` swaps `row.original` for a freshly
+  // converted row whose handlers are inert stubs, so the re-threading below has
+  // to happen on every render — not just on mount.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
-  row.original.onChange = fetchCharge;
+  row.original.onChange = refetchCharge;
   // Same threading for the delete path — the row is dropped from the table instead of refetched.
   // eslint-disable-next-line react-hooks/immutability -- intentional react-table row-model mutation
-  row.original.onDelete = () => removeCharge(row.original.id);
+  row.original.onDelete = dropCharge;
 
   return (
     <>
@@ -95,7 +110,7 @@ export const ChargeRow = ({ row, updateCharge, removeCharge }: Props): ReactElem
               <Card className="w-full shadow-lg">
                 <ChargeExtendedInfo
                   chargeID={row.original.id}
-                  onChange={fetchCharge}
+                  onChange={refetchCharge}
                   onChargeDeleted={removeCharge}
                   fetching={fetching}
                 />

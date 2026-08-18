@@ -414,7 +414,9 @@ export function ChargeExtendedInfo({
                 <AccordionTrigger disabled={!hasTransactions}>
                   <div className="flex flex-row items-center gap-2 justify-between w-full">
                     Transactions
-                    {isIncomeNoDocsCharge && <PreviewDocumentModal chargeId={charge!.id} />}
+                    {isIncomeNoDocsCharge && (
+                      <PreviewDocumentModal chargeId={charge!.id} onIssued={onExtendedChange} />
+                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -464,7 +466,9 @@ export function ChargeExtendedInfo({
                       )}
                       Documents
                     </div>
-                    {hasOpenDocuments && <PreviewDocumentModal chargeId={charge.id} />}
+                    {hasOpenDocuments && (
+                      <PreviewDocumentModal chargeId={charge.id} onIssued={onExtendedChange} />
+                    )}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -556,7 +560,7 @@ export function ChargeExtendedInfo({
               <AccordionItem value="bankDeposit">
                 <AccordionTrigger>Bank Deposit</AccordionTrigger>
                 <AccordionContent>
-                  <ChargeBankDeposit chargeId={charge.id} />
+                  <ChargeBankDeposit chargeId={charge.id} onChange={onExtendedChange} />
                 </AccordionContent>
               </AccordionItem>
             )}
