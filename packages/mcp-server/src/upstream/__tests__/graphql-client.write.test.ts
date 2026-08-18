@@ -216,3 +216,37 @@ describe('mutateMultipart', () => {
     ).rejects.toThrow(UpstreamError);
   });
 });
+
+describe('body construction failures', () => {
+  it('leaves no live timer when building the body throws', async () => {
+    // Regression guard: the body used to be built after the timeout was armed
+    // but outside the try/finally that clears it, so a build failure leaked a
+    // pending timer that held the event loop open for the whole budget.
+    const fetchImpl = okFetch();
+    const client = new UpstreamGraphQLClient({
+      endpoint: 'http://localhost:4000/graphql',
+      timeoutMs: 60_000,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+
+    await expect(
+      client.mutate({ query: MUTATION, variables: { circular } }, CONTEXT),
+    ).rejects.toThrow();
+
+    // Nothing was armed at all, so there is nothing left to clear.
+    expect(setTimeoutSpy).not.toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('clears the timer on a successful call', async () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
+    await clientWith(okFetch()).mutate({ query: MUTATION, variables: { id: '1' } }, CONTEXT);
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+    clearTimeoutSpy.mockRestore();
+  });
+});

@@ -303,9 +303,11 @@ export class UpstreamGraphQLClient {
     buildBody: () => WireBody,
     context: UpstreamRequestContext,
   ): Promise<TData> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
+    // Build the request BEFORE arming the timeout. Two reasons: the timeout
+    // budget is for the upstream exchange, not for serializing our own body; and
+    // a `buildBody()` that throws (a variable that will not JSON-serialize, a
+    // runtime without Blob/FormData) must not leave a live timer behind holding
+    // the event loop open — it would escape the `finally` that clears it.
     const wire = buildBody();
     const headers: Record<string, string> = {
       ...wire.headers,
@@ -331,6 +333,9 @@ export class UpstreamGraphQLClient {
     // The timeout budget spans the entire exchange — obtaining the response AND
     // consuming its body — so an upstream that sends headers then stalls the body
     // is still aborted. The timer is cleared only once everything is done.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+
     try {
       let response: Response;
       try {
