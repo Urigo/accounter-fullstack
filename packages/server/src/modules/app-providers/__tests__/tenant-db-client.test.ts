@@ -15,9 +15,13 @@ describe('TenantAwareDBClient', () => {
 
   beforeEach(() => {
     // Mock PoolClient
+    // A real PoolClient is an EventEmitter; the client attaches an 'error'
+    // listener while the connection is checked out.
     mockPoolClient = {
       query: vi.fn(),
       release: vi.fn(),
+      on: vi.fn(),
+      removeListener: vi.fn(),
     } as unknown as PoolClient;
 
     // Mock Pool

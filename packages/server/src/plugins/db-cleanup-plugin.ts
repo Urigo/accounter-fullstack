@@ -7,7 +7,29 @@ export function dbCleanupPlugin(): Plugin<AccounterContext> {
       // Initialize the cleanup list
       // Cast to AccounterContext to avoid potential readonly issues or type mismatches
       // during initial context building phase.
-      (context as AccounterContext).dbClientsToDispose = [];
+      const accounterContext = context as AccounterContext;
+      accounterContext.dbClientsToDispose = [];
+
+      // Dispose when the client goes away.
+      //
+      // `onExecuteDone` below only runs when execution *completes*. A request
+      // the client cancels mid-flight (urql aborts the previous query on every
+      // keystroke of a search box) rejects with an AbortError instead, so the
+      // hook never fires and the request-scoped connection is never released:
+      // it stays checked out of the pool, holding an open transaction, until
+      // the process restarts. Postgres reports these as `idle in transaction`
+      // with `wait_event = ClientRead`. Enough of them and the pool is gone and
+      // every subsequent request hangs forever in `pool.connect()`.
+      const signal = accounterContext.request?.signal;
+      if (signal) {
+        if (signal.aborted) {
+          void disposeClients(accounterContext);
+          return;
+        }
+        signal.addEventListener('abort', () => void disposeClients(accounterContext), {
+          once: true,
+        });
+      }
     },
     onExecute({ args }) {
       return {

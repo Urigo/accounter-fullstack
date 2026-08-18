@@ -36,6 +36,38 @@ const PostgresModel = zod.object({
   POSTGRES_USER: zod.string(),
   POSTGRES_PASSWORD: zod.string(),
   POSTGRES_MAX_CLIENTS: emptyString(NumberFromString).optional().default(20),
+  /**
+   * How long `pool.connect()` may wait for a free connection before failing.
+   * `0` restores pg's default of waiting forever — never do that in production:
+   * an exhausted pool then wedges every request with no error and no recovery.
+   */
+  POSTGRES_CONNECTION_TIMEOUT_MS: emptyString(NumberFromString).optional().default(10_000),
+  /**
+   * Server-side cap on a single statement. Generous by default so bulk
+   * mutations (merges, ledger regeneration, imports) are unaffected; it exists
+   * to bound a pathological query, not to police normal ones.
+   */
+  POSTGRES_STATEMENT_TIMEOUT_MS: emptyString(NumberFromString).optional().default(120_000),
+  /**
+   * Postgres-side backstop against leaked sessions: a connection left `idle in
+   * transaction` this long is terminated by the server.
+   *
+   * Must stay comfortably above the longest legitimate in-request pause. The
+   * request-scoped session model keeps a transaction open across external I/O
+   * (document OCR, Green Invoice, Cloudinary), so a too-aggressive value would
+   * kill live requests. 5 minutes bounds a leak without touching real traffic.
+   */
+  POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS: emptyString(NumberFromString)
+    .optional()
+    .default(300_000),
+  /**
+   * Client-side counterpart to the above: a TenantAwareDBClient whose last
+   * query finished this long ago is force-disposed by the watchdog, returning
+   * its connection to the pool. Same reasoning for the default.
+   */
+  POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(300_000),
+  /** Interval for the pool/session health heartbeat log. `0` disables it. */
+  POSTGRES_MONITOR_INTERVAL_MS: emptyString(NumberFromString).optional().default(30_000),
 });
 
 const CloudinaryModel = zod.union([
@@ -249,6 +281,11 @@ export const env = {
     password: postgres.POSTGRES_PASSWORD,
     ssl: postgres.POSTGRES_SSL === '1',
     max: postgres.POSTGRES_MAX_CLIENTS,
+    connectionTimeoutMs: postgres.POSTGRES_CONNECTION_TIMEOUT_MS,
+    statementTimeoutMs: postgres.POSTGRES_STATEMENT_TIMEOUT_MS,
+    idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
+    clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    monitorIntervalMs: postgres.POSTGRES_MONITOR_INTERVAL_MS,
   },
   cloudinary: cloudinary?.CLOUDINARY_API_KEY
     ? {

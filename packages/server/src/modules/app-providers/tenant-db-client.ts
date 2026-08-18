@@ -23,6 +23,80 @@ export function isDataModifyingQuery(text: string): boolean {
 }
 
 /**
+ * Clients currently holding a checked-out pooled connection, so a leaked one
+ * can be found and reclaimed. A client that is never disposed holds that
+ * connection *and* an open transaction forever: Postgres reports it as `idle
+ * in transaction` with `wait_event = ClientRead`, and the pool loses the slot
+ * permanently. Once the leak count reaches the pool's `max`, every request
+ * hangs in `pool.connect()`.
+ *
+ * Membership is tied to holding a connection rather than to the client's
+ * lifetime, so the set stays bounded by the pool size no matter how many
+ * clients are constructed or whether anything disposes them.
+ */
+const connectionHolders = new Set<TenantAwareDBClient>();
+
+export interface TenantDbClientStats {
+  /** Clients holding a checked-out connection right now. */
+  holdingConnection: number;
+  /** Longest any holder has gone without issuing a query. */
+  maxIdleMs: number;
+}
+
+export function getTenantDbClientStats(): TenantDbClientStats {
+  const now = Date.now();
+  let maxIdleMs = 0;
+
+  for (const client of connectionHolders) {
+    maxIdleMs = Math.max(maxIdleMs, now - client.lastActivityAt);
+  }
+
+  return { holdingConnection: connectionHolders.size, maxIdleMs };
+}
+
+export interface WatchdogOptions {
+  /** Force-dispose a client idle for longer than this. */
+  maxIdleMs: number;
+  /** How often to sweep. */
+  intervalMs: number;
+  onLeak?: (info: { idleMs: number; lastQuery: string | null }) => void;
+}
+
+/**
+ * Last line of defence against a connection leak.
+ *
+ * Disposal is driven by request lifecycle hooks, and the whole class of bug
+ * this guards against is a hook that does not fire. So the watchdog trusts no
+ * hook: it sweeps every live client and reclaims any that has gone quiet for
+ * longer than a request could plausibly stay quiet.
+ *
+ * The predicate is *idle* time (since the last query), not total age — a slow
+ * but healthy request keeps querying, while a leaked client never issues
+ * another statement, so its idle time grows without bound.
+ */
+export function startTenantDbClientWatchdog(options: WatchdogOptions): { stop: () => void } {
+  const timer = setInterval(() => {
+    const now = Date.now();
+    for (const client of connectionHolders) {
+      if (now - client.lastActivityAt < options.maxIdleMs) {
+        continue;
+      }
+
+      const info = { idleMs: now - client.lastActivityAt, lastQuery: client.lastQuery };
+      options.onLeak?.(info);
+      void client.dispose().catch(error => {
+        console.error('Watchdog failed to dispose leaked TenantAwareDBClient:', error);
+      });
+    }
+  }, options.intervalMs);
+
+  // Never hold the event loop open just to sweep.
+  timer.unref();
+
+  return { stop: () => clearInterval(timer) };
+}
+
+/**
  * TenantAwareDBClient enforces Row-Level Security (RLS) by setting PostgreSQL
  * session variables on a request-scoped transaction.
  *
@@ -79,6 +153,16 @@ export class TenantAwareDBClient {
   private isDisposed = false;
   private authContext: AuthContext | null = null;
   private authContextInitialized = false;
+  private clientErrorListener: ((error: Error) => void) | null = null;
+
+  /** Timestamp of the last query issued, for leak detection. See the watchdog. */
+  public lastActivityAt = Date.now();
+  /** First line of the last statement issued, to identify a leak's origin. */
+  public lastQuery: string | null = null;
+
+  public get holdsConnection(): boolean {
+    return this.activeClient !== null;
+  }
 
   /**
    * Per-operation mode: commit and release the connection after every
@@ -108,6 +192,12 @@ export class TenantAwareDBClient {
     }
   }
 
+  /** Records query activity so the watchdog can tell a busy client from a leaked one. */
+  private markActivity(text: string): void {
+    this.lastActivityAt = Date.now();
+    this.lastQuery = text.trim().split('\n')[0]?.slice(0, 120) ?? null;
+  }
+
   /**
    * Execute a query with RLS enforcement on the request-scoped session.
    * Data-modifying statements are committed immediately.
@@ -128,7 +218,9 @@ export class TenantAwareDBClient {
 
     // Inside an explicit transaction() scope — run on its client directly.
     if (this.storage.getStore() && this.activeClient) {
+      this.markActivity(text);
       const result = await this.activeClient.query<T>(text, params);
+      this.markActivity(text);
       return { ...result, rowCount: result.rowCount ?? 0 };
     }
 
@@ -136,7 +228,9 @@ export class TenantAwareDBClient {
       this.ensureNotDisposed();
       const client = await this.ensureSession();
       try {
+        this.markActivity(text);
         const result = await client.query<T>(text, params);
+        this.markActivity(text);
         if (this.autoRelease || isDataModifyingQuery(text)) {
           await this.endSession('COMMIT');
         }
@@ -231,7 +325,27 @@ export class TenantAwareDBClient {
    * Always called while holding the mutex.
    */
   private async ensureSession(): Promise<PoolClient> {
-    this.activeClient ||= await this.dbProvider.pool.connect();
+    if (!this.activeClient) {
+      const client = await this.dbProvider.pool.connect();
+
+      // pg removes its own idle-client error handler while a client is checked
+      // out, leaving the borrower responsible for it. Without a listener here,
+      // a connection reset — including Postgres terminating the session via
+      // `idle_in_transaction_session_timeout` — emits an unhandled 'error'
+      // event, which surfaces as an uncaughtException and takes down the whole
+      // process. Absorb it and let the pool discard the connection instead.
+      const onClientError = (error: Error) => {
+        console.error('[db] Error on checked-out client, discarding connection:', error);
+        this.sessionOpen = false;
+        this.activeClient = null;
+        this.clientErrorListener = null;
+        connectionHolders.delete(this);
+      };
+      client.on('error', onClientError);
+      this.clientErrorListener = onClientError;
+      this.activeClient = client;
+      connectionHolders.add(this);
+    }
 
     if (!this.sessionOpen) {
       const client = this.activeClient;
@@ -247,12 +361,7 @@ export class TenantAwareDBClient {
         } catch {
           // Ignore rollback errors (e.g. if connection closed)
         }
-        try {
-          client.release(true);
-        } catch {
-          // Ignore release errors
-        }
-        this.activeClient = null;
+        this.releaseClient(true);
         throw error;
       }
     }
@@ -274,19 +383,19 @@ export class TenantAwareDBClient {
       await this.activeClient.query(mode);
     } catch (error) {
       console.error(`Failed to ${mode} transaction:`, error);
-      try {
-        this.activeClient.release(true);
-      } catch {
-        // Ignore release errors
-      }
-      this.activeClient = null;
+      this.releaseClient(true);
     }
   }
 
-  private releaseClient(): void {
+  private releaseClient(destroy = false): void {
+    connectionHolders.delete(this);
     if (this.activeClient) {
+      if (this.clientErrorListener) {
+        this.activeClient.removeListener('error', this.clientErrorListener);
+        this.clientErrorListener = null;
+      }
       try {
-        this.activeClient.release();
+        this.activeClient.release(destroy);
       } catch (e) {
         console.error('Error releasing client:', e);
       }
@@ -355,7 +464,7 @@ export class TenantAwareDBClient {
     if (this.isDisposed) return;
 
     if (!this.activeClient) {
-      this.isDisposed = true;
+      this.markDisposed();
       return;
     }
 
@@ -379,7 +488,7 @@ export class TenantAwareDBClient {
       // Mark disposed to prevent further usage, and schedule cleanup for when
       // the in-flight operation finishes — otherwise the held connection would
       // leak from the pool.
-      this.isDisposed = true;
+      this.markDisposed();
       void this.mutex
         .runExclusive(async () => {
           await this.endSession('ROLLBACK');
@@ -398,10 +507,15 @@ export class TenantAwareDBClient {
       // COMMIT keeps a missed write-classification durable as a safety net.
       await this.endSession('COMMIT');
       this.releaseClient();
-      this.isDisposed = true;
+      this.markDisposed();
     } finally {
       release();
     }
+  }
+
+  private markDisposed(): void {
+    this.isDisposed = true;
+    connectionHolders.delete(this);
   }
 
   private ensureNotDisposed() {
