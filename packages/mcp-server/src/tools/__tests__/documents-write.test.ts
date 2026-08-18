@@ -228,12 +228,16 @@ describe('uploadDocumentsTool — input guards', () => {
 
   it('rejects a batch over the per-call size cap even when each file fits', async () => {
     const { client, captured } = uploadClient([]);
-    // Four 4MB files: each under the 5MB per-file cap, together over the 15MB call cap.
-    const chunk = Buffer.alloc(4 * 1024 * 1024, 0x41).toString('base64');
+    // Three 200KB files: each comfortably under the per-file cap, together over
+    // the per-call one — so this exercises the total check, not the per-file one.
+    const each = 200 * 1024;
+    expect(each).toBeLessThan(MAX_DOCUMENT_BYTES);
+    expect(each * 3).toBeGreaterThan(MAX_TOTAL_DOCUMENT_BYTES);
+    const chunk = Buffer.alloc(each, 0x41).toString('base64');
     const result = await run(
       {
         chargeId: CHARGE,
-        documents: Array.from({ length: 4 }, (_, i) =>
+        documents: Array.from({ length: 3 }, (_, i) =>
           doc({ filename: `f${i}.pdf`, contentBase64: chunk }),
         ),
       },
@@ -241,10 +245,25 @@ describe('uploadDocumentsTool — input guards', () => {
     );
 
     expect(result.isError).toBe(true);
-    expect((result.structuredContent as { message: string }).message).toMatch(
-      new RegExp(`${MAX_TOTAL_DOCUMENT_BYTES / 1024 / 1024}MB per-call limit`),
-    );
+    expect((result.structuredContent as { message: string }).message).toMatch(/per-call/);
     expect(captured).toHaveLength(0);
+  });
+
+  it('tells an over-size caller what to do instead of shrinking the file', async () => {
+    // The failure mode this guards against is not a wrong error code — it is the
+    // model "helpfully" re-rendering a tax receipt at lower quality until it
+    // fits, and archiving the degraded copy as the financial record.
+    const { client } = uploadClient([]);
+    const oversized = Buffer.alloc(MAX_DOCUMENT_BYTES + 1, 0x41).toString('base64');
+    const result = await run(
+      { chargeId: CHARGE, documents: [doc({ contentBase64: oversized })] },
+      client,
+    );
+
+    const message = (result.structuredContent as { message: string }).message;
+    expect(message).toMatch(/Do NOT downscale, re-encode, or reduce the quality/);
+    expect(message).toMatch(/Google Drive/);
+    expect(message).toMatch(/email/);
   });
 });
 

@@ -40,7 +40,7 @@ handles natively upstream), following the existing precedent in `packages/gmail-
   which is not a side effect the model should trigger by leaving a field blank. `isSensitive` is
   pinned to `true` and deliberately absent from the input schema. Documents arrive as base64 because
   this server is remote and has no access to the caller's filesystem; each is validated for encoding,
-  MIME type, and size (5 MB per file, 15 MB per call, decoded) *before* anything is uploaded —
+  MIME type, and size (256KB per file, 512KB per call, decoded) *before* anything is uploaded —
   `Buffer.from(x, 'base64')` silently skips characters it does not recognize, so a truncated payload
   would otherwise decode to a plausible-looking short buffer and surface as a corrupt file much
   later. Upstream returns one result per file, so partial failure is reported positionally rather
@@ -50,6 +50,15 @@ handles natively upstream), following the existing precedent in `packages/gmail-
   which of several same-named tags was meant — the model resolves them with `accounter_list_tags`
   first. The edit is incremental, not a replacement, and removals run before additions, so a tag id
   passed in both lists ends up added.
+
+The upload caps are small because inline base64 makes the *model* the transport — it must emit the
+whole encoded file as tool arguments, and base64 tokenizes at roughly 3 characters per token, so a
+277KB PDF costs on the order of 100k output tokens. They are also pinned against
+`MAX_MCP_BODY_BYTES` by `tools/__tests__/upload-limits.test.ts`, because an earlier draft advertised
+5MB per file while the 1MB body cap made that unreachable. Over-size errors name the Drive and email
+ingestion paths rather than just reporting a number: without that, the model's natural move is to
+re-encode a scanned receipt at lower quality until it fits, archiving a degraded copy of a legal
+financial record.
 
 Known gaps, filed as I6/I7 in `docs/todo.md`: writes carry no idempotency key (the server never
 retries, but a client retrying an upload whose result it never saw can duplicate the document), and

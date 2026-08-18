@@ -30,10 +30,48 @@ export const UPLOAD_DOCUMENTS_TOOL_NAME = 'accounter_upload_documents';
 
 /** Max documents per call. */
 export const MAX_DOCUMENTS_PER_CALL = 10;
-/** Max decoded size of one document. */
-export const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Size limits for inline base64.
+ *
+ * These are small on purpose, and the reason is worth stating plainly: inline
+ * base64 makes the *model* the transport. It has to emit the whole encoded file
+ * as tool arguments, and base64 tokenizes at roughly 3 characters per token, so
+ * a 277 KB PDF costs on the order of 100k output tokens — past a single
+ * message's budget before any server-side limit is consulted.
+ *
+ * Three ceilings therefore apply, and the model's is by far the tightest:
+ *
+ *  1. the model's per-message output budget — practically a few tens of KB;
+ *  2. `MAX_MCP_BODY_BYTES`, the 1 MB cap on the whole JSON-RPC body, which after
+ *     base64's 4/3 expansion leaves roughly 700 KB of file;
+ *  3. these constants.
+ *
+ * An earlier revision advertised 5 MB per file, which ceiling (2) made
+ * unreachable — the request died as a 413 long before this check ran. The values
+ * below sit under (2) with room for the JSON envelope, and
+ * `upload-limits.test.ts` asserts that relationship so the two cannot drift
+ * apart again. Anything larger belongs on a transport that does not route bytes
+ * through the model; {@link OVERSIZE_GUIDANCE} tells the caller which.
+ */
+export const MAX_DOCUMENT_BYTES = 256 * 1024;
 /** Max decoded size of all documents in one call. */
-export const MAX_TOTAL_DOCUMENT_BYTES = 15 * 1024 * 1024;
+export const MAX_TOTAL_DOCUMENT_BYTES = 512 * 1024;
+
+/**
+ * Appended to every over-size error. A tool that merely says "too large" invites
+ * the model to shrink the file until it fits — which, for a scanned receipt,
+ * means re-rendering a legal document at degraded quality and archiving that
+ * instead. Naming the real alternatives is what stops the retry loop.
+ */
+export const OVERSIZE_GUIDANCE =
+  'Do NOT downscale, re-encode, or reduce the quality of the document to fit — the stored file is a ' +
+  'financial record and must keep its original fidelity. Instead use a path that does not send bytes ' +
+  'through the conversation: upload the file to the shared Google Drive folder and use the Drive ' +
+  'ingestion flow, or forward it to the document-ingestion email address.';
+
+/** Render a byte count for humans; every limit here is KB-scale. */
+const asKb = (bytes: number) => `${Math.round(bytes / 1024)}KB`;
 
 /**
  * Accepted document MIME types. An allowlist rather than a blocklist: everything
@@ -64,7 +102,8 @@ const documentInput = z.object({
     .min(1)
     .describe(
       'The file content, base64-encoded. A `data:<type>;base64,` prefix is accepted and stripped. ' +
-        `Max ${MAX_DOCUMENT_BYTES / 1024 / 1024}MB per file once decoded.`,
+        `Max ${asKb(MAX_DOCUMENT_BYTES)} per file once decoded — this content travels as tool ` +
+        'arguments, so a larger file will not fit in a single message however it is encoded.',
     ),
 });
 
@@ -143,7 +182,8 @@ function decodeDocument(contentBase64: string, index: number): Uint8Array {
   }
   if (content.byteLength > MAX_DOCUMENT_BYTES) {
     throw new ToolInputError(
-      `Document exceeds the ${MAX_DOCUMENT_BYTES / 1024 / 1024}MB per-file limit`,
+      `Document is ${asKb(content.byteLength)}, over the ${asKb(MAX_DOCUMENT_BYTES)} per-file limit ` +
+        `for inline upload. ${OVERSIZE_GUIDANCE}`,
       [{ path, message: `decoded size is ${content.byteLength} bytes` }],
     );
   }
@@ -161,9 +201,9 @@ async function uploadDocumentsHandler(
   const totalBytes = contents.reduce((sum, content) => sum + content.byteLength, 0);
   if (totalBytes > MAX_TOTAL_DOCUMENT_BYTES) {
     throw new ToolInputError(
-      `Documents total ${totalBytes} bytes, over the ${
-        MAX_TOTAL_DOCUMENT_BYTES / 1024 / 1024
-      }MB per-call limit. Split them across several calls.`,
+      `Documents total ${asKb(totalBytes)}, over the ${asKb(MAX_TOTAL_DOCUMENT_BYTES)} per-call ` +
+        `limit for inline upload. Sending fewer documents per call may resolve this; if a single ` +
+        `document is itself near the limit, it will not. ${OVERSIZE_GUIDANCE}`,
     );
   }
 
@@ -241,6 +281,11 @@ export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = 
     'Attach one or more documents (invoices, receipts, contracts) to an EXISTING charge. Documents are ' +
     'passed as base64-encoded content and are always stored as sensitive. This tool never creates a ' +
     'charge: `chargeId` is required and must already exist. ' +
+    `Inline upload suits small files only (max ${asKb(MAX_DOCUMENT_BYTES)} per file, ` +
+    `${asKb(MAX_TOTAL_DOCUMENT_BYTES)} per call, decoded): the content travels as tool arguments, so ` +
+    'a large file cannot fit in one message regardless of encoding. For anything bigger use the ' +
+    'Google Drive or email ingestion paths — never re-encode a financial document at lower quality ' +
+    'to make it fit. ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: uploadDocumentsInput,
   policy: {

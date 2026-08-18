@@ -194,7 +194,8 @@ The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; 
   `chargeId` is required (upstream would otherwise create a new charge), `isSensitive` is pinned to
   `true`, and each file is validated for encoding, MIME type, and size _before_ anything is
   uploaded. Upstream returns one result per file, so partial failure is reported positionally rather
-  than collapsed. Requires `business_owner`/`accountant`.
+  than collapsed. **Small files only** — see
+  [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
 
 ## Upstream GraphQL client
 
@@ -521,14 +522,41 @@ Two tool-specific rules worth knowing:
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.
 
+### Why inline upload is small
+
+`accounter_upload_documents` caps a document at **256KB** and a call at **512KB**, decoded. That is
+far below what the upstream mutation could take, and the reason is the transport, not the backend.
+
+Inline base64 makes the _model_ the transport: it has to emit the entire encoded file as tool
+arguments. Base64 tokenizes at roughly 3 characters per token, so a 277KB PDF costs on the order of
+100k output tokens — past a single message's budget. Three ceilings apply, and the model's is the
+tightest:
+
+| Ceiling                                           | Effective limit                              |
+| ------------------------------------------------- | -------------------------------------------- |
+| Model's per-message output budget                 | a few tens of KB of file                     |
+| `MAX_MCP_BODY_BYTES` (1MB JSON-RPC body)          | ~700KB decoded, after base64's 4/3 expansion |
+| `MAX_DOCUMENT_BYTES` / `MAX_TOTAL_DOCUMENT_BYTES` | 256KB / 512KB                                |
+
+An earlier revision advertised 5MB per file, which the body cap made unreachable — the request died
+as a 413 before the tool's own check ran. `tools/__tests__/upload-limits.test.ts` now asserts the
+caps against `MAX_MCP_BODY_BYTES` so the two cannot drift apart again.
+
+Over-size errors deliberately name the alternatives rather than just reporting a number. Without
+that, the model's natural move is to downscale or re-encode the file until it fits — which for a
+scanned receipt means archiving a degraded copy of a legal financial record. For anything larger
+than the caps, use a path that does not route bytes through the conversation: the Google Drive
+folder ingestion (`batchUploadDocumentsFromGoogleDrive`) or the email ingestion gateway.
+
 ## Known limitations
 
 - There is no generic "run any query" surface: every capability is a curated tool with a strict
   input schema, and the upstream client's read and write paths are separately guarded.
 - Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
   payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
-  rather than streamed in full. Uploads are bounded too: ≤ 10 documents, 5 MB per file and 15 MB per
-  call once decoded, against a MIME allowlist.
+  rather than streamed in full. Uploads are bounded too: ≤ 10 documents, 256KB per file and 512KB
+  per call once decoded, against a MIME allowlist. Inline base64 is only viable for small files at
+  all — see [Why inline upload is small](#why-inline-upload-is-small).
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
 - Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
