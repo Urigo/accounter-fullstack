@@ -278,9 +278,8 @@ async function isTransactionNew(
     'chargingDate',
     'requestNumber',
     'accountErrorCode',
-    'monthlyRefundCardIndex',
-    'id',
     'monthlyRefundCardIndex', // add to DB if non-null value is received from scraper in the future
+    'id',
   ];
   newAttributesChecker(transaction, [...columnNames], logger, nickname, optionalTransactionKeys);
 
