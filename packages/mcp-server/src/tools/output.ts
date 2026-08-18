@@ -8,6 +8,10 @@ import type { ToolResult } from './registry.js';
  * (never cutting a JSON structure mid-object), reports how many items were
  * returned versus available, and attaches a continuation hint whenever the
  * caller is not seeing everything (either an upstream cap or the payload guard).
+ *
+ * Write tools use {@link shapeWriteResult} instead: what matters there is what
+ * changed, so the outcome fields are always kept and only the optional per-item
+ * echo is dropped when the payload guard trips.
  */
 
 /** Max serialized size of a tool result's structured content, in bytes. */
@@ -145,4 +149,59 @@ export function listShapeFields(result: ToolResult): Record<string, unknown> {
   if (typeof totalCount === 'number') fields.totalCount = totalCount;
   if (typeof truncated === 'boolean') fields.truncated = truncated;
   return fields;
+}
+
+export interface ShapeWriteParams<T> {
+  /** What the tool did, e.g. `upload_documents`. Echoed as `action`. */
+  action: string;
+  /** Human-readable summary line. */
+  summary: string;
+  /** Outcome fields (counts, ids). Always kept — never dropped by the guard. */
+  outcome: Record<string, unknown>;
+  /** Optional per-item echo of what changed, dropped whole if too large. */
+  items?: { key: string; values: readonly T[] };
+  /** Override the byte cap (mainly for tests). */
+  maxBytes?: number;
+}
+
+/**
+ * Shape a completed write into a bounded {@link ToolResult}.
+ *
+ * The asymmetry with {@link shapeListResult} is deliberate. A truncated *list*
+ * is still a useful answer, so it drops trailing items one at a time. A write's
+ * outcome — did it apply, to what, how many — is never droppable, so the guard
+ * applies only to the optional `items` echo, and it drops that echo **whole**:
+ * a half-echoed list of changed records would read as "these are the ones that
+ * changed", which would be false. When it is dropped, `itemsOmitted` says so
+ * rather than leaving the model to infer it from an absent key.
+ */
+export function shapeWriteResult<T>(params: ShapeWriteParams<T>): ToolResult {
+  const maxBytes = params.maxBytes ?? MAX_TOOL_RESULT_BYTES;
+  const base: Record<string, unknown> = {
+    ...params.outcome,
+    ok: true,
+    action: params.action,
+  };
+
+  let structured = base;
+  if (params.items) {
+    const withItems = { ...base, [params.items.key]: params.items.values };
+    structured =
+      byteLength(JSON.stringify(withItems)) <= maxBytes
+        ? withItems
+        : {
+            ...base,
+            itemsOmitted: {
+              key: params.items.key,
+              count: params.items.values.length,
+              reason: 'payload_size',
+              hint: 'The write applied in full; only the per-item echo was too large to return.',
+            },
+          };
+  }
+
+  return {
+    content: [{ type: 'text', text: params.summary }],
+    structuredContent: structured,
+  };
 }

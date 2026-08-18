@@ -2,12 +2,14 @@
  * Shared upstream GraphQL client used by tool handlers.
  *
  * Design constraints (spec §5.3, §8.3, §10):
- * - Phase 1 is read-only: mutations/subscriptions are refused.
- * - No generic "execute anything" is exposed to tools — tools call typed
- *   read-only operation wrappers built on `createReadOperation`, never this
- *   engine directly.
+ * - Reads and writes travel separate, individually guarded methods: `query`
+ *   refuses anything that is not a read, and `mutate`/`mutateMultipart` refuse
+ *   anything that is not a single mutation. Neither can be used to send the
+ *   other kind of document, so a read tool cannot mutate and a write tool cannot
+ *   smuggle an arbitrary operation.
  * - A strict timeout budget with cancellation; bounded retries for idempotent
- *   read failures only (never on auth/validation errors).
+ *   read failures only (never on auth/validation errors, and never on a write —
+ *   mutations are not idempotent, so a retry could double-apply).
  * - The correlation id and the caller's Authorization header are propagated
  *   upstream; the raw token is never logged or persisted.
  * - Upstream errors are sanitized (no stack traces / internal SQL details).
@@ -66,6 +68,24 @@ export interface UpstreamRequestContext {
   businessScope?: readonly string[];
 }
 
+/**
+ * A binary file sent alongside a mutation via the GraphQL multipart request
+ * spec. `variablePath` is the dot path of the `null` placeholder it replaces in
+ * the operation variables, e.g. `variables.documents.0`.
+ */
+export interface UploadFile {
+  variablePath: string;
+  filename: string;
+  contentType: string;
+  content: Uint8Array;
+}
+
+/** The body of one wire attempt, plus the headers specific to its encoding. */
+interface WireBody {
+  headers: Record<string, string>;
+  body: BodyInit;
+}
+
 export interface UpstreamClientConfig {
   endpoint: string;
   timeoutMs: number;
@@ -89,6 +109,34 @@ const NON_READ_OPERATION_RE = /\b(mutation|subscription)\b/i;
 function assertReadOnly(query: string): void {
   if (NON_READ_OPERATION_RE.test(query)) {
     throw new UpstreamError('UPSTREAM_ERROR', 'Only read-only operations are permitted', false);
+  }
+}
+
+/** Strip `#` line comments so a commented-out operation cannot fool the guards. */
+function stripGraphQLComments(query: string): string {
+  return query.replace(/#[^\n]*/g, '');
+}
+
+// Mirror of `assertReadOnly` for the write path. A write wrapper must be just as
+// unable to send an arbitrary document as a read wrapper is to send a mutation:
+//  - the document must *start* with `mutation`, so a leading `query` cannot be
+//    paired with a trailing mutation selected via `operationName`;
+//  - `subscription` is refused outright;
+//  - exactly one operation definition may be present.
+// The operation count is matched per line, so a *field* named `mutation` inside a
+// selection set also trips it. Over-rejecting is the safe direction here — our
+// own wrappers only send single, top-level mutations.
+const OPERATION_DEFINITION_RE = /^[ \t]*(query|mutation|subscription)\b/gm;
+
+function assertSingleMutation(query: string): void {
+  const stripped = stripGraphQLComments(query);
+  const operations = stripped.match(OPERATION_DEFINITION_RE) ?? [];
+  if (!/^\s*mutation\b/.test(stripped) || operations.length !== 1) {
+    throw new UpstreamError(
+      'UPSTREAM_ERROR',
+      'Only a single top-level mutation may be sent on the write path',
+      false,
+    );
   }
 }
 
@@ -135,7 +183,103 @@ export class UpstreamGraphQLClient {
    */
   async query<TData>(request: GraphQLRequest, context: UpstreamRequestContext): Promise<TData> {
     assertReadOnly(request.query);
+    return this.execute<TData>(
+      () => ({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          query: request.query,
+          variables: request.variables ?? {},
+          ...(request.operationName ? { operationName: request.operationName } : {}),
+        }),
+      }),
+      context,
+      this.maxRetries,
+    );
+  }
 
+  /**
+   * Execute a single mutation with a JSON body. Same timeout, headers, and error
+   * sanitization as {@link query}, but **never retried**: a mutation is not
+   * idempotent, so re-sending a request that may already have been applied
+   * upstream could double-apply it. A timed-out or network-failed write surfaces
+   * to the caller as-is, for them to decide about.
+   */
+  async mutate<TData>(request: GraphQLRequest, context: UpstreamRequestContext): Promise<TData> {
+    assertSingleMutation(request.query);
+    return this.execute<TData>(
+      () => ({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          query: request.query,
+          variables: request.variables ?? {},
+          ...(request.operationName ? { operationName: request.operationName } : {}),
+        }),
+      }),
+      context,
+      0,
+    );
+  }
+
+  /**
+   * Execute a single mutation carrying binary files, using the GraphQL multipart
+   * request spec (which graphql-yoga implements natively upstream — there is no
+   * upload plugin to route around).
+   *
+   * `request.variables` must already carry `null` placeholders at each file's
+   * {@link UploadFile.variablePath}; this method only assembles the form. Like
+   * {@link mutate} it is never retried.
+   *
+   * `Content-Type` is deliberately left unset: `FormData` supplies it along with
+   * the generated multipart boundary, and setting it by hand would strip the
+   * boundary and make the body unparseable upstream.
+   */
+  async mutateMultipart<TData>(
+    request: GraphQLRequest,
+    files: readonly UploadFile[],
+    context: UpstreamRequestContext,
+  ): Promise<TData> {
+    assertSingleMutation(request.query);
+    return this.execute<TData>(
+      () => {
+        const form = new FormData();
+        form.set(
+          'operations',
+          JSON.stringify({
+            query: request.query,
+            variables: request.variables ?? {},
+            ...(request.operationName ? { operationName: request.operationName } : {}),
+          }),
+        );
+        form.set(
+          'map',
+          JSON.stringify(
+            Object.fromEntries(files.map((file, index) => [String(index), [file.variablePath]])),
+          ),
+        );
+        for (const [index, file] of files.entries()) {
+          form.append(
+            String(index),
+            new Blob([file.content as BlobPart], { type: file.contentType }),
+            file.filename,
+          );
+        }
+        return { headers: { Accept: 'application/json' }, body: form };
+      },
+      context,
+      0,
+    );
+  }
+
+  /**
+   * Shared engine: retry loop around {@link executeOnce}. `buildBody` is called
+   * per attempt rather than once, so a retried request never re-sends an already
+   * consumed body stream.
+   */
+  private async execute<TData>(
+    buildBody: () => WireBody,
+    context: UpstreamRequestContext,
+    maxRetries: number,
+  ): Promise<TData> {
     // Span covers all retry attempts; the correlation id also propagates to the
     // upstream server via the X-Correlation-Id header on each attempt.
     return withSpan('upstream:graphql', context.correlationId, async () => {
@@ -143,10 +287,10 @@ export class UpstreamGraphQLClient {
       // Total tries = 1 + maxRetries; only retryable failures loop.
       for (;;) {
         try {
-          return await this.executeOnce<TData>(request, context);
+          return await this.executeOnce<TData>(buildBody, context);
         } catch (error) {
           const isRetryable = error instanceof UpstreamError && error.retryable;
-          if (!isRetryable || attempt >= this.maxRetries) {
+          if (!isRetryable || attempt >= maxRetries) {
             throw error;
           }
           attempt += 1;
@@ -156,22 +300,22 @@ export class UpstreamGraphQLClient {
   }
 
   private async executeOnce<TData>(
-    request: GraphQLRequest,
+    buildBody: () => WireBody,
     context: UpstreamRequestContext,
   ): Promise<TData> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
 
+    const wire = buildBody();
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
+      ...wire.headers,
       'X-Correlation-Id': context.correlationId,
     };
     // Forward the caller's bearer token so upstream applies the same identity.
     if (context.authorization) {
       headers.Authorization = context.authorization;
     }
-    // Forward the resolved read scope so upstream RLS narrows the query.
+    // Forward the resolved business scope so upstream RLS narrows the request.
     //
     // Two guards, both load-bearing:
     //  - Only set the header when at least one id survives. Upstream reads an
@@ -193,11 +337,7 @@ export class UpstreamGraphQLClient {
         response = await this.fetchImpl(this.endpoint, {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            query: request.query,
-            variables: request.variables ?? {},
-            ...(request.operationName ? { operationName: request.operationName } : {}),
-          }),
+          body: wire.body,
           signal: controller.signal,
         });
       } catch (error) {

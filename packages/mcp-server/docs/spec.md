@@ -22,7 +22,8 @@ These decisions were explicitly selected and are treated as baseline requirement
 - Client surface for phase 1: Claude hosted surfaces (Claude.ai/Desktop)
 - Authentication baseline: Auth0-based OAuth using existing identity model
 - OAuth connector variant: CIMD preferred
-- Initial capability scope: read-only tools only
+- Initial capability scope: read-only tools only (write tools added later behind
+  `MCP_ENABLE_WRITE_TOOLS`, default off — see §12.3b)
 - Deployment model: new monorepo package for MCP server
 - Connector goal: directory-ready in near term
 - Metadata hosting: same domain as MCP server with well-known routes
@@ -463,6 +464,27 @@ Deliverable:
 Deliverable:
 
 - usable phase 1 feature set with read-only operations.
+
+## 12.3b Phase 2b: First Write Tools — implemented
+
+Writes are opt-in per deployment via `MCP_ENABLE_WRITE_TOOLS` (default `0`), evaluated together with
+`MCP_TOOL_ALLOWLIST` at the transport boundary. A tool excluded by either control is reported as
+`Unknown tool`, so neither leaks the capability it hides.
+
+Delivered:
+
+1. A guarded write path on the upstream client — `mutate()` and `mutateMultipart()` (GraphQL
+   multipart request spec), each refusing anything that is not a single top-level mutation, just as
+   `query()` refuses anything that is not a read. **No retries on writes**: a mutation is not
+   idempotent, so re-sending one that may already have applied could double-apply it.
+2. `ToolAuthPolicy.mutating`, which gates exposure, forces a **single write-target business** (an
+   ambiguous scope is refused, never resolved by picking one), and triggers an audit log line
+   emitted _before_ the handler runs, carrying only identifiers and counts.
+3. Two tools: `accounter_update_charges_tags` and `accounter_upload_documents`.
+
+Deferred to a later phase: idempotency keys for writes (a client retrying an upload it never saw the
+result of can still duplicate it), and modelling the server's accountant-approval degradation, which
+today runs upstream inside `batchUploadDocuments` and is not reflected in the tool response.
 
 ## 12.4 Phase 3: Hardening
 

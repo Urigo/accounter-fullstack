@@ -30,8 +30,10 @@ operational metrics (request/outcome counters, a latency histogram, auth-failure
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
 backend via `traceparent` and `X-Correlation-Id`.
 
-Phase 2 (write scope) is **not** implemented — see
-[Known limitations & phase 2](#known-limitations--phase-2-write-scope).
+Phase 2 (write scope) has landed its first two tools — `accounter_update_charges_tags` and
+`accounter_upload_documents` — behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
+default**. See [Write tools](#write-tools) for the model, and
+[Known limitations](#known-limitations) for what is still out of scope.
 
 ## Tools
 
@@ -180,16 +182,30 @@ scope, because it _is_ the scope.
   `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
   response also reports once alongside the echoed `scope`.
 
+The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
+[Write tools](#write-tools) for the rules they all share.
+
+- **`accounter_update_charges_tags`** — add and/or remove tags across 1–50 charges. Tags are given
+  by id (`addTagIds` / `removeTagIds`), never by name: names are not unique across owners, so
+  resolving them here would mean guessing which of several same-named tags was meant — the model
+  resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
+  before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
+- **`accounter_upload_documents`** — attach 1–10 base64-encoded documents to an **existing** charge.
+  `chargeId` is required (upstream would otherwise create a new charge), `isSensitive` is pinned to
+  `true`, and each file is validated for encoding, MIME type, and size _before_ anything is
+  uploaded. Upstream returns one result per file, so partial failure is reported positionally rather
+  than collapsed. Requires `business_owner`/`accountant`.
+
 ## Upstream GraphQL client
 
 Tool handlers talk to the Accounter GraphQL server through a single hardened client
 (`src/upstream/graphql-client.ts`): a strict per-request **timeout** with cancellation, **bounded
 retries** for idempotent read failures only (network errors, timeouts, and 5xx — never 4xx
-auth/validation errors or GraphQL-level errors), **header propagation** of the correlation id, the
-caller's `Authorization` bearer token, and the resolved read scope as `x-business-scope`, and
-**sanitized** upstream errors (no stack traces or internal details). Phase 1 is read-only:
-mutations/subscriptions are refused, and there is **no** generic "execute anything" surface — tools
-use typed read-only wrappers via `createReadOperation`.
+auth/validation errors, GraphQL-level errors, or **any write**), **header propagation** of the
+correlation id, the caller's `Authorization` bearer token, and the resolved read scope as
+`x-business-scope`, and **sanitized** upstream errors (no stack traces or internal details). Phase 1
+is read-only: mutations/subscriptions are refused, and there is **no** generic "execute anything"
+surface — tools use typed read-only wrappers via `createReadOperation`.
 
 ## Identity & tenant scope
 
@@ -386,6 +402,7 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `MCP_SERVER_PORT`             | no       | `3100`                   | TCP port the HTTP transport listens on                             |
 | `MCP_ENABLED`                 | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
 | `MCP_TOOL_ALLOWLIST`          | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
+| `MCP_ENABLE_WRITE_TOOLS`      | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
 | `AUTH0_JWKS_URL`              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
 | `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
@@ -466,23 +483,58 @@ The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mo
 | Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                         |
 | Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                              |
 
-## Known limitations & phase 2 (write scope)
+## Write tools
 
-Phase 1 is intentionally **read-only** and single-purpose:
+Two mutating tools are available, and both are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
-- Only the read-only tools above are exposed; there is no generic "run any query" surface and **no
-  mutations/subscriptions** (the upstream client refuses them).
+| Tool                            | What it does                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)     |
+| `accounter_upload_documents`    | Attaches base64-encoded documents to an **existing** charge, always as sensitive |
+
+The default is off so that upgrading a running deployment never silently grants the model write
+access — an operator opts in per environment. `MCP_TOOL_ALLOWLIST` composes on top and can narrow
+which write tools are exposed, but naming one in the allowlist can never turn writes on. A tool
+excluded by either control is reported as `Unknown tool`, exactly like a nonexistent one, so neither
+control announces the capability it is hiding.
+
+Four properties hold for every mutating tool, enforced centrally rather than per tool:
+
+- **A separate, guarded client path.** `UpstreamGraphQLClient.query()` still refuses anything that
+  is not a read; `mutate()` / `mutateMultipart()` refuse anything that is not a _single_ top-level
+  mutation. Neither can send the other's traffic.
+- **No retries.** A mutation is not idempotent, so a timed-out or failed write surfaces to the
+  caller rather than being re-sent and possibly double-applied.
+- **A single write target.** A read may span every membership; a write must resolve to exactly one
+  business. An ambiguous scope is refused with an actionable message (pass `memberBusinessId`)
+  rather than resolved by picking one.
+- **An audit line per call**, emitted _before_ the handler runs, carrying the tool, user,
+  correlation id, write-target business, and affected id counts — never file contents, filenames, or
+  tokens.
+
+Two tool-specific rules worth knowing:
+
+- `accounter_upload_documents` requires `chargeId`. The upstream mutation _creates a new charge_
+  when it is omitted, which is not a side effect the model should trigger by leaving a field blank.
+  `isSensitive` is pinned to `true` and is deliberately absent from the input schema.
+- `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
+  `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
+  ends up added.
+
+## Known limitations
+
+- There is no generic "run any query" surface: every capability is a curated tool with a strict
+  input schema, and the upstream client's read and write paths are separately guarded.
 - Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
   payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
-  rather than streamed in full.
+  rather than streamed in full. Uploads are bounded too: ≤ 10 documents, 5 MB per file and 15 MB per
+  call once decoded, against a MIME allowlist.
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
 - Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
   remain in-process (`GET /metrics`) and are not yet exported over OTLP.
-
-**Phase 2 (write scope)** — not implemented — will add mutating tools (e.g. tagging/updating
-charges) behind: per-tool write policies and role checks reusing the server's authorization model;
-the server's accountant-approval degradation on charge-mutating operations; write-target business
-resolution (a single owning business per write, versus phase-1 multi-business read scope); and
-idempotency/audit for writes. Until then, all tools are safe to expose to read-only assistant
-workflows.
+- Writes carry **no idempotency key**, so a client that retries a call it never saw the result of
+  can duplicate an upload. The tools themselves never retry (see above), and tag updates are
+  naturally idempotent, but document uploads are not.
+- The server's **accountant-approval degradation** runs upstream inside `batchUploadDocuments`; the
+  connector does not model it, so it is not reflected in the tool's response.

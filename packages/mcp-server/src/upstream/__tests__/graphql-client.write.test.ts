@@ -1,0 +1,218 @@
+import { describe, expect, it, vi } from 'vitest';
+import {
+  BUSINESS_SCOPE_HEADER,
+  UpstreamError,
+  UpstreamGraphQLClient,
+  type UploadFile,
+  type UpstreamRequestContext,
+} from '../graphql-client.js';
+
+/**
+ * The write half of the upstream client. The read half (`query`) is covered in
+ * `graphql-client.test.ts`; what is specific here is that the two halves cannot
+ * be used for each other's traffic, that a write is never retried, and that the
+ * multipart envelope is assembled to spec.
+ */
+
+const CONTEXT: UpstreamRequestContext = {
+  correlationId: 'corr-1',
+  authorization: 'Bearer t',
+  businessScope: ['b1'],
+};
+
+const MUTATION = /* GraphQL */ `
+  mutation McpDoThing($id: UUID!) {
+    doThing(id: $id) {
+      id
+    }
+  }
+`;
+
+function clientWith(fetchImpl: unknown, maxRetries?: number) {
+  return new UpstreamGraphQLClient({
+    endpoint: 'http://localhost:4000/graphql',
+    timeoutMs: 1000,
+    ...(maxRetries === undefined ? {} : { maxRetries }),
+    fetchImpl: fetchImpl as typeof fetch,
+  });
+}
+
+const okFetch = (data: unknown = { doThing: { id: '1' } }) =>
+  vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ data }) }) as unknown as Response);
+
+const file = (overrides: Partial<UploadFile> = {}): UploadFile => ({
+  variablePath: 'variables.documents.0',
+  filename: 'a.pdf',
+  contentType: 'application/pdf',
+  content: new TextEncoder().encode('hello'),
+  ...overrides,
+});
+
+describe('assertSingleMutation (via mutate)', () => {
+  it.each([
+    ['a query document', 'query McpThing { thing { id } }'],
+    ['a subscription', 'subscription McpThing { thing { id } }'],
+    [
+      'a mutation hidden behind a leading query',
+      'query McpRead { thing { id } }\nmutation McpWrite { doThing { id } }',
+    ],
+    [
+      'two mutations in one document',
+      'mutation McpA { a { id } }\nmutation McpB { b { id } }',
+    ],
+    ['a commented-out mutation with a real query', '# mutation McpFake\nquery McpReal { a }'],
+  ])('refuses %s', async (_label, document) => {
+    const fetchImpl = okFetch();
+    await expect(clientWith(fetchImpl).mutate({ query: document }, CONTEXT)).rejects.toThrow(
+      UpstreamError,
+    );
+    // Rejected before any network call — the guard is not a post-hoc check.
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('accepts a single top-level mutation', async () => {
+    const fetchImpl = okFetch();
+    await expect(
+      clientWith(fetchImpl).mutate({ query: MUTATION, variables: { id: '1' } }, CONTEXT),
+    ).resolves.toEqual({ doThing: { id: '1' } });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('still refuses a mutation on the read path', async () => {
+    const fetchImpl = okFetch();
+    await expect(clientWith(fetchImpl).query({ query: MUTATION }, CONTEXT)).rejects.toThrow(
+      /read-only/,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('mutate — no retries', () => {
+  it('does not retry a 5xx, which a read would retry', async () => {
+    const fetchImpl = vi.fn(
+      async () => ({ ok: false, status: 503, json: async () => ({}) }) as unknown as Response,
+    );
+    const client = clientWith(fetchImpl, 2);
+
+    await expect(client.mutate({ query: MUTATION }, CONTEXT)).rejects.toThrow(UpstreamError);
+    // A write may already have applied upstream; re-sending could double-apply.
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+
+    // Contrast: the same client retries a read failure up to maxRetries.
+    fetchImpl.mockClear();
+    await expect(client.query({ query: 'query McpX { x }' }, CONTEXT)).rejects.toThrow(
+      UpstreamError,
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not retry a network failure', async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error('ECONNRESET');
+    });
+    await expect(clientWith(fetchImpl, 2).mutate({ query: MUTATION }, CONTEXT)).rejects.toThrow(
+      UpstreamError,
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('mutateMultipart', () => {
+  it('builds an operations/map/parts form to the multipart request spec', async () => {
+    let captured: RequestInit | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      captured = init;
+      return { ok: true, status: 200, json: async () => ({ data: { ok: true } }) } as unknown as Response;
+    });
+
+    await clientWith(fetchImpl).mutateMultipart(
+      { query: MUTATION, variables: { documents: [null, null] } },
+      [file({ filename: 'a.pdf' }), file({ variablePath: 'variables.documents.1', filename: 'b.png', contentType: 'image/png' })],
+      CONTEXT,
+    );
+
+    const form = captured!.body as FormData;
+    expect(JSON.parse(String(form.get('map')))).toEqual({
+      '0': ['variables.documents.0'],
+      '1': ['variables.documents.1'],
+    });
+    const operations = JSON.parse(String(form.get('operations'))) as {
+      query: string;
+      variables: Record<string, unknown>;
+    };
+    expect(operations.query).toBe(MUTATION);
+    expect(operations.variables.documents).toEqual([null, null]);
+
+    const part0 = form.get('0') as File;
+    expect(part0.name).toBe('a.pdf');
+    expect(part0.type).toBe('application/pdf');
+    expect(new TextDecoder().decode(await part0.arrayBuffer())).toBe('hello');
+    expect((form.get('1') as File).type).toBe('image/png');
+  });
+
+  it('leaves Content-Type unset so FormData supplies the boundary', async () => {
+    let captured: RequestInit | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      captured = init;
+      return { ok: true, status: 200, json: async () => ({ data: {} }) } as unknown as Response;
+    });
+
+    await clientWith(fetchImpl).mutateMultipart(
+      { query: MUTATION, variables: { documents: [null] } },
+      [file()],
+      CONTEXT,
+    );
+
+    const headers = captured!.headers as Record<string, string>;
+    expect(Object.keys(headers).map(k => k.toLowerCase())).not.toContain('content-type');
+    // The identity/tracing/scope headers still ride along.
+    expect(headers.Authorization).toBe('Bearer t');
+    expect(headers['X-Correlation-Id']).toBe('corr-1');
+    expect(headers[BUSINESS_SCOPE_HEADER]).toBe('b1');
+  });
+
+  it('refuses a non-mutation document', async () => {
+    const fetchImpl = okFetch();
+    await expect(
+      clientWith(fetchImpl).mutateMultipart({ query: 'query McpX { x }' }, [file()], CONTEXT),
+    ).rejects.toThrow(UpstreamError);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('omits the scope header entirely when the scope is empty', async () => {
+    // Upstream reads an absent header as "all memberships"; an empty one would
+    // mean the opposite, so it must never be sent.
+    let captured: RequestInit | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      captured = init;
+      return { ok: true, status: 200, json: async () => ({ data: {} }) } as unknown as Response;
+    });
+
+    await clientWith(fetchImpl).mutateMultipart(
+      { query: MUTATION, variables: { documents: [null] } },
+      [file()],
+      { correlationId: 'c', businessScope: [] },
+    );
+
+    expect(captured!.headers as Record<string, string>).not.toHaveProperty(BUSINESS_SCOPE_HEADER);
+  });
+
+  it('sanitizes a GraphQL-level error rather than leaking it', async () => {
+    const fetchImpl = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => ({ errors: [{ message: 'relation "documents" does not exist' }] }),
+        }) as unknown as Response,
+    );
+
+    await expect(
+      clientWith(fetchImpl).mutateMultipart(
+        { query: MUTATION, variables: { documents: [null] } },
+        [file()],
+        CONTEXT,
+      ),
+    ).rejects.toThrow(UpstreamError);
+  });
+});

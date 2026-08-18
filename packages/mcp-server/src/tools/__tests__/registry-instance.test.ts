@@ -26,4 +26,23 @@ describe('production tool registry', () => {
     // No required parameters — the model can always call it cold.
     expect(descriptor?.inputSchema.required).toBeUndefined();
   });
+
+  it('registers every mutating tool after every read tool', () => {
+    // Registration order is what `tools/list` advertises. Reads first is a
+    // deliberate prompt-engineering choice: a tool that changes data should not
+    // be the first thing the model reaches for.
+    const tools = toolRegistry.list();
+    const firstWrite = tools.findIndex(tool => tool.policy.mutating);
+    expect(firstWrite).toBeGreaterThan(0);
+    expect(tools.slice(firstWrite).every(tool => tool.policy.mutating)).toBe(true);
+  });
+
+  it('gives every mutating tool a role gate and a single-business scope', () => {
+    for (const tool of toolRegistry.list().filter(t => t.policy.mutating)) {
+      expect(tool.policy.requiresBusinessScope, `${tool.name} must be scope-gated`).toBe(true);
+      expect(tool.policy.requiredRoles, `${tool.name} must gate on a role`).toEqual(
+        expect.arrayContaining(['business_owner', 'accountant']),
+      );
+    }
+  });
 });

@@ -21,7 +21,7 @@ import { protectedResourceMetadataUrl } from '../oauth/metadata.js';
 import { getMetrics } from '../observability/metrics.js';
 import { withSpan } from '../observability/tracing.js';
 import { getRateLimiter } from '../rate-limit/default-limiter.js';
-import { isToolAllowed } from '../tools/allowlist.js';
+import { isToolExposed } from '../tools/allowlist.js';
 import { executeRegisteredTool } from '../tools/execute.js';
 import { toolRegistry } from '../tools/registry-instance.js';
 import { getUpstreamClient } from '../upstream/default-client.js';
@@ -166,6 +166,17 @@ export interface McpDispatchContext {
    * call site cannot silently bypass enforcement by forgetting the field.
    */
   allowlist: readonly string[];
+  /**
+   * `MCP_ENABLE_WRITE_TOOLS`, resolved at the HTTP boundary. When false,
+   * mutating tools are absent from `tools/list` and rejected by `tools/call`.
+   *
+   * Required for the same reason as `allowlist`, and deliberately not defaulted:
+   * a defaulted `writeToolsEnabled` would have to default to something, and
+   * either choice is wrong — `true` silently enables writes for a call site that
+   * forgot the field, `false` makes write tools mysteriously vanish for one that
+   * did. Making it explicit means the question is answered at every call site.
+   */
+  writeToolsEnabled: boolean;
 }
 
 /**
@@ -182,16 +193,21 @@ export async function dispatchMcpRequest(
   }
   const id = request.id ?? null;
 
-  // `MCP_TOOL_ALLOWLIST` enforcement: an empty allowlist exposes every tool; a
-  // non-empty one restricts both discovery and dispatch to the named subset.
-  // The list is threaded in via the dispatch context (built at the HTTP
+  // Exposure controls: `MCP_TOOL_ALLOWLIST` (empty ⇒ every tool; non-empty ⇒
+  // only the named subset) and `MCP_ENABLE_WRITE_TOOLS` (off ⇒ no mutating
+  // tool). Both are threaded in via the dispatch context (built at the HTTP
   // boundary) so this function stays env-free and directly unit-testable.
-  const { allowlist } = context;
+  const { allowlist, writeToolsEnabled } = context;
+  const exposure = { allowlist, writeToolsEnabled };
 
   if (request.method === 'tools/list') {
-    const registered = toolRegistry
-      .describe()
-      .filter(descriptor => isToolAllowed(allowlist, descriptor.name));
+    // `describe()` yields descriptors, which carry no policy — look the tool
+    // back up so the write switch is evaluated against the real policy rather
+    // than inferred from the name.
+    const registered = toolRegistry.describe().filter(descriptor => {
+      const tool = toolRegistry.get(descriptor.name);
+      return tool !== undefined && isToolExposed(tool, exposure);
+    });
     return success(id, { tools: [...listedTools, ...registered] });
   }
 
@@ -201,10 +217,11 @@ export async function dispatchMcpRequest(
     if (name === SMOKE_TOOL_NAME) {
       return success(id, runSmokeTool(params.arguments));
     }
-    // A tool that exists but is excluded by the allowlist is reported as
-    // unknown — indistinguishable from a nonexistent one, so the allowlist does
-    // not leak which capabilities the server could otherwise offer.
-    const tool = isToolAllowed(allowlist, name) ? toolRegistry.get(name) : undefined;
+    // A tool that exists but is excluded by the allowlist or by the write switch
+    // is reported as unknown — indistinguishable from a nonexistent one, so
+    // neither control leaks which capabilities the server could otherwise offer.
+    const registered = toolRegistry.get(name);
+    const tool = registered && isToolExposed(registered, exposure) ? registered : undefined;
     if (!tool) {
       return failure(id, JsonRpcErrorCode.InvalidParams, `Unknown tool: ${name}`);
     }
@@ -398,6 +415,7 @@ export async function mcpHttpHandler(req: IncomingMessage, res: ServerResponse):
     authorization:
       typeof req.headers.authorization === 'string' ? req.headers.authorization : undefined,
     allowlist: env.server.toolAllowlist,
+    writeToolsEnabled: env.server.writeToolsEnabled,
   });
 
   if (response === null) {

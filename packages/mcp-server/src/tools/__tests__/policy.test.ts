@@ -101,6 +101,64 @@ describe('evaluateToolPolicy — roles', () => {
   });
 });
 
+describe('evaluateToolPolicy — mutating tools', () => {
+  const writePolicy: ToolAuthPolicy = {
+    requiresBusinessScope: true,
+    dataClassification: 'business',
+    mutating: true,
+  };
+
+  it('allows a caller whose only membership is the write target', () => {
+    const decision = evaluateToolPolicy({ policy: writePolicy, auth: authContext([M('b1')]) });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: ['b1'] } });
+  });
+
+  it('allows a multi-member caller who names one target', () => {
+    const decision = evaluateToolPolicy({
+      policy: writePolicy,
+      auth: authContext([M('b1'), M('b2')]),
+      requestedMemberBusinessIds: ['b2'],
+    });
+    expect(decision).toEqual({ allowed: true, readScope: { memberBusinessIds: ['b2'] } });
+  });
+
+  it('denies when the scope is ambiguous, rather than picking one', () => {
+    const decision = evaluateToolPolicy({
+      policy: writePolicy,
+      auth: authContext([M('b1'), M('b2')]),
+    });
+    expect(decision.allowed).toBe(false);
+    if (!decision.allowed) {
+      expect(decision.error.code).toBe('AUTHORIZATION_ERROR');
+      // The message names the count so the caller knows to narrow, not retry.
+      expect(decision.error.message).toMatch(/exactly one business, but the request resolved to 2/);
+      expect(decision.error.message).toMatch(/memberBusinessId/);
+    }
+  });
+
+  it('denies a caller narrowing to more than one target', () => {
+    const decision = evaluateToolPolicy({
+      policy: writePolicy,
+      auth: authContext([M('b1'), M('b2')]),
+      requestedMemberBusinessIds: ['b1', 'b2'],
+    });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('denies a caller with no memberships', () => {
+    const decision = evaluateToolPolicy({ policy: writePolicy, auth: authContext([]) });
+    expect(decision.allowed).toBe(false);
+  });
+
+  it('leaves non-mutating tools free to span every membership', () => {
+    const decision = evaluateToolPolicy({
+      policy: { ...writePolicy, mutating: false },
+      auth: authContext([M('b1'), M('b2')]),
+    });
+    expect(decision.allowed).toBe(true);
+  });
+});
+
 describe('authorizeToolCall', () => {
   it('evaluates the policy of a registered tool', () => {
     const tool = {

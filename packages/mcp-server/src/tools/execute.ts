@@ -93,6 +93,27 @@ function requestedMemberBusinessIds(input: unknown): string[] | undefined {
   return undefined;
 }
 
+/**
+ * Size-only summary of a write tool's input, for the audit log. Deliberately
+ * records *how much* was touched and *which ids*, never payload content — a
+ * document's bytes, filename, or MIME type must not reach the logs. Array
+ * lengths and string ids are the only things extracted.
+ */
+function auditCounts(input: unknown): Record<string, unknown> {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (Array.isArray(value)) {
+      fields[`${key}Count`] = value.length;
+    } else if (typeof value === 'string' && key.toLowerCase().endsWith('id')) {
+      fields[key] = value;
+    }
+  }
+  return fields;
+}
+
 export interface ExecuteToolParams {
   tool: ToolDefinition;
   rawArgs: unknown;
@@ -258,11 +279,28 @@ async function runTool(params: ExecuteToolParams): Promise<ToolRun> {
     }
   }
 
-  // 4. Execute the handler.
+  // 4. Audit the write. Mutating tools are logged BEFORE the handler runs, so a
+  // call that then times out or crashes still leaves a record that it was
+  // attempted — the opposite ordering would lose exactly the calls worth
+  // investigating. Only identifiers and counts are recorded: never file
+  // contents, never the token.
+  if (tool.policy.mutating) {
+    log('info', 'mutating tool invoked', {
+      audit: true,
+      tool: tool.name,
+      userId: auth.userId,
+      correlationId,
+      // Guaranteed to be exactly one id by the single-write-target policy rule.
+      writeTargetBusinessId: decision.readScope.memberBusinessIds[0],
+      ...auditCounts(input),
+    });
+  }
+
+  // 5. Execute the handler.
   //
   // `upstream` is built here, where the resolved read scope is known, so a
   // handler cannot forget to forward `x-business-scope` — it only has to pass
-  // `context.upstream` through to `client.query`.
+  // `context.upstream` through to `client.query`/`client.mutate`.
   const context: ToolExecutionContext = {
     auth,
     readScope: decision.readScope,
