@@ -1,19 +1,31 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useMutation } from 'urql';
-import { DeleteDocumentDocument, type DeleteDocumentMutationVariables } from '../gql/graphql.js';
+import {
+  DeleteDocumentDocument,
+  type DeleteDocumentMutation,
+  type DeleteDocumentMutationVariables,
+} from '../gql/graphql.js';
 import { handleCommonErrors } from '../helpers/error-handling.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
   mutation DeleteDocument($documentId: UUID!) {
-    deleteDocument(documentId: $documentId)
+    deleteDocument(documentId: $documentId) {
+      success
+      chargeId
+      deletedChargeId
+    }
   }
 `;
 
+type DeleteDocumentResult = DeleteDocumentMutation['deleteDocument'];
+
 type UseDeleteDocument = {
   fetching: boolean;
-  deleteDocument: (variables: DeleteDocumentMutationVariables) => Promise<boolean>;
+  deleteDocument: (
+    variables: DeleteDocumentMutationVariables,
+  ) => Promise<DeleteDocumentResult | void>;
 };
 
 const NOTIFICATION_ID = 'deleteDocument';
@@ -34,9 +46,14 @@ export const useDeleteDocument = (): UseDeleteDocument => {
         const res = await mutate(variables);
         const data = handleCommonErrors(res, message, notificationId);
         if (data) {
+          if (data.deleteDocument.success === false) {
+            throw new Error('Unsuccessful deletion');
+          }
           toast.success('Success', {
             id: notificationId,
-            description: 'Document was deleted',
+            description: data.deleteDocument.deletedChargeId
+              ? 'Document was deleted, along with its now-empty charge'
+              : 'Document was deleted',
           });
           return data.deleteDocument;
         }
@@ -49,7 +66,7 @@ export const useDeleteDocument = (): UseDeleteDocument => {
           closeButton: true,
         });
       }
-      return false;
+      return void 0;
     },
     [mutate],
   );

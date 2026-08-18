@@ -38,7 +38,7 @@ export default gql`
     updateDocument(documentId: UUID!, fields: UpdateDocumentFieldsInput!): UpdateDocumentResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
-    deleteDocument(documentId: UUID!): Boolean!
+    deleteDocument(documentId: UUID!): DeleteDocumentResult!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
     uploadDocument(file: FileScalar!, chargeId: UUID): UploadDocumentResult!
@@ -327,6 +327,17 @@ export default gql`
   " result type for updateDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
   type UpdateDocumentSuccessfulResult {
     document: Document
+    " set when the document's former charge became empty by the update and was deleted "
+    deletedChargeId: UUID
+  }
+
+  " result type for deleteDocument" # eslint-disable-next-line @graphql-eslint/strict-id-in-types -- no current solution for this
+  type DeleteDocumentResult {
+    success: Boolean!
+    " the charge the deleted document belonged to, if any "
+    chargeId: UUID
+    " set when that charge became empty and was deleted along with the document "
+    deletedChargeId: UUID
   }
 
   " input variables for insertDocument "

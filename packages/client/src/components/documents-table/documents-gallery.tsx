@@ -22,9 +22,15 @@ import { EditDocumentModal } from '../common/index.js';
 type Props = {
   chargeProps: FragmentType<typeof DocumentsGalleryFieldsFragmentDoc>;
   onChange: () => void;
+  /** Called when removing a document emptied the charge and the server deleted the charge too. */
+  onChargeDeleted?: (chargeId: string) => void;
 };
 
-export const DocumentsGallery = ({ chargeProps, onChange }: Props): ReactElement => {
+export const DocumentsGallery = ({
+  chargeProps,
+  onChange,
+  onChargeDeleted,
+}: Props): ReactElement => {
   const { additionalDocuments } = getFragmentData(DocumentsGalleryFieldsFragmentDoc, chargeProps);
   const [openModal, setOpenModal] = useState<string | undefined>(undefined);
 
@@ -62,6 +68,7 @@ export const DocumentsGallery = ({ chargeProps, onChange }: Props): ReactElement
             documentId={openModal}
             onDone={(): void => setOpenModal(undefined)}
             onChange={onChange}
+            onChargeDeleted={onChargeDeleted}
           />
         </>
       ) : (
