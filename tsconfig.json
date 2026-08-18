@@ -47,6 +47,16 @@
       "graphql-modules": ["./node_modules/graphql-modules/index"]
     }
   },
+  "include": [
+    "scripts",
+    "codegen.ts",
+    "vitest.config.ts",
+    "*.mjs",
+    "graphql.config.js",
+    // Global GraphQLModules.GlobalContext augmentation, needed by any server
+    // source the root scripts pull in transitively.
+    "packages/server/src/shared/types/graphql-modules.d.ts"
+  ],
   "exclude": [
     "**/node_modules",
     "**/dist",
