@@ -7,6 +7,14 @@
       "tooltip": "Start dev environment"
     }
   ],
+  // TS server: this monorepo's largest project (client) needs ~1.9GB; default cap is 3GB.
+  "js/ts.tsserver.maxMemory": 6144,
+  // Use the repo's TypeScript (6.0.3), not VS Code's bundled version.
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsserver.watchOptions": {
+    "watchFile": "useFsEventsOnParentDirectory",
+    "watchDirectory": "useFsEvents"
+  },
   "editor.formatOnSave": true,
   "cSpell.words": ["Hashavshevet", "mantine"],
   "prettier.configPath": "./prettier.config.mjs",

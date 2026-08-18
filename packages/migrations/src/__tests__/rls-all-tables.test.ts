@@ -3,6 +3,7 @@ import { createConnectionString } from '../connection-string.js';
 import { env } from '../environment.js';
 import { runPGMigrations } from '../run-pg-migrations.js';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import z from 'zod';
 
 const TEST_DB_NAME = `accounter_migration_test_rls_${Date.now()}`;
 const TEST_ROLE_NAME = `rls_test_user_${Date.now()}`;
@@ -200,11 +201,11 @@ describe('RLS All Tables Migration', () => {
             `);
 
             // 3. Verify Visibility for A
-            const resultA = await connection.query(sql.unsafe`
-                SELECT * FROM accounter_schema.charges
+            const resultA = await connection.query(sql.type(z.object({ id: z.string() }))`
+                SELECT id FROM accounter_schema.charges
                 WHERE id = ${chargeIdA}
             `);
-            
+
             expect(resultA.rows).toHaveLength(1);
             expect(resultA.rows[0].id).toBe(chargeIdA);
           } finally {

@@ -56,6 +56,12 @@ export default [
       '**/__generated__/',
       '**/schema.graphql',
       '**/__tests__/',
+      '**/tests/',
+      '**/.storybook/',
+      '**/vite.config.ts',
+      '**/vitest.config.ts',
+      'packages/*/scripts/',
+      'packages/*/tools/',
       '**/.eslintrc.cjs',
       '**/.*rc.*js',
       '**/.bob/',
@@ -75,7 +81,11 @@ export default [
       sourceType: 'script',
 
       parserOptions: {
-        project: ['tsconfig.json', '*/tsconfig.json', 'packages/*/tsconfig.scripts.json'],
+        // Resolve the nearest tsconfig.json per file. Replaces a `project` glob list that
+        // silently matched nothing under packages/ and fell back to the (whole-repo) root
+        // project, which OOM'd ESLint.
+        projectService: true,
+        tsconfigRootDir: __dirname,
       },
     },
 
