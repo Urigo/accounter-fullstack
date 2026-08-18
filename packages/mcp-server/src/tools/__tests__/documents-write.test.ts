@@ -141,20 +141,20 @@ describe('uploadDocumentsTool — multipart envelope', () => {
     expect(names).not.toContain('content-type');
   });
 
-  it('pins isSensitive to true and forwards the chargeId', async () => {
+  it('pins isSensitive to false and forwards the chargeId', async () => {
     const { client, captured } = uploadClient([ok('d1')]);
     await run({ chargeId: CHARGE, documents: [doc()] }, client);
 
     expect(captured[0].operations.variables).toMatchObject({
       chargeId: CHARGE,
-      isSensitive: true,
+      isSensitive: false,
     });
   });
 
   it('rejects a caller-supplied isSensitive — it is not part of the schema', async () => {
     const { client, captured } = uploadClient([ok('d1')]);
     const result = await run(
-      { chargeId: CHARGE, documents: [doc()], isSensitive: false },
+      { chargeId: CHARGE, documents: [doc()], isSensitive: true },
       client,
     );
 
@@ -298,7 +298,7 @@ describe('uploadDocumentsTool — result mapping', () => {
     expect(structured.ok).toBe(true);
     expect(structured.uploadedCount).toBe(2);
     expect(structured.failedCount).toBe(1);
-    expect(structured.isSensitive).toBe(true);
+    expect(structured.isSensitive).toBe(false);
     // The failure is tied to the file it belongs to, so the model knows which
     // one it still has to deal with.
     expect(structured.results[1]).toMatchObject({
@@ -349,5 +349,149 @@ describe('uploadDocumentsTool — policy', () => {
 
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
+  });
+});
+
+/**
+ * The URL branch is the one that makes the tool usable for real files: the
+ * server fetches the bytes, so nothing about the document passes through the
+ * model and none of the inline size caps apply. What matters here is that the
+ * two branches stay mutually exclusive and that the URL branch takes the plain
+ * JSON mutation rather than the multipart one.
+ */
+describe('uploadDocumentsTool — documentUrls', () => {
+  interface CapturedJson {
+    query: string;
+    variables: Record<string, unknown>;
+    headers: Record<string, string>;
+  }
+
+  function urlClient(responses: unknown[]) {
+    const captured: CapturedJson[] = [];
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      captured.push({
+        query: body.query,
+        variables: body.variables,
+        headers: init.headers as Record<string, string>,
+      });
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { batchUploadDocumentsFromUrls: responses } }),
+      } as unknown as Response;
+    });
+    const client = new UpstreamGraphQLClient({
+      endpoint: 'http://localhost:4000/graphql',
+      timeoutMs: 1000,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    return { client, captured };
+  }
+
+  const DRIVE_URL = 'https://drive.google.com/file/d/abc123/view';
+
+  it('sends the URLs as a plain JSON mutation, not multipart', async () => {
+    const { client, captured } = urlClient([ok('d1')]);
+    const result = await run({ chargeId: CHARGE, documentUrls: [DRIVE_URL] }, client);
+
+    expect(result.isError).toBeUndefined();
+    expect(captured).toHaveLength(1);
+    expect(captured[0].query).toContain('batchUploadDocumentsFromUrls');
+    expect(captured[0].variables).toMatchObject({
+      urls: [DRIVE_URL],
+      chargeId: CHARGE,
+      isSensitive: false,
+    });
+    expect(captured[0].headers['content-type'] ?? captured[0].headers['Content-Type']).toContain(
+      'application/json',
+    );
+  });
+
+  it('reports each URL positionally, so a partial failure names the URL that failed', async () => {
+    const { client } = urlClient([
+      ok('d1'),
+      { __typename: 'CommonError', message: 'https://example.com/b.pdf: HTTP 404' },
+    ]);
+    const result = await run(
+      { chargeId: CHARGE, documentUrls: [DRIVE_URL, 'https://example.com/b.pdf'] },
+      client,
+    );
+
+    const structured = result.structuredContent as {
+      source: string;
+      uploadedCount: number;
+      failedCount: number;
+      results: Array<Record<string, unknown>>;
+    };
+    expect(structured.source).toBe('urls');
+    expect(structured.uploadedCount).toBe(1);
+    expect(structured.failedCount).toBe(1);
+    // Labelled `url`, not `filename` — the caller never supplied a filename here.
+    expect(structured.results[0]).toMatchObject({ url: DRIVE_URL, status: 'uploaded' });
+    expect(structured.results[1]).toMatchObject({
+      url: 'https://example.com/b.pdf',
+      status: 'failed',
+    });
+  });
+
+  it('applies no size limit to the URL branch', async () => {
+    // A URL list far past what any inline payload could carry is still fine:
+    // the bytes are the server's problem, not the model's.
+    const { client, captured } = urlClient([ok('d1')]);
+    const long = `https://example.com/${'a'.repeat(1900)}.pdf`;
+    const result = await run({ chargeId: CHARGE, documentUrls: [long] }, client);
+
+    expect(result.isError).toBeUndefined();
+    expect(captured[0].variables.urls).toEqual([long]);
+  });
+
+  it('rejects a call carrying both documentUrls and documents', async () => {
+    const { client, captured } = urlClient([]);
+    const result = await run(
+      { chargeId: CHARGE, documentUrls: [DRIVE_URL], documents: [doc()] },
+      client,
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+
+  it('rejects a call carrying neither', async () => {
+    const { client, captured } = urlClient([]);
+    const result = await run({ chargeId: CHARGE }, client);
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+
+  it('rejects a non-URL string', async () => {
+    const { client, captured } = urlClient([]);
+    const result = await run({ chargeId: CHARGE, documentUrls: ['/tmp/invoice.pdf'] }, client);
+
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');
+    expect(captured).toHaveLength(0);
+  });
+
+  it('audits the call without logging the URLs, which can carry access tokens', async () => {
+    const { client } = urlClient([ok('d1')]);
+    const lines: string[] = [];
+    const write = vi.spyOn(console, 'log').mockImplementation(line => void lines.push(String(line)));
+    try {
+      await run(
+        { chargeId: CHARGE, documentUrls: ['https://example.com/secret?token=hunter2'] },
+        client,
+      );
+    } finally {
+      write.mockRestore();
+    }
+
+    const audit = lines.find(line => line.includes('"audit":true'));
+    expect(audit).toBeDefined();
+    expect(audit).toContain('"documentUrlsCount":1');
+    expect(audit).not.toContain('hunter2');
   });
 });

@@ -2,6 +2,7 @@ import { Inject, Injectable, Scope } from 'graphql-modules';
 import { ENVIRONMENT } from '../../../shared/tokens.js';
 import type { Environment } from '../../../shared/types/index.js';
 import {
+  fileSchema,
   folderContentSchema,
   type DriveFileContent,
   type DriveFolderContent,
@@ -74,6 +75,85 @@ export class GoogleDriveProvider {
   private isRelevantFileType(originalMimeType: string): boolean {
     const mimeType = originalMimeType.toLowerCase();
     return mimeType === 'application/pdf' || mimeType.startsWith('image/');
+  }
+
+  /**
+   * Whether a URL points at a single Google Drive *file* (as opposed to a
+   * folder, which {@link fetchFilesFromSharedFolder} handles).
+   */
+  public static isFileUrl(rawUrl: string): boolean {
+    return GoogleDriveProvider.extractFileId(rawUrl) !== null;
+  }
+
+  /**
+   * Pull the file id out of the several share-link shapes Drive hands out:
+   * `/file/d/<id>/view`, `/open?id=<id>`, `/uc?id=<id>`.
+   */
+  private static extractFileId(rawUrl: string): string | null {
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      return null;
+    }
+    const host = url.hostname.toLowerCase();
+    if (host !== 'drive.google.com' && host !== 'docs.google.com') {
+      return null;
+    }
+    const pathMatch = /\/(?:file|document|spreadsheets|presentation)\/d\/([^/?#]+)/.exec(
+      url.pathname,
+    );
+    if (pathMatch) {
+      return pathMatch[1];
+    }
+    const idParam = url.searchParams.get('id');
+    return idParam && idParam.length > 0 ? idParam : null;
+  }
+
+  private async fetchFileMetadata(fileId: string): Promise<DriveFileContent> {
+    const url = new URL(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?fields=id,name,mimeType,kind&key=${this.apiKey}`,
+    );
+
+    const res = await fetch(url).catch(err => {
+      const message = `Failed fetching file metadata from Google Drive for id="${fileId}"`;
+      console.error(`${message}: ${err}`);
+      throw new Error(message);
+    });
+
+    if (!res.ok) {
+      // Almost always "not shared with the API key" rather than "missing".
+      throw new Error(
+        `Google Drive returned HTTP ${res.status} for file id="${fileId}". Make sure the file is shared with anyone holding the link.`,
+      );
+    }
+
+    const parsed = fileSchema.safeParse(await res.json().catch(() => null));
+    if (!parsed.success) {
+      throw new Error(`Failed to parse Google Drive metadata for file id="${fileId}"`);
+    }
+    return parsed.data;
+  }
+
+  /**
+   * Fetch a single file from a Drive share link.
+   *
+   * A share link is not a download link — `/file/d/<id>/view` answers with an
+   * HTML page — so the id is resolved through the Drive API for its real name
+   * and MIME type before the bytes are pulled.
+   */
+  public async fetchFileFromUrl(fileUrl: string): Promise<File> {
+    const fileId = GoogleDriveProvider.extractFileId(fileUrl);
+    if (!fileId) {
+      throw new Error(`Not a Google Drive file URL: "${fileUrl}"`);
+    }
+    const metadata = await this.fetchFileMetadata(fileId);
+    if (!this.isRelevantFileType(metadata.mimeType)) {
+      throw new Error(
+        `Unsupported Google Drive file type "${metadata.mimeType}" for file="${metadata.name}" — expected a PDF or an image`,
+      );
+    }
+    return this.fetchFile(metadata);
   }
 
   public async fetchFilesFromSharedFolder(folderUrl: string): Promise<File[]> {

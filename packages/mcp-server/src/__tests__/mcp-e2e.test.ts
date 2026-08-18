@@ -512,7 +512,7 @@ describe('write tools with MCP_ENABLE_WRITE_TOOLS=1', () => {
     expect(structured.scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
   });
 
-  it('uploads a document to an existing charge, always as sensitive', async () => {
+  it('uploads a document to an existing charge', async () => {
     const body = await writeRpc('tools/call', {
       name: 'accounter_upload_documents',
       arguments: {
@@ -528,7 +528,7 @@ describe('write tools with MCP_ENABLE_WRITE_TOOLS=1', () => {
     expect(structured.ok).toBe(true);
     expect(structured.uploadedCount).toBe(1);
     expect(structured.failedCount).toBe(0);
-    expect(structured.isSensitive).toBe(true);
+    expect(structured.isSensitive).toBe(false);
     expect(fakeUpstreamClient.mutateMultipart).toHaveBeenCalled();
   });
 

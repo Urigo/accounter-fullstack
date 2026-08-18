@@ -10,6 +10,10 @@ import { deleteCharges } from '../../charges/helpers/delete-charges.helper.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
+import {
+  fetchRemoteDocument,
+  RemoteDocumentError,
+} from '../helpers/fetch-remote-document.helper.js';
 import { getDocumentFromFile } from '../helpers/upload.helper.js';
 import { basicDocumentValidation } from '../helpers/validate-document.helper.js';
 import { DocumentsProvider } from '../providers/documents.provider.js';
@@ -151,6 +155,82 @@ export const documentsResolvers: DocumentsModule.Resolvers &
       await degradeChargesAccountantApproval(injector, [chargeId]);
 
       return res.map(document => ({ document: document as IGetAllDocumentsResult }));
+    },
+    batchUploadDocumentsFromUrls: async (_, { urls, isSensitive, chargeId }, { injector }) => {
+      if (!chargeId) {
+        const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+        // generate new charge
+        const newCharge = await injector.get(ChargesProvider).generateCharge({
+          ownerId,
+          userDescription: 'New uploaded documents',
+        });
+        if (!newCharge) {
+          throw new GraphQLError(`Failed to generate new charge for new document`);
+        }
+        chargeId = newCharge.id;
+      }
+
+      // Results are positional and one URL's failure must not sink the batch, so
+      // each fetch is settled independently and its outcome is carried alongside
+      // the index it came from.
+      const settled = await Promise.all(
+        urls.map(async (url, index) => {
+          try {
+            // A Drive share link is not a download link — `/file/d/<id>/view`
+            // answers with an HTML page — so those go through the Drive API,
+            // which also reads files shared to the account rather than public.
+            const file = GoogleDriveProvider.isFileUrl(url)
+              ? await injector.get(GoogleDriveProvider).fetchFileFromUrl(url)
+              : await fetchRemoteDocument(url);
+            const document = await getDocumentFromFile(injector, file, chargeId, isSensitive);
+            return { index, document };
+          } catch (error) {
+            const message =
+              error instanceof RemoteDocumentError
+                ? error.message
+                : `Failed ingesting document from URL: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(`Failed ingesting document from URL="${url}": ${error}`);
+            return { index, message };
+          }
+        }),
+      );
+
+      const fetched = settled.filter(
+        (
+          entry,
+        ): entry is { index: number; document: IInsertDocumentsParams['documents'][number] } =>
+          'document' in entry,
+      );
+
+      const inserted = fetched.length
+        ? await injector
+            .get(DocumentsProvider)
+            .insertDocuments({ documents: fetched.map(entry => entry.document) })
+        : [];
+
+      if (inserted.length) {
+        await degradeChargesAccountantApproval(injector, [chargeId]);
+      }
+
+      // `insertDocuments` returns rows in the order it was given them, so the
+      // Nth inserted row belongs to the Nth successfully fetched URL.
+      const documentByIndex = new Map(
+        fetched.map((entry, position) => [entry.index, inserted[position]]),
+      );
+
+      return urls.map((url, index) => {
+        const document = documentByIndex.get(index);
+        if (document) {
+          return { document: document as IGetAllDocumentsResult };
+        }
+        const failure = settled.find(entry => entry.index === index);
+        const reason =
+          failure && 'message' in failure
+            ? failure.message
+            : 'document was fetched but could not be stored';
+        return { __typename: 'CommonError' as const, message: `${url}: ${reason}` };
+      });
     },
     batchUploadDocumentsFromGoogleDrive: async (
       _,

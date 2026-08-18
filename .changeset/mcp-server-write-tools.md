@@ -35,12 +35,12 @@ handles natively upstream), following the existing precedent in `packages/gmail-
 
 **Tools**
 
-- `accounter_upload_documents` — attaches 1–10 base64-encoded documents to an **existing** charge.
+- `accounter_upload_documents` — attaches 1–10 documents to an **existing** charge.
   `chargeId` is required: upstream `batchUploadDocuments` creates a new charge when it is omitted,
-  which is not a side effect the model should trigger by leaving a field blank. `isSensitive` is
-  pinned to `true` and deliberately absent from the input schema. Documents arrive as base64 because
-  this server is remote and has no access to the caller's filesystem; each is validated for encoding,
-  MIME type, and size (256KB per file, 512KB per call, decoded) *before* anything is uploaded —
+  which is not a side effect the model should trigger by leaving a field blank. Documents arrive
+  either as URLs the server fetches itself (preferred, no size limit) or as inline base64; each
+  inline document is validated for encoding, MIME type, and size (256KB per file, 512KB per call,
+  decoded) *before* anything is uploaded —
   `Buffer.from(x, 'base64')` silently skips characters it does not recognize, so a truncated payload
   would otherwise decode to a plausible-looking short buffer and surface as a corrupt file much
   later. Upstream returns one result per file, so partial failure is reported positionally rather
@@ -51,12 +51,18 @@ handles natively upstream), following the existing precedent in `packages/gmail-
   first. The edit is incremental, not a replacement, and removals run before additions, so a tag id
   passed in both lists ends up added.
 
-The upload caps are small because inline base64 makes the *model* the transport — it must emit the
+`isSensitive` is pinned to `false` and deliberately absent from the input schema. The upstream name
+is misleading: `getOcrData` returns early with `documentType: UNPROCESSED` whenever it is set, so
+`true` does not so much mark a document sensitive as skip OCR entirely — documents uploaded through
+the tool would land with no amount, date, counterparty, or serial. Documents ingested here are meant
+to be read, so both branches pass `false`.
+
+The inline caps are small because inline base64 makes the *model* the transport — it must emit the
 whole encoded file as tool arguments, and base64 tokenizes at roughly 3 characters per token, so a
 277KB PDF costs on the order of 100k output tokens. They are also pinned against
 `MAX_MCP_BODY_BYTES` by `tools/__tests__/upload-limits.test.ts`, because an earlier draft advertised
-5MB per file while the 1MB body cap made that unreachable. Over-size errors name the Drive and email
-ingestion paths rather than just reporting a number: without that, the model's natural move is to
+5MB per file while the 1MB body cap made that unreachable. Over-size errors name the URL path
+rather than just reporting a number: without that, the model's natural move is to
 re-encode a scanned receipt at lower quality until it fits, archiving a degraded copy of a legal
 financial record.
 

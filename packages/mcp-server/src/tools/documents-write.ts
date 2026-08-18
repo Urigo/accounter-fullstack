@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { ToolInputError } from '../errors/taxonomy.js';
-import type { McpBatchUploadDocumentsMutation } from '../gql/index.js';
+import type {
+  McpBatchUploadDocumentsFromUrlsMutation,
+  McpBatchUploadDocumentsMutation,
+} from '../gql/index.js';
 import type { UploadFile } from '../upstream/graphql-client.js';
 import { shapeWriteResult } from './output.js';
 import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
@@ -9,24 +12,52 @@ import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './sc
 /**
  * Write tool: attach documents to an existing charge.
  *
- * Two upstream facts shape this tool:
+ * The tool has two branches, and which one a call takes decides who moves the
+ * bytes:
+ *
+ * - **`documentUrls`** — the server fetches each URL itself. The model emits a
+ *   link, not a payload, so nothing about the file passes through it and there
+ *   is no size limit worth stating. This is the branch to prefer for anything
+ *   that already lives somewhere fetchable.
+ * - **`documents`** — inline base64. Here the *model* is the transport: it has
+ *   to reproduce the whole encoded file as tool arguments, which both costs
+ *   enormous output budget and risks corrupting the file, since base64 has no
+ *   redundancy and a single mis-emitted character destroys it. Hence the small
+ *   caps below.
+ *
+ * Exactly one branch per call; see {@link uploadDocumentsInput}.
+ *
+ * Two upstream facts shape the rest:
  *
  * 1. `batchUploadDocuments` takes real binary files (`FileScalar` is a web
  *    `File`/`Blob` — the upstream helper calls `.arrayBuffer()` on it, so a
  *    string will not do). This server is a *remote* HTTP service with no access
- *    to the caller's filesystem, so documents arrive as inline base64 and are
- *    decoded here into the GraphQL multipart request upstream.
+ *    to the caller's filesystem, so inline documents arrive as base64 and are
+ *    decoded here into the GraphQL multipart request upstream. The URL branch
+ *    sidesteps this entirely: `batchUploadDocumentsFromUrls` takes plain
+ *    strings, so it is an ordinary JSON mutation.
  *
  * 2. `batchUploadDocuments` **creates a new charge when `chargeId` is omitted**.
  *    That is a side effect the model should never trigger by leaving a field
  *    blank, so `chargeId` is required here: this tool attaches to an existing
  *    charge or it fails.
  *
- * `isSensitive` is pinned to `true` and deliberately absent from the input
- * schema — it is a property of this ingestion path, not a choice to delegate.
+ * `isSensitive` is pinned and deliberately absent from the input schema — see
+ * {@link PINNED_IS_SENSITIVE}.
  */
 
 export const UPLOAD_DOCUMENTS_TOOL_NAME = 'accounter_upload_documents';
+
+/**
+ * Pinned, not caller-supplied.
+ *
+ * The upstream name is misleading: `getOcrData` returns early with
+ * `documentType: UNPROCESSED` when this is set, so `true` does not so much mark
+ * a document sensitive as skip OCR entirely — every document uploaded here would
+ * land with no amount, date, counterparty, or serial. Documents ingested through
+ * this tool are meant to be read, so both branches pass `false`.
+ */
+const PINNED_IS_SENSITIVE = false;
 
 /** Max documents per call. */
 export const MAX_DOCUMENTS_PER_CALL = 10;
@@ -66,9 +97,10 @@ export const MAX_TOTAL_DOCUMENT_BYTES = 512 * 1024;
  */
 export const OVERSIZE_GUIDANCE =
   'Do NOT downscale, re-encode, or reduce the quality of the document to fit — the stored file is a ' +
-  'financial record and must keep its original fidelity. Instead use a path that does not send bytes ' +
-  'through the conversation: upload the file to the shared Google Drive folder and use the Drive ' +
-  'ingestion flow, or forward it to the document-ingestion email address.';
+  'financial record and must keep its original fidelity. Use `documentUrls` instead: put the file ' +
+  'somewhere fetchable (Google Drive, or any direct download link) and pass the link, so the server ' +
+  'fetches the bytes rather than routing them through this conversation. There is no size limit on ' +
+  'that path. Failing that, forward the file to the document-ingestion email address.';
 
 /** Render a byte count for humans; every limit here is KB-scale. */
 const asKb = (bytes: number) => `${Math.round(bytes / 1024)}KB`;
@@ -107,21 +139,46 @@ const documentInput = z.object({
     ),
 });
 
-const uploadDocumentsInput = z.object({
-  memberBusinessId: writeTargetBusinessIdInput,
-  chargeId: z
-    .string()
-    .min(1)
-    .describe(
-      'The EXISTING charge to attach the documents to. Required — this tool never creates a charge. ' +
-        'Use accounter_search_charges to find one.',
-    ),
-  documents: z
-    .array(documentInput)
-    .min(1)
-    .max(MAX_DOCUMENTS_PER_CALL)
-    .describe(`The documents to upload (1-${MAX_DOCUMENTS_PER_CALL} per call).`),
-});
+const uploadDocumentsInput = z
+  .object({
+    memberBusinessId: writeTargetBusinessIdInput,
+    chargeId: z
+      .string()
+      .min(1)
+      .describe(
+        'The EXISTING charge to attach the documents to. Required — this tool never creates a charge. ' +
+          'Use accounter_search_charges to find one.',
+      ),
+    documentUrls: z
+      .array(z.url().max(2048))
+      .min(1)
+      .max(MAX_DOCUMENTS_PER_CALL)
+      .optional()
+      .describe(
+        'PREFERRED. http(s) URLs the SERVER fetches the documents from — the bytes never travel ' +
+          'through this conversation, so there is no size limit. Google Drive share links are ' +
+          'resolved through the Drive API; any other URL must answer with a PDF or an image ' +
+          '(a link that renders a web page is rejected). ' +
+          `1-${MAX_DOCUMENTS_PER_CALL} per call. Mutually exclusive with \`documents\`.`,
+      ),
+    documents: z
+      .array(documentInput)
+      .min(1)
+      .max(MAX_DOCUMENTS_PER_CALL)
+      .optional()
+      .describe(
+        `Inline base64 documents (1-${MAX_DOCUMENTS_PER_CALL} per call). Use ONLY for small content ` +
+          'you generated yourself; for an existing file prefer `documentUrls`. Mutually exclusive ' +
+          'with `documentUrls`.',
+      ),
+  })
+  // Enforced here rather than as a union so the model gets one clear message
+  // instead of a pair of "no variant matched" branches, and so omitting both is
+  // named as its own mistake.
+  .refine(input => !!input.documentUrls !== !!input.documents, {
+    message: 'Provide exactly one of `documentUrls` or `documents` — not both, and not neither.',
+    path: ['documentUrls'],
+  });
 type UploadDocumentsInput = z.infer<typeof uploadDocumentsInput>;
 
 const BATCH_UPLOAD_DOCUMENTS_MUTATION = /* GraphQL */ `
@@ -146,6 +203,27 @@ const BATCH_UPLOAD_DOCUMENTS_MUTATION = /* GraphQL */ `
 `;
 
 /** `data:<mime>;base64,` prefix some clients prepend to encoded content. */
+const BATCH_UPLOAD_DOCUMENTS_FROM_URLS_MUTATION = /* GraphQL */ `
+  mutation McpBatchUploadDocumentsFromUrls(
+    $urls: [String!]!
+    $chargeId: UUID
+    $isSensitive: Boolean
+  ) {
+    batchUploadDocumentsFromUrls(urls: $urls, chargeId: $chargeId, isSensitive: $isSensitive) {
+      __typename
+      ... on UploadDocumentSuccessfulResult {
+        document {
+          id
+          documentType
+        }
+      }
+      ... on CommonError {
+        message
+      }
+    }
+  }
+`;
+
 const DATA_URI_PREFIX_RE = /^data:[^;,]*;base64,/i;
 const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
@@ -190,11 +268,67 @@ function decodeDocument(contentBase64: string, index: number): Uint8Array {
   return content;
 }
 
-async function uploadDocumentsHandler(
+/** One entry per input document/URL, in the order it was given. */
+type UploadOutcome =
+  | {
+      label: string | undefined;
+      status: 'uploaded';
+      documentId: string | null;
+      documentType: string | null;
+    }
+  | { label: string | undefined; status: 'failed'; message: string };
+
+/**
+ * Upstream returns a list of a *union*, one entry per input, so a partial
+ * failure is expressed per element. Map it positionally rather than collapsing
+ * the batch to one status — the model needs to know which files it still has to
+ * deal with.
+ */
+function toOutcomes(
+  results: McpBatchUploadDocumentsMutation['batchUploadDocuments'],
+  labels: Array<string | undefined>,
+): UploadOutcome[] {
+  return results.map((result, index) => {
+    const label = labels[index];
+    if (result.__typename === 'UploadDocumentSuccessfulResult') {
+      return {
+        label,
+        status: 'uploaded' as const,
+        documentId: result.document?.id ?? null,
+        documentType: result.document?.documentType ?? null,
+      };
+    }
+    return {
+      label,
+      status: 'failed' as const,
+      message: result.__typename === 'CommonError' ? result.message : 'Unknown upload failure',
+    };
+  });
+}
+
+/** The URL branch: the server fetches, so nothing here touches bytes. */
+async function uploadFromUrls(
+  urls: string[],
   input: UploadDocumentsInput,
   context: ToolExecutionContext,
-): Promise<ToolResult> {
-  const contents = input.documents.map((document, index) =>
+): Promise<UploadOutcome[]> {
+  const data = await context.client.mutate<McpBatchUploadDocumentsFromUrlsMutation>(
+    {
+      query: BATCH_UPLOAD_DOCUMENTS_FROM_URLS_MUTATION,
+      variables: { urls, chargeId: input.chargeId, isSensitive: PINNED_IS_SENSITIVE },
+    },
+    context.upstream,
+  );
+  return toOutcomes(data.batchUploadDocumentsFromUrls, urls);
+}
+
+/** The inline branch: base64 in, multipart out. */
+async function uploadInline(
+  documents: NonNullable<UploadDocumentsInput['documents']>,
+  input: UploadDocumentsInput,
+  context: ToolExecutionContext,
+): Promise<UploadOutcome[]> {
+  const contents = documents.map((document, index) =>
     decodeDocument(document.contentBase64, index),
   );
 
@@ -207,7 +341,7 @@ async function uploadDocumentsHandler(
     );
   }
 
-  const files: UploadFile[] = input.documents.map((document, index) => ({
+  const files: UploadFile[] = documents.map((document, index) => ({
     // Matches the `documents` argument name in the mutation above; the
     // placeholder nulls below occupy these positions.
     variablePath: `variables.documents.${index}`,
@@ -223,37 +357,36 @@ async function uploadDocumentsHandler(
         // Per the GraphQL multipart request spec the file variables are null
         // placeholders; `map` (built by the client from `files`) points each
         // form part at its position here.
-        documents: input.documents.map(() => null),
+        documents: documents.map(() => null),
         chargeId: input.chargeId,
-        // Pinned, not caller-supplied: every document ingested through this tool
-        // is treated as sensitive.
-        isSensitive: true,
+        isSensitive: PINNED_IS_SENSITIVE,
       },
     },
     files,
     context.upstream,
   );
 
-  // Upstream returns a list of a *union*, one entry per file, so a partial
-  // failure is expressed per element. Report each outcome positionally rather
-  // than collapsing the batch to one status — the model needs to know which
-  // files it still has to deal with.
-  const results = data.batchUploadDocuments.map((result, index) => {
-    const filename = input.documents[index]?.filename;
-    if (result.__typename === 'UploadDocumentSuccessfulResult') {
-      return {
-        filename,
-        status: 'uploaded' as const,
-        documentId: result.document?.id ?? null,
-        documentType: result.document?.documentType ?? null,
-      };
-    }
-    return {
-      filename,
-      status: 'failed' as const,
-      message: result.__typename === 'CommonError' ? result.message : 'Unknown upload failure',
-    };
-  });
+  return toOutcomes(
+    data.batchUploadDocuments,
+    documents.map(document => document.filename),
+  );
+}
+
+async function uploadDocumentsHandler(
+  input: UploadDocumentsInput,
+  context: ToolExecutionContext,
+): Promise<ToolResult> {
+  // Exactly one of the two is set — the schema's refinement guarantees it.
+  const source = input.documentUrls ? 'urls' : 'inline';
+  const outcomes = input.documentUrls
+    ? await uploadFromUrls(input.documentUrls, input, context)
+    : await uploadInline(input.documents!, input, context);
+
+  // The label means different things per branch, so it is named for what it is
+  // rather than reported under a `filename` key holding a URL.
+  const results = outcomes.map(({ label, ...rest }) =>
+    source === 'urls' ? { url: label, ...rest } : { filename: label, ...rest },
+  );
 
   const uploadedCount = results.filter(result => result.status === 'uploaded').length;
   const failedCount = results.length - uploadedCount;
@@ -262,9 +395,10 @@ async function uploadDocumentsHandler(
     action: 'upload_documents',
     outcome: {
       chargeId: input.chargeId,
+      source,
       uploadedCount,
       failedCount,
-      isSensitive: true,
+      isSensitive: PINNED_IS_SENSITIVE,
       scope: { memberBusinessIds: context.readScope.memberBusinessIds },
     },
     items: { key: 'results', values: results },
@@ -278,14 +412,17 @@ async function uploadDocumentsHandler(
 export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = {
   name: UPLOAD_DOCUMENTS_TOOL_NAME,
   description:
-    'Attach one or more documents (invoices, receipts, contracts) to an EXISTING charge. Documents are ' +
-    'passed as base64-encoded content and are always stored as sensitive. This tool never creates a ' +
-    'charge: `chargeId` is required and must already exist. ' +
-    `Inline upload suits small files only (max ${asKb(MAX_DOCUMENT_BYTES)} per file, ` +
-    `${asKb(MAX_TOTAL_DOCUMENT_BYTES)} per call, decoded): the content travels as tool arguments, so ` +
-    'a large file cannot fit in one message regardless of encoding. For anything bigger use the ' +
-    'Google Drive or email ingestion paths — never re-encode a financial document at lower quality ' +
-    'to make it fit. ' +
+    'Attach one or more documents (invoices, receipts, contracts) to an EXISTING charge. This tool ' +
+    'never creates a charge: `chargeId` is required and must already exist. ' +
+    'Provide EXACTLY ONE of two inputs. ' +
+    '(1) `documentUrls` — PREFERRED: http(s) links the server fetches itself, with no size limit, ' +
+    'since the bytes never pass through the conversation. Google Drive share links work. If the file ' +
+    'is on disk and you have a shell, put it somewhere fetchable first and pass the resulting link. ' +
+    '(2) `documents` — inline base64, for small content only ' +
+    `(max ${asKb(MAX_DOCUMENT_BYTES)} per file, ${asKb(MAX_TOTAL_DOCUMENT_BYTES)} per call, decoded), ` +
+    'because that content travels as tool arguments and both costs enormous output and risks ' +
+    'corrupting the file. Never re-encode or downscale a financial document to make it fit — use ' +
+    '`documentUrls` instead. ' +
     WRITE_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: uploadDocumentsInput,
   policy: {
