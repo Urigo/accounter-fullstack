@@ -15,11 +15,15 @@ export function UnlinkTransactionButton({ transactionId, onChange }: Props): Rea
   const { updateTransaction } = useUpdateTransaction();
 
   async function onUnlink(): Promise<void> {
-    await updateTransaction({
+    const unlinked = await updateTransaction({
       transactionId,
       fields: { chargeId: EMPTY_UUID },
     });
-    onChange?.();
+    // Only report the change once the transaction actually moved off the charge — the hook returns
+    // nothing on failure, and hosts use this to close the editor and reload.
+    if (unlinked) {
+      onChange?.();
+    }
   }
 
   return (
