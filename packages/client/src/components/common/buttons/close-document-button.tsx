@@ -25,8 +25,11 @@ export function CloseDocumentButton({
   const [previewCreditInvoice, setPreviewCreditInvoice] = useState(false);
 
   const onFinallyClose = useCallback(async () => {
-    await closeDocument({ documentId });
-    onChange?.();
+    const closed = await closeDocument({ documentId });
+    // The hook resolves `false` on failure — don't report a change that never happened.
+    if (closed) {
+      onChange?.();
+    }
   }, [closeDocument, documentId, onChange]);
 
   if (!couldIssueCreditInvoice) {

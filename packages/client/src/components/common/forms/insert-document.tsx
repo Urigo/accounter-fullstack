@@ -37,9 +37,14 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
       // Close only once the insert has landed: closing first unmounts this form (the host drops the
       // charge id) while the mutation is still in flight, and the host is left showing a charge
       // without the document it just gained.
-      await insertDocument({
+      const inserted = await insertDocument({
         record: { ...data, chargeId },
       });
+      if (!inserted) {
+        // The insert failed (the hook has already reported it) — keep the form open with the
+        // entered values so it can be retried, and don't claim the charge changed.
+        return;
+      }
       onChange?.();
       closeModal?.();
     }
