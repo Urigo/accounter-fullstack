@@ -1,4 +1,4 @@
-import type { McpAuthContext } from '../auth/identity.js';
+import type { AuthorizedReadScope, McpAuthContext } from '../auth/identity.js';
 import {
   errorPayload,
   isInternalError,
@@ -11,11 +11,13 @@ import { outcomeForCode, type Metrics, type RequestOutcome } from '../observabil
 import { withSpan } from '../observability/tracing.js';
 import { rateLimitKey, type RateLimiterLike } from '../rate-limit/limiter.js';
 import type { UpstreamGraphQLClient } from '../upstream/graphql-client.js';
+import { listShapeFields } from './output.js';
 import { evaluateToolPolicy } from './policy.js';
 import {
   validateToolInput,
   type ToolDefinition,
   type ToolExecutionContext,
+  type ToolObservation,
   type ToolResult,
 } from './registry.js';
 
@@ -26,11 +28,49 @@ import {
  * ({@link toErrorPayload}) and returned as an MCP tool result with `isError`
  * and a structured `{ code, message, correlationId, retryable }` payload rather
  * than as a protocol-level JSON-RPC error, so the model can read it.
+ *
+ * Every completed call also emits exactly one `tool call` usage log line (see
+ * {@link TOOL_CALL_EVENT}) — on every path, including the validation,
+ * authorization and rate-limit rejections that never reach a handler. The
+ * per-request logs in `server.ts` cannot carry this: every MCP call is the same
+ * `POST /mcp`, so the tool name, its outcome and its inputs are only knowable
+ * here.
  */
 
 // Re-exported so tool handlers can import the domain-validation error alongside
 // the executor; the canonical definition lives in the error taxonomy.
 export { ToolInputError } from '../errors/taxonomy.js';
+
+/**
+ * `event` discriminator on the usage log line, so tool calls can be selected out
+ * of the log stream without matching on free-text messages.
+ */
+export const TOOL_CALL_EVENT = 'tool_call';
+
+/**
+ * Run a tool's `observe` hook without letting it affect the call.
+ *
+ * Telemetry is strictly secondary to serving the request: a buggy hook must not
+ * turn a successful tool call into an error, so a throw is logged and dropped.
+ */
+function safeObserve(
+  tool: ToolDefinition,
+  input: Record<string, unknown>,
+  result: ToolResult,
+): ToolObservation | undefined {
+  if (!tool.observe) {
+    return undefined;
+  }
+  try {
+    return tool.observe(input, result);
+  } catch (error) {
+    log('warn', 'tool observation failed', {
+      tool: tool.name,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+}
 
 /**
  * Optional per-tool convention: input fields carrying scope narrowing. Either a
@@ -97,13 +137,14 @@ function outcomeOf(result: ToolResult): RequestOutcome {
  * provided.
  */
 export async function executeRegisteredTool(params: ExecuteToolParams): Promise<ToolResult> {
-  const { metrics } = params;
+  const { metrics, tool } = params;
   const start = performance.now();
-  const result = await runTool(params);
+  const { result, input, readScope } = await runTool(params);
+  const latencyMs = Math.round(performance.now() - start);
+  const outcome = outcomeOf(result);
 
   if (metrics) {
-    const outcome = outcomeOf(result);
-    metrics.recordRequest(params.tool.name, outcome, Math.round(performance.now() - start));
+    metrics.recordRequest(tool.name, outcome, latencyMs);
     if (outcome === 'rate_limited') {
       metrics.recordRateLimited();
     } else if (outcome === 'upstream_error' || outcome === 'timeout_error') {
@@ -111,20 +152,68 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
     }
   }
 
+  // Only observe a call that actually ran a handler: `input` is undefined when
+  // validation, policy or the rate limiter rejected it, and a hook reading an
+  // input that was never parsed would be reporting fiction.
+  const observation = input === undefined ? undefined : safeObserve(tool, input, result);
+
+  // Tool-contributed fields are spread first so the canonical fields below
+  // always win a name collision — cf. `completionFields` and `shapeListResult`.
+  // A tool cannot misreport its own name, outcome, or caller.
+  log('info', 'tool call', {
+    ...observation?.fields,
+    ...listShapeFields(result),
+    event: TOOL_CALL_EVENT,
+    tool: tool.name,
+    outcome,
+    latencyMs,
+    userId: params.auth.userId,
+    correlationId: params.correlationId,
+    businessScopeSize: readScope?.memberBusinessIds.length,
+    isError: result.isError === true,
+  });
+
+  for (const [counter, label] of observation?.counters ?? []) {
+    metrics?.recordLabeled(counter, label);
+  }
+
   return result;
 }
 
-async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
+/**
+ * A finished run plus the context the usage log needs.
+ *
+ * The two optional fields are populated at different points on purpose, so they
+ * are not interchangeable signals:
+ *
+ * - `readScope` is present as soon as the policy resolved a scope — including on
+ *   a rate-limit rejection, where the scope is real and worth logging even
+ *   though nothing ran. It is absent only for a validation or authorization
+ *   rejection, where no scope was ever resolved.
+ * - `input` is present only when a handler actually executed, which is precisely
+ *   what gates `observe`: a hook reporting on a call that was rejected before
+ *   its handler would be describing work that never happened. A rate-limited
+ *   call therefore carries `readScope` but no `input`.
+ */
+interface ToolRun {
+  result: ToolResult;
+  input?: Record<string, unknown>;
+  readScope?: AuthorizedReadScope;
+}
+
+async function runTool(params: ExecuteToolParams): Promise<ToolRun> {
   const { tool, rawArgs, auth, correlationId, client, authorization, limiter } = params;
 
   // 1. Strict input validation (unknown fields rejected).
   const validation = validateToolInput(tool, rawArgs);
   if (!validation.ok) {
-    return toToolErrorResult(
-      errorPayload('VALIDATION_ERROR', validation.error.message, correlationId, {
-        issues: validation.error.issues,
-      }),
-    );
+    return {
+      result: toToolErrorResult(
+        errorPayload('VALIDATION_ERROR', validation.error.message, correlationId, {
+          issues: validation.error.issues,
+        }),
+      ),
+    };
   }
   const input = validation.data;
 
@@ -135,9 +224,11 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
     requestedMemberBusinessIds: requestedMemberBusinessIds(input),
   });
   if (!decision.allowed) {
-    return toToolErrorResult(
-      errorPayload('AUTHORIZATION_ERROR', decision.error.message, correlationId),
-    );
+    return {
+      result: toToolErrorResult(
+        errorPayload('AUTHORIZATION_ERROR', decision.error.message, correlationId),
+      ),
+    };
   }
 
   // 3. Rate limit (before any expensive upstream call), keyed by identity +
@@ -153,14 +244,17 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
     );
     if (!outcome.allowed) {
       const retryAfterSeconds = Math.ceil(outcome.retryAfterMs / 1000);
-      return toToolErrorResult(
-        errorPayload(
-          'RATE_LIMIT_ERROR',
-          `Rate limit exceeded. Retry in ${retryAfterSeconds}s.`,
-          correlationId,
-          { retryAfterMs: outcome.retryAfterMs },
+      return {
+        result: toToolErrorResult(
+          errorPayload(
+            'RATE_LIMIT_ERROR',
+            `Rate limit exceeded. Retry in ${retryAfterSeconds}s.`,
+            correlationId,
+            { retryAfterMs: outcome.retryAfterMs },
+          ),
         ),
-      );
+        readScope: decision.readScope,
+      };
     }
   }
 
@@ -183,9 +277,10 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
   };
   try {
     // Span covers the handler + its upstream calls for tracing.
-    return await withSpan(`tool:${tool.name}`, correlationId, async () =>
+    const result = await withSpan(`tool:${tool.name}`, correlationId, async () =>
       tool.handler(input, context),
     );
+    return { result, input, readScope: decision.readScope };
   } catch (error) {
     // Log unexpected (unmapped) failures so bugs aren't hidden; the caller only
     // ever sees the generic, sanitized INTERNAL_ERROR message.
@@ -197,6 +292,10 @@ async function runTool(params: ExecuteToolParams): Promise<ToolResult> {
         stack: error instanceof Error ? error.stack : undefined,
       });
     }
-    return toToolErrorResult(toErrorPayload(error, correlationId));
+    return {
+      result: toToolErrorResult(toErrorPayload(error, correlationId)),
+      input,
+      readScope: decision.readScope,
+    };
   }
 }

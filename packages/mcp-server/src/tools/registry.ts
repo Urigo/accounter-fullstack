@@ -64,6 +64,29 @@ export interface ToolResult {
 /** A zod object schema describing a tool's input. */
 export type ToolInputSchema = z.ZodObject;
 
+/**
+ * A bounded label counter to increment: `[counter name, label]`.
+ *
+ * Labels must be low-cardinality and free of customer data — they are rendered
+ * into the `/metrics` snapshot. The metrics registry caps distinct labels per
+ * counter, so a caller-derived label cannot grow the process unboundedly.
+ */
+export type LabeledCounter = readonly [counter: string, label: string];
+
+/**
+ * A tool's contribution to usage telemetry: extra log fields and label counters.
+ *
+ * Deliberately separate from {@link ToolResult}: `tools/call` returns the result
+ * object verbatim as the JSON-RPC payload, so anything attached to it would be
+ * sent to the caller. Observation data must never reach the wire.
+ */
+export interface ToolObservation {
+  /** Extra structured fields merged into the `tool call` log line. */
+  fields?: Record<string, unknown>;
+  /** Bounded label counters to increment on the metrics registry. */
+  counters?: readonly LabeledCounter[];
+}
+
 /** A registered, curated tool. Handlers must be pure and testable. */
 export interface ToolDefinition<Schema extends ToolInputSchema = ToolInputSchema> {
   name: string;
@@ -74,6 +97,16 @@ export interface ToolDefinition<Schema extends ToolInputSchema = ToolInputSchema
     input: z.infer<Schema>,
     context: ToolExecutionContext,
   ) => Promise<ToolResult> | ToolResult;
+  /**
+   * Derive usage telemetry from the validated input and the finished result.
+   *
+   * Optional and pure: it must not throw, mutate, or perform I/O. The executor
+   * calls it once per completed handler run, guards it against throwing, and
+   * merges {@link ToolObservation.fields} into the usage log line beneath the
+   * canonical fields — so a tool can enrich its own telemetry but never spoof
+   * `tool`, `outcome`, or `userId`.
+   */
+  observe?: (input: z.infer<Schema>, result: ToolResult) => ToolObservation;
 }
 
 /** Tool descriptor advertised by `tools/list` (JSON Schema for the input). */

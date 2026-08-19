@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { shapeListResult } from './output.js';
-import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import type {
+  LabeledCounter,
+  ToolDefinition,
+  ToolExecutionContext,
+  ToolObservation,
+  ToolResult,
+} from './registry.js';
 import {
   GLOSSARY,
   GLOSSARY_TOPICS,
@@ -32,6 +38,28 @@ export const EXPLAIN_TERMINOLOGY_TOOL_NAME = 'accounter_explain_terminology';
 
 /** Upper bound on terms per call. Generous — each match is a few hundred bytes. */
 export const MAX_REQUESTED_TERMS = 20;
+
+/**
+ * Labeled counters this tool contributes to `/metrics`.
+ *
+ * The glossary's value is a function of what callers actually ask it, so the two
+ * questions worth answering cheaply are which terms get looked up and which
+ * looked-up terms do not exist yet — the latter being the list of entries the
+ * glossary is missing.
+ */
+export const GLOSSARY_TERM_REQUESTS_COUNTER = 'glossary_term_requests';
+export const GLOSSARY_TERM_MISSES_COUNTER = 'glossary_term_misses';
+export const GLOSSARY_MODE_COUNTER = 'glossary_mode';
+
+/**
+ * Length cap on a miss label.
+ *
+ * A miss label is caller-supplied text reaching the unauthenticated `/metrics`
+ * snapshot, so it is folded (collapsing `Value Date`/`valueDate`/`value-date`
+ * into one label) and clipped. The input schema already caps a term at 60 chars;
+ * this keeps the label short enough to read in a snapshot.
+ */
+const MAX_MISS_LABEL_LENGTH = 40;
 
 /** Shortest shared prefix that makes a term worth suggesting for a typo. */
 const MIN_SUGGESTION_PREFIX = 3;
@@ -209,9 +237,7 @@ function selectEntries(input: ExplainTerminologyInput): {
 function handler(input: ExplainTerminologyInput, _context: ToolExecutionContext): ToolResult {
   // Mode is derived rather than a flag: asking for nothing in particular means
   // "show me what exists" (cheap), asking for something means "explain it".
-  const isIndexMode = input.terms === undefined && input.topics === undefined;
-
-  if (isIndexMode) {
+  if (isIndexMode(input)) {
     return shapeListResult({
       items: GLOSSARY.map(toIndexItem),
       itemsKey: 'terms',
@@ -248,6 +274,74 @@ function handler(input: ExplainTerminologyInput, _context: ToolExecutionContext)
   });
 }
 
+/** Index mode is "show me what exists"; full mode is "explain this". */
+function isIndexMode(input: ExplainTerminologyInput): boolean {
+  return input.terms === undefined && input.topics === undefined;
+}
+
+/**
+ * Usage telemetry for a finished lookup.
+ *
+ * Matches are resolved from `input.terms` rather than read back off the result,
+ * which looks like duplicated work but is the only correct source. A call
+ * carrying `topics` returns every entry in those topics, and none of those
+ * entries were individually asked for — counting them would make
+ * "most-requested term" a measure of topic breadth instead of caller interest.
+ * Re-resolving is a `Map` hit per term, at most {@link MAX_REQUESTED_TERMS} of
+ * them.
+ *
+ * Both spellings are reported: `requestedTerms` verbatim (so an alias the caller
+ * reached for, `valueDate`, stays visible) alongside the canonical `matchedTerms`
+ * it resolved to.
+ */
+function observe(input: ExplainTerminologyInput, _result: ToolResult): ToolObservation {
+  if (isIndexMode(input)) {
+    // No per-term counters here on purpose: index mode returns all of the
+    // glossary, and crediting every entry would bury the real signal.
+    return {
+      fields: { glossaryMode: 'index', requestedTermCount: 0 },
+      counters: [[GLOSSARY_MODE_COUNTER, 'index']],
+    };
+  }
+
+  const requestedTerms = input.terms ?? [];
+  const matchedTerms: string[] = [];
+  const missedTerms: string[] = [];
+  for (const requested of requestedTerms) {
+    const entry = lookup(requested);
+    if (entry) {
+      matchedTerms.push(entry.term);
+    } else {
+      missedTerms.push(requested);
+    }
+  }
+
+  const counters: LabeledCounter[] = [[GLOSSARY_MODE_COUNTER, 'full']];
+  for (const term of matchedTerms) {
+    counters.push([GLOSSARY_TERM_REQUESTS_COUNTER, term]);
+  }
+  for (const term of missedTerms) {
+    counters.push([GLOSSARY_TERM_MISSES_COUNTER, missLabel(term)]);
+  }
+
+  return {
+    fields: {
+      glossaryMode: 'full',
+      requestedTermCount: requestedTerms.length,
+      requestedTerms,
+      matchedTerms,
+      missedTerms,
+      requestedTopics: input.topics ?? [],
+    },
+    counters,
+  };
+}
+
+/** Fold and clip an unmatched term into a metrics-safe label. */
+function missLabel(term: string): string {
+  return fold(term).slice(0, MAX_MISS_LABEL_LENGTH);
+}
+
 export const explainTerminologyTool: ToolDefinition<typeof explainTerminologyInput> = {
   name: EXPLAIN_TERMINOLOGY_TOOL_NAME,
   description:
@@ -268,4 +362,5 @@ export const explainTerminologyTool: ToolDefinition<typeof explainTerminologyInp
     dataClassification: 'public',
   },
   handler,
+  observe,
 };
