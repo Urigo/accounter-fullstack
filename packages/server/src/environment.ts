@@ -20,6 +20,12 @@ const numberFromNumberOrNumberString = (input: unknown): number | undefined => {
 
 const NumberFromString = zod.preprocess(numberFromNumberOrNumberString, zod.number().min(1));
 
+/** Same as `NumberFromString`, but `0` is a meaningful value (e.g. "disabled"). */
+const NonNegativeNumberFromString = zod.preprocess(
+  numberFromNumberOrNumberString,
+  zod.number().min(0),
+);
+
 // treat an empty string (`''`) as undefined
 const emptyString = <T extends zod.ZodType>(input: T) => {
   return zod.preprocess((value: unknown) => {
@@ -38,8 +44,9 @@ const PostgresModel = zod.object({
   POSTGRES_MAX_CLIENTS: emptyString(NumberFromString).optional().default(20),
   /**
    * How long `pool.connect()` may wait for a free connection before failing.
-   * `0` restores pg's default of waiting forever — never do that in production:
-   * an exhausted pool then wedges every request with no error and no recovery.
+   * pg's own default is to wait forever, which turns an exhausted pool into a
+   * silent, permanent wedge — so this is always set, and the schema rejects
+   * `0` to keep "wait forever" unreachable through configuration.
    */
   POSTGRES_CONNECTION_TIMEOUT_MS: emptyString(NumberFromString).optional().default(10_000),
   /**
@@ -66,8 +73,14 @@ const PostgresModel = zod.object({
    * its connection to the pool. Same reasoning for the default.
    */
   POSTGRES_CLIENT_MAX_IDLE_MS: emptyString(NumberFromString).optional().default(300_000),
+  /**
+   * How often the watchdog sweeps for leaked connections. Defaults to the
+   * smaller of 30s and the idle ceiling, so a tightened ceiling is still
+   * enforced promptly.
+   */
+  POSTGRES_WATCHDOG_INTERVAL_MS: emptyString(NumberFromString).optional(),
   /** Interval for the pool/session health heartbeat log. `0` disables it. */
-  POSTGRES_MONITOR_INTERVAL_MS: emptyString(NumberFromString).optional().default(30_000),
+  POSTGRES_MONITOR_INTERVAL_MS: emptyString(NonNegativeNumberFromString).optional().default(30_000),
 });
 
 const CloudinaryModel = zod.union([
@@ -285,6 +298,9 @@ export const env = {
     statementTimeoutMs: postgres.POSTGRES_STATEMENT_TIMEOUT_MS,
     idleInTransactionTimeoutMs: postgres.POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS,
     clientMaxIdleMs: postgres.POSTGRES_CLIENT_MAX_IDLE_MS,
+    watchdogIntervalMs:
+      postgres.POSTGRES_WATCHDOG_INTERVAL_MS ??
+      Math.min(postgres.POSTGRES_CLIENT_MAX_IDLE_MS, 30_000),
     monitorIntervalMs: postgres.POSTGRES_MONITOR_INTERVAL_MS,
   },
   cloudinary: cloudinary?.CLOUDINARY_API_KEY

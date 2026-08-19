@@ -66,7 +66,7 @@ async function main() {
   // sweep deliberately trusts none of them.
   const dbClientWatchdog = startTenantDbClientWatchdog({
     maxIdleMs: env.postgres.clientMaxIdleMs,
-    intervalMs: Math.min(env.postgres.clientMaxIdleMs, 30_000),
+    intervalMs: env.postgres.watchdogIntervalMs,
     onLeak: ({ idleMs, lastQuery }) => {
       process.stderr.write(
         `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle. Last query: ${lastQuery ?? 'unknown'}\n`,

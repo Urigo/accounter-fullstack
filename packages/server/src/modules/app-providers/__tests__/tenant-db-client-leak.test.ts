@@ -74,6 +74,19 @@ describe('TenantAwareDBClient connection-leak safeguards', () => {
     await client.dispose();
   });
 
+  it('returns a broken connection to the pool as destroyed', async () => {
+    const client = buildClient(poolClient);
+    await client.query('SELECT 1');
+    expect(getTenantDbClientStats().holdingConnection).toBe(1);
+
+    poolClient.emit('error', new Error('connection terminated'));
+
+    // Dropping the reference without releasing would leave the pool counting
+    // the connection as checked out forever — a permanently lost slot.
+    expect(poolClient.release).toHaveBeenCalledWith(true);
+    expect(getTenantDbClientStats().holdingConnection).toBe(0);
+  });
+
   it('reports a held connection in the stats, and stops once released', async () => {
     expect(getTenantDbClientStats().holdingConnection).toBe(0);
 

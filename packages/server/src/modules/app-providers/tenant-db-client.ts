@@ -337,9 +337,11 @@ export class TenantAwareDBClient {
       const onClientError = (error: Error) => {
         console.error('[db] Error on checked-out client, discarding connection:', error);
         this.sessionOpen = false;
-        this.activeClient = null;
-        this.clientErrorListener = null;
-        connectionHolders.delete(this);
+        // Hand the connection back to the pool as destroyed. Merely dropping
+        // our own reference would leave the pool counting it as checked out
+        // forever — losing the slot permanently, which is precisely the leak
+        // this class exists to prevent.
+        this.releaseClient(true);
       };
       client.on('error', onClientError);
       this.clientErrorListener = onClientError;

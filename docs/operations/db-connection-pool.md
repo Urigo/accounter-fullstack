@@ -71,14 +71,15 @@ does not run", so no single mechanism is trusted:
 
 ## Configuration
 
-| Variable                                  | Default  | Notes                                                       |
-| ----------------------------------------- | -------- | ----------------------------------------------------------- |
-| `POSTGRES_MAX_CLIENTS`                    | `20`     | Pool size. Keep well under the server's `max_connections`.  |
-| `POSTGRES_CONNECTION_TIMEOUT_MS`          | `10000`  | Never set to `0` in production — that means "wait forever". |
-| `POSTGRES_STATEMENT_TIMEOUT_MS`           | `120000` | Bounds a pathological query. Raise if bulk jobs need it.    |
-| `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` | `300000` | See the warning below before lowering.                      |
-| `POSTGRES_CLIENT_MAX_IDLE_MS`             | `300000` | Client-side counterpart of the above.                       |
-| `POSTGRES_MONITOR_INTERVAL_MS`            | `30000`  | `0` disables the heartbeat.                                 |
+| Variable                                  | Default  | Notes                                                      |
+| ----------------------------------------- | -------- | ---------------------------------------------------------- |
+| `POSTGRES_MAX_CLIENTS`                    | `20`     | Pool size. Keep well under the server's `max_connections`. |
+| `POSTGRES_CONNECTION_TIMEOUT_MS`          | `10000`  | Rejects `0`, so "wait forever" is unreachable.             |
+| `POSTGRES_STATEMENT_TIMEOUT_MS`           | `120000` | Bounds a pathological query. Raise if bulk jobs need it.   |
+| `POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` | `300000` | See the warning below before lowering.                     |
+| `POSTGRES_CLIENT_MAX_IDLE_MS`             | `300000` | Client-side counterpart of the above.                      |
+| `POSTGRES_WATCHDOG_INTERVAL_MS`           | derived  | Sweep interval; defaults to `min(30s, client max idle)`.   |
+| `POSTGRES_MONITOR_INTERVAL_MS`            | `30000`  | `0` disables the heartbeat.                                |
 
 ### Why the idle timeouts are 5 minutes and not 60 seconds
 
