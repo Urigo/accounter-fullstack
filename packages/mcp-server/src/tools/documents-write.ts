@@ -6,7 +6,12 @@ import type {
 } from '../gql/index.js';
 import type { UploadFile } from '../upstream/graphql-client.js';
 import { shapeWriteResult } from './output.js';
-import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import type {
+  ToolDefinition,
+  ToolExecutionContext,
+  ToolObservation,
+  ToolResult,
+} from './registry.js';
 import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './scope-input.js';
 
 /**
@@ -409,6 +414,43 @@ async function uploadDocumentsHandler(
   });
 }
 
+/**
+ * Which branch a call took: `urls` (server fetches) or `inline` (base64 through
+ * the model). This is the counter the URL branch exists to move — it answers
+ * whether the model actually reaches for links, or still falls back to base64
+ * and its size ceiling.
+ */
+export const DOCUMENT_SOURCE_COUNTER = 'document_upload_source';
+
+/**
+ * Usage telemetry for one upload.
+ *
+ * A write result carries no `returnedCount`/`totalCount`/`truncated`, so
+ * `listShapeFields` contributes nothing to its usage line — without this hook a
+ * completed upload would log *that* it happened and nothing about *what* it
+ * did. The counts come from the shaped result rather than the input, because
+ * upstream reports success per file and a partially failed batch is the case
+ * worth seeing.
+ *
+ * The same rule as the audit line applies, for the same reason: counts and
+ * shape only. Filenames describe the caller's documents and URLs can carry
+ * access tokens, so neither reaches the log.
+ */
+function observe(input: UploadDocumentsInput, result: ToolResult): ToolObservation {
+  const source = input.documentUrls ? 'urls' : 'inline';
+  const structured = result.structuredContent as
+    { uploadedCount?: number; failedCount?: number } | undefined;
+  return {
+    fields: {
+      documentSource: source,
+      requestedDocumentCount: (input.documentUrls ?? input.documents ?? []).length,
+      uploadedCount: structured?.uploadedCount,
+      failedCount: structured?.failedCount,
+    },
+    counters: [[DOCUMENT_SOURCE_COUNTER, source]],
+  };
+}
+
 export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = {
   name: UPLOAD_DOCUMENTS_TOOL_NAME,
   description:
@@ -432,4 +474,5 @@ export const uploadDocumentsTool: ToolDefinition<typeof uploadDocumentsInput> = 
     mutating: true,
   },
   handler: uploadDocumentsHandler,
+  observe,
 };

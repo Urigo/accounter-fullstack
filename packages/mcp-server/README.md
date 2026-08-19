@@ -318,6 +318,16 @@ the `glossary_term_requests`, `glossary_term_misses` and `glossary_mode` label c
 caller looks up is the clearest available read on the vocabulary they arrived with, and
 `missedTerms` is a self-maintaining backlog of glossary entries to write.
 
+The write tools use it too. A write result has none of the shared list-shape fields, so without a
+hook its usage line would record _that_ a write happened and nothing about what it did:
+`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`),
+`requestedDocumentCount`, `uploadedCount` and `failedCount` plus a `document_upload_source` counter,
+and `accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
+`addedTagCount` and `removedTagCount` — the gap between requested and updated is how a model working
+from stale charge ids becomes visible. This line is the complement to the `audit: true` line each
+write already emits _before_ its handler runs: the audit line names the records, this one says what
+applied. Neither carries document content, filenames, or URLs.
+
 See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 for the full field reference
 and the `jq` extraction recipes (most-requested terms, missing terms, tool popularity).
 

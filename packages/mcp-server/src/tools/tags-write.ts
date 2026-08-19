@@ -3,7 +3,12 @@ import { ToolInputError } from '../errors/taxonomy.js';
 import type { McpBatchUpdateChargesTagsMutation } from '../gql/index.js';
 import { UpstreamError } from '../upstream/graphql-client.js';
 import { shapeWriteResult } from './output.js';
-import type { ToolDefinition, ToolExecutionContext, ToolResult } from './registry.js';
+import type {
+  ToolDefinition,
+  ToolExecutionContext,
+  ToolObservation,
+  ToolResult,
+} from './registry.js';
 import { WRITE_SCOPE_DESCRIPTION_SUFFIX, writeTargetBusinessIdInput } from './scope-input.js';
 
 /**
@@ -126,6 +131,31 @@ async function updateChargesTagsHandler(
   });
 }
 
+/**
+ * Usage telemetry for one tag update.
+ *
+ * As with the upload tool, a write result has none of the list-shape fields the
+ * executor logs automatically, so the counts have to come from here. Requested
+ * and updated counts are both reported because their *difference* is the signal:
+ * upstream silently skips a charge id it cannot resolve, so a call that asked
+ * for 50 and updated 43 is the shape of a model working from stale ids.
+ *
+ * Ids themselves are deliberately left out. The pre-handler audit line already
+ * carries them, and repeating them here would double the volume of the noisiest
+ * field for no added answer.
+ */
+function observe(input: UpdateChargesTagsInput, result: ToolResult): ToolObservation {
+  const structured = result.structuredContent as { updatedCount?: number } | undefined;
+  return {
+    fields: {
+      requestedChargeCount: input.chargeIds.length,
+      updatedChargeCount: structured?.updatedCount,
+      addedTagCount: input.addTagIds?.length ?? 0,
+      removedTagCount: input.removeTagIds?.length ?? 0,
+    },
+  };
+}
+
 export const updateChargesTagsTool: ToolDefinition<typeof updateChargesTagsInput> = {
   name: UPDATE_CHARGES_TAGS_TOOL_NAME,
   description:
@@ -143,4 +173,5 @@ export const updateChargesTagsTool: ToolDefinition<typeof updateChargesTagsInput
     mutating: true,
   },
   handler: updateChargesTagsHandler,
+  observe,
 };

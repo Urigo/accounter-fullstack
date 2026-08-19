@@ -5,8 +5,10 @@ import { Metrics } from '../../observability/metrics.js';
 import { RateLimiter } from '../../rate-limit/limiter.js';
 import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { SEARCH_CHARGES_TOOL_NAME, searchChargesTool } from '../charges.js';
+import { DOCUMENT_SOURCE_COUNTER, uploadDocumentsTool } from '../documents-write.js';
 import { executeRegisteredTool, TOOL_CALL_EVENT } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
+import { updateChargesTagsTool } from '../tags-write.js';
 import { explainTerminologyTool } from '../terminology.js';
 import type { ToolDefinition, ToolResult } from '../registry.js';
 
@@ -54,6 +56,24 @@ function dataFor(query: string): unknown {
   if (query.includes('transactionsByIDs')) return { transactionsByIDs: [] };
   if (query.includes('documentsByIds')) return { documentsByIds: [] };
   if (query.includes('allTags')) return { allTags: [] };
+  if (query.includes('batchUpdateChargesTags')) {
+    return {
+      batchUpdateChargesTags: {
+        __typename: 'BatchUpdateChargesTagsSuccessfulResult',
+        charges: [{ id: 'c1', tags: [{ id: 't1', name: 'travel' }] }],
+      },
+    };
+  }
+  if (query.includes('batchUploadDocumentsFromUrls')) {
+    return {
+      batchUploadDocumentsFromUrls: [
+        {
+          __typename: 'UploadDocumentSuccessfulResult',
+          document: { id: 'd1', documentType: 'INVOICE' },
+        },
+      ],
+    };
+  }
   if (query.includes('taxCategories')) return { taxCategories: [] };
   if (query.includes('allBusinesses')) return { allBusinesses: { nodes: [] } };
   if (query.includes('transactionsForBalanceReport')) return { transactionsForBalanceReport: [] };
@@ -82,6 +102,17 @@ const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },
+  // The write tools need a resolved single write target and real arguments; `{}`
+  // would only ever exercise the validation-rejection path.
+  accounter_update_charges_tags: { memberBusinessId: B1, chargeIds: ['c1'], addTagIds: ['t1'] },
+  // The URL branch keeps this a plain JSON mutation, which is what the shared
+  // fake upstream here speaks; the multipart branch has its own coverage in
+  // `documents-write.test.ts`.
+  accounter_upload_documents: {
+    memberBusinessId: B1,
+    chargeId: 'c1',
+    documentUrls: ['https://example.com/invoice.pdf?token=hunter2'],
+  },
 };
 
 interface UsageLine {
@@ -271,5 +302,77 @@ describe('observation failures', () => {
 
     expect(result.isError).toBeUndefined();
     expect(usageLine()).toMatchObject({ tool: 'broken_observe_tool', outcome: 'success' });
+  });
+});
+
+/**
+ * A write's usage line is not covered by the automatic `listShapeFields` path —
+ * a write result has no `returnedCount`/`totalCount`/`truncated` — so what it
+ * reports comes entirely from each tool's `observe` hook. These pin what that
+ * hook may and may not say.
+ */
+describe('write tool usage logging', () => {
+  const uploadArgs = {
+    memberBusinessId: B1,
+    chargeId: 'c1',
+    documentUrls: ['https://example.com/invoice.pdf?token=hunter2'],
+  };
+
+  function runUpload(metrics = new Metrics()) {
+    return executeRegisteredTool({
+      tool: uploadDocumentsTool,
+      rawArgs: uploadArgs,
+      auth: authContext(),
+      correlationId: 'corr-1',
+      client: client(),
+      metrics,
+    });
+  }
+
+  it('reports which branch an upload took, and what actually applied', async () => {
+    await runUpload();
+
+    expect(usageLine()).toMatchObject({
+      tool: 'accounter_upload_documents',
+      outcome: 'success',
+      documentSource: 'urls',
+      requestedDocumentCount: 1,
+      uploadedCount: 1,
+      failedCount: 0,
+    });
+  });
+
+  it('counts the upload branch, so base64 fallbacks are visible in metrics', async () => {
+    const metrics = new Metrics();
+    await runUpload(metrics);
+
+    expect(metrics.snapshot().labeledTotals[DOCUMENT_SOURCE_COUNTER]).toEqual({ urls: 1 });
+  });
+
+  it('never logs the URLs themselves — a signed link carries an access token', async () => {
+    await runUpload();
+
+    expect(JSON.stringify(usageLine())).not.toContain('hunter2');
+  });
+
+  it('reports requested and updated charge counts, whose difference is the signal', async () => {
+    await executeRegisteredTool({
+      tool: updateChargesTagsTool,
+      // Two charges asked for; the fake upstream resolves one, which is exactly
+      // the stale-id case the two counts exist to expose.
+      rawArgs: { memberBusinessId: B1, chargeIds: ['c1', 'c2'], addTagIds: ['t1'] },
+      auth: authContext(),
+      correlationId: 'corr-1',
+      client: client(),
+    });
+
+    expect(usageLine()).toMatchObject({
+      tool: 'accounter_update_charges_tags',
+      outcome: 'success',
+      requestedChargeCount: 2,
+      updatedChargeCount: 1,
+      addedTagCount: 1,
+      removedTagCount: 0,
+    });
   });
 });
