@@ -229,6 +229,21 @@ const replaceBusinesses = sql<IReplaceBusinessesQuery>`
     SET business_id = $targetBusinessId
     WHERE business_id = $businessIdToReplace
     RETURNING (integrations->>'greenInvoiceId')::uuid
+  ),
+  -- Only when the target is itself a security business: the FK points at
+  -- businesses_securities, and the merged security row (plus any identifier left behind
+  -- here) is cascaded away with it. The unique index on
+  -- (owner_id, identifier_type, identifier_value) already rules out a collision.
+  security_identifiers AS (
+    UPDATE accounter_schema.security_identifiers
+    SET business_id = $targetBusinessId
+    WHERE business_id = $businessIdToReplace
+      AND EXISTS (
+        SELECT 1
+        FROM accounter_schema.businesses_securities
+        WHERE id = $targetBusinessId
+      )
+    RETURNING id
   )
   UPDATE accounter_schema.transactions
   SET business_id = $targetBusinessId
