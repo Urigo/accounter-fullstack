@@ -7,6 +7,7 @@ import { UpstreamGraphQLClient } from '../../upstream/graphql-client.js';
 import { SEARCH_CHARGES_TOOL_NAME, searchChargesTool } from '../charges.js';
 import { executeRegisteredTool, TOOL_CALL_EVENT } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
+import { explainTerminologyTool } from '../terminology.js';
 import type { ToolDefinition, ToolResult } from '../registry.js';
 
 /**
@@ -199,6 +200,41 @@ describe('usage logging across outcomes', () => {
 
     const outcomes = usageLines().map(line => line.outcome);
     expect(outcomes).toEqual(['success', 'rate_limited']);
+  });
+
+  it('keeps the resolved scope on a rate-limited call, which ran no handler', async () => {
+    // The scope is resolved before the limiter, so it is real and worth logging
+    // even though nothing executed — unlike a rejection that never got that far.
+    const limiter = new RateLimiter({ windowMs: 1000, max: 1 }, () => 0);
+    const params = {
+      tool: explainTerminologyTool,
+      rawArgs: { terms: ['charge'] },
+      auth: authContext(),
+      correlationId: 'corr-1',
+      client: client(),
+      limiter,
+    };
+    await executeRegisteredTool(params);
+    await executeRegisteredTool(params);
+
+    const [, limited] = usageLines();
+    expect(limited).toMatchObject({ outcome: 'rate_limited', businessScopeSize: 2 });
+    // `observe` must not run for a call whose handler never did, or the glossary
+    // would report a lookup that never happened.
+    expect(limited.glossaryMode).toBeUndefined();
+    expect(limited.matchedTerms).toBeUndefined();
+  });
+
+  it('omits the scope for rejections that never resolved one', async () => {
+    await executeRegisteredTool({
+      tool: searchChargesTool,
+      rawArgs: { notAField: 1 },
+      auth: authContext(),
+      correlationId: 'corr-1',
+      client: client(),
+    });
+
+    expect(usageLine().businessScopeSize).toBeUndefined();
   });
 
   it('records the resolved scope size so a narrowed call is distinguishable', async () => {

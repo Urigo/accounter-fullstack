@@ -183,8 +183,17 @@ export async function executeRegisteredTool(params: ExecuteToolParams): Promise<
 /**
  * A finished run plus the context the usage log needs.
  *
- * `input` and `readScope` are only present once the call has cleared validation
- * and policy — their absence is exactly what tells the caller no handler ran.
+ * The two optional fields are populated at different points on purpose, so they
+ * are not interchangeable signals:
+ *
+ * - `readScope` is present as soon as the policy resolved a scope — including on
+ *   a rate-limit rejection, where the scope is real and worth logging even
+ *   though nothing ran. It is absent only for a validation or authorization
+ *   rejection, where no scope was ever resolved.
+ * - `input` is present only when a handler actually executed, which is precisely
+ *   what gates `observe`: a hook reporting on a call that was rejected before
+ *   its handler would be describing work that never happened. A rate-limited
+ *   call therefore carries `readScope` but no `input`.
  */
 interface ToolRun {
   result: ToolResult;

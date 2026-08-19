@@ -107,15 +107,15 @@ per-tool record: every MCP call is the same `POST /mcp`, so the
 
 Common fields:
 
-| Field                                        | Meaning                                                                          |
-| -------------------------------------------- | -------------------------------------------------------------------------------- |
-| `tool`                                       | Registered tool name.                                                            |
-| `outcome`                                    | Same label set as the `requestsTotal` metric (`success`, `validation_error`, …). |
-| `latencyMs`                                  | End-to-end time inside the executor.                                             |
-| `userId`                                     | Auth0 subject of the caller.                                                     |
-| `correlationId`                              | Ties the call to its request and to the upstream GraphQL hop.                    |
-| `businessScopeSize`                          | Number of businesses in the resolved read scope; absent when no handler ran.     |
-| `returnedCount` / `totalCount` / `truncated` | Result size, for any tool using the shared list shaping.                         |
+| Field                                        | Meaning                                                                                                                                                                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tool`                                       | Registered tool name.                                                                                                                                                                                                    |
+| `outcome`                                    | Same label set as the `requestsTotal` metric (`success`, `validation_error`, …).                                                                                                                                         |
+| `latencyMs`                                  | End-to-end time inside the executor.                                                                                                                                                                                     |
+| `userId`                                     | Auth0 subject of the caller.                                                                                                                                                                                             |
+| `correlationId`                              | Ties the call to its request and to the upstream GraphQL hop.                                                                                                                                                            |
+| `businessScopeSize`                          | Businesses in the resolved read scope. Present once the policy resolved a scope, **including a rate-limited call** (scope is resolved before the limiter runs); absent only for a validation or authorization rejection. |
+| `returnedCount` / `totalCount` / `truncated` | Result size, for any tool using the shared list shaping.                                                                                                                                                                 |
 
 Glossary-specific fields (`accounter_explain_terminology`), which are the readable signal of what a
 caller was trying to do before they knew how to ask for data:
