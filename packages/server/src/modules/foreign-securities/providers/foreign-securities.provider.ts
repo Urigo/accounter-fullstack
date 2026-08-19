@@ -6,6 +6,7 @@ import { FinancialAccountsProvider } from '../../financial-accounts/providers/fi
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
+  matchExecutionsToTransactions,
   matchSecurityExecutions,
   type AccountTuple,
   type MatchableTransaction,
@@ -14,10 +15,12 @@ import { extractSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
   IGetSecuritiesByKeysQuery,
+  IGetSecurityExecutionsByKeysQuery,
   IGetSecurityExecutionsQuery,
   SecurityExecutionRow,
   SecurityRow,
 } from '../types.js';
+import { SecurityBusinessesProvider } from './security-businesses.provider.js';
 
 /**
  * No owner_id predicate: accounter_schema.poalim_securities is FORCE RLS with a
@@ -77,6 +80,46 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     AND account_number = ANY($accountNumbers!)
     AND value_date = ANY($valueDates!);`;
 
+/**
+ * Every ingested execution of the given securities, unbounded by charge or date — the whole
+ * life of an instrument, which is what its business page shows. RLS scopes it to the tenant.
+ */
+const getSecurityExecutionsByKeys = sql<IGetSecurityExecutionsByKeysQuery>`
+  SELECT
+    id,
+    security,
+    bank_number,
+    branch_number,
+    account_number,
+    trade_date,
+    value_date,
+    settlement_date,
+    payment_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    trade_gross_value_trade_currency,
+    net_value_trade_currency,
+    net_value_settlement_currency,
+    net_value_nis,
+    trade_currency,
+    settlement_currency,
+    trade_commission_value_trade_currency,
+    management_fees_value_trade_currency,
+    israe_tax_value,
+    nominal_profit_loss_nis,
+    real_profit_loss_nis,
+    payment_type,
+    symbol,
+    isin
+  FROM accounter_schema.poalim_securities_transactions
+  WHERE security = ANY($securities!)
+  ORDER BY trade_date, id;`;
+
+/** What the reverse match needs off a transaction, charge included so a row can link out. */
+type MatchedTransaction = MatchableTransaction & { charge_id: string };
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -87,6 +130,7 @@ export class ForeignSecuritiesProvider {
     private transactionsProvider: TransactionsProvider,
     private financialAccountsProvider: FinancialAccountsProvider,
     private financialBankAccountsProvider: FinancialBankAccountsProvider,
+    private securityBusinessesProvider: SecurityBusinessesProvider,
   ) {}
 
   private async batchSecuritiesByKeys(securityKeys: readonly string[]) {
@@ -176,6 +220,46 @@ export class ForeignSecuritiesProvider {
     );
 
     return matchSecurityExecutions(transactions, candidates, accountTuples);
+  }
+
+  /**
+   * The whole ingested life of one security business: every execution of every Poalim key it
+   * is known by, each carrying the cash movement (and so the charge) behind it.
+   *
+   * The candidate transactions are the security business's own — which is what the counterparty
+   * now is for a resolved trade — so this reads the same pairing the charge view shows, from
+   * the other end.
+   */
+  public async getSecurityBusinessHistory(businessId: string, ownerId: string) {
+    const identifiers =
+      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.load(businessId);
+    const securityKeys = identifiers
+      .filter(identifier => identifier.identifier_type === 'POALIM_SECURITY_KEY')
+      .map(identifier => identifier.identifier_value);
+
+    if (securityKeys.length === 0) {
+      return { executions: [], transactionByExecutionId: new Map<string, MatchedTransaction>() };
+    }
+
+    const [executions, transactions] = await Promise.all([
+      getSecurityExecutionsByKeys.run({ securities: securityKeys }, this.db),
+      this.transactionsProvider.getTransactionsByFilters({
+        businessIDs: [businessId],
+        ownerIDs: [ownerId],
+      }),
+    ]);
+
+    const accountTuples = await this.getAccountTuples([
+      ...new Set(transactions.map(transaction => transaction.account_id).filter(Boolean)),
+    ] as string[]);
+
+    const transactionByExecutionId = matchExecutionsToTransactions(
+      transactions as unknown as MatchedTransaction[],
+      executions,
+      accountTuples,
+    );
+
+    return { executions, transactionByExecutionId };
   }
 
   /**

@@ -1,6 +1,11 @@
 import { GraphQLError } from 'graphql';
 import { Currency } from '../../../shared/enums.js';
+import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
+import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import { calculateSecurityPosition } from '../helpers/security-position.helper.js';
+import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
 
@@ -21,6 +26,56 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
           business != null && !(business instanceof Error),
       );
     },
+    securityBusinessHistory: async (_, { businessId }, { injector }) => {
+      const securityBusiness = await injector
+        .get(SecurityBusinessesProvider)
+        .getSecurityBusinessByIdLoader.load(businessId);
+      if (!securityBusiness) {
+        throw new GraphQLError(`Business ID="${businessId}" is not a security`);
+      }
+
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+      const { executions, transactionByExecutionId } = await injector
+        .get(ForeignSecuritiesProvider)
+        .getSecurityBusinessHistory(businessId, ownerId);
+
+      return {
+        id: businessId,
+        security: securityBusiness,
+        position: { id: businessId, ...calculateSecurityPosition(executions) },
+        executions: executions.map(execution => ({
+          id: execution.id,
+          execution,
+          transaction: transactionByExecutionId.get(execution.id) ?? null,
+        })),
+      };
+    },
+  },
+  SecurityHistoryExecution: {
+    id: historyExecution => historyExecution.id,
+    execution: historyExecution => historyExecution.execution,
+    // Transaction concrete types are mapped to their id (see codegen.ts mappers); Charge is
+    // mapped to its row, so it has to be loaded.
+    transaction: historyExecution => historyExecution.transaction?.id ?? null,
+    charge: async (historyExecution, _, { injector }) => {
+      const chargeId = historyExecution.transaction?.charge_id;
+      if (!chargeId) {
+        return null;
+      }
+      return (await injector.get(ChargesProvider).getChargeByIdLoader.load(chargeId)) ?? null;
+    },
+  },
+  SecurityPosition: {
+    id: position => position.id,
+    quantity: position => position.quantity,
+    averageCost: position =>
+      position.averageCost == null
+        ? null
+        : formatFinancialAmount(position.averageCost, position.currency),
+    totalBought: position => formatFinancialAmount(position.totalBought, position.currency),
+    totalSold: position => formatFinancialAmount(position.totalSold, position.currency),
+    historyStartDate: position => position.historyStartDate,
+    lastExecutionDate: position => position.lastExecutionDate,
   },
   LtdFinancialEntity: {
     securityInfo: async (business, _, { injector }) =>

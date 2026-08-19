@@ -156,6 +156,11 @@ const config: CodegenConfig = {
           SalaryCharge: '../modules/charges/types.js#IGetChargesByIdsResult',
           Security: '../modules/foreign-securities/types.js#SecurityRow',
           SecurityBusiness: '../modules/foreign-securities/types.js#SecurityBusinessRow',
+          SecurityBusinessHistory:
+            '../modules/foreign-securities/types.js#SecurityBusinessHistoryProto',
+          SecurityHistoryExecution:
+            '../modules/foreign-securities/types.js#SecurityHistoryExecutionProto',
+          SecurityPosition: '../modules/foreign-securities/types.js#SecurityPositionWithIdProto',
           SecurityExecution: '../modules/foreign-securities/types.js#SecurityExecutionRow',
           SecurityIdentifier: '../modules/foreign-securities/types.js#SecurityIdentifierRow',
           Shaam6111Report: '../modules/reports/types.js#Shaam6111ReportProto',
