@@ -12,7 +12,9 @@ import { cleanupExpiredInvitations, type Logger } from './jobs/cleanup-expired-i
 import { scheduleDailyAtUtc } from './jobs/utils.js';
 import { createGraphQLApp } from './modules-app.js';
 import { DBProvider } from './modules/app-providers/db.provider.js';
+import { startTenantDbClientWatchdog } from './modules/app-providers/tenant-db-client.js';
 import { Auth0ManagementProvider } from './modules/auth/providers/auth0-management.provider.js';
+import { startPoolMonitor } from './observability/pool-monitor.js';
 import { authPlugin } from './plugins/auth-plugin.js';
 import { correlationIdPlugin } from './plugins/correlation-id-plugin.js';
 import { dbCleanupPlugin } from './plugins/db-cleanup-plugin.js';
@@ -35,6 +37,19 @@ async function main() {
     database: env.postgres.db,
     ssl: env.postgres.ssl ? { rejectUnauthorized: false } : false,
     max: env.postgres.max, // maximum number of clients in the pool
+    // Names this app's connections in pg_stat_activity, so a session can be
+    // attributed without guessing from client_addr.
+    application_name: 'accounter-server',
+    // Never queue for a connection indefinitely: without this, an exhausted
+    // pool makes every request hang silently and forever.
+    connectionTimeoutMillis: env.postgres.connectionTimeoutMs,
+    statement_timeout: env.postgres.statementTimeoutMs,
+    // Server-side backstop: Postgres reclaims a session abandoned mid-transaction.
+    idle_in_transaction_session_timeout: env.postgres.idleInTransactionTimeoutMs,
+    // Detect connections silently dropped by an intermediary rather than
+    // discovering it on the next query.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   });
 
   if (env.auth0) {
@@ -44,6 +59,29 @@ async function main() {
   }
 
   const dbProvider = new DBProvider(pool);
+
+  // Reclaim any request-scoped connection whose owner disappeared without
+  // disposing it. Disposal is driven by request lifecycle hooks, and the bug
+  // class this guards against is precisely a hook that never fires — so this
+  // sweep deliberately trusts none of them.
+  const dbClientWatchdog = startTenantDbClientWatchdog({
+    maxIdleMs: env.postgres.clientMaxIdleMs,
+    intervalMs: env.postgres.watchdogIntervalMs,
+    onLeak: ({ idleMs, lastQuery }) => {
+      process.stderr.write(
+        `[db] Reclaiming leaked connection after ${Math.round(idleMs / 1000)}s idle. Last query: ${lastQuery ?? 'unknown'}\n`,
+      );
+    },
+  });
+
+  const poolMonitor =
+    env.postgres.monitorIntervalMs > 0
+      ? startPoolMonitor({
+          pool,
+          intervalMs: env.postgres.monitorIntervalMs,
+          max: env.postgres.max,
+        })
+      : null;
   const auth0Provider = new Auth0ManagementProvider(env);
   const logger: Logger = {
     info: (message, meta) => {
@@ -143,6 +181,8 @@ async function main() {
     });
 
     cleanupSchedule?.cancel();
+    dbClientWatchdog.stop();
+    poolMonitor?.stop();
 
     // Allow in-flight requests some time to complete, then close the pool
     const FORCE_EXIT_TIMEOUT_MS = 10_000;
