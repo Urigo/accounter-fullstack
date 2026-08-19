@@ -190,11 +190,13 @@ The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; 
   resolving them here would mean guessing which of several same-named tags was meant — the model
   resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
   before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
-- **`accounter_upload_documents`** — attach 1–10 base64-encoded documents to an **existing** charge.
-  `chargeId` is required (upstream would otherwise create a new charge), `isSensitive` is pinned to
-  `true`, and each file is validated for encoding, MIME type, and size _before_ anything is
-  uploaded. Upstream returns one result per file, so partial failure is reported positionally rather
-  than collapsed. **Small files only** — see
+- **`accounter_upload_documents`** — attach 1–10 documents to an **existing** charge, given either
+  as `documentUrls` (preferred — the server fetches them, so there is no size limit) or as inline
+  base64 `documents`; exactly one of the two per call. `chargeId` is required (upstream would
+  otherwise create a new charge) and `isSensitive` is pinned to `false`. Each inline file is
+  validated for encoding, MIME type, and size _before_ anything is uploaded. Upstream returns one
+  result per input, so partial failure is reported positionally rather than collapsed. See
+  [Uploading by URL](#uploading-by-url) and
   [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
 
 ## Upstream GraphQL client
@@ -488,10 +490,10 @@ The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mo
 
 Two mutating tools are available, and both are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
-| Tool                            | What it does                                                                     |
-| ------------------------------- | -------------------------------------------------------------------------------- |
-| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names)     |
-| `accounter_upload_documents`    | Attaches base64-encoded documents to an **existing** charge, always as sensitive |
+| Tool                            | What it does                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names) |
+| `accounter_upload_documents`    | Attaches documents — by URL or inline base64 — to an **existing** charge     |
 
 The default is off so that upgrading a running deployment never silently grants the model write
 access — an operator opts in per environment. `MCP_TOOL_ALLOWLIST` composes on top and can narrow
@@ -517,10 +519,34 @@ Two tool-specific rules worth knowing:
 
 - `accounter_upload_documents` requires `chargeId`. The upstream mutation _creates a new charge_
   when it is omitted, which is not a side effect the model should trigger by leaving a field blank.
-  `isSensitive` is pinned to `true` and is deliberately absent from the input schema.
+  `isSensitive` is pinned to `false` and is deliberately absent from the input schema — the upstream
+  name is misleading, since `getOcrData` returns early with `documentType: UNPROCESSED` whenever it
+  is set, so `true` does not so much mark a document sensitive as skip OCR entirely and land it with
+  no amount, date, counterparty, or serial.
 - `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
   `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
   ends up added.
+
+### Uploading by URL
+
+`documentUrls` is the path to reach for. The **server** fetches each URL and ingests the result, so
+the bytes never pass through the model — which is what every limit in the next section is working
+around. There is no size cap on this branch. Google Drive share links work (they are resolved
+through the Drive API, because `/file/d/<id>/view` returns an HTML page rather than the file), as
+does any direct download link.
+
+A server that fetches caller-supplied URLs is an SSRF primitive, so
+`packages/server/src/modules/documents/helpers/fetch-remote-document.helper.ts` guards it: private,
+loopback, link-local (the cloud metadata address included) and CGNAT ranges are refused,
+`localhost`/`.local` are refused by name, non-`http(s)` schemes are refused, and redirects are
+followed **manually** so every hop is re-validated — checking only the submitted URL is how this
+guard is usually bypassed, since the redirect target is attacker-controlled too. Bytes, redirects,
+and wall-clock time are capped, and the content type is read from the _response_, never from the
+URL's extension: a `.pdf` link that answers with `text/html` is a login page, and storing it would
+file a web page as a financial record.
+
+The audit line records `documentUrlsCount` only, never the URLs themselves — a signed download link
+carries an access token.
 
 ### Why inline upload is small
 
@@ -542,11 +568,11 @@ An earlier revision advertised 5MB per file, which the body cap made unreachable
 as a 413 before the tool's own check ran. `tools/__tests__/upload-limits.test.ts` now asserts the
 caps against `MAX_MCP_BODY_BYTES` so the two cannot drift apart again.
 
-Over-size errors deliberately name the alternatives rather than just reporting a number. Without
+Over-size errors deliberately name the alternative rather than just reporting a number. Without
 that, the model's natural move is to downscale or re-encode the file until it fits — which for a
-scanned receipt means archiving a degraded copy of a legal financial record. For anything larger
-than the caps, use a path that does not route bytes through the conversation: the Google Drive
-folder ingestion (`batchUploadDocumentsFromGoogleDrive`) or the email ingestion gateway.
+scanned receipt means archiving a degraded copy of a legal financial record. The alternative is
+`documentUrls`: put the file somewhere fetchable and pass the link, and none of these ceilings
+apply.
 
 ## Known limitations
 
@@ -554,9 +580,9 @@ folder ingestion (`batchUploadDocumentsFromGoogleDrive`) or the email ingestion 
   input schema, and the upstream client's read and write paths are separately guarded.
 - Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
   payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
-  rather than streamed in full. Uploads are bounded too: ≤ 10 documents, 256KB per file and 512KB
-  per call once decoded, against a MIME allowlist. Inline base64 is only viable for small files at
-  all — see [Why inline upload is small](#why-inline-upload-is-small).
+  rather than streamed in full. Inline uploads are bounded too: ≤ 10 documents, 256KB per file and
+  512KB per call once decoded, against a MIME allowlist. Inline base64 is only viable for small
+  files at all — see [Why inline upload is small](#why-inline-upload-is-small).
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
 - Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
