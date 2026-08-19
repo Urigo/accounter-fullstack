@@ -421,6 +421,7 @@ export function ChargeExtendedInfo({
                   {transactionsAreReady && (
                     <ChargeTransactionsTable
                       transactionsProps={charge}
+                      chargeType={chargeType}
                       onChange={onExtendedChange}
                     />
                   )}

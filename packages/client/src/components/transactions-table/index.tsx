@@ -18,6 +18,8 @@ type Props = {
   transactionsProps: FragmentType<typeof TransactionForTransactionsTableFieldsFragmentDoc>[];
   enableEdit?: boolean;
   enableChargeLink?: boolean;
+  /** The charge these transactions belong to, when rendered inside one. */
+  chargeType?: string;
   onChange?: () => void;
 };
 
@@ -26,6 +28,7 @@ export const TransactionsTable = ({
   onChange,
   enableEdit,
   enableChargeLink,
+  chargeType,
 }: Props): ReactElement => {
   const [editTransactionId, setEditTransactionId] = useState<string | undefined>(undefined);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -44,9 +47,10 @@ export const TransactionsTable = ({
         onUpdate: onChange || (() => {}),
         enableEdit,
         enableChargeLink,
+        chargeType,
       };
     });
-  }, [transactions, enableEdit, enableChargeLink, onChange]);
+  }, [transactions, enableEdit, enableChargeLink, chargeType, onChange]);
 
   const tableColumns = useMemo(() => {
     return enableEdit || enableChargeLink ? [...columns, actionsColumn] : columns;

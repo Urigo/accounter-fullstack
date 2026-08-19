@@ -55,6 +55,12 @@ export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFrag
   editTransaction: (id: string) => void;
   enableEdit?: boolean;
   enableChargeLink?: boolean;
+  /**
+   * The type of the charge these transactions belong to, when the table is rendered inside
+   * one. Lets a cell narrow its behaviour to a charge kind — the counterparty picker offers
+   * securities only, on a foreign-securities trade.
+   */
+  chargeType?: string;
 };
 
 export const columns: ColumnDef<TableFeaturesConfig, TransactionsTableRowType>[] = [

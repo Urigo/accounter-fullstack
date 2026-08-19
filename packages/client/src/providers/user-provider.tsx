@@ -19,6 +19,7 @@ import { UserContextDocument, type UserContextQuery } from '../gql/graphql.js';
       defaultCryptoConversionFiatCurrency
       ledgerLock
       financialAccountsBusinessesIds
+      foreignSecuritiesBusinessId
       locality
     }
   }
@@ -46,6 +47,8 @@ export interface UserInfo extends User {
     defaultCryptoConversionFiatCurrency: string;
     ledgerLock?: string | null;
     financialAccountsBusinessesIds: string[];
+    /** The general foreign-securities business — the fallback counterparty for a trade. */
+    foreignSecuritiesBusinessId: string | null;
     locality: string;
   };
 }
@@ -66,6 +69,7 @@ function toUserInfoContext(
     defaultCryptoConversionFiatCurrency: userContext.defaultCryptoConversionFiatCurrency ?? '',
     ledgerLock: userContext.ledgerLock,
     financialAccountsBusinessesIds: userContext.financialAccountsBusinessesIds ?? [],
+    foreignSecuritiesBusinessId: userContext.foreignSecuritiesBusinessId ?? null,
     locality: userContext.locality ?? '',
   };
 }

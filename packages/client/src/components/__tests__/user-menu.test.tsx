@@ -80,6 +80,7 @@ const baseUserContext: UserInfo = {
     defaultCryptoConversionFiatCurrency: 'USD',
     ledgerLock: null,
     financialAccountsBusinessesIds: [],
+    foreignSecuritiesBusinessId: null,
     locality: 'IL',
     memberships: [],
     activeReadScope: [],

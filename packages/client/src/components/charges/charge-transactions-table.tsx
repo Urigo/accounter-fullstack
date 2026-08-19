@@ -16,13 +16,25 @@ import { TransactionsTable } from '../transactions-table/index.js';
 
 type Props = {
   transactionsProps: FragmentType<typeof ChargeTableTransactionsFieldsFragmentDoc>;
+  chargeType?: string;
   onChange: () => void;
 };
 
-export const ChargeTransactionsTable = ({ transactionsProps, onChange }: Props): ReactElement => {
+export const ChargeTransactionsTable = ({
+  transactionsProps,
+  chargeType,
+  onChange,
+}: Props): ReactElement => {
   const { transactions } = getFragmentData(
     ChargeTableTransactionsFieldsFragmentDoc,
     transactionsProps,
   );
-  return <TransactionsTable transactionsProps={transactions} onChange={onChange} enableEdit />;
+  return (
+    <TransactionsTable
+      transactionsProps={transactions}
+      onChange={onChange}
+      chargeType={chargeType}
+      enableEdit
+    />
+  );
 };
