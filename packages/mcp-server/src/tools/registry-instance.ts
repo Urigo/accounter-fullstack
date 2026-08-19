@@ -7,6 +7,7 @@ import { getLedgerRecordsTool } from './ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
+import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
 
 /**
@@ -23,6 +24,11 @@ export const toolRegistry = new ToolRegistry();
 // `listedTools` is now empty (the internal smoke tool is dispatchable but no
 // longer advertised), so this is genuinely the first tool the model sees.
 toolRegistry.register(listBusinessMembershipsTool);
+// Vocabulary second: it is the other zero-cost orientation call (pure, unscoped,
+// no upstream hop), and it is what stops the model reading `byBusinesses` as the
+// owner predicate or summing INTERNAL/CONVERSION charges into a spend total.
+// Ahead of the data tools so it is read before the filters it explains are used.
+toolRegistry.register(explainTerminologyTool);
 toolRegistry.register(searchChargesTool);
 // Charge detail (by id) sits next to search: the model searches, then drills
 // into specific charges — which nest their transactions and documents.

@@ -5,6 +5,7 @@ import { BUSINESS_SCOPE_HEADER, UpstreamGraphQLClient } from '../../upstream/gra
 import { LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME } from '../businesses.js';
 import { executeRegisteredTool } from '../execute.js';
 import { toolRegistry } from '../registry-instance.js';
+import { EXPLAIN_TERMINOLOGY_TOOL_NAME } from '../terminology.js';
 
 /**
  * The cross-cutting guard: iterate the *production registry* rather than a
@@ -15,6 +16,20 @@ import { toolRegistry } from '../registry-instance.js';
  * headers (not the context object) means a handler that hand-builds
  * `{ correlationId, authorization }` and drops the scope fails here.
  */
+
+/**
+ * The tools that legitimately make no upstream call, and so have no scope to
+ * forward or echo. Membership discovery *is* the scope; the glossary is static
+ * reference content with no business data at all.
+ *
+ * Kept as an explicit named set rather than loosening the assertion, so a *data*
+ * tool that forgets to forward scope still fails — which is the whole point of
+ * iterating the production registry here.
+ */
+const PURE_TOOLS = new Set<string>([
+  LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME,
+  EXPLAIN_TERMINOLOGY_TOOL_NAME,
+]);
 
 const B1 = 'aa000000-0000-4000-8000-000000000001';
 const B2 = 'aa000000-0000-4000-8000-000000000002';
@@ -106,8 +121,8 @@ describe('registry-wide business-scope forwarding', () => {
       expect(result.isError, `${name} should succeed`).toBeUndefined();
       const structured = result.structuredContent as Record<string, unknown>;
 
-      if (name === LIST_BUSINESS_MEMBERSHIPS_TOOL_NAME) {
-        // Discovery is pure and *is* the scope — no upstream call, no echo.
+      if (PURE_TOOLS.has(name)) {
+        // No upstream call means there is nothing to forward and nothing to echo.
         expect(headersSeen).toHaveLength(0);
         expect(structured).not.toHaveProperty('scope');
         return;
