@@ -14,6 +14,7 @@ import type {
   AdminContext,
   IGetAdminContextsQuery,
   IGetAdminContextsResult,
+  IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
 } from '../types.js';
@@ -21,6 +22,16 @@ import type {
 const getAdminContexts = sql<IGetAdminContextsQuery>`
   SELECT *
   FROM accounter_schema.user_context
+  WHERE owner_id IN $$ownerIds;
+`;
+
+/**
+ * Deliberately raw SQL rather than going through SecurityBusinessesProvider: that provider
+ * takes its owner id from this one, so injecting it back would close a DI cycle.
+ */
+const getSecurityBusinessIds = sql<IGetSecurityBusinessIdsQuery>`
+  SELECT id, owner_id
+  FROM accounter_schema.businesses_securities
   WHERE owner_id IN $$ownerIds;
 `;
 
@@ -456,6 +467,39 @@ export class AdminContextProvider {
     };
   }
 
+  /**
+   * Every per-security business is an internal wallet too.
+   *
+   * A securities trade's counterparty is the security it traded rather than the general
+   * foreign-securities business, and `internalWalletsIds` is what decides that a securities
+   * movement is internal — it drives the ledger's counterparty override, fee classification,
+   * and the balance report's internal-transfer filter. Leaving the securities out would change
+   * all three the moment a transaction points at one.
+   *
+   * `normalizeContext` stays synchronous and pure; the enrichment happens on the async paths
+   * that read from the DB anyway.
+   */
+  private async withSecurityBusinesses(
+    context: AdminContext,
+    ownerIds: string[],
+  ): Promise<AdminContext> {
+    const securityBusinesses = await getSecurityBusinessIds.run({ ownerIds }, this.db);
+    if (securityBusinesses.length === 0) {
+      return context;
+    }
+
+    return {
+      ...context,
+      financialAccounts: {
+        ...context.financialAccounts,
+        internalWalletsIds: [
+          ...context.financialAccounts.internalWalletsIds,
+          ...securityBusinesses.map(securityBusiness => securityBusiness.id),
+        ],
+      },
+    };
+  }
+
   public async getAdminContext(): Promise<AdminContext | null> {
     if (this.cachedContext) {
       return this.cachedContext;
@@ -464,7 +508,9 @@ export class AdminContextProvider {
     const ownerId = await this.resolveOwnerIdForRequest();
 
     const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
-    const context = contexts[0] ? this.normalizeContext(contexts[0]) : null;
+    const context = contexts[0]
+      ? await this.withSecurityBusinesses(this.normalizeContext(contexts[0]), [ownerId])
+      : null;
     this.cachedContext = context;
     return context;
   }
@@ -492,7 +538,10 @@ export class AdminContextProvider {
 
     const updatedContexts = await updateAdminContext.run({ ...params, ownerId }, this.db);
     if (updatedContexts.length >= 1) {
-      const normalizedContext = this.normalizeContext(updatedContexts[0]);
+      const normalizedContext = await this.withSecurityBusinesses(
+        this.normalizeContext(updatedContexts[0]),
+        [ownerId],
+      );
       this.cachedContext = normalizedContext;
       return normalizedContext;
     }
@@ -503,10 +552,12 @@ export class AdminContextProvider {
     const uniqueOwnerIds = Array.from(new Set(ownerIds));
     const contexts = await getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db);
     const contextsByOwnerId = new Map(contexts.map(c => [c.owner_id, c]));
-    return ownerIds.map(id => {
-      const context = contextsByOwnerId.get(id);
-      return context ? this.normalizeContext(context) : null;
-    });
+    return Promise.all(
+      ownerIds.map(id => {
+        const context = contextsByOwnerId.get(id);
+        return context ? this.withSecurityBusinesses(this.normalizeContext(context), [id]) : null;
+      }),
+    );
   }
 
   public adminContextByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>

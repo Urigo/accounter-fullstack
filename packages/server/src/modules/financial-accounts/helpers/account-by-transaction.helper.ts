@@ -1,5 +1,6 @@
 import type { Injector } from 'graphql-modules';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
+import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import { FinancialAccountsProvider } from '../providers/financial-accounts.provider.js';
 import type { IGetFinancialAccountsByAccountIDsResult } from '../types.js';
@@ -8,10 +9,7 @@ export async function getFinancialAccountByTransactionId(
   transactionId: string,
   injector: Injector,
 ): Promise<IGetFinancialAccountsByAccountIDsResult> {
-  const {
-    ownerId,
-    foreignSecurities: { foreignSecuritiesBusinessId },
-  } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+  const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
   const transaction = await injector
     .get(TransactionsProvider)
     .transactionByIdLoader.load(transactionId);
@@ -19,8 +17,12 @@ export async function getFinancialAccountByTransactionId(
     throw new Error(`Transaction ID="${transactionId}" is missing account_id`);
   }
 
+  // The securities portfolio is one account whatever the counterparty is — the general
+  // foreign-securities business or the specific security the trade was in.
+  const foreignSecuritiesBusinessIds = await getForeignSecuritiesBusinessIds(injector);
+
   let account: IGetFinancialAccountsByAccountIDsResult | undefined;
-  if (!!foreignSecuritiesBusinessId && transaction.business_id === foreignSecuritiesBusinessId) {
+  if (!!transaction.business_id && foreignSecuritiesBusinessIds.has(transaction.business_id)) {
     const accounts = await injector
       .get(FinancialAccountsProvider)
       .getFinancialAccountsByOwnerIdLoader.load(ownerId);

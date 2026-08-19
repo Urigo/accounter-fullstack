@@ -164,6 +164,10 @@ describe('AdminContextProvider', () => {
     expect(result?.defaultLocalCurrency).toBe('EUR');
   });
 
+  // Loading a context takes two queries: the user_context row, then the tenant's security
+  // businesses, which join internalWalletsIds.
+  const QUERIES_PER_CONTEXT_LOAD = 2;
+
   it('should cache the result', async () => {
     dbProvider.query.mockResolvedValue({
       rows: [{ owner_id: 'test-owner-id' }],
@@ -172,7 +176,7 @@ describe('AdminContextProvider', () => {
 
     await provider.getAdminContext();
     await provider.getAdminContext();
-    expect(dbProvider.query).toHaveBeenCalledTimes(1);
+    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
   });
 
   it('should invalidate cache on update', async () => {
@@ -180,21 +184,30 @@ describe('AdminContextProvider', () => {
       rows: [{ owner_id: 'test-owner-id', default_local_currency: 'USD' }],
       rowCount: 1,
     } as unknown as QueryResultWithRows); // get
-    
+    dbProvider.query.mockResolvedValueOnce({
+      rows: [],
+      rowCount: 0,
+    } as unknown as QueryResultWithRows); // security businesses
+
     await provider.getAdminContext();
-    expect(dbProvider.query).toHaveBeenCalledTimes(1);
+    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
 
     dbProvider.query.mockResolvedValueOnce({
         rows: [{ owner_id: 'test-owner-id', default_local_currency: 'EUR' }],
         rowCount: 1
     } as unknown as QueryResultWithRows); // update
-    
+    dbProvider.query.mockResolvedValueOnce({
+      rows: [],
+      rowCount: 0,
+    } as unknown as QueryResultWithRows); // security businesses
+
     await provider.updateAdminContext({ defaultLocalCurrency: 'EUR' });
-    expect(dbProvider.query).toHaveBeenCalledTimes(2); // +1 for update
+    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD * 2);
 
     // The cache should now have the updated value from updateAdminContext
     const result = await provider.getAdminContext();
     expect(result?.defaultLocalCurrency).toBe('EUR');
-    expect(dbProvider.query).toHaveBeenCalledTimes(2); // No additional call, using cache
+    // No additional call, using cache
+    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD * 2);
   });
 });
