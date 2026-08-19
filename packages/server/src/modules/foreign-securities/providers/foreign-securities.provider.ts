@@ -6,7 +6,6 @@ import { FinancialAccountsProvider } from '../../financial-accounts/providers/fi
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import {
-  DEFAULT_DATE_WINDOW_DAYS,
   matchSecurityExecutions,
   type AccountTuple,
   type MatchableTransaction,
@@ -35,10 +34,9 @@ const getSecuritiesByKeys = sql<IGetSecuritiesByKeysQuery>`
   ORDER BY security_key, as_of_date DESC;`;
 
 /**
- * A coarse prefilter, not the match itself: the ANY(...) predicates form a cross-product over
- * the charge's keys and accounts, and the date range spans every transaction on the charge.
- * `matchSecurityExecutions` does the exact per-row pairing in memory — same shape as
- * `fetchPoalimSecuritiesTransactionsByKeys` in the ingestion provider.
+ * A prefilter, not the match itself: the ANY(...) predicates form a cross-product over the
+ * charge's keys, accounts and settlement days. `matchSecurityExecutions` does the per-row
+ * pairing in memory, where the account tuple, currency and direction are checked together.
  *
  * Tenant scoping is RLS again (FORCE ROW LEVEL SECURITY + tenant_isolation), hence no
  * owner_id predicate.
@@ -63,6 +61,7 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     net_value_settlement_currency,
     net_value_nis,
     trade_currency,
+    settlement_currency,
     trade_commission_value_trade_currency,
     management_fees_value_trade_currency,
     israe_tax_value,
@@ -76,14 +75,7 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     AND bank_number = ANY($bankNumbers!)
     AND branch_number = ANY($branchNumbers!)
     AND account_number = ANY($accountNumbers!)
-    AND (
-      trade_date BETWEEN $fromDate! AND $toDate!
-      OR value_date BETWEEN $fromDate! AND $toDate!
-      OR settlement_date BETWEEN $fromDate! AND $toDate!
-      OR payment_date BETWEEN $fromDate! AND $toDate!
-    );`;
-
-const MS_PER_DAY = 86_400_000;
+    AND value_date = ANY($valueDates!);`;
 
 @Injectable({
   scope: Scope.Operation,
@@ -162,12 +154,12 @@ export class ForeignSecuritiesProvider {
       return new Map();
     }
 
-    const dates = transactions.flatMap(transaction =>
-      [transaction.event_date, transaction.debit_date_override ?? transaction.debit_date]
-        .filter((date): date is Date => date != null)
-        .map(date => date.getTime()),
-    );
-    if (dates.length === 0) {
+    // An execution settles on the day its cash leg is debited, so those are the only days
+    // worth fetching. A transaction with no debit date can never pair up.
+    const valueDates = transactions
+      .map(transaction => transaction.debit_date_override ?? transaction.debit_date)
+      .filter((date): date is Date => date != null);
+    if (valueDates.length === 0) {
       return new Map();
     }
 
@@ -178,8 +170,7 @@ export class ForeignSecuritiesProvider {
         bankNumbers: [...new Set(tuples.map(tuple => tuple.bankNumber))],
         branchNumbers: [...new Set(tuples.map(tuple => tuple.branchNumber))],
         accountNumbers: [...new Set(tuples.map(tuple => tuple.accountNumber))],
-        fromDate: new Date(Math.min(...dates) - DEFAULT_DATE_WINDOW_DAYS * MS_PER_DAY),
-        toDate: new Date(Math.max(...dates) + DEFAULT_DATE_WINDOW_DAYS * MS_PER_DAY),
+        valueDates,
       },
       this.db,
     );

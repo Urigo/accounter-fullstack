@@ -49,11 +49,14 @@ type StubTransaction = {
   id: string;
   source_description: string | null;
   amount?: string;
-  event_date?: Date;
+  currency?: string;
   debit_date?: Date | null;
   debit_date_override?: Date | null;
   account_id?: string;
 };
+
+/** The day the fixtures settle on: execution value date and transaction debit date alike. */
+const VALUE_DATE = '2024-03-12';
 
 /**
  * The provider reads only the identity, description, account and date/amount fields off each
@@ -64,12 +67,13 @@ type StubTransaction = {
 function createStubTransactionsProvider(transactions: StubTransaction[]): TransactionsProvider {
   return {
     transactionsByChargeIDLoader: {
-      load: (_chargeId: string) =>
+      load: (chargeId: string) =>
         Promise.resolve(
           transactions.map(transaction => ({
+            charge_id: chargeId,
             amount: '-1000.00',
-            event_date: new Date('2024-03-10T00:00:00'),
-            debit_date: null,
+            currency: 'USD',
+            debit_date: new Date(`${VALUE_DATE}T00:00:00`),
             debit_date_override: null,
             account_id: ACCOUNT_ID,
             ...transaction,
@@ -156,6 +160,7 @@ type ExecutionFixture = {
   accountNumber?: number;
   security: string;
   tradeDate?: string;
+  valueDate?: string | null;
   tradeType?: string;
   netValueTradeCurrency?: string;
 };
@@ -167,6 +172,7 @@ async function insertExecution({
   accountNumber = ACCOUNT_NUMBER,
   security,
   tradeDate = '2024-03-10',
+  valueDate = VALUE_DATE,
   tradeType = 'קניה',
   netValueTradeCurrency = '1000.00',
 }: ExecutionFixture) {
@@ -174,9 +180,9 @@ async function insertExecution({
   // the two agree (an invariant the scraper's zod schema enforces).
   await pool.query(
     `INSERT INTO accounter_schema.poalim_securities_transactions (
-       owner_id, bank_number, branch_number, account_number, security, trade_date,
+       owner_id, bank_number, branch_number, account_number, security, trade_date, value_date,
        trade_type, transaction_type, nv, trade_price, net_value_trade_currency, trade_currency
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $7, 10, 100, $8, 'דולר ארה"ב')`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, 10, 100, $9, 'דולר ארה"ב')`,
     [
       ownerId,
       BANK_NUMBER,
@@ -184,6 +190,7 @@ async function insertExecution({
       accountNumber,
       security,
       tradeDate,
+      valueDate,
       tradeType,
       netValueTradeCurrency,
     ],
@@ -425,9 +432,9 @@ describe('getChargeSecurities — matched executions', () => {
     expect(securities[0].executions).toEqual([]);
   });
 
-  it('excludes an execution far outside the transaction date window', async () => {
+  it('excludes an execution that settles on another day', async () => {
     await insertSecurity({ securityKey: '5129523' });
-    await insertExecution({ security: '5129523', tradeDate: '2024-01-05' });
+    await insertExecution({ security: '5129523', valueDate: '2024-01-05' });
     const provider = createProvider([
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);

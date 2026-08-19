@@ -1,32 +1,34 @@
+import { Currency, SecurityTradeType } from '../../../shared/enums.js';
+import { formatCurrency } from '../../../shared/helpers/amount.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
+import { toSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
  * `accounter_schema.poalim_securities_transactions` carries no link to
  * `accounter_schema.transactions` — the scrape has no per-execution id and the bank never
- * cross-references the cash leg. Pairing is therefore derived, on three axes:
+ * cross-references the cash leg. Pairing is therefore derived, from the two facts both sides
+ * report about the same event:
  *
- * 1. the security key the transaction description carries (the caller already grouped by it),
- * 2. the Poalim account tuple (bank/branch/account) behind the transaction's `account_id`,
- * 3. a date within a few days of the transaction, **and** a matching amount.
+ * 1. the execution settles on the day the account is debited or credited
+ *    (`value_date` = the transaction's effective debit date), and
+ * 2. the execution's net value *in the transaction's currency* is the amount that moved,
+ *    with the direction the trade type implies.
  *
- * The amount is what makes this safe: a security can be traded several times on the same day,
- * so date alone would attach every one of them to every cash movement. A candidate that falls
- * in the window but matches no amount is dropped rather than shown as a maybe.
+ * Both are exact. Amounts come out of Postgres `numeric` as decimal strings and both sides
+ * report the same figure, so there is nothing for a tolerance to absorb — a near-miss is a
+ * different event, not a rounding difference. The account tuple is required on top: the same
+ * security trading in two of a tenant's portfolios would otherwise cross-match.
+ *
+ * Pairing is one-to-one and greedy: a security can be executed several times on one day for
+ * the same amount, and each execution belongs to exactly one cash movement.
  */
-
-/** How far apart an execution date and a transaction date may be and still pair up. */
-export const DEFAULT_DATE_WINDOW_DAYS = 5;
-
-/**
- * Absolute tolerance on the amount compare. The values come out of Postgres `numeric` as
- * decimal strings, so this only absorbs the bank's own rounding, not float drift.
- */
-export const DEFAULT_AMOUNT_TOLERANCE = 0.01;
 
 export type MatchableTransaction = {
   id: string;
+  charge_id: string;
   amount: string;
-  event_date: Date;
+  /** The raw column value; `accounter_schema.currency` is a string union, not the enum. */
+  currency: string;
   debit_date: Date | null;
   debit_date_override: Date | null;
   account_id: string;
@@ -40,8 +42,9 @@ export type MatchableExecution = {
   account_number: number;
   trade_date: Date;
   value_date: Date | null;
-  settlement_date: Date | null;
-  payment_date: Date | null;
+  trade_type: string;
+  trade_currency: string | null;
+  settlement_currency: string | null;
   net_value_trade_currency: string | null;
   net_value_settlement_currency: string | null;
   net_value_nis: string | null;
@@ -54,70 +57,71 @@ export type AccountTuple = {
   accountNumber: number;
 };
 
-export type MatchOptions = {
-  dateWindowDays?: number;
-  amountTolerance?: number;
+/**
+ * Which way cash moves for each kind of execution. `null` is "the bank reports no cash
+ * direction for this action" — those rows are matched on date, amount and account alone
+ * rather than being force-fitted to a sign the source never implies.
+ */
+const CASH_DIRECTION: Record<SecurityTradeType, -1 | 1 | null> = {
+  [SecurityTradeType.Buy]: -1,
+  [SecurityTradeType.Sell]: 1,
+  [SecurityTradeType.DividendPayment]: 1,
+  [SecurityTradeType.InterestPayment]: 1,
+  [SecurityTradeType.Redemption]: 1,
+  // Security movements, not cash: a distribution or a deposit transfer has no cash leg of its
+  // own, and the two-sided variants settle between accounts rather than against the balance.
+  [SecurityTradeType.StockDistribution]: null,
+  [SecurityTradeType.TransferIn]: null,
+  [SecurityTradeType.TransferOut]: null,
+  [SecurityTradeType.TransferInTwoSided]: null,
+  [SecurityTradeType.TransferOutTwoSided]: null,
 };
 
-const MS_PER_DAY = 86_400_000;
+/** The transaction's effective debit date — an override wins, as everywhere else. */
+function effectiveDebitDate(transaction: MatchableTransaction): Date | null {
+  return transaction.debit_date_override ?? transaction.debit_date;
+}
 
 /**
  * Both sides are calendar dates stored as `DATE` and parsed back to *local* midnight, so
- * subtracting the raw timestamps drifts by an hour across a DST boundary. Going through the
- * timeless string and re-reading it as UTC keeps the day count exact.
+ * comparing the raw timestamps drifts across a DST boundary. The timeless string is the day.
  */
-function toDayNumber(date: Date): number {
-  return Date.parse(`${dateToTimelessDateString(date)}T00:00:00Z`) / MS_PER_DAY;
-}
-
-function withinDays(a: Date, b: Date, windowDays: number): boolean {
-  return Math.abs(toDayNumber(a) - toDayNumber(b)) <= windowDays;
-}
-
-/** Sign is direction, which the two sources express differently; compare magnitudes. */
-function amountsMatch(a: string, b: string, tolerance: number): boolean {
-  const left = Math.abs(Number(a));
-  const right = Math.abs(Number(b));
-  if (Number.isNaN(left) || Number.isNaN(right)) {
-    return false;
-  }
-  return Math.abs(left - right) <= tolerance;
-}
-
-function transactionDates(transaction: MatchableTransaction): Date[] {
-  const effectiveDebitDate = transaction.debit_date_override ?? transaction.debit_date;
-  return effectiveDebitDate
-    ? [transaction.event_date, effectiveDebitDate]
-    : [transaction.event_date];
-}
-
-function executionDates(execution: MatchableExecution): Date[] {
-  return [
-    execution.trade_date,
-    execution.value_date,
-    execution.settlement_date,
-    execution.payment_date,
-  ].filter((date): date is Date => date != null);
+function sameDay(a: Date, b: Date): boolean {
+  return dateToTimelessDateString(a) === dateToTimelessDateString(b);
 }
 
 /**
- * The cash leg can be booked in the trade, settlement or reporting currency depending on the
- * action, so all three net values are candidates for the amount compare.
+ * The cash leg is booked in the trade or settlement currency depending on the action, and the
+ * bank reports a NIS figure for everything. Only the column quoted in the transaction's own
+ * currency is comparable — the others are the same value through an exchange rate.
+ *
+ * The feed spells its currencies out in Hebrew; `formatCurrency` knows those labels, and the
+ * nullable form keeps an unrecognized one from throwing mid-match.
  */
-function executionAmounts(execution: MatchableExecution): string[] {
-  return [
-    execution.net_value_trade_currency,
-    execution.net_value_settlement_currency,
-    execution.net_value_nis,
-  ].filter((amount): amount is string => amount != null);
+function executionAmountInCurrency(
+  execution: MatchableExecution,
+  currency: Currency,
+): string | null {
+  // `formatCurrency` reads a missing label as ILS, which would make every unreported
+  // settlement currency look like a shekel column; an absent label means "not reported".
+  const label = (raw: string | null) => (raw?.trim() ? formatCurrency(raw, true) : null);
+
+  if (label(execution.trade_currency) === currency) {
+    return execution.net_value_trade_currency;
+  }
+  if (label(execution.settlement_currency) === currency) {
+    return execution.net_value_settlement_currency;
+  }
+  if (currency === Currency.Ils) {
+    return execution.net_value_nis;
+  }
+  return null;
 }
 
 function matchesTransaction(
   execution: MatchableExecution,
   transaction: MatchableTransaction,
   accountTuple: AccountTuple,
-  dateWindowDays: number,
-  amountTolerance: number,
 ): boolean {
   if (
     execution.bank_number !== accountTuple.bankNumber ||
@@ -127,51 +131,94 @@ function matchesTransaction(
     return false;
   }
 
-  const dateMatches = executionDates(execution).some(executionDate =>
-    transactionDates(transaction).some(transactionDate =>
-      withinDays(executionDate, transactionDate, dateWindowDays),
-    ),
-  );
-  if (!dateMatches) {
+  const debitDate = effectiveDebitDate(transaction);
+  if (!debitDate || !execution.value_date || !sameDay(execution.value_date, debitDate)) {
     return false;
   }
 
-  return executionAmounts(execution).some(amount =>
-    amountsMatch(amount, transaction.amount, amountTolerance),
-  );
+  const currency = formatCurrency(transaction.currency, true);
+  if (!currency) {
+    return false;
+  }
+
+  const executionAmount = executionAmountInCurrency(execution, currency);
+  if (executionAmount == null) {
+    return false;
+  }
+
+  const executionValue = Number(executionAmount);
+  const transactionValue = Number(transaction.amount);
+  if (Number.isNaN(executionValue) || Number.isNaN(transactionValue)) {
+    return false;
+  }
+  if (Math.abs(executionValue) !== Math.abs(transactionValue)) {
+    return false;
+  }
+
+  const direction = CASH_DIRECTION[toSecurityTradeType(execution.trade_type)];
+  if (direction == null || transactionValue === 0) {
+    return true;
+  }
+  return Math.sign(transactionValue) === direction;
 }
 
 /**
- * Pairs the charge's transactions with the ingested executions and returns the matched
- * executions grouped by security key.
+ * The cash movement behind each execution, at most one per side.
  *
  * `accountTuples` maps a transaction's `account_id` to its Poalim identity; transactions whose
  * account is missing from the map (not a bank account, or not yet backfilled) are skipped —
  * without the tuple there is no way to tell one portfolio from another.
+ *
+ * Executions are consumed oldest first so the pairing is stable regardless of row order.
+ */
+export function matchExecutionsToTransactions<
+  TExecution extends MatchableExecution,
+  TTransaction extends MatchableTransaction,
+>(
+  transactions: readonly TTransaction[],
+  executions: readonly TExecution[],
+  accountTuples: ReadonlyMap<string, AccountTuple>,
+): Map<string, TTransaction> {
+  const matches = new Map<string, TTransaction>();
+  const takenTransactionIds = new Set<string>();
+
+  const ordered = [...executions].sort(
+    (a, b) => a.trade_date.getTime() - b.trade_date.getTime() || a.id.localeCompare(b.id),
+  );
+
+  for (const execution of ordered) {
+    const transaction = transactions.find(candidate => {
+      if (takenTransactionIds.has(candidate.id)) {
+        return false;
+      }
+      const accountTuple = accountTuples.get(candidate.account_id);
+      return accountTuple != null && matchesTransaction(execution, candidate, accountTuple);
+    });
+
+    if (transaction) {
+      takenTransactionIds.add(transaction.id);
+      matches.set(execution.id, transaction);
+    }
+  }
+
+  return matches;
+}
+
+/**
+ * The same pairing seen from the charge: the matched executions, grouped by security key.
  */
 export function matchSecurityExecutions<TExecution extends MatchableExecution>(
   transactions: readonly MatchableTransaction[],
   executions: readonly TExecution[],
   accountTuples: ReadonlyMap<string, AccountTuple>,
-  options: MatchOptions = {},
 ): Map<string, TExecution[]> {
-  const dateWindowDays = options.dateWindowDays ?? DEFAULT_DATE_WINDOW_DAYS;
-  const amountTolerance = options.amountTolerance ?? DEFAULT_AMOUNT_TOLERANCE;
+  const matches = matchExecutionsToTransactions(transactions, executions, accountTuples);
 
   const matchedBySecurity = new Map<string, TExecution[]>();
-
   for (const execution of executions) {
-    const matched = transactions.some(transaction => {
-      const accountTuple = accountTuples.get(transaction.account_id);
-      return (
-        accountTuple != null &&
-        matchesTransaction(execution, transaction, accountTuple, dateWindowDays, amountTolerance)
-      );
-    });
-    if (!matched) {
+    if (!matches.has(execution.id)) {
       continue;
     }
-
     const group = matchedBySecurity.get(execution.security);
     if (group) {
       group.push(execution);
