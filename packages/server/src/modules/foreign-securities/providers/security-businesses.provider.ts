@@ -196,9 +196,20 @@ export class SecurityBusinessesProvider {
     this.batchIdentifiersByBusinessIds(businessIds),
   );
 
+  /** The security businesses already created for these ISINs, keyed by ISIN. */
+  public async getSecurityBusinessesByIsins(
+    isins: readonly string[],
+  ): Promise<Map<string, SecurityBusinessRow>> {
+    if (isins.length === 0) {
+      return new Map();
+    }
+    const rows = await getSecurityBusinessesByIsins.run({ isins: [...new Set(isins)] }, this.db);
+    rows.map(row => this.getSecurityBusinessByIdLoader.prime(row.id, row));
+    return new Map(rows.map(row => [row.isin, row]));
+  }
+
   private async getSecurityBusinessByIsin(isin: string): Promise<SecurityBusinessRow | null> {
-    const [row] = await getSecurityBusinessesByIsins.run({ isins: [isin] }, this.db);
-    return row ?? null;
+    return (await this.getSecurityBusinessesByIsins([isin])).get(isin) ?? null;
   }
 
   /**
