@@ -121,6 +121,24 @@ function upstreamData(query: string, authorization?: string): unknown {
       ],
     };
   }
+  if (query.includes('batchUpdateChargesTags')) {
+    return {
+      batchUpdateChargesTags: {
+        __typename: 'BatchUpdateChargesTagsSuccessfulResult',
+        charges: [{ id: 'charge-1', tags: [{ id: 'tag-1', name: 'travel' }] }],
+      },
+    };
+  }
+  if (query.includes('batchUploadDocuments')) {
+    return {
+      batchUploadDocuments: [
+        {
+          __typename: 'UploadDocumentSuccessfulResult',
+          document: { id: 'doc-1', documentType: 'INVOICE' },
+        },
+      ],
+    };
+  }
   throw new Error(`unexpected upstream query: ${query}`);
 }
 
@@ -131,15 +149,27 @@ function upstreamData(query: string, authorization?: string): unknown {
  */
 const forwardedScopes: Array<{ query: string; businessScope?: readonly string[] }> = [];
 
+type UpstreamCall = (
+  request: { query: string },
+  context: { authorization?: string; businessScope?: readonly string[] },
+) => Promise<unknown>;
+
+const record: UpstreamCall = async (request, context) => {
+  forwardedScopes.push({ query: request.query, businessScope: context.businessScope });
+  return upstreamData(request.query, context.authorization);
+};
+
 const fakeUpstreamClient = {
-  query: vi.fn(
+  query: vi.fn(record),
+  mutate: vi.fn(record),
+  // The real signature takes `(request, files, context)`; the files are asserted
+  // in the unit suites, so here the third argument is what matters.
+  mutateMultipart: vi.fn(
     async (
       request: { query: string },
+      _files: unknown,
       context: { authorization?: string; businessScope?: readonly string[] },
-    ) => {
-      forwardedScopes.push({ query: request.query, businessScope: context.businessScope });
-      return upstreamData(request.query, context.authorization);
-    },
+    ) => record(request, context),
   ),
 };
 
@@ -263,6 +293,25 @@ describe('authenticated tool invocation', () => {
     // Discovery leads the list, and the internal smoke tool is not advertised.
     expect(tools[0]).toBe('accounter_list_business_memberships');
     expect(tools).not.toContain('accounter_smoke_ping');
+    // MCP_ENABLE_WRITE_TOOLS is unset here, which is the default a deployment
+    // upgrades into: the write tools must not appear.
+    expect(tools).not.toContain('accounter_update_charges_tags');
+    expect(tools).not.toContain('accounter_upload_documents');
+  });
+
+  it('rejects a write tool as unknown while writes are disabled', async () => {
+    const res = await rpc('tools/call', {
+      params: {
+        name: 'accounter_update_charges_tags',
+        arguments: { chargeIds: ['charge-1'], addTagIds: ['tag-1'] },
+      },
+      token: 'owner-token',
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { error?: { message: string } };
+    // Indistinguishable from a nonexistent tool — a disabled capability must not
+    // announce itself as merely switched off.
+    expect(body.error?.message).toMatch(/Unknown tool/);
   });
 
   it('runs a charges search scoped to the caller and returns structured results', async () => {
@@ -379,5 +428,121 @@ describe('malformed input and error taxonomy', () => {
     });
     const body = (await res.json()) as { error?: { code: number } };
     expect(body.error?.code).toBe(-32700);
+  });
+});
+
+/**
+ * The write tools, on a server started with `MCP_ENABLE_WRITE_TOOLS=1`.
+ *
+ * A second server is spun up rather than flipping the flag on the shared one:
+ * the config is memoized per process, and the default-off case above is exactly
+ * what the rest of this file must keep asserting.
+ */
+describe('write tools with MCP_ENABLE_WRITE_TOOLS=1', () => {
+  let writeServer: Server;
+  let writeBaseUrl: string;
+
+  beforeAll(async () => {
+    vi.stubEnv('MCP_ENABLE_WRITE_TOOLS', '1');
+    const { resetEnvCache } = await import('../config/env.js');
+    resetEnvCache();
+
+    const { createHttpServer } = await import('../server.js');
+    writeServer = createHttpServer();
+    await new Promise<void>(resolve => writeServer.listen(0, '127.0.0.1', resolve));
+    const { port } = writeServer.address() as AddressInfo;
+    writeBaseUrl = `http://127.0.0.1:${port}`;
+  });
+
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) =>
+      writeServer.close(error => (error ? reject(error) : resolve())),
+    );
+    // Restore the default so nothing after this block inherits write access.
+    vi.stubEnv('MCP_ENABLE_WRITE_TOOLS', '0');
+    const { resetEnvCache } = await import('../config/env.js');
+    resetEnvCache();
+  });
+
+  async function writeRpc(method: string, params: unknown, token = 'owner-token') {
+    const res = await fetch(`${writeBaseUrl}/mcp`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    });
+    expect(res.status).toBe(200);
+    return (await res.json()) as {
+      result?: { isError?: boolean; structuredContent?: JsonRecord };
+      error?: { message: string };
+    };
+  }
+
+  it('advertises both write tools, after the read tools', async () => {
+    const res = await fetch(`${writeBaseUrl}/mcp`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer owner-token' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+    const tools = (
+      (await res.json()) as { result: { tools: Array<{ name: string }> } }
+    ).result.tools.map(t => t.name);
+
+    expect(tools).toContain('accounter_update_charges_tags');
+    expect(tools).toContain('accounter_upload_documents');
+    // Reads still lead: a tool that changes data should not be the first thing
+    // the model reaches for.
+    expect(tools.indexOf('accounter_update_charges_tags')).toBeGreaterThan(
+      tools.indexOf('accounter_search_charges'),
+    );
+  });
+
+  it('updates charge tags end to end', async () => {
+    const body = await writeRpc('tools/call', {
+      name: 'accounter_update_charges_tags',
+      arguments: { chargeIds: ['charge-1'], addTagIds: ['tag-1'] },
+    });
+
+    expect(body.result?.isError).toBeUndefined();
+    const structured = body.result?.structuredContent as JsonRecord;
+    expect(structured.ok).toBe(true);
+    expect(structured.action).toBe('update_charges_tags');
+    expect(structured.updatedCount).toBe(1);
+    expect(fakeUpstreamClient.mutate).toHaveBeenCalled();
+    // The write is scoped to the caller's single membership.
+    expect(structured.scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
+  });
+
+  it('uploads a document to an existing charge', async () => {
+    const body = await writeRpc('tools/call', {
+      name: 'accounter_upload_documents',
+      arguments: {
+        chargeId: 'charge-1',
+        documents: [
+          { filename: 'invoice.pdf', mimeType: 'application/pdf', contentBase64: 'aGVsbG8=' },
+        ],
+      },
+    });
+
+    expect(body.result?.isError).toBeUndefined();
+    const structured = body.result?.structuredContent as JsonRecord;
+    expect(structured.ok).toBe(true);
+    expect(structured.uploadedCount).toBe(1);
+    expect(structured.failedCount).toBe(0);
+    expect(structured.isSensitive).toBe(false);
+    expect(fakeUpstreamClient.mutateMultipart).toHaveBeenCalled();
+  });
+
+  it('denies a write to a caller with no memberships', async () => {
+    const body = await writeRpc(
+      'tools/call',
+      {
+        name: 'accounter_update_charges_tags',
+        arguments: { chargeIds: ['charge-1'], addTagIds: ['tag-1'] },
+      },
+      'viewer-token',
+    );
+
+    expect(body.result?.isError).toBe(true);
+    expect((body.result?.structuredContent as JsonRecord).code).toBe('AUTHORIZATION_ERROR');
   });
 });

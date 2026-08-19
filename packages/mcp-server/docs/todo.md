@@ -56,6 +56,26 @@ D3 (`MCP_TOOL_ALLOWLIST`) and D6 (rate-limit keying) are settled — see the clo
 
 Ranked by when they start to hurt, not by size.
 
+### I6. Writes have no idempotency key — **medium (once writes are enabled)**
+
+The first two write tools are in (`accounter_update_charges_tags`, `accounter_upload_documents`,
+behind `MCP_ENABLE_WRITE_TOOLS`, default off). The client deliberately never retries a mutation, so
+the server cannot double-apply one on its own — but a _client_ that retries a call whose result it
+never saw can. Tag updates are naturally idempotent and unaffected; document uploads are not, and
+would produce a duplicate document.
+
+- [ ] Decide whether an idempotency key belongs on the tool input, or on a dedupe check upstream
+      (`batchUploadDocuments` already computes a content hash — see `upload.helper.ts`)
+
+### I7. Accountant-approval degradation is invisible to the connector — **low**
+
+`batchUploadDocuments` calls `degradeChargesAccountantApproval` upstream, so uploading through
+`accounter_upload_documents` silently changes the charge's accountant status. The tool's response
+does not mention it, so the model cannot tell the user what else its call did.
+
+- [ ] Either surface the resulting accountant status in the write result, or say so in the tool
+      description
+
 ### I5. Stable tunnel for local development — **low (friction)**
 
 Production is settled (see the closed list — `https://mcp.accounter.tax`). Local development still
@@ -136,6 +156,11 @@ Recorded so nobody re-discovers them as bugs. Each has a stated condition that w
 Item ids (I1…I5, D1…D6) are kept stable even where the numbering now has gaps, because the other
 docs and PR descriptions reference them.
 
+- **Phase 2 write scope (first tools)** — the write path landed: `mutate`/`mutateMultipart` on the
+  upstream client (each guarded to a single top-level mutation, never retried), a `mutating` tool
+  policy that forces one write-target business and emits an audit line, the `MCP_ENABLE_WRITE_TOOLS`
+  kill-switch (default off, composed with the allowlist), and the tools
+  `accounter_update_charges_tags` and `accounter_upload_documents`. Remaining write gaps are I6/I7.
 - **I1 / D3 — `MCP_TOOL_ALLOWLIST` enforcement** — done in #4104. `isToolAllowed`
   (`src/tools/allowlist.ts`) is applied at the transport boundary: `tools/list` filters advertised
   descriptors and `tools/call` rejects an excluded tool as `Unknown tool`, so the allowlist never

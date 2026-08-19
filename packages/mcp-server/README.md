@@ -30,8 +30,10 @@ operational metrics (request/outcome counters, a latency histogram, auth-failure
 at `GET /metrics`; and OpenTelemetry tracing exported to Grafana Tempo (opt-in), correlated with the
 backend via `traceparent` and `X-Correlation-Id`.
 
-Phase 2 (write scope) is **not** implemented — see
-[Known limitations & phase 2](#known-limitations--phase-2-write-scope).
+Phase 2 (write scope) has landed its first two tools — `accounter_update_charges_tags` and
+`accounter_upload_documents` — behind the `MCP_ENABLE_WRITE_TOOLS` flag, which is **off by
+default**. See [Write tools](#write-tools) for the model, and
+[Known limitations](#known-limitations) for what is still out of scope.
 
 ## Tools
 
@@ -180,16 +182,33 @@ scope, because it _is_ the scope.
   `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
   response also reports once alongside the echoed `scope`.
 
+The two **write** tools below are only exposed when `MCP_ENABLE_WRITE_TOOLS=1`; see
+[Write tools](#write-tools) for the rules they all share.
+
+- **`accounter_update_charges_tags`** — add and/or remove tags across 1–50 charges. Tags are given
+  by id (`addTagIds` / `removeTagIds`), never by name: names are not unique across owners, so
+  resolving them here would mean guessing which of several same-named tags was meant — the model
+  resolves them with `accounter_list_tags` first. Incremental, not a replacement, and removals run
+  before additions so an id in both lists ends up added. Requires `business_owner`/`accountant`.
+- **`accounter_upload_documents`** — attach 1–10 documents to an **existing** charge, given either
+  as `documentUrls` (preferred — the server fetches them, so there is no size limit) or as inline
+  base64 `documents`; exactly one of the two per call. `chargeId` is required (upstream would
+  otherwise create a new charge) and `isSensitive` is pinned to `false`. Each inline file is
+  validated for encoding, MIME type, and size _before_ anything is uploaded. Upstream returns one
+  result per input, so partial failure is reported positionally rather than collapsed. See
+  [Uploading by URL](#uploading-by-url) and
+  [Why inline upload is small](#why-inline-upload-is-small). Requires `business_owner`/`accountant`.
+
 ## Upstream GraphQL client
 
 Tool handlers talk to the Accounter GraphQL server through a single hardened client
 (`src/upstream/graphql-client.ts`): a strict per-request **timeout** with cancellation, **bounded
 retries** for idempotent read failures only (network errors, timeouts, and 5xx — never 4xx
-auth/validation errors or GraphQL-level errors), **header propagation** of the correlation id, the
-caller's `Authorization` bearer token, and the resolved read scope as `x-business-scope`, and
-**sanitized** upstream errors (no stack traces or internal details). Phase 1 is read-only:
-mutations/subscriptions are refused, and there is **no** generic "execute anything" surface — tools
-use typed read-only wrappers via `createReadOperation`.
+auth/validation errors, GraphQL-level errors, or **any write**), **header propagation** of the
+correlation id, the caller's `Authorization` bearer token, and the resolved read scope as
+`x-business-scope`, and **sanitized** upstream errors (no stack traces or internal details). Phase 1
+is read-only: mutations/subscriptions are refused, and there is **no** generic "execute anything"
+surface — tools use typed read-only wrappers via `createReadOperation`.
 
 ## Identity & tenant scope
 
@@ -299,6 +318,16 @@ the `glossary_term_requests`, `glossary_term_misses` and `glossary_mode` label c
 caller looks up is the clearest available read on the vocabulary they arrived with, and
 `missedTerms` is a self-maintaining backlog of glossary entries to write.
 
+The write tools use it too. A write result has none of the shared list-shape fields, so without a
+hook its usage line would record _that_ a write happened and nothing about what it did:
+`accounter_upload_documents` reports `documentSource` (`urls` vs `inline`),
+`requestedDocumentCount`, `uploadedCount` and `failedCount` plus a `document_upload_source` counter,
+and `accounter_update_charges_tags` reports `requestedChargeCount`, `updatedChargeCount`,
+`addedTagCount` and `removedTagCount` — the gap between requested and updated is how a model working
+from stale charge ids becomes visible. This line is the complement to the `audit: true` line each
+write already emits _before_ its handler runs: the audit line names the records, this one says what
+applied. Neither carries document content, filenames, or URLs.
+
 See [`docs/operations-runbook.md`](./docs/operations-runbook.md) §3.1 for the full field reference
 and the `jq` extraction recipes (most-requested terms, missing terms, tool popularity).
 
@@ -386,6 +415,7 @@ process to exit immediately with a clear error. Secrets are supplied via the env
 | `MCP_SERVER_PORT`             | no       | `3100`                   | TCP port the HTTP transport listens on                             |
 | `MCP_ENABLED`                 | no       | `1`                      | Master kill-switch (`1` on / `0` off)                              |
 | `MCP_TOOL_ALLOWLIST`          | no       | `''` (none)              | Comma-separated tool names allowed (empty = least privilege)       |
+| `MCP_ENABLE_WRITE_TOOLS`      | no       | `0`                      | Expose mutating (write) tools (`1` on / `0` off)                   |
 | `AUTH0_JWKS_URL`              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`        |
 | `GRAPHQL_UPSTREAM_TIMEOUT_MS` | no       | `10000`                  | Upstream GraphQL request timeout budget (ms)                       |
 | `MCP_RATE_LIMIT_CONFIG`       | no       | `''` (defaults)          | Optional rate-limit override spec (parsed by the limiter later)    |
@@ -466,23 +496,109 @@ The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mo
 | Tool result code `AUTHORIZATION_ERROR`                                          | The caller lacks a required role, requested a business outside their memberships, or has no memberships. Verify the token's scopes and the server-side `business_users` rows.                         |
 | Tool result code `RATE_LIMIT_ERROR` with `retryAfterMs`                         | Per-`{user, scope, tool}` window exceeded. Back off for `retryAfterMs`, or tune `MCP_RATE_LIMIT_CONFIG`.                                                                                              |
 
-## Known limitations & phase 2 (write scope)
+## Write tools
 
-Phase 1 is intentionally **read-only** and single-purpose:
+Two mutating tools are available, and both are **hidden unless `MCP_ENABLE_WRITE_TOOLS=1`**:
 
-- Only the read-only tools above are exposed; there is no generic "run any query" surface and **no
-  mutations/subscriptions** (the upstream client refuses them).
+| Tool                            | What it does                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `accounter_update_charges_tags` | Adds and/or removes tags across one or more charges (tag **ids**, not names) |
+| `accounter_upload_documents`    | Attaches documents — by URL or inline base64 — to an **existing** charge     |
+
+The default is off so that upgrading a running deployment never silently grants the model write
+access — an operator opts in per environment. `MCP_TOOL_ALLOWLIST` composes on top and can narrow
+which write tools are exposed, but naming one in the allowlist can never turn writes on. A tool
+excluded by either control is reported as `Unknown tool`, exactly like a nonexistent one, so neither
+control announces the capability it is hiding.
+
+Four properties hold for every mutating tool, enforced centrally rather than per tool:
+
+- **A separate, guarded client path.** `UpstreamGraphQLClient.query()` still refuses anything that
+  is not a read; `mutate()` / `mutateMultipart()` refuse anything that is not a _single_ top-level
+  mutation. Neither can send the other's traffic.
+- **No retries.** A mutation is not idempotent, so a timed-out or failed write surfaces to the
+  caller rather than being re-sent and possibly double-applied.
+- **A single write target.** A read may span every membership; a write must resolve to exactly one
+  business. An ambiguous scope is refused with an actionable message (pass `memberBusinessId`)
+  rather than resolved by picking one.
+- **An audit line per call**, emitted _before_ the handler runs, carrying the tool, user,
+  correlation id, write-target business, and affected id counts — never file contents, filenames, or
+  tokens.
+
+Two tool-specific rules worth knowing:
+
+- `accounter_upload_documents` requires `chargeId`. The upstream mutation _creates a new charge_
+  when it is omitted, which is not a side effect the model should trigger by leaving a field blank.
+  `isSensitive` is pinned to `false` and is deliberately absent from the input schema — the upstream
+  name is misleading, since `getOcrData` returns early with `documentType: UNPROCESSED` whenever it
+  is set, so `true` does not so much mark a document sensitive as skip OCR entirely and land it with
+  no amount, date, counterparty, or serial.
+- `accounter_update_charges_tags` is incremental, not a replacement: tags not named in
+  `removeTagIds` stay. Removals are applied before additions, so a tag id passed in _both_ lists
+  ends up added.
+
+### Uploading by URL
+
+`documentUrls` is the path to reach for. The **server** fetches each URL and ingests the result, so
+the bytes never pass through the model — which is what every limit in the next section is working
+around. There is no size cap on this branch. Google Drive share links work (they are resolved
+through the Drive API, because `/file/d/<id>/view` returns an HTML page rather than the file), as
+does any direct download link.
+
+A server that fetches caller-supplied URLs is an SSRF primitive, so
+`packages/server/src/modules/documents/helpers/fetch-remote-document.helper.ts` guards it: private,
+loopback, link-local (the cloud metadata address included) and CGNAT ranges are refused,
+`localhost`/`.local` are refused by name, non-`http(s)` schemes are refused, and redirects are
+followed **manually** so every hop is re-validated — checking only the submitted URL is how this
+guard is usually bypassed, since the redirect target is attacker-controlled too. Bytes, redirects,
+and wall-clock time are capped, and the content type is read from the _response_, never from the
+URL's extension: a `.pdf` link that answers with `text/html` is a login page, and storing it would
+file a web page as a financial record.
+
+The audit line records `documentUrlsCount` only, never the URLs themselves — a signed download link
+carries an access token.
+
+### Why inline upload is small
+
+`accounter_upload_documents` caps a document at **256KB** and a call at **512KB**, decoded. That is
+far below what the upstream mutation could take, and the reason is the transport, not the backend.
+
+Inline base64 makes the _model_ the transport: it has to emit the entire encoded file as tool
+arguments. Base64 tokenizes at roughly 3 characters per token, so a 277KB PDF costs on the order of
+100k output tokens — past a single message's budget. Three ceilings apply, and the model's is the
+tightest:
+
+| Ceiling                                           | Effective limit                              |
+| ------------------------------------------------- | -------------------------------------------- |
+| Model's per-message output budget                 | a few tens of KB of file                     |
+| `MAX_MCP_BODY_BYTES` (1MB JSON-RPC body)          | ~700KB decoded, after base64's 4/3 expansion |
+| `MAX_DOCUMENT_BYTES` / `MAX_TOTAL_DOCUMENT_BYTES` | 256KB / 512KB                                |
+
+An earlier revision advertised 5MB per file, which the body cap made unreachable — the request died
+as a 413 before the tool's own check ran. `tools/__tests__/upload-limits.test.ts` now asserts the
+caps against `MAX_MCP_BODY_BYTES` so the two cannot drift apart again.
+
+Over-size errors deliberately name the alternative rather than just reporting a number. Without
+that, the model's natural move is to downscale or re-encode the file until it fits — which for a
+scanned receipt means archiving a degraded copy of a legal financial record. The alternative is
+`documentUrls`: put the file somewhere fetchable and pass the link, and none of these ceilings
+apply.
+
+## Known limitations
+
+- There is no generic "run any query" surface: every capability is a curated tool with a strict
+  input schema, and the upstream client's read and write paths are separately guarded.
 - Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
   payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
-  rather than streamed in full.
+  rather than streamed in full. Inline uploads are bounded too: ≤ 10 documents, 256KB per file and
+  512KB per call once decoded, against a MIME allowlist. Inline base64 is only viable for small
+  files at all — see [Why inline upload is small](#why-inline-upload-is-small).
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
 - Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
   remain in-process (`GET /metrics`) and are not yet exported over OTLP.
-
-**Phase 2 (write scope)** — not implemented — will add mutating tools (e.g. tagging/updating
-charges) behind: per-tool write policies and role checks reusing the server's authorization model;
-the server's accountant-approval degradation on charge-mutating operations; write-target business
-resolution (a single owning business per write, versus phase-1 multi-business read scope); and
-idempotency/audit for writes. Until then, all tools are safe to expose to read-only assistant
-workflows.
+- Writes carry **no idempotency key**, so a client that retries a call it never saw the result of
+  can duplicate an upload. The tools themselves never retry (see above), and tag updates are
+  naturally idempotent, but document uploads are not.
+- The server's **accountant-approval degradation** runs upstream inside `batchUploadDocuments`; the
+  connector does not model it, so it is not reflected in the tool's response.

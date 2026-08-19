@@ -38,15 +38,21 @@ Baseline latency targets and the load profile are captured by
 Tools contribute low-cardinality label counters through their `observe` hook. These answer product
 questions about how the connector is actually being used, not operational ones:
 
-| Counter                  | Label                           | Answers                                                        |
-| ------------------------ | ------------------------------- | -------------------------------------------------------------- |
-| `glossary_term_requests` | canonical glossary term         | Which terminology callers look up most (≤62 labels).           |
-| `glossary_term_misses`   | folded, 40-char-clipped request | Terms callers asked for that the glossary does not define yet. |
-| `glossary_mode`          | `index` \| `full`               | Browse-the-index-first vs. direct lookup.                      |
+| Counter                  | Label                           | Answers                                                         |
+| ------------------------ | ------------------------------- | --------------------------------------------------------------- |
+| `glossary_term_requests` | canonical glossary term         | Which terminology callers look up most (≤62 labels).            |
+| `glossary_term_misses`   | folded, 40-char-clipped request | Terms callers asked for that the glossary does not define yet.  |
+| `glossary_mode`          | `index` \| `full`               | Browse-the-index-first vs. direct lookup.                       |
+| `document_upload_source` | `urls` \| `inline`              | Whether uploads arrive as links or as base64 through the model. |
 
 ```bash
 curl -s "$MCP_BASE_URL/metrics" | jq '.labeledTotals'
 ```
+
+`document_upload_source` is the one to watch after a change to the upload tool's description:
+`inline` is capped at 256KB per file because that content rides in the model's own output, so a
+rising `inline` share means callers are still hitting a ceiling that `documentUrls` removes
+entirely.
 
 Two caveats before you read anything into these numbers:
 
@@ -133,6 +139,19 @@ Note that terms pulled in by `topics` are deliberately **not** counted as reques
 `topics: ["charge"]` call returns every charge entry, and crediting each one would turn
 "most-requested term" into a measure of topic breadth.
 
+Write-tool fields. Every write also emits a **separate** `mutating tool invoked` audit line
+(`audit: true`) _before_ its handler runs, carrying the affected record ids; the fields below are
+the complement to it, recorded _after_ the call and saying what actually applied. Neither line ever
+carries document content, filenames, or URLs — a signed download link carries an access token:
+
+| Field                                         | Tool                            | Meaning                                                                                  |
+| --------------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `documentSource`                              | `accounter_upload_documents`    | `urls` (server fetched them) or `inline` (base64 through the model).                     |
+| `requestedDocumentCount`                      | `accounter_upload_documents`    | Documents named in the call.                                                             |
+| `uploadedCount` / `failedCount`               | `accounter_upload_documents`    | Per-file outcome — upstream reports success per document, so a batch can partially fail. |
+| `requestedChargeCount` / `updatedChargeCount` | `accounter_update_charges_tags` | Charges asked for vs. actually updated. A gap means ids that upstream could not resolve. |
+| `addedTagCount` / `removedTagCount`           | `accounter_update_charges_tags` | Size of each direction of the edit.                                                      |
+
 Extraction recipes (pipe your platform's log stream in; `jq -c` on a file works the same):
 
 ```bash
@@ -147,6 +166,15 @@ jq -r 'select(.event=="tool_call") | .missedTerms // [] | .[]' logs.jsonl \
 # Which tool a caller reached for after a glossary lookup, in order
 jq -r 'select(.event=="tool_call") | [.userId, .tool, (.matchedTerms // [] | join(","))] | @tsv' \
   logs.jsonl
+
+# Uploads still taking the size-capped base64 path, by caller
+jq -r 'select(.event=="tool_call" and .documentSource=="inline") | .userId' logs.jsonl \
+  | sort | uniq -c | sort -rn
+
+# Tag updates that silently skipped charges (asked > updated)
+jq -r 'select(.event=="tool_call" and .updatedChargeCount != null
+  and .updatedChargeCount < .requestedChargeCount)
+  | [.correlationId, .requestedChargeCount, .updatedChargeCount] | @tsv' logs.jsonl
 
 # Tool popularity and error rate
 jq -r 'select(.event=="tool_call") | "\(.tool)\t\(.outcome)"' logs.jsonl \

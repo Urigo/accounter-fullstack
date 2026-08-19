@@ -46,6 +46,8 @@ export interface EvaluatePolicyParams {
  *   otherwise the request is denied (not silently dropped).
  * - When the tool requires business scope, the resolved scope must be
  *   non-empty (a caller with no memberships cannot use it).
+ * - When the tool is mutating, the resolved scope must name exactly one
+ *   business — a write needs a single, unambiguous target.
  */
 export function evaluateToolPolicy(params: EvaluatePolicyParams): PolicyDecision {
   const { policy, auth, requestedMemberBusinessIds } = params;
@@ -61,7 +63,18 @@ export function evaluateToolPolicy(params: EvaluatePolicyParams): PolicyDecision
     return deny('No authorized business scope for this request');
   }
 
-  // 3. Role gate (any-of) evaluated against membership roleIds in the resolved scope.
+  // 3. Single write target. A read may legitimately span every membership, but
+  // a write must land in one known business, so an ambiguous scope is refused
+  // rather than resolved by picking one. The message names the count so the
+  // caller knows to narrow instead of retrying the same call.
+  if (policy.mutating && readScope.memberBusinessIds.length !== 1) {
+    return deny(
+      `This tool writes data and must target exactly one business, but the request resolved to ${readScope.memberBusinessIds.length}. ` +
+        'Pass a single `memberBusinessId`; use accounter_list_business_memberships to choose one.',
+    );
+  }
+
+  // 4. Role gate (any-of) evaluated against membership roleIds in the resolved scope.
   if (policy.requiredRoles && policy.requiredRoles.length > 0) {
     const inScope = new Set(readScope.memberBusinessIds);
     const held = new Set(

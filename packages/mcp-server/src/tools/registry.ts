@@ -25,6 +25,17 @@ export interface ToolAuthPolicy {
   requiresBusinessScope: boolean;
   /** Sensitivity of the data the tool returns. */
   dataClassification: DataClassification;
+  /**
+   * The tool performs an upstream mutation. This is the flag the whole write
+   * path hangs off, and it carries three consequences:
+   *  - the tool is hidden and undispatchable unless `MCP_ENABLE_WRITE_TOOLS=1`
+   *    (see `allowlist.ts` / `mcp/handler.ts`);
+   *  - its resolved scope must name exactly ONE business — a write needs an
+   *    unambiguous target, unlike a read that may span memberships (see
+   *    `policy.ts`);
+   *  - each call is audit-logged before the handler runs (see `execute.ts`).
+   */
+  mutating?: boolean;
 }
 
 /** Context passed to a tool handler at execution time. */

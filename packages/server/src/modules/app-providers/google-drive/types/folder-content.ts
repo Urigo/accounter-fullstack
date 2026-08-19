@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const fileSchema = z.object({
+export const fileSchema = z.object({
   kind: z.string(),
   mimeType: z.string(),
   id: z.string(),

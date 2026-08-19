@@ -3,10 +3,12 @@ import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
 import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
+import { uploadDocumentsTool } from './documents-write.js';
 import { getLedgerRecordsTool } from './ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
+import { updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
 
@@ -44,3 +46,10 @@ toolRegistry.register(listTaxCategoriesTool);
 // The full business directory sits with the other reference-data lookups.
 toolRegistry.register(listBusinessesTool);
 toolRegistry.register(balanceReportTool);
+
+// Write tools last. Registration order is the order the model sees, and reads
+// are what it should reach for first — a tool that changes data should not be
+// the first thing in the list. These are also hidden entirely unless
+// `MCP_ENABLE_WRITE_TOOLS=1`, so on a default deployment the list ends above.
+toolRegistry.register(updateChargesTagsTool);
+toolRegistry.register(uploadDocumentsTool);

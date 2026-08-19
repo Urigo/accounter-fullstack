@@ -17,6 +17,9 @@ describe('parseEnv — valid configuration', () => {
     expect(config.server.port).toBe(3100);
     expect(config.server.enabled).toBe(true);
     expect(config.server.toolAllowlist).toEqual([]);
+    // Writes are off unless an operator opts in, so upgrading a running
+    // deployment never silently grants the model write access.
+    expect(config.server.writeToolsEnabled).toBe(false);
     expect(config.auth0.issuerUrl).toBe('https://tenant.auth0.com/');
     expect(config.auth0.audience).toBe('https://api.accounter.example');
     expect(config.upstream.graphqlUrl).toBe('http://localhost:4000/graphql');
@@ -226,5 +229,28 @@ describe('loadEnv — fail-fast startup', () => {
     expect(config.server.port).toBe(3100);
     expect(config.upstream.graphqlUrl).toBe('http://localhost:4000/graphql');
     expect(exit).not.toHaveBeenCalled();
+  });
+});
+
+describe('parseEnv — MCP_ENABLE_WRITE_TOOLS', () => {
+  it('enables write tools only for the literal "1"', () => {
+    expect(parseEnv({ ...validEnv, MCP_ENABLE_WRITE_TOOLS: '1' }).server.writeToolsEnabled).toBe(
+      true,
+    );
+    expect(parseEnv({ ...validEnv, MCP_ENABLE_WRITE_TOOLS: '0' }).server.writeToolsEnabled).toBe(
+      false,
+    );
+  });
+
+  it('treats an empty value as unset (writes off)', () => {
+    expect(parseEnv({ ...validEnv, MCP_ENABLE_WRITE_TOOLS: '' }).server.writeToolsEnabled).toBe(
+      false,
+    );
+  });
+
+  it.each(['true', 'yes', 'on', '2'])('rejects the ambiguous value %s', value => {
+    // A value like "true" must fail loudly rather than being read as off — an
+    // operator who meant to enable writes should not be silently ignored.
+    expect(() => parseEnv({ ...validEnv, MCP_ENABLE_WRITE_TOOLS: value })).toThrow();
   });
 });

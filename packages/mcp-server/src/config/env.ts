@@ -20,6 +20,7 @@ import zod from 'zod';
  * | MCP_SERVER_PORT             | no       | 3100                     | TCP port the HTTP transport listens on.                           |
  * | MCP_ENABLED                 | no       | 1                        | Master kill-switch (`1` on / `0` off).                            |
  * | MCP_TOOL_ALLOWLIST          | no       | '' (all tools)           | Comma-separated allowed tool names; empty ⇒ no restriction.       |
+ * | MCP_ENABLE_WRITE_TOOLS      | no       | 0                        | Expose mutating (write) tools (`1` on / `0` off).                 |
  * | AUTH0_JWKS_URL              | no       | derived from issuer      | JWKS endpoint; defaults to `<issuer>/.well-known/jwks.json`.      |
  * | GRAPHQL_UPSTREAM_TIMEOUT_MS | no       | 10000                    | Upstream GraphQL request timeout budget in milliseconds.          |
  * | MCP_RATE_LIMIT_CONFIG       | no       | '' (defaults applied)    | Optional rate-limit override spec (parsed by the limiter later).  |
@@ -72,6 +73,12 @@ export const envSchema = zod
     // `tools/allowlist.ts`. When narrowing, keep `accounter_list_business_memberships`
     // in the set — it is the discovery entry point for business scoping.
     MCP_TOOL_ALLOWLIST: emptyStringAsUndefined(zod.string().optional().default('')),
+    // Master switch for mutating tools. Defaults to OFF so upgrading a running
+    // deployment never silently grants the model write access: an operator has
+    // to opt in per environment. Orthogonal to (and evaluated together with)
+    // MCP_TOOL_ALLOWLIST — turning writes on still respects a narrowed allowlist,
+    // and a write tool named in the allowlist stays hidden while this is off.
+    MCP_ENABLE_WRITE_TOOLS: booleanFlag('0'),
     AUTH0_JWKS_URL: emptyStringAsUndefined(
       zod.url({ message: 'AUTH0_JWKS_URL must be a valid URL' }).optional(),
     ),
@@ -160,6 +167,8 @@ export interface AppConfig {
     enabled: boolean;
     /** Parsed tool allowlist; empty array means "no restriction" (all tools). */
     toolAllowlist: readonly string[];
+    /** Whether mutating (write) tools are exposed at all. Off by default. */
+    writeToolsEnabled: boolean;
   };
   auth0: {
     issuerUrl: string;
@@ -237,6 +246,7 @@ export function parseEnv(source: NodeJS.ProcessEnv): AppConfig {
       toolAllowlist: raw.MCP_TOOL_ALLOWLIST.split(',')
         .map(name => name.trim())
         .filter(Boolean),
+      writeToolsEnabled: raw.MCP_ENABLE_WRITE_TOOLS === '1',
     },
     auth0: {
       issuerUrl: ensureTrailingSlash(raw.AUTH0_ISSUER_URL),

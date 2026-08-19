@@ -51,8 +51,31 @@ function authContext(): McpAuthContext {
   ]);
 }
 
+/**
+ * The document a tool sent, whether it went out as JSON (reads, and writes with
+ * no files) or as a multipart form (writes carrying files, where the operation
+ * travels in the `operations` part). Both encodings must be understood here, or
+ * the write tools would silently skip the header assertions below.
+ */
+function queryFromBody(body: BodyInit | null | undefined): string {
+  if (typeof body === 'string') {
+    return (JSON.parse(body) as { query: string }).query;
+  }
+  const operations = (body as FormData).get('operations');
+  return (JSON.parse(String(operations)) as { query: string }).query;
+}
+
 /** Upstream payloads keyed by the operation each tool issues. */
 function dataFor(query: string): unknown {
+  if (query.includes('batchUploadDocuments')) return { batchUploadDocuments: [] };
+  if (query.includes('batchUpdateChargesTags')) {
+    return {
+      batchUpdateChargesTags: {
+        __typename: 'BatchUpdateChargesTagsSuccessfulResult',
+        charges: [],
+      },
+    };
+  }
   if (query.includes('allCharges')) {
     return {
       allCharges: {
@@ -75,11 +98,10 @@ function capturingClient() {
   const headersSeen: Array<Record<string, string>> = [];
   const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
     headersSeen.push(init.headers as Record<string, string>);
-    const body = JSON.parse(init.body as string) as { query: string };
     return {
       ok: true,
       status: 200,
-      json: async () => ({ data: dataFor(body.query) }),
+      json: async () => ({ data: dataFor(queryFromBody(init.body)) }),
     } as unknown as Response;
   });
   const client = new UpstreamGraphQLClient({
@@ -90,12 +112,29 @@ function capturingClient() {
   return { client, headersSeen };
 }
 
-/** Minimal valid arguments per tool; everything else is optional. */
+/**
+ * Minimal valid arguments per tool; everything else is optional.
+ *
+ * A `memberBusinessId` here is not just a filter — it is also what the expected
+ * scope is derived from below, so narrowing a tool's args narrows its assertion
+ * automatically. The write tools must pass one: a mutating policy refuses an
+ * ambiguous target, and this fixture's caller belongs to two businesses.
+ */
 const ARGS_BY_TOOL: Record<string, unknown> = {
   accounter_balance_report: { memberBusinessId: B1, fromDate: '2026-01-01', toDate: '2026-03-01' },
   accounter_get_charges: { chargeIds: ['c1'] },
   accounter_get_transactions: { transactionIds: ['t1'] },
   accounter_get_documents: { documentIds: ['d1'] },
+  accounter_update_charges_tags: {
+    memberBusinessId: B1,
+    chargeIds: ['c1'],
+    addTagIds: ['tag-1'],
+  },
+  accounter_upload_documents: {
+    memberBusinessId: B1,
+    chargeId: 'c1',
+    documents: [{ filename: 'a.pdf', mimeType: 'application/pdf', contentBase64: 'eA==' }],
+  },
 };
 
 describe('registry-wide business-scope forwarding', () => {
@@ -109,9 +148,10 @@ describe('registry-wide business-scope forwarding', () => {
     '%s forwards the resolved scope and echoes it',
     async (name, tool) => {
       const { client, headersSeen } = capturingClient();
+      const args = ARGS_BY_TOOL[name] ?? {};
       const result = await executeRegisteredTool({
         tool,
-        rawArgs: ARGS_BY_TOOL[name] ?? {},
+        rawArgs: args,
         auth: authContext(),
         correlationId: 'c',
         client,
@@ -129,8 +169,10 @@ describe('registry-wide business-scope forwarding', () => {
       }
 
       expect(headersSeen.length, `${name} should call upstream`).toBeGreaterThan(0);
-      // The balance report narrows to its single memberBusinessId; the rest keep both.
-      const expectedScope = name === 'accounter_balance_report' ? [B1] : [B1, B2];
+      // A tool given an explicit `memberBusinessId` narrows to it; the rest keep
+      // the caller's full membership set.
+      const requested = (args as { memberBusinessId?: string }).memberBusinessId;
+      const expectedScope = requested ? [requested] : [B1, B2];
       for (const headers of headersSeen) {
         expect(headers[BUSINESS_SCOPE_HEADER]).toBe(expectedScope.join(','));
       }

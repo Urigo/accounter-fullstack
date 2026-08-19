@@ -58,3 +58,29 @@ export const SINGLE_BUSINESS_SCOPE_DESCRIPTION_SUFFIX =
   'Scope: this covers exactly one business — pass its id as the required `memberBusinessId`. The ' +
   'response echoes the effective `scope.memberBusinessIds` alongside it. If you belong to more than ' +
   'one business, call `accounter_list_business_memberships` first to choose.';
+
+/**
+ * Write-target input for **mutating** tools.
+ *
+ * Optional rather than required, unlike {@link memberBusinessIdsInput}'s
+ * single-business sibling above: a caller who belongs to exactly one business
+ * already resolves to an unambiguous target, so demanding the id would be
+ * ceremony. When they belong to several, the mutating-policy rule in `policy.ts`
+ * refuses the call and says to pass this field — so the ambiguous case fails
+ * loudly instead of the tool guessing a target.
+ */
+export const writeTargetBusinessIdInput = z
+  .string()
+  .min(1)
+  .optional()
+  .describe(
+    'The business to write to — required only if you are a member of more than one. Must be one of ' +
+      'your memberships. Use accounter_list_business_memberships to discover ids.',
+  );
+
+/** Trailing clause for mutating tools, stating the write-target rule. */
+export const WRITE_SCOPE_DESCRIPTION_SUFFIX =
+  'This tool CHANGES data. Scope: a write targets exactly one business — if you are a member of ' +
+  'several, pass `memberBusinessId` (call `accounter_list_business_memberships` to choose), ' +
+  'otherwise your only membership is used. The response echoes the effective ' +
+  '`scope.memberBusinessIds`.';

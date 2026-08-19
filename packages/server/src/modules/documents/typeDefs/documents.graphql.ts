@@ -51,6 +51,14 @@ export default gql`
     ): [UploadDocumentResult!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " Attach documents to a charge by fetching them from URLs server-side, so the bytes never travel through the caller. Google Drive share links are resolved through the Drive API; every other URL must answer with a PDF or an image. Results are positional — one entry per input URL, so a partial failure names the URL that failed. "
+    batchUploadDocumentsFromUrls(
+      urls: [String!]!
+      isSensitive: Boolean
+      chargeId: UUID
+    ): [UploadDocumentResult!]!
+      @requiresAuth
+      @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchUploadDocumentsFromGoogleDrive(
       sharedFolderUrl: String!
       isSensitive: Boolean

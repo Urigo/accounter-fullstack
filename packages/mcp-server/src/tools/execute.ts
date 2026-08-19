@@ -93,6 +93,56 @@ function requestedMemberBusinessIds(input: unknown): string[] | undefined {
   return undefined;
 }
 
+/**
+ * Most ids recorded for a single field. Every current write tool caps well below
+ * this (50 charges, 50 tags, 10 documents), so the bound exists to stop a future
+ * tool with a larger cap from turning one audit line into a log flood.
+ */
+const MAX_AUDITED_IDS = 50;
+
+/** Whether a field name denotes a record identifier (`chargeId`, `addTagIds`). */
+function isIdField(key: string): boolean {
+  const lower = key.toLowerCase();
+  return lower.endsWith('id') || lower.endsWith('ids');
+}
+
+/**
+ * Summary of a write tool's input, for the audit log.
+ *
+ * Records **which records were touched and how many** — never payload content.
+ * The distinction is the whole design: identifiers are what make an audit line
+ * answerable after the fact ("which charges did this retag?"), while a
+ * document's bytes, filename, or MIME type must never reach the logs.
+ *
+ * So id fields contribute their values (bounded by {@link MAX_AUDITED_IDS}), and
+ * every array additionally contributes its length. An array that is *not* an id
+ * field — `documents`, whose elements are the payload — contributes its length
+ * and nothing else.
+ */
+function auditFields(input: unknown): Record<string, unknown> {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (Array.isArray(value)) {
+      fields[`${key}Count`] = value.length;
+      // `every(string)` is load-bearing, not defensive: it is what keeps an array
+      // of objects (documents) from being spread into the log by a field name
+      // that merely happens to end in "ids".
+      if (isIdField(key) && value.every(entry => typeof entry === 'string')) {
+        fields[key] = value.slice(0, MAX_AUDITED_IDS);
+        if (value.length > MAX_AUDITED_IDS) {
+          fields[`${key}Truncated`] = true;
+        }
+      }
+    } else if (typeof value === 'string' && isIdField(key)) {
+      fields[key] = value;
+    }
+  }
+  return fields;
+}
+
 export interface ExecuteToolParams {
   tool: ToolDefinition;
   rawArgs: unknown;
@@ -258,11 +308,28 @@ async function runTool(params: ExecuteToolParams): Promise<ToolRun> {
     }
   }
 
-  // 4. Execute the handler.
+  // 4. Audit the write. Mutating tools are logged BEFORE the handler runs, so a
+  // call that then times out or crashes still leaves a record that it was
+  // attempted — the opposite ordering would lose exactly the calls worth
+  // investigating. Only identifiers and counts are recorded: never file
+  // contents, never the token.
+  if (tool.policy.mutating) {
+    log('info', 'mutating tool invoked', {
+      audit: true,
+      tool: tool.name,
+      userId: auth.userId,
+      correlationId,
+      // Guaranteed to be exactly one id by the single-write-target policy rule.
+      writeTargetBusinessId: decision.readScope.memberBusinessIds[0],
+      ...auditFields(input),
+    });
+  }
+
+  // 5. Execute the handler.
   //
   // `upstream` is built here, where the resolved read scope is known, so a
   // handler cannot forget to forward `x-business-scope` — it only has to pass
-  // `context.upstream` through to `client.query`.
+  // `context.upstream` through to `client.query`/`client.mutate`.
   const context: ToolExecutionContext = {
     auth,
     readScope: decision.readScope,
