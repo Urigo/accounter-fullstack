@@ -35,7 +35,7 @@ __metadata:
   resolution: "@accounter-helper/migrations@workspace:packages/migrations"
   dependencies:
     "@slonik/pg-driver": "patch:@slonik/pg-driver@npm%3A49.10.9#~/.yarn/patches/@slonik-pg-driver-npm-49.10.9-8d2c0c21df.patch"
-    "@types/pg": "npm:8.21.0"
+    "@types/pg": "npm:8.23.1"
     pg-promise: "npm:12.7.0"
     slonik: "npm:49.10.9"
     tslib: "npm:2.8.1"
@@ -392,7 +392,7 @@ __metadata:
     "@types/bcrypt": "npm:6.0.0"
     "@types/inline-css": "npm:3.0.4"
     "@types/node": "npm:25.9.5"
-    "@types/pg": "npm:8.21.0"
+    "@types/pg": "npm:8.23.1"
     "@whatwg-node/fetch": "npm:0.10.13"
     ai: "npm:7.0.64"
     async-mutex: "npm:0.5.0"
@@ -11329,6 +11329,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/pg@npm:8.23.1":
+  version: 8.23.1
+  resolution: "@types/pg@npm:8.23.1"
+  dependencies:
+    "@types/node": "npm:*"
+    pg-protocol: "npm:*"
+    pg-types: "npm:^2.2.0"
+  checksum: 10c0/0e39ff7dbe233e1e50b172d87fe84cca086a52e255adb104ef1d60619cded356c4414427ffbea58e70a5a985c3036603c8e544ca2937fc1cf4050185109973be
+  languageName: node
+  linkType: hard
+
 "@types/prop-types@npm:*, @types/prop-types@npm:^15.7.15":
   version: 15.7.15
   resolution: "@types/prop-types@npm:15.7.15"
@@ -12212,7 +12223,7 @@ __metadata:
     "@theguild/eslint-config": "npm:0.13.4"
     "@theguild/prettier-config": "npm:3.0.1"
     "@types/node": "npm:25.9.5"
-    "@types/pg": "npm:8.21.0"
+    "@types/pg": "npm:8.23.1"
     "@typescript-eslint/eslint-plugin": "npm:8.67.0"
     "@typescript-eslint/parser": "npm:8.67.0"
     "@vitest/coverage-v8": "npm:4.1.10"

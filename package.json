@@ -71,7 +71,7 @@
     "@theguild/eslint-config": "0.13.4",
     "@theguild/prettier-config": "3.0.1",
     "@types/node": "25.9.5",
-    "@types/pg": "8.21.0",
+    "@types/pg": "8.23.1",
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
     "@vitest/coverage-v8": "4.1.10",
