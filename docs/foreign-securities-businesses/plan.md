@@ -180,15 +180,22 @@ type SecurityBusiness {
   identifiers: [SecurityIdentifier!]!
 }
 
-type SecurityIdentifier { type: SecurityIdentifierType!, value: String! }
-enum SecurityIdentifierType { POALIM_SECURITY_KEY, ISIN }
+type SecurityIdentifier {
+  type: SecurityIdentifierType!
+  value: String!
+}
+
+enum SecurityIdentifierType {
+  POALIM_SECURITY_KEY
+  ISIN
+}
 
 type SecurityPosition {
   quantity: Float!
   averageCost: FinancialAmount
   totalBought: FinancialAmount
   totalSold: FinancialAmount
-  " earliest ingested execution — the position is only as complete as history from this date "
+  "Earliest ingested execution — the position is only as complete as history from this date"
   historyStartDate: TimelessDate!
   lastExecutionDate: TimelessDate
 }
