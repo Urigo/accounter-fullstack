@@ -9,6 +9,10 @@ import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provi
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
 
+/** An amount the executions imply, or null when they imply nothing. */
+const positionAmount = (value: number | null, currency: string | null) =>
+  value == null || currency == null ? null : formatFinancialAmount(value, currency);
+
 export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
   Query: {
     allSecurityBusinesses: async (_, __, { injector }) => {
@@ -68,12 +72,12 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
   SecurityPosition: {
     id: position => position.id,
     quantity: position => position.quantity,
-    averageCost: position =>
-      position.averageCost == null
-        ? null
-        : formatFinancialAmount(position.averageCost, position.currency),
-    totalBought: position => formatFinancialAmount(position.totalBought, position.currency),
-    totalSold: position => formatFinancialAmount(position.totalSold, position.currency),
+    // A security with no ingested executions has no currency to report an amount in, and
+    // `formatFinancialAmount` would fall back to the local one — turning "nothing is known"
+    // into a confident ILS 0. Null is the honest answer; the client renders it as an em dash.
+    averageCost: position => positionAmount(position.averageCost, position.currency),
+    totalBought: position => positionAmount(position.totalBought, position.currency),
+    totalSold: position => positionAmount(position.totalSold, position.currency),
     historyStartDate: position => position.historyStartDate,
     lastExecutionDate: position => position.lastExecutionDate,
   },

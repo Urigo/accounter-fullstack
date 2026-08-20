@@ -24,6 +24,9 @@ describe('calculateSecurityPosition', () => {
     expect(position.quantity).toBe(0);
     expect(position.averageCost).toBeNull();
     expect(position.historyStartDate).toBeNull();
+    // No currency means no amount can be reported: the resolver returns null rather than
+    // letting formatFinancialAmount fall back to the local currency and claim ILS 0.
+    expect(position.currency).toBeNull();
   });
 
   it('adds bought units and subtracts sold ones', () => {

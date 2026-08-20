@@ -14,6 +14,10 @@ only way to see what is held was to add the executions up by hand. The business 
 - **the full execution history** across every Poalim key the security is known by, oldest first, each
   row linking to the charge behind its cash movement (and reading as `—` when no movement matched).
 
+A security with no ingested executions reports null amounts rather than zeroes: there is no
+currency to state them in, and `formatFinancialAmount` would fall back to the local one and turn
+"nothing is known" into a confident ILS 0. The card renders those as an em dash.
+
 The position is **derived, and says so**: holdings are not scraped, so the card states the date the
 ingested history starts from and that anything held before it is not counted. Corporate actions that
 change the unit count without an execution row are invisible for the same reason. Cash-only actions
