@@ -14,6 +14,7 @@ import type {
   AdminContext,
   IGetAdminContextsQuery,
   IGetAdminContextsResult,
+  IGetSecurityBusinessIdsQuery,
   IUpdateAdminContextParams,
   IUpdateAdminContextQuery,
 } from '../types.js';
@@ -21,6 +22,16 @@ import type {
 const getAdminContexts = sql<IGetAdminContextsQuery>`
   SELECT *
   FROM accounter_schema.user_context
+  WHERE owner_id IN $$ownerIds;
+`;
+
+/**
+ * Deliberately raw SQL rather than going through SecurityBusinessesProvider: that provider
+ * takes its owner id from this one, so injecting it back would close a DI cycle.
+ */
+const getSecurityBusinessIds = sql<IGetSecurityBusinessIdsQuery>`
+  SELECT id, owner_id
+  FROM accounter_schema.businesses_securities
   WHERE owner_id IN $$ownerIds;
 `;
 
@@ -456,6 +467,59 @@ export class AdminContextProvider {
     };
   }
 
+  /**
+   * Every per-security business is an internal wallet too.
+   *
+   * A securities trade's counterparty is the security it traded rather than the general
+   * foreign-securities business, and `internalWalletsIds` is what decides that a securities
+   * movement is internal — it drives the ledger's counterparty override, fee classification,
+   * and the balance report's internal-transfer filter. Leaving the securities out would change
+   * all three the moment a transaction points at one.
+   *
+   * `normalizeContext` stays synchronous and pure; the enrichment happens on the async paths
+   * that read from the DB anyway.
+   */
+  private async securityBusinessIdsByOwner(ownerIds: string[]): Promise<Map<string, string[]>> {
+    const securityBusinesses = await getSecurityBusinessIds.run({ ownerIds }, this.db);
+
+    const byOwner = new Map<string, string[]>();
+    for (const securityBusiness of securityBusinesses) {
+      const ids = byOwner.get(securityBusiness.owner_id);
+      if (ids) {
+        ids.push(securityBusiness.id);
+      } else {
+        byOwner.set(securityBusiness.owner_id, [securityBusiness.id]);
+      }
+    }
+    return byOwner;
+  }
+
+  private withSecurityBusinesses(context: AdminContext, securityBusinessIds: string[]) {
+    if (securityBusinessIds.length === 0) {
+      return context;
+    }
+
+    return {
+      ...context,
+      financialAccounts: {
+        ...context.financialAccounts,
+        // De-duped: the general foreign-securities business is already in the list, and
+        // nothing rules out a future source putting a security there too.
+        internalWalletsIds: [
+          ...new Set([...context.financialAccounts.internalWalletsIds, ...securityBusinessIds]),
+        ],
+      },
+    };
+  }
+
+  private async withOwnSecurityBusinesses(
+    context: AdminContext,
+    ownerId: string,
+  ): Promise<AdminContext> {
+    const byOwner = await this.securityBusinessIdsByOwner([ownerId]);
+    return this.withSecurityBusinesses(context, byOwner.get(ownerId) ?? []);
+  }
+
   public async getAdminContext(): Promise<AdminContext | null> {
     if (this.cachedContext) {
       return this.cachedContext;
@@ -464,7 +528,9 @@ export class AdminContextProvider {
     const ownerId = await this.resolveOwnerIdForRequest();
 
     const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
-    const context = contexts[0] ? this.normalizeContext(contexts[0]) : null;
+    const context = contexts[0]
+      ? await this.withOwnSecurityBusinesses(this.normalizeContext(contexts[0]), ownerId)
+      : null;
     this.cachedContext = context;
     return context;
   }
@@ -492,7 +558,10 @@ export class AdminContextProvider {
 
     const updatedContexts = await updateAdminContext.run({ ...params, ownerId }, this.db);
     if (updatedContexts.length >= 1) {
-      const normalizedContext = this.normalizeContext(updatedContexts[0]);
+      const normalizedContext = await this.withOwnSecurityBusinesses(
+        this.normalizeContext(updatedContexts[0]),
+        ownerId,
+      );
       this.cachedContext = normalizedContext;
       return normalizedContext;
     }
@@ -501,11 +570,21 @@ export class AdminContextProvider {
 
   private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {
     const uniqueOwnerIds = Array.from(new Set(ownerIds));
-    const contexts = await getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db);
+    // Both reads are batched over the whole key set: a per-owner enrichment here would be an
+    // N+1 behind a DataLoader, on a path resolvers hit with many owners at once.
+    const [contexts, securityBusinessIdsByOwner] = await Promise.all([
+      getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db),
+      this.securityBusinessIdsByOwner(uniqueOwnerIds),
+    ]);
     const contextsByOwnerId = new Map(contexts.map(c => [c.owner_id, c]));
     return ownerIds.map(id => {
       const context = contextsByOwnerId.get(id);
-      return context ? this.normalizeContext(context) : null;
+      return context
+        ? this.withSecurityBusinesses(
+            this.normalizeContext(context),
+            securityBusinessIdsByOwner.get(id) ?? [],
+          )
+        : null;
     });
   }
 
