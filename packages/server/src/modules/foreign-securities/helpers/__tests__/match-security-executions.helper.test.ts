@@ -98,6 +98,35 @@ describe('matchExecutionsToTransactions', () => {
     expect(matched.get('e1')?.id).toBe('t1');
   });
 
+  it('compares decimals exactly, past what a double can hold', () => {
+    // Both sides parse to the same double, so a Number-based compare would call these equal.
+    expect(
+      match(
+        [transaction({ amount: '-12345678901234567.01' })],
+        [execution({ net_value_trade_currency: '12345678901234567.02' })],
+      ).size,
+    ).toBe(0);
+
+    const matched = match(
+      [transaction({ amount: '-12345678901234567.01' })],
+      [execution({ net_value_trade_currency: '12345678901234567.010' })],
+    );
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('reads a signed zero as a zero', () => {
+    const matched = match(
+      [transaction({ amount: '-0.00' })],
+      [execution({ net_value_trade_currency: '0' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('does not match an amount that is not a plain decimal', () => {
+    expect(match([transaction({ amount: 'NaN' })], [execution()]).size).toBe(0);
+  });
+
   it('compares the net value quoted in the transaction currency', () => {
     // Same execution, booked in ILS: the NIS column is the comparable one.
     const matched = match(
@@ -144,6 +173,17 @@ describe('matchExecutionsToTransactions', () => {
     const matched = match(
       [transaction({ amount: '1000.00' })],
       [execution({ trade_type: 'העברה לזכות הפקדון' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('tolerates a trade type it does not know rather than failing the whole charge', () => {
+    // The bank adding a word the translation has not learned must not take down a charge; the
+    // resolver is where that drift is meant to surface, and only for rows that get served.
+    const matched = match(
+      [transaction({ amount: '1000.00' })],
+      [execution({ trade_type: 'משהו חדש' })],
     );
 
     expect(matched.get('e1')?.id).toBe('t1');

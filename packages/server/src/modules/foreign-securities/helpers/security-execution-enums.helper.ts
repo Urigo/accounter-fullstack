@@ -60,6 +60,18 @@ function translate<T>(map: Record<string, T>, raw: string, field: string, zodCon
 export const toSecurityTradeType = (raw: string): SecurityTradeType =>
   translate(TRADE_TYPES, raw, 'trade type', 'TRADE_TYPES');
 
+/**
+ * The same translation for callers that must not fail on drift.
+ *
+ * Throwing is right when an execution is being *served* — the value would otherwise be
+ * silently dropped from the response. It is wrong while deciding whether a row is even
+ * relevant: one unknown trade type in the table would take down every charge that looks at
+ * the same account, including those the row has nothing to do with. Rows that do surface
+ * still reach `toSecurityTradeType` in the resolver, so the drift stays loud where it counts.
+ */
+export const tryToSecurityTradeType = (raw: string): SecurityTradeType | null =>
+  TRADE_TYPES[raw] ?? null;
+
 export const toSecurityTransactionType = (raw: string): SecurityTransactionType =>
   translate(TRANSACTION_TYPES, raw, 'transaction type', 'TRANSACTION_TYPES');
 

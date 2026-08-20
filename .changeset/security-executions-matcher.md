@@ -20,10 +20,18 @@ The rule is now the two facts both sides report about the same event, and both a
   `settlement_currency` → `net_value_settlement_currency`, ILS → `net_value_nis`) rather than trying
   all three: the others are the same value through an exchange rate. Both sides come out of Postgres
   `numeric` as decimal strings reporting the same figure, so there is nothing for a tolerance to
-  absorb — a near miss is a different event. A buy debits and a sale, redemption, dividend or interest
+  absorb — a near miss is a different event. The comparison is on the canonicalized decimal
+  strings rather than through `Number`: the two sources spell one value differently (`1000` against
+  `1000.00`), and reconciling that through a binary float is a strange thing to do in a comparison
+  documented as exact — past 2^53, or with enough fraction digits, two different values land on one
+  double. A buy debits and a sale, redemption, dividend or interest
   payment credits; actions the bank files with no cash direction of their own (stock distributions,
   deposit transfers) are matched on date, amount and account alone rather than being force-fitted to a
-  sign the source never implies.
+  sign the source never implies. A trade type the translation has never seen is treated the same way
+  instead of throwing: one unknown word in the table would otherwise take down every charge that
+  looks at the same account, including those the row has nothing to do with. Rows that actually get
+  served still go through the throwing translation in the resolver, so the drift stays loud where it
+  matters.
 
 The Poalim account tuple is still required on top, so the same security trading in two of a tenant's
 portfolios cannot cross-match. Pairing is now explicitly **one-to-one and greedy**, oldest execution

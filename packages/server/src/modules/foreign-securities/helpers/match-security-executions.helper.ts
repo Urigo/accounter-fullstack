@@ -1,7 +1,7 @@
 import { Currency, SecurityTradeType } from '../../../shared/enums.js';
 import { formatCurrency } from '../../../shared/helpers/amount.js';
 import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
-import { toSecurityTradeType } from './security-execution-enums.helper.js';
+import { tryToSecurityTradeType } from './security-execution-enums.helper.js';
 
 /**
  * `accounter_schema.poalim_securities_transactions` carries no link to
@@ -77,6 +77,44 @@ const CASH_DIRECTION: Record<SecurityTradeType, -1 | 1 | null> = {
   [SecurityTradeType.TransferOutTwoSided]: null,
 };
 
+type DecimalValue = {
+  negative: boolean;
+  /** The value without its sign, in one canonical spelling: `1000`, `1000.1`, `0`. */
+  magnitude: string;
+};
+
+const DECIMAL = /^([+-]?)(\d*)(?:\.(\d*))?$/;
+
+/**
+ * `numeric` reaches us as a decimal string, and the two sources spell the same value
+ * differently — `1000` against `1000.00`. Going through `Number` to reconcile that would trade
+ * an exact decimal for a binary approximation, which is a strange thing to do in a comparison
+ * documented as exact: past 2^53, or with enough fraction digits, two different values can land
+ * on one double and two spellings of one value can land on different ones. Canonicalizing the
+ * string keeps the decimal exact at any size.
+ *
+ * Returns null for anything that is not a plain decimal, which cannot be compared and therefore
+ * cannot match.
+ */
+function parseDecimal(raw: string): DecimalValue | null {
+  const match = DECIMAL.exec(raw.trim());
+  if (!match) {
+    return null;
+  }
+
+  const [, sign, whole = '', fraction = ''] = match;
+  if (!whole && !fraction) {
+    return null;
+  }
+
+  const integerPart = whole.replace(/^0+/, '');
+  const fractionPart = fraction.replace(/0+$/, '');
+  const magnitude = fractionPart ? `${integerPart || '0'}.${fractionPart}` : integerPart || '0';
+
+  // -0 is 0; a zero has no direction to disagree about.
+  return { negative: sign === '-' && magnitude !== '0', magnitude };
+}
+
 /** The transaction's effective debit date — an override wins, as everywhere else. */
 function effectiveDebitDate(transaction: MatchableTransaction): Date | null {
   return transaction.debit_date_override ?? transaction.debit_date;
@@ -146,20 +184,24 @@ function matchesTransaction(
     return false;
   }
 
-  const executionValue = Number(executionAmount);
-  const transactionValue = Number(transaction.amount);
-  if (Number.isNaN(executionValue) || Number.isNaN(transactionValue)) {
+  const executionValue = parseDecimal(executionAmount);
+  const transactionValue = parseDecimal(transaction.amount);
+  if (!executionValue || !transactionValue) {
     return false;
   }
-  if (Math.abs(executionValue) !== Math.abs(transactionValue)) {
+  if (executionValue.magnitude !== transactionValue.magnitude) {
     return false;
   }
 
-  const direction = CASH_DIRECTION[toSecurityTradeType(execution.trade_type)];
-  if (direction == null || transactionValue === 0) {
+  // A trade type the translation does not know leaves the direction unconstrained rather than
+  // failing the match: the date, amount and account still have to agree, and an execution that
+  // gets this far reaches the resolver, which is where unknown vocabulary is meant to be loud.
+  const tradeType = tryToSecurityTradeType(execution.trade_type);
+  const direction = tradeType ? CASH_DIRECTION[tradeType] : null;
+  if (direction == null || transactionValue.magnitude === '0') {
     return true;
   }
-  return Math.sign(transactionValue) === direction;
+  return (transactionValue.negative ? -1 : 1) === direction;
 }
 
 /**
