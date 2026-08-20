@@ -1,9 +1,11 @@
-import { useCallback, useState, type ReactElement } from 'react';
+import { useCallback, useContext, useMemo, useState, type ReactElement } from 'react';
 import { CheckIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
 import { useGetBusinesses } from '../../../hooks/use-get-businesses.js';
+import { useGetSecurityBusinesses } from '../../../hooks/use-get-security-businesses.js';
 import { useUpdateTransaction } from '../../../hooks/use-update-transaction.js';
+import { UserContext } from '../../../providers/user-provider.js';
 import { SelectWithSearch, Tooltip } from '../../common/index.js';
 import { InsertBusiness } from '../../common/modals/insert-business.js';
 import { SimilarTransactionsModal } from '../../common/modals/similar-transactions-modal.js';
@@ -23,7 +25,16 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
     id: transactionId,
     sourceDescription,
     enableEdit,
+    isFee,
+    chargeType,
   } = transaction;
+
+  /**
+   * A foreign-securities trade settles against the security it traded, so offering the whole
+   * business directory there is noise at best and a mis-assignment at worst. The fee row is the
+   * bank's and keeps the full list.
+   */
+  const isSecurityTrade = chargeType === 'ForeignSecuritiesCharge' && !isFee;
 
   const hasSuggestion = !!missingInfoSuggestions?.business && enableEdit;
   const suggestedName = hasSuggestion ? missingInfoSuggestions?.business?.name : 'Missing';
@@ -55,7 +66,30 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
     [updateBusiness, onChange],
   );
 
-  const { selectableBusinesses: selectOptions, fetching: businessesLoading } = useGetBusinesses();
+  const { selectableBusinesses, fetching: businessesLoading } = useGetBusinesses();
+  const { selectableSecurityBusinesses, fetching: securitiesLoading } = useGetSecurityBusinesses({
+    pause: !isSecurityTrade,
+  });
+  const { userContext } = useContext(UserContext);
+  const foreignSecuritiesBusinessId = userContext?.context.foreignSecuritiesBusinessId ?? null;
+
+  const selectOptions = useMemo(() => {
+    if (!isSecurityTrade) {
+      return selectableBusinesses;
+    }
+    // Plus the general foreign-securities business, for a trade whose security cannot be told.
+    const generalOption = selectableBusinesses.find(
+      option => option.value === foreignSecuritiesBusinessId,
+    );
+    return generalOption
+      ? [...selectableSecurityBusinesses, generalOption]
+      : selectableSecurityBusinesses;
+  }, [
+    isSecurityTrade,
+    selectableBusinesses,
+    selectableSecurityBusinesses,
+    foreignSecuritiesBusinessId,
+  ]);
 
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(suggestedId ?? null);
 
@@ -90,7 +124,12 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
                 variant="outline"
                 size="icon"
                 onClick={() => selectedBusinessId && updateBusiness(selectedBusinessId)}
-                disabled={fetching || businessesLoading || !selectedBusinessId}
+                disabled={
+                  fetching ||
+                  businessesLoading ||
+                  (isSecurityTrade && securitiesLoading) ||
+                  !selectedBusinessId
+                }
               >
                 <CheckIcon className="size-4" />
               </Button>
