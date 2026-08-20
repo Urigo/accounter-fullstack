@@ -645,46 +645,52 @@ export async function hapoalim(
       data: HapoalimSecuritiesTransactions | null;
       isValid: boolean | null;
       errors?: unknown;
+      truncated?: string;
     }> => {
       const tradeAccountNumber = `${account.branchNumber}-${account.accountNumber}`;
 
-      const { firstPage, failedPage, executions } =
+      const { firstPage, failedPage, executions, truncated } =
         await fetchAllExecutions<HapoalimSecuritiesTransactions>({
           fromDate: range?.fromDate ?? startDate,
           toDate: range?.toDate ?? now,
           label: `account ${tradeAccountNumber}`,
           isErrorPage: page => describeMytradeError(page) !== null,
-          fetchPage: ({ fromDate, toDate }) =>
+          // The window is the same every round — only `pageState` moves. The cursor is
+          // an opaque base64 blob, so it has to be URL-encoded rather than interpolated.
+          fetchPage: ({ fromDate, toDate, pageState }) =>
             fetchFromMytrade<HapoalimSecuritiesTransactions>(
               `${apiSiteUrl}/mytrade/api/v2/json2/order/executions/history?account=${tradeAccountNumber}` +
-                `&fromDate=${toMytradeDateString(fromDate)}&toDate=${toMytradeDateString(toDate)}`,
+                `&fromDate=${toMytradeDateString(fromDate)}&toDate=${toMytradeDateString(toDate)}` +
+                (pageState ? `&pageState=${encodeURIComponent(pageState)}` : ''),
               'GET',
             ),
         });
 
       // Every round answers the same shape, so the first page carries the response
-      // envelope (`PageState`) and the merged executions replace its own. A page
-      // with no `Account` at all — an error payload — is passed through verbatim,
-      // for the error branches below to report on.
+      // envelope and the merged executions replace its own. Its `PageState` is the
+      // round-1 cursor, long spent — the merged object is not a page, so it is nulled
+      // out; `truncated` is what says whether anything was left unfetched. A page with
+      // no `Account` at all — an error payload — is passed through verbatim, for the
+      // error branches below to report on.
       const data =
         firstPage && 'Account' in firstPage
           ? ({
               ...firstPage,
-              Account: { ...firstPage.Account, Execution: executions },
+              Account: { ...firstPage.Account, Execution: executions, PageState: null },
             } as HapoalimSecuritiesTransactions)
           : firstPage;
 
       if (!options?.validateSchema) {
-        return { data, isValid: null };
+        return { data, isValid: null, ...(truncated ? { truncated } : {}) };
       }
 
       if (!data) {
         console.log(`No securities transactions found for account ${tradeAccountNumber}`);
-        return { data, isValid: true };
+        return { data, isValid: true, ...(truncated ? { truncated } : {}) };
       }
 
-      // A failed round is reported whichever round it was: the walk-back only got
-      // part of the window, so the merged executions must not pass as the whole of it.
+      // A failed round is reported whichever round it was: paging only got part of
+      // the window, so the merged executions must not pass as the whole of it.
       const reportedPage = failedPage ?? firstPage;
       const error = describeMytradeError(reportedPage);
       if (error) {
@@ -695,6 +701,9 @@ export async function hapoalim(
       return {
         data: validation.data ?? null,
         isValid: validation.success,
+        // Paging that stopped early is not a validation failure — the rows fetched are
+        // real and ingest is idempotent, so they upload and a later run backfills.
+        ...(truncated ? { truncated } : {}),
         // The schema is strict enough that a raw issue list is unreadable: it
         // points at Account.Execution.37.TradeType without saying which row that
         // is. The helper names the security and trade date per issue.

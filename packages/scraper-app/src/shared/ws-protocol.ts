@@ -221,6 +221,19 @@ export const TaskAccountTxnsDoneSchema = z.object({
   skipped: z.number(),
 });
 
+/**
+ * A fetch that succeeded but is known to be incomplete — currently only securities
+ * executions whose paging stopped with the bank's cursor still open. The rows still
+ * upload; this is what tells the operator the window was not fully covered.
+ */
+export const TaskAccountWarningSchema = z.object({
+  type: z.literal('task-account-warning'),
+  sourceId: z.string(),
+  accountId: z.string(),
+  txnType: z.enum(['ils', 'foreign', 'swift', 'securitiesInfo', 'securitiesTransactions']),
+  message: z.string(),
+});
+
 export const ServerMessageSchema = z.discriminatedUnion('type', [
   ConnectedSchema,
   PongSchema,
@@ -243,6 +256,7 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
   TaskAccountTxnsFetchingSchema,
   TaskAccountTxnsUploadingSchema,
   TaskAccountTxnsDoneSchema,
+  TaskAccountWarningSchema,
 ]);
 
 export type ServerMessage = z.infer<typeof ServerMessageSchema>;

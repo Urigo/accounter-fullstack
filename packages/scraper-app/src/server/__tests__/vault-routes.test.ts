@@ -3,7 +3,7 @@ import { access, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 import { defaultVault, encryptVault, saveVaultFile } from '../vault.js';
 import { isLocked, lockVault } from '../vault-store.js';
 import { registerVaultRoutes } from '../vault-routes.js';
@@ -319,5 +319,116 @@ describe('POST /api/vault/upload', () => {
     await uploadVault(app, { force: true });
     const res = await app.inject({ method: 'GET', url: '/api/vault/status' });
     expect(res.json()).toMatchObject({ locked: true });
+  });
+});
+
+// ── Tests for GET /api/vault/test-connection ─────────────────────────────────
+
+describe('GET /api/vault/test-connection', () => {
+  const SERVER_URL = 'http://localhost:4000/graphql';
+  const API_KEY = 'scraper-key-1';
+
+  let vaultPath: string;
+  let app: FastifyInstance;
+  let fetchSpy: MockInstance<typeof globalThis.fetch>;
+
+  function mockReply(body: string, init?: { status?: number; contentType?: string }) {
+    fetchSpy.mockResolvedValue(
+      new Response(body, {
+        status: init?.status ?? 200,
+        headers: { 'content-type': init?.contentType ?? 'application/json' },
+      }),
+    );
+  }
+
+  beforeEach(async () => {
+    vaultPath = makeTmpPath();
+    app = await buildApp(vaultPath);
+    fetchSpy = vi.spyOn(globalThis, 'fetch');
+    await app.inject({
+      method: 'POST',
+      url: '/api/vault/create',
+      payload: { password: PASSWORD, serverUrl: SERVER_URL, apiKey: API_KEY },
+    });
+  });
+
+  afterEach(async () => {
+    fetchSpy.mockRestore();
+    lockVault();
+    await app.close();
+    await rm(vaultPath, { force: true });
+    delete process.env['VAULT_PATH'];
+  });
+
+  it('probes with the same X-API-Key header the upload client sends', async () => {
+    mockReply(JSON.stringify({ data: { __typename: 'Query' } }));
+
+    await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0]!;
+    expect(url).toBe(SERVER_URL);
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers['X-API-Key']).toBe(API_KEY);
+    expect(headers['Authorization']).toBeUndefined();
+  });
+
+  it('reports ok for a real GraphQL result', async () => {
+    mockReply(JSON.stringify({ data: { __typename: 'Query' } }));
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true });
+    expect(res.json().latencyMs).toBeTypeOf('number');
+  });
+
+  it('fails on a 200 that is really a SPA index.html', async () => {
+    // The regression this route missed: a serverUrl pointing at a SPA (this very app)
+    // answers an unknown path with index.html and a 200, which used to read as healthy.
+    mockReply('<!doctype html>\n<html lang="en"><head><title>Scraper App</title></head></html>', {
+      contentType: 'text/html',
+    });
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.json().ok).toBe(false);
+    expect(res.json().error).toContain('did not return JSON');
+    expect(res.json().error).toContain('/graphql');
+  });
+
+  it('surfaces a GraphQL error message', async () => {
+    mockReply(JSON.stringify({ errors: [{ message: 'Unauthorized' }] }));
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.json()).toMatchObject({ ok: false, error: 'Unauthorized' });
+  });
+
+  it('fails on valid JSON that is not a GraphQL result', async () => {
+    mockReply(JSON.stringify({ hello: 'world' }));
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.json()).toMatchObject({ ok: false });
+    expect(res.json().error).toContain('did not return a GraphQL result');
+  });
+
+  it('reports the status and body of a non-2xx response', async () => {
+    mockReply('nope', { status: 502, contentType: 'text/plain' });
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.json()).toMatchObject({ ok: false, error: 'HTTP 502: nope' });
+  });
+
+  it('returns 401 when the vault is locked', async () => {
+    lockVault();
+
+    const res = await app.inject({ method: 'GET', url: '/api/vault/test-connection' });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.json()).toEqual({ error: 'vault-locked' });
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
