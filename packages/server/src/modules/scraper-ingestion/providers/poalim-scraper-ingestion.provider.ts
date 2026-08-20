@@ -16,6 +16,8 @@ import { dateToTimelessDateString } from '../../../shared/helpers/index.js';
 import type { TimelessDateString } from '../../../shared/types/index.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
+import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
+import type { SecurityBusinessDescriptors } from '../../foreign-securities/types.js';
 import { formatValue } from '../helpers/utils.helper.js';
 import {
   validatePoalimForeignTransactions,
@@ -1161,6 +1163,21 @@ function diffPoalimSecurityTransactionRow(
   return changed;
 }
 
+/** The descriptor columns a security business is built from, as the payload spells them. */
+type SecurityDescriptorSource = {
+  isin?: string | null | void;
+  security?: string | null | void;
+  symbol?: string | null | void;
+  engName?: string | null | void;
+  hebName?: string | null | void;
+  issuerExchange?: string | null | void;
+  tradeCurrency?: string | null | void;
+  issuerCountryCode?: string | null | void;
+};
+
+/** pgtyped spells an absent value `void`; the descriptors take null. */
+const text = (value: string | null | void): string | null => value ?? null;
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -1171,7 +1188,88 @@ export class PoalimScraperIngestionProvider {
   constructor(
     private db: TenantAwareDBClient,
     private authContextProvider: AuthContextProvider,
+    private securityBusinessesProvider: SecurityBusinessesProvider,
   ) {}
+
+  /**
+   * Give every security in the payload a business of its own, and record the Poalim key it is
+   * known by here.
+   *
+   * Driven off the whole validated payload rather than only the newly inserted rows: a
+   * re-scrape inserts nothing, but a security whose business was never created (ingested
+   * before this existed, or created while an earlier scrape failed here) still needs one.
+   * Both steps are idempotent, and `ensureSecurityBusinesses` settles the whole payload with a
+   * single lookup, so a repeat scrape costs one query rather than one per security.
+   *
+   * Rows with no ISIN are skipped: the ISIN is the identity, and one cannot be invented from
+   * the Poalim key alone. Those securities stay unlinked and are assigned by hand.
+   *
+   * Failures are logged rather than thrown: the executions are already stored, and reporting
+   * the upload as failed would be a lie. The next scrape repairs the gap.
+   */
+  private async ensureSecurityBusinesses(
+    transactions: readonly SecurityDescriptorSource[],
+  ): Promise<void> {
+    const bySecurityIsin = new Map<
+      string,
+      { descriptors: SecurityBusinessDescriptors; poalimKeys: Set<string> }
+    >();
+
+    for (const transaction of transactions) {
+      const isin = transaction.isin?.trim();
+      if (!isin) {
+        continue;
+      }
+
+      let entry = bySecurityIsin.get(isin);
+      if (!entry) {
+        entry = {
+          descriptors: {
+            isin,
+            symbol: text(transaction.symbol),
+            engName: text(transaction.engName),
+            hebName: text(transaction.hebName),
+            exchange: text(transaction.issuerExchange),
+            currencyCode: text(transaction.tradeCurrency),
+            issuerCountryCode: text(transaction.issuerCountryCode),
+            isForeign: true,
+          },
+          poalimKeys: new Set(),
+        };
+        bySecurityIsin.set(isin, entry);
+      }
+      if (transaction.security) {
+        entry.poalimKeys.add(transaction.security);
+      }
+    }
+
+    if (bySecurityIsin.size === 0) {
+      return;
+    }
+
+    try {
+      const securityBusinesses = await this.securityBusinessesProvider.ensureSecurityBusinesses(
+        [...bySecurityIsin.values()].map(entry => entry.descriptors),
+      );
+
+      for (const [isin, { poalimKeys }] of bySecurityIsin) {
+        const securityBusiness = securityBusinesses.get(isin);
+        if (!securityBusiness) {
+          continue;
+        }
+
+        for (const poalimKey of poalimKeys) {
+          await this.securityBusinessesProvider.linkIdentifier(
+            securityBusiness.id,
+            'POALIM_SECURITY_KEY',
+            poalimKey,
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create security businesses for ingested executions:', error);
+    }
+  }
 
   private async getBusinessId() {
     if (this.businessIdCache !== null) {
@@ -1580,6 +1678,8 @@ export class PoalimScraperIngestionProvider {
           }
         }
       }
+
+      await this.ensureSecurityBusinesses(validated);
 
       return {
         inserted: insertedIds.length,

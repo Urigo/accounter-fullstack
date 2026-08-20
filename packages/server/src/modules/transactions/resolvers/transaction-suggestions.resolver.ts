@@ -11,6 +11,8 @@ import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { suggestionDataSchema } from '../../financial-entities/helpers/business-suggestion-data-schema.helper.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../../financial-entities/providers/financial-entities.provider.js';
+import { extractSecurityKeys } from '../../foreign-securities/helpers/security-key.helper.js';
+import { SecurityBusinessesProvider } from '../../foreign-securities/providers/security-businesses.provider.js';
 import { TransactionsProvider } from '../providers/transactions.provider.js';
 import type { TransactionsModule } from '../types.js';
 
@@ -124,14 +126,21 @@ const missingInfoSuggestions = async (
     }
   }
 
-  if (transaction.business_id) {
-    const business = await injector
-      .get(BusinessesProvider)
-      .getBusinessByIdLoader.load(transaction.business_id);
-
-    if (business?.suggestion_data) {
+  // A securities trade names the security it traded in its description. That key resolves to
+  // one business, which is a stronger signal than any phrase — and stronger than the POALIM
+  // description heuristics further down, which would otherwise claim it for the bank.
+  // Only for the main transaction: the fee row is Poalim's, and it never gets here.
+  const securityKeys = extractSecurityKeys(transaction.source_description);
+  if (securityKeys.length === 1) {
+    const securityBusiness = await injector
+      .get(SecurityBusinessesProvider)
+      .getSecurityBusinessByIdentifierLoader.load({
+        type: 'POALIM_SECURITY_KEY',
+        value: securityKeys[0],
+      });
+    if (securityBusiness) {
       return {
-        business: business.id,
+        business: securityBusiness.id,
       };
     }
   }

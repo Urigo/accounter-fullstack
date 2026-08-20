@@ -14,6 +14,11 @@ import { Currency } from '../../../../shared/enums.js';
 import type { AuthContextProvider } from '../../../auth/providers/auth-context.provider.js';
 import { DBProvider } from '../../../app-providers/db.provider.js';
 import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js';
+import type { AdminContextProvider } from '../../../admin-context/providers/admin-context.provider.js';
+import { BusinessesProvider } from '../../../financial-entities/providers/businesses.provider.js';
+import { FinancialEntitiesProvider } from '../../../financial-entities/providers/financial-entities.provider.js';
+import { TaxCategoriesProvider } from '../../../financial-entities/providers/tax-categories.provider.js';
+import { SecurityBusinessesProvider } from '../../../foreign-securities/providers/security-businesses.provider.js';
 import { PoalimScraperIngestionProvider } from '../poalim-scraper-ingestion.provider.js';
 
 let pool: Pool;
@@ -55,7 +60,36 @@ beforeAll(async () => {
   const dbProvider = new DBProvider(pool);
   const authContextProvider = createMockAuthContextProvider();
   const dbClient = new TenantAwareDBClient(dbProvider, authContextProvider);
-  provider = new PoalimScraperIngestionProvider(dbClient, authContextProvider);
+  // The securities upload creates a business per ingested ISIN. The tenant here has no
+  // user_context row, so the admin context is stubbed with the little of it that path reads.
+  const adminContextProvider = {
+    getVerifiedAdminContext: () =>
+      Promise.resolve({
+        ownerId: TEST_OWNER_ID,
+        foreignSecurities: {
+          foreignSecuritiesBusinessId: null,
+          foreignSecuritiesFeesCategoryId: null,
+        },
+      }),
+  } as unknown as AdminContextProvider;
+  const businessesProvider = new BusinessesProvider(dbClient, adminContextProvider);
+  const taxCategoriesProvider = new TaxCategoriesProvider(dbClient, adminContextProvider);
+  provider = new PoalimScraperIngestionProvider(
+    dbClient,
+    authContextProvider,
+    new SecurityBusinessesProvider(
+      dbClient,
+      adminContextProvider,
+      new FinancialEntitiesProvider(
+        dbClient,
+        businessesProvider,
+        {} as never,
+        taxCategoriesProvider,
+      ),
+      businessesProvider,
+      taxCategoriesProvider,
+    ),
+  );
 
   // poalim_securities.owner_id is a real FK, so the acting tenant must exist.
   await pool.query(
@@ -82,6 +116,16 @@ afterAll(async () => {
   for (const table of TRIGGER_TABLES) {
     await pool.query(`ALTER TABLE accounter_schema.${table} ENABLE TRIGGER ALL`);
   }
+  // The securities upload creates a business per ingested ISIN; the owner FKs are NO ACTION,
+  // so those have to go before the tenant they belong to.
+  await pool.query(
+    'DELETE FROM accounter_schema.businesses WHERE owner_id = $1 AND id <> $1',
+    [TEST_OWNER_ID],
+  );
+  await pool.query(
+    'DELETE FROM accounter_schema.financial_entities WHERE owner_id = $1 AND id <> $1',
+    [TEST_OWNER_ID],
+  );
   // Drop the seeded tenant; poalim_securities* rows cascade with it.
   await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [TEST_OWNER_ID]);
   await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = $1', [
@@ -379,8 +423,25 @@ describe('uploadPoalimSecurities', () => {
 
 // ── Poalim Securities Transactions ────────────────────────────────────────────
 
+/** Security businesses created by an upload, so each case starts from nothing. */
+async function clearSecurityBusinesses() {
+  await pool.query('DELETE FROM accounter_schema.businesses_securities WHERE owner_id = $1', [
+    TEST_OWNER_ID,
+  ]);
+  await pool.query('DELETE FROM accounter_schema.businesses WHERE owner_id = $1 AND id <> $1', [
+    TEST_OWNER_ID,
+  ]);
+  await pool.query(
+    'DELETE FROM accounter_schema.financial_entities WHERE owner_id = $1 AND id <> $1',
+    [TEST_OWNER_ID],
+  );
+}
+
 describe('uploadPoalimSecuritiesTransactions', () => {
-  beforeEach(() => truncateOwned('poalim_securities_transactions'));
+  beforeEach(async () => {
+    await truncateOwned('poalim_securities_transactions');
+    await clearSecurityBusinesses();
+  });
 
   // Synthetic values only — never lifted from a real bank capture. Timestamps keep
   // the bank's .NET round-trip shape (7 fractional digits, Israel offset, and the
@@ -465,6 +526,64 @@ describe('uploadPoalimSecuritiesTransactions', () => {
     expect(result.skipped).toBe(2);
     expect(result.insertedIds).toHaveLength(0);
     expect(result.changedTransactions).toEqual([]);
+  });
+
+  describe('security businesses', () => {
+    const securityBusinessesOfOwner = async () => {
+      const { rows } = await pool.query(
+        `SELECT bs.isin, fe.name, si.identifier_type, si.identifier_value
+         FROM accounter_schema.businesses_securities bs
+         INNER JOIN accounter_schema.financial_entities fe ON fe.id = bs.id
+         LEFT JOIN accounter_schema.security_identifiers si ON si.business_id = bs.id
+         WHERE bs.owner_id = $1
+         ORDER BY bs.isin, si.identifier_value`,
+        [TEST_OWNER_ID],
+      );
+      return rows;
+    };
+
+    it('creates a business per ingested security, keyed by its Poalim key', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+
+      expect(await securityBusinessesOfOwner()).toEqual([
+        {
+          isin: 'US0000000001',
+          name: 'EXAMPLE CORP (EXMP)',
+          identifier_type: 'POALIM_SECURITY_KEY',
+          identifier_value: '1234567',
+        },
+      ]);
+    });
+
+    it('creates one business for several executions of the same security', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction, dividend]);
+
+      expect(await securityBusinessesOfOwner()).toHaveLength(1);
+    });
+
+    it('does not duplicate anything on a re-scrape', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+      await provider.uploadPoalimSecuritiesTransactions([baseTransaction]);
+
+      expect(await securityBusinessesOfOwner()).toHaveLength(1);
+    });
+
+    it('collapses two Poalim keys reporting the same ISIN onto one business', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([
+        baseTransaction,
+        { ...baseTransaction, security: '7654321', tradeDate: '2024-02-15T00:00:00.0000000+02:00' },
+      ]);
+
+      const rows = await securityBusinessesOfOwner();
+      expect(rows.map(row => row.identifier_value)).toEqual(['1234567', '7654321']);
+      expect(new Set(rows.map(row => row.isin)).size).toBe(1);
+    });
+
+    it('leaves a security with no ISIN unlinked, for manual assignment', async () => {
+      await provider.uploadPoalimSecuritiesTransactions([{ ...baseTransaction, isin: null }]);
+
+      expect(await securityBusinessesOfOwner()).toEqual([]);
+    });
   });
 
   // The corporate-action dates are part of the dedup key and are null on a trade,

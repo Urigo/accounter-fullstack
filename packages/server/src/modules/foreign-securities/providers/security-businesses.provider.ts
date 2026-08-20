@@ -196,30 +196,73 @@ export class SecurityBusinessesProvider {
     this.batchIdentifiersByBusinessIds(businessIds),
   );
 
+  /** The security businesses already created for these ISINs, keyed by ISIN. */
+  public async getSecurityBusinessesByIsins(
+    isins: readonly string[],
+  ): Promise<Map<string, SecurityBusinessRow>> {
+    if (isins.length === 0) {
+      return new Map();
+    }
+    const rows = await getSecurityBusinessesByIsins.run({ isins: [...new Set(isins)] }, this.db);
+    rows.map(row => this.getSecurityBusinessByIdLoader.prime(row.id, row));
+    return new Map(rows.map(row => [row.isin, row]));
+  }
+
   private async getSecurityBusinessByIsin(isin: string): Promise<SecurityBusinessRow | null> {
-    const [row] = await getSecurityBusinessesByIsins.run({ isins: [isin] }, this.db);
-    return row ?? null;
+    return (await this.getSecurityBusinessesByIsins([isin])).get(isin) ?? null;
   }
 
   /**
    * The business a security is represented by, creating it on first sight.
    *
-   * Idempotent by ISIN: concurrent ingests race on the (owner_id, isin) unique index, and the
-   * loser rolls its whole transaction back — financial entity and business included — then
-   * re-reads the winner's row, so a race can't leave a half-built business behind.
-   *
-   * Sort code, IRS code, country and tax category are inherited from the tenant's general
-   * foreign-securities business, so a security behaves like it everywhere those fields drive
-   * reporting.
+   * Idempotent by ISIN — see `createSecurityBusiness` for how a race is settled.
    */
   public async ensureSecurityBusiness(
     descriptors: SecurityBusinessDescriptors,
   ): Promise<SecurityBusinessRow> {
     const existing = await this.getSecurityBusinessByIsin(descriptors.isin);
-    if (existing) {
-      return existing;
+    return existing ?? this.createSecurityBusiness(descriptors);
+  }
+
+  /**
+   * The same for a batch, in one lookup: an ingest introduces a whole portfolio at once, and
+   * asking per ISIN whether it exists costs a round trip for every security every scrape.
+   * Only the ISINs with no business yet are created.
+   */
+  public async ensureSecurityBusinesses(
+    descriptorsList: readonly SecurityBusinessDescriptors[],
+  ): Promise<Map<string, SecurityBusinessRow>> {
+    const byIsin = new Map(descriptorsList.map(descriptors => [descriptors.isin, descriptors]));
+    if (byIsin.size === 0) {
+      return new Map();
     }
 
+    const securityBusinesses = await this.getSecurityBusinessesByIsins([...byIsin.keys()]);
+
+    for (const [isin, descriptors] of byIsin) {
+      if (!securityBusinesses.has(isin)) {
+        securityBusinesses.set(isin, await this.createSecurityBusiness(descriptors));
+      }
+    }
+
+    return securityBusinesses;
+  }
+
+  /**
+   * Creates the business behind a security, assuming the caller has established there is none.
+   *
+   * Concurrent ingests race on the (owner_id, isin) unique index, and the loser rolls its whole
+   * transaction back — financial entity and business included — then re-reads the winner's row,
+   * so a race can't leave a half-built business behind. That fallback is also what makes the
+   * caller's "there is none" only have to be true at the time it looked.
+   *
+   * Sort code, IRS code, country and tax category are inherited from the tenant's general
+   * foreign-securities business, so a security behaves like it everywhere those fields drive
+   * reporting.
+   */
+  private async createSecurityBusiness(
+    descriptors: SecurityBusinessDescriptors,
+  ): Promise<SecurityBusinessRow> {
     const adminContext = await this.adminContextProvider.getVerifiedAdminContext();
     const { ownerId } = adminContext;
     const generalBusinessId = adminContext.foreignSecurities.foreignSecuritiesBusinessId;
