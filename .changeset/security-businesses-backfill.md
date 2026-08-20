@@ -12,8 +12,11 @@ that gap in two idempotent steps:
 1. **A business per ISIN** out of `accounter_schema.poalim_securities_transactions`, with a
    `POALIM_SECURITY_KEY` identifier for every Poalim key seen reporting that ISIN — so two keys for
    one instrument collapse onto one business. Sort code, IRS code, country and tax category are
-   inherited from the tenant's general foreign-securities business, matching what
-   `ensureSecurityBusiness` does.
+   inherited from the tenant's general foreign-securities business, and the currency is normalized
+   through `formatCurrency`, matching what `ensureSecurityBusiness` does. The three inserts a
+   security takes run as one transaction: a failure part-way through would otherwise leave a
+   business that is not a security, which the ISIN lookup would never find again and a re-run would
+   duplicate.
 2. **Re-point the trades** whose description names exactly one key that resolves. Only transactions
    currently pointing at the general foreign-securities business are touched — anything else is a
    human decision the script has no business overwriting — and only non-fee rows, since the fee side

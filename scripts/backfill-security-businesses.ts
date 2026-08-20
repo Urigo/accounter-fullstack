@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import pg from 'pg';
 import { buildSecurityBusinessName } from '../packages/server/src/modules/foreign-securities/helpers/security-business-name.helper.js';
 import { extractSecurityKeys } from '../packages/server/src/modules/foreign-securities/helpers/security-key.helper.js';
+import { formatCurrency } from '../packages/server/src/shared/helpers/amount.js';
 
 config();
 
@@ -66,6 +67,36 @@ const SCHEMA = 'accounter_schema';
 
 /** Stands in for the id a business would have been given, so a dry run can count the work. */
 const DRY_RUN_PREFIX = 'dry-run:';
+
+/**
+ * Runs a group of dependent writes as one unit. A security is three inserts across
+ * financial_entities, businesses and businesses_securities: a failure part-way through would
+ * leave a business that is not a security, which the ISIN lookup would never find again and a
+ * re-run would happily duplicate — so the script would stop being safe to re-run, which is the
+ * one thing it promises.
+ */
+async function inTransaction<T>(client: pg.Client, write: () => Promise<T>): Promise<T> {
+  await client.query('BEGIN');
+  try {
+    const result = await write();
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  }
+}
+
+/**
+ * `businesses_securities.currency_code` is the closed `accounter_schema.currency` type, while
+ * the executions report whatever the feed said — Poalim spells its currencies out in Hebrew.
+ * Same normalization the ingestion provider does; an unrecognized label leaves the column empty
+ * rather than failing the insert.
+ */
+function toCurrency(rawCurrency: string | null): string | null {
+  const label = rawCurrency?.trim();
+  return label ? formatCurrency(label, true) : null;
+}
 
 async function ownersToProcess(client: pg.Client, ownerId: string | null): Promise<string[]> {
   if (ownerId) {
@@ -180,49 +211,51 @@ async function createSecurityBusiness(
     symbol: group.descriptors.symbol,
   });
 
-  const {
-    rows: [financialEntity],
-  } = await client.query<{ id: string }>(
-    `INSERT INTO ${SCHEMA}.financial_entities (name, type, owner_id, sort_code, irs_code, is_active)
-     VALUES ($1, 'business', $2, $3, $4, true)
-     RETURNING id`,
-    [name, ownerId, general?.sort_code ?? null, general?.irs_code ?? null],
-  );
-
-  await client.query(
-    `INSERT INTO ${SCHEMA}.businesses (id, owner_id, country, hebrew_name)
-     VALUES ($1, $2, $3, $4)`,
-    [financialEntity.id, ownerId, general?.country ?? 'ISR', group.descriptors.hebName],
-  );
-
-  await client.query(
-    `INSERT INTO ${SCHEMA}.businesses_securities (
-       id, owner_id, isin, symbol, eng_name, heb_name, exchange, currency_code,
-       is_foreign, issuer_country_code
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9)`,
-    [
-      financialEntity.id,
-      ownerId,
-      group.isin,
-      group.descriptors.symbol,
-      group.descriptors.engName,
-      group.descriptors.hebName,
-      group.descriptors.exchange,
-      group.descriptors.currencyCode,
-      group.descriptors.issuerCountryCode,
-    ],
-  );
-
-  if (general?.tax_category_id) {
-    await client.query(
-      `INSERT INTO ${SCHEMA}.business_tax_category_match (business_id, owner_id, tax_category_id)
-       VALUES ($1, $2, $3)
-       ON CONFLICT DO NOTHING`,
-      [financialEntity.id, ownerId, general.tax_category_id],
+  return inTransaction(client, async () => {
+    const {
+      rows: [financialEntity],
+    } = await client.query<{ id: string }>(
+      `INSERT INTO ${SCHEMA}.financial_entities (name, type, owner_id, sort_code, irs_code, is_active)
+       VALUES ($1, 'business', $2, $3, $4, true)
+       RETURNING id`,
+      [name, ownerId, general?.sort_code ?? null, general?.irs_code ?? null],
     );
-  }
 
-  return financialEntity.id;
+    await client.query(
+      `INSERT INTO ${SCHEMA}.businesses (id, owner_id, country, hebrew_name)
+       VALUES ($1, $2, $3, $4)`,
+      [financialEntity.id, ownerId, general?.country ?? 'ISR', group.descriptors.hebName],
+    );
+
+    await client.query(
+      `INSERT INTO ${SCHEMA}.businesses_securities (
+         id, owner_id, isin, symbol, eng_name, heb_name, exchange, currency_code,
+         is_foreign, issuer_country_code
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9)`,
+      [
+        financialEntity.id,
+        ownerId,
+        group.isin,
+        group.descriptors.symbol,
+        group.descriptors.engName,
+        group.descriptors.hebName,
+        group.descriptors.exchange,
+        toCurrency(group.descriptors.currencyCode),
+        group.descriptors.issuerCountryCode,
+      ],
+    );
+
+    if (general?.tax_category_id) {
+      await client.query(
+        `INSERT INTO ${SCHEMA}.business_tax_category_match (business_id, owner_id, tax_category_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT DO NOTHING`,
+        [financialEntity.id, ownerId, general.tax_category_id],
+      );
+    }
+
+    return financialEntity.id;
+  });
 }
 
 async function backfillOwner(client: pg.Client, ownerId: string, apply: boolean) {
