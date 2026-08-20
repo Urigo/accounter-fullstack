@@ -18,7 +18,6 @@ import { BusinessesOperationProvider } from '../modules/financial-entities/provi
 import { BusinessesProvider } from '../modules/financial-entities/providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../modules/financial-entities/providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../modules/financial-entities/providers/tax-categories.provider.js';
-import { SecurityBusinessesProvider } from '../modules/foreign-securities/providers/security-businesses.provider.js';
 import { BalanceCancellationProvider } from '../modules/ledger/providers/balance-cancellation.provider.js';
 import { LedgerProvider } from '../modules/ledger/providers/ledger.provider.js';
 import { UnbalancedBusinessesProvider } from '../modules/ledger/providers/unbalanced-businesses.provider.js';
@@ -171,28 +170,6 @@ export function createLedgerTestContext(options: {
       }
       case BusinessTripsProvider:
         return new BusinessTripsProvider(tenantAwareDB, adminContextProvider);
-      case SecurityBusinessesProvider: {
-        const businessesProvider = new BusinessesProvider(tenantAwareDB, adminContextProvider);
-        const taxCategoriesProvider = new TaxCategoriesProvider(
-          tenantAwareDB,
-          adminContextProvider,
-        );
-        const businessesOperationStub: Pick<BusinessesOperationProvider, 'deleteBusinessById'> = {
-          deleteBusinessById: async (_businessId: string) => {},
-        };
-        return new SecurityBusinessesProvider(
-          tenantAwareDB,
-          adminContextProvider,
-          new FinancialEntitiesProvider(
-            tenantAwareDB,
-            businessesProvider,
-            businessesOperationStub as unknown as BusinessesOperationProvider,
-            taxCategoriesProvider,
-          ),
-          businessesProvider,
-          taxCategoriesProvider,
-        );
-      }
       case ChargeSpreadProvider:
         return new ChargeSpreadProvider(tenantAwareDB, adminContextProvider);
       default:

@@ -48,7 +48,6 @@ export const userContextResolvers: CommonModule.Resolvers = {
           defaultCryptoConversionFiatCurrency: null,
           ledgerLock: null,
           financialAccountsBusinessesIds: null,
-          foreignSecuritiesBusinessId: null,
           locality: null,
         };
       }
@@ -56,7 +55,6 @@ export const userContextResolvers: CommonModule.Resolvers = {
       const {
         financialAccounts: { internalWalletsIds },
         bankDeposits: { bankDepositBusinessId },
-        foreignSecurities: { foreignSecuritiesBusinessId },
         defaultLocalCurrency,
         defaultCryptoConversionFiatCurrency,
         ledgerLock,
@@ -76,7 +74,6 @@ export const userContextResolvers: CommonModule.Resolvers = {
         defaultCryptoConversionFiatCurrency,
         ledgerLock,
         financialAccountsBusinessesIds,
-        foreignSecuritiesBusinessId,
         locality,
       };
     },

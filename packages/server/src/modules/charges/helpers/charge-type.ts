@@ -2,7 +2,6 @@ import { Injector } from 'graphql-modules';
 import { ChargeTypeEnum } from '../../../shared/enums.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { BusinessTripsProvider } from '../../business-trips/providers/business-trips.provider.js';
-import { getForeignSecuritiesBusinessIds } from '../../foreign-securities/helpers/foreign-securities-businesses.helper.js';
 import { TransactionsProvider } from '../../transactions/providers/transactions.provider.js';
 import type { charge_type, IGetChargesByIdsResult } from '../types.js';
 import { getChargeBusinesses } from './common.helper.js';
@@ -93,6 +92,7 @@ async function deriveChargeType(
   }
 
   const {
+    foreignSecurities: { foreignSecuritiesBusinessId },
     bankDeposits: { bankDepositBusinessId },
     dividends: { dividendBusinessIds },
     authorities: { vatBusinessId },
@@ -106,12 +106,10 @@ async function deriveChargeType(
     return ChargeTypeEnum.BankDeposit;
   }
 
-  // The securities side is the general business *and* every per-security business: a trade's
-  // counterparty is the security it traded, and the general one only where none was resolved.
-  const foreignSecuritiesBusinessIds = await getForeignSecuritiesBusinessIds(injector);
   if (
-    (mainBusinessId && foreignSecuritiesBusinessIds.has(mainBusinessId)) ||
-    allBusinessIds.some(businessId => foreignSecuritiesBusinessIds.has(businessId))
+    foreignSecuritiesBusinessId &&
+    (mainBusinessId === foreignSecuritiesBusinessId ||
+      allBusinessIds.includes(foreignSecuritiesBusinessId))
   ) {
     return ChargeTypeEnum.ForeignSecurities;
   }

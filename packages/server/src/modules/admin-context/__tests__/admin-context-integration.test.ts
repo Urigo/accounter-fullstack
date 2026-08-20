@@ -4,8 +4,6 @@ import { AdminContextProvider } from '../providers/admin-context.provider.js';
 import type { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type { AuthContextProvider } from '../../auth/providers/auth-context.provider.js';
 
-const QUERIES_PER_CONTEXT_LOAD = 2;
-
 function createProvider(options: {
   businessId: string | null;
   activeReadScopeBusinessIds?: string[];
@@ -76,9 +74,7 @@ describe('AdminContext DI Integration', () => {
     expect(context.ownerId).toBe('owner-a');
     expect(context.defaultLocalCurrency).toBe('USD');
     expect(auth.getAuthContext).toHaveBeenCalledTimes(1);
-    // Two queries per load: the user_context row, then the tenant's security businesses,
-    // which join internalWalletsIds.
-    expect(query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
   it('uses single-business active scope as owner selection', async () => {
@@ -173,8 +169,8 @@ describe('AdminContext DI Integration', () => {
 
     expect(contextA.ownerId).toBe('owner-a');
     expect(contextB.ownerId).toBe('owner-b');
-    expect(requestA.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
-    expect(requestB.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
+    expect(requestA.query).toHaveBeenCalledTimes(1);
+    expect(requestB.query).toHaveBeenCalledTimes(1);
   });
 
   it('caches admin context within a single request', async () => {
@@ -196,7 +192,7 @@ describe('AdminContext DI Integration', () => {
 
     expect(first.ownerId).toBe('owner-a');
     expect(second.ownerId).toBe('owner-a');
-    expect(query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
+    expect(query).toHaveBeenCalledTimes(1);
   });
 
   it('fails closed when auth context is unavailable (RLS guard path)', async () => {

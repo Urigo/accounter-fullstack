@@ -48,7 +48,6 @@ const adminContext = {
   locality: 'ISRAEL',
   financialAccounts: { internalWalletsIds: ['wallet-1', 'wallet-2'] },
   bankDeposits: { bankDepositBusinessId: null },
-  foreignSecurities: { foreignSecuritiesBusinessId: 'foreign-securities-1' },
 } as AdminContextFixture;
 
 const authContext = {
@@ -84,8 +83,6 @@ describe('userContext resolver (multi-business)', () => {
     expect(result.ledgerLock).toBe('2024-01-01');
     expect(result.locality).toBe('ISRAEL');
     expect(result.financialAccountsBusinessesIds).toEqual(['wallet-1', 'wallet-2']);
-    // The client needs it as the fallback counterparty option for a securities trade.
-    expect(result.foreignSecuritiesBusinessId).toBe('foreign-securities-1');
   });
 
   it('appends the bank deposit business id when present', async () => {

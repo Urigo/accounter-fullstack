@@ -164,71 +164,37 @@ describe('AdminContextProvider', () => {
     expect(result?.defaultLocalCurrency).toBe('EUR');
   });
 
-  // Loading a context takes two queries: the user_context row, then the tenant's security
-  // businesses, which join internalWalletsIds.
-  const QUERIES_PER_CONTEXT_LOAD = 2;
-
-  /**
-   * The two queries return different shapes, so they are stubbed separately: answering the
-   * security-businesses query with a user_context row would put an `undefined` id into
-   * internalWalletsIds and hide the very thing the enrichment is supposed to do.
-   */
-  function mockContextLoad(
-    context: Record<string, unknown>,
-    securityBusinesses: Array<{ id: string; owner_id: string }> = [],
-  ) {
-    dbProvider.query.mockResolvedValueOnce({
-      rows: [context],
+  it('should cache the result', async () => {
+    dbProvider.query.mockResolvedValue({
+      rows: [{ owner_id: 'test-owner-id' }],
       rowCount: 1,
     } as unknown as QueryResultWithRows);
-    dbProvider.query.mockResolvedValueOnce({
-      rows: securityBusinesses,
-      rowCount: securityBusinesses.length,
-    } as unknown as QueryResultWithRows);
-  }
-
-  it('should cache the result', async () => {
-    mockContextLoad({ owner_id: 'test-owner-id' });
 
     await provider.getAdminContext();
     await provider.getAdminContext();
-    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
-  });
-
-  it('adds the security businesses to the internal wallets, once each', async () => {
-    mockContextLoad(
-      { owner_id: 'test-owner-id', foreign_securities_business_id: 'general-securities' },
-      [
-        { id: 'security-a', owner_id: 'test-owner-id' },
-        { id: 'security-b', owner_id: 'test-owner-id' },
-        // Already an internal wallet through the context itself.
-        { id: 'general-securities', owner_id: 'test-owner-id' },
-      ],
-    );
-
-    const context = await provider.getAdminContext();
-
-    const walletIds = context!.financialAccounts.internalWalletsIds;
-    expect(walletIds).toEqual(expect.arrayContaining(['security-a', 'security-b']));
-    expect(walletIds.filter(id => id === 'general-securities')).toHaveLength(1);
-    expect(walletIds).not.toContain(undefined);
+    expect(dbProvider.query).toHaveBeenCalledTimes(1);
   });
 
   it('should invalidate cache on update', async () => {
-    mockContextLoad({ owner_id: 'test-owner-id', default_local_currency: 'USD' });
-
+    dbProvider.query.mockResolvedValueOnce({
+      rows: [{ owner_id: 'test-owner-id', default_local_currency: 'USD' }],
+      rowCount: 1,
+    } as unknown as QueryResultWithRows); // get
+    
     await provider.getAdminContext();
-    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD);
+    expect(dbProvider.query).toHaveBeenCalledTimes(1);
 
-    mockContextLoad({ owner_id: 'test-owner-id', default_local_currency: 'EUR' });
-
+    dbProvider.query.mockResolvedValueOnce({
+        rows: [{ owner_id: 'test-owner-id', default_local_currency: 'EUR' }],
+        rowCount: 1
+    } as unknown as QueryResultWithRows); // update
+    
     await provider.updateAdminContext({ defaultLocalCurrency: 'EUR' });
-    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD * 2);
+    expect(dbProvider.query).toHaveBeenCalledTimes(2); // +1 for update
 
     // The cache should now have the updated value from updateAdminContext
     const result = await provider.getAdminContext();
     expect(result?.defaultLocalCurrency).toBe('EUR');
-    // No additional call, using cache
-    expect(dbProvider.query).toHaveBeenCalledTimes(QUERIES_PER_CONTEXT_LOAD * 2);
+    expect(dbProvider.query).toHaveBeenCalledTimes(2); // No additional call, using cache
   });
 });
