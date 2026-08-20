@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
-import { Globe, Mail, MapPin, Phone, Plus, Save, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { Globe, Landmark, Mail, MapPin, Phone, Plus, Save, Trash2, X } from 'lucide-react';
+import { useFieldArray, useForm, type UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Badge } from '@/components/ui/badge.js';
@@ -34,7 +34,7 @@ import { useAllCountries } from '@/hooks/use-get-countries.js';
 import { useUpdateBusiness } from '@/hooks/use-update-business.js';
 import { useUpdateClient } from '@/hooks/use-update-client.js';
 import { UserContext } from '@/providers/user-provider.js';
-import { ComboBox } from '../common';
+import { ComboBox, NumberInput } from '../common';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -56,6 +56,12 @@ import { ComboBox } from '../common';
       # localAddress
       phoneNumber
       website
+      bankAccounts {
+        id
+        bankNumber
+        branchNumber
+        accountNumber
+      }
       clientInfo {
         id
         emails
@@ -75,6 +81,15 @@ const contactInfoSchema = z.object({
   localAddress: z.string().optional(),
   phone: z.string().optional(),
   website: z.url('Invalid URL').optional().or(z.literal('')),
+  bankAccounts: z
+    .array(
+      z.object({
+        bankNumber: z.number().int().positive(),
+        branchNumber: z.number().int().positive(),
+        accountNumber: z.number().int().positive(),
+      }),
+    )
+    .optional(),
   generalContacts: z.array(z.email()).optional(),
   billingEmails: z.array(z.email()).optional(),
 });
@@ -100,6 +115,12 @@ function ContactsSectionFragmentToFormValues(
     // localAddress: ,
     phone: business.phoneNumber ?? undefined,
     website: business.website ?? undefined,
+    bankAccounts:
+      business.bankAccounts?.map(account => ({
+        bankNumber: account.bankNumber,
+        branchNumber: account.branchNumber,
+        accountNumber: account.accountNumber,
+      })) ?? [],
     generalContacts: business.email
       ?.split(',')
       .map(email => email.trim())
@@ -123,6 +144,11 @@ function convertFormDataToUpdateBusinessInput(
     phoneNumber: formData.phone,
     website: formData.website,
     email: formData.generalContacts?.join(', '),
+    bankAccounts: formData.bankAccounts?.map(account => ({
+      bankNumber: account.bankNumber,
+      branchNumber: account.branchNumber,
+      accountNumber: account.accountNumber,
+    })),
   };
 }
 
@@ -479,6 +505,8 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
                 )}
               />
 
+              <BankAccountsField form={form} />
+
               <FormField
                 control={form.control}
                 name="generalContacts"
@@ -616,5 +644,115 @@ export function ContactInfoSection({ data, refetchBusiness }: Props) {
         </form>
       </Form>
     </Card>
+  );
+}
+
+function BankAccountsField({
+  form,
+}: {
+  form: UseFormReturn<ContactInfoFormValues, unknown, ContactInfoFormValues>;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'bankAccounts',
+  });
+
+  return (
+    <FormItem className="md:col-span-2">
+      <FormLabel className="flex items-center gap-2">
+        <Landmark className="h-4 w-4" />
+        Bank Accounts
+      </FormLabel>
+      <div className="space-y-2">
+        {fields.map((item, index) => (
+          <div key={item.id} className="flex items-end gap-2">
+            <FormField
+              control={form.control}
+              name={`bankAccounts.${index}.bankNumber`}
+              render={({ field, fieldState }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-xs text-muted-foreground">Bank</FormLabel>
+                  <FormControl>
+                    <NumberInput
+                      value={field.value ?? undefined}
+                      onValueChange={value => field.onChange(value ?? undefined)}
+                      hideControls
+                      decimalScale={0}
+                      placeholder="Bank"
+                      className={dirtyFieldMarker(fieldState)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name={`bankAccounts.${index}.branchNumber`}
+              render={({ field, fieldState }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-xs text-muted-foreground">Branch</FormLabel>
+                  <FormControl>
+                    <NumberInput
+                      value={field.value ?? undefined}
+                      onValueChange={value => field.onChange(value ?? undefined)}
+                      hideControls
+                      decimalScale={0}
+                      placeholder="Branch"
+                      className={dirtyFieldMarker(fieldState)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name={`bankAccounts.${index}.accountNumber`}
+              render={({ field, fieldState }) => (
+                <FormItem className="flex-1">
+                  <FormLabel className="text-xs text-muted-foreground">Account</FormLabel>
+                  <FormControl>
+                    <NumberInput
+                      value={field.value ?? undefined}
+                      onValueChange={value => field.onChange(value ?? undefined)}
+                      hideControls
+                      decimalScale={0}
+                      placeholder="Account"
+                      className={dirtyFieldMarker(fieldState)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => remove(index)}
+              aria-label="Remove bank account"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            append({
+              bankNumber: undefined as unknown as number,
+              branchNumber: undefined as unknown as number,
+              accountNumber: undefined as unknown as number,
+            })
+          }
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Bank Account
+        </Button>
+      </div>
+    </FormItem>
   );
 }
