@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  matchExecutionsToTransactions,
   matchSecurityExecutions,
   type AccountTuple,
   type MatchableExecution,
@@ -20,12 +21,14 @@ const accountTuples = new Map([
 // Dates are constructed the way `DATE` columns come back from node-postgres: local midnight.
 const date = (value: string) => new Date(`${value}T00:00:00`);
 
+/** A buy: the account is debited on the execution's value date. */
 function transaction(overrides: Partial<MatchableTransaction> = {}): MatchableTransaction {
   return {
     id: 't1',
+    charge_id: 'c1',
     amount: '-1000.00',
-    event_date: date('2024-03-10'),
-    debit_date: null,
+    currency: 'USD',
+    debit_date: date('2024-03-12'),
     debit_date_override: null,
     account_id: ACCOUNT_ID,
     ...overrides,
@@ -40,165 +43,229 @@ function execution(overrides: Partial<MatchableExecution> = {}): MatchableExecut
     branch_number: ACCOUNT.branchNumber,
     account_number: ACCOUNT.accountNumber,
     trade_date: date('2024-03-10'),
-    value_date: null,
-    settlement_date: null,
-    payment_date: null,
+    value_date: date('2024-03-12'),
+    trade_type: 'קניה',
+    trade_currency: 'דולר ארה"ב',
+    settlement_currency: null,
     net_value_trade_currency: '1000.00',
     net_value_settlement_currency: null,
-    net_value_nis: null,
+    net_value_nis: '3700.00',
     ...overrides,
   };
 }
 
-describe('matchSecurityExecutions', () => {
-  it('matches on account, date and amount, grouped by security key', () => {
-    const matched = matchSecurityExecutions([transaction()], [execution()], accountTuples);
+const match = (
+  transactions: MatchableTransaction[],
+  executions: MatchableExecution[],
+): Map<string, MatchableTransaction> =>
+  matchExecutionsToTransactions(transactions, executions, accountTuples);
 
-    expect([...matched.keys()]).toEqual(['5129523']);
-    expect(matched.get('5129523')?.map(e => e.id)).toEqual(['e1']);
+describe('matchExecutionsToTransactions', () => {
+  it('pairs an execution with the cash movement on its value date', () => {
+    const matched = match([transaction()], [execution()]);
+
+    expect(matched.get('e1')?.id).toBe('t1');
   });
 
-  it('disambiguates same-day executions of the same security by amount', () => {
-    const matched = matchSecurityExecutions(
-      [transaction({ amount: '-2500.50' })],
-      [
-        execution({ id: 'wrong-amount', net_value_trade_currency: '1000.00' }),
-        execution({ id: 'right-amount', net_value_trade_currency: '2500.50' }),
-      ],
-      accountTuples,
+  it('requires the value date to be the effective debit date, not the trade date', () => {
+    expect(match([transaction({ debit_date: date('2024-03-10') })], [execution()]).size).toBe(0);
+  });
+
+  it('prefers a debit date override, as everywhere else', () => {
+    const matched = match(
+      [transaction({ debit_date: date('2024-03-31'), debit_date_override: date('2024-03-12') })],
+      [execution()],
     );
 
-    expect(matched.get('5129523')?.map(e => e.id)).toEqual(['right-amount']);
+    expect(matched.get('e1')?.id).toBe('t1');
   });
 
-  it('compares magnitudes, so a sell (credit) still matches its execution', () => {
-    const matched = matchSecurityExecutions(
+  it('drops a transaction with no debit date', () => {
+    expect(match([transaction({ debit_date: null })], [execution()]).size).toBe(0);
+  });
+
+  it('drops an execution with no value date', () => {
+    expect(match([transaction()], [execution({ value_date: null })]).size).toBe(0);
+  });
+
+  it('compares the amount exactly — a near miss is a different event', () => {
+    expect(match([transaction({ amount: '-1000.01' })], [execution()]).size).toBe(0);
+  });
+
+  it('ignores trailing zeros, which the two sources spell differently', () => {
+    const matched = match([transaction({ amount: '-1000' })], [execution()]);
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('compares decimals exactly, past what a double can hold', () => {
+    // Both sides parse to the same double, so a Number-based compare would call these equal.
+    expect(
+      match(
+        [transaction({ amount: '-12345678901234567.01' })],
+        [execution({ net_value_trade_currency: '12345678901234567.02' })],
+      ).size,
+    ).toBe(0);
+
+    const matched = match(
+      [transaction({ amount: '-12345678901234567.01' })],
+      [execution({ net_value_trade_currency: '12345678901234567.010' })],
+    );
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('reads a signed zero as a zero', () => {
+    const matched = match(
+      [transaction({ amount: '-0.00' })],
+      [execution({ net_value_trade_currency: '0' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('does not match an amount that is not a plain decimal', () => {
+    expect(match([transaction({ amount: 'NaN' })], [execution()]).size).toBe(0);
+  });
+
+  it('compares the net value quoted in the transaction currency', () => {
+    // Same execution, booked in ILS: the NIS column is the comparable one.
+    const matched = match(
+      [transaction({ amount: '-3700.00', currency: 'ILS' })],
+      [execution({ trade_currency: 'דולר ארה"ב' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('reads the settlement currency column when that is what the transaction is in', () => {
+    const matched = match(
+      [transaction({ amount: '-920.00', currency: 'EUR' })],
+      [execution({ settlement_currency: 'EUR', net_value_settlement_currency: '920.00' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('will not compare across currencies', () => {
+    expect(
+      match(
+        [transaction({ amount: '-1000.00', currency: 'EUR' })],
+        [execution({ net_value_nis: null })],
+      ).size,
+    ).toBe(0);
+  });
+
+  it('requires the direction the trade type implies', () => {
+    // A buy takes money out; a credit of the same size is some other event.
+    expect(match([transaction({ amount: '1000.00' })], [execution()]).size).toBe(0);
+  });
+
+  it('matches a sale against a credit', () => {
+    const matched = match(
       [transaction({ amount: '1000.00' })],
-      [execution({ net_value_trade_currency: '-1000.00' })],
-      accountTuples,
+      [execution({ trade_type: 'מכירה' })],
     );
 
-    expect(matched.get('5129523')).toHaveLength(1);
+    expect(matched.get('e1')?.id).toBe('t1');
   });
 
-  it('falls back to the settlement-currency and NIS net values', () => {
+  it('leaves the sign unconstrained for actions with no cash direction', () => {
+    const matched = match(
+      [transaction({ amount: '1000.00' })],
+      [execution({ trade_type: 'העברה לזכות הפקדון' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('tolerates a trade type it does not know rather than failing the whole charge', () => {
+    // The bank adding a word the translation has not learned must not take down a charge; the
+    // resolver is where that drift is meant to surface, and only for rows that get served.
+    const matched = match(
+      [transaction({ amount: '1000.00' })],
+      [execution({ trade_type: 'משהו חדש' })],
+    );
+
+    expect(matched.get('e1')?.id).toBe('t1');
+  });
+
+  it('will not cross-match between two portfolios', () => {
+    expect(match([transaction({ account_id: OTHER_ACCOUNT_ID })], [execution()]).size).toBe(0);
+  });
+
+  it('skips a transaction whose account has no Poalim identity', () => {
+    expect(match([transaction({ account_id: 'unmapped-account' })], [execution()]).size).toBe(0);
+  });
+
+  it('pairs one-to-one when a security is executed twice the same day for the same amount', () => {
+    const matched = match(
+      [transaction({ id: 't1' }), transaction({ id: 't2' })],
+      [execution({ id: 'e1' }), execution({ id: 'e2' })],
+    );
+
+    expect([...matched.entries()].map(([executionId, t]) => [executionId, t.id])).toEqual([
+      ['e1', 't1'],
+      ['e2', 't2'],
+    ]);
+  });
+
+  it('leaves a third execution unmatched when only two cash movements exist', () => {
+    const matched = match(
+      [transaction({ id: 't1' }), transaction({ id: 't2' })],
+      [execution({ id: 'e1' }), execution({ id: 'e2' }), execution({ id: 'e3' })],
+    );
+
+    expect(matched.size).toBe(2);
+    expect(matched.has('e3')).toBe(false);
+  });
+
+  it('consumes executions oldest first, whatever order they arrive in', () => {
+    const older = execution({ id: 'e-late-id', trade_date: date('2024-03-08') });
+    const newer = execution({ id: 'e-early-id', trade_date: date('2024-03-10') });
+
+    const matched = match([transaction()], [newer, older]);
+
+    expect(matched.has('e-late-id')).toBe(true);
+    expect(matched.has('e-early-id')).toBe(false);
+  });
+});
+
+describe('matchSecurityExecutions', () => {
+  it('groups the matched executions by security key', () => {
     const matched = matchSecurityExecutions(
-      [transaction({ amount: '-3600.25' })],
+      [transaction({ id: 't1' }), transaction({ id: 't2', amount: '-2000.00' })],
       [
-        execution({
-          net_value_trade_currency: null,
-          net_value_nis: '3600.25',
-        }),
+        execution({ id: 'e1', security: '5129523' }),
+        execution({ id: 'e2', security: '7654321', net_value_trade_currency: '2000.00' }),
       ],
       accountTuples,
     );
 
-    expect(matched.get('5129523')).toHaveLength(1);
+    expect([...matched.keys()].sort()).toEqual(['5129523', '7654321']);
+    expect(matched.get('5129523')?.map(e => e.id)).toEqual(['e1']);
+    expect(matched.get('7654321')?.map(e => e.id)).toEqual(['e2']);
   });
 
-  it('drops an execution whose amount is outside the tolerance', () => {
+  it('omits a security whose executions match nothing', () => {
     const matched = matchSecurityExecutions(
-      [transaction({ amount: '-1000.00' })],
-      [execution({ net_value_trade_currency: '1000.02' })],
+      [transaction()],
+      [execution({ id: 'e2', security: '7654321', net_value_trade_currency: '9999.00' })],
       accountTuples,
     );
 
     expect(matched.size).toBe(0);
   });
 
-  it('accepts an amount at the tolerance boundary', () => {
+  it('orders a security group by trade date', () => {
     const matched = matchSecurityExecutions(
-      [transaction({ amount: '-1000.00' })],
-      [execution({ net_value_trade_currency: '1000.01' })],
-      accountTuples,
-    );
-
-    expect(matched.get('5129523')).toHaveLength(1);
-  });
-
-  it('matches an execution whose settlement date lands on the debit date', () => {
-    const matched = matchSecurityExecutions(
-      [transaction({ event_date: date('2024-03-10'), debit_date: date('2024-03-12') })],
-      [execution({ trade_date: date('2024-02-01'), settlement_date: date('2024-03-12') })],
-      accountTuples,
-    );
-
-    expect(matched.get('5129523')).toHaveLength(1);
-  });
-
-  it('honours the debit date override over the raw debit date', () => {
-    const matched = matchSecurityExecutions(
+      [transaction({ id: 't1' }), transaction({ id: 't2' })],
       [
-        transaction({
-          event_date: date('2024-01-01'),
-          debit_date: date('2024-01-02'),
-          debit_date_override: date('2024-03-12'),
-        }),
-      ],
-      [execution({ trade_date: date('2024-03-12') })],
-      accountTuples,
-    );
-
-    expect(matched.get('5129523')).toHaveLength(1);
-  });
-
-  it('respects the date window edges', () => {
-    const withinWindow = matchSecurityExecutions(
-      [transaction()],
-      [execution({ trade_date: date('2024-03-15') })],
-      accountTuples,
-      { dateWindowDays: 5 },
-    );
-    expect(withinWindow.get('5129523')).toHaveLength(1);
-
-    const outsideWindow = matchSecurityExecutions(
-      [transaction()],
-      [execution({ trade_date: date('2024-03-16') })],
-      accountTuples,
-      { dateWindowDays: 5 },
-    );
-    expect(outsideWindow.size).toBe(0);
-  });
-
-  it('does not match an execution from another account', () => {
-    const matched = matchSecurityExecutions(
-      [transaction()],
-      [execution({ account_number: OTHER_ACCOUNT.accountNumber })],
-      new Map([[ACCOUNT_ID, ACCOUNT]]),
-    );
-
-    expect(matched.size).toBe(0);
-  });
-
-  it('skips transactions whose account has no resolved Poalim tuple', () => {
-    const matched = matchSecurityExecutions([transaction()], [execution()], new Map());
-
-    expect(matched.size).toBe(0);
-  });
-
-  it('returns each matched execution once, sorted by trade date', () => {
-    const matched = matchSecurityExecutions(
-      [transaction({ id: 'trade' }), transaction({ id: 'duplicate-leg' })],
-      [
-        execution({ id: 'later', trade_date: date('2024-03-12') }),
-        execution({ id: 'earlier', trade_date: date('2024-03-08') }),
+        execution({ id: 'e-newer', trade_date: date('2024-03-11') }),
+        execution({ id: 'e-older', trade_date: date('2024-03-09') }),
       ],
       accountTuples,
     );
 
-    expect(matched.get('5129523')?.map(e => e.id)).toEqual(['earlier', 'later']);
-  });
-
-  it('groups matches from several securities under their own keys', () => {
-    const matched = matchSecurityExecutions(
-      [transaction({ id: 't1', amount: '-1000.00' }), transaction({ id: 't2', amount: '-500.00' })],
-      [
-        execution({ id: 'a', security: '5129523', net_value_trade_currency: '1000.00' }),
-        execution({ id: 'b', security: '77774297', net_value_trade_currency: '500.00' }),
-      ],
-      accountTuples,
-    );
-
-    expect([...matched.keys()].sort()).toEqual(['5129523', '77774297']);
+    expect(matched.get('5129523')?.map(e => e.id)).toEqual(['e-older', 'e-newer']);
   });
 });
