@@ -8,11 +8,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ROUTES } from '../../../router/routes.js';
 import { WelcomePage } from '../welcome.js';
 
-const { useAuth0Mock, useViewerMock, useLogoutMock } = vi.hoisted(() => ({
-  useAuth0Mock: vi.fn(),
-  useViewerMock: vi.fn(),
-  useLogoutMock: vi.fn(),
-}));
+const { useAuth0Mock, useViewerMock, useLogoutMock, claimInvitationMock, refreshViewerMock } =
+  vi.hoisted(() => ({
+    useAuth0Mock: vi.fn(),
+    useViewerMock: vi.fn(),
+    useLogoutMock: vi.fn(),
+    claimInvitationMock: vi.fn(),
+    refreshViewerMock: vi.fn(),
+  }));
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: useAuth0Mock,
@@ -26,6 +29,14 @@ vi.mock('../../../hooks/use-logout.js', () => ({
   useLogout: useLogoutMock,
 }));
 
+vi.mock('../../../hooks/use-claim-invitation.js', () => ({
+  useClaimInvitation: () => ({
+    fetching: false,
+    error: undefined,
+    claimInvitation: claimInvitationMock,
+  }),
+}));
+
 (
   globalThis as typeof globalThis & {
     IS_REACT_ACT_ENVIRONMENT?: boolean;
@@ -37,7 +48,7 @@ async function renderWelcome(
   authState = { isAuthenticated: true, isLoading: false },
 ) {
   useAuth0Mock.mockReturnValue(authState);
-  useViewerMock.mockReturnValue(viewerState);
+  useViewerMock.mockReturnValue({ refreshViewer: refreshViewerMock, ...viewerState });
   useLogoutMock.mockReturnValue(vi.fn());
 
   const router = createMemoryRouter(
@@ -69,7 +80,7 @@ async function renderWelcome(
     container.remove();
   };
 
-  return { html, router, cleanup };
+  return { html, container, router, cleanup };
 }
 
 describe('WelcomePage', () => {
@@ -81,7 +92,12 @@ describe('WelcomePage', () => {
     const { html, cleanup } = await renderWelcome({
       fetching: false,
       error: undefined,
-      viewer: { email: 'new@example.com', emailVerified: true, status: 'NO_WORKSPACE' },
+      viewer: {
+        email: 'new@example.com',
+        emailVerified: true,
+        status: 'NO_WORKSPACE',
+        pendingInvitations: [],
+      },
     });
 
     expect(html).toContain('No workspace yet');
@@ -93,7 +109,12 @@ describe('WelcomePage', () => {
     const { html, cleanup } = await renderWelcome({
       fetching: false,
       error: undefined,
-      viewer: { email: 'new@example.com', emailVerified: false, status: 'EMAIL_UNVERIFIED' },
+      viewer: {
+        email: 'new@example.com',
+        emailVerified: false,
+        status: 'EMAIL_UNVERIFIED',
+        pendingInvitations: [],
+      },
     });
 
     expect(html).toContain('Verify your email');
@@ -136,11 +157,80 @@ describe('WelcomePage', () => {
     await cleanup();
   });
 
+  it('offers a waiting invitation instead of the dead-end copy', async () => {
+    const { html, cleanup } = await renderWelcome({
+      fetching: false,
+      error: undefined,
+      viewer: {
+        email: 'new@example.com',
+        emailVerified: true,
+        status: 'NO_WORKSPACE',
+        pendingInvitations: [
+          {
+            id: 'inv-1',
+            businessId: 'biz-1',
+            businessName: 'Acme Ltd',
+            roleId: 'employee',
+            expiresAt: '2030-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain("You've been invited");
+    expect(html).toContain('Acme Ltd');
+    expect(html).toContain('Accept');
+    expect(html).not.toContain('invitation-only');
+    await cleanup();
+  });
+
+  it('claims the invitation and returns to the app', async () => {
+    claimInvitationMock.mockResolvedValue({ success: true, businessId: 'biz-1' });
+
+    const { container, router, cleanup } = await renderWelcome({
+      fetching: false,
+      error: undefined,
+      viewer: {
+        email: 'new@example.com',
+        emailVerified: true,
+        status: 'NO_WORKSPACE',
+        pendingInvitations: [
+          {
+            id: 'inv-1',
+            businessId: 'biz-1',
+            businessName: 'Acme Ltd',
+            roleId: 'employee',
+            expiresAt: '2030-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    });
+
+    const acceptButton = [...container.querySelectorAll('button')].find(
+      button => button.textContent === 'Accept',
+    );
+    await act(async () => {
+      acceptButton?.click();
+      await Promise.resolve();
+    });
+
+    expect(claimInvitationMock).toHaveBeenCalledWith('inv-1');
+    // The stale NO_WORKSPACE answer must not outlive the navigation.
+    expect(refreshViewerMock).toHaveBeenCalled();
+    expect(router.state.location.pathname).toBe(ROUTES.HOME);
+    await cleanup();
+  });
+
   it('returns an active viewer to the app', async () => {
     const { router, cleanup } = await renderWelcome({
       fetching: false,
       error: undefined,
-      viewer: { email: 'member@example.com', emailVerified: true, status: 'ACTIVE' },
+      viewer: {
+        email: 'member@example.com',
+        emailVerified: true,
+        status: 'ACTIVE',
+        pendingInvitations: [],
+      },
     });
 
     expect(router.state.location.pathname).toBe(ROUTES.HOME);
