@@ -1198,8 +1198,8 @@ export class PoalimScraperIngestionProvider {
    * Driven off the whole validated payload rather than only the newly inserted rows: a
    * re-scrape inserts nothing, but a security whose business was never created (ingested
    * before this existed, or created while an earlier scrape failed here) still needs one.
-   * Both steps are idempotent, and the existing ISINs are fetched in one query so a repeat
-   * scrape costs a single lookup.
+   * Both steps are idempotent, and `ensureSecurityBusinesses` settles the whole payload with a
+   * single lookup, so a repeat scrape costs one query rather than one per security.
    *
    * Rows with no ISIN are skipped: the ISIN is the identity, and one cannot be invented from
    * the Poalim key alone. Those securities stay unlinked and are assigned by hand.
@@ -1248,14 +1248,15 @@ export class PoalimScraperIngestionProvider {
     }
 
     try {
-      const existing = await this.securityBusinessesProvider.getSecurityBusinessesByIsins([
-        ...bySecurityIsin.keys(),
-      ]);
+      const securityBusinesses = await this.securityBusinessesProvider.ensureSecurityBusinesses(
+        [...bySecurityIsin.values()].map(entry => entry.descriptors),
+      );
 
-      for (const [isin, { descriptors, poalimKeys }] of bySecurityIsin) {
-        const securityBusiness =
-          existing.get(isin) ??
-          (await this.securityBusinessesProvider.ensureSecurityBusiness(descriptors));
+      for (const [isin, { poalimKeys }] of bySecurityIsin) {
+        const securityBusiness = securityBusinesses.get(isin);
+        if (!securityBusiness) {
+          continue;
+        }
 
         for (const poalimKey of poalimKeys) {
           await this.securityBusinessesProvider.linkIdentifier(

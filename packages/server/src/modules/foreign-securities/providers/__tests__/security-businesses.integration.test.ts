@@ -216,6 +216,24 @@ describe('ensureSecurityBusiness', () => {
     expect(security.currency_code).toBeNull();
   });
 
+  it('settles a whole payload in one lookup, creating only what is missing', async () => {
+    const provider = createProvider();
+    const first = await provider.ensureSecurityBusiness(APPLE);
+
+    const securities = await provider.ensureSecurityBusinesses([
+      APPLE,
+      { isin: 'US5949181045', symbol: 'MSFT', engName: 'MICROSOFT CORP', isForeign: true },
+    ]);
+
+    expect(securities.get(APPLE.isin)?.id).toBe(first.id);
+    expect(securities.get('US5949181045')?.symbol).toBe('MSFT');
+    const { rows } = await pool.query(
+      'SELECT count(*)::int AS count FROM accounter_schema.businesses_securities WHERE owner_id = $1',
+      [TEST_OWNER_ID],
+    );
+    expect(rows[0].count).toBe(2);
+  });
+
   it('is idempotent per ISIN — a second call returns the same business', async () => {
     const provider = createProvider();
 

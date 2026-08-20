@@ -8,8 +8,9 @@ Create a security's business when its executions arrive, and suggest it as the t
 of its own and records the Poalim key it is known by, through `ensureSecurityBusiness` /
 `linkIdentifier`. Driven off the whole validated payload rather than only the newly inserted rows: a
 re-scrape inserts nothing, but a security whose business was never created — ingested before this
-existed, or created while an earlier scrape failed here — still needs one. Both steps are idempotent
-and the existing ISINs are fetched in a single query, so a repeat scrape costs one lookup. Two Poalim
+existed, or created while an earlier scrape failed here — still needs one. Both steps are idempotent, and the whole payload is settled through
+the new `SecurityBusinessesProvider.ensureSecurityBusinesses` batch API — one lookup for the lot,
+rather than a bulk pre-check followed by a per-ISIN re-check inside `ensureSecurityBusiness`. Two Poalim
 keys reporting the same ISIN collapse onto one business, which is the point of keying on the ISIN.
 
 Rows with no ISIN are skipped: the ISIN is the identity and one cannot be invented from the Poalim
