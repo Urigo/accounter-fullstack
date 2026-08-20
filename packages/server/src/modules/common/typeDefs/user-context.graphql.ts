@@ -23,6 +23,8 @@ export default gql`
     defaultCryptoConversionFiatCurrency: Currency
     ledgerLock: TimelessDate
     financialAccountsBusinessesIds: [UUID!]
+    " the general foreign-securities business, the fallback counterparty for a securities trade "
+    foreignSecuritiesBusinessId: UUID
     locality: String
   }
 `;
