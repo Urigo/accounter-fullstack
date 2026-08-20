@@ -31,7 +31,9 @@ this *the* foreign-securities business", answered by the new
   as before. `normalizeContext` stays synchronous and pure; the enrichment happens on the async paths
   that hit the DB anyway, with raw SQL rather than `SecurityBusinessesProvider` — that provider takes
   its owner id from the admin context, so injecting it back would close a DI cycle. Loading a context
-  is now two queries instead of one.
+  is now two queries instead of one, and the DataLoader path batches both over the whole key set
+  rather than enriching per owner, which would have been an N+1 behind a loader. The ids are merged
+  as a set, so the general foreign-securities business is not listed twice.
 
 `UserContext.foreignSecuritiesBusinessId` is exposed to the client, which needs it as the fallback
 counterparty option when no security could be resolved for a trade.

@@ -479,12 +479,23 @@ export class AdminContextProvider {
    * `normalizeContext` stays synchronous and pure; the enrichment happens on the async paths
    * that read from the DB anyway.
    */
-  private async withSecurityBusinesses(
-    context: AdminContext,
-    ownerIds: string[],
-  ): Promise<AdminContext> {
+  private async securityBusinessIdsByOwner(ownerIds: string[]): Promise<Map<string, string[]>> {
     const securityBusinesses = await getSecurityBusinessIds.run({ ownerIds }, this.db);
-    if (securityBusinesses.length === 0) {
+
+    const byOwner = new Map<string, string[]>();
+    for (const securityBusiness of securityBusinesses) {
+      const ids = byOwner.get(securityBusiness.owner_id);
+      if (ids) {
+        ids.push(securityBusiness.id);
+      } else {
+        byOwner.set(securityBusiness.owner_id, [securityBusiness.id]);
+      }
+    }
+    return byOwner;
+  }
+
+  private withSecurityBusinesses(context: AdminContext, securityBusinessIds: string[]) {
+    if (securityBusinessIds.length === 0) {
       return context;
     }
 
@@ -492,12 +503,21 @@ export class AdminContextProvider {
       ...context,
       financialAccounts: {
         ...context.financialAccounts,
+        // De-duped: the general foreign-securities business is already in the list, and
+        // nothing rules out a future source putting a security there too.
         internalWalletsIds: [
-          ...context.financialAccounts.internalWalletsIds,
-          ...securityBusinesses.map(securityBusiness => securityBusiness.id),
+          ...new Set([...context.financialAccounts.internalWalletsIds, ...securityBusinessIds]),
         ],
       },
     };
+  }
+
+  private async withOwnSecurityBusinesses(
+    context: AdminContext,
+    ownerId: string,
+  ): Promise<AdminContext> {
+    const byOwner = await this.securityBusinessIdsByOwner([ownerId]);
+    return this.withSecurityBusinesses(context, byOwner.get(ownerId) ?? []);
   }
 
   public async getAdminContext(): Promise<AdminContext | null> {
@@ -509,7 +529,7 @@ export class AdminContextProvider {
 
     const contexts = await getAdminContexts.run({ ownerIds: [ownerId] }, this.db);
     const context = contexts[0]
-      ? await this.withSecurityBusinesses(this.normalizeContext(contexts[0]), [ownerId])
+      ? await this.withOwnSecurityBusinesses(this.normalizeContext(contexts[0]), ownerId)
       : null;
     this.cachedContext = context;
     return context;
@@ -538,9 +558,9 @@ export class AdminContextProvider {
 
     const updatedContexts = await updateAdminContext.run({ ...params, ownerId }, this.db);
     if (updatedContexts.length >= 1) {
-      const normalizedContext = await this.withSecurityBusinesses(
+      const normalizedContext = await this.withOwnSecurityBusinesses(
         this.normalizeContext(updatedContexts[0]),
-        [ownerId],
+        ownerId,
       );
       this.cachedContext = normalizedContext;
       return normalizedContext;
@@ -550,14 +570,22 @@ export class AdminContextProvider {
 
   private async batchAdminContextsByOwnerIds(ownerIds: readonly string[]) {
     const uniqueOwnerIds = Array.from(new Set(ownerIds));
-    const contexts = await getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db);
+    // Both reads are batched over the whole key set: a per-owner enrichment here would be an
+    // N+1 behind a DataLoader, on a path resolvers hit with many owners at once.
+    const [contexts, securityBusinessIdsByOwner] = await Promise.all([
+      getAdminContexts.run({ ownerIds: uniqueOwnerIds }, this.db),
+      this.securityBusinessIdsByOwner(uniqueOwnerIds),
+    ]);
     const contextsByOwnerId = new Map(contexts.map(c => [c.owner_id, c]));
-    return Promise.all(
-      ownerIds.map(id => {
-        const context = contextsByOwnerId.get(id);
-        return context ? this.withSecurityBusinesses(this.normalizeContext(context), [id]) : null;
-      }),
-    );
+    return ownerIds.map(id => {
+      const context = contextsByOwnerId.get(id);
+      return context
+        ? this.withSecurityBusinesses(
+            this.normalizeContext(context),
+            securityBusinessIdsByOwner.get(id) ?? [],
+          )
+        : null;
+    });
   }
 
   public adminContextByOwnerIdLoader = new DataLoader((ownerIds: readonly string[]) =>
