@@ -92,7 +92,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
       <main className="container mx-auto px-4 py-6 md:px-6 lg:px-8 max-w-7xl">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full lg:grid-cols-12 sm:grid-cols-4 grid-cols-8 mb-6 h-auto gap-1 bg-muted/50 p-1">
+          <TabsList className="grid w-full lg:grid-cols-8 sm:grid-cols-4 grid-cols-8 mb-6 h-auto gap-1 bg-muted/50 p-1">
             <TabsTrigger
               value="contact"
               className="flex items-center gap-2 data-[state=active]:bg-background"
