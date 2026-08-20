@@ -122,6 +122,8 @@ function createProvider(
     createStubTransactionsProvider(transactions),
     createStubFinancialAccountsProvider(accountNumber),
     createStubFinancialBankAccountsProvider(),
+    // Only the security-history path uses it, which these cases do not take.
+    {} as never,
   );
 }
 

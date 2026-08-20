@@ -2,6 +2,7 @@ import { useContext, useEffect, type ReactElement } from 'react';
 import {
   ArrowLeftRight,
   Building2,
+  CandlestickChart,
   ChartLine,
   DollarSign,
   FileCheck,
@@ -31,6 +32,7 @@ import { ConfigurationsSection } from './configurations-section.js';
 import { ContactInfoSection } from './contact-info-section.js';
 import { DocumentsSection } from './documents-section.js';
 import { LedgerSection } from './ledger-section.js';
+import { SecuritySection } from './security-section.js';
 import { TransactionsSection } from './transactions-section.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -42,6 +44,9 @@ import { TransactionsSection } from './transactions-section.js';
         id
       }
       adminInfo {
+        id
+      }
+      securityInfo {
         id
       }
     }
@@ -79,6 +84,7 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
 
   const isClient = 'clientInfo' in business && !!business.clientInfo;
   const isAdmin = 'adminInfo' in business && !!business.adminInfo;
+  const isSecurity = 'securityInfo' in business && !!business.securityInfo;
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,6 +142,15 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
               <ChartLine className="h-4 w-4" />
               <span className="hidden sm:inline">Balance</span>
             </TabsTrigger>
+            {isSecurity && (
+              <TabsTrigger
+                value="security"
+                className="flex items-center gap-2 data-[state=active]:bg-background"
+              >
+                <CandlestickChart className="h-4 w-4" />
+                <span className="hidden sm:inline">Security</span>
+              </TabsTrigger>
+            )}
             {isClient && (
               <>
                 <TabsTrigger
@@ -216,6 +231,12 @@ export default function Business({ data, refetchBusiness }: Props): ReactElement
           <TabsContent value="balance" className="mt-0">
             <BalanceSection businessId={business.id} />
           </TabsContent>
+
+          {isSecurity && (
+            <TabsContent value="security" className="mt-0">
+              <SecuritySection businessId={business.id} />
+            </TabsContent>
+          )}
 
           {isClient && (
             <>

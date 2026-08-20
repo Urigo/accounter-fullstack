@@ -7,6 +7,7 @@ import type {
   IGetSecurityIdentifiersByBusinessIdsResult,
   security_identifier_type,
 } from './__generated__/security-businesses.types.js';
+import type { SecurityPositionProto } from './helpers/security-position.helper.js';
 
 export type * from './__generated__/types.js';
 export type * from './__generated__/foreign-securities.types.js';
@@ -57,6 +58,24 @@ export type SecurityRow = IGetSecuritiesByKeysResult;
  * `getSecurityExecutions` — the curated subset of the ~100 source columns.
  */
 export type SecurityExecutionRow = IGetSecurityExecutionsResult;
+
+/** The derived position, carrying the security it belongs to so clients can cache it. */
+export type SecurityPositionWithIdProto = SecurityPositionProto & { id: string };
+
+/** An execution paired with the cash movement behind it, for a security's own page. */
+export type SecurityHistoryExecutionProto = {
+  id: string;
+  execution: SecurityExecutionRow;
+  /** The matched transaction, carrying the charge it belongs to. Null when nothing matched. */
+  transaction: { id: string; charge_id: string } | null;
+};
+
+export type SecurityBusinessHistoryProto = {
+  id: string;
+  security: SecurityBusinessRow;
+  position: SecurityPositionWithIdProto;
+  executions: SecurityHistoryExecutionProto[];
+};
 
 export type ChargeSecurityProto = {
   /** Scoped to the charge so the client cache keeps a key's entries distinct per charge. */

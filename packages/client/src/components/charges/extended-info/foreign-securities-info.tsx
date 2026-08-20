@@ -5,7 +5,7 @@ import {
   type ForeignSecuritiesChargeInfoFragment,
 } from '../../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../../gql/index.js';
-import { formatStringifyAmount } from '../../../helpers/numbers.js';
+import { SecurityExecutionsTable } from '../../securities/security-executions-table.js';
 import {
   Account,
   Amount,
@@ -45,26 +45,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
         }
         executions {
           id
-          tradeDate
-          valueDate
-          settlementDate
-          tradeType
-          transactionType
-          paymentType
-          quantity
-          tradePrice
-          netValue {
-            formatted
-          }
-          tradeCommission {
-            formatted
-          }
-          managementFees {
-            formatted
-          }
-          israelTaxValue {
-            formatted
-          }
+          ...SecurityExecutionFields
         }
       }
     }
@@ -132,7 +113,11 @@ const SecuritySection = ({ security }: { security: ChargeSecurity }): ReactEleme
         </div>
       )}
       <SecurityTransactionsTable transactions={security.transactions} />
-      <SecurityExecutionsTable executions={security.executions} />
+      {security.executions.length > 0 && (
+        <TableSection title="Portfolio activity">
+          <SecurityExecutionsTable rows={security.executions.map(execution => ({ execution }))} />
+        </TableSection>
+      )}
     </div>
   );
 };
@@ -213,72 +198,3 @@ const SecurityTransactionsTable = ({
     </TableSection>
   ) : null;
 };
-
-const formatNumber = (value: number | null | undefined, digits = 2): string =>
-  value == null ? '' : formatStringifyAmount(value, digits);
-
-const formatDate = (value: string | Date | null | undefined): string =>
-  value ? new Date(value).toLocaleDateString() : '';
-
-/** The bank's enum values read better as words than as SCREAMING_SNAKE_CASE. */
-const humanizeEnum = (value: string): string =>
-  value
-    .toLowerCase()
-    .split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-const SecurityExecutionsTable = ({
-  executions,
-}: {
-  executions: ChargeSecurity['executions'];
-}): ReactNode =>
-  executions.length ? (
-    <TableSection title="Portfolio activity">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Trade Date</TableHead>
-            <TableHead>Value Date</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Quantity</TableHead>
-            <TableHead>Price</TableHead>
-            <TableHead>Net Value</TableHead>
-            <TableHead>Commission</TableHead>
-            <TableHead>Tax</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {executions.map(execution => (
-            <TableRow key={execution.id}>
-              <TableCell className="whitespace-nowrap">{formatDate(execution.tradeDate)}</TableCell>
-              <TableCell className="whitespace-nowrap">
-                {formatDate(execution.valueDate ?? execution.settlementDate)}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-row flex-wrap items-center gap-1">
-                  <Badge variant="secondary">{humanizeEnum(execution.tradeType)}</Badge>
-                  {execution.transactionType !== execution.tradeType && (
-                    <Badge variant="outline">{humanizeEnum(execution.transactionType)}</Badge>
-                  )}
-                  {execution.paymentType && (
-                    <Badge variant="outline">{humanizeEnum(execution.paymentType)}</Badge>
-                  )}
-                </div>
-              </TableCell>
-              {/* Quantities can be fractional for ETFs and mutual funds. */}
-              <TableCell>{formatNumber(execution.quantity, 4)}</TableCell>
-              <TableCell>{formatNumber(execution.tradePrice, 4)}</TableCell>
-              <TableCell className="whitespace-nowrap">{execution.netValue?.formatted}</TableCell>
-              <TableCell className="whitespace-nowrap">
-                {(execution.tradeCommission ?? execution.managementFees)?.formatted}
-              </TableCell>
-              <TableCell className="whitespace-nowrap">
-                {execution.israelTaxValue?.formatted}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableSection>
-  ) : null;

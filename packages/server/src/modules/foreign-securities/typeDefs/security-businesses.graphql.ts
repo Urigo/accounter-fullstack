@@ -4,6 +4,41 @@ export default gql`
   extend type Query {
     " Every business that stands for a traded security, for pickers scoped to securities "
     allSecurityBusinesses: [LtdFinancialEntity!]! @requiresAuth
+    " The full ingested life of one security: its holding and every execution "
+    securityBusinessHistory(businessId: UUID!): SecurityBusinessHistory! @requiresAuth
+  }
+
+  " Everything a security business page shows "
+  type SecurityBusinessHistory {
+    id: UUID!
+    security: SecurityBusiness!
+    position: SecurityPosition!
+    " Every ingested execution, oldest first "
+    executions: [SecurityHistoryExecution!]!
+  }
+
+  " What the ingested executions add up to. Derived rather than reported — the bank's own holdings are not ingested, so the numbers are only as complete as the execution history behind them (see historyStartDate) "
+  type SecurityPosition {
+    " The security this position belongs to "
+    id: UUID!
+    " Units held, from the executions alone "
+    quantity: Float!
+    " Weighted average paid per unit bought; null when nothing was bought "
+    averageCost: FinancialAmount
+    totalBought: FinancialAmount
+    totalSold: FinancialAmount
+    " The earliest ingested execution — anything before it is invisible here "
+    historyStartDate: TimelessDate
+    lastExecutionDate: TimelessDate
+  }
+
+  " An execution with the cash movement behind it "
+  type SecurityHistoryExecution {
+    id: UUID!
+    execution: SecurityExecution!
+    " The charge the matched cash movement belongs to; null when no movement was matched "
+    charge: Charge
+    transaction: Transaction
   }
 
   extend type LtdFinancialEntity {
