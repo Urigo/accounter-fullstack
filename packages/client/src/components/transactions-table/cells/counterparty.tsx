@@ -67,7 +67,9 @@ export function Counterparty({ transaction, onChange }: Props): ReactElement {
   );
 
   const { selectableBusinesses, fetching: businessesLoading } = useGetBusinesses();
-  const { selectableSecurityBusinesses, fetching: securitiesLoading } = useGetSecurityBusinesses();
+  const { selectableSecurityBusinesses, fetching: securitiesLoading } = useGetSecurityBusinesses({
+    pause: !isSecurityTrade,
+  });
   const { userContext } = useContext(UserContext);
   const foreignSecuritiesBusinessId = userContext?.context.foreignSecuritiesBusinessId ?? null;
 

@@ -27,13 +27,24 @@ type UseGetSecurityBusinesses = {
   selectableSecurityBusinesses: Array<{ value: string; label: string }>;
 };
 
+type UseGetSecurityBusinessesOptions = {
+  /** Skips the query entirely — for callers that only need the list in some rows. */
+  pause?: boolean;
+};
+
 /**
  * The businesses that stand for a traded security, for pickers that should offer only those —
  * the counterparty of a foreign-securities trade, above all.
+ *
+ * Pausable because its caller is a table cell: a plain transactions table would otherwise run
+ * this query once per row for a list it never shows.
  */
-export const useGetSecurityBusinesses = (): UseGetSecurityBusinesses => {
+export const useGetSecurityBusinesses = ({
+  pause,
+}: UseGetSecurityBusinessesOptions = {}): UseGetSecurityBusinesses => {
   const [{ data, fetching, error }, fetch] = useQuery({
     query: AllSecurityBusinessesDocument,
+    pause,
   });
 
   useEffect(() => {

@@ -14,10 +14,12 @@ apart.
 The fee row is the bank's and keeps the full list, matching what the suggestion resolver does on the
 server.
 
-The rule is decided client-side from what the charge already knows, so `chargeType` is threaded from
-`charge-extended-info` through `ChargeTransactionsTable` and `TransactionsTable` onto the row, the
-same way `enableEdit` and `enableChargeLink` are. The other `TransactionsTable` callers pass no
-charge type and are unaffected.
+The rule is decided client-side from what the charge already knows, so `chargeType` — typed as the
+shared `ChargeType` union rather than a bare string, since it is compared against typename literals —
+is threaded from `charge-extended-info` through `ChargeTransactionsTable` and `TransactionsTable`
+onto the row, the same way `enableEdit` and `enableChargeLink` are. The other `TransactionsTable`
+callers pass no charge type and are unaffected: `useGetSecurityBusinesses` takes a `pause` flag, so a
+plain transactions table does not run the securities query once per row for a list it never shows.
 
 `UserContext.foreignSecuritiesBusinessId` is read through the user provider for that fallback option,
 and `useGetSecurityBusinesses` is the securities-scoped counterpart of `useGetAdminBusinesses`.

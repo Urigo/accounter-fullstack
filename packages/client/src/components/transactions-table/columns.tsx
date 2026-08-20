@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
+import type { ChargeType } from '@/helpers/charges.js';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
 import type { TransactionForTransactionsTableFieldsFragment } from '../../gql/graphql.js';
 import { ChargeNavigateButton, EditMiniButton, InsertMiscExpenseModal } from '../common/index.js';
@@ -60,7 +61,7 @@ export type TransactionsTableRowType = TransactionForTransactionsTableFieldsFrag
    * one. Lets a cell narrow its behaviour to a charge kind — the counterparty picker offers
    * securities only, on a foreign-securities trade.
    */
-  chargeType?: string;
+  chargeType?: ChargeType;
 };
 
 export const columns: ColumnDef<TableFeaturesConfig, TransactionsTableRowType>[] = [
