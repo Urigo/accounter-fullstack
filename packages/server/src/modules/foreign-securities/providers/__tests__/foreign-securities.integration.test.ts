@@ -10,6 +10,7 @@ import type { FinancialAccountsProvider } from '../../../financial-accounts/prov
 import type { FinancialBankAccountsProvider } from '../../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
 import { ForeignSecuritiesProvider } from '../foreign-securities.provider.js';
+import { SecurityBusinessesProvider } from '../security-businesses.provider.js';
 
 let pool: Pool;
 
@@ -21,6 +22,12 @@ const OTHER_OWNER_ID = '00000000-0000-0000-0000-0000000006ed';
 const CHARGE_ID = '00000000-0000-0000-0000-00000000c001';
 
 const ACCOUNT_ID = '00000000-0000-0000-0000-00000000a001';
+
+// The synthetic security businesses. Fixed ids so cleanup and assertions are deterministic.
+const APPLE_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a1';
+const MSFT_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a2';
+const ISIN_ONLY_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a3';
+const SECURITY_BUSINESS_IDS = [APPLE_BUSINESS_ID, MSFT_BUSINESS_ID, ISIN_ONLY_BUSINESS_ID];
 const BANK_NUMBER = 12;
 const BRANCH_NUMBER = 615;
 const ACCOUNT_NUMBER = 100000;
@@ -122,8 +129,16 @@ function createProvider(
     createStubTransactionsProvider(transactions),
     createStubFinancialAccountsProvider(accountNumber),
     createStubFinancialBankAccountsProvider(),
-    // Only the security-history path uses it, which these cases do not take.
-    {} as never,
+    // The holdings path reads security businesses and their identifiers, so this one has to be
+    // real. Only `db` is exercised: the four remaining constructor deps drive the create path,
+    // which these cases seed around by inserting the rows directly.
+    new SecurityBusinessesProvider(
+      dbClient,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    ),
   );
 }
 
@@ -165,6 +180,8 @@ type ExecutionFixture = {
   valueDate?: string | null;
   tradeType?: string;
   netValueTradeCurrency?: string;
+  /** Units moved. Fractional on purpose in the holdings cases — ETFs trade that way. */
+  nv?: string;
 };
 
 // Synthetic values only — never lifted from a real bank capture.
@@ -177,6 +194,7 @@ async function insertExecution({
   valueDate = VALUE_DATE,
   tradeType = 'קניה',
   netValueTradeCurrency = '1000.00',
+  nv = '10',
 }: ExecutionFixture) {
   // trade_type/transaction_type carry the bank's own Hebrew vocabulary; on a plain buy or sale
   // the two agree (an invariant the scraper's zod schema enforces).
@@ -184,7 +202,7 @@ async function insertExecution({
     `INSERT INTO accounter_schema.poalim_securities_transactions (
        owner_id, bank_number, branch_number, account_number, security, trade_date, value_date,
        trade_type, transaction_type, nv, trade_price, net_value_trade_currency, trade_currency
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, 10, 100, $9, 'דולר ארה"ב')`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $10, 100, $9, 'דולר ארה"ב')`,
     [
       ownerId,
       BANK_NUMBER,
@@ -195,8 +213,51 @@ async function insertExecution({
       valueDate,
       tradeType,
       netValueTradeCurrency,
+      nv,
     ],
   );
+}
+
+/**
+ * A security business and the Poalim keys it answers to, inserted directly rather than through
+ * `SecurityBusinessesProvider.ensureSecurityBusiness` — that path needs an admin context and a
+ * general foreign-securities business, neither of which the holdings query reads.
+ */
+async function insertSecurityBusiness({
+  id,
+  isin,
+  engName = 'Example Corp',
+  securityKeys = [],
+  ownerId = TEST_OWNER_ID,
+}: {
+  id: string;
+  isin: string;
+  engName?: string;
+  securityKeys?: string[];
+  ownerId?: string;
+}) {
+  await pool.query(
+    `INSERT INTO accounter_schema.financial_entities (id, owner_id, name, type)
+     VALUES ($1, $2, $3, 'business')`,
+    [id, ownerId, `${engName} (${isin})`],
+  );
+  await pool.query(
+    `INSERT INTO accounter_schema.businesses (id, owner_id) VALUES ($1, $2)`,
+    [id, ownerId],
+  );
+  await pool.query(
+    `INSERT INTO accounter_schema.businesses_securities (id, owner_id, isin, eng_name, symbol)
+     VALUES ($1, $2, $3, $4, 'EXMP')`,
+    [id, ownerId, isin, engName],
+  );
+  for (const securityKey of securityKeys) {
+    await pool.query(
+      `INSERT INTO accounter_schema.security_identifiers
+         (owner_id, business_id, identifier_type, identifier_value)
+       VALUES ($1, $2, 'POALIM_SECURITY_KEY', $3)`,
+      [ownerId, id, securityKey],
+    );
+  }
 }
 
 beforeAll(async () => {
@@ -222,12 +283,15 @@ beforeAll(async () => {
     grants: [
       { table: 'poalim_securities', privileges: 'SELECT' },
       { table: 'poalim_securities_transactions', privileges: 'SELECT' },
+      { table: 'businesses_securities', privileges: 'SELECT' },
+      { table: 'security_identifiers', privileges: 'SELECT' },
     ],
   });
 });
 
 afterAll(async () => {
   await dropRlsRole(pool);
+  await deleteSecurityBusinesses();
   // poalim_securities and poalim_securities_transactions rows cascade with the owning business.
   for (const ownerId of [TEST_OWNER_ID, OTHER_OWNER_ID]) {
     await pool.query('DELETE FROM accounter_schema.businesses WHERE id = $1', [ownerId]);
@@ -250,7 +314,22 @@ beforeEach(async () => {
     'DELETE FROM accounter_schema.poalim_securities_transactions WHERE owner_id = ANY($1)',
     [owners],
   );
+  await deleteSecurityBusinesses();
 });
+
+/**
+ * The synthetic security businesses, by explicit id so the tenants' own business rows survive
+ * between tests. `businesses` first: its FK to `financial_entities` does not cascade, while
+ * businesses_securities and security_identifiers do cascade from `businesses`.
+ */
+async function deleteSecurityBusinesses() {
+  await pool.query('DELETE FROM accounter_schema.businesses WHERE id = ANY($1)', [
+    SECURITY_BUSINESS_IDS,
+  ]);
+  await pool.query('DELETE FROM accounter_schema.financial_entities WHERE id = ANY($1)', [
+    SECURITY_BUSINESS_IDS,
+  ]);
+}
 
 describe('getChargeSecurities', () => {
   it('resolves a key from a transaction description to its ingested security', async () => {
@@ -473,6 +552,123 @@ describe('getChargeSecurities — matched executions', () => {
           `SELECT security FROM accounter_schema.poalim_securities_transactions
            WHERE security = ANY($1)`,
           [['5129523']],
+        );
+        return result.rows;
+      });
+
+      expect(rows).toEqual([]);
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  });
+});
+
+describe('getExecutionsBySecurityBusiness', () => {
+  it('gives every security business its own executions, chronologically', async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'US0378331005',
+      engName: 'APPLE INC',
+      securityKeys: ['1097'],
+    });
+    await insertSecurityBusiness({
+      id: MSFT_BUSINESS_ID,
+      isin: 'US5949181045',
+      engName: 'MICROSOFT CORP',
+      securityKeys: ['2044'],
+    });
+    await insertExecution({ security: '1097', tradeDate: '2024-03-10' });
+    await insertExecution({ security: '1097', tradeDate: '2024-01-05' });
+    await insertExecution({ security: '2044', tradeDate: '2024-02-02' });
+
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(2);
+    // The SQL orders globally by trade_date, so each business's slice stays chronological —
+    // which is what the position derivation reads its currency and start date off.
+    expect(
+      executionsByBusinessId.get(APPLE_BUSINESS_ID)?.map(execution => execution.trade_date),
+    ).toEqual([new Date('2024-01-05T00:00:00'), new Date('2024-03-10T00:00:00')]);
+    expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)).toHaveLength(1);
+  });
+
+  it('collapses several Poalim keys onto the one security business they name', async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'US0378331005',
+      securityKeys: ['1097', '1098'],
+    });
+    await insertExecution({ security: '1097' });
+    await insertExecution({ security: '1098' });
+
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(2);
+  });
+
+  it('keeps a security business with no Poalim key, with nothing against it', async () => {
+    // Its ISIN was ingested but no execution ever named it by key. It is still a security the
+    // tenant has, so it has to stay listable — a zero position, not a missing row.
+    await insertSecurityBusiness({
+      id: ISIN_ONLY_BUSINESS_ID,
+      isin: 'IL0010811243',
+      securityKeys: [],
+    });
+
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.has(ISIN_ONLY_BUSINESS_ID)).toBe(true);
+    expect(executionsByBusinessId.get(ISIN_ONLY_BUSINESS_ID)).toEqual([]);
+  });
+
+  it('ignores executions whose key belongs to no security business', async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'US0378331005',
+      securityKeys: ['1097'],
+    });
+    await insertExecution({ security: '1097' });
+    await insertExecution({ security: '9999' });
+
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.size).toBe(1);
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(1);
+  });
+
+  it('has no entries at all when the tenant has no security businesses', async () => {
+    await insertExecution({ security: '1097' });
+
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.size).toBe(0);
+  });
+
+  /**
+   * As with the poalim_* tables above, a provider-level assertion proves nothing here: the
+   * suite connects as a superuser, who bypasses RLS. This runs the query shape the holdings
+   * path depends on under the non-superuser role the server actually operates behind.
+   */
+  it("does not expose another tenant's security businesses under tenant_isolation", async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'US0378331005',
+      securityKeys: ['1097'],
+      ownerId: OTHER_OWNER_ID,
+    });
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Session variables must be set as superuser, before privileges are dropped.
+      await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [TEST_OWNER_ID]);
+
+      const rows = await runAsRlsRole(client, async () => {
+        const result = await client.query(
+          `SELECT bs.isin, si.identifier_value
+           FROM accounter_schema.businesses_securities bs
+           LEFT JOIN accounter_schema.security_identifiers si ON si.business_id = bs.id`,
         );
         return result.rows;
       });

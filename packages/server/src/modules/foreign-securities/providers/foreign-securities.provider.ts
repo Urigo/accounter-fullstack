@@ -263,6 +263,76 @@ export class ForeignSecuritiesProvider {
   }
 
   /**
+   * Every ingested execution of every security business the tenant has, grouped by the business
+   * it belongs to. Each business gets an entry, so "nothing ingested" is distinguishable from
+   * "not a security".
+   *
+   * One query for the whole portfolio: `getSecurityExecutionsByKeys` already filters on
+   * `security = ANY(...)` and returns the key on every row, so the union of every business's
+   * Poalim keys can be asked for at once and split back up in memory.
+   *
+   * Unlike `getSecurityBusinessHistory` this never looks at transactions or accounts — those
+   * exist only to pair an execution with the cash movement behind it, which a position does not
+   * need, and they cost a transactions query plus an account lookup per security.
+   */
+  public async getExecutionsBySecurityBusiness(): Promise<Map<string, SecurityExecutionRow[]>> {
+    const securityBusinesses = await this.securityBusinessesProvider.getAllSecurityBusinesses();
+
+    const executionsByBusinessId = new Map<string, SecurityExecutionRow[]>(
+      securityBusinesses.map(securityBusiness => [securityBusiness.id, []]),
+    );
+    if (securityBusinesses.length === 0) {
+      return executionsByBusinessId;
+    }
+
+    // One batched query behind the loader, not one per business.
+    const identifierLists =
+      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.loadMany(
+        securityBusinesses.map(securityBusiness => securityBusiness.id),
+      );
+
+    // The executions table is keyed by Poalim's security key, and one business can carry several
+    // of them — that is what the identifiers bridge is for — so invert into key -> business. The
+    // unique index on (owner_id, identifier_type, identifier_value) is what makes one key resolve
+    // to exactly one business, so a plain Map is enough.
+    const businessIdByKey = new Map<string, string>();
+    for (const identifiers of identifierLists) {
+      // loadMany reports a rejected key as an Error rather than throwing; one bad business must
+      // not blank the whole list.
+      if (identifiers instanceof Error) {
+        continue;
+      }
+      for (const identifier of identifiers) {
+        if (identifier.identifier_type === 'POALIM_SECURITY_KEY') {
+          businessIdByKey.set(identifier.identifier_value, identifier.business_id);
+        }
+      }
+    }
+
+    if (businessIdByKey.size === 0) {
+      return executionsByBusinessId;
+    }
+
+    // ORDER BY trade_date, id is global to the result, so each key's slice stays chronological —
+    // which is what `calculateSecurityPosition` reads its currency off.
+    const executions = await getSecurityExecutionsByKeys.run(
+      { securities: [...businessIdByKey.keys()] },
+      this.db,
+    );
+
+    for (const execution of executions) {
+      const businessId = businessIdByKey.get(execution.security);
+      if (!businessId) {
+        continue;
+      }
+      // An identifier can outlive the business it pointed at; skip rather than invent a bucket.
+      executionsByBusinessId.get(businessId)?.push(execution);
+    }
+
+    return executionsByBusinessId;
+  }
+
+  /**
    * The securities a charge's transactions reference, keyed off the security key each
    * description carries. Keys with no ingested row are still returned, with a null
    * `details`, so a stale or missing scrape is visible instead of silently dropping data.

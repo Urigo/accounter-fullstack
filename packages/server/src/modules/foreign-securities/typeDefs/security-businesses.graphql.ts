@@ -6,6 +6,16 @@ export default gql`
     allSecurityBusinesses: [LtdFinancialEntity!]! @requiresAuth
     " The full ingested life of one security: its holding and every execution "
     securityBusinessHistory(businessId: UUID!): SecurityBusinessHistory! @requiresAuth
+    " Every security the tenant holds, with the position its executions add up to. Closed positions — sold out, or never ingested — are left out unless asked for "
+    securityHoldings(includeClosed: Boolean = false): [SecurityHolding!]! @requiresAuth
+  }
+
+  " One security and what is held of it, without the execution history behind it "
+  type SecurityHolding {
+    " The security's business id — the same id its own page is keyed by "
+    id: UUID!
+    security: SecurityBusiness!
+    position: SecurityPosition!
   }
 
   " Everything a security business page shows "

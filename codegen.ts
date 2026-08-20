@@ -160,6 +160,7 @@ const config: CodegenConfig = {
             '../modules/foreign-securities/types.js#SecurityBusinessHistoryProto',
           SecurityHistoryExecution:
             '../modules/foreign-securities/types.js#SecurityHistoryExecutionProto',
+          SecurityHolding: '../modules/foreign-securities/types.js#SecurityHoldingProto',
           SecurityPosition: '../modules/foreign-securities/types.js#SecurityPositionWithIdProto',
           SecurityExecution: '../modules/foreign-securities/types.js#SecurityExecutionRow',
           SecurityIdentifier: '../modules/foreign-securities/types.js#SecurityIdentifierRow',

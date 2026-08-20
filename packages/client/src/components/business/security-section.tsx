@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react';
 import { useQuery } from 'urql';
-import { Badge } from '@/components/ui/badge.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.js';
 import { BusinessSecuritySectionDocument } from '@/gql/graphql.js';
+import { SecurityDescriptorBadges } from '../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
   formatSecurityNumber,
@@ -20,12 +20,7 @@ import {
         symbol
         engName
         hebName
-        exchange
-        currencyCode
-        itemType
-        stockType
-        isEtf
-        isForeign
+        ...SecurityDescriptorFields
         identifiers {
           id
           type
@@ -102,15 +97,7 @@ export function SecuritySection({ businessId }: Props): ReactElement {
               {security.symbol && <span className="text-gray-500"> ({security.symbol})</span>}
             </CardTitle>
             {security.hebName && <CardDescription>{security.hebName}</CardDescription>}
-            <div className="flex flex-row flex-wrap items-center gap-2">
-              <Badge variant="secondary">{security.isin}</Badge>
-              {security.exchange && <Badge variant="secondary">{security.exchange}</Badge>}
-              {security.currencyCode && <Badge variant="secondary">{security.currencyCode}</Badge>}
-              {security.itemType && <Badge variant="outline">{security.itemType}</Badge>}
-              {security.stockType && <Badge variant="outline">{security.stockType}</Badge>}
-              {security.isEtf && <Badge variant="outline">ETF</Badge>}
-              {security.isForeign && <Badge variant="outline">Foreign</Badge>}
-            </div>
+            <SecurityDescriptorBadges security={security} />
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -123,11 +110,11 @@ export function SecuritySection({ businessId }: Props): ReactElement {
           </div>
           <div className="text-xs text-gray-400">
             {position.historyStartDate
-              ? `Derived from ingested trades since ${formatSecurityDate(position.historyStartDate)}` +
+              ? `Added up from the scraped trades since ${formatSecurityDate(position.historyStartDate)}` +
                 (position.lastExecutionDate
                   ? `, last one ${formatSecurityDate(position.lastExecutionDate)}`
                   : '') +
-                '. Holdings are not scraped, so anything held before that date is not counted here.'
+                '. The bank does not report a holding, so anything held before that date is not counted here.'
               : 'No executions ingested for this security yet.'}
             {poalimKeys.length > 0 && ` · Poalim key ${poalimKeys.join(', ')}`}
           </div>

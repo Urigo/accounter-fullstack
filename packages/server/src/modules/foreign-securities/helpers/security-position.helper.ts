@@ -47,6 +47,24 @@ export type SecurityPositionProto = {
   lastExecutionDate: TimelessDateString | null;
 };
 
+/**
+ * How close to zero counts as zero. Units are fractional for ETFs and mutual funds, so a
+ * fully-sold position lands on a floating-point residue rather than on 0, and `quantity !== 0`
+ * would keep every closed position in a holdings list. The threshold sits two orders of
+ * magnitude below the four decimals the UI prints, so nothing visible on screen is ever hidden.
+ */
+const QUANTITY_EPSILON = 1e-6;
+
+/**
+ * Whether anything is still held.
+ *
+ * `Math.abs` on purpose: a negative quantity means the ingested history starts mid-life — units
+ * were sold that were never seen bought — and that is a data-quality signal worth surfacing,
+ * not a closed position to filter away.
+ */
+export const isOpenPosition = (position: Pick<SecurityPositionProto, 'quantity'>): boolean =>
+  Math.abs(position.quantity) > QUANTITY_EPSILON;
+
 const toNumber = (value: string | null): number => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
