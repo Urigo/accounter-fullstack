@@ -8,13 +8,13 @@ import { FinancialEntitiesProvider } from '../../financial-entities/providers/fi
 import { TaxCategoriesProvider } from '../../financial-entities/providers/tax-categories.provider.js';
 import { buildSecurityBusinessName } from '../helpers/security-business-name.helper.js';
 import type {
+  IGetAllSecurityBusinessesQuery,
   IGetSecurityBusinessesByIdentifiersQuery,
   IGetSecurityBusinessesByIdsQuery,
   IGetSecurityBusinessesByIsinsQuery,
   IGetSecurityIdentifiersByBusinessIdsQuery,
   IInsertSecurityBusinessQuery,
   IInsertSecurityIdentifierQuery,
-  ISelectAllSecurityBusinessesQuery,
   SecurityBusinessDescriptors,
   SecurityBusinessRow,
   SecurityIdentifierRow,
@@ -31,7 +31,7 @@ const getSecurityBusinessesByIds = sql<IGetSecurityBusinessesByIdsQuery>`
   FROM accounter_schema.businesses_securities
   WHERE id IN $$ids;`;
 
-const selectAllSecurityBusinesses = sql<ISelectAllSecurityBusinessesQuery>`
+const getAllSecurityBusinesses = sql<IGetAllSecurityBusinessesQuery>`
   SELECT *
   FROM accounter_schema.businesses_securities;`;
 
@@ -107,7 +107,7 @@ export class SecurityBusinessesProvider {
    * account resolution ask for it on every transaction they touch.
    */
   public getAllSecurityBusinesses(): Promise<SecurityBusinessRow[]> {
-    this.allSecurityBusinessesPromise ??= selectAllSecurityBusinesses
+    this.allSecurityBusinessesPromise ??= getAllSecurityBusinesses
       .run(undefined, this.db)
       .then(rows => {
         rows.map(row => this.getSecurityBusinessByIdLoader.prime(row.id, row));

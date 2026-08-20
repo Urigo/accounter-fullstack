@@ -3,8 +3,8 @@ import type {
   IGetSecurityExecutionsResult,
 } from './__generated__/foreign-securities.types.js';
 import type {
+  IGetAllSecurityBusinessesResult,
   IGetSecurityIdentifiersByBusinessIdsResult,
-  ISelectAllSecurityBusinessesResult,
   security_identifier_type,
 } from './__generated__/security-businesses.types.js';
 
@@ -18,14 +18,14 @@ export type {
   IGetSecurityIdentifiersByBusinessIdsQuery,
   IInsertSecurityBusinessQuery,
   IInsertSecurityIdentifierQuery,
-  ISelectAllSecurityBusinessesQuery,
+  IGetAllSecurityBusinessesQuery,
 } from './__generated__/security-businesses.types.js';
 
 /** How a source names a security — accounter_schema.security_identifier_type. */
 export type SecurityIdentifierType = security_identifier_type;
 
 /** A row of `accounter_schema.businesses_securities` — the security side of a business. */
-export type SecurityBusinessRow = ISelectAllSecurityBusinessesResult;
+export type SecurityBusinessRow = IGetAllSecurityBusinessesResult;
 
 /** A row of `accounter_schema.security_identifiers`. */
 export type SecurityIdentifierRow = IGetSecurityIdentifiersByBusinessIdsResult;
