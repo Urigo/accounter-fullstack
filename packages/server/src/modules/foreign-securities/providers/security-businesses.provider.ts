@@ -1,6 +1,8 @@
 import DataLoader from 'dataloader';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { Currency } from '../../../shared/enums.js';
+import { formatCurrency } from '../../../shared/helpers/amount.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
@@ -71,6 +73,21 @@ const insertSecurityIdentifier = sql<IInsertSecurityIdentifierQuery>`
   )
   VALUES ($ownerId!, $businessId!, $identifierType!, $identifierValue!)
   ON CONFLICT (owner_id, identifier_type, identifier_value) DO NOTHING;`;
+
+/**
+ * `businesses_securities.currency_code` is `accounter_schema.currency`, but the securities
+ * feeds are not: Poalim spells its currencies out in Hebrew (`דולר ארה"ב`), other sources use
+ * ISO codes. `formatCurrency` knows both, and its nullable form returns null for a label it
+ * does not recognize rather than throwing — a security whose currency cannot be resolved is
+ * still worth having, with the column left empty.
+ *
+ * The guard matters: `formatCurrency` reads a *missing* label as ILS, which would stamp every
+ * security that reports no currency as a shekel one.
+ */
+function toCurrency(rawCurrency: string | null | undefined): Currency | null {
+  const label = rawCurrency?.trim();
+  return label ? formatCurrency(label, true) : null;
+}
 
 export type IdentifierKey = {
   type: SecurityIdentifierType;
@@ -277,7 +294,7 @@ export class SecurityBusinessesProvider {
             engName: descriptors.engName?.trim() || null,
             hebName: descriptors.hebName?.trim() || null,
             exchange: descriptors.exchange?.trim() || null,
-            currencyCode: descriptors.currencyCode?.trim() || null,
+            currencyCode: toCurrency(descriptors.currencyCode),
             itemType: descriptors.itemType ?? null,
             stockType: descriptors.stockType ?? null,
             isEtf: descriptors.isEtf ?? null,

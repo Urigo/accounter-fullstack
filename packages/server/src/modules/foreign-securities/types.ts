@@ -40,6 +40,7 @@ export type SecurityBusinessDescriptors = {
   engName?: string | null;
   hebName?: string | null;
   exchange?: string | null;
+  /** As the source spells it — Hebrew label or ISO code; the provider normalizes it. */
   currencyCode?: string | null;
   itemType?: string | null;
   stockType?: string | null;

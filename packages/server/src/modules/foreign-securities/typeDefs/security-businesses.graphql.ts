@@ -24,8 +24,8 @@ export default gql`
     engName: String
     hebName: String
     exchange: String
-    " Kept as a free string, not the Currency enum, for source fidelity "
-    currencyCode: String
+    " The currency the security trades in; null when the source reported one we do not know "
+    currencyCode: Currency
     itemType: String
     stockType: String
     isEtf: Boolean

@@ -31,7 +31,7 @@ export default {
       eng_name           TEXT,
       heb_name           TEXT,
       exchange           TEXT,
-      currency_code      TEXT,
+      currency_code      accounter_schema.currency,
       item_type          TEXT,
       stock_type         TEXT,
       is_etf             BOOLEAN,
@@ -47,6 +47,13 @@ export default {
 
     COMMENT ON COLUMN accounter_schema.businesses_securities.isin IS
       'The security''s identity. Sourced from accounter_schema.poalim_securities_transactions.isin';
+
+    -- The closed type, unlike accounter_schema.poalim_securities.currency_code, which stays TEXT
+    -- for source fidelity: this column is a resolved attribute of the business, not a verbatim
+    -- copy of what a scrape reported, and the feeds spell their currencies inconsistently
+    -- (Hebrew labels among them). Writers normalize through formatCurrency before inserting.
+    COMMENT ON COLUMN accounter_schema.businesses_securities.currency_code IS
+      'The currency the security trades in, normalized from the source label';
 
     CREATE UNIQUE INDEX businesses_securities_owner_isin_uindex
       ON accounter_schema.businesses_securities (owner_id, isin);

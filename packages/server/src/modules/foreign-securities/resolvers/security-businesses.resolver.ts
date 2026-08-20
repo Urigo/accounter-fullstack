@@ -1,4 +1,5 @@
 import { GraphQLError } from 'graphql';
+import { Currency } from '../../../shared/enums.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
@@ -47,7 +48,9 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
     engName: securityBusiness => securityBusiness.eng_name,
     hebName: securityBusiness => securityBusiness.heb_name,
     exchange: securityBusiness => securityBusiness.exchange,
-    currencyCode: securityBusiness => securityBusiness.currency_code,
+    // The column is accounter_schema.currency, whose values are the GraphQL enum's — the same
+    // cast the financial-accounts resolvers use for their currency columns.
+    currencyCode: securityBusiness => securityBusiness.currency_code as Currency | null,
     itemType: securityBusiness => securityBusiness.item_type,
     stockType: securityBusiness => securityBusiness.stock_type,
     isEtf: securityBusiness => securityBusiness.is_etf,

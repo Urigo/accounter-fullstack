@@ -18,7 +18,12 @@ to — carries no ISIN at all. The ISIN appears only on execution rows. So two t
   `businesses_admin` / `clients`: the presence of a row is what makes a business a security. Holds
   the ISIN (unique per owner) plus descriptors cached off the ingested row that introduced it
   (symbol, names, exchange, currency, item/stock type, ETF/foreign flags, issuer country), so a
-  business list renders without joining the securities feeds.
+  business list renders without joining the securities feeds. `currency_code` is
+  `accounter_schema.currency` rather than free text — unlike `poalim_securities.currency_code`,
+  which stays TEXT for source fidelity, this one is a resolved attribute of the business. The
+  feeds are not that tidy (Poalim spells its currencies out in Hebrew), so writes go through
+  `formatCurrency`: an unrecognized label leaves the column empty rather than failing the insert,
+  and a *missing* one is not silently read as the local currency.
 - `accounter_schema.security_identifiers` — how each source names the security, as
   `(identifier_type, identifier_value) → business`. `POALIM_SECURITY_KEY` and `ISIN` to start; a
   second broker is one `ALTER TYPE ... ADD VALUE`, not a new column. Several identifiers may point

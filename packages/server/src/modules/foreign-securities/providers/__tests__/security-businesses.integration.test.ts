@@ -184,6 +184,38 @@ describe('ensureSecurityBusiness', () => {
     });
   });
 
+  it('normalizes the currency the feed reports into the closed type', async () => {
+    const provider = createProvider();
+
+    // The Poalim securities feed spells its currencies out in Hebrew.
+    const security = await provider.ensureSecurityBusiness({
+      ...APPLE,
+      currencyCode: 'דולר ארה"ב',
+    });
+
+    expect(security.currency_code).toBe('USD');
+  });
+
+  it('leaves the currency empty rather than failing on a label it cannot resolve', async () => {
+    const provider = createProvider();
+
+    const security = await provider.ensureSecurityBusiness({
+      ...APPLE,
+      currencyCode: 'ZZZ',
+    });
+
+    expect(security.currency_code).toBeNull();
+    expect(security.isin).toBe(APPLE.isin);
+  });
+
+  it('does not read a missing currency as the local one', async () => {
+    const provider = createProvider();
+
+    const security = await provider.ensureSecurityBusiness({ ...APPLE, currencyCode: '  ' });
+
+    expect(security.currency_code).toBeNull();
+  });
+
   it('is idempotent per ISIN — a second call returns the same business', async () => {
     const provider = createProvider();
 
