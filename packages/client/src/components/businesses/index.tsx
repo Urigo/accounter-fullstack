@@ -30,7 +30,6 @@ import {
 } from '../ui/dropdown-menu.js';
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia, EmptyTitle } from '../ui/empty.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
-import { BatchUpdateBusinessesDialog } from './batch-update-dialog.js';
 import {
   businessNodesToRows,
   filterBusinessRows,
@@ -201,13 +200,6 @@ export const Businesses = (): ReactElement => {
           usageLoading={usageEnabled && usageFetching}
         />
         <MergeBusinessesButton selected={selectedForMerge} resetMerge={() => setRowSelection({})} />
-        <BatchUpdateBusinessesDialog
-          businessIds={selectedIds}
-          onDone={() => {
-            refetch();
-            setRowSelection({});
-          }}
-        />
       </div>,
     );
   }, [setFiltersContext, selectedIds, refetch, filters, setFilters, usageEnabled, usageFetching]);

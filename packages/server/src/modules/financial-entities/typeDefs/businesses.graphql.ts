@@ -112,6 +112,12 @@ export default gql`
     batchUpdateBusinesses(businessIds: [UUID!]!, fields: BatchUpdateBusinessInput!): [Business!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
+    " add and/or remove suggestion tags across many businesses at once; returns the updated businesses "
+    batchUpdateBusinessesTags(
+      businessIds: [UUID!]!
+      addTagIds: [UUID!]
+      removeTagIds: [UUID!]
+    ): [Business!]! @requiresAuth @requiresAnyRole(roles: ["business_owner", "accountant"])
     batchGenerateBusinessesOutOfTransactions: [Business!]!
       @requiresAuth
       @requiresAnyRole(roles: ["business_owner", "accountant"])
@@ -180,7 +186,8 @@ export default gql`
     taxCategory: UUID
     irsCode: Int
     pcn874RecordType: Pcn874RecordType
-    suggestions: SuggestionsInput
+    " suggestion description, applied to every selected business; the rest of the suggestion data (tags, phrases, emails) is per-business and is not batch-editable here — use batchUpdateBusinessesTags for tags "
+    suggestionDescription: String
     exemptDealer: Boolean
     optionalVAT: Boolean
     isReceiptEnough: Boolean

@@ -6,6 +6,8 @@ import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
+  IBatchUpsertBusinessesTaxCategoryParams,
+  IBatchUpsertBusinessesTaxCategoryQuery,
   IDeleteBusinessTaxCategoryParams,
   IDeleteBusinessTaxCategoryQuery,
   IDeleteTaxCategoryQuery,
@@ -123,6 +125,17 @@ const insertTaxCategory = sql<IInsertTaxCategoryQuery>`
 const insertBusinessTaxCategory = sql<IInsertBusinessTaxCategoryQuery>`
   INSERT INTO accounter_schema.business_tax_category_match (business_id, owner_id, tax_category_id)
   VALUES ($businessId, $ownerId, $taxCategoryId)
+  RETURNING *;`;
+
+// Point many businesses at one tax category in a single statement. The (business_id, owner_id)
+// primary key makes this an upsert, so callers don't need a preceding "does a match already exist?"
+// read per business the way the single-business path does.
+const batchUpsertBusinessesTaxCategory = sql<IBatchUpsertBusinessesTaxCategoryQuery>`
+  INSERT INTO accounter_schema.business_tax_category_match (business_id, owner_id, tax_category_id)
+  SELECT business_id, $ownerId, $taxCategoryId
+  FROM unnest($businessIds::uuid[]) AS business_id
+  ON CONFLICT (business_id, owner_id) DO UPDATE
+    SET tax_category_id = EXCLUDED.tax_category_id
   RETURNING *;`;
 
 const deleteBusinessTaxCategory = sql<IDeleteBusinessTaxCategoryQuery>`
@@ -308,6 +321,15 @@ export class TaxCategoriesProvider {
 
   public insertBusinessTaxCategory(params: IInsertBusinessTaxCategoryParams) {
     return insertBusinessTaxCategory.run(params, this.db);
+  }
+
+  public batchUpsertBusinessesTaxCategory(
+    params: Omit<IBatchUpsertBusinessesTaxCategoryParams, 'businessIds'> & {
+      businessIds: string[];
+    },
+  ) {
+    if (params.taxCategoryId) this.invalidateTaxCategoryById(params.taxCategoryId);
+    return batchUpsertBusinessesTaxCategory.run(params, this.db);
   }
 
   public deleteBusinessTaxCategory(params: IDeleteBusinessTaxCategoryParams) {

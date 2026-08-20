@@ -5,6 +5,8 @@ import type { PoolClient } from 'pg';
 import { sql } from '@pgtyped/runtime';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
+  IBatchUpdateFinancialEntitiesParams,
+  IBatchUpdateFinancialEntitiesQuery,
   IDeleteFinancialEntityQuery,
   IGetAllFinancialEntitiesQuery,
   IGetAllFinancialEntitiesResult,
@@ -53,6 +55,29 @@ const updateFinancialEntity = sql<IUpdateFinancialEntityQuery>`
   )
   WHERE
     id = $financialEntityId
+  RETURNING *;
+`;
+
+// Batch sibling of `updateFinancialEntity`, for the fields a bulk edit may touch. One statement for
+// the whole selection instead of one per entity. `name` and `type` are deliberately excluded — they
+// are per-entity by nature and must never be applied wholesale.
+const batchUpdateFinancialEntities = sql<IBatchUpdateFinancialEntitiesQuery>`
+  UPDATE accounter_schema.financial_entities
+  SET
+  sort_code = COALESCE(
+    $sortCode,
+    sort_code
+  ),
+  irs_code = COALESCE(
+    $irsCode,
+    irs_code
+  ),
+  is_active = COALESCE(
+    $isActive,
+    is_active
+  )
+  WHERE
+    id IN $$financialEntityIds
   RETURNING *;
 `;
 
@@ -170,6 +195,17 @@ export class FinancialEntitiesProvider {
       this.invalidateFinancialEntityById(params.financialEntityId);
     }
     return updateFinancialEntity.run(params, this.db);
+  }
+
+  public batchUpdateFinancialEntities(
+    params: Omit<IBatchUpdateFinancialEntitiesParams, 'financialEntityIds'> & {
+      financialEntityIds: string[];
+    },
+  ) {
+    for (const financialEntityId of params.financialEntityIds) {
+      this.invalidateFinancialEntityById(financialEntityId);
+    }
+    return batchUpdateFinancialEntities.run(params, this.db);
   }
 
   public insertFinancialEntity(

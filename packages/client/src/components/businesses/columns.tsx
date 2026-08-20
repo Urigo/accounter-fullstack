@@ -14,6 +14,7 @@ import { Badge } from '../ui/badge.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { BusinessRowActions } from './business-row-actions.js';
 import { formatLocality, type BusinessTableMeta, type BusinessTableRow } from './business-rows.js';
+import { BusinessesBatchActionsMenu } from './businesses-batch-actions-menu.js';
 
 function formatDate(value: Date | null): string {
   // A failed `new Date(...)` parse yields an Invalid Date (truthy), which makes date-fns `format`
@@ -42,13 +43,17 @@ export const columns: ColumnDef<TableFeaturesConfig, BusinessTableRow>[] = [
   {
     id: 'select',
     header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate')
-        }
-        onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
+      <div className="flex items-center gap-1">
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && 'indeterminate')
+          }
+          onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+        <BusinessesBatchActionsMenu table={table} />
+      </div>
     ),
     cell: ({ row }) => (
       <Checkbox

@@ -7,6 +7,10 @@ import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import type {
+  IBatchUpdateBusinessesParams,
+  IBatchUpdateBusinessesQuery,
+  IBatchUpdateBusinessesSuggestionTagsParams,
+  IBatchUpdateBusinessesSuggestionTagsQuery,
   IGetAllBusinessesQuery,
   IGetAllBusinessesResult,
   IGetBusinessByEmailQuery,
@@ -131,6 +135,104 @@ const updateBusiness = sql<IUpdateBusinessQuery>`
   )
   WHERE
     id = $businessId
+  RETURNING *;
+`;
+
+// Batch sibling of `updateBusiness`: applies one set of values to many businesses in a single
+// statement, so a bulk edit costs one round-trip instead of one per business. Only the fields the
+// businesses table owns; sort code / IRS code / active flag live on financial_entities (see
+// `batchUpdateFinancialEntities`) and the tax-category match has its own table.
+// `suggestionDescription` is folded into the JSON `suggestion_data` blob rather than a column, so
+// it needs the CASE guard — a plain COALESCE would rebuild the object even when unset.
+const batchUpdateBusinesses = sql<IBatchUpdateBusinessesQuery>`
+  UPDATE accounter_schema.businesses
+  SET
+  city = COALESCE(
+    $city,
+    city
+  ),
+  zip_code = COALESCE(
+    $zipCode,
+    zip_code
+  ),
+  country = COALESCE(
+    $country,
+    country
+  ),
+  no_invoices_required = COALESCE(
+    $isDocumentsOptional,
+    no_invoices_required
+  ),
+  can_settle_with_receipt = COALESCE(
+    $isReceiptEnough,
+    can_settle_with_receipt
+  ),
+  exempt_dealer = COALESCE(
+    $exemptDealer,
+    exempt_dealer
+  ),
+  optional_vat = COALESCE(
+    $optionalVat,
+    optional_vat
+  ),
+  pcn874_record_type_override = COALESCE(
+    $pcn874RecordTypeOverride,
+    pcn874_record_type_override
+  ),
+  suggestion_data = CASE
+    WHEN $suggestionDescription::text IS NULL THEN suggestion_data
+    ELSE jsonb_set(
+      CASE WHEN jsonb_typeof(suggestion_data) = 'object'
+           THEN suggestion_data
+           ELSE '{}'::jsonb
+      END,
+      '{description}',
+      to_jsonb($suggestionDescription::text)
+    )
+  END
+  WHERE
+    id IN $$businessIds
+  RETURNING *;
+`;
+
+// Additive/subtractive suggestion-tag update across many businesses in one statement. Business
+// suggestion tags live as a string array inside the `suggestion_data` JSON blob (no join table like
+// charge_tags), so the set arithmetic happens in SQL: the current tags minus `removeTagIds`, unioned
+// with `addTagIds`. EXCEPT binds before UNION, so an id in both lists ends up added ("add wins"),
+// matching `applyChargeTagChanges`. Both set operators de-duplicate, so the result is a clean set.
+// The jsonb_typeof guards (same as in `getBusinessByEmail`) keep a malformed/legacy record — a
+// non-object `suggestion_data`, or a `tags` that is not a JSON array — from throwing and taking the
+// whole batch down with it; such a record is treated as having no tags and is rewritten cleanly.
+const batchUpdateBusinessesSuggestionTags = sql<IBatchUpdateBusinessesSuggestionTagsQuery>`
+  UPDATE accounter_schema.businesses
+  SET
+  suggestion_data = jsonb_set(
+    CASE WHEN jsonb_typeof(suggestion_data) = 'object'
+         THEN suggestion_data
+         ELSE '{}'::jsonb
+    END,
+    '{tags}',
+    COALESCE(
+      (
+        SELECT jsonb_agg(tag_id)
+        FROM (
+          SELECT jsonb_array_elements_text(
+            CASE WHEN jsonb_typeof(suggestion_data -> 'tags') = 'array'
+                 THEN suggestion_data -> 'tags'
+                 ELSE '[]'::jsonb
+            END
+          ) AS tag_id
+          EXCEPT
+          SELECT unnest($removeTagIds::uuid[])::text
+          UNION
+          SELECT unnest($addTagIds::uuid[])::text
+        ) AS updated_tags
+      ),
+      '[]'::jsonb
+    )
+  )
+  WHERE
+    id IN $$businessIds
   RETURNING *;
 `;
 
@@ -292,6 +394,22 @@ export class BusinessesProvider {
   ) {
     if (params.businessId) await this.invalidateBusinessById(params.businessId);
     return updateBusiness.run(params, this.db);
+  }
+
+  public async batchUpdateBusinesses(
+    params: Omit<IBatchUpdateBusinessesParams, 'businessIds'> & { businessIds: string[] },
+  ) {
+    await Promise.all(params.businessIds.map(id => this.invalidateBusinessById(id)));
+    return batchUpdateBusinesses.run(params, this.db);
+  }
+
+  public async batchUpdateBusinessesSuggestionTags(
+    params: Omit<IBatchUpdateBusinessesSuggestionTagsParams, 'businessIds'> & {
+      businessIds: string[];
+    },
+  ) {
+    await Promise.all(params.businessIds.map(id => this.invalidateBusinessById(id)));
+    return batchUpdateBusinessesSuggestionTags.run(params, this.db);
   }
 
   private async batchInsertBusinesses(
