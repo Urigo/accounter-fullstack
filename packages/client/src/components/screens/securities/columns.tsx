@@ -7,7 +7,7 @@ import { DataTableColumnHeader } from '../../common/data-table-column-header.js'
 import { SecurityDescriptorBadges } from '../../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
-  formatSecurityNumber,
+  formatSecurityDecimal,
 } from '../../securities/security-executions-table.js';
 
 export type SecurityHoldingRow = SecurityHoldingsScreenQuery['securityHoldings'][number];
@@ -93,9 +93,7 @@ export const columns: ColumnDef<TableFeaturesConfig, SecurityHoldingRow>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Current hold" />,
     // Quantities can be fractional for ETFs and mutual funds.
     cell: ({ row }) => (
-      <span className="tabular-nums">
-        {formatSecurityNumber(row.original.position.quantity, 4)}
-      </span>
+      <span className="tabular-nums">{formatSecurityDecimal(row.original.position.quantity)}</span>
     ),
   },
   {

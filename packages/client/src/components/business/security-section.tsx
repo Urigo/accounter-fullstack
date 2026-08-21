@@ -5,7 +5,7 @@ import { BusinessSecuritySectionDocument } from '@/gql/graphql.js';
 import { SecurityDescriptorBadges } from '../securities/security-descriptor-badges.js';
 import {
   formatSecurityDate,
-  formatSecurityNumber,
+  formatSecurityDecimal,
   SecurityExecutionsTable,
 } from '../securities/security-executions-table.js';
 
@@ -103,7 +103,7 @@ export function SecuritySection({ businessId }: Props): ReactElement {
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Quantities can be fractional for ETFs and mutual funds. */}
-            <Stat label="Current hold" value={formatSecurityNumber(position.quantity, 4)} />
+            <Stat label="Current hold" value={formatSecurityDecimal(position.quantity)} />
             <Stat label="Average cost" value={position.averageCost?.formatted ?? '—'} />
             <Stat label="Total bought" value={position.totalBought?.formatted ?? '—'} />
             <Stat label="Total sold" value={position.totalSold?.formatted ?? '—'} />
