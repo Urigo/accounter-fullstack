@@ -316,10 +316,12 @@ export const columns: ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[] = 
                     row.original.documentType === DocumentType.Invoice ||
                     row.original.documentType === DocumentType.InvoiceReceipt
                   }
+                  onChange={row.original.onUpdate}
                 />
                 <PreviewDocumentModal
                   documentId={row.original.id}
                   tooltip="Issue Document out of This Document"
+                  onIssued={row.original.onUpdate}
                 />
               </>
             )}

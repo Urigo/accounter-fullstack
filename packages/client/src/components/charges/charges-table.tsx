@@ -18,6 +18,7 @@ import {
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
 import type { ChargeType } from '../../helpers/index.js';
+import { useStableValue } from '../../hooks/use-stable-value.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
 import type { AmountProps } from './cells/amount.js';
 import type { BusinessTripProps } from './cells/business-trip.js';
@@ -327,16 +328,24 @@ export const ChargesTable = ({
     [setRowSelection],
   );
 
+  // Callers routinely build this array inline (`data={charge ? [charge] : []}`, `data={nodes ?? []}`,
+  // `data={list.filter(...).map(...)}`), handing us a fresh identity on every render even when the
+  // charges are unchanged. Re-deriving the rows from it each time would throw away the fresher data
+  // a per-row refetch (`updateCharge`) just wrote into local state, so the row would visibly revert
+  // to the list query's stale values. Stabilizing the reference keeps the rebuild tied to actual
+  // content changes.
+  const stableData = useStableValue(data);
+
   // Update charges when data changes
   useEffect(() => {
     setCharges(
-      data?.map(rawCharge =>
+      stableData?.map(rawCharge =>
         convertChargeFragmentToTableRow(
           getFragmentData(ChargeForChargesTableFieldsFragmentDoc, rawCharge),
         ),
       ) ?? [],
     );
-  }, [data]);
+  }, [stableData]);
 
   const table = useTable({
     features: tableFeaturesConfig,

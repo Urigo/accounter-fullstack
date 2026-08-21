@@ -10,20 +10,27 @@ import { ConfirmationModal, PreviewDocumentModal } from '../index.js';
 type Props = ComponentProps<typeof Button> & {
   documentId: string;
   couldIssueCreditInvoice: boolean;
+  /** Called after the document was closed (or a credit invoice issued for it). */
+  onChange?: () => void;
 };
 
 export function CloseDocumentButton({
   documentId,
   couldIssueCreditInvoice,
+  onChange,
   ...props
 }: Props): ReactElement {
   const { closeDocument } = useCloseDocument();
   const [open, setOpen] = useState(false);
   const [previewCreditInvoice, setPreviewCreditInvoice] = useState(false);
 
-  const onFinallyClose = useCallback(() => {
-    closeDocument({ documentId });
-  }, [closeDocument, documentId]);
+  const onFinallyClose = useCallback(async () => {
+    const closed = await closeDocument({ documentId });
+    // The hook resolves `false` on failure — don't report a change that never happened.
+    if (closed) {
+      onChange?.();
+    }
+  }, [closeDocument, documentId, onChange]);
 
   if (!couldIssueCreditInvoice) {
     return (
@@ -95,6 +102,7 @@ export function CloseDocumentButton({
         documentType={DocumentType.CreditInvoice}
         open={previewCreditInvoice}
         setOpen={setPreviewCreditInvoice}
+        onIssued={onChange}
       />
     </>
   );

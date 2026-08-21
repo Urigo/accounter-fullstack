@@ -25,8 +25,14 @@ import { RecentDocsOfSameType } from './recent-docs-of-same-type.js';
 
 interface GenerateDocumentProps {
   initialFormData?: Partial<PreviewDocumentInput>;
+  /**
+   * Hands the edited draft back to the caller *instead of* issuing it — the primary button becomes
+   * "Accept Changes". Callers that want the document actually issued must not pass this.
+   */
   onDone?: (draft: PreviewDocumentInput) => void;
   onClose: () => void;
+  /** Called once a document was successfully issued, so hosts can refresh the affected charge. */
+  onIssued?: () => void;
   chargeId?: string;
 }
 
@@ -48,6 +54,7 @@ export function GenerateDocument({
   initialFormData,
   onDone,
   onClose,
+  onIssued,
   chargeId,
 }: GenerateDocumentProps) {
   const [formData, setFormData] = useState<PreviewDocumentInput>({
@@ -117,13 +124,17 @@ export function GenerateDocument({
 
   const handleIssue = useCallback(
     async (issueData: IssueDocumentData) => {
-      await issueDocument({
+      const issued = await issueDocument({
         input: formData,
         chargeId,
         ...issueData,
       });
+      if (issued) {
+        // The charge just gained a document — let the host reload it.
+        onIssued?.();
+      }
     },
-    [formData, chargeId, issueDocument],
+    [formData, chargeId, issueDocument, onIssued],
   );
 
   const isIssueDisabled = !isPreviewCurrent || previewFetching || hasFormChanged;

@@ -223,15 +223,12 @@ export function ChargeActionsMenu({
         chargeId={chargeId}
         open={previewIssueDocument}
         setOpen={setPreviewIssueDocument}
-        onDone={() => onChange?.()}
+        onIssued={() => onChange?.()}
       />
       <EditChargeModal
         chargeId={editingCharge ? chargeId : undefined}
         close={() => setEditingCharge(false)}
-        onChange={() => {
-          setEditingCharge(false);
-          onChange?.();
-        }}
+        onChange={onChange}
       />
       <InsertDocumentModal
         chargeId={insertingDocument ? chargeId : undefined}
