@@ -479,8 +479,9 @@ const ExecutionItemSchema = ExecutionFields.superRefine((row, ctx) => {
 });
 
 /**
- * `Account.PageState` is the bank's opaque paging cursor and is not consumed —
- * the endpoint is queried with an explicit date range instead.
+ * `Account.PageState` is the bank's opaque paging cursor. The scraper follows it to
+ * fetch the whole window and nulls it on the merged payload that arrives here, so this
+ * side only ever has to accept it — never act on it.
  */
 export const PoalimSecuritiesTransactionsPayloadSchema = z.strictObject({
   Account: z.strictObject({

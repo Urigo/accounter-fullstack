@@ -37,6 +37,8 @@ export type TxnTypeState = {
   count?: number;
   inserted?: number;
   skipped?: number;
+  /** Fetched successfully but known to be incomplete — see `task-account-warning`. */
+  warning?: string;
 };
 
 export type AccountStep = {
@@ -270,7 +272,11 @@ export function useRunSocket(): UseRunSocketResult {
             const accountSteps = state.accountSteps ?? [];
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
-              [msg.txnType]: { phase: 'uploading' as const, count: msg.count },
+              [msg.txnType]: {
+                ...step[msg.txnType],
+                phase: 'uploading' as const,
+                count: msg.count,
+              },
             };
             next.set(msg.sourceId, {
               ...state,
@@ -284,9 +290,28 @@ export function useRunSocket(): UseRunSocketResult {
             const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
             const txnPatch: Partial<AccountStep> = {
               [msg.txnType]: {
+                ...step[msg.txnType],
                 phase: 'done' as const,
                 inserted: msg.inserted,
                 skipped: msg.skipped,
+              },
+            };
+            next.set(msg.sourceId, {
+              ...state,
+              accountSteps: updateAccountStep(updated, msg.accountId, { ...step, ...txnPatch }),
+            });
+            break;
+          }
+          case 'task-account-warning': {
+            const state = get(msg.sourceId);
+            const accountSteps = state.accountSteps ?? [];
+            const [updated, step] = findOrCreateAccountStep(accountSteps, msg.accountId);
+            // The fetch succeeded, so the phase is left alone — only the caveat is added.
+            const txnPatch: Partial<AccountStep> = {
+              [msg.txnType]: {
+                phase: 'fetching' as const,
+                ...step[msg.txnType],
+                warning: msg.message,
               },
             };
             next.set(msg.sourceId, {
