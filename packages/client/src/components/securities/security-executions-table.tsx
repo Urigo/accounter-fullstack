@@ -4,7 +4,6 @@ import {
   type SecurityExecutionFieldsFragment,
 } from '../../gql/graphql.js';
 import { getFragmentData, type FragmentType } from '../../gql/index.js';
-import { formatStringifyAmount } from '../../helpers/numbers.js';
 import { ChargeNavigateButton } from '../common/buttons/charge-navigate-button.js';
 import { Badge } from '../ui/badge.js';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table.js';
@@ -36,8 +35,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
   }
 `;
 
-export const formatSecurityNumber = (value: number | null | undefined, digits = 2): string =>
-  value == null ? '' : formatStringifyAmount(value, digits);
+/**
+ * Quantities and prices arrive with four decimals, but nearly all of them are trailing zeros.
+ * Keep up to four digits for the fractional ETF/mutual-fund values, drop whatever is only padding.
+ */
+export const formatSecurityDecimal = (value: number | null | undefined): string =>
+  value == null
+    ? ''
+    : new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 4,
+      }).format(value);
 
 export const formatSecurityDate = (value: string | Date | null | undefined): string =>
   value ? new Date(value).toLocaleDateString() : '';
@@ -110,8 +118,8 @@ export function SecurityExecutionsTable({ rows, withChargeLink }: Props): ReactE
                 </div>
               </TableCell>
               {/* Quantities can be fractional for ETFs and mutual funds. */}
-              <TableCell>{formatSecurityNumber(execution.quantity, 4)}</TableCell>
-              <TableCell>{formatSecurityNumber(execution.tradePrice, 4)}</TableCell>
+              <TableCell>{formatSecurityDecimal(execution.quantity)}</TableCell>
+              <TableCell>{formatSecurityDecimal(execution.tradePrice)}</TableCell>
               <TableCell className="whitespace-nowrap">{execution.netValue?.formatted}</TableCell>
               <TableCell className="whitespace-nowrap">
                 {(execution.tradeCommission ?? execution.managementFees)?.formatted}
