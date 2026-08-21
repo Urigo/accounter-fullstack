@@ -81,6 +81,7 @@ export async function scrapePoalim(
     swift: DecoratedSwiftTransactions | null;
     securitiesInfo: PoalimSecuritiesInfoPayload | null;
     securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
+    securitiesTransactionsWarning?: string;
     bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
   }[]
 > {
@@ -196,6 +197,7 @@ export async function scrapePoalim(
       swift: DecoratedSwiftTransactions | null;
       securitiesInfo: PoalimSecuritiesInfoPayload | null;
       securitiesTransactions: PoalimSecuritiesTransactionsPayload | null;
+      securitiesTransactionsWarning?: string;
       bankAccount: { bankNumber: number; branchNumber: number; accountNumber: number };
     }[] = [];
     const isBusiness = creds.options?.isBusinessAccount ?? false;
@@ -208,6 +210,7 @@ export async function scrapePoalim(
       let swift: DecoratedSwiftTransactions | null = null;
       let securitiesInfo: PoalimSecuritiesInfoPayload | null = null;
       let securitiesTransactions: PoalimSecuritiesTransactionsPayload | null = null;
+      let securitiesTransactionsWarning: string | undefined;
       const accountId = `${account.branchNumber}-${account.accountNumber}`;
       const accountRef = {
         bankNumber: account.bankNumber,
@@ -311,6 +314,7 @@ export async function scrapePoalim(
           data: securitiesTransactionsData,
           isValid: securitiesTransactionsValid,
           errors: securitiesTransactionsErrors,
+          truncated: securitiesTransactionsTruncated,
         } = await scraper.getSecuritiesTransactions(accountRef, {
           fromDate: dateFrom,
           toDate: dateTo,
@@ -326,6 +330,9 @@ export async function scrapePoalim(
             securitiesTransactionsData,
           );
         }
+        // Paging stopped with the bank's cursor still open: what came back is real and
+        // still worth uploading, but it is not the whole window, so say so.
+        securitiesTransactionsWarning = securitiesTransactionsTruncated;
       }
 
       accountsData.push({
@@ -334,6 +341,7 @@ export async function scrapePoalim(
         swift,
         securitiesInfo,
         securitiesTransactions,
+        ...(securitiesTransactionsWarning ? { securitiesTransactionsWarning } : {}),
         bankAccount: accountRef,
       });
     }

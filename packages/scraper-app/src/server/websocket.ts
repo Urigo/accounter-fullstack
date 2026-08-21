@@ -438,6 +438,15 @@ function buildTask(
 
             const securitiesTransactionsPayload = accountData.securitiesTransactions;
             if (securitiesTransactionsPayload) {
+              if (accountData.securitiesTransactionsWarning) {
+                emit({
+                  type: 'task-account-warning',
+                  sourceId: src.id,
+                  accountId,
+                  txnType: 'securitiesTransactions',
+                  message: accountData.securitiesTransactionsWarning,
+                });
+              }
               // Executions are settled by definition — nothing pending to filter out.
               const executionsCount = securitiesTransactionsPayload.Account.Execution.length;
               emit({
