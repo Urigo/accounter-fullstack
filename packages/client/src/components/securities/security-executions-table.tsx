@@ -35,17 +35,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
   }
 `;
 
+/** Shared by every cell below, so the formatter is built once rather than per row. */
+const securityDecimalFormat = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 4,
+});
+
 /**
  * Quantities and prices arrive with four decimals, but nearly all of them are trailing zeros.
  * Keep up to four digits for the fractional ETF/mutual-fund values, drop whatever is only padding.
  */
 export const formatSecurityDecimal = (value: number | null | undefined): string =>
-  value == null
-    ? ''
-    : new Intl.NumberFormat('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 4,
-      }).format(value);
+  value == null ? '' : securityDecimalFormat.format(value);
 
 export const formatSecurityDate = (value: string | Date | null | undefined): string =>
   value ? new Date(value).toLocaleDateString() : '';
