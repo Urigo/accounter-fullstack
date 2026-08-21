@@ -120,9 +120,10 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     }
     const t0 = Date.now();
     try {
-      // Same header the upload client sends (see graphql/client.ts) — the server reads
-      // `x-api-key` and claims an `Authorization: Bearer` header for the JWT path
-      // instead, so probing with Bearer would never exercise the real auth route.
+      // Probe with the same header the upload client sends (see graphql/client.ts).
+      // The server takes the scraper key from `x-api-key`; an `Authorization: Bearer`
+      // header is claimed first and routed to JWT verification, so probing with Bearer
+      // would test a different code path than the one uploads actually use.
       const res = await fetch(serverUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },

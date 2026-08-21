@@ -141,6 +141,7 @@ function TxnTypeCell({
       )}
       {state.warning && (
         <span
+          role="img"
           title={state.warning}
           style={{ marginLeft: 4, color: '#b45309', cursor: 'help' }}
           aria-label={state.warning}
