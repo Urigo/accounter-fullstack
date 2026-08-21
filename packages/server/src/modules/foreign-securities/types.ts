@@ -70,6 +70,16 @@ export type SecurityHistoryExecutionProto = {
   transaction: { id: string; charge_id: string } | null;
 };
 
+/**
+ * One security plus the position its executions imply, for the tenant-wide holdings list.
+ * The execution list itself is deliberately absent — see the `SecurityHolding` type.
+ */
+export type SecurityHoldingProto = {
+  id: string;
+  security: SecurityBusinessRow;
+  position: SecurityPositionWithIdProto;
+};
+
 export type SecurityBusinessHistoryProto = {
   id: string;
   security: SecurityBusinessRow;

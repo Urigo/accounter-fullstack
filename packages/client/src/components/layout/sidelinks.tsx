@@ -7,6 +7,7 @@ import {
   Book,
   BookOpenCheck,
   Calculator,
+  CandlestickChart,
   ChartColumnDecreasing,
   ChartNoAxesCombined,
   CheckCheck,
@@ -282,6 +283,12 @@ export const sidelinks: SideLink[] = [
     title: 'Salaries',
     label: '',
     icon: <BadgeDollarSign size={18} />,
+  },
+  {
+    href: ROUTES.SECURITIES,
+    title: 'Securities',
+    label: '',
+    icon: <CandlestickChart size={18} />,
   },
   {
     href: ROUTES.TAGS,

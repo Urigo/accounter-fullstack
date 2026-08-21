@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculateSecurityPosition,
+  isOpenPosition,
   type PositionExecution,
 } from '../security-position.helper.js';
 
@@ -92,5 +93,36 @@ describe('calculateSecurityPosition', () => {
 
   it('carries the currency the executions are quoted in', () => {
     expect(calculateSecurityPosition([execution()]).currency).toBe('דולר ארה"ב');
+  });
+});
+
+describe('isOpenPosition', () => {
+  it('reads an untouched security as closed', () => {
+    expect(isOpenPosition(calculateSecurityPosition([]))).toBe(false);
+  });
+
+  it('reads a fully sold fractional holding as closed despite the float residue', () => {
+    // Fractional units are the norm for ETFs and mutual funds, and summing them does not land
+    // back on zero — which is the whole reason the predicate needs an epsilon.
+    const position = calculateSecurityPosition([
+      execution({ nv: '0.1' }),
+      execution({ nv: '0.2' }),
+      execution({ nv: '0.3', trade_type: 'מכירה', net_value_trade_currency: '30.00' }),
+    ]);
+
+    expect(position.quantity).not.toBe(0);
+    expect(isOpenPosition(position)).toBe(false);
+  });
+
+  it('reads a holding still visible at four decimals as open', () => {
+    expect(isOpenPosition({ quantity: 0.0001 })).toBe(true);
+  });
+
+  it('reads a residue below the printed precision as closed', () => {
+    expect(isOpenPosition({ quantity: 5e-7 })).toBe(false);
+  });
+
+  it('reads a negative holding as open, since it means the history starts mid-life', () => {
+    expect(isOpenPosition({ quantity: -5 })).toBe(true);
   });
 });

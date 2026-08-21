@@ -175,6 +175,9 @@ const AnnualAudit = lazy(() =>
 const Salaries = lazy(() =>
   import('../components/salaries/index.js').then(m => ({ default: m.Salaries })),
 );
+const Securities = lazy(() =>
+  import('../components/screens/securities/index.js').then(m => ({ default: m.Securities })),
+);
 const TagsManager = lazy(() =>
   import('../components/tags/index.js').then(m => ({ default: m.TagsManager })),
 );
@@ -655,6 +658,11 @@ export const routes: RouteObject[] = [
             path: 'salaries',
             element: withSuspense(Salaries, <TableSkeleton />),
             handle: { title: 'Salaries', breadcrumb: 'Salaries' },
+          },
+          {
+            path: 'securities',
+            element: withSuspense(Securities, <TableSkeleton />),
+            handle: { title: 'Securities', breadcrumb: 'Securities' },
           },
           {
             path: 'tags',

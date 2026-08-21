@@ -4,7 +4,7 @@ import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
-import { calculateSecurityPosition } from '../helpers/security-position.helper.js';
+import { calculateSecurityPosition, isOpenPosition } from '../helpers/security-position.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
@@ -28,6 +28,35 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
       return businesses.filter(
         (business): business is Exclude<(typeof businesses)[number], Error | undefined | null> =>
           business != null && !(business instanceof Error),
+      );
+    },
+    securityHoldings: async (_, { includeClosed }, { injector }) => {
+      const securityBusinesses = await injector
+        .get(SecurityBusinessesProvider)
+        .getAllSecurityBusinesses();
+      const executionsByBusinessId = await injector
+        .get(ForeignSecuritiesProvider)
+        .getExecutionsBySecurityBusiness();
+
+      return (
+        securityBusinesses
+          .map(securityBusiness => ({
+            id: securityBusiness.id,
+            security: securityBusiness,
+            position: {
+              id: securityBusiness.id,
+              ...calculateSecurityPosition(executionsByBusinessId.get(securityBusiness.id) ?? []),
+            },
+          }))
+          // Closed positions are the bulk of a long-lived portfolio, so the screen asks for them
+          // explicitly. A security with nothing ingested against it reads as closed too.
+          .filter(holding => includeClosed || isOpenPosition(holding.position))
+          // Ordered here so an unsorted render is stable across requests.
+          .sort((a, b) =>
+            (a.security.eng_name ?? a.security.isin).localeCompare(
+              b.security.eng_name ?? b.security.isin,
+            ),
+          )
       );
     },
     securityBusinessHistory: async (_, { businessId }, { injector }) => {

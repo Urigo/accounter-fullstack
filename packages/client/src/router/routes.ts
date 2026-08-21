@@ -147,6 +147,7 @@ export const ROUTES = {
 
   ACCOUNTANT_APPROVALS: '/accountant-approvals',
   SALARIES: '/salaries',
+  SECURITIES: '/securities',
   TAGS: '/tags',
   TAX_CATEGORIES: '/tax-categories',
   SORT_CODES: '/sort-codes',
