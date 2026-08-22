@@ -1,5 +1,15 @@
 # @accounter/shaam-uniform-format-generator
 
+## 0.2.7
+
+### Patch Changes
+
+- [#3846](https://github.com/Urigo/accounter-fullstack/pull/3846)
+  [`d382eb2`](https://github.com/Urigo/accounter-fullstack/commit/d382eb20cf27b76ef80d235080bead1ba66b1e77)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`iconv-lite@0.7.3` ↗︎](https://www.npmjs.com/package/iconv-lite/v/0.7.3)
+    (from `0.7.2`, in `dependencies`)
+
 ## 0.2.6
 
 ### Patch Changes
