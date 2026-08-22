@@ -1,5 +1,254 @@
 # @accounter/modern-poalim-scraper
 
+## 0.11.0
+
+### Minor Changes
+
+- [#4194](https://github.com/Urigo/accounter-fullstack/pull/4194)
+  [`4eb395f`](https://github.com/Urigo/accounter-fullstack/commit/4eb395fc0436adeca029f2a8bb49e0aef8f22c66)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Ingest static foreign-securities reference
+  data from Bank Hapoalim.
+
+  Poalim's "mytrade" portfolio app exposes the static details of every security held in a trading
+  account — name, symbol, exchange, currency, instrument type. Accounter already had a
+  `FOREIGN_SECURITIES` account type and recognised securities fees, but had no record of _which_
+  securities an account holds, so securities transactions could not be resolved against instrument
+  metadata. This adds the full ingestion path for that list. Live portfolio balances
+  (`View.Account`, `View.Account.AccountPosition.Balance`) and open orders (`View.Orders`) are out
+  of scope; nothing reads the stored rows yet.
+
+  `modern-poalim-scraper` gains `getSecurities(account)`, following the same
+  `{ data, isValid, errors }` contract as its siblings, plus the exported `HapoalimSecurities` /
+  `PoalimSecurity` types. Two things about this endpoint differ from the rest of the Poalim surface
+  and are worth knowing:
+
+  - It addresses the account as `branch-account` (no bank number), unlike the three-part `accountId`
+    every other method uses.
+  - It is only served to callers running on the mytrade SPA's own page, and requires a `session`
+    header holding a **server-issued** key — inventing one is rejected with
+    `InvalidSessionException`. So the request is issued from a short-lived sibling tab on the
+    logged-in browser context, and `captureMytradeSession` listens for the SPA's own `/mytrade/api/`
+    call to harvest the real `session` / `csession` headers rather than guessing where the SPA
+    stores them.
+
+  Accounts with no securities portfolio omit `View.Meta.Security` entirely; that is treated as an
+  empty portfolio rather than a malformed response, so it no longer fails the whole Poalim run.
+
+  `server` gains `uploadPoalimSecurities(securities: [PoalimSecurityInput!]!)` on the
+  scraper-ingestion module, backed by a new `accounter_schema.poalim_securities` table (migration
+  `2026-08-11T12-00-00.add-poalim-securities-table`) that mirrors the source fields one-to-one. The
+  table is owner-scoped with RLS and a `tenant_isolation` policy, and deduplicates on
+  `(bank_number, branch_number, account_number, security_key)`. Re-scrapes are no-ops, and changed
+  attributes are reported through the shared `changedTransactions` result — `as_of_date` is excluded
+  from that comparison since it moves on every scrape and would otherwise flag every row. These rows
+  are reference data, not cash movements, so there is deliberately no insert trigger and no
+  `transactions_raw_list` wiring.
+
+  `scraper-app` gets a per-source "Fetch foreign securities" option (off by default — the endpoint
+  is portfolio-specific), a `securities` column in the run progress table, and the fetch/upload
+  steps.
+
+  Also tightens two things that this work surfaced: the shared XSRF lookup now reads cookies from
+  the browser context instead of the deprecated page-level cookie API, filtered by cookie domain —
+  all scrapers share the default browser context, so an unfiltered lookup could pick up another
+  bank's `XSRF-TOKEN`.
+
+- [#4203](https://github.com/Urigo/accounter-fullstack/pull/4203)
+  [`9a38125`](https://github.com/Urigo/accounter-fullstack/commit/9a3812588d0ed0ebcee304122073950e9990abc8)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Ingest securities portfolio activity from
+  Bank Hapoalim.
+
+  The previous securities work stored _what_ an account holds; this adds _what happened_ in it —
+  buys, sells, dividend and interest payments, redemptions, deposit transfers and other corporate
+  actions — from the "mytrade" order executions history
+  (`/mytrade/api/v2/json2/order/executions/history`). Nothing reads the stored rows yet.
+
+  Because there are now two securities feeds, the static one is renamed throughout so the two are
+  never confused:
+
+  - `modern-poalim-scraper`: `getSecurities` → `getSecuritiesInfo`; `HapoalimSecuritiesSchema` →
+    `HapoalimSecuritiesInfoSchema`; the `HapoalimSecurities` / `PoalimSecurity` types →
+    `HapoalimSecuritiesInfo` / `PoalimSecurityInfo`. **Breaking** for direct consumers of those
+    exports.
+  - `scraper-app`: payload type `poalim-securities` → `poalim-securities-info`,
+    `poalimSecuritiesVars` → `poalimSecuritiesInfoVars`, WebSocket `txnType` `securities` →
+    `securitiesInfo`.
+
+  The server's `uploadPoalimSecurities` mutation and the `accounter_schema.poalim_securities` table
+  keep their names — they are persisted API and schema, and read fine as the reference feed
+  alongside the new table.
+
+  `modern-poalim-scraper` gains `getSecuritiesTransactions(account, range?)`, following the same
+  `{ data, isValid, errors }` contract as its siblings, plus the exported
+  `HapoalimSecuritiesTransactions` / `PoalimSecurityTransaction` types. It shares the sibling-tab
+  and `captureMytradeSession` mechanics with `getSecuritiesInfo` (both now go through a common
+  `fetchFromMytrade` helper), with two differences: this endpoint is a **GET** — sending it as POST
+  returns nothing, so `fetchPoalimMytradeWithinPage` took a `method` parameter — and it takes a
+  `ddMMyyyy` date range, defaulting to the scraper's configured `duration` window.
+
+  The response schema is strict rather than permissive, on both the scraper and the scraper-app
+  side: closed enums for the bank's own vocabularies (transaction and trade types, payment types,
+  currencies, security groups, the `כן`/`לא` flags), formats for timestamps, ISIN, security numbers
+  and branch/account strings, ranges for percentages and non-negative amounts, and the cross-field
+  invariants the bank's data obeys — a buy/sell `TradeType` iff the matching `TransactionType`, the
+  `PaymentType`/`PaymentDate`/`ExDate` block filled all-or-nothing and never on a trade, the
+  `FinancialAccount*` strings agreeing with `Branch`/`Account`, one currency across issue/trade/
+  settlement, and `IsUSEquity` agreeing with the issuer country. The intent is that a bank-side
+  change is a loud, located failure rather than a silently mis-typed column: every constraint
+  carries a message naming the field, the offending value and what to widen, and
+  `describeSecuritiesTransactionsError` annotates each issue with the security and trade date of the
+  row it came from (the raw Zod path points at `Account.Execution.37.TradeType`, which says nothing
+  about which execution that is). `PayloadValidationError` now prints a capped `path: message` list
+  instead of dumping the whole `ZodError` as JSON.
+
+  `server` gains
+  `uploadPoalimSecuritiesTransactions(transactions: [PoalimSecurityTransactionInput!]!)` on the
+  scraper-ingestion module, backed by a new `accounter_schema.poalim_securities_transactions` table
+  (migration `2026-08-13T12-00-00.add-poalim-securities-transactions-table`) that mirrors the source
+  fields one-to-one, bank misspellings included (`israe_tax_value`, `peyment_pecentage`,
+  `trade_currnecy_rate`, `last_tranaction_date`, `fund_plus_accumulated_inerest_value`) so the
+  mapping stays mechanical. It is owner-scoped with RLS and a `tenant_isolation` policy, and joins
+  to `poalim_securities` on `security` / `security_key`. The response carries no per-execution id,
+  so deduplication uses the natural key — account, security, the trade/value/settlement dates, trade
+  and transaction type, quantity, price, net value and the corporate-action dates — with
+  `NULLS NOT DISTINCT`, since most of those are null on a plain trade. That key is verified unique
+  across a full year of real executions; shorter keys are not (two same-day dividends on one
+  security collide). Re-scrapes are no-ops and restated values are reported through the shared
+  `changedTransactions` result. Like `poalim_securities`, these rows are not cash movements: no
+  insert trigger, no `transactions_raw_list` wiring.
+
+  The date columns are `DATE`, matching every other `poalim_*` table. The bank sends calendar dates
+  dressed as instants — always midnight, carrying the Israel offset of that date — so storing them
+  as `TIMESTAMPTZ` (as the first cut did, fixed by migration
+  `2026-08-14T10-00-00.poalim-securities-transactions-calendar-dates`) put the stored instant at
+  21:00 or 22:00 UTC the day before, and anything rendering it outside Israel time reported the
+  wrong day. For the same reason the ingestion provider compares and queries these as calendar dates
+  rather than converting through `Date`, which would shift the day on any server not running on
+  Israel time.
+
+  `scraper-app` fetches and uploads both securities feeds under the existing per-source option (now
+  labelled "Fetch securities portfolio (info + activity)"), with separate progress columns for each.
+
+  Also extends the foreign-transactions `metadata.messages[].messageCode` lists, which the
+  enumerated unions rejected on an account whose informational banners differed from the ones
+  already listed.
+
+### Patch Changes
+
+- [#3738](https://github.com/Urigo/accounter-fullstack/pull/3738)
+  [`670f7cc`](https://github.com/Urigo/accounter-fullstack/commit/670f7cc2bd58c04da5dd151e4878382916700a8e)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.2.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.0)
+    (from `25.1.0`, in `dependencies`)
+
+- [#3762](https://github.com/Urigo/accounter-fullstack/pull/3762)
+  [`50ca939`](https://github.com/Urigo/accounter-fullstack/commit/50ca939661d9eb5b31e134c54d12015e524fac1c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.2.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.0)
+    (from `25.1.0`, in `dependencies`)
+
+- [#3768](https://github.com/Urigo/accounter-fullstack/pull/3768)
+  [`7a7dc71`](https://github.com/Urigo/accounter-fullstack/commit/7a7dc71ba2dc9a660f150340f2352704d571f367)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.61.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.61.1)
+    (from `1.61.0`, in `dependencies`)
+  - Updated dependency [`puppeteer@25.2.1` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.2.1)
+    (from `25.2.0`, in `dependencies`)
+
+- [#3821](https://github.com/Urigo/accounter-fullstack/pull/3821)
+  [`fd69847`](https://github.com/Urigo/accounter-fullstack/commit/fd698477f09c7bbf245bcb011afc359f47521da3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.3.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.3.0)
+    (from `25.2.1`, in `dependencies`)
+
+- [#4037](https://github.com/Urigo/accounter-fullstack/pull/4037)
+  [`e3f2337`](https://github.com/Urigo/accounter-fullstack/commit/e3f233710a581a48dee6e45e956170dc3c2799c3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.62.0` ↗︎](https://www.npmjs.com/package/playwright/v/1.62.0)
+    (from `1.61.1`, in `dependencies`)
+
+- [#4056](https://github.com/Urigo/accounter-fullstack/pull/4056)
+  [`568beb7`](https://github.com/Urigo/accounter-fullstack/commit/568beb7c49949f553c9e6cce54ab248123ba86b3)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.4.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.4.0)
+    (from `25.3.0`, in `dependencies`)
+
+- [#4066](https://github.com/Urigo/accounter-fullstack/pull/4066)
+  [`3910f54`](https://github.com/Urigo/accounter-fullstack/commit/3910f548f6da8ec4130878766853ec326df37b94)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`playwright@1.62.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.62.1)
+    (from `1.62.0`, in `dependencies`)
+
+- [#4081](https://github.com/Urigo/accounter-fullstack/pull/4081)
+  [`f899b37`](https://github.com/Urigo/accounter-fullstack/commit/f899b37a1561ef168398d122f214d9802178707d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`playwright@1.62.1` ↗︎](https://www.npmjs.com/package/playwright/v/1.62.1)
+    (from `1.62.0`, in `dependencies`)
+
+- [#4120](https://github.com/Urigo/accounter-fullstack/pull/4120)
+  [`73316d3`](https://github.com/Urigo/accounter-fullstack/commit/73316d3a7704b22a493d5357097a283baf3567ea)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.5.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.5.0)
+    (from `25.4.0`, in `dependencies`)
+
+- [#4125](https://github.com/Urigo/accounter-fullstack/pull/4125)
+  [`9571ea2`](https://github.com/Urigo/accounter-fullstack/commit/9571ea22c35a030112b2631a8a4e2c0c212098fa)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.5.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.5.0)
+    (from `25.4.0`, in `dependencies`)
+
+- [#4185](https://github.com/Urigo/accounter-fullstack/pull/4185)
+  [`75b5f17`](https://github.com/Urigo/accounter-fullstack/commit/75b5f17f1d642d2ac8f97d62f7e7d1cbb20cda24)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.6.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.6.0)
+    (from `25.5.0`, in `dependencies`)
+
+- [#4194](https://github.com/Urigo/accounter-fullstack/pull/4194)
+  [`4eb395f`](https://github.com/Urigo/accounter-fullstack/commit/4eb395fc0436adeca029f2a8bb49e0aef8f22c66)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Removed dependency [`inquirer@14.0.2` ↗︎](https://www.npmjs.com/package/inquirer/v/14.0.2) (from
+    `dependencies`)
+
+- [#4207](https://github.com/Urigo/accounter-fullstack/pull/4207)
+  [`87e374e`](https://github.com/Urigo/accounter-fullstack/commit/87e374e340733845f3c6ff9616f2a475d390788d)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.7.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.7.0)
+    (from `25.6.0`, in `dependencies`)
+
+- [#4209](https://github.com/Urigo/accounter-fullstack/pull/4209)
+  [`34d4c12`](https://github.com/Urigo/accounter-fullstack/commit/34d4c126f017b92d02b56de4b473f3075baa1996)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.7.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.7.0)
+    (from `25.6.0`, in `dependencies`)
+
+- [#4230](https://github.com/Urigo/accounter-fullstack/pull/4230)
+  [`a6291cb`](https://github.com/Urigo/accounter-fullstack/commit/a6291cbc20de9a52d0a8c4fc7cca8bd1e9f15bdf)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.8.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.8.0)
+    (from `25.7.0`, in `dependencies`)
+
+- [#4253](https://github.com/Urigo/accounter-fullstack/pull/4253)
+  [`223a6f6`](https://github.com/Urigo/accounter-fullstack/commit/223a6f6ee9c10ff5fd1bd514d0bed0fb5d3a78c5)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency [`puppeteer@25.8.0` ↗︎](https://www.npmjs.com/package/puppeteer/v/25.8.0)
+    (from `25.7.0`, in `dependencies`)
+
+- [#4234](https://github.com/Urigo/accounter-fullstack/pull/4234)
+  [`bb8cc37`](https://github.com/Urigo/accounter-fullstack/commit/bb8cc3743043d2bb11595ccc8f49e6e52eccedfc)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Accept the Poalim securities feed's non-USD
+  currencies, and page past its 150-execution response cap
+
+  The executions schema only knew `שקל חדש` and `דולר ארה"ב`, so any non-US listing failed
+  validation; `אירו`, `לירה שטרלינג` and `ין יפני` are now accepted and mapped to `Currency` on
+  read. The endpoint also caps a response at 150 executions without saying it truncated, so a full
+  page is re-requested with the window's ceiling pulled back to the oldest day that page reached,
+  and the pages are merged and deduplicated.
+
+- [#3950](https://github.com/Urigo/accounter-fullstack/pull/3950)
+  [`c406f51`](https://github.com/Urigo/accounter-fullstack/commit/c406f5151625b26768c3764ee302ef5e1aa80c05)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Add `accountName` to
+  `AccountDataItemSchema`wq
+
 ## 0.10.6
 
 ### Patch Changes

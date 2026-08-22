@@ -1,5 +1,143 @@
 # @accounter/email-ingestion-gateway
 
+## 0.1.1
+
+### Patch Changes
+
+- [#3926](https://github.com/Urigo/accounter-fullstack/pull/3926)
+  [`295fa80`](https://github.com/Urigo/accounter-fullstack/commit/295fa805843094115b58f291be309b86351ac96d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Refine the email-ingestion-gateway
+  container build. Rename `DockerFile` to `Dockerfile`, fix the `docker:build`/`docker:run`
+  workspace scripts to use the correct build context (`../../`) and paths, copy only workspace
+  manifests before `yarn install` for better layer caching, run the production stage as the non-root
+  `pwuser` from the Playwright base image (copying artifacts with `--chown` instead of a costly
+  recursive `chown -R /app`), and add a root `.dockerignore` so the repo-root build context stays
+  small and host `node_modules` don't clobber the installed dependencies.
+
+- [#4127](https://github.com/Urigo/accounter-fullstack/pull/4127)
+  [`5bdeb5c`](https://github.com/Urigo/accounter-fullstack/commit/5bdeb5c61ef2ffc46d93e786cbd1afff0113c68d)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix email-ingestion falsely marking
+  forwarded supplier invoices as self-issued (SELF_ISSUED DUPLICATE) and silently dropping them.
+
+  When a supplier (e.g. Aiven) emails a tenant's Accounts-Payable Google Group, the mailing list
+  rewrites the quoted `From:` to the group's own forwarding address
+  (`'Aiven Billing' via Account Payables <ap@…>`). The real issuer's address survived only as a body
+  contact/footer `mailto:` link, which the issuer-candidate extractor did not harvest — so the only
+  recognized address was the forwarder, hard-coded as a self-issuing provider. The email was bound
+  to the tenant's own business and skipped at ingest as a `DUPLICATE` (`SELF_ISSUED`), inserting
+  nothing.
+
+  - **Gateway `mime-extractor.ts`**: harvest any body `mailto:` link (not only header-anchored
+    `From:`/`Reply-To:`/`Sender:` addresses) as lower-priority issuer candidates, so a real issuer
+    reachable only through a contact/footer link is still recovered for server-side recognition.
+  - **Server `email-ingestion-control.resolver.ts`**: a positive _external_ business recognition now
+    wins over the single-address self-issued heuristic. When recognition identifies a real
+    counterparty (any business other than the tenant), the documents are attributed to it and the
+    self-issued check is skipped, so a supplier invoice routed through the tenant's own forwarding
+    group is no longer misclassified.
+  - **Server `email-ingestion-ingest.provider.ts`**: the self-issued / tenant-matched path now
+    **QUARANTINEs** (recorded, visible, reprocessable) instead of silently returning `DUPLICATE`
+    with nothing written, so a misclassification is never silent data loss. The `SELF_ISSUED` reason
+    code now pairs with the `QUARANTINED` outcome.
+
+- [#4124](https://github.com/Urigo/accounter-fullstack/pull/4124)
+  [`3f3c0bd`](https://github.com/Urigo/accounter-fullstack/commit/3f3c0bd2b29e6e7beaf370a41eb54cd87e5f10c0)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Fix v2 email ingestion stranding emails on
+  a failed document upload. The server consumed the single-use grant in its own committed
+  transaction before the fallible, non-transactional document preparation (Cloudinary upload, OCR),
+  so any failure there left the grant burned with **nothing** persisted — no document, no charge, no
+  quarantine, no idempotency record — and every retry then hit the already-consumed grant
+  (`GRANT_INVALID` → `REJECTED`). The underlying error was also swallowed by the ingest resolver,
+  making the failure invisible server-side.
+
+  Now the server validates the grant read-only up front, prepares documents while the grant is still
+  intact, and consumes the grant **atomically inside the write transaction**, so a failure rolls the
+  consume back and the email stays retryable. A Cloudinary/prep failure is turned into a new
+  `UPLOAD_FAILED` quarantine (recorded and reprocessable) instead of throwing raw, while unexpected
+  errors still surface with the grant unconsumed. The ingest resolver now logs the real cause (keyed
+  by `correlationId`) rather than returning a bare `CommonError`.
+
+- [#4184](https://github.com/Urigo/accounter-fullstack/pull/4184)
+  [`d6fa2d0`](https://github.com/Urigo/accounter-fullstack/commit/d6fa2d002226930e0bbd20fd3fced9543c03455a)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Classify incoming email as `DIRECT` /
+  `RELAYED` / `FORWARDED` / `SELF_ISSUED` before recognizing an issuer, so **manually forwarded**
+  supplier invoices stop being withheld as self-issued and **self-issued** copies are detected for
+  every tenant rather than one hard-coded one.
+
+  Issuer recognition was sound for mail sent straight to the tenant, but collapsed on two shapes
+  that dominate real inboxes. A hand forward rewrites `From` to the forwarder, drops the original
+  `Reply-To`, and sets no `X-Original-*`; when the quoted headers are themselves a mailing-list
+  rewrite (`'No Reply - Mailchimp' via Account Payables <ap@…>`), _every_ recoverable address
+  belongs to the tenant — so recognition matched the tenant's own business and ingest withheld the
+  document. A forwarded Mailchimp invoice was indistinguishable from a genuine self-issued one.
+  Separately, self-issued detection fired only because `INVOICE_ISSUING_PROVIDER_EMAILS` hard-coded
+  one specific tenant's forwarding group (`ap@the-guild.dev`); no other tenant had any detection at
+  all.
+
+  - **Server `email-ingestion-classify.helper.ts`** (new, replaces
+    `email-ingestion-issuer.helper.ts`): a single `classifyEmail(evidence, tenantContext)` returning
+    `{ kind, issuerCandidates, forwarder, issuerNameHint }`, absorbing `selectIssuerEmail` /
+    `selectIssuerCandidates` / `isSelfIssuedSenderEvidence` and the branching that lived in the
+    control resolver. Kind is decided first-match-wins, with "a quoted forward block exists"
+    outranking "arrived via an invoice platform": a person deliberately forwarding into the ingest
+    alias signals intent to ingest, whereas self-issued confirmations always arrive by automatic
+    relay, never by hand. Issuer candidates are tiered (innermost quoted `From` → `Reply-To` →
+    `X-Original-From` → `From` → body `mailto:`, with invoice-platform addresses held back to last),
+    and the tenant's own addresses, its mailing-list addresses and the forwarder are excluded at
+    every tier. `issuerNameHint` carries the sender's display name for the case where a list rewrite
+    leaves no usable address at all — the only signal the name-based matcher and OCR can work from.
+  - **Server `EmailIngestionControlProvider.loadTenantMailContext`** (60 s TTL cache): derives the
+    tenant's own addresses from its active ingest aliases plus the emails on its **own** business
+    row — deliberately `b.id = tenant`, not `b.owner_id = tenant`, since the latter is every
+    counterparty in the workspace and would exclude every supplier from recognition. Colleagues
+    registered nowhere are covered by new optional `suggestion_data.emailIngestion` config
+    (`ownDomains`, `extraPlatformSenders`), a schema-only addition with no DDL.
+  - **Server: self-issued mail is now `IngestOutcome.IGNORED`, not `QUARANTINED`.** It is still
+    recorded and reprocessable, but routine self-issued copies no longer fill the operator triage
+    queue. The signal is the new `email_ingestion_grants.classification` column bound at control
+    time, replacing the `business_id = owner_id` inference that conflated the two cases in the first
+    place; grants issued before the column fall back to that comparison.
+  - **Gateway `forwarded.ts`** (new): structural parsing of quoted
+    `---------- Forwarded message ---------` blocks across both the text and HTML parts. Forwards
+    nest, and the block nearest the original sender is the innermost one — ordering the previous
+    flat address scrape could not express. The extractor now ships `fromDisplayName`,
+    `originalSender`, `listId`, `listAddresses` and `forwardedBlocks` as additive sender evidence;
+    the gateway still holds no tenant knowledge.
+  - **Gateway `treatment.ts`**: a `SELF_ISSUED` email produces no documents at all, skipping a
+    Chromium render per message and — more importantly — never fetching whatever sits behind its
+    links.
+  - Two parsing defects fixed along the way: `addressParser` strips `(via Paddle.com)` as an RFC
+    5322 comment, so quoted display names are now sliced rather than parsed; and `headerValue`
+    returned the first match, letting `X-Original-From` shadow `X-Original-Sender` — the most
+    reliable "arrived via an invoice platform" signal. They are separate evidence fields now.
+
+  **Deploy the server before the gateway.** GraphQL rejects unknown fields on input objects at
+  validation, so a gateway sending the new `SenderEvidenceInput` fields to an un-upgraded server
+  gets an error that `server-client` maps to `TRANSIENT_UPSTREAM` and retries — stalling all inbound
+  mail. The reverse is safe: an upgraded server receiving old evidence degrades to header-only
+  classification. `ap@the-guild.dev` remains in the global invoice-platform list so behavior is
+  unchanged until that tenant's `emailIngestion.ownDomains` config is populated and verified in
+  production; remove it then.
+
+  Forward-only: emails already quarantined as `SELF_ISSUED` are not reclassified.
+
+- [#3762](https://github.com/Urigo/accounter-fullstack/pull/3762)
+  [`50ca939`](https://github.com/Urigo/accounter-fullstack/commit/50ca939661d9eb5b31e134c54d12015e524fac1c)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Gateway: parse incoming MIME with
+  `postal-mime` (as recommended by Cloudflare's email-handler docs) instead of the hand-rolled
+  parser. This decodes RFC 2047 encoded-word headers, so non-ASCII subjects and sender display names
+  (e.g. Hebrew `=?UTF-8?B?…?=`) are no longer stored as raw encoded strings — fixing the email
+  charge description that reads them. `extractFromMime` keeps the same public contract
+  (document-type filtering, size/count limits, nesting-depth guard, and the `From: <mailto:…>`
+  issuer-candidate heuristic) and now also forwards the email subject to the server for the charge
+  description.
+
+- [#3873](https://github.com/Urigo/accounter-fullstack/pull/3873)
+  [`246b1e4`](https://github.com/Urigo/accounter-fullstack/commit/246b1e4d41a6424c4b9f251ff0b8cf36c774ab30)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - - **New `IngestReasonCode.SELF_ISSUED`**
+  constant in both `contracts.ts` files (server and gateway): Distinguishes self-issued skips from
+  content re-deliveries in duplicate outcomes.
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,40 @@
 # @accounter/gmail-listener
 
+## 0.1.3
+
+### Patch Changes
+
+- [#4200](https://github.com/Urigo/accounter-fullstack/pull/4200)
+  [`d6e2cfb`](https://github.com/Urigo/accounter-fullstack/commit/d6e2cfbecb411a7a57e72e6f68236bf4546e32b0)
+  Thanks [@renovate](https://github.com/apps/renovate)! - dependencies updates:
+  - Updated dependency
+    [`@google-cloud/pubsub@6.0.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.0.1)
+    (from `6.0.0`, in `dependencies`)
+
+- [#4209](https://github.com/Urigo/accounter-fullstack/pull/4209)
+  [`34d4c12`](https://github.com/Urigo/accounter-fullstack/commit/34d4c126f017b92d02b56de4b473f3075baa1996)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - dependencies updates:
+  - Updated dependency
+    [`@google-cloud/pubsub@6.0.1` ↗︎](https://www.npmjs.com/package/@google-cloud/pubsub/v/6.0.1)
+    (from `6.0.0`, in `dependencies`)
+
+- [#3761](https://github.com/Urigo/accounter-fullstack/pull/3761)
+  [`837d95c`](https://github.com/Urigo/accounter-fullstack/commit/837d95c0985ade04cf31cc7f956d409a1a7463e5)
+  Thanks [@gilgardosh](https://github.com/gilgardosh)! - Deprecate the legacy gmail-listener email
+  path now that the v2 multi-tenant `@accounter/email-ingestion-gateway` pipeline (Cloudflare →
+  Gateway → Server) covers it.
+
+  - The server GraphQL fields `businessEmailConfig` (query) and `insertEmailDocuments` (mutation)
+    are marked `@deprecated` (non-breaking — the legacy listener keeps working for rollback) and
+    scheduled for removal after cutover. Their resolvers carry matching `@deprecated` JSDoc.
+  - `@accounter/gmail-listener` is marked deprecated (README banner + package description) and
+    superseded by the gateway. It is kept only for rollback during the cutover.
+  - Docs updated to acknowledge the migration (root `CLAUDE.md`, `packages/server/CLAUDE.md`).
+
+  The `gmail_listener` auth role and the package itself are intentionally retained for rollback;
+  hard removal (and `npm deprecate` of the published package) is a follow-up once the cutover is
+  complete.
+
 ## 0.1.2
 
 ### Patch Changes

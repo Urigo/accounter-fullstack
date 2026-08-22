@@ -1,6 +1,6 @@
 {
   "name": "@accounter/mcp-server",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Remote MCP (Model Context Protocol) server exposing a curated, read-only subset of Accounter capabilities to Claude clients",
   "repository": {
