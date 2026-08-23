@@ -12,6 +12,7 @@ import { getLedgerRecordsTool } from '../ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from '../lookups.js';
 import type { ToolExecutionContext, ToolResult } from '../registry.js';
 import { balanceReportTool } from '../reports.js';
+import { getSecurityExecutionsTool, listSecurityHoldingsTool } from '../securities.js';
 import { getTransactionsTool } from '../transaction-details.js';
 import {
   SCOPE_DESCRIPTION_SUFFIX,
@@ -56,6 +57,8 @@ const BUSINESS_SCOPED_TOOLS = [
   searchChargesTool,
   getLedgerRecordsTool,
   getContractsTool,
+  listSecurityHoldingsTool,
+  getSecurityExecutionsTool,
   listTagsTool,
   listTaxCategoriesTool,
   listBusinessesTool,
@@ -70,6 +73,8 @@ const MULTI_BUSINESS_TOOLS = [
   searchChargesTool,
   getLedgerRecordsTool,
   getContractsTool,
+  listSecurityHoldingsTool,
+  getSecurityExecutionsTool,
   listTagsTool,
   listTaxCategoriesTool,
 ];

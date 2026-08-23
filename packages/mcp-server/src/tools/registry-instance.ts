@@ -8,6 +8,7 @@ import { getLedgerRecordsTool } from './ledger.js';
 import { listBusinessesTool, listTagsTool, listTaxCategoriesTool } from './lookups.js';
 import { ToolRegistry } from './registry.js';
 import { balanceReportTool } from './reports.js';
+import { getSecurityExecutionsTool, listSecurityHoldingsTool } from './securities.js';
 import { updateChargesTagsTool } from './tags-write.js';
 import { explainTerminologyTool } from './terminology.js';
 import { getTransactionsTool } from './transaction-details.js';
@@ -41,6 +42,11 @@ toolRegistry.register(getDocumentsTool);
 // charge/transaction/document drill-down rather than sitting with the lookups.
 toolRegistry.register(getLedgerRecordsTool);
 toolRegistry.register(getContractsTool);
+// Securities are their own drill-down, not reference data: the portfolio is the
+// entry point and the execution history is what it drills into, so the pair sits
+// together after the charge/ledger chain and ahead of the lookups.
+toolRegistry.register(listSecurityHoldingsTool);
+toolRegistry.register(getSecurityExecutionsTool);
 toolRegistry.register(listTagsTool);
 toolRegistry.register(listTaxCategoriesTool);
 // The full business directory sits with the other reference-data lookups.
