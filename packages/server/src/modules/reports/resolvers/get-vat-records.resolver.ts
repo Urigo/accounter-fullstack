@@ -15,6 +15,7 @@ import { BusinessesProvider } from '../../financial-entities/providers/businesse
 import { isRefundCharge } from '../../ledger/helpers/common-charge-ledger.helper.js';
 import {
   adjustTaxRecord,
+  isVatReportRelevantDocument,
   type RawVatReportRecord,
   type VatReportRecordSources,
 } from '../helpers/vat-report.helper.js';
@@ -68,10 +69,6 @@ export const getVatRecords = async (
       })
       .then(documents =>
         documents.filter(doc => {
-          if (doc.charge_id) {
-            docsChargesIDs.add(doc.charge_id);
-          }
-
           // filter documents with vat_report_date_override outside of the date range
           if (doc.vat_report_date_override) {
             const isBeforeFromDate =
@@ -82,12 +79,15 @@ export const getVatRecords = async (
             }
           }
 
-          if (!doc.charge_id || !doc.creditor_id || !doc.debtor_id) {
-            // filter invoice documents with linked charge
+          // Only financial (invoice) documents linked to a charge are considered by the VAT
+          // report. Non-financial documents (e.g. "OTHER") may carry a date but must not be
+          // included nor register their charge via `docsChargesIDs` (issue #3375).
+          if (!isVatReportRelevantDocument(doc)) {
             return false;
           }
-          const isRelevantDoc = ['INVOICE', 'INVOICE_RECEIPT', 'CREDIT_INVOICE'].includes(doc.type);
-          return isRelevantDoc;
+
+          docsChargesIDs.add(doc.charge_id);
+          return true;
         }),
       );
 

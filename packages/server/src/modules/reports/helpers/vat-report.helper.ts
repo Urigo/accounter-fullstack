@@ -10,6 +10,7 @@ import {
 } from '../../charges/helpers/common.helper.js';
 import type { IGetChargesByIdsResult } from '../../charges/types.js';
 import { DepreciationProvider } from '../../depreciation/providers/depreciation.provider.js';
+import { isInvoice } from '../../documents/helpers/common.helper.js';
 import type { IGetDocumentsByFiltersResult } from '../../documents/types.js';
 import { ExchangeProvider } from '../../exchange-rates/providers/exchange.provider.js';
 import type { IGetBusinessesByIdsResult } from '../../financial-entities/types.js';
@@ -46,6 +47,30 @@ export type RawVatReportRecord = {
   allocationNumber?: string | null;
   pcn874RecordType?: Pcn874RecordType;
 };
+
+/**
+ * Determines whether a document should be considered by the VAT report.
+ *
+ * Only financial (invoice) documents linked to a charge and carrying both counterparties are
+ * relevant. Non-financial documents — most notably `OTHER`, but also `RECEIPT`, `PROFORMA` and
+ * `UNPROCESSED` — may still carry a date, counterparty or amount, yet they must never be included
+ * in the report nor pull their charge into it via that date (issue #3375).
+ *
+ * Acts as a type guard so callers can safely treat `charge_id`, `creditor_id` and `debtor_id`
+ * as non-null strings — all three are asserted present here.
+ */
+export function isVatReportRelevantDocument(
+  doc: IGetDocumentsByFiltersResult,
+): doc is IGetDocumentsByFiltersResult & {
+  charge_id: string;
+  creditor_id: string;
+  debtor_id: string;
+} {
+  if (!doc.charge_id || !doc.creditor_id || !doc.debtor_id) {
+    return false;
+  }
+  return isInvoice(doc.type);
+}
 
 export const MONTHLY_VAT_AMOUNT_TOLERANCE = 0.01;
 
