@@ -21,6 +21,10 @@ export const Tags = ({
   const { updateCharge, fetching } = useUpdateCharge();
 
   const [similarChargesOpen, setSimilarChargesOpen] = useState(false);
+  // The tags the similar-charges follow-up compares against, captured when they were applied.
+  // Reading them off the props instead would make the criteria vanish the moment `onChange` below
+  // refreshes the row (the suggestion is gone once accepted), closing the dialog immediately.
+  const [appliedTagIds, setAppliedTagIds] = useState<{ id: string }[] | undefined>(undefined);
 
   const hasAlternative = isMissing && !!suggestedTags?.length;
 
@@ -28,13 +32,21 @@ export const Tags = ({
 
   const updateTag = useCallback(
     async (tags?: Array<{ id: string }>) => {
-      await updateCharge({
+      const appliedTags = tags?.map(t => ({ id: t.id }));
+      const updated = await updateCharge({
         chargeId,
-        fields: { tags: tags?.map(t => ({ id: t.id })) },
+        fields: { tags: appliedTags },
       });
+      if (!updated) {
+        return;
+      }
+      // Refresh the row on the mutation itself. Hanging it off the follow-up dialog's close made
+      // the update invisible whenever that dialog resolved without closing.
+      onChange();
+      setAppliedTagIds(appliedTags);
       setSimilarChargesOpen(true);
     },
-    [chargeId, updateCharge],
+    [chargeId, updateCharge, onChange],
   );
 
   return (
@@ -68,10 +80,9 @@ export const Tags = ({
 
       <SimilarChargesByIdModal
         chargeId={chargeId}
-        tagIds={suggestedTags?.map(t => ({ id: t.id }))}
+        tagIds={appliedTagIds}
         open={similarChargesOpen}
         onOpenChange={setSimilarChargesOpen}
-        onClose={onChange}
       />
     </>
   );

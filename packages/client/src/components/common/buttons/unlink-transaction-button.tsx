@@ -7,16 +7,23 @@ import { ConfirmationModal } from '../index.js';
 
 interface Props {
   transactionId: string;
+  /** Called after the transaction was detached, so the (now transaction-less) charge can reload. */
+  onChange?: () => void;
 }
 
-export function UnlinkTransactionButton({ transactionId }: Props): ReactElement {
+export function UnlinkTransactionButton({ transactionId, onChange }: Props): ReactElement {
   const { updateTransaction } = useUpdateTransaction();
 
-  function onUnlink(): void {
-    updateTransaction({
+  async function onUnlink(): Promise<void> {
+    const unlinked = await updateTransaction({
       transactionId,
       fields: { chargeId: EMPTY_UUID },
     });
+    // Only report the change once the transaction actually moved off the charge — the hook returns
+    // nothing on failure, and hosts use this to close the editor and reload.
+    if (unlinked) {
+      onChange?.();
+    }
   }
 
   return (

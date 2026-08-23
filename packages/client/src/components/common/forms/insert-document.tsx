@@ -22,7 +22,7 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
     watch,
   } = formManager;
   const { insertDocument, fetching } = useInsertDocument();
-  const onSubmit: SubmitHandler<InsertDocumentInput> = data => {
+  const onSubmit: SubmitHandler<InsertDocumentInput> = async data => {
     if (data && Object.keys(data).length > 0) {
       if (data.vat) {
         if (!data.amount?.currency) {
@@ -34,9 +34,18 @@ export const InsertDocument = ({ chargeId, onChange, closeModal }: Props): React
         data.vat.currency = data.amount.currency;
       }
       data.documentType ??= DocumentType.Unprocessed;
-      insertDocument({
+      // Close only once the insert has landed: closing first unmounts this form (the host drops the
+      // charge id) while the mutation is still in flight, and the host is left showing a charge
+      // without the document it just gained.
+      const inserted = await insertDocument({
         record: { ...data, chargeId },
-      }).then(() => onChange?.());
+      });
+      if (!inserted) {
+        // The insert failed (the hook has already reported it) — keep the form open with the
+        // entered values so it can be retried, and don't claim the charge changed.
+        return;
+      }
+      onChange?.();
       closeModal?.();
     }
   };

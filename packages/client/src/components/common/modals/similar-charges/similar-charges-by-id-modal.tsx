@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useQuery } from 'urql';
 import { SimilarChargesDocument } from '../../../../gql/graphql.js';
@@ -63,39 +63,82 @@ export function SimilarChargesByIdModal({
     },
   });
 
-  useEffect(() => {
-    if (open && (tagIds || description) && !data) {
-      fetchSimilarCharges();
+  const hasCriteria = !!tagIds?.length || !!description;
+
+  // `tagIds` is commonly rebuilt inline by the host (`suggestedTags.map(...)`), so its identity
+  // changes on every render. Key the fetch on the criteria's *content* instead, or the effect below
+  // would re-run — and re-query — on each render.
+  const criteriaKey = useMemo(
+    () =>
+      JSON.stringify({
+        tags: tagIds?.map(tag => tag.id) ?? null,
+        description: description ?? null,
+      }),
+    [tagIds, description],
+  );
+
+  // Every close path — an explicit dismissal, "nothing similar to review", "no criteria to review"
+  // — has to route through here. Closing via `onOpenChange` is what lets the host reopen the modal
+  // for the *next* action; leaving its `open` latched at `true` made every later action a no-op,
+  // since setting an already-`true` state changes nothing. `onClose` fires at most once per open so
+  // the host's refresh isn't run several times for one action.
+  const hasClosed = useRef(false);
+  const close = useCallback(() => {
+    if (hasClosed.current) {
+      return;
     }
-  }, [open, tagIds, description, fetchSimilarCharges, data]);
+    hasClosed.current = true;
+    onOpenChange(false);
+    onClose?.();
+  }, [onOpenChange, onClose]);
+
+  // Declared before the fetch effect so a reopen clears the guard before anything can close again.
+  useEffect(() => {
+    if (open) {
+      hasClosed.current = false;
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    if (!hasCriteria) {
+      // Nothing to review — the mutation already landed, so just hand control back.
+      close();
+      return;
+    }
+    // `network-only`: the modal opens right after a charge was mutated, so a previous run's result
+    // for the same criteria is stale by definition.
+    fetchSimilarCharges({ requestPolicy: 'network-only' });
+    // `criteriaKey` stands in for the unstable `tagIds`/`description` identities.
+  }, [open, criteriaKey, hasCriteria, close, fetchSimilarCharges]);
 
   const onDialogChange = useCallback(
     (openState: boolean) => {
-      onOpenChange(openState);
-      if (open && !openState) {
-        onClose?.();
+      if (openState) {
+        onOpenChange(true);
+        return;
       }
+      close();
     },
-    [onOpenChange, onClose, open],
+    [onOpenChange, close],
   );
 
-  // Trigger close function the modal if there are no similar charges and the modal is open
+  // Nothing similar to review: close straight away so the host isn't left waiting on a dialog that
+  // would never be shown.
   useEffect(() => {
-    if (open && !fetching && data?.similarCharges.length === 0) {
-      onClose?.();
+    if (open && hasCriteria && !fetching && data?.similarCharges.length === 0) {
+      close();
     }
-  }, [open, fetching, data, onClose]);
+  }, [open, hasCriteria, fetching, data, close]);
 
-  const shouldShowModal = useMemo(() => {
-    return open && (!!tagIds || !!description) && data && data?.similarCharges.length > 0;
-  }, [open, tagIds, description, data]);
-
-  useEffect(() => {
-    if (open && !tagIds && !description) {
-      // if no criteria to search for similar charges, close the modal
-      onClose?.();
-    }
-  }, [open, tagIds, description, onClose]);
+  // Always a boolean — a bare `data &&` here left it `undefined` before the query resolved, which
+  // flipped the dialog between controlled and uncontrolled.
+  const shouldShowModal = useMemo(
+    () => !!(open && hasCriteria && data && data.similarCharges.length > 0),
+    [open, hasCriteria, data],
+  );
 
   return (
     <Dialog open={shouldShowModal} onOpenChange={onDialogChange}>
@@ -106,7 +149,7 @@ export function SimilarChargesByIdModal({
         <ErrorBoundary fallback={<div>Error fetching similar charges</div>}>
           {fetching ? (
             <AccounterLoader />
-          ) : tagIds || description ? (
+          ) : hasCriteria ? (
             <SimilarChargesTable
               data={data?.similarCharges ?? []}
               tagIds={tagIds}

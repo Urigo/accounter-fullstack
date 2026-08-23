@@ -28,7 +28,13 @@ export const EditTransactionModal = ({
           <div className="flex flex-row gap-2">
             ID: {transactionID}
             <CopyToClipboardButton content={transactionID} />
-            <UnlinkTransactionButton transactionId={transactionID} />
+            <UnlinkTransactionButton
+              transactionId={transactionID}
+              onChange={() => {
+                onChange();
+                close();
+              }}
+            />
           </div>
         </div>
       }
