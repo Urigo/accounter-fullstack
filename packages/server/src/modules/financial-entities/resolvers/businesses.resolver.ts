@@ -10,10 +10,12 @@ import {
   SuggestionData,
   suggestionDataSchema,
 } from '../helpers/business-suggestion-data-schema.helper.js';
+import { parseBusinessBankAccounts } from '../helpers/business-bank-account.helper.js';
 import { updateSuggestions } from '../helpers/businesses.helper.js';
 import { updateSingleBusiness } from '../helpers/update-business.helper.js';
 import { filterBusinessByName } from '../helpers/utils.helper.js';
 import { BusinessesOperationProvider } from '../providers/businesses-operation.provider.js';
+import { BusinessBankAccountsProvider } from '../providers/business-bank-accounts.provider.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { FinancialEntitiesProvider } from '../providers/financial-entities.provider.js';
 import { TaxCategoriesProvider } from '../providers/tax-categories.provider.js';
@@ -166,6 +168,18 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
         if (!business) {
           throw new Error(`Failed to create core business`);
+        }
+
+        if (fields.bankAccounts?.length) {
+          const accounts = parseBusinessBankAccounts(fields.bankAccounts);
+          await injector
+            .get(BusinessBankAccountsProvider)
+            .setBankAccountsForBusiness(financialEntity.id, ownerId, accounts)
+            .catch((e: Error) => {
+              const message = `Error setting bank accounts for business ID="${financialEntity.id}"`;
+              console.error(`${message}: ${e}`);
+              throw new Error(message);
+            });
         }
 
         if (fields.taxCategory) {
@@ -472,6 +486,10 @@ export const businessesResolvers: FinancialEntitiesModule.Resolvers &
 
     hebrewName: DbBusiness => DbBusiness.hebrew_name,
     email: DbBusiness => DbBusiness.email,
+    bankAccounts: (DbBusiness, _, { injector }) =>
+      injector
+        .get(BusinessBankAccountsProvider)
+        .getBankAccountsByBusinessIdLoader.load(DbBusiness.id),
     exemptDealer: DbBusiness => DbBusiness.exempt_dealer,
     website: DbBusiness => DbBusiness.website,
     phoneNumber: DbBusiness => DbBusiness.phone_number,
