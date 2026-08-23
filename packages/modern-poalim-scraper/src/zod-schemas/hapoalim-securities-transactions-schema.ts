@@ -478,9 +478,10 @@ const PoalimSecurityTransactionSchema = PoalimSecurityTransactionFields.superRef
 });
 
 /**
- * Only `Account` is modelled. `PageState` is the bank's opaque paging cursor —
- * it is carried through untouched (and unused: the endpoint is queried with an
- * explicit date range rather than paged).
+ * Only `Account` is modelled. `PageState` is the bank's opaque paging cursor: the
+ * scraper follows it round by round until it comes back null (see
+ * `hapoalim-securities-paging.ts`), and nulls it on the merged result, which is the
+ * whole window rather than a page.
  */
 export const HapoalimSecuritiesTransactionsSchema = z.strictObject({
   Account: z.strictObject({

@@ -120,16 +120,48 @@ export async function registerVaultRoutes(app: FastifyInstance): Promise<void> {
     }
     const t0 = Date.now();
     try {
+      // Probe with the same header the upload client sends (see graphql/client.ts).
+      // The server takes the scraper key from `x-api-key`; an `Authorization: Bearer`
+      // header is claimed first and routed to JWT verification, so probing with Bearer
+      // would test a different code path than the one uploads actually use.
       const res = await fetch(serverUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
         body: JSON.stringify({ query: '{ __typename }' }),
         signal: AbortSignal.timeout(10_000),
       });
       const latencyMs = Date.now() - t0;
+      const text = await res.text().catch(() => '');
       if (!res.ok) {
-        const text = await res.text().catch(() => res.statusText);
-        return { ok: false, error: `HTTP ${res.status}: ${text}`, latencyMs };
+        return { ok: false, error: `HTTP ${res.status}: ${text || res.statusText}`, latencyMs };
+      }
+
+      // A 2xx is not enough: anything serving a SPA answers an unknown path with
+      // index.html and a 200. Only a parseable GraphQL result proves this URL is
+      // really the Accounter endpoint.
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text);
+      } catch {
+        return {
+          ok: false,
+          error:
+            `${serverUrl} did not return JSON — it is probably not the Accounter GraphQL ` +
+            `endpoint. The URL must include the path, e.g. http://localhost:4000/graphql`,
+          latencyMs,
+        };
+      }
+
+      const body = parsed as {
+        data?: { __typename?: unknown } | null;
+        errors?: { message?: string }[] | null;
+      } | null;
+      const gqlError = body?.errors?.[0]?.message;
+      if (gqlError) {
+        return { ok: false, error: gqlError, latencyMs };
+      }
+      if (typeof body?.data?.__typename !== 'string') {
+        return { ok: false, error: `${serverUrl} did not return a GraphQL result`, latencyMs };
       }
       return { ok: true, latencyMs };
     } catch (err) {

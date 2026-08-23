@@ -21,8 +21,23 @@ export async function buildServer(): Promise<FastifyInstance> {
   const uiRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../ui');
   if (existsSync(uiRoot)) {
     await app.register(staticPlugin, { root: uiRoot, prefix: '/', wildcard: true });
-    // Serve index.html for any path that doesn't match a static asset (SPA client-side routing)
-    app.setNotFoundHandler((_req, reply) => reply.sendFile('index.html'));
+    // Serve index.html for any path that doesn't match a static asset (SPA client-side routing).
+    //
+    // Only for browser navigations, though. `sendFile` answers with a 200, so letting
+    // this handler catch an API call, a websocket upgrade or a non-GET verb turns a
+    // mistyped URL into HTML-with-a-200 — which is how pointing the vault's serverUrl at
+    // this app instead of the Accounter server surfaced as an unreadable
+    // "Invalid execution result: result is not object or array" from graphql-request.
+    app.setNotFoundHandler((req, reply) => {
+      const isNavigation =
+        (req.method === 'GET' || req.method === 'HEAD') &&
+        !req.url.startsWith('/api/') &&
+        !req.url.startsWith('/ws');
+      if (!isNavigation) {
+        return reply.status(404).send({ error: 'not-found', method: req.method, url: req.url });
+      }
+      return reply.sendFile('index.html');
+    });
   }
 
   return app;

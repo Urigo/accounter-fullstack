@@ -1,31 +1,27 @@
 /**
  * Paging for the Poalim "mytrade" order executions history.
  *
- * The endpoint caps a response at {@link MYTRADE_EXECUTIONS_PAGE_SIZE} executions
- * and returns the most recent ones in the requested window, with no flag saying it
- * truncated. A full page therefore has to be re-requested with the window's
- * ceiling pulled back to the oldest day that page reached, until a short page
- * proves the window is exhausted.
+ * The endpoint pages with an opaque cursor: every response carries
+ * `Account.PageState`, and a non-null value means there is more to fetch. The next
+ * request repeats the *same* date window and hands the cursor back as a `pageState`
+ * query param. Row counts say nothing — a short page can still have a cursor, and a
+ * long one can be the last.
  *
- * The driver lives here, apart from the browser-driven scraper, so the walk-back
- * can be exercised without a bank session — see `__tests__`.
+ * The driver lives here, apart from the browser-driven scraper, so the paging can be
+ * exercised without a bank session — see `__tests__`.
  */
 
 /**
- * The most executions one response can carry. A response of exactly this length
- * means "there is probably older activity in this window", nothing more.
+ * Backstop on the paging loop. A cursor page can hold anything from one execution to
+ * a few hundred, so this is not a record budget — it only catches a cursor that never
+ * goes null, which is a runaway loop rather than a portfolio. Each round costs a full
+ * browser tab and SPA boot, so the loop must stay bounded.
  */
-export const MYTRADE_EXECUTIONS_PAGE_SIZE = 150;
-
-/**
- * Backstop on the walk-back. At a full page per round this covers 3000 executions
- * in one window; anything beyond it is a runaway loop, not a portfolio.
- */
-export const MYTRADE_EXECUTIONS_MAX_ROUNDS = 20;
+export const MYTRADE_EXECUTIONS_MAX_ROUNDS = 100;
 
 /** A page of executions as it arrives — before the schema has vouched for it. */
 export type RawExecutionsPage = {
-  Account?: { Execution?: unknown[] } | null;
+  Account?: { Execution?: unknown[]; PageState?: string | null | undefined } | null;
 } | null;
 
 export const rawExecutions = (page: RawExecutionsPage): unknown[] => {
@@ -34,50 +30,23 @@ export const rawExecutions = (page: RawExecutionsPage): unknown[] => {
 };
 
 /**
- * The `YYYY-MM-DD` prefix of a .NET round-trip timestamp.
+ * The cursor for the next round, or null when the window is exhausted.
  *
- * Read off the string rather than through a `Date`: the timestamps carry Israel's
- * UTC offset, and going via a `Date` would move the calendar day by one on a
- * machine running in a western timezone — which, used as the next window's
- * ceiling, would silently skip a day of executions. Returns null for the
- * `0001-01-01` sentinel and for anything unparseable.
+ * The bank's value is an opaque base64 blob — never parsed, only handed back verbatim
+ * on the next request. A missing or empty value counts as exhausted.
  */
-export function calendarDay(value: unknown): string | null {
-  const match = typeof value === 'string' ? /^(\d{4})-\d{2}-\d{2}/.exec(value) : null;
-  if (!match || Number(match[1]) < 1900) {
-    return null;
-  }
-  return match[0];
+function pageCursor(page: RawExecutionsPage): string | null {
+  const cursor = page?.Account?.PageState;
+  return typeof cursor === 'string' && cursor.trim() !== '' ? cursor : null;
 }
 
 /**
- * The oldest calendar day a page of executions reached, as `YYYY-MM-DD`.
+ * Identity of an execution, for dropping any rows consecutive pages share.
  *
- * The endpoint answers newest-first, so this is the last row's value date — but it
- * is taken as a minimum over the whole page rather than off the last row, so an
- * unsorted response cannot cut the walk-back short. Rows with no value date
- * (corporate actions that never settle) fall back to their trade date.
- */
-export function oldestExecutionDay(executions: readonly unknown[]): string | null {
-  let oldest: string | null = null;
-  for (const execution of executions) {
-    const row = execution as Record<string, unknown> | null;
-    const day = calendarDay(row?.['ValueDate']) ?? calendarDay(row?.['TradeDate']);
-    if (day && (oldest === null || day < oldest)) {
-      oldest = day;
-    }
-  }
-  return oldest;
-}
-
-/**
- * Identity of an execution, for dropping the rows consecutive pages share.
- *
- * The walk-back re-requests the ceiling day rather than the day before it, since
- * one day can hold both fetched and unfetched executions — so the pages overlap by
- * a day. The fields are the ones the ingestion dedup key is built from (see
- * `ON CONFLICT` in poalim-scraper-ingestion.provider.ts), so two rows that agree
- * on them are the same execution to everything downstream.
+ * The cursor should hand back each execution once, so this is a safety net rather than
+ * load-bearing. The fields are the ones the ingestion dedup key is built from (see
+ * `ON CONFLICT` in poalim-scraper-ingestion.provider.ts), so two rows that agree on
+ * them are the same execution to everything downstream.
  */
 export function executionIdentity(execution: unknown): string {
   const row = (execution ?? {}) as Record<string, unknown>;
@@ -98,29 +67,11 @@ export function executionIdentity(execution: unknown): string {
   ]);
 }
 
-/** The window's ceiling is requested at day granularity (the API takes ddMMyyyy). */
-const sameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
-
-/** A local `Date` as `YYYY-MM-DD`, for messages — `toISOString` would shift the day. */
-const toLocalDay = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')}`;
-
-/** `YYYY-MM-DD` back to a local `Date`, so the day survives the round trip. */
-function dayToLocalDate(day: string): Date {
-  const [year, month, date] = day.split('-').map(Number);
-  return new Date(year!, month! - 1, date!);
-}
-
 export type FetchAllExecutionsResult<TPage extends RawExecutionsPage> = {
   /** The first response, kept whole: it carries the envelope the merge builds on. */
   firstPage: TPage | null;
   /**
-   * The error payload that ended the walk-back, from whichever round produced it.
+   * The error payload that ended the paging, from whichever round produced it.
    * Set means the window was only partly fetched, so `executions` is incomplete and
    * the caller must report this rather than the merged result — a later round
    * failing is just as fatal as the first one failing.
@@ -131,22 +82,23 @@ export type FetchAllExecutionsResult<TPage extends RawExecutionsPage> = {
   /** How many requests were issued. */
   rounds: number;
   /**
-   * Set when the walk-back stopped with the window still unfinished and no error
-   * payload to blame — a full page it could not get past, the round cap, or a round
-   * that came back with nothing. Already logged; carried for callers.
+   * Set when paging stopped with a cursor still open and no error payload to blame —
+   * a cursor that stopped advancing, the round cap, or a round that came back with
+   * nothing. Already logged; carried for callers.
    */
   truncated?: string | undefined;
 };
 
 /**
- * Requests the window repeatedly, pulling its ceiling back over the oldest day
- * each full page reached, and returns the merged, deduplicated executions.
+ * Requests the window repeatedly, following `Account.PageState` until it comes back
+ * null, and returns the merged, deduplicated executions.
  *
- * Stops on a short page (the window is exhausted), on a page that could not be read
- * (an error payload lands in `failedPage`, a null response in `truncated`), when the
- * ceiling can no longer move (a single day holding a full page), and at
- * {@link MYTRADE_EXECUTIONS_MAX_ROUNDS} rounds. Every outcome other than the short
- * page leaves a reason in `failedPage` or `truncated`: a caller that ignores both
+ * The date window is fixed: every round asks for the same `fromDate`/`toDate` and only
+ * the cursor moves. Stops on a null cursor (the window is exhausted), on a page that
+ * could not be read (an error payload lands in `failedPage`, a null response in
+ * `truncated`), on a cursor that repeats itself, and at
+ * {@link MYTRADE_EXECUTIONS_MAX_ROUNDS} rounds. Every outcome other than the null
+ * cursor leaves a reason in `failedPage` or `truncated`: a caller that ignores both
  * cannot tell a complete window from a partial one.
  */
 export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
@@ -159,7 +111,11 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
 }: {
   fromDate: Date;
   toDate: Date;
-  fetchPage: (window: { fromDate: Date; toDate: Date }) => Promise<TPage | null>;
+  fetchPage: (request: {
+    fromDate: Date;
+    toDate: Date;
+    pageState?: string;
+  }) => Promise<TPage | null>;
   isErrorPage?: (page: TPage) => boolean;
   label?: string;
   warn?: (message: string) => void;
@@ -168,13 +124,13 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
   let failedPage: TPage | null = null;
   const executions: unknown[] = [];
   const seen = new Set<string>();
-  let ceiling = toDate;
+  let pageState: string | undefined;
   let rounds = 0;
   let truncated: string | undefined;
 
   for (let round = 1; round <= MYTRADE_EXECUTIONS_MAX_ROUNDS; round++) {
     rounds = round;
-    const page = await fetchPage({ fromDate, toDate: ceiling });
+    const page = await fetchPage({ fromDate, toDate, ...(pageState ? { pageState } : {}) });
     firstPage ??= page;
     if (!page) {
       // Round 1 returning nothing is the ordinary "no portfolio activity" answer;
@@ -182,7 +138,7 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
       if (round > 1) {
         truncated =
           `Securities executions for ${label} stopped after round ${round - 1}: the next request ` +
-          `came back with nothing, so the window before ${toLocalDay(ceiling)} was not fetched ` +
+          `came back with nothing while the paging cursor was still open ` +
           `(stopped at ${executions.length} executions).`;
         warn(truncated);
       }
@@ -190,14 +146,13 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
     }
 
     // An error payload carries no executions. It is kept whatever round it arrives
-    // on: after a good first page it would otherwise look like a finished walk-back.
+    // on: after a good first page it would otherwise look like a finished walk.
     if (isErrorPage(page)) {
       failedPage = page;
       break;
     }
 
-    const rows = rawExecutions(page);
-    for (const row of rows) {
+    for (const row of rawExecutions(page)) {
       const identity = executionIdentity(row);
       if (!seen.has(identity)) {
         seen.add(identity);
@@ -205,46 +160,32 @@ export async function fetchAllExecutions<TPage extends RawExecutionsPage>({
       }
     }
 
-    if (rows.length < MYTRADE_EXECUTIONS_PAGE_SIZE) {
+    const nextPageState = pageCursor(page);
+
+    // The window is exhausted. This is the normal exit, whatever the row count was.
+    if (nextPageState === null) {
       break;
     }
 
-    const oldestDay = oldestExecutionDay(rows);
-    if (!oldestDay) {
+    // The cursor is not moving, so the next round would return the same page.
+    if (nextPageState === pageState) {
       truncated =
-        `Securities executions for ${label} filled a page but carry no usable date; ` +
-        `stopped at ${executions.length} executions — older activity in the window was not fetched.`;
+        `Securities executions for ${label} stopped after round ${round}: the endpoint returned ` +
+        `the same paging cursor twice, so it is not advancing ` +
+        `(stopped at ${executions.length} executions).`;
       warn(truncated);
-      break;
-    }
-
-    const nextCeiling = dayToLocalDate(oldestDay);
-
-    // No progress: the page is a full 150 executions sitting on (or after) the day
-    // the window already ends on, so re-requesting it would return the same rows.
-    if (sameDay(nextCeiling, ceiling) || nextCeiling > ceiling) {
-      truncated =
-        `${label} has at least ${MYTRADE_EXECUTIONS_PAGE_SIZE} securities executions on ${oldestDay} — ` +
-        `the endpoint cannot page past a single day, so any beyond that were not fetched.`;
-      warn(truncated);
-      break;
-    }
-
-    // The full page already reached the floor of the window; nothing older to ask for.
-    if (nextCeiling < fromDate) {
       break;
     }
 
     if (round === MYTRADE_EXECUTIONS_MAX_ROUNDS) {
       truncated =
-        `Securities executions for ${label} still filled a page after ${MYTRADE_EXECUTIONS_MAX_ROUNDS} rounds; ` +
-        `stopped at ${executions.length} executions, fetched back to ${oldestDay} — ` +
-        `request a narrower range to get the rest.`;
+        `Securities executions for ${label} were still paging after ${MYTRADE_EXECUTIONS_MAX_ROUNDS} ` +
+        `rounds; stopped at ${executions.length} executions — request a narrower range to get the rest.`;
       warn(truncated);
       break;
     }
 
-    ceiling = nextCeiling;
+    pageState = nextPageState;
   }
 
   return { firstPage, failedPage, executions, rounds, truncated };

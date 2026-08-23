@@ -122,7 +122,9 @@ function MonthStepsTable({ steps }: { steps: MonthStep[] }) {
 function TxnTypeCell({
   state,
 }: {
-  state: { phase: string; count?: number; inserted?: number; skipped?: number } | undefined;
+  state:
+    | { phase: string; count?: number; inserted?: number; skipped?: number; warning?: string }
+    | undefined;
 }) {
   if (!state) return <td style={{ padding: '2px 8px 2px 0', color: '#d1d5db' }}>—</td>;
   const badge = TXN_PHASE_BADGE[state.phase] ?? TXN_PHASE_BADGE['fetching']!;
@@ -136,6 +138,16 @@ function TxnTypeCell({
       )}
       {state.phase === 'uploading' && state.count != null && (
         <span style={{ marginLeft: 4, color: '#6b7280', fontSize: '0.9em' }}>{state.count}</span>
+      )}
+      {state.warning && (
+        <span
+          role="img"
+          title={state.warning}
+          style={{ marginLeft: 4, color: '#b45309', cursor: 'help' }}
+          aria-label={state.warning}
+        >
+          ⚠
+        </span>
       )}
     </td>
   );
