@@ -88,6 +88,59 @@ user-delegated grant on the Accounter API to the new app, update the connector's
 Claude Desktop, and restore the test application's original name. Best paired with any other change
 that already requires re-granting API access.
 
+## Recorded findings (not gaps)
+
+Things learned while building a tool that are worth not re-deriving.
+
+### Securities tables were never in the multi-business RLS scope (2026-08-23, fixed)
+
+`2026-05-25T10-00-00.rls-multi-business-scope` switched every `tenant_isolation` read predicate to
+`owner_id = ANY(accounter_schema.get_current_business_scope())`, leaving writes on
+`get_current_business_id()`. Its table list covered 45 tables. All four securities tables —
+`poalim_securities`, `poalim_securities_transactions`, `businesses_securities`,
+`security_identifiers` — were created _after_ it (2026-08-11 / 08-13 / 08-20) and so still read
+through the singular helper, verified against a live database before the fix.
+
+The failure mode was a **silent narrowing, not a leak**: the connector forwards its resolved read
+scope as `x-business-scope` and echoes that scope back to the caller, so a two-business caller was
+told it had seen both while the securities tables had served one. The web client's business switcher
+had the same bug. Fixed by `2026-08-23T10-00-00.rls-scope-securities-tables`, with predicates
+byte-identical to the earlier migration's.
+
+**The general lesson:** a table added after that migration does not inherit its predicate, and
+nothing fails loudly when it doesn't. Any new owner-scoped table needs
+`owner_id = ANY(get_current_business_scope())` written into its own creating migration. When adding
+a tool over tables you did not create, check `pg_policies.qual` for them before trusting
+`x-business-scope` to have narrowed anything.
+
+### Charge links and pagination do not compose (`accounter_get_security_executions`)
+
+`matchExecutionsToTransactions` pairs a securities execution with the bank row behind it. There is
+no link in the source — the scrape has no per-execution id — so the pairing is derived, exact, and
+**greedy and one-to-one over the sets it is handed**, consuming executions oldest-first.
+
+Hand it a page's slice and an execution on page 2 can claim the cash movement that belongs to one on
+page 1, so the _same_ execution reports a _different_ charge at a different page size. A paginated
+query therefore cannot resolve charge links from its own page.
+
+`Query.securityExecutions` splits into two paths for this reason: without `includeCharges` the
+filter pushes into SQL and the page is a `LIMIT`/`OFFSET` slice; with it, each named security's
+whole history is fetched and paired, then filtered and sliced in memory — which is why that path
+caps how many securities the filter may resolve to, and why the tool refuses `includeCharges` unless
+the securities are named. Both paths order identically so they cannot disagree about what page 1 is.
+
+**The general lesson:** before paginating a result whose fields are computed across rows, check
+whether the computation is order- or set-dependent. A greedy one-to-one assignment is.
+
+### These integration suites share one database and bypass RLS
+
+`foreign-securities.integration.test.ts` and `security-businesses.integration.test.ts` run
+concurrently against the same database, connect as a superuser (which bypasses
+`FORCE ROW LEVEL SECURITY`), and the securities lookups carry no `owner_id` predicate because RLS is
+what scopes them in production. So a lookup by ISIN sees every tenant's securities, and an assertion
+on a whole result set's size assumes exclusive access to the database. Use synthetic per-suite ISINs
+and assert on your own fixtures' buckets, not on totals.
+
 ## Open decisions
 
 1. **Audience strategy.** Accept the shared `https://api.accounter.com` audience for MCP and GraphQL

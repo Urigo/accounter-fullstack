@@ -18,10 +18,11 @@ Phase 1 (read-only) is feature-complete. The server provides: strict startup env
 transport with `/health`, `/metrics`, the OAuth protected-resource metadata endpoint, and the MCP
 route (`POST /mcp`, JSON-RPC 2.0) with graceful shutdown; Auth0 bearer-token verification; identity
 mapping to an internal user + business-membership context with memberships resolved from the
-Accounter GraphQL server; a curated registry of twelve read-only tools
-(`accounter_list_business_memberships`, `accounter_search_charges`, `accounter_get_charges`,
-`accounter_get_transactions`, `accounter_get_documents`, `accounter_get_ledger_records`,
-`accounter_get_contracts`, `accounter_list_tags`, `accounter_list_tax_categories`,
+Accounter GraphQL server; a curated registry of fourteen read-only tools
+(`accounter_list_business_memberships`, `accounter_explain_terminology`, `accounter_search_charges`,
+`accounter_get_charges`, `accounter_get_transactions`, `accounter_get_documents`,
+`accounter_get_ledger_records`, `accounter_get_contracts`, `accounter_list_security_holdings`,
+`accounter_get_security_executions`, `accounter_list_tags`, `accounter_list_tax_categories`,
 `accounter_list_businesses`, `accounter_balance_report`) each gated by strict input validation, a
 per-tool authorization policy, and business-scope narrowing forwarded upstream as
 `x-business-scope`; a hardened upstream GraphQL client (timeout, bounded retries, header
@@ -127,6 +128,18 @@ scope, because it _is_ the scope.
   `accounter_search_charges`. A charge whose `owner` falls outside the resolved scope is dropped as
   defense-in-depth on top of RLS.
 
+  A **foreign-securities** charge additionally carries the security traded and the portfolio
+  executions behind the cash movement, opt-in via `includeSecurities`. That charge type is the one
+  place where what happened is not in the charge itself: the cash leg is a bank row, and the trade
+  lives in a separate ingested feed. Each security reports the `securityBusinessId` that
+  `accounter_list_security_holdings` and `accounter_get_security_executions` are addressed by, so
+  the answer can be followed into the portfolio. Three states stay distinct: the field is **absent**
+  for a charge that is not a securities one and for one fetched without the flag, an **empty array**
+  means the transaction descriptions carried no key the ingested feed knows, and
+  `referenceFound: false` on a present security means the reference scrape is stale for a key that
+  _is_ traded. Nesting executions multiplies the payload, so pair it with explicit `chargeIds` or a
+  small `pageSize`.
+
   Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
   `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
   so a field added upstream fails the suite instead of quietly becoming unreachable. Three fields —
@@ -162,9 +175,32 @@ scope, because it _is_ the scope.
   owner filter and is forwarded as the upstream `filters.ownerIds`; there is no separate owner input
   to drift from it. Each row reports its `ownerId` plus the client, period, amount, billing cycle,
   document type, product/plan, and purchase orders.
+- **`accounter_list_security_holdings`** — the **securities portfolio**: one row per security with
+  units held, weighted average cost per unit bought, totals bought and sold, and the span of the
+  ingested trade history. `includeClosed` also returns securities traded but no longer held;
+  `search` matches name (either language), symbol, ISIN, exchange, currency and every source
+  identifier — the same fields the `/securities` screen searches, so the two cannot drift. Upstream
+  takes no search argument and a portfolio is tens to low hundreds of rows, so the filtering,
+  ordering (by |quantity| descending, biggest live position first) and row cap all happen in the
+  tool. Two things about the numbers are load-bearing: the position is **derived** by adding up
+  scraped executions rather than read from a bank balance, and amounts are in each security's own
+  trade currency and are never converted. The response therefore carries `byCurrency` subtotals —
+  the only valid aggregation — plus a machine-readable `caveats` array, rather than leaving a model
+  to add a shekel column to a dollar one. Quantities and average costs are never summed at all.
+- **`accounter_get_security_executions`** — the **trade history** behind that portfolio: buys,
+  sales, dividends, interest, redemptions, distributions and transfers, newest first, with dates,
+  direction, quantity, unit price, net value, commission and Israeli tax. Narrow by security
+  (`securityBusinessIds`, `isins` or `symbols` — three ways of naming one axis, so they union with
+  each other), by trade date, and by `tradeTypes`/`transactionTypes`. Really paginated upstream
+  (1-based `page` here, 0-based there) with `pagination` echoed. `includeCharges` additionally
+  resolves the charge each trade's cash movement landed on, and **requires naming the securities**:
+  the pairing is greedy and one-to-one over a security's whole history, so it cannot be computed
+  from a page — see the note in `docs/connector-gaps-and-decisions.md`. Asking for it unnarrowed is
+  refused here as a `VALIDATION_ERROR` rather than upstream as an `UPSTREAM_ERROR`, so the failure
+  says what to add.
 - **`accounter_list_tags`** — list tags for categorizing charges, optionally filtered by name and by
   `memberBusinessIds`. Rows carry `ownerId`. Deterministically sorted (name, then id) and
-  size-capped (≤ 500).
+  size-capped (≤ 1000).
 - **`accounter_list_tax_categories`** — list tax categories (id, name, `ownerId`, IRS code,
   bookkeeping sort code, active flag), optionally filtered by name, active status, or
   `memberBusinessIds`. Same deterministic sort + cap.
@@ -177,8 +213,8 @@ scope, because it _is_ the scope.
   short. Use `accounter_list_business_memberships` instead for just the caller's own memberships and
   roles.
 - **`accounter_balance_report`** — read-only balance report (transactions) for **exactly one** of
-  your businesses over a bounded date range (≤ 366 days), selected by the required singular
-  `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 500 with a
+  your businesses over a bounded date range (≤ 1096 days), selected by the required singular
+  `memberBusinessId`. Requires `business_owner`/`accountant` role; rows are capped at 1000 with a
   `truncated` flag. Every row carries `ownerId` — the one business the report ran for, which the
   response also reports once alongside the echoed `scope`.
 
@@ -479,9 +515,23 @@ curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
 curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"accounter_list_tags","arguments":{"memberBusinessIds":["00000000-0000-4000-8000-000000000000"]}}}'
+
+# 8. Securities: the portfolio, then the trades behind one row.
+#    Expect byCurrency subtotals and a caveats array, and a securityBusinessId to
+#    carry into step 9.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"accounter_list_security_holdings","arguments":{}}}'
+
+# 9. Executions for one security, newest first, with charge links.
+#    Run it twice with pageSize 5 and 100: the same execution must report the same
+#    chargeId either way — that invariant is why includeCharges needs the securities named.
+curl -s -X POST http://localhost:3100/mcp -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"accounter_get_security_executions","arguments":{"securityBusinessIds":["<securityBusinessId from step 8>"],"includeCharges":true,"pageSize":5}}}'
 ```
 
-The automated equivalent of steps 1–7 (with the Auth0 verifier and upstream mocked) lives in
+The automated equivalent of steps 1–9 (with the Auth0 verifier and upstream mocked) lives in
 `src/__tests__/mcp-e2e.test.ts` and runs with `yarn workspace @accounter/mcp-server test`.
 
 ## Troubleshooting
@@ -588,11 +638,13 @@ apply.
 
 - There is no generic "run any query" surface: every capability is a curated tool with a strict
   input schema, and the upstream client's read and write paths are separately guarded.
-- Responses are **bounded** (date ranges ≤ 366 days, page size ≤ 50, list caps of 500, a
-  payload-size guard) — very large result sets are truncated with a `truncated`/`continuation` hint
-  rather than streamed in full. Inline uploads are bounded too: ≤ 10 documents, 256KB per file and
-  512KB per call once decoded, against a MIME allowlist. Inline base64 is only viable for small
-  files at all — see [Why inline upload is small](#why-inline-upload-is-small).
+- Responses are **bounded** (date ranges ≤ 1096 days, page sizes ≤ 500, list caps of 200–1000
+  depending on the tool, a 60KB payload-size guard — every cap is an exported `MAX_*` constant so
+  the suite asserts it rather than this file being the record) — very large result sets are
+  truncated with a `truncated`/`continuation` hint rather than streamed in full. Inline uploads are
+  bounded too: ≤ 10 documents, 256KB per file and 512KB per call once decoded, against a MIME
+  allowlist. Inline base64 is only viable for small files at all — see
+  [Why inline upload is small](#why-inline-upload-is-small).
 - Rate limiting and metrics are **in-process** (per replica); there is no shared/Redis-backed
   limiter or Prometheus exposition yet (the limiter and metrics are behind swappable seams).
 - Tracing is exported to OpenTelemetry/Grafana Tempo (opt-in via `OTEL_ENABLED=1`), but metrics
