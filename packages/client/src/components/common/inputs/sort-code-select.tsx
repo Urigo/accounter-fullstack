@@ -29,7 +29,8 @@ type SortCodeSelectProps = {
  * General, reusable sort code selector.
  *
  * Fetches the sort codes for the given business owner and renders a searchable
- * shadcn combo box. Each option displays both the sort code key and its name.
+ * shadcn combo box. Each option displays the sort code name and its key, and is
+ * searchable by both.
  */
 export function SortCodeSelect({
   ownerId,
@@ -51,7 +52,7 @@ export function SortCodeSelect({
   const options = useMemo(() => {
     const list = sortCodes.map(sortCode => ({
       value: sortCode.key.toString(),
-      label: sortCode.name ? `${sortCode.key} - ${sortCode.name}` : sortCode.key.toString(),
+      label: sortCode.name ? `${sortCode.name} (${sortCode.key})` : sortCode.key.toString(),
     }));
     // Keep the currently selected value visible even while the list is still
     // loading or if it no longer exists among the fetched sort codes.
