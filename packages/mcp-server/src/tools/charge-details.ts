@@ -101,6 +101,18 @@ const getChargesInput = z
         'Include each charge’s linked documents (default false — opt in only when you need the ' +
           'individual invoices/receipts).',
       ),
+    includeSecurities: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        'For foreign-securities charges, include the security traded and the portfolio executions ' +
+          'behind the cash movement (default false). Only such charges carry it; every other type is ' +
+          'unaffected. Each security also reports its `securityBusinessId`, which is what ' +
+          'accounter_list_security_holdings and accounter_get_security_executions are addressed by. ' +
+          'Nesting executions multiplies the payload, so pair it with explicit `chargeIds` or a small ' +
+          '`pageSize`.',
+      ),
   })
   .superRefine((value, context) => {
     const hasIds = value.chargeIds !== undefined && value.chargeIds.length > 0;
@@ -279,12 +291,59 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     additionalDocuments @include(if: $includeDocuments) {
       ...McpChargeDetailDocumentFields
     }
+    ... on ForeignSecuritiesCharge {
+      securities @include(if: $includeSecurities) {
+        securityKey
+        securityBusiness {
+          id
+          ownerId
+          isin
+          symbol
+          engName
+        }
+        details {
+          key
+          engName
+          symbol
+          itemType
+          exchange
+          currencyCode
+          asOfDate
+        }
+        executions {
+          id
+          tradeDate
+          valueDate
+          tradeType
+          transactionType
+          paymentType
+          quantity
+          tradePrice
+          netValue {
+            raw
+            formatted
+            currency
+          }
+          tradeCommission {
+            raw
+            formatted
+            currency
+          }
+          israelTaxValue {
+            raw
+            formatted
+            currency
+          }
+        }
+      }
+    }
   }
 
   query McpGetCharges(
     $chargeIDs: [UUID!]!
     $includeTransactions: Boolean!
     $includeDocuments: Boolean!
+    $includeSecurities: Boolean!
   ) {
     chargesByIDs(chargeIDs: $chargeIDs) {
       ...McpChargeDetailFields
@@ -297,6 +356,7 @@ const CHARGES_QUERY_DOCUMENT = /* GraphQL */ `
     $limit: Int!
     $includeTransactions: Boolean!
     $includeDocuments: Boolean!
+    $includeSecurities: Boolean!
   ) {
     allCharges(filters: $filters, page: $page, limit: $limit) {
       nodes {
@@ -323,6 +383,22 @@ function isNotFoundByIdUpstreamError(error: unknown): boolean {
 }
 
 type RawCharge = McpGetChargesQuery['chargesByIDs'][number];
+/**
+ * The securities block hangs off the `ForeignSecuritiesCharge` member of the union
+ * only — unlike `transactions` and `additionalDocuments`, which the `Charge`
+ * interface declares for every member — so it has to be narrowed rather than read.
+ */
+type RawSecuritiesCharge = Extract<RawCharge, { __typename: 'ForeignSecuritiesCharge' }>;
+type RawChargeSecurity = NonNullable<RawSecuritiesCharge['securities']>[number];
+
+/**
+ * Undefined for any charge that is not a securities one, and for a securities
+ * charge fetched without `includeSecurities` — `@include(if:)` omits the field
+ * entirely, so both read as "not asked for", which is what the payload says.
+ */
+function rawChargeSecurities(charge: RawCharge): readonly RawChargeSecurity[] | undefined {
+  return 'securities' in charge ? charge.securities : undefined;
+}
 
 interface NormalizedCharge {
   id: string;
@@ -347,10 +423,50 @@ interface NormalizedCharge {
   metadata: Record<string, unknown> | null;
   transactions: NormalizedTransaction[];
   documents: NormalizedDocument[];
+  /** Present only for a securities charge fetched with `includeSecurities`. */
+  securities?: Array<ReturnType<typeof normalizeChargeSecurity>>;
+}
+
+/**
+ * One security a charge's transaction descriptions referenced, plus the trades
+ * behind the cash movement.
+ *
+ * `details` is the ingested reference row and is legitimately null: the feed can
+ * be out of date, and saying so is more useful than dropping the key. Descriptors
+ * come from the security *business* where both have them — its `currencyCode` is
+ * the resolved `Currency` enum, while the reference feed's is a raw source string
+ * that can still be a Hebrew label.
+ */
+function normalizeChargeSecurity(security: RawChargeSecurity) {
+  return {
+    securityKey: security.securityKey,
+    securityBusinessId: security.securityBusiness?.id ?? null,
+    isin: security.securityBusiness?.isin ?? null,
+    symbol: security.securityBusiness?.symbol ?? security.details?.symbol ?? null,
+    name: security.securityBusiness?.engName ?? security.details?.engName ?? null,
+    exchange: security.details?.exchange ?? null,
+    itemType: security.details?.itemType ?? null,
+    referenceAsOf: security.details?.asOfDate ?? null,
+    referenceFound: security.details != null,
+    executions: security.executions.map(execution => ({
+      executionId: execution.id,
+      tradeDate: execution.tradeDate,
+      valueDate: execution.valueDate,
+      tradeType: execution.tradeType,
+      transactionType: execution.transactionType,
+      paymentType: execution.paymentType,
+      quantity: execution.quantity,
+      tradePrice: execution.tradePrice,
+      netValue: normalizeAmount(execution.netValue),
+      tradeCommission: normalizeAmount(execution.tradeCommission),
+      israelTaxValue: normalizeAmount(execution.israelTaxValue),
+    })),
+  };
 }
 
 function normalizeCharge(charge: RawCharge): NormalizedCharge {
   const owner = normalizeEntity(charge.owner);
+  const securities = rawChargeSecurities(charge);
   return {
     id: charge.id,
     description: charge.userDescription ?? null,
@@ -375,6 +491,11 @@ function normalizeCharge(charge: RawCharge): NormalizedCharge {
       normalizeTransaction(raw as RawTransaction),
     ),
     documents: (charge.additionalDocuments ?? []).map(raw => normalizeDocument(raw as RawDocument)),
+    // Absent unless asked for and unless this charge is a securities one, so
+    // "not a securities charge" stays distinguishable from "an empty list of
+    // securities" — which is itself a real state, meaning the descriptions
+    // carried no key the ingested feed knows.
+    ...(securities === undefined ? {} : { securities: securities.map(normalizeChargeSecurity) }),
   };
 }
 
@@ -393,6 +514,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
               chargeIDs: input.chargeIds!,
               includeTransactions: input.includeTransactions,
               includeDocuments: input.includeDocuments,
+              includeSecurities: input.includeSecurities,
             } satisfies McpGetChargesQueryVariables,
           },
           context.upstream,
@@ -422,6 +544,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
             limit: input.pageSize,
             includeTransactions: input.includeTransactions,
             includeDocuments: input.includeDocuments,
+            includeSecurities: input.includeSecurities,
           } satisfies McpGetChargesByFiltersQueryVariables,
         },
         context.upstream,
@@ -487,7 +610,7 @@ async function handler(input: GetChargesInput, context: ToolExecutionContext): P
 export const getChargesTool: ToolDefinition<typeof getChargesInput> = {
   name: GET_CHARGES_TOOL_NAME,
   description:
-    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts and `chargeType`. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`. Read-only. ' +
+    'Fetch charges by id and/or by filters (all ChargeFilter fields), with full detail: owner, counterparty, amounts (total, VAT, withholding), dates, tags, metadata counts and `chargeType`. Linked transactions and documents are opt-in via `includeTransactions` / `includeDocuments`, and for a foreign-securities charge the security traded and the portfolio executions behind it are opt-in via `includeSecurities` (each reporting a `securityBusinessId` that accounter_list_security_holdings and accounter_get_security_executions accept). Read-only. ' +
     SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: getChargesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },
