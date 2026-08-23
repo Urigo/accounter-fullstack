@@ -8,6 +8,33 @@ export default gql`
     securityBusinessHistory(businessId: UUID!): SecurityBusinessHistory! @requiresAuth
     " Every security the tenant holds, with the position its executions add up to. Closed positions — sold out, or never ingested — are left out unless asked for "
     securityHoldings(includeClosed: Boolean = false): [SecurityHolding!]! @requiresAuth
+    " Ingested executions across securities, newest first — deliberately the opposite of securityBusinessHistory, whose oldest-first order the position calculation depends on "
+    securityExecutions(
+      filters: SecurityExecutionsFilter
+      page: Int = 0
+      limit: Int = 100
+      " Resolve the cash movement, and so the charge, behind each execution. The pairing is greedy and one-to-one over a security's whole history, so it cannot be computed from a page — the same execution would report a different charge at a different page size. Asking for it therefore switches to an unpaginated match per security, and caps how many securities the filter may resolve to "
+      includeCharges: Boolean = false
+    ): PaginatedSecurityExecutions! @requiresAuth
+  }
+
+  " Which securities, over what period, of what kind. The three identity filters (securityBusinessIds, isins, symbols) union with each other — they are three ways of naming the same axis — while dates and types narrow on top. Naming none of them means every security the tenant has "
+  input SecurityExecutionsFilter {
+    " Security business ids — the same ids securityHoldings returns "
+    securityBusinessIds: [UUID!]
+    isins: [String!]
+    " Matched case-insensitively against the security's cached symbol "
+    symbols: [String!]
+    fromTradeDate: TimelessDate
+    toTradeDate: TimelessDate
+    tradeTypes: [SecurityTradeType!]
+    transactionTypes: [SecurityTransactionType!]
+  }
+
+  " A page of executions, each carrying the security it belongs to "
+  type PaginatedSecurityExecutions {
+    nodes: [SecurityHistoryExecution!]!
+    pageInfo: PageInfo!
   }
 
   " One security and what is held of it, without the execution history behind it "
@@ -46,6 +73,8 @@ export default gql`
   type SecurityHistoryExecution {
     id: UUID!
     execution: SecurityExecution!
+    " The security this execution belongs to — what a cross-security list groups by "
+    securityBusiness: SecurityBusiness!
     " The charge the matched cash movement belongs to; null when no movement was matched "
     charge: Charge
     transaction: Transaction
@@ -59,6 +88,8 @@ export default gql`
   " A business that stands for one traded security, identified by its ISIN "
   type SecurityBusiness {
     id: UUID!
+    " The tenant this security belongs to, so rows from several businesses stay distinguishable "
+    ownerId: UUID!
     " The business this security is represented by "
     business: LtdFinancialEntity!
     isin: String!

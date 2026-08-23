@@ -13,6 +13,8 @@ export default gql`
     securityKey: String!
     " Reference details; null when no matching security was ingested for this owner "
     details: Security
+    " The security's own business, reached through the key -> ISIN identifier bridge. Null when the key has no security business yet — the reference feed can be ingested before the executions that create one "
+    securityBusiness: SecurityBusiness
     " The charge's transactions whose description carries this key "
     transactions: [Transaction!]!
     " Ingested portfolio executions matched to those transactions by account, date and amount "

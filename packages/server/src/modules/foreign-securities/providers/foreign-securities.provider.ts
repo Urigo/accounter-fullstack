@@ -1,6 +1,8 @@
 import DataLoader from 'dataloader';
+import { GraphQLError } from 'graphql';
 import { Injectable, Scope } from 'graphql-modules';
 import { sql } from '@pgtyped/runtime';
+import { dateToTimelessDateString } from '../../../shared/helpers/misc.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
 import { FinancialAccountsProvider } from '../../financial-accounts/providers/financial-accounts.provider.js';
 import { FinancialBankAccountsProvider } from '../../financial-accounts/providers/financial-bank-accounts.provider.js';
@@ -14,10 +16,14 @@ import {
 import { extractSecurityKeys } from '../helpers/security-key.helper.js';
 import type {
   ChargeSecurityProto,
+  IGetFilteredSecurityExecutionsQuery,
   IGetSecuritiesByKeysQuery,
   IGetSecurityExecutionsByKeysQuery,
   IGetSecurityExecutionsQuery,
+  PaginatedSecurityExecutionsProto,
   SecurityExecutionRow,
+  SecurityExecutionsFilterInput,
+  SecurityHistoryExecutionProto,
   SecurityRow,
 } from '../types.js';
 import { SecurityBusinessesProvider } from './security-businesses.provider.js';
@@ -116,6 +122,71 @@ const getSecurityExecutionsByKeys = sql<IGetSecurityExecutionsByKeysQuery>`
   FROM accounter_schema.poalim_securities_transactions
   WHERE security = ANY($securities!)
   ORDER BY trade_date, id;`;
+
+/**
+ * The paginated, filtered slice `Query.securityExecutions` serves.
+ *
+ * Newest first, deliberately the opposite of `getSecurityExecutionsByKeys`: that one feeds
+ * `calculateSecurityPosition`, which reads a position's currency off the *first* execution and
+ * so depends on chronological order. This one is read by a human asking what happened lately.
+ *
+ * Trade and transaction types are filtered on the bank's own labels — the caller passes GraphQL
+ * enums and the resolver translates them through `tradeTypeToRaw` / `transactionTypeToRaw`, so
+ * the Hebrew never appears outside the enum helper.
+ *
+ * `COUNT(*) OVER ()` rides on the returned rows, which means a request for a page past the end
+ * reports a total of 0 rather than the real count. That is the only inaccuracy, it costs a
+ * second round trip to fix, and it only misreports a page the caller invented — so it stands.
+ *
+ * Tenant scoping is RLS, as everywhere in this file.
+ */
+const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
+  SELECT
+    id,
+    security,
+    bank_number,
+    branch_number,
+    account_number,
+    trade_date,
+    value_date,
+    settlement_date,
+    payment_date,
+    trade_type,
+    transaction_type,
+    nv,
+    trade_price,
+    trade_gross_value_trade_currency,
+    net_value_trade_currency,
+    net_value_settlement_currency,
+    net_value_nis,
+    trade_currency,
+    settlement_currency,
+    trade_commission_value_trade_currency,
+    management_fees_value_trade_currency,
+    israe_tax_value,
+    nominal_profit_loss_nis,
+    real_profit_loss_nis,
+    payment_type,
+    symbol,
+    isin,
+    COUNT(*) OVER () AS total_count
+  FROM accounter_schema.poalim_securities_transactions
+  WHERE security IN $$securities
+    AND ($isTradeTypes = 0 OR trade_type IN $$tradeTypes)
+    AND ($isTransactionTypes = 0 OR transaction_type IN $$transactionTypes)
+    AND ($fromTradeDate::DATE IS NULL OR trade_date >= $fromTradeDate)
+    AND ($toTradeDate::DATE IS NULL OR trade_date <= $toTradeDate)
+  ORDER BY trade_date DESC, id DESC
+  LIMIT $limit! OFFSET $offset!;`;
+
+/**
+ * How many securities `includeCharges` will pair at once.
+ *
+ * Each one costs its whole execution history plus a transactions query, because the pairing is
+ * only correct over a complete set (see `matchExecutionsToTransactions`). The cap is what keeps
+ * "every trade I ever made, with charges" from turning into a portfolio-wide fan-out.
+ */
+export const MAX_CHARGE_LINK_SECURITIES = 10;
 
 /** What the reverse match needs off a transaction, charge included so a row can link out. */
 type MatchedTransaction = MatchableTransaction & { charge_id: string };
@@ -285,29 +356,9 @@ export class ForeignSecuritiesProvider {
       return executionsByBusinessId;
     }
 
-    // One batched query behind the loader, not one per business.
-    const identifierLists =
-      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.loadMany(
-        securityBusinesses.map(securityBusiness => securityBusiness.id),
-      );
-
-    // The executions table is keyed by Poalim's security key, and one business can carry several
-    // of them — that is what the identifiers bridge is for — so invert into key -> business. The
-    // unique index on (owner_id, identifier_type, identifier_value) is what makes one key resolve
-    // to exactly one business, so a plain Map is enough.
-    const businessIdByKey = new Map<string, string>();
-    for (const identifiers of identifierLists) {
-      // loadMany reports a rejected key as an Error rather than throwing; one bad business must
-      // not blank the whole list.
-      if (identifiers instanceof Error) {
-        continue;
-      }
-      for (const identifier of identifiers) {
-        if (identifier.identifier_type === 'POALIM_SECURITY_KEY') {
-          businessIdByKey.set(identifier.identifier_value, identifier.business_id);
-        }
-      }
-    }
+    const businessIdByKey = await this.getBusinessIdBySecurityKey(
+      securityBusinesses.map(securityBusiness => securityBusiness.id),
+    );
 
     if (businessIdByKey.size === 0) {
       return executionsByBusinessId;
@@ -330,6 +381,227 @@ export class ForeignSecuritiesProvider {
     }
 
     return executionsByBusinessId;
+  }
+
+  /**
+   * Poalim security key -> the security business it belongs to, for the given businesses.
+   *
+   * The executions table is keyed by the bank's proprietary key, and one business can carry
+   * several of them — that is what the identifiers bridge is for — so every read of the
+   * executions feed has to invert the relation first. The unique index on
+   * `(owner_id, identifier_type, identifier_value)` is what makes one key resolve to exactly one
+   * business, so a plain Map is enough.
+   *
+   * One batched query behind the loader, not one per business.
+   */
+  private async getBusinessIdBySecurityKey(
+    businessIds: readonly string[],
+  ): Promise<Map<string, string>> {
+    const identifierLists =
+      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.loadMany([
+        ...businessIds,
+      ]);
+
+    const businessIdByKey = new Map<string, string>();
+    for (const identifiers of identifierLists) {
+      // loadMany reports a rejected key as an Error rather than throwing; one bad business must
+      // not blank the whole list.
+      if (identifiers instanceof Error) {
+        continue;
+      }
+      for (const identifier of identifiers) {
+        if (identifier.identifier_type === 'POALIM_SECURITY_KEY') {
+          businessIdByKey.set(identifier.identifier_value, identifier.business_id);
+        }
+      }
+    }
+
+    return businessIdByKey;
+  }
+
+  /**
+   * Which securities a filter names.
+   *
+   * `securityBusinessIds`, `isins` and `symbols` are three ways of naming the same axis, so they
+   * union with each other rather than intersecting — asking for one ISIN and one symbol means
+   * both securities, not the empty overlap. Naming none of them means every security.
+   *
+   * Resolved against the request-memoized `getAllSecurityBusinesses()` rather than with three
+   * more queries: it is one round trip already paid for, and going through it means an id that
+   * is not a security business of this tenant resolves to nothing instead of reaching the
+   * executions feed.
+   */
+  private async resolveFilterSecurityBusinessIds(
+    filters: SecurityExecutionsFilterInput,
+  ): Promise<string[]> {
+    const securityBusinesses = await this.securityBusinessesProvider.getAllSecurityBusinesses();
+
+    const requestedIds = new Set(filters.securityBusinessIds?.filter(Boolean) ?? []);
+    const requestedIsins = new Set(filters.isins?.filter(Boolean) ?? []);
+    // The bank is inconsistent about symbol case across its two feeds; match case-insensitively.
+    const requestedSymbols = new Set(
+      (filters.symbols?.filter(Boolean) ?? []).map(symbol => symbol.toLowerCase()),
+    );
+
+    if (requestedIds.size === 0 && requestedIsins.size === 0 && requestedSymbols.size === 0) {
+      return securityBusinesses.map(securityBusiness => securityBusiness.id);
+    }
+
+    return securityBusinesses
+      .filter(
+        securityBusiness =>
+          requestedIds.has(securityBusiness.id) ||
+          requestedIsins.has(securityBusiness.isin) ||
+          (securityBusiness.symbol != null &&
+            requestedSymbols.has(securityBusiness.symbol.toLowerCase())),
+      )
+      .map(securityBusiness => securityBusiness.id);
+  }
+
+  /**
+   * A page of executions across securities, newest first.
+   *
+   * Two paths, because charge links and pagination do not compose. Without them the filter
+   * pushes straight into SQL and the page is a `LIMIT`/`OFFSET` slice. With them the pairing has
+   * to see a security's *whole* history — `matchExecutionsToTransactions` is greedy and
+   * one-to-one over the sets it is handed, so pairing a page's slice would let an execution on
+   * page 2 claim the cash movement that belongs to one on page 1, and the same execution would
+   * report a different charge at a different page size. So that path reuses
+   * `getSecurityBusinessHistory` per security, unpaginated, and slices in memory — which is why
+   * it is capped at {@link MAX_CHARGE_LINK_SECURITIES} securities.
+   */
+  public async getSecurityExecutionsPage(params: {
+    filters: SecurityExecutionsFilterInput;
+    page: number;
+    limit: number;
+    includeCharges: boolean;
+    ownerId: string;
+  }): Promise<PaginatedSecurityExecutionsProto> {
+    const { filters, page, limit, includeCharges, ownerId } = params;
+    const empty: PaginatedSecurityExecutionsProto = {
+      nodes: [],
+      totalRecords: 0,
+      currentPage: page,
+      pageSize: limit,
+    };
+
+    const businessIds = await this.resolveFilterSecurityBusinessIds(filters);
+    if (businessIds.length === 0) {
+      return empty;
+    }
+
+    if (includeCharges) {
+      if (businessIds.length > MAX_CHARGE_LINK_SECURITIES) {
+        throw new GraphQLError(
+          `includeCharges resolves to ${businessIds.length} securities, more than the ${MAX_CHARGE_LINK_SECURITIES} it can pair at once — narrow securityBusinessIds, isins or symbols, or drop includeCharges.`,
+        );
+      }
+      return this.chargeLinkedExecutionsPage(businessIds, filters, page, limit, ownerId);
+    }
+
+    const businessIdByKey = await this.getBusinessIdBySecurityKey(businessIds);
+    if (businessIdByKey.size === 0) {
+      return empty;
+    }
+
+    const rawTradeTypes = filters.rawTradeTypes?.filter(Boolean) ?? [];
+    const rawTransactionTypes = filters.rawTransactionTypes?.filter(Boolean) ?? [];
+
+    const rows = await getFilteredSecurityExecutions.run(
+      {
+        securities: [...businessIdByKey.keys()],
+        isTradeTypes: rawTradeTypes.length ? 1 : 0,
+        isTransactionTypes: rawTransactionTypes.length ? 1 : 0,
+        // pgtyped requires a non-empty array for `IN $$list`; the matching `is*` flag
+        // short-circuits the predicate, so the placeholder is never compared.
+        tradeTypes: rawTradeTypes.length ? [...rawTradeTypes] : [null],
+        transactionTypes: rawTransactionTypes.length ? [...rawTransactionTypes] : [null],
+        fromTradeDate: filters.fromTradeDate ?? null,
+        toTradeDate: filters.toTradeDate ?? null,
+        limit,
+        offset: page * limit,
+      },
+      this.db,
+    );
+
+    return {
+      // `COUNT(*) OVER ()` is identical on every row of the page.
+      totalRecords: rows.length ? Number(rows[0].total_count) : 0,
+      currentPage: page,
+      pageSize: limit,
+      nodes: rows.flatMap(row => {
+        const securityBusinessId = businessIdByKey.get(row.security);
+        // Cannot happen — the rows come from `security IN $$securities`, built from these very
+        // keys — but an identifier can outlive the business it pointed at, so skip rather than
+        // assert a business id into existence.
+        return securityBusinessId
+          ? [{ id: row.id, execution: row, securityBusinessId, transaction: null }]
+          : [];
+      }),
+    };
+  }
+
+  /**
+   * The `includeCharges` path: every named security's complete history, paired, then filtered,
+   * ordered and sliced in memory. See {@link getSecurityExecutionsPage} for why it cannot be
+   * done in SQL.
+   */
+  private async chargeLinkedExecutionsPage(
+    businessIds: readonly string[],
+    filters: SecurityExecutionsFilterInput,
+    page: number,
+    limit: number,
+    ownerId: string,
+  ): Promise<PaginatedSecurityExecutionsProto> {
+    const histories = await Promise.all(
+      businessIds.map(businessId => this.getSecurityBusinessHistory(businessId, ownerId)),
+    );
+
+    const rawTradeTypes = new Set(filters.rawTradeTypes?.filter(Boolean) ?? []);
+    const rawTransactionTypes = new Set(filters.rawTransactionTypes?.filter(Boolean) ?? []);
+
+    const matched: SecurityHistoryExecutionProto[] = [];
+    for (const [index, { executions, transactionByExecutionId }] of histories.entries()) {
+      const securityBusinessId = businessIds[index]!;
+      for (const execution of executions) {
+        // Both sides are calendar dates; the timeless string compares as the day, which the raw
+        // Date does not once a DST boundary is between them.
+        const tradeDate = dateToTimelessDateString(execution.trade_date);
+        if (filters.fromTradeDate && tradeDate < filters.fromTradeDate) {
+          continue;
+        }
+        if (filters.toTradeDate && tradeDate > filters.toTradeDate) {
+          continue;
+        }
+        if (rawTradeTypes.size && !rawTradeTypes.has(execution.trade_type)) {
+          continue;
+        }
+        if (rawTransactionTypes.size && !rawTransactionTypes.has(execution.transaction_type)) {
+          continue;
+        }
+        matched.push({
+          id: execution.id,
+          execution,
+          securityBusinessId,
+          transaction: transactionByExecutionId.get(execution.id) ?? null,
+        });
+      }
+    }
+
+    // Newest first, matching the SQL path's ORDER BY exactly so the two paths cannot disagree
+    // about what page 1 is.
+    matched.sort(
+      (a, b) =>
+        b.execution.trade_date.getTime() - a.execution.trade_date.getTime() ||
+        b.execution.id.localeCompare(a.execution.id),
+    );
+
+    return {
+      nodes: matched.slice(page * limit, (page + 1) * limit),
+      totalRecords: matched.length,
+      currentPage: page,
+      pageSize: limit,
+    };
   }
 
   /**

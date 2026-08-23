@@ -207,6 +207,7 @@ export default [
               'PaginatedCharges',
               'PaginatedBusinesses',
               'PaginatedFinancialEntities',
+              'PaginatedSecurityExecutions',
               'PCNFileResult',
               'PCNRawData',
               'ReportCommentary',
