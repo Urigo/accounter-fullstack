@@ -1,5 +1,4 @@
 ---
-'@accounter-helper/migrations': patch
 '@accounter/server': minor
 '@accounter/mcp-server': minor
 ---
