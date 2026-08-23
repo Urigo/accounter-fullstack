@@ -1,10 +1,12 @@
-import { useState, type ReactElement } from 'react';
+import { useContext, useState, type ReactElement } from 'react';
 import type { BatchUpdateBusinessInput } from '../../gql/graphql.js';
 import { useBatchUpdateBusinesses } from '../../hooks/use-batch-update-businesses.js';
 import { useAllCountries } from '../../hooks/use-get-countries.js';
 import { useGetTags } from '../../hooks/use-get-tags.js';
+import { useGetTaxCategories } from '../../hooks/use-get-tax-categories.js';
 import { cn } from '../../lib/utils.js';
-import { ComboBox, MultiSelect } from '../common/index.js';
+import { UserContext } from '../../providers/index.js';
+import { ComboBox, MultiSelect, SortCodeSelect } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import {
   Dialog,
@@ -58,7 +60,8 @@ const EMPTY_FORM: FormState = {
   exemptDealer: 'unset',
 };
 
-// `country` is rendered separately as a searchable ComboBox; the rest are simple inputs.
+// `country`, `taxCategory` and `sortCode` are rendered separately as searchable selects; the rest
+// are simple inputs.
 // `fullWidth` fields span both columns on wider screens.
 const FIELDS: {
   key: keyof FormState;
@@ -69,9 +72,7 @@ const FIELDS: {
 }[] = [
   { key: 'city', label: 'City' },
   { key: 'zipCode', label: 'Zip code' },
-  { key: 'sortCode', label: 'Sort code', numeric: true },
   { key: 'irsCode', label: 'IRS code', numeric: true },
-  { key: 'taxCategory', label: 'Tax category (UUID)', fullWidth: true },
   { key: 'description', label: 'Suggestion description', fullWidth: true },
 ];
 
@@ -138,14 +139,16 @@ export function BatchUpdateBusinessesDialog({
   const { fetching, batchUpdateBusinesses } = useBatchUpdateBusinesses();
   const { countries, fetching: fetchingCountries } = useAllCountries();
   const { selectableTags, fetching: fetchingTags } = useGetTags();
+  const { selectableTaxCategories, fetching: fetchingTaxCategories } = useGetTaxCategories();
+  const { userContext } = useContext(UserContext);
 
   const fields = buildFields(form);
   const isFormEmpty = Object.keys(fields).length === 0;
-  // sortCode/irsCode map to GraphQL Int, so only whole non-negative integers are valid — reject
-  // decimals and scientific notation that Number() would otherwise coerce.
+  // irsCode maps to GraphQL Int, so only whole non-negative integers are valid — reject decimals
+  // and scientific notation that Number() would otherwise coerce. sortCode comes from a select, so
+  // it is always a valid key.
   const hasInvalidNumericFields =
-    (form.sortCode.trim() !== '' && !INTEGER_PATTERN.test(form.sortCode.trim())) ||
-    (form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim()));
+    form.irsCode.trim() !== '' && !INTEGER_PATTERN.test(form.irsCode.trim());
 
   const onSubmit = async (): Promise<void> => {
     if (Object.keys(fields).length === 0) {
@@ -182,6 +185,28 @@ export function BatchUpdateBusinessesDialog({
               onChange={value => setForm(prev => ({ ...prev, country: value ?? '' }))}
               disabled={fetchingCountries}
               placeholder="Select country"
+            />
+          </div>
+          <div className="grid gap-1 sm:col-span-2">
+            <Label>Tax category</Label>
+            <ComboBox
+              data={selectableTaxCategories}
+              value={form.taxCategory || null}
+              onChange={value => setForm(prev => ({ ...prev, taxCategory: value ?? '' }))}
+              disabled={fetchingTaxCategories}
+              placeholder="Select tax category"
+            />
+          </div>
+          <div className="grid gap-1">
+            <Label>Sort code</Label>
+            <SortCodeSelect
+              ownerId={userContext?.context.adminBusinessId}
+              value={form.sortCode || null}
+              onChange={value =>
+                setForm(prev => ({ ...prev, sortCode: value === null ? '' : value.toString() }))
+              }
+              placeholder="Select sort code"
+              triggerClassName="w-full justify-start"
             />
           </div>
           {FIELDS.map(field => (
