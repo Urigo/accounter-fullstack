@@ -4,7 +4,56 @@
 
 @plugin 'tailwindcss-animate';
 
+/*
+  shadcn/ui colour tokens.
+
+  These were never ported when this project moved from Tailwind v3 (which configured them in a
+  `tailwind.config.cjs` that no longer exists) to v4's CSS-first `@theme`. Until now the token
+  namespace was simply undefined, so every `text-muted-foreground` / `bg-card` / `border-border` /
+  `text-destructive` in the codebase — roughly 380 usages across ~100 files — compiled to no rule at
+  all and rendered as inherited black on transparent.
+
+  Values follow shadcn's `gray` base (see `components.json`) and are written as literal `oklch()`
+  rather than `var(--color-gray-500)` on purpose: Tailwind v4 only emits the default palette
+  variables it sees used, so referencing one that happens to be unused elsewhere would resolve to
+  nothing.
+
+  Plain `@theme`, NOT `@theme inline` — inline substitutes the literal value into each utility, which
+  would make the `.dark` overrides below dead code.
+*/
 @theme {
+  --color-background: #fff;
+  --color-foreground: oklch(13% 0.028 261.692); /* gray-950 */
+
+  --color-card: #fff;
+  --color-card-foreground: oklch(13% 0.028 261.692); /* gray-950 */
+
+  --color-popover: #fff;
+  --color-popover-foreground: oklch(13% 0.028 261.692); /* gray-950 */
+
+  --color-primary: oklch(21% 0.034 264.665); /* gray-900 */
+  --color-primary-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+  --color-secondary: oklch(96.7% 0.003 264.542); /* gray-100 */
+  --color-secondary-foreground: oklch(21% 0.034 264.665); /* gray-900 */
+
+  --color-muted: oklch(96.7% 0.003 264.542); /* gray-100 */
+  --color-muted-foreground: oklch(55.1% 0.027 264.364); /* gray-500 */
+
+  --color-accent: oklch(96.7% 0.003 264.542); /* gray-100 */
+  --color-accent-foreground: oklch(21% 0.034 264.665); /* gray-900 */
+
+  --color-destructive: oklch(57.7% 0.245 27.325); /* red-600 */
+  --color-destructive-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+  /*
+    Kept at gray-200 to match the `border-color` compatibility rule in the base layer below, so
+    `border-border` renders identically to a border with no colour utility at all.
+  */
+  --color-border: oklch(92.8% 0.006 264.531); /* gray-200 */
+  --color-input: oklch(92.8% 0.006 264.531); /* gray-200 */
+  --color-ring: oklch(70.7% 0.022 261.325); /* gray-400 */
+
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-accordion-down: accordion-down 0.2s ease-out;
 
@@ -52,6 +101,47 @@
   ::backdrop,
   ::file-selector-button {
     border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+/*
+  Dark-mode overrides for the tokens defined in `@theme` above.
+
+  Note this is currently inert: nothing in the app ever puts `.dark` on an ancestor. `next-themes` is
+  installed but no `ThemeProvider` is mounted (`root-layout.tsx` mounts MUI's), so `useTheme()` sits
+  at its `system` default and never writes a class. These values are still correct to define — the
+  ~425 `dark:` utilities already in the codebase are waiting on the same switch — but activating dark
+  mode is a separate change.
+*/
+@layer base {
+  .dark {
+    --color-background: oklch(13% 0.028 261.692); /* gray-950 */
+    --color-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-card: oklch(21% 0.034 264.665); /* gray-900 */
+    --color-card-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-popover: oklch(21% 0.034 264.665); /* gray-900 */
+    --color-popover-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-primary: oklch(98.5% 0.002 247.839); /* gray-50 */
+    --color-primary-foreground: oklch(21% 0.034 264.665); /* gray-900 */
+
+    --color-secondary: oklch(27.8% 0.033 256.848); /* gray-800 */
+    --color-secondary-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-muted: oklch(27.8% 0.033 256.848); /* gray-800 */
+    --color-muted-foreground: oklch(70.7% 0.022 261.325); /* gray-400 */
+
+    --color-accent: oklch(27.8% 0.033 256.848); /* gray-800 */
+    --color-accent-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-destructive: oklch(70.4% 0.191 22.216); /* red-400 */
+    --color-destructive-foreground: oklch(98.5% 0.002 247.839); /* gray-50 */
+
+    --color-border: oklch(27.8% 0.033 256.848); /* gray-800 */
+    --color-input: oklch(27.8% 0.033 256.848); /* gray-800 */
+    --color-ring: oklch(44.6% 0.03 256.802); /* gray-600 */
   }
 }
 
