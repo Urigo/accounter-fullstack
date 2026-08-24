@@ -8,6 +8,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.js';
 
@@ -17,28 +19,40 @@ export const accountantApprovalOptions: Record<
 > = {
   [AccountantStatus.Approved]: {
     icon: Check,
-    color: 'text-green-600',
-    bgColor: 'hover:bg-green-50',
+    color: 'text-emerald-600 dark:text-emerald-400',
+    bgColor: 'hover:bg-emerald-50 dark:hover:bg-emerald-950/40',
     label: 'Approved',
     value: AccountantStatus.Approved,
   },
   [AccountantStatus.Pending]: {
     icon: Clock,
-    color: 'text-yellow-600',
-    bgColor: 'hover:bg-yellow-50',
+    color: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'hover:bg-amber-50 dark:hover:bg-amber-950/40',
     label: 'Pending',
     value: AccountantStatus.Pending,
   },
   [AccountantStatus.Unapproved]: {
     icon: X,
-    color: 'text-red-600',
-    bgColor: 'hover:bg-red-50',
+    color: 'text-red-600 dark:text-red-400',
+    bgColor: 'hover:bg-red-50 dark:hover:bg-red-950/40',
     label: 'Unapproved',
     value: AccountantStatus.Unapproved,
   },
 };
 
 const getApprovalStatusConfig = (status: AccountantStatus) => accountantApprovalOptions[status];
+
+const STATUS_DOT: Record<AccountantStatus, string> = {
+  [AccountantStatus.Approved]: 'bg-emerald-500',
+  [AccountantStatus.Pending]: 'bg-amber-500',
+  [AccountantStatus.Unapproved]: 'bg-red-500',
+};
+
+const STATUS_ORDER: AccountantStatus[] = [
+  AccountantStatus.Approved,
+  AccountantStatus.Pending,
+  AccountantStatus.Unapproved,
+];
 
 export function UpdateAccountantStatus(props: {
   onChange?: () => void;
@@ -104,25 +118,41 @@ export function UpdateAccountantStatus(props: {
           variant="ghost"
           size="sm"
           className={`h-7 w-7 p-0 ${approvalConfig.bgColor}`}
+          // The status was conveyed by a coloured glyph with only a `title`, which is a description
+          // rather than a name — down a list of a hundred records a screen reader announced a hundred
+          // identical unnamed buttons.
+          aria-label={`Approval status: ${approvalConfig.label}. Change status`}
           title={approvalConfig.label}
           disabled={isDisabled}
         >
-          <ApprovalIcon className={`h-3.5 w-3.5 ${approvalConfig.color}`} />
+          <ApprovalIcon aria-hidden className={`h-3.5 w-3.5 ${approvalConfig.color}`} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center">
-        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Approved)}>
-          <Check className="h-4 w-4 mr-2 text-green-600" />
-          Approved
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Pending)}>
-          <Clock className="h-4 w-4 mr-2 text-yellow-600" />
-          Pending
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onStatusChange(AccountantStatus.Unapproved)}>
-          <X className="h-4 w-4 mr-2 text-red-600" />
-          Unapproved
-        </DropdownMenuItem>
+      <DropdownMenuContent align="start" className="w-44">
+        <DropdownMenuLabel variant="section">Set approval</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {STATUS_ORDER.map(option => {
+          const config = accountantApprovalOptions[option];
+          return (
+            <DropdownMenuItem
+              key={option}
+              onClick={() => onStatusChange(option)}
+              className="gap-2 text-xs"
+            >
+              <span aria-hidden className={`size-1.5 rounded-full ${STATUS_DOT[option]}`} />
+              <span className="font-medium">{config.label}</span>
+              {/* Pending is not a step on the way to approved — it means an approved charge changed
+                  underneath and lost its approval. Saying so here is cheaper than the support
+                  question it otherwise generates. */}
+              {option === AccountantStatus.Pending && (
+                <span className="ml-auto text-[10px] text-muted-foreground">downgraded</span>
+              )}
+              {option === status && (
+                <Check aria-hidden className="ml-auto size-3 text-muted-foreground" />
+              )}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -58,6 +58,6 @@ export const Charge = ({ chargeId }: Props): ReactElement => {
   return isLoading ? (
     <AccounterLoader />
   ) : (
-    <ChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened />
+    <ChargesTable data={chargeData?.charge ? [chargeData.charge] : []} isAllOpened hideToolbar />
   );
 };

@@ -4,7 +4,7 @@ import { useQuery } from 'urql';
 import { LoadingOverlay } from '@mantine/core';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { ChargesTable } from '@/components/charges/charges-table.js';
-import { AllChargesDocument, type ChargeFilter } from '../../../gql/graphql.js';
+import { AllChargesDocument, type ChargeFilter, type ChargeSortBy } from '../../../gql/graphql.js';
 import { useStableValue } from '../../../hooks/use-stable-value.js';
 import { useUrlQuery } from '../../../hooks/use-url-query.js';
 import { FiltersContext } from '../../../providers/filters-context.js';
@@ -73,6 +73,12 @@ export const AllCharges = (): ReactElement => {
 
   const resetMergeList = useCallback((): void => {
     setRowSelection({});
+  }, []);
+
+  // Sorting is server-side, so it belongs to the filter this screen owns rather than to the table.
+  // `ChargesFilters` watches `filter` and resets the page, so a sort change starts from page 0.
+  const setSortBy = useCallback((sortBy: ChargeSortBy): void => {
+    setFilter(current => ({ ...current, sortBy }));
   }, []);
 
   // Derive the merge button's input from the row-selection map. Each selected charge gets an
@@ -152,6 +158,7 @@ export const AllCharges = (): ReactElement => {
             onRowSelectionChange={setRowSelection}
             isAllOpened={isAllOpened}
             showExport
+            sort={{ value: filter?.sortBy, onChange: setSortBy }}
           />
         </div>
       ) : (

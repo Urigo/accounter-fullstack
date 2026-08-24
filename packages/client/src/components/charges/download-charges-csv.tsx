@@ -1,5 +1,6 @@
 import { useCallback, type ReactElement } from 'react';
 import { format } from 'date-fns';
+import { FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useClient } from 'urql';
 import {
@@ -127,6 +128,19 @@ export const DownloadChargesCsv = ({ chargeIds, businessName }: Props): ReactEle
   }, [client, chargeIds, businessName]);
 
   return (
-    <DownloadCSVButton createFileVariables={createFileVariables} label="Download charges CSV" />
+    <DownloadCSVButton
+      createFileVariables={createFileVariables}
+      label="Download charges CSV"
+      // Icon-only, the button had no accessible name at all — the tooltip supplies a description, not
+      // a name. The visible text is now the name, and it also stops the export reading as a mystery
+      // glyph at the end of the toolbar.
+      buttonContent={
+        <>
+          <FileDown className="size-4" />
+          Export CSV
+        </>
+      }
+      buttonProps={{ size: 'sm', className: 'gap-1.5 px-2.5' }}
+    />
   );
 };

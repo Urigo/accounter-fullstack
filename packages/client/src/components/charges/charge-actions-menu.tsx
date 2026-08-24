@@ -111,7 +111,9 @@ export function ChargeActionsMenu({
             <Link className="size-4" />
             Copy Charge Link
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => setConfirmDeleteOpen(true)}>
+          {/* The only irreversible item in the menu, and it sat in the same weight as "Copy Charge
+              Link" directly above it. */}
+          <DropdownMenuItem variant="destructive" onSelect={() => setConfirmDeleteOpen(true)}>
             <Trash className="size-4" />
             Delete Charge
           </DropdownMenuItem>
