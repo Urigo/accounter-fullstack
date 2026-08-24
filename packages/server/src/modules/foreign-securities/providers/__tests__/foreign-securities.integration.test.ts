@@ -9,7 +9,8 @@ import { TenantAwareDBClient } from '../../../app-providers/tenant-db-client.js'
 import type { FinancialAccountsProvider } from '../../../financial-accounts/providers/financial-accounts.provider.js';
 import type { FinancialBankAccountsProvider } from '../../../financial-accounts/providers/financial-bank-accounts.provider.js';
 import type { TransactionsProvider } from '../../../transactions/providers/transactions.provider.js';
-import { ForeignSecuritiesProvider } from '../foreign-securities.provider.js';
+import { dateToTimelessDateString } from '../../../../shared/helpers/misc.js';
+import { ForeignSecuritiesProvider, MAX_CHARGE_LINK_SECURITIES } from '../foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../security-businesses.provider.js';
 
 let pool: Pool;
@@ -27,7 +28,31 @@ const ACCOUNT_ID = '00000000-0000-0000-0000-00000000a001';
 const APPLE_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a1';
 const MSFT_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a2';
 const ISIN_ONLY_BUSINESS_ID = '00000000-0000-0000-0000-0000000005a3';
-const SECURITY_BUSINESS_IDS = [APPLE_BUSINESS_ID, MSFT_BUSINESS_ID, ISIN_ONLY_BUSINESS_ID];
+/**
+ * Filler security businesses, used only to push a tenant past
+ * `MAX_CHARGE_LINK_SECURITIES`. Declared here rather than inline so the shared
+ * cleanup covers them — a leaked security business is visible to every other case
+ * in the file, since this suite connects as a superuser and so is not scoped by RLS.
+ */
+const OVERFLOW_BUSINESS_IDS = Array.from(
+  { length: MAX_CHARGE_LINK_SECURITIES },
+  (_unused, index) => `00000000-0000-0000-0000-0000000007${String(index).padStart(2, '0')}`,
+);
+const SECURITY_BUSINESS_IDS = [
+  APPLE_BUSINESS_ID,
+  MSFT_BUSINESS_ID,
+  ISIN_ONLY_BUSINESS_ID,
+  ...OVERFLOW_BUSINESS_IDS,
+];
+/**
+ * ISINs here are synthetic (`ZZ…`) rather than real ones.
+ *
+ * The securities lookups carry no `owner_id` predicate — RLS does that, and this
+ * suite connects as a superuser which bypasses it — so every security business in
+ * the database is visible to a lookup by ISIN. Sharing a real ISIN with
+ * `security-businesses.integration.test.ts`, which runs concurrently and asserts
+ * on the row it gets back for one, is a genuine cross-suite collision.
+ */
 const BANK_NUMBER = 12;
 const BRANCH_NUMBER = 615;
 const ACCOUNT_NUMBER = 100000;
@@ -74,20 +99,25 @@ const VALUE_DATE = '2024-03-12';
 function createStubTransactionsProvider(transactions: StubTransaction[]): TransactionsProvider {
   return {
     transactionsByChargeIDLoader: {
-      load: (chargeId: string) =>
-        Promise.resolve(
-          transactions.map(transaction => ({
-            charge_id: chargeId,
-            amount: '-1000.00',
-            currency: 'USD',
-            debit_date: new Date(`${VALUE_DATE}T00:00:00`),
-            debit_date_override: null,
-            account_id: ACCOUNT_ID,
-            ...transaction,
-          })),
-        ),
+      load: (chargeId: string) => Promise.resolve(transactions.map(row => withDefaults(chargeId, row))),
     },
+    // The reverse direction, used by `getSecurityBusinessHistory`: the candidate cash
+    // movements are the security business's own transactions.
+    getTransactionsByFilters: () =>
+      Promise.resolve(transactions.map(row => withDefaults(CHARGE_ID, row))),
   } as unknown as TransactionsProvider;
+}
+
+function withDefaults(chargeId: string, transaction: StubTransaction) {
+  return {
+    charge_id: chargeId,
+    amount: '-1000.00',
+    currency: 'USD',
+    debit_date: new Date(`${VALUE_DATE}T00:00:00`),
+    debit_date_override: null,
+    account_id: ACCOUNT_ID,
+    ...transaction,
+  };
 }
 
 /**
@@ -179,6 +209,8 @@ type ExecutionFixture = {
   tradeDate?: string;
   valueDate?: string | null;
   tradeType?: string;
+  /** Defaults to `tradeType`, which is the invariant on a plain buy or sale. */
+  transactionType?: string;
   netValueTradeCurrency?: string;
   /** Units moved. Fractional on purpose in the holdings cases — ETFs trade that way. */
   nv?: string;
@@ -193,6 +225,7 @@ async function insertExecution({
   tradeDate = '2024-03-10',
   valueDate = VALUE_DATE,
   tradeType = 'קניה',
+  transactionType,
   netValueTradeCurrency = '1000.00',
   nv = '10',
 }: ExecutionFixture) {
@@ -202,7 +235,7 @@ async function insertExecution({
     `INSERT INTO accounter_schema.poalim_securities_transactions (
        owner_id, bank_number, branch_number, account_number, security, trade_date, value_date,
        trade_type, transaction_type, nv, trade_price, net_value_trade_currency, trade_currency
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $10, 100, $9, 'דולר ארה"ב')`,
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $11, $10, 100, $9, 'דולר ארה"ב')`,
     [
       ownerId,
       BANK_NUMBER,
@@ -214,6 +247,7 @@ async function insertExecution({
       tradeType,
       netValueTradeCurrency,
       nv,
+      transactionType ?? tradeType,
     ],
   );
 }
@@ -281,10 +315,12 @@ beforeAll(async () => {
 
   await ensureRlsRole(pool, {
     grants: [
-      { table: 'poalim_securities', privileges: 'SELECT' },
-      { table: 'poalim_securities_transactions', privileges: 'SELECT' },
-      { table: 'businesses_securities', privileges: 'SELECT' },
-      { table: 'security_identifiers', privileges: 'SELECT' },
+      // DELETE/UPDATE as well as SELECT: the write-target cases below have to reach the policy
+      // check rather than failing on a missing privilege, which would pass for the wrong reason.
+      { table: 'poalim_securities', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'poalim_securities_transactions', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'businesses_securities', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'security_identifiers', privileges: 'SELECT, UPDATE, DELETE' },
     ],
   });
 });
@@ -338,7 +374,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].securityKey).toBe('5129523');
@@ -352,7 +388,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0077774297' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].securityKey).toBe('77774297');
@@ -367,7 +403,7 @@ describe('getChargeSecurities', () => {
       { id: 'fee', source_description: 'ניע"ז עמ קניה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].transactionIds).toEqual(['trade', 'fee']);
@@ -380,7 +416,7 @@ describe('getChargeSecurities', () => {
       { id: 't2', source_description: null },
     ]);
 
-    expect(await provider.getChargeSecurities(CHARGE_ID)).toEqual([]);
+    expect(await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID)).toEqual([]);
   });
 
   it('returns one entry per distinct key on a merged charge', async () => {
@@ -395,7 +431,7 @@ describe('getChargeSecurities', () => {
       { id: 't2', source_description: 'ניע"ז קניה 0077774297' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities.map(s => s.securityKey)).toEqual(['5129523', '77774297']);
     expect(securities.map(s => s.details?.eng_name)).toEqual(['Example Corp', 'Other Corp']);
@@ -419,7 +455,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].details?.eng_name).toBe('Fresh Name');
@@ -465,7 +501,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toHaveLength(1);
     expect(securities[0].executions[0].trade_type).toBe('קניה');
@@ -484,7 +520,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523', amount: '2500.50' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions.map(e => e.net_value_trade_currency)).toEqual(['2500.50']);
   });
@@ -496,7 +532,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -508,7 +544,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -520,7 +556,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -534,7 +570,7 @@ describe('getChargeSecurities — matched executions', () => {
       'IL12-3456',
     );
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -564,17 +600,24 @@ describe('getChargeSecurities — matched executions', () => {
   });
 });
 
+/** This suite's own buckets out of a tenant-wide result. See the note on ISINs above. */
+function ownedBuckets<T>(byBusinessId: Map<string, T[]>): T[][] {
+  return SECURITY_BUSINESS_IDS.map(id => byBusinessId.get(id)).filter(
+    (bucket): bucket is T[] => bucket !== undefined,
+  );
+}
+
 describe('getExecutionsBySecurityBusiness', () => {
   it('gives every security business its own executions, chronologically', async () => {
     await insertSecurityBusiness({
       id: APPLE_BUSINESS_ID,
-      isin: 'US0378331005',
+      isin: 'ZZ0000000601',
       engName: 'APPLE INC',
       securityKeys: ['1097'],
     });
     await insertSecurityBusiness({
       id: MSFT_BUSINESS_ID,
-      isin: 'US5949181045',
+      isin: 'ZZ0000000602',
       engName: 'MICROSOFT CORP',
       securityKeys: ['2044'],
     });
@@ -596,7 +639,7 @@ describe('getExecutionsBySecurityBusiness', () => {
   it('collapses several Poalim keys onto the one security business they name', async () => {
     await insertSecurityBusiness({
       id: APPLE_BUSINESS_ID,
-      isin: 'US0378331005',
+      isin: 'ZZ0000000601',
       securityKeys: ['1097', '1098'],
     });
     await insertExecution({ security: '1097' });
@@ -625,7 +668,7 @@ describe('getExecutionsBySecurityBusiness', () => {
   it('ignores executions whose key belongs to no security business', async () => {
     await insertSecurityBusiness({
       id: APPLE_BUSINESS_ID,
-      isin: 'US0378331005',
+      isin: 'ZZ0000000601',
       securityKeys: ['1097'],
     });
     await insertExecution({ security: '1097' });
@@ -633,16 +676,26 @@ describe('getExecutionsBySecurityBusiness', () => {
 
     const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
 
-    expect(executionsByBusinessId.size).toBe(1);
+    // Asserted on this suite's own buckets rather than on the map's size: the
+    // query carries no owner predicate — RLS is what scopes it in production, and
+    // this suite connects as a superuser which bypasses it — so a concurrently
+    // running suite's security businesses are legitimately in the result.
     expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(1);
+    // '9999' belongs to no security business, so it is nowhere in the map.
+    expect(ownedBuckets(executionsByBusinessId).flat()).toHaveLength(1);
   });
 
-  it('has no entries at all when the tenant has no security businesses', async () => {
+  it('gives a security business with nothing ingested an empty bucket, not none', async () => {
+    await insertSecurityBusiness({ id: APPLE_BUSINESS_ID, isin: 'ZZ0000000601' });
     await insertExecution({ security: '1097' });
 
     const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
 
-    expect(executionsByBusinessId.size).toBe(0);
+    // Apple carries no POALIM_SECURITY_KEY identifier, so the execution cannot
+    // resolve to it — but the business still gets an entry, which is what keeps
+    // "nothing ingested" distinguishable from "not a security".
+    expect(executionsByBusinessId.has(APPLE_BUSINESS_ID)).toBe(true);
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toEqual([]);
   });
 
   /**
@@ -653,7 +706,7 @@ describe('getExecutionsBySecurityBusiness', () => {
   it("does not expose another tenant's security businesses under tenant_isolation", async () => {
     await insertSecurityBusiness({
       id: APPLE_BUSINESS_ID,
-      isin: 'US0378331005',
+      isin: 'ZZ0000000601',
       securityKeys: ['1097'],
       ownerId: OTHER_OWNER_ID,
     });
@@ -678,5 +731,525 @@ describe('getExecutionsBySecurityBusiness', () => {
       await client.query('ROLLBACK');
       client.release();
     }
+  });
+});
+
+/**
+ * `Query.securityExecutions` behind the provider: the SQL-pushdown path, the
+ * unpaginated match path behind `includeCharges`, and the filter resolution both
+ * share.
+ */
+describe('getSecurityExecutionsPage', () => {
+  const APPLE_ISIN = 'ZZ0000000601';
+  const MSFT_ISIN = 'ZZ0000000602';
+
+  /**
+   * Every case narrows to this suite's own two securities by default.
+   *
+   * Omitting the identity filter means "every security this tenant has", and the
+   * suite connects as a superuser — so RLS does not scope the read and a
+   * concurrently-running suite's fixtures would land in the result. Only the one
+   * case that is actually about the unfiltered behaviour leaves this out, and it
+   * asserts containment rather than an exact count.
+   */
+  const page = (
+    overrides: Partial<Parameters<ForeignSecuritiesProvider['getSecurityExecutionsPage']>[0]> = {},
+  ) =>
+    createProvider([]).getSecurityExecutionsPage({
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+      ...overrides,
+      filters: { isins: [APPLE_ISIN, MSFT_ISIN], ...overrides.filters },
+    });
+
+  beforeEach(async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: APPLE_ISIN,
+      engName: 'Apple',
+      securityKeys: ['1097'],
+    });
+    await insertSecurityBusiness({
+      id: MSFT_BUSINESS_ID,
+      isin: MSFT_ISIN,
+      engName: 'Microsoft',
+      securityKeys: ['2098'],
+    });
+  });
+
+  it('is empty, without erroring, when the tenant has no matching security', async () => {
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { isins: ['ZZ0000000699'] },
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.nodes).toEqual([]);
+    expect(result.totalRecords).toBe(0);
+  });
+
+  it('covers every security when no identity filter is given', async () => {
+    await insertExecution({ security: '1097' });
+    await insertExecution({ security: '2098' });
+
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: {},
+      page: 0,
+      limit: 500,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    // Containment, not equality: with no identity filter and no RLS under a
+    // superuser connection, a concurrent suite's fixtures can be in here too.
+    const businessIds = new Set(result.nodes.map(node => node.securityBusinessId));
+    expect(businessIds).toContain(APPLE_BUSINESS_ID);
+    expect(businessIds).toContain(MSFT_BUSINESS_ID);
+  });
+
+  it('orders newest first — the opposite of the history query', async () => {
+    await insertExecution({ security: '1097', tradeDate: '2024-01-01' });
+    await insertExecution({ security: '1097', tradeDate: '2024-06-01' });
+    await insertExecution({ security: '1097', tradeDate: '2024-03-01' });
+
+    const result = await page();
+
+    expect(result.nodes.map(node => dateToTimelessDateString(node.execution.trade_date))).toEqual([
+      '2024-06-01',
+      '2024-03-01',
+      '2024-01-01',
+    ]);
+  });
+
+  it('reports the full match count alongside a page of it', async () => {
+    for (const day of ['01', '02', '03', '04', '05']) {
+      await insertExecution({ security: '1097', tradeDate: `2024-03-${day}` });
+    }
+
+    const first = await page({ limit: 2, page: 0 });
+    const second = await page({ limit: 2, page: 1 });
+
+    expect(first.totalRecords).toBe(5);
+    expect(first.nodes).toHaveLength(2);
+    expect(second.totalRecords).toBe(5);
+    // Consecutive pages must not overlap or skip.
+    expect(second.nodes.map(node => node.id)).not.toEqual(first.nodes.map(node => node.id));
+  });
+
+  /**
+   * The three identity filters name the same axis three ways, so they union.
+   * Intersecting them would make "this ISIN and that symbol" mean the empty
+   * overlap, which is never what a caller means.
+   */
+  it('unions the identity filters rather than intersecting them', async () => {
+    await insertExecution({ security: '1097' });
+    await insertExecution({ security: '2098' });
+
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { isins: [APPLE_ISIN], securityBusinessIds: [MSFT_BUSINESS_ID] },
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(2);
+  });
+
+  it('matches symbols case-insensitively', async () => {
+    await insertExecution({ security: '1097' });
+
+    const businessesFor = async (symbol: string) => {
+      const result = await createProvider([]).getSecurityExecutionsPage({
+        filters: { symbols: [symbol] },
+        page: 0,
+        limit: 500,
+        includeCharges: false,
+        ownerId: TEST_OWNER_ID,
+      });
+      return new Set(result.nodes.map(node => node.securityBusinessId));
+    };
+
+    // insertSecurityBusiness writes the symbol as 'EXMP', so the lowercase spelling
+    // has to reach it. Asserted by which security came back rather than by a count:
+    // with no ISIN filter and no RLS under a superuser connection, a concurrent
+    // suite's fixtures can share the result.
+    expect(await businessesFor('exmp')).toContain(APPLE_BUSINESS_ID);
+    expect(await businessesFor('nope')).not.toContain(APPLE_BUSINESS_ID);
+  });
+
+  it('ignores an id that is not one of this tenant security businesses', async () => {
+    await insertExecution({ security: '1097' });
+
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { securityBusinessIds: [OTHER_OWNER_ID] },
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(0);
+  });
+
+  it('pushes the trade-date range into SQL', async () => {
+    await insertExecution({ security: '1097', tradeDate: '2024-01-15' });
+    await insertExecution({ security: '1097', tradeDate: '2024-05-15' });
+
+    const bounded = await page({
+      filters: { fromTradeDate: '2024-04-01', toTradeDate: '2024-06-30' },
+    });
+
+    expect(bounded.totalRecords).toBe(1);
+    expect(dateToTimelessDateString(bounded.nodes[0]!.execution.trade_date)).toBe('2024-05-15');
+  });
+
+  it('filters on the bank own labels for trade and transaction type', async () => {
+    await insertExecution({ security: '1097', tradeType: 'קניה' });
+    await insertExecution({ security: '1097', tradeType: 'מכירה' });
+
+    expect((await page({ filters: { rawTradeTypes: ['מכירה'] } })).totalRecords).toBe(1);
+    expect((await page({ filters: { rawTransactionTypes: ['קניה'] } })).totalRecords).toBe(1);
+    // An empty list is "no restriction", not "match nothing" — the `is*` flag guard.
+    expect((await page({ filters: { rawTradeTypes: [] } })).totalRecords).toBe(2);
+    expect((await page()).totalRecords).toBe(2);
+  });
+
+  it('carries the security business on every row, so a flat list can be grouped', async () => {
+    await insertExecution({ security: '2098' });
+
+    const result = await page();
+
+    expect(result.nodes[0]!.securityBusinessId).toBe(MSFT_BUSINESS_ID);
+    // Not asked for, so no pairing was attempted.
+    expect(result.nodes[0]!.transaction).toBeNull();
+  });
+
+  it('refuses to pair charge links across more securities than it can', async () => {
+    // Two are seeded already; take the tenant past the cap so an unnarrowed
+    // request has to be refused.
+    for (const [index, id] of OVERFLOW_BUSINESS_IDS.entries()) {
+      await insertSecurityBusiness({
+        id,
+        isin: `ZZ9${String(index).padStart(9, '0')}`,
+        securityKeys: [`90${index}`],
+      });
+    }
+    await insertExecution({ security: '1097' });
+
+    await expect(
+      createProvider([]).getSecurityExecutionsPage({
+        filters: {},
+        page: 0,
+        limit: 50,
+        includeCharges: true,
+        ownerId: TEST_OWNER_ID,
+      }),
+    ).rejects.toThrow(/more than the \d+ it can pair at once/);
+  });
+
+  it('pairs charge links when the filter names few enough securities', async () => {
+    await insertExecution({ security: '1097' });
+
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { isins: [APPLE_ISIN] },
+      page: 0,
+      limit: 50,
+      includeCharges: true,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(1);
+    expect(result.nodes[0]!.securityBusinessId).toBe(APPLE_BUSINESS_ID);
+  });
+
+  /**
+   * The two paths must agree about what page 1 is, or paging with and without
+   * charge links would return different rows for the same request.
+   */
+  it('orders the match path identically to the SQL path', async () => {
+    await insertExecution({ security: '1097', tradeDate: '2024-01-01' });
+    await insertExecution({ security: '1097', tradeDate: '2024-06-01' });
+    await insertExecution({ security: '1097', tradeDate: '2024-03-01' });
+
+    const pushdown = await page({ filters: { isins: [APPLE_ISIN] } });
+    const matched = await createProvider([]).getSecurityExecutionsPage({
+      filters: { isins: [APPLE_ISIN] },
+      page: 0,
+      limit: 50,
+      includeCharges: true,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(matched.nodes.map(node => node.id)).toEqual(pushdown.nodes.map(node => node.id));
+  });
+
+  it('applies the date and type filters on the match path too', async () => {
+    await insertExecution({ security: '1097', tradeDate: '2024-01-15', tradeType: 'קניה' });
+    await insertExecution({ security: '1097', tradeDate: '2024-05-15', tradeType: 'מכירה' });
+
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: {
+        isins: [APPLE_ISIN],
+        fromTradeDate: '2024-04-01',
+        rawTradeTypes: ['מכירה'],
+      },
+      page: 0,
+      limit: 50,
+      includeCharges: true,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(1);
+    expect(result.nodes[0]!.execution.trade_type).toBe('מכירה');
+  });
+
+  /**
+   * Tenant isolation is deliberately NOT asserted here: this suite connects as a
+   * superuser, who bypasses RLS, so a green provider-level assertion would prove
+   * nothing. The `multi-business read scope` cases below run the same tables under
+   * the non-superuser role the server actually operates behind.
+   */
+});
+
+/**
+ * A Poalim security key is unique only *within* an owner.
+ *
+ * `security_identifiers` is unique on `(owner_id, identifier_type, identifier_value)`, so two
+ * businesses that both trade one security each carry it under the same key — the ordinary case for
+ * a tenant with more than one business, not an exotic one. Reads follow the request's whole
+ * business scope, so both rows are visible at once and a key-only lookup has nothing to tell them
+ * apart: it keeps whichever was seen last and files one business's trades under the other's
+ * security.
+ *
+ * These cases run as the suite's superuser, which bypasses RLS — which is exactly the widest
+ * version of the situation, and what makes them a regression test for the join rather than for the
+ * policy.
+ */
+describe('two businesses trading the same security', () => {
+  const SHARED_KEY = '1097';
+
+  beforeEach(async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000621',
+      engName: 'Shared Security (mine)',
+      securityKeys: [SHARED_KEY],
+    });
+    await insertSecurityBusiness({
+      id: MSFT_BUSINESS_ID,
+      isin: 'ZZ0000000622',
+      engName: 'Shared Security (theirs)',
+      securityKeys: [SHARED_KEY],
+      ownerId: OTHER_OWNER_ID,
+    });
+    await insertExecution({ security: SHARED_KEY, tradeDate: '2024-03-01' });
+    await insertExecution({
+      ownerId: OTHER_OWNER_ID,
+      security: SHARED_KEY,
+      tradeDate: '2024-03-02',
+    });
+  });
+
+  it('gives each business only its own executions', async () => {
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(1);
+    expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)).toHaveLength(1);
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)![0]!.owner_id).toBe(TEST_OWNER_ID);
+    expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)![0]!.owner_id).toBe(OTHER_OWNER_ID);
+  });
+
+  it('keeps a filtered page to the business it named', async () => {
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { securityBusinessIds: [APPLE_BUSINESS_ID] },
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(1);
+    expect(result.nodes[0]!.securityBusinessId).toBe(APPLE_BUSINESS_ID);
+    expect(result.nodes[0]!.execution.owner_id).toBe(TEST_OWNER_ID);
+  });
+
+  it("keeps one business's history out of the other's", async () => {
+    const { executions } = await createProvider([]).getSecurityBusinessHistory(
+      MSFT_BUSINESS_ID,
+      OTHER_OWNER_ID,
+    );
+
+    expect(executions).toHaveLength(1);
+    expect(executions[0]!.owner_id).toBe(OTHER_OWNER_ID);
+  });
+
+  it('resolves the reference details per owner', async () => {
+    await insertSecurity({ securityKey: SHARED_KEY, engName: 'Mine' });
+    await insertSecurity({
+      ownerId: OTHER_OWNER_ID,
+      securityKey: SHARED_KEY,
+      engName: 'Theirs',
+    });
+
+    const provider = createProvider([]);
+    const [mine, theirs] = await Promise.all([
+      provider.securityByKeyLoader.load({ ownerId: TEST_OWNER_ID, securityKey: SHARED_KEY }),
+      provider.securityByKeyLoader.load({ ownerId: OTHER_OWNER_ID, securityKey: SHARED_KEY }),
+    ]);
+
+    expect(mine?.eng_name).toBe('Mine');
+    expect(theirs?.eng_name).toBe('Theirs');
+  });
+});
+
+/**
+ * The read predicate on all four securities tables was pinned to the singular
+ * `get_current_business_id()` until this was fixed, so a request whose authorized
+ * scope spanned several businesses silently saw only one of them. A
+ * provider-level assertion proves nothing — this suite connects as a superuser,
+ * who bypasses RLS — so this runs under the non-superuser role the server
+ * actually operates behind.
+ */
+describe('multi-business read scope', () => {
+  async function readUnderScope(
+    table: string,
+    scope: string[] | null,
+    currentBusinessId = TEST_OWNER_ID,
+  ) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Session variables must be set as superuser, before privileges are dropped.
+      await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [
+        currentBusinessId,
+      ]);
+      await client.query(`SELECT set_config('app.current_business_scope', $1, true)`, [
+        scope ? `{${scope.join(',')}}` : '',
+      ]);
+
+      return await runAsRlsRole(client, async () => {
+        const result = await client.query(
+          `SELECT owner_id FROM accounter_schema.${table} ORDER BY owner_id`,
+        );
+        return result.rows.map((row: { owner_id: string }) => row.owner_id);
+      });
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  }
+
+  beforeEach(async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000611',
+      securityKeys: ['1097'],
+    });
+    await insertSecurityBusiness({
+      id: MSFT_BUSINESS_ID,
+      isin: 'ZZ0000000612',
+      securityKeys: ['2098'],
+      ownerId: OTHER_OWNER_ID,
+    });
+    await insertSecurity({ securityKey: '1097' });
+    await insertSecurity({ ownerId: OTHER_OWNER_ID, securityKey: '2098' });
+    await insertExecution({ security: '1097' });
+    await insertExecution({ ownerId: OTHER_OWNER_ID, security: '2098' });
+  });
+
+  const TABLES = [
+    'poalim_securities',
+    'poalim_securities_transactions',
+    'businesses_securities',
+    'security_identifiers',
+  ];
+
+  it.each(TABLES)('%s returns every business in the scope', async table => {
+    const owners = await readUnderScope(table, [TEST_OWNER_ID, OTHER_OWNER_ID]);
+
+    expect(new Set(owners)).toEqual(new Set([TEST_OWNER_ID, OTHER_OWNER_ID]));
+  });
+
+  it.each(TABLES)('%s narrows to a single-business scope', async table => {
+    const owners = await readUnderScope(table, [TEST_OWNER_ID]);
+
+    expect(new Set(owners)).toEqual(new Set([TEST_OWNER_ID]));
+  });
+
+  /**
+   * `get_current_business_scope()` falls back to `ARRAY[get_current_business_id()]`
+   * when the GUC is unset, so a caller that never sets a scope behaves exactly as
+   * it did before the predicate was widened.
+   */
+  it.each(TABLES)('%s falls back to the single business when no scope is set', async table => {
+    const owners = await readUnderScope(table, null);
+
+    expect(new Set(owners)).toEqual(new Set([TEST_OWNER_ID]));
+  });
+
+  /**
+   * Reads follow the scope; writes do not.
+   *
+   * `USING` selects the rows a statement may act on, and Postgres consults it for DELETE and
+   * UPDATE as well as SELECT — `WITH CHECK` only constrains the *new* values. So the permissive
+   * scope-wide policy on its own would let a session delete another in-scope business's row, or
+   * update one into its own ownership. The restrictive per-command policies are what stop that,
+   * and these cases are the proof: the row is readable, and neither writable.
+   */
+  async function writeUnderScope(
+    statement: 'delete' | 'update',
+    table: string,
+    scope: string[],
+    targetOwnerId: string,
+    currentBusinessId = TEST_OWNER_ID,
+  ): Promise<number> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [
+        currentBusinessId,
+      ]);
+      await client.query(`SELECT set_config('app.current_business_scope', $1, true)`, [
+        `{${scope.join(',')}}`,
+      ]);
+
+      return await runAsRlsRole(client, async () => {
+        const sql =
+          statement === 'delete'
+            ? `DELETE FROM accounter_schema.${table} WHERE owner_id = $1`
+            : `UPDATE accounter_schema.${table} SET owner_id = owner_id WHERE owner_id = $1`;
+        const result = await client.query(sql, [targetOwnerId]);
+        return result.rowCount ?? 0;
+      });
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  }
+
+  it.each(TABLES)('%s refuses to delete another business in the scope', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    // Visible...
+    expect(await readUnderScope(table, scope)).toContain(OTHER_OWNER_ID);
+    // ...and still not deletable, because the write target is the other business.
+    expect(await writeUnderScope('delete', table, scope, OTHER_OWNER_ID)).toBe(0);
+  });
+
+  it.each(TABLES)('%s refuses to update another business in the scope', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    expect(await writeUnderScope('update', table, scope, OTHER_OWNER_ID)).toBe(0);
+  });
+
+  it.each(TABLES)('%s still lets the write target delete its own rows', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    expect(await writeUnderScope('delete', table, scope, TEST_OWNER_ID)).toBeGreaterThan(0);
   });
 });

@@ -218,10 +218,171 @@ describe('getChargesTool', () => {
     const client = clientReturning(chargeFixture, body => (sentBody = body));
     await run(getChargesTool, client, authContext([B1]), { chargeIds: ['c1'] });
     const variables = (
-      sentBody as { variables: { includeTransactions: boolean; includeDocuments: boolean } }
+      sentBody as {
+        variables: {
+          includeTransactions: boolean;
+          includeDocuments: boolean;
+          includeSecurities: boolean;
+        };
+      }
     ).variables;
     expect(variables.includeTransactions).toBe(false);
     expect(variables.includeDocuments).toBe(false);
+    expect(variables.includeSecurities).toBe(false);
+  });
+
+  describe('includeSecurities', () => {
+    /**
+     * A foreign-securities charge carrying one security: a key whose reference row
+     * was ingested, and one buy execution.
+     */
+    const securitiesChargeFixture = {
+      chargesByIDs: [
+        {
+          ...chargeFixture.chargesByIDs[0],
+          id: 'sec-charge',
+          __typename: 'ForeignSecuritiesCharge',
+          securities: [
+            {
+              securityKey: '1177423',
+              securityBusiness: {
+                id: 'sb-big',
+                ownerId: B1,
+                isin: 'US67066G1040',
+                symbol: 'NVDA',
+                engName: 'NVIDIA Corp',
+              },
+              details: {
+                key: '1177423',
+                engName: 'NVIDIA CORP',
+                symbol: 'NVDA',
+                itemType: 'STOCK',
+                exchange: 'NASDAQ',
+                currencyCode: 'דולר ארה"ב',
+                asOfDate: '2026-06-01T00:00:00.000Z',
+              },
+              executions: [
+                {
+                  id: 'ex-1',
+                  tradeDate: '2026-05-01',
+                  valueDate: '2026-05-03',
+                  tradeType: 'BUY',
+                  transactionType: 'BUY',
+                  paymentType: null,
+                  quantity: 10,
+                  tradePrice: 100,
+                  netValue: { raw: -1000, formatted: '$-1,000.00', currency: 'USD' },
+                  tradeCommission: { raw: 5, formatted: '$5.00', currency: 'USD' },
+                  israelTaxValue: null,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    it('is off by default and adds nothing to the payload', async () => {
+      const result = await run(getChargesTool, clientReturning(chargeFixture), authContext([B1]), {
+        chargeIds: ['c1'],
+      });
+      const charge = (result.structuredContent as { charges: Array<Record<string, unknown>> })
+        .charges[0]!;
+      expect(charge).not.toHaveProperty('securities');
+    });
+
+    it('selects the securities block when asked', async () => {
+      let sentBody: unknown;
+      const client = clientReturning(securitiesChargeFixture, body => (sentBody = body));
+      await run(getChargesTool, client, authContext([B1]), {
+        chargeIds: ['sec-charge'],
+        includeSecurities: true,
+      });
+      const sent = sentBody as { variables: { includeSecurities: boolean }; query: string };
+      expect(sent.variables.includeSecurities).toBe(true);
+      expect(sent.query).toContain('... on ForeignSecuritiesCharge');
+      expect(sent.query).toContain('securities @include(if: $includeSecurities)');
+    });
+
+    it('reports the security, its business id and its executions', async () => {
+      const result = await run(
+        getChargesTool,
+        clientReturning(securitiesChargeFixture),
+        authContext([B1]),
+        { chargeIds: ['sec-charge'], includeSecurities: true },
+      );
+      const charge = (
+        result.structuredContent as {
+          charges: Array<{ securities: Array<Record<string, unknown>> }>;
+        }
+      ).charges[0]!;
+
+      expect(charge.securities).toHaveLength(1);
+      expect(charge.securities[0]).toMatchObject({
+        securityKey: '1177423',
+        // The id the other two securities tools are addressed by, which is the
+        // whole point of carrying the security business here.
+        securityBusinessId: 'sb-big',
+        isin: 'US67066G1040',
+        symbol: 'NVDA',
+        name: 'NVIDIA Corp',
+        referenceFound: true,
+      });
+      expect(
+        (charge.securities[0]!.executions as Array<Record<string, unknown>>)[0],
+      ).toMatchObject({
+        executionId: 'ex-1',
+        tradeType: 'BUY',
+        quantity: 10,
+      });
+    });
+
+    it('says so when the reference feed has no row for a traded key', async () => {
+      const fixture = structuredClone(securitiesChargeFixture);
+      (fixture.chargesByIDs[0]!.securities[0] as Record<string, unknown>).details = null;
+
+      const result = await run(getChargesTool, clientReturning(fixture), authContext([B1]), {
+        chargeIds: ['sec-charge'],
+        includeSecurities: true,
+      });
+      const security = (
+        result.structuredContent as {
+          charges: Array<{ securities: Array<Record<string, unknown>> }>;
+        }
+      ).charges[0]!.securities[0]!;
+
+      // A stale scrape must be visible rather than looking like an absent
+      // security: the key and the security business survive.
+      expect(security.referenceFound).toBe(false);
+      expect(security.securityKey).toBe('1177423');
+      expect(security.symbol).toBe('NVDA');
+      expect(security.exchange).toBeNull();
+    });
+
+    it('distinguishes "no keys resolved" from "not a securities charge"', async () => {
+      const fixture = structuredClone(securitiesChargeFixture);
+      fixture.chargesByIDs[0]!.securities = [];
+
+      const result = await run(getChargesTool, clientReturning(fixture), authContext([B1]), {
+        chargeIds: ['sec-charge'],
+        includeSecurities: true,
+      });
+      const charge = (result.structuredContent as { charges: Array<Record<string, unknown>> })
+        .charges[0]!;
+      // Present and empty, not absent.
+      expect(charge.securities).toEqual([]);
+    });
+
+    it('leaves a non-securities charge untouched even when asked', async () => {
+      const result = await run(getChargesTool, clientReturning(chargeFixture), authContext([B1]), {
+        chargeIds: ['c1'],
+        includeSecurities: true,
+      });
+      const charge = (result.structuredContent as { charges: Array<Record<string, unknown>> })
+        .charges[0]!;
+      expect(charge).not.toHaveProperty('securities');
+      expect(charge.id).toBe('c1');
+    });
   });
 
   it('forwards all available filters to allCharges', async () => {

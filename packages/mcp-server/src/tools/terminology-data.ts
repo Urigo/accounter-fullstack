@@ -16,7 +16,7 @@
  * result or an input schema and needs to know what it means and what it is
  * *not*. Prefer stating the trap over restating the field name.
  *
- * Budget: at 62 entries the index is ~10 KB and the full glossary ~40 KB against
+ * Budget: at 67 entries the index is ~11 KB and the full glossary ~40 KB against
  * the 60 KB `MAX_TOOL_RESULT_BYTES` guard, so there is room for roughly 30 more
  * before a request for every topic starts truncating. `terminology.test.ts`
  * asserts the whole glossary still fits in one response, so overshooting fails
@@ -173,9 +173,10 @@ const CHARGE_ENTRIES: readonly GlossaryEntry[] = [
     summary:
       'FOREIGN_SECURITIES / ForeignSecuritiesCharge — activity in a securities portfolio held at the bank.',
     detail:
-      'Buys, sells, dividends and fees on a foreign securities portfolio, identified by the securities counterparty business configured for the owner.',
+      'Buys, sells, dividends, redemptions and fees on a securities portfolio held at the bank. A charge is typed this way when any of its businesses is on the securities side, which since the per-security businesses landed means the traded security itself — the general "Foreign Securities" business configured for the owner is now only the fallback for a movement no specific security was resolved for. The cash leg is a bank transaction like any other; the trade behind it lives in the ingested portfolio feed and is only reachable by asking for it (see security-execution). Ledger generation for this charge type is not supported yet.',
     aliases: ['FOREIGN_SECURITIES', 'ForeignSecuritiesCharge'],
-    seeAlso: ['charge-type'],
+    seeAlso: ['charge-type', 'security-business', 'security-execution'],
+    tools: ['accounter_get_charges'],
   },
   {
     term: 'creditcard-bank-charge',
@@ -369,6 +370,24 @@ const TRANSACTION_ENTRIES: readonly GlossaryEntry[] = [
       'Conversion charges hold two of these — the currency going out and the currency coming in. QUOTE is the buy side, BASE is the sell side. Each carries the rate the bank actually applied alongside the official Bank of Israel rate for the day; the difference between them is the cost of the conversion and is posted to an exchange-rate account.',
     aliases: ['ConversionTransaction', 'QUOTE', 'BASE'],
     seeAlso: ['conversion-charge', 'transaction'],
+  },
+  {
+    term: 'security-execution',
+    topic: 'transaction',
+    summary:
+      'One executed action in a securities portfolio — a buy, sale, dividend, interest payment, redemption, distribution or transfer.',
+    detail:
+      "Scraped from the bank's portfolio feed, NOT from the bank statement: an execution is what the portfolio reports happened to the security, while the matching bank transaction is what happened to the cash. They are separate records with no link in the source — the scrape has no per-execution id — so the pairing is derived, and it is exact: same account, the execution's value date equal to the transaction's effective debit date, and the net value in the transaction's own currency matching with the sign the trade type implies. Pairing is one-to-one, so a security executed several times in a day for the same amount still maps each execution to its own cash movement. Dividends and interest are execution KINDS here (DIVIDEND_PAYMENT, INTEREST_PAYMENT), not a separate entity, and they move cash without changing the unit count. Amounts are in the security's own trade currency and are never converted.",
+    aliases: [
+      'SecurityExecution',
+      'execution',
+      'executions',
+      'trade',
+      'SecurityTradeType',
+      'SecurityTransactionType',
+    ],
+    seeAlso: ['security-business', 'derived-position', 'foreign-securities-charge', 'transaction'],
+    tools: ['accounter_get_security_executions', 'accounter_get_charges'],
   },
 ];
 
@@ -681,6 +700,58 @@ const ENTITY_ENTRIES: readonly GlossaryEntry[] = [
       'Each owning business configures which specific entity plays each role: input and output VAT categories, the tax authority business, social security, exchange-rate and fee categories, salary and reserve categories, the per-institution businesses, the local currency, and the ledger lock date. Nothing generates without it, and it is why the same conceptual account has different ids for different owners — never assume an id is shared across businesses.',
     aliases: ['adminContext', 'AdminContextInfo'],
     seeAlso: ['tax-category', 'ledger-record', 'ledger-lock', 'owner'],
+  },
+  {
+    term: 'security-business',
+    topic: 'entity',
+    summary:
+      'A traded security modelled as a business of its own, identified by its ISIN, so it can be a counterparty and have a page.',
+    detail:
+      "The presence of a businesses_securities row is what makes a business a security — the same shape as businesses_admin or clients. Identity is the ISIN, which forces an indirection: the rest of the system addresses a security by Poalim's proprietary key, and the reference feed that key joins to carries no ISIN at all, so an identifier table bridges them. That is also how two Poalim keys collapse onto one security. A security business inherits sort code, IRS code, country and tax category from the tenant's general foreign-securities business, and deliberately carries no suggestion phrases: a security must never win a description-based counterparty match. Its id is the security's identity everywhere — the `securityBusinessId` on a holding, an execution and a charge's securities block are all the same id.",
+    aliases: ['SecurityBusiness', 'securityInfo', 'securityBusinessId', 'security'],
+    seeAlso: ['isin', 'poalim-security-key', 'derived-position', 'counterparty'],
+    tools: ['accounter_list_security_holdings', 'accounter_get_security_executions'],
+  },
+  {
+    term: 'derived-position',
+    topic: 'entity',
+    summary:
+      "What a security's ingested executions add up to: units held, average cost, totals bought and sold. Derived, never reported.",
+    detail:
+      "The bank does not report a holding, so a position is arithmetic over the scraped trade history and is only as complete as that history. Four consequences worth stating before quoting any of these numbers: anything held before historyStartDate is not counted; splits and corporate actions that change the unit count with no execution row are invisible; a NEGATIVE quantity means the history starts mid-life (a data-quality signal, not a short position); and a NULL amount means nothing was ingested rather than zero, because with no execution there is no currency to state an amount in. There are no market prices anywhere in the system, so current value and unrealized profit or loss cannot be computed at all. Amounts are each security's own trade currency and are never converted — never sum them across securities, and never sum quantities or average costs even within one currency.",
+    aliases: [
+      'SecurityPosition',
+      'SecurityHolding',
+      'position',
+      'holding',
+      'holdings',
+      'averageCost',
+      'historyStartDate',
+    ],
+    seeAlso: ['security-business', 'security-execution'],
+    tools: ['accounter_list_security_holdings'],
+  },
+  {
+    term: 'poalim-security-key',
+    topic: 'entity',
+    summary:
+      "The bank's proprietary id for a security, parsed out of transaction descriptions rather than reported as a field.",
+    detail:
+      "A securities transaction's description carries the key as a zero-padded run of digits, which is extracted and unpadded — it is the only link between a bank cash movement and a security. It is NOT the ISIN and is not comparable across brokers: the identifier table maps POALIM_SECURITY_KEY to a security business, and several keys may point at one security. A key with no ingested reference row is reported with null details rather than dropped, because a stale scrape should be visible instead of looking like an absent security.",
+    aliases: ['securityKey', 'POALIM_SECURITY_KEY', 'security key'],
+    seeAlso: ['security-business', 'isin', 'foreign-securities-charge'],
+    tools: ['accounter_get_charges'],
+  },
+  {
+    term: 'isin',
+    topic: 'entity',
+    summary:
+      'The international securities identification number — the identity a security business is keyed by.',
+    detail:
+      "Unique per owner, and the thing that distinguishes two share classes of one issuer where a name or symbol would not, which is why pickers label a security by name AND ISIN. It appears on execution rows but not on the bank's reference feed, which is the reason identity and lookup are split across two tables. Use it as the stable way to name a security to a tool when you do not have its `securityBusinessId`.",
+    aliases: ['ISIN', 'isins'],
+    seeAlso: ['security-business', 'poalim-security-key'],
+    tools: ['accounter_get_security_executions'],
   },
 ];
 

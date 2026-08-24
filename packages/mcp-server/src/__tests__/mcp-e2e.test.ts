@@ -107,6 +107,64 @@ function upstreamData(query: string, authorization?: string): unknown {
       ],
     };
   }
+  if (query.includes('securityHoldings')) {
+    return {
+      securityHoldings: [
+        {
+          id: 'sec-biz-1',
+          security: {
+            ownerId: AUTHORIZED_BUSINESS,
+            isin: 'US67066G1040',
+            symbol: 'NVDA',
+            engName: 'NVIDIA Corp',
+            hebName: null,
+            exchange: 'NASDAQ',
+            currencyCode: 'USD',
+            isEtf: false,
+            identifiers: [{ type: 'POALIM_SECURITY_KEY', value: '1177423' }],
+          },
+          position: {
+            quantity: 400,
+            averageCost: { raw: 100, formatted: '100.00', currency: 'USD' },
+            totalBought: { raw: 40000, formatted: '40,000.00', currency: 'USD' },
+            totalSold: { raw: 0, formatted: '0.00', currency: 'USD' },
+            historyStartDate: '2023-02-02',
+            lastExecutionDate: '2026-06-01',
+          },
+        },
+      ],
+    };
+  }
+  if (query.includes('securityExecutions')) {
+    return {
+      securityExecutions: {
+        pageInfo: { totalPages: 1, totalRecords: 1 },
+        nodes: [
+          {
+            securityBusiness: {
+              id: 'sec-biz-1',
+              ownerId: AUTHORIZED_BUSINESS,
+              isin: 'US67066G1040',
+              symbol: 'NVDA',
+            },
+            execution: {
+              id: 'exec-1',
+              tradeDate: '2026-05-01',
+              valueDate: '2026-05-03',
+              tradeType: 'BUY',
+              transactionType: 'BUY',
+              paymentType: null,
+              quantity: 10,
+              tradePrice: 100,
+              netValue: { raw: -1000, formatted: '-1,000.00', currency: 'USD' },
+              tradeCommission: { raw: 5, formatted: '5.00', currency: 'USD' },
+              israelTaxValue: null,
+            },
+          },
+        ],
+      },
+    };
+  }
   if (query.includes('transactionsForBalanceReport')) {
     return {
       transactionsForBalanceReport: [
@@ -288,6 +346,8 @@ describe('authenticated tool invocation', () => {
         'accounter_list_tags',
         'accounter_list_tax_categories',
         'accounter_balance_report',
+        'accounter_list_security_holdings',
+        'accounter_get_security_executions',
       ]),
     );
     // Discovery leads the list, and the internal smoke tool is not advertised.
@@ -326,6 +386,52 @@ describe('authenticated tool invocation', () => {
     // Rows are owner-tagged and the response echoes the effective scope.
     expect(charges[0].ownerId).toBe(AUTHORIZED_BUSINESS);
     expect(charges[0].ownerName).toBe('Acme Ltd');
+    expect(scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
+  });
+
+  it('runs the securities portfolio over the wire, subtotalled and caveated', async () => {
+    const result = await callTool('accounter_list_security_holdings', {}, 'owner-token');
+    expect(result.isError).toBeUndefined();
+    const { holdings, byCurrency, caveats, scope } = result.structuredContent as {
+      holdings: Array<{ securityBusinessId: string; ownerId: string; isin: string }>;
+      byCurrency: Array<{ currency: string; securityCount: number; totalBought: number }>;
+      caveats: string[];
+      scope: { memberBusinessIds: string[] };
+    };
+
+    expect(holdings).toHaveLength(1);
+    expect(holdings[0].securityBusinessId).toBe('sec-biz-1');
+    expect(holdings[0].ownerId).toBe(AUTHORIZED_BUSINESS);
+    expect(holdings[0].isin).toBe('US67066G1040');
+    // The only valid total, and the reason it is computed server-side.
+    expect(byCurrency).toEqual([
+      { currency: 'USD', securityCount: 1, totalBought: 40000, totalSold: 0 },
+    ]);
+    expect(caveats.length).toBeGreaterThan(0);
+    expect(scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
+  });
+
+  it('runs the securities execution history over the wire, 1-based', async () => {
+    const result = await callTool(
+      'accounter_get_security_executions',
+      { isins: ['US67066G1040'] },
+      'owner-token',
+    );
+    expect(result.isError).toBeUndefined();
+    const { executions, pagination, scope } = result.structuredContent as {
+      executions: Array<{ executionId: string; securityBusinessId: string; tradeType: string }>;
+      pagination: { page: number; totalPages: number; hasNextPage: boolean };
+      scope: { memberBusinessIds: string[] };
+    };
+
+    expect(executions).toHaveLength(1);
+    expect(executions[0]).toMatchObject({
+      executionId: 'exec-1',
+      securityBusinessId: 'sec-biz-1',
+      tradeType: 'BUY',
+    });
+    // The tool speaks 1-based pages even though upstream is 0-based.
+    expect(pagination).toMatchObject({ page: 1, totalPages: 1, hasNextPage: false });
     expect(scope).toEqual({ memberBusinessIds: [AUTHORIZED_BUSINESS] });
   });
 

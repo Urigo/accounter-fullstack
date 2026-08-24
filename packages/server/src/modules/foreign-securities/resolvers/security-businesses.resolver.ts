@@ -4,10 +4,20 @@ import { formatFinancialAmount } from '../../../shared/helpers/amount.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { ChargesProvider } from '../../charges/providers/charges.provider.js';
 import { BusinessesProvider } from '../../financial-entities/providers/businesses.provider.js';
+import {
+  tradeTypeToRaw,
+  transactionTypeToRaw,
+} from '../helpers/security-execution-enums.helper.js';
 import { calculateSecurityPosition, isOpenPosition } from '../helpers/security-position.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
 import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule } from '../types.js';
+
+/**
+ * Falls back to the schema default, which graphql-js applies for an omitted argument but not for
+ * an explicit `null`.
+ */
+const DEFAULT_SECURITY_EXECUTIONS_LIMIT = 100;
 
 /** An amount the executions imply, or null when they imply nothing. */
 const positionAmount = (value: number | null, currency: string | null) =>
@@ -79,14 +89,58 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
         executions: executions.map(execution => ({
           id: execution.id,
           execution,
+          securityBusinessId: businessId,
           transaction: transactionByExecutionId.get(execution.id) ?? null,
         })),
       };
     },
+    securityExecutions: async (_, { filters, page, limit, includeCharges }, { injector }) => {
+      const { ownerId } = await injector.get(AdminContextProvider).getVerifiedAdminContext();
+
+      return injector.get(ForeignSecuritiesProvider).getSecurityExecutionsPage({
+        ownerId,
+        page: page ?? 0,
+        limit: limit ?? DEFAULT_SECURITY_EXECUTIONS_LIMIT,
+        includeCharges: includeCharges ?? false,
+        filters: {
+          securityBusinessIds: filters?.securityBusinessIds,
+          isins: filters?.isins,
+          symbols: filters?.symbols,
+          fromTradeDate: filters?.fromTradeDate,
+          toTradeDate: filters?.toTradeDate,
+          // Translated here rather than in the provider so the bank's Hebrew stays confined to
+          // the enum helper — the provider filters on labels and never learns what they say.
+          rawTradeTypes: filters?.tradeTypes?.map(tradeType => tradeTypeToRaw[tradeType]),
+          rawTransactionTypes: filters?.transactionTypes?.map(
+            transactionType => transactionTypeToRaw[transactionType],
+          ),
+        },
+      });
+    },
+  },
+  PaginatedSecurityExecutions: {
+    nodes: executionsPage => executionsPage.nodes,
+    pageInfo: executionsPage => ({
+      totalRecords: executionsPage.totalRecords,
+      totalPages: Math.ceil(executionsPage.totalRecords / executionsPage.pageSize),
+      currentPage: executionsPage.currentPage,
+      pageSize: executionsPage.pageSize,
+    }),
   },
   SecurityHistoryExecution: {
     id: historyExecution => historyExecution.id,
     execution: historyExecution => historyExecution.execution,
+    securityBusiness: async (historyExecution, _, { injector }) => {
+      const securityBusiness = await injector
+        .get(SecurityBusinessesProvider)
+        .getSecurityBusinessByIdLoader.load(historyExecution.securityBusinessId);
+      if (!securityBusiness) {
+        throw new GraphQLError(
+          `Business ID="${historyExecution.securityBusinessId}" is not a security`,
+        );
+      }
+      return securityBusiness;
+    },
     // Transaction concrete types are mapped to their id (see codegen.ts mappers); Charge is
     // mapped to its row, so it has to be loaded.
     transaction: historyExecution => historyExecution.transaction?.id ?? null,
@@ -118,6 +172,7 @@ export const securityBusinessesResolvers: ForeignSecuritiesModule.Resolvers = {
   },
   SecurityBusiness: {
     id: securityBusiness => securityBusiness.id,
+    ownerId: securityBusiness => securityBusiness.owner_id,
     business: async (securityBusiness, _, { injector }) => {
       const business = await injector
         .get(BusinessesProvider)

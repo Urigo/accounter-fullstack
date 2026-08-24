@@ -77,3 +77,28 @@ export const toSecurityTransactionType = (raw: string): SecurityTransactionType 
 
 export const toSecurityPaymentType = (raw: string | null): SecurityPaymentType | null =>
   raw === null ? null : translate(PAYMENT_TYPES, raw, 'payment type', 'PAYMENT_TYPES');
+
+/**
+ * The translation run backwards, so a filter can push a GraphQL enum into SQL without
+ * hand-writing the bank's Hebrew.
+ *
+ * Built by inverting the maps above rather than written out again — a value added to one and
+ * forgotten in the other is exactly the drift these maps exist to make loud. The inverses are
+ * kept per-map for the same reason the forward maps are: the bank spells the same word two ways
+ * (`פדיון` as a trade type, `פידיון` as a payment type), so a single shared inverse would
+ * silently resolve one to the other.
+ *
+ * Every enum member is covered because each forward map is a bijection today; the
+ * `Record<Enum, string>` assertion is what will fail the build if a new member arrives without
+ * its label.
+ */
+function invert<T extends string>(map: Record<string, T>): Record<T, string> {
+  return Object.fromEntries(Object.entries(map).map(([raw, value]) => [value, raw])) as Record<
+    T,
+    string
+  >;
+}
+
+export const tradeTypeToRaw = invert(TRADE_TYPES);
+export const transactionTypeToRaw = invert(TRANSACTION_TYPES);
+export const paymentTypeToRaw = invert(PAYMENT_TYPES);

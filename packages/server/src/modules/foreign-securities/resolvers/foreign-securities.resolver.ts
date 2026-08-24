@@ -11,6 +11,7 @@ import {
   toSecurityTransactionType,
 } from '../helpers/security-execution-enums.helper.js';
 import { ForeignSecuritiesProvider } from '../providers/foreign-securities.provider.js';
+import { SecurityBusinessesProvider } from '../providers/security-businesses.provider.js';
 import type { ForeignSecuritiesModule, SecurityExecutionRow } from '../types.js';
 
 /**
@@ -36,7 +37,9 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
   ForeignSecuritiesCharge: {
     securities: async (dbCharge, _, { injector }) => {
       try {
-        return await injector.get(ForeignSecuritiesProvider).getChargeSecurities(dbCharge.id);
+        return await injector
+          .get(ForeignSecuritiesProvider)
+          .getChargeSecurities(dbCharge.id, dbCharge.owner_id);
       } catch (e) {
         throw errorSimplifier(`Error fetching securities for charge ${dbCharge.id}`, e);
       }
@@ -46,6 +49,19 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
     id: chargeSecurity => chargeSecurity.id,
     securityKey: chargeSecurity => chargeSecurity.securityKey,
     details: chargeSecurity => chargeSecurity.details,
+    // The bridge from the bank's key to the security's own identity: `security_identifiers` maps
+    // POALIM_SECURITY_KEY -> the ISIN-keyed security business, which is what the holdings list
+    // and the executions query are addressed by. Null is a real answer — the reference feed can
+    // be ingested before the executions that create a security business.
+    securityBusiness: async (chargeSecurity, _, { injector }) =>
+      (await injector.get(SecurityBusinessesProvider).getSecurityBusinessByIdentifierLoader.load({
+        // Scoped to the charge's owner: the key is unique only within one, so a request whose
+        // scope spans two businesses trading the same security would otherwise resolve to
+        // whichever row won the batch.
+        ownerId: chargeSecurity.ownerId,
+        type: 'POALIM_SECURITY_KEY',
+        value: chargeSecurity.securityKey,
+      })) ?? null,
     // Transaction concrete types are mapped to their id (see codegen.ts mappers).
     transactions: chargeSecurity => chargeSecurity.transactionIds,
     executions: chargeSecurity => chargeSecurity.executions,

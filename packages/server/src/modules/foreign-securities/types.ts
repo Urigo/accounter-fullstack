@@ -66,8 +66,34 @@ export type SecurityPositionWithIdProto = SecurityPositionProto & { id: string }
 export type SecurityHistoryExecutionProto = {
   id: string;
   execution: SecurityExecutionRow;
+  /**
+   * The security business the execution belongs to. Carried rather than resolved from the row
+   * because the executions table is keyed by Poalim's security key, and several keys can
+   * collapse onto one ISIN — the caller already knows which business it asked for.
+   */
+  securityBusinessId: string;
   /** The matched transaction, carrying the charge it belongs to. Null when nothing matched. */
   transaction: { id: string; charge_id: string } | null;
+};
+
+/** A page of executions plus the total the filter matched, for `Query.securityExecutions`. */
+export type PaginatedSecurityExecutionsProto = {
+  nodes: SecurityHistoryExecutionProto[];
+  totalRecords: number;
+  currentPage: number;
+  pageSize: number;
+};
+
+/** What `Query.securityExecutions` narrows on, normalized off the GraphQL input. */
+export type SecurityExecutionsFilterInput = {
+  securityBusinessIds?: readonly string[] | null;
+  isins?: readonly string[] | null;
+  symbols?: readonly string[] | null;
+  fromTradeDate?: string | null;
+  toTradeDate?: string | null;
+  /** The bank's own labels, already translated from the GraphQL enums by the resolver. */
+  rawTradeTypes?: readonly string[] | null;
+  rawTransactionTypes?: readonly string[] | null;
 };
 
 /**
@@ -90,6 +116,11 @@ export type SecurityBusinessHistoryProto = {
 export type ChargeSecurityProto = {
   /** Scoped to the charge so the client cache keeps a key's entries distinct per charge. */
   id: string;
+  /**
+   * The charge's owner. Carried because the Poalim key is only unique within one — resolving the
+   * key to a security without it can attach a charge to another business's security.
+   */
+  ownerId: string;
   securityKey: string;
   details: SecurityRow | null;
   transactionIds: string[];

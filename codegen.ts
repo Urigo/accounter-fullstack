@@ -163,6 +163,8 @@ const config: CodegenConfig = {
           SecurityHolding: '../modules/foreign-securities/types.js#SecurityHoldingProto',
           SecurityPosition: '../modules/foreign-securities/types.js#SecurityPositionWithIdProto',
           SecurityExecution: '../modules/foreign-securities/types.js#SecurityExecutionRow',
+          PaginatedSecurityExecutions:
+            '../modules/foreign-securities/types.js#PaginatedSecurityExecutionsProto',
           SecurityIdentifier: '../modules/foreign-securities/types.js#SecurityIdentifierRow',
           Shaam6111Report: '../modules/reports/types.js#Shaam6111ReportProto',
           SortCode: '../modules/sort-codes/types.js#IGetSortCodesByIdsResult',
