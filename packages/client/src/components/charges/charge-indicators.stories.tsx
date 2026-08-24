@@ -1,10 +1,11 @@
 import type { ReactElement, ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Currency, LedgerValidationStatus, MissingChargeInfo } from '../../gql/graphql.js';
-import { CHARGE_TYPE_NAME, type ChargeType } from '../../helpers/index.js';
+import { CHARGE_TYPE_COLOR, CHARGE_TYPE_NAME, type ChargeType } from '../../helpers/index.js';
 import {
   amountState,
   AmountText,
+  ChargeTypeBadge,
   CountChip,
   ledgerState,
   NeedsBadge,
@@ -51,6 +52,29 @@ function Gallery(): ReactElement {
           stays visually quiet.
         </p>
       </div>
+
+      <Section title="ChargeTypeBadge — the eleven type hues">
+        <Row label="every type, side by side">
+          {ALL_TYPES.map(type => (
+            <ChargeTypeBadge key={type} type={type} />
+          ))}
+        </Row>
+        <Row label="hue per type">
+          {ALL_TYPES.map(type => (
+            <span key={type} className="text-xs text-muted-foreground">
+              {CHARGE_TYPE_COLOR[type]}
+            </span>
+          ))}
+        </Row>
+        <Row label="reserved: none of the above may be amber, emerald or red">
+          <span className="text-xs text-muted-foreground">
+            Those three mean needs-attention, accept and error respectively, and all three appear on
+            the same record as the chip. Salary, Monthly VAT and Dividend were moved off amber,
+            emerald and rose for exactly that reason — see the invariant in
+            <code> charge-indicators.test.tsx</code>.
+          </span>
+        </Row>
+      </Section>
 
       <Section title="StatusDot">
         <Row label="all four states (ok renders nothing)">

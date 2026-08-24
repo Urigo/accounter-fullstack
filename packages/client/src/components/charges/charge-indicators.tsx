@@ -2,7 +2,14 @@ import type { ReactElement } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils.js';
 import { Currency, LedgerValidationStatus, MissingChargeInfo } from '../../gql/graphql.js';
-import { formatAmountWithCurrency, type ChargeType } from '../../helpers/index.js';
+import {
+  formatAmountWithCurrency,
+  getChargeTypeColor,
+  getChargeTypeIcon,
+  getChargeTypeName,
+  type ChargeType,
+  type ChargeTypeColor,
+} from '../../helpers/index.js';
 import { relevantMissingInfo } from './charge-fields.js';
 
 /**
@@ -14,7 +21,7 @@ import { relevantMissingInfo } from './charge-fields.js';
 export type IndicatorState = 'ok' | 'pending' | 'warning' | 'error';
 
 const DOT_CLASS: Record<Exclude<IndicatorState, 'ok'>, string> = {
-  pending: 'bg-gray-300 dark:bg-gray-600 animate-pulse',
+  pending: 'bg-muted-foreground/40 animate-pulse',
   warning: 'bg-amber-500 dark:bg-amber-400',
   error: 'bg-red-500 dark:bg-red-400',
 };
@@ -26,6 +33,17 @@ const STATE_LABEL: Record<IndicatorState, string> = {
   warning: 'has differences',
   error: 'has issues',
 };
+
+/**
+ * A displayed field that has no value.
+ *
+ * Deliberately quiet: the needs badge in the manage region carries the alarm for anything actually
+ * missing, so repeating it per field would make a record read as full of errors when it is merely
+ * incomplete. Was defined identically in two places before this.
+ */
+export function AbsentValue({ children }: { children: string }): ReactElement {
+  return <span className="italic text-muted-foreground/70">{children}</span>;
+}
 
 /**
  * Replaces Mantine's `Indicator`. Two differences that matter: `ok` renders nothing (so a healthy
@@ -47,6 +65,66 @@ export function StatusDot({
       aria-hidden
       className={cn('inline-block size-2 shrink-0 rounded-full', DOT_CLASS[state], className)}
     />
+  );
+}
+
+/**
+ * Complete literal class list per hue. Written out rather than assembled from the hue name because
+ * Tailwind only ever sees literals in source — `bg-${color}-50` would compile to nothing, which is
+ * precisely the failure this codebase spent a release with across its whole token layer.
+ */
+const TYPE_CHIP_CLASS: Record<ChargeTypeColor, string> = {
+  indigo:
+    'bg-indigo-50 text-indigo-700 ring-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:ring-indigo-900',
+  violet:
+    'bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-900',
+  teal: 'bg-teal-50 text-teal-700 ring-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:ring-teal-900',
+  cyan: 'bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:ring-cyan-900',
+  blue: 'bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900',
+  orange:
+    'bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:ring-orange-900',
+  fuchsia:
+    'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200 dark:bg-fuchsia-950/40 dark:text-fuchsia-300 dark:ring-fuchsia-900',
+  slate:
+    'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:ring-slate-700',
+  purple:
+    'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:ring-purple-900',
+  sky: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:ring-sky-900',
+  pink: 'bg-pink-50 text-pink-700 ring-pink-200 dark:bg-pink-950/40 dark:text-pink-300 dark:ring-pink-900',
+};
+
+/** The hue class list for a charge type. Exported for the palette invariant test. */
+export function chargeTypeChipClass(type: ChargeType): string {
+  return TYPE_CHIP_CLASS[getChargeTypeColor(type)];
+}
+
+/**
+ * The record's type token: a tinted icon chip beside the full type name.
+ *
+ * The type is the key to interpreting every other field, so it reads as a name rather than hiding an
+ * icon behind a tooltip. Colour makes it findable down a long list, and is never the only signal —
+ * the name always reads, which matters both for colourblind users and for the eleven hues that are
+ * only a step apart from each other.
+ */
+export function ChargeTypeBadge({
+  type,
+  className,
+}: {
+  type: ChargeType;
+  className?: string;
+}): ReactElement {
+  return (
+    <span className={cn('flex min-w-0 items-center gap-1.5', className)}>
+      <span
+        className={cn(
+          'inline-flex size-6 shrink-0 items-center justify-center rounded-md ring-1 [&_svg]:size-3.5',
+          chargeTypeChipClass(type),
+        )}
+      >
+        {getChargeTypeIcon(type)}
+      </span>
+      <span className="truncate text-sm font-medium">{getChargeTypeName(type)}</span>
+    </span>
   );
 }
 
@@ -86,20 +164,24 @@ export function CountChip({
   label,
   count,
   state = 'ok',
+  hint,
 }: {
   label: string;
   count: number;
   state?: IndicatorState;
+  /** Hover text. Supplements the accessible name below; never a substitute for it. */
+  hint?: string;
 }): ReactElement {
   return (
     <span
+      title={hint}
       className={cn(
         'inline-flex items-center gap-1 whitespace-nowrap text-xs',
         state === 'error'
           ? 'text-red-600 dark:text-red-400'
           : state === 'warning'
             ? 'text-amber-700 dark:text-amber-400'
-            : 'text-gray-600 dark:text-gray-400',
+            : 'text-muted-foreground',
       )}
       aria-label={`${label} ${count}${state === 'ok' ? '' : `, ${STATE_LABEL[state]}`}`}
     >

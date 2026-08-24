@@ -4,6 +4,7 @@ import { useUpdateCharge } from '../../hooks/use-update-charge.js';
 import { SimilarChargesByIdModal } from '../common/index.js';
 import { Badge } from '../ui/badge.js';
 import { Button } from '../ui/button.js';
+import { AbsentValue } from './charge-indicators.js';
 
 export type SuggestedTag = { id: string; name: string; namePath?: string[] };
 
@@ -97,12 +98,6 @@ function SuggestionAffordance({
   );
 }
 
-/** Shown where a displayed field has no value and no suggestion. The row-level needs badge carries
- * the alarm, so this stays quiet rather than shouting a second time. */
-function MissingValue({ children }: { children: string }): ReactElement {
-  return <span className="italic text-gray-400 dark:text-gray-500">{children}</span>;
-}
-
 export function ChargeDescriptionField({
   chargeId,
   value,
@@ -127,7 +122,7 @@ export function ChargeDescriptionField({
     return <span className="font-medium">{trimmed}</span>;
   }
   if (!suggestion) {
-    return <MissingValue>No description</MissingValue>;
+    return <AbsentValue>No description</AbsentValue>;
   }
   return (
     <SuggestionAffordance
@@ -182,7 +177,7 @@ export function ChargeTagsField({
     );
   }
   if (suggestedTags.length === 0) {
-    return <MissingValue>No tags</MissingValue>;
+    return <AbsentValue>No tags</AbsentValue>;
   }
   return (
     <SuggestionAffordance

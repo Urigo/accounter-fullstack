@@ -61,6 +61,47 @@ const ICON_MAP: Record<ChargeType, ReactElement> = {
 export const getChargeTypeIcon = (type?: ChargeType): ReactElement =>
   !type || !(type in ICON_MAP) ? <Coins /> : ICON_MAP[type];
 
+/**
+ * Hue assigned to each charge type, used by the record's type chip.
+ *
+ * Colour is the fastest way to pick one type out of a hundred-row list, but the charges surface
+ * already spends colour on *state*: amber means "needs attention" (the needs badge, suggestion
+ * underlines), emerald means "accept / positive amount", red means "error / negative amount". Those
+ * three are therefore deliberately absent here — a Salary charge wearing an amber chip inches from
+ * an amber needs badge would make amber stop meaning attention. `charge-indicators.test.tsx` asserts
+ * that reservation so a future palette edit cannot quietly reintroduce the collision.
+ */
+export type ChargeTypeColor =
+  | 'indigo'
+  | 'violet'
+  | 'teal'
+  | 'cyan'
+  | 'blue'
+  | 'orange'
+  | 'fuchsia'
+  | 'slate'
+  | 'purple'
+  | 'sky'
+  | 'pink';
+
+export const CHARGE_TYPE_COLOR: Record<ChargeType, ChargeTypeColor> = {
+  CommonCharge: 'indigo',
+  CreditcardBankCharge: 'violet',
+  ConversionCharge: 'teal',
+  InternalTransferCharge: 'cyan',
+  BusinessTripCharge: 'blue',
+  BankDepositCharge: 'orange',
+  ForeignSecuritiesCharge: 'fuchsia',
+  FinancialCharge: 'slate',
+  SalaryCharge: 'purple',
+  MonthlyVatCharge: 'sky',
+  DividendCharge: 'pink',
+};
+
+/** Falls back to the most neutral hue for an unrecognised `__typename`. */
+export const getChargeTypeColor = (type?: ChargeType): ChargeTypeColor =>
+  !type || !(type in CHARGE_TYPE_COLOR) ? 'slate' : CHARGE_TYPE_COLOR[type];
+
 export function getChargeTypeInputValue(type: ChargeType): ChargeTypeInput {
   switch (type) {
     case 'CommonCharge':

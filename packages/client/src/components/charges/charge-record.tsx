@@ -112,7 +112,19 @@ function ChargeRecordImpl({
           aria-labelledby={titleId}
           data-state={isSelected ? 'selected' : undefined}
           className={cn(
-            'grid grid-cols-12 items-start gap-x-3 data-[state=selected]:bg-gray-50 dark:data-[state=selected]:bg-gray-900',
+            'grid grid-cols-12 items-start gap-x-3',
+            // The rail is always drawn, transparent when unselected, so selecting a record tints it
+            // without shifting its contents a further 2px right.
+            'border-l-2 border-l-transparent',
+            'data-[state=selected]:border-l-primary/40 data-[state=selected]:bg-muted/60',
+            // Whole-row drop feedback, off Mantine's `data-accept` on the dropzone root. Without it
+            // the only sign a drag had registered was the cursor, on a target with no visible edges.
+            //
+            // The ring is `primary`, not the `ring` token: `--color-accent` and `--color-muted` hold
+            // the same value, so the tint alone is indistinguishable from the selected background
+            // above, and a gray ring at 40% did not separate them either. A dark ring enclosing the
+            // whole record cannot be confused with selection, which only ever marks the left edge.
+            'group-data-[accept]/dropzone:bg-accent group-data-[accept]/dropzone:ring-2 group-data-[accept]/dropzone:ring-primary/60 group-data-[accept]/dropzone:ring-inset',
             density === 'compact' ? 'gap-y-0.5 px-3 py-1.5' : 'gap-y-2 p-3',
           )}
         >
@@ -152,20 +164,25 @@ function ChargeRecordImpl({
           id={panelId}
           role="region"
           aria-labelledby={titleId}
-          className="border-t bg-gray-50/50 p-3 dark:bg-gray-900/50"
+          className="border-t bg-muted/30 py-3 pr-3"
         >
-          {/* `w-0 min-w-full overflow-x-auto` keeps the (wide) extended info from stretching the
-              page: it renders at the record's width and anything wider scrolls in here. The panel
-              still contains genuinely wide nested tables (transactions, documents, ledger). */}
-          <div className="w-0 min-w-full overflow-x-auto">
-            <Card className="w-full shadow-lg">
-              <ChargeExtendedInfo
-                chargeID={row.id}
-                onChange={onChange}
-                onChargeDeleted={removeCharge}
-                fetching={fetching}
-              />
-            </Card>
+          {/* The rail indents the panel under its record so it reads as belonging to it rather than
+              as the next thing in the list — full-bleed, the two were only distinguishable by
+              background tint. */}
+          <div className="ml-4 border-l-2 border-border pl-4">
+            {/* `w-0 min-w-full overflow-x-auto` keeps the (wide) extended info from stretching the
+                page: it renders at the record's width and anything wider scrolls in here. The panel
+                still contains genuinely wide nested tables (transactions, documents, ledger). */}
+            <div className="w-0 min-w-full overflow-x-auto">
+              <Card className="w-full shadow-lg">
+                <ChargeExtendedInfo
+                  chargeID={row.id}
+                  onChange={onChange}
+                  onChargeDeleted={removeCharge}
+                  fetching={fetching}
+                />
+              </Card>
+            </div>
           </div>
         </div>
       )}

@@ -97,7 +97,7 @@ export function ChargesToolbar({
           onCheckedChange={value => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all charges"
         />
-        <span aria-live="polite" className="text-sm text-gray-600 dark:text-gray-400">
+        <span aria-live="polite" className="text-sm text-muted-foreground">
           {selectedCount > 0
             ? `${selectedCount} of ${rowCount} selected`
             : `${rowCount} charge${rowCount === 1 ? '' : 's'}`}

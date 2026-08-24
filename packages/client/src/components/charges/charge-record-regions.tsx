@@ -4,16 +4,18 @@ import { ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/router/routes.js';
 import { MissingChargeInfo } from '../../gql/graphql.js';
-import { getChargeTypeIcon, getChargeTypeName } from '../../helpers/index.js';
 import { Tooltip, UpdateAccountantStatus } from '../common/index.js';
 import { Button } from '../ui/button.js';
 import { Checkbox } from '../ui/checkbox.js';
 import { ChargeActionsMenu } from './charge-actions-menu.js';
 import { hasDateRange } from './charge-dates.js';
 import { isFieldVisible, isMissing, isSpecialField } from './charge-fields.js';
+import type { IndicatorState } from './charge-indicators.js';
 import {
+  AbsentValue as Absent,
   amountState,
   AmountText,
+  ChargeTypeBadge,
   CountChip,
   ledgerState,
   NeedsBadge,
@@ -50,10 +52,13 @@ function isCompact(density: ChargeDensity): boolean {
   return density === 'compact';
 }
 
-/** Quiet placeholder for a displayed field with no value. The needs badge carries the alarm. */
-function Absent({ children }: { children: string }): ReactElement {
-  return <span className="italic text-gray-400 dark:text-gray-500">{children}</span>;
-}
+/** Hover wording for the ledger chip, whose state is the only one with four possibilities. */
+const LEDGER_HINT: Record<IndicatorState, string> = {
+  ok: 'Ledger is valid',
+  pending: 'Validating the ledger…',
+  warning: 'Ledger differs from the expected records',
+  error: 'Ledger is invalid',
+};
 
 /** A — selection, accountant approval, and the row-level roll-up of what this charge is missing. */
 export function ManageRegion({
@@ -103,21 +108,14 @@ export function IdentityRegion({
 
   return (
     <div className="col-span-9 flex min-w-0 flex-col gap-0.5 md:col-span-2">
-      <span className="flex items-center gap-1.5">
-        {/* The type used to be an icon behind a tooltip. It is the key to interpreting everything
-            else in the record, so it carries its name. */}
-        <span className="shrink-0 text-gray-500 dark:text-gray-400 [&_svg]:size-4">
-          {getChargeTypeIcon(row.type)}
-        </span>
-        <span className="truncate text-sm font-medium">{getChargeTypeName(row.type)}</span>
-      </span>
+      <ChargeTypeBadge type={row.type} />
       {isFieldVisible(row.type, 'mainDate') && (
-        <span className="text-xs tabular-nums text-gray-600 dark:text-gray-400">
+        <span className="text-xs tabular-nums text-muted-foreground">
           {row.dates?.date ? format(row.dates.date, 'dd MMM yy') : <Absent>No date</Absent>}
         </span>
       )}
       {showRange && (
-        <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+        <span className="text-xs tabular-nums text-muted-foreground/70">
           {format(row.dates!.mostMinDate!, 'dd MMM')} –{' '}
           {format(row.dates!.mostMaxDate!, 'dd MMM yy')}
         </span>
@@ -154,7 +152,7 @@ export function MeaningRegion({
       )}
 
       {(showCounterparty || showTaxCategory || showBusinessTrip) && (
-        <span className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+        <span className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
           {showCounterparty &&
             (row.counterparty ? (
               <>
@@ -169,7 +167,7 @@ export function MeaningRegion({
                 </Link>
                 {bothSides && (
                   <Tooltip content="Internal transfer — both sides of the movement are your own accounts">
-                    <span className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500">
+                    <span className="inline-flex items-center gap-1 text-muted-foreground/70">
                       <ArrowRight aria-hidden className="size-3" />
                       both sides
                     </span>
@@ -181,7 +179,7 @@ export function MeaningRegion({
             ))}
 
           {showCounterparty && showTaxCategory && (
-            <ArrowRight aria-hidden className="size-3 shrink-0 text-gray-300 dark:text-gray-600" />
+            <ArrowRight aria-hidden className="size-3 shrink-0 text-muted-foreground/40" />
           )}
 
           {showTaxCategory &&
@@ -192,7 +190,7 @@ export function MeaningRegion({
             ))}
 
           {showBusinessTrip && row.businessTrip && (showCounterparty || showTaxCategory) && (
-            <span aria-hidden className="text-gray-300 dark:text-gray-600">
+            <span aria-hidden className="text-muted-foreground/40">
               ·
             </span>
           )}
@@ -256,11 +254,9 @@ export function MoneyRegion({
         ) : (
           <Absent>No amount</Absent>
         ))}
-      {isConversion && (
-        <span className="text-xs text-gray-400 dark:text-gray-500">base → quote</span>
-      )}
+      {isConversion && <span className="text-xs text-muted-foreground/70">base → quote</span>}
       {showVat && (
-        <span className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
           <StatusDot
             state={vatState({
               value: row.vat?.value,
@@ -291,15 +287,17 @@ export function HealthRegion({
   const chips: ReactElement[] = [];
   const compact = isCompact(density);
 
+  const txMissing = isMissing(row.type, row.missingInfo, MissingChargeInfo.Transactions);
+  const docMissing = isMissing(row.type, row.missingInfo, MissingChargeInfo.Documents);
+
   if (!compact && isFieldVisible(row.type, 'transactionsCount')) {
     chips.push(
       <CountChip
         key="tx"
         label="tx"
         count={row.counts.transactions}
-        state={
-          isMissing(row.type, row.missingInfo, MissingChargeInfo.Transactions) ? 'error' : 'ok'
-        }
+        state={txMissing ? 'error' : 'ok'}
+        hint={txMissing ? 'Missing a transaction' : `${row.counts.transactions} transactions`}
       />,
     );
   }
@@ -309,12 +307,20 @@ export function HealthRegion({
         key="doc"
         label="doc"
         count={row.counts.documents}
-        state={isMissing(row.type, row.missingInfo, MissingChargeInfo.Documents) ? 'error' : 'ok'}
+        state={docMissing ? 'error' : 'ok'}
+        hint={docMissing ? 'Missing a document' : `${row.counts.documents} documents`}
       />,
     );
   }
   if (!compact && isFieldVisible(row.type, 'miscExpensesCount')) {
-    chips.push(<CountChip key="misc" label="misc" count={row.counts.miscExpenses} />);
+    chips.push(
+      <CountChip
+        key="misc"
+        label="misc"
+        count={row.counts.miscExpenses}
+        hint={`${row.counts.miscExpenses} misc expenses`}
+      />,
+    );
   }
   if (!compact && isFieldVisible(row.type, 'ledgerCount')) {
     chips.push(
@@ -323,6 +329,7 @@ export function HealthRegion({
         label="ledger"
         count={row.counts.ledger}
         state={ledgerState(row.counts.invalidLedger)}
+        hint={LEDGER_HINT[ledgerState(row.counts.invalidLedger)]}
       />,
     );
   }

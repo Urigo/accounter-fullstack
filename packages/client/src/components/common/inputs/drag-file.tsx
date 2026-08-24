@@ -28,6 +28,12 @@ export const DragFile = ({ children, chargeId }: Props): ReactElement => {
       }
       activateOnClick={false}
       activateOnKeyboard={false}
+      // Mantine puts `data-accept` / `data-reject` / `data-idle` on this root as the drag progresses.
+      // Naming the group lets whatever is inside style itself off the drag state — the charge record
+      // lights its whole row up on `group-data-[accept]/dropzone:` — without this component having to
+      // know anything about its children. The suffix keeps it clear of the plain `group` that the
+      // record's own descendants use.
+      className="group/dropzone"
       radius={0}
       padding={0}
       maxFiles={Infinity}

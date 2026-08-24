@@ -410,25 +410,31 @@ export const ChargesTable = ({
 
   return (
     <BatchChargesExtendedInfoProvider chargeIds={chargeIds} active={isAllOpened}>
-      <div className="flex flex-col gap-2 w-full">
+      {/* Toolbar and list share one bordered surface. Floating the toolbar above a separately
+          bordered list read as two unrelated objects, and its select-all checkbox in particular
+          looked disconnected from the rows it governs. `overflow-hidden` is what lets the first and
+          last record's background respect the rounded corners. */}
+      <div className="w-full overflow-hidden rounded-md border bg-card">
         {!hideToolbar && (
-          <ChargesToolbar
-            table={table}
-            showExport={showExport}
-            exportIds={exportIds}
-            sort={sort}
-            sorting={sorting}
-            onSortingChange={setSorting}
-            onRefreshCharges={refreshCharges}
-            density={density}
-            onDensityChange={setDensity}
-          />
+          <div className="border-b px-3 py-2">
+            <ChargesToolbar
+              table={table}
+              showExport={showExport}
+              exportIds={exportIds}
+              sort={sort}
+              sorting={sorting}
+              onSortingChange={setSorting}
+              onRefreshCharges={refreshCharges}
+              density={density}
+              onDensityChange={setDensity}
+            />
+          </div>
         )}
         {rows.length ? (
           // A list, not a grid: the record's fields stack and vary per charge type, so table
           // semantics (and `role="grid"`, which would promise arrow-key cell navigation) would
           // misdescribe it. Alignment across records comes from the shared grid inside each record.
-          <ul className="w-full divide-y rounded-md border">
+          <ul className="w-full divide-y">
             {rows.map(row => (
               <ChargeRecord
                 key={row.id}
@@ -446,7 +452,7 @@ export const ChargesTable = ({
             ))}
           </ul>
         ) : (
-          <Empty className="rounded-md border">
+          <Empty>
             <EmptyHeader>
               <EmptyTitle>No charges</EmptyTitle>
               <EmptyDescription>Nothing matches the current filters.</EmptyDescription>

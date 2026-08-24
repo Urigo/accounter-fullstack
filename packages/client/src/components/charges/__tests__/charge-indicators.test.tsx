@@ -4,9 +4,12 @@ import React, { act, type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { describe, expect, it } from 'vitest';
 import { Currency, LedgerValidationStatus, MissingChargeInfo } from '../../../gql/graphql.js';
+import { CHARGE_TYPE_COLOR, type ChargeType } from '../../../helpers/index.js';
 import {
   amountState,
   AmountText,
+  ChargeTypeBadge,
+  chargeTypeChipClass,
   CountChip,
   ledgerState,
   NeedsBadge,
@@ -143,7 +146,9 @@ describe('CountChip', () => {
 
 describe('NeedsBadge', () => {
   it('renders nothing for a complete charge', async () => {
-    const { container, cleanup } = await render(<NeedsBadge type="CommonCharge" missingInfo={[]} />);
+    const { container, cleanup } = await render(
+      <NeedsBadge type="CommonCharge" missingInfo={[]} />,
+    );
     expect(container.innerHTML).toBe('');
     await cleanup();
   });
@@ -222,5 +227,53 @@ describe('AmountText', () => {
     );
     expect(container.textContent).toContain('1,180');
     await cleanup();
+  });
+});
+
+describe('charge type palette', () => {
+  const ALL_TYPES = Object.keys(CHARGE_TYPE_COLOR) as ChargeType[];
+
+  it('covers all eleven charge types', () => {
+    expect(ALL_TYPES).toHaveLength(11);
+    for (const type of ALL_TYPES) {
+      expect(chargeTypeChipClass(type), type).toBeTruthy();
+    }
+  });
+
+  it('gives every type its own hue, so two types are never confusable by colour', () => {
+    const hues = ALL_TYPES.map(type => CHARGE_TYPE_COLOR[type]);
+    expect(new Set(hues).size).toBe(hues.length);
+  });
+
+  /**
+   * The reservation this whole palette is built around. Amber means "needs attention", emerald
+   * "accept / positive", red "error / negative" — all three appear on the same record as the type
+   * chip, so a type wearing one of them would make that colour stop meaning state. Asserted rather
+   * than merely commented, because the cost of a future palette edit reintroducing it is that the
+   * needs badge quietly stops reading as a warning.
+   */
+  it('never spends a status colour on a type', () => {
+    const RESERVED = ['amber', 'emerald', 'red', 'green', 'yellow', 'rose'];
+    for (const type of ALL_TYPES) {
+      expect(RESERVED, type).not.toContain(CHARGE_TYPE_COLOR[type]);
+      // Also guard the emitted classes, in case a hue name and its classes ever drift apart.
+      for (const reserved of RESERVED) {
+        expect(chargeTypeChipClass(type), `${type} chip uses ${reserved}`).not.toContain(
+          `-${reserved}-`,
+        );
+      }
+    }
+  });
+
+  it('renders the type name alongside the chip, so colour is never the only signal', async () => {
+    const { container, cleanup } = await render(<ChargeTypeBadge type="SalaryCharge" />);
+    expect(container.textContent).toContain('Salary');
+    // The hue is on the chip, and the name is readable independently of it.
+    expect(container.querySelector('.bg-purple-50')).not.toBeNull();
+    await cleanup();
+  });
+
+  it('falls back to a neutral hue for an unrecognised __typename', () => {
+    expect(chargeTypeChipClass('NotARealCharge' as ChargeType)).toContain('-slate-');
   });
 });

@@ -43,7 +43,7 @@ export function ChargesSortMenu({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5" aria-label="Sort charges">
           <DirectionIcon className="size-4" />
-          <span className="text-xs font-normal text-gray-500 dark:text-gray-400">Sort</span>
+          <span className="text-xs font-normal text-muted-foreground">Sort</span>
           <span className="text-xs font-medium">{active?.label ?? 'None'}</span>
         </Button>
       </DropdownMenuTrigger>
