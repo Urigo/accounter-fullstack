@@ -18,7 +18,7 @@ import type {
   ChargeSecurityProto,
   IGetFilteredSecurityExecutionsQuery,
   IGetSecuritiesByKeysQuery,
-  IGetSecurityExecutionsByKeysQuery,
+  IGetSecurityExecutionsByBusinessIdsQuery,
   IGetSecurityExecutionsQuery,
   PaginatedSecurityExecutionsProto,
   SecurityExecutionRow,
@@ -29,18 +29,22 @@ import type {
 import { SecurityBusinessesProvider } from './security-businesses.provider.js';
 
 /**
- * No owner_id predicate: accounter_schema.poalim_securities is FORCE RLS with a
- * tenant_isolation policy, so going through TenantAwareDBClient scopes this to the
- * acting tenant. The dedup key includes branch/account, so one tenant can hold the
- * same security in several accounts — DISTINCT ON keeps the freshest scrape.
+ * Deduped per owner as well as per key, and returning the owner.
+ *
+ * RLS scopes this to the request's business *scope*, which can span several businesses, and the
+ * bank's key is only unique within one of them — two businesses trading the same security each
+ * have a reference row for it. Deduping on the key alone would hand one business the other's
+ * reference details. The dedup key also includes branch/account in the table itself, so one owner
+ * can hold the same security in several accounts — `DISTINCT ON` keeps the freshest scrape.
  */
 const getSecuritiesByKeys = sql<IGetSecuritiesByKeysQuery>`
-  SELECT DISTINCT ON (security_key)
-         id, security_key, eng_name, heb_name, symbol, eng_symbol, heb_symbol,
+  SELECT DISTINCT ON (owner_id, security_key)
+         id, owner_id, security_key, eng_name, heb_name, symbol, eng_symbol, heb_symbol,
          item_type, stock_type, exchange, currency_code, is_etf, is_foreign, as_of_date
   FROM accounter_schema.poalim_securities
-  WHERE security_key = ANY($securityKeys!)
-  ORDER BY security_key, as_of_date DESC;`;
+  WHERE owner_id = $ownerId!
+    AND security_key = ANY($securityKeys!)
+  ORDER BY owner_id, security_key, as_of_date DESC;`;
 
 /**
  * A prefilter, not the match itself: the ANY(...) predicates form a cross-product over the
@@ -53,6 +57,7 @@ const getSecuritiesByKeys = sql<IGetSecuritiesByKeysQuery>`
 const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
   SELECT
     id,
+    owner_id,
     security,
     bank_number,
     branch_number,
@@ -87,48 +92,70 @@ const getSecurityExecutions = sql<IGetSecurityExecutionsQuery>`
     AND value_date = ANY($valueDates!);`;
 
 /**
- * Every ingested execution of the given securities, unbounded by charge or date — the whole
- * life of an instrument, which is what its business page shows. RLS scopes it to the tenant.
+ * Every ingested execution of the given security businesses, unbounded by charge or date — the
+ * whole life of an instrument, which is what its page shows.
+ *
+ * Addressed by security *business* rather than by Poalim key, through a join on the identifier
+ * bridge. A key is only unique within an owner — `security_identifiers` is unique on
+ * `(owner_id, identifier_type, identifier_value)`, and the same security traded by two of a
+ * tenant's businesses carries the same key under each. Reads follow the request's whole business
+ * scope rather than one business, so filtering on the key alone would pull one business's
+ * executions into another's history and position. The join carries the owner on both sides and
+ * hands back the business each row belongs to, resolving the relation once, in SQL, rather than
+ * rebuilding it from a map that cannot express it.
+ *
+ * Tenant scoping is still RLS, on both tables.
  */
-const getSecurityExecutionsByKeys = sql<IGetSecurityExecutionsByKeysQuery>`
+const getSecurityExecutionsByBusinessIds = sql<IGetSecurityExecutionsByBusinessIdsQuery>`
   SELECT
-    id,
-    security,
-    bank_number,
-    branch_number,
-    account_number,
-    trade_date,
-    value_date,
-    settlement_date,
-    payment_date,
-    trade_type,
-    transaction_type,
-    nv,
-    trade_price,
-    trade_gross_value_trade_currency,
-    net_value_trade_currency,
-    net_value_settlement_currency,
-    net_value_nis,
-    trade_currency,
-    settlement_currency,
-    trade_commission_value_trade_currency,
-    management_fees_value_trade_currency,
-    israe_tax_value,
-    nominal_profit_loss_nis,
-    real_profit_loss_nis,
-    payment_type,
-    symbol,
-    isin
-  FROM accounter_schema.poalim_securities_transactions
-  WHERE security = ANY($securities!)
-  ORDER BY trade_date, id;`;
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    si.business_id AS security_business_id
+  FROM accounter_schema.poalim_securities_transactions t
+  INNER JOIN accounter_schema.security_identifiers si
+    ON si.owner_id = t.owner_id
+    AND si.identifier_type = 'POALIM_SECURITY_KEY'
+    AND si.identifier_value = t.security
+  WHERE si.business_id IN $$businessIds
+  ORDER BY t.trade_date, t.id;`;
 
 /**
  * The paginated, filtered slice `Query.securityExecutions` serves.
  *
- * Newest first, deliberately the opposite of `getSecurityExecutionsByKeys`: that one feeds
- * `calculateSecurityPosition`, which reads a position's currency off the *first* execution and
- * so depends on chronological order. This one is read by a human asking what happened lately.
+ * Newest first, deliberately the opposite of `getSecurityExecutionsByBusinessIds`: that one
+ * feeds `calculateSecurityPosition`, which reads a position's currency off the *first* execution
+ * and so depends on chronological order. This one is read by a human asking what happened lately.
+ *
+ * Addressed by security business through the same identifier join, for the same reason — see the
+ * note there. Resolving the relation in SQL rather than after the fact also keeps
+ * `COUNT(*) OVER ()` honest: a row dropped in memory for belonging to another owner would leave a
+ * total that no longer matches what pagination can reach.
  *
  * Trade and transaction types are filtered on the bank's own labels — the caller passes GraphQL
  * enums and the resolver translates them through `tradeTypeToRaw` / `transactionTypeToRaw`, so
@@ -142,41 +169,47 @@ const getSecurityExecutionsByKeys = sql<IGetSecurityExecutionsByKeysQuery>`
  */
 const getFilteredSecurityExecutions = sql<IGetFilteredSecurityExecutionsQuery>`
   SELECT
-    id,
-    security,
-    bank_number,
-    branch_number,
-    account_number,
-    trade_date,
-    value_date,
-    settlement_date,
-    payment_date,
-    trade_type,
-    transaction_type,
-    nv,
-    trade_price,
-    trade_gross_value_trade_currency,
-    net_value_trade_currency,
-    net_value_settlement_currency,
-    net_value_nis,
-    trade_currency,
-    settlement_currency,
-    trade_commission_value_trade_currency,
-    management_fees_value_trade_currency,
-    israe_tax_value,
-    nominal_profit_loss_nis,
-    real_profit_loss_nis,
-    payment_type,
-    symbol,
-    isin,
+    t.id,
+    t.owner_id,
+    t.security,
+    t.bank_number,
+    t.branch_number,
+    t.account_number,
+    t.trade_date,
+    t.value_date,
+    t.settlement_date,
+    t.payment_date,
+    t.trade_type,
+    t.transaction_type,
+    t.nv,
+    t.trade_price,
+    t.trade_gross_value_trade_currency,
+    t.net_value_trade_currency,
+    t.net_value_settlement_currency,
+    t.net_value_nis,
+    t.trade_currency,
+    t.settlement_currency,
+    t.trade_commission_value_trade_currency,
+    t.management_fees_value_trade_currency,
+    t.israe_tax_value,
+    t.nominal_profit_loss_nis,
+    t.real_profit_loss_nis,
+    t.payment_type,
+    t.symbol,
+    t.isin,
+    si.business_id AS security_business_id,
     COUNT(*) OVER () AS total_count
-  FROM accounter_schema.poalim_securities_transactions
-  WHERE security IN $$securities
-    AND ($isTradeTypes = 0 OR trade_type IN $$tradeTypes)
-    AND ($isTransactionTypes = 0 OR transaction_type IN $$transactionTypes)
-    AND ($fromTradeDate::DATE IS NULL OR trade_date >= $fromTradeDate)
-    AND ($toTradeDate::DATE IS NULL OR trade_date <= $toTradeDate)
-  ORDER BY trade_date DESC, id DESC
+  FROM accounter_schema.poalim_securities_transactions t
+  INNER JOIN accounter_schema.security_identifiers si
+    ON si.owner_id = t.owner_id
+    AND si.identifier_type = 'POALIM_SECURITY_KEY'
+    AND si.identifier_value = t.security
+  WHERE si.business_id IN $$businessIds
+    AND ($isTradeTypes = 0 OR t.trade_type IN $$tradeTypes)
+    AND ($isTransactionTypes = 0 OR t.transaction_type IN $$transactionTypes)
+    AND ($fromTradeDate::DATE IS NULL OR t.trade_date >= $fromTradeDate)
+    AND ($toTradeDate::DATE IS NULL OR t.trade_date <= $toTradeDate)
+  ORDER BY t.trade_date DESC, t.id DESC
   LIMIT $limit! OFFSET $offset!;`;
 
 /**
@@ -191,6 +224,19 @@ export const MAX_CHARGE_LINK_SECURITIES = 10;
 /** What the reverse match needs off a transaction, charge included so a row can link out. */
 type MatchedTransaction = MatchableTransaction & { charge_id: string };
 
+/**
+ * A Poalim security key, qualified by the owner it belongs to.
+ *
+ * The bank's key is only unique within an owner, and reads follow the request's whole business
+ * scope rather than a single business — so the key alone cannot identify a security once a tenant
+ * has two businesses trading the same one.
+ */
+export type OwnedSecurityKey = { ownerId: string; securityKey: string };
+
+function ownedKey(ownerId: string, securityKey: string): string {
+  return `${ownerId}:${securityKey}`;
+}
+
 @Injectable({
   scope: Scope.Operation,
   global: true,
@@ -204,15 +250,39 @@ export class ForeignSecuritiesProvider {
     private securityBusinessesProvider: SecurityBusinessesProvider,
   ) {}
 
-  private async batchSecuritiesByKeys(securityKeys: readonly string[]) {
-    const securities = await getSecuritiesByKeys.run({ securityKeys: [...securityKeys] }, this.db);
-    // DISTINCT ON in the query guarantees one row per key, so a plain Map is enough.
-    const securityByKey = new Map(securities.map(security => [security.security_key, security]));
-    return securityKeys.map(key => securityByKey.get(key) ?? null);
+  private async batchSecuritiesByKeys(keys: readonly OwnedSecurityKey[]) {
+    // One query per owner; in practice a batch carries a single one, since a charge belongs to
+    // exactly one business.
+    const keysByOwner = new Map<string, Set<string>>();
+    for (const key of keys) {
+      const values = keysByOwner.get(key.ownerId);
+      if (values) {
+        values.add(key.securityKey);
+      } else {
+        keysByOwner.set(key.ownerId, new Set([key.securityKey]));
+      }
+    }
+
+    const securityByOwnedKey = new Map<string, SecurityRow>();
+    await Promise.all(
+      [...keysByOwner].map(async ([ownerId, securityKeys]) => {
+        const securities = await getSecuritiesByKeys.run(
+          { ownerId, securityKeys: [...securityKeys] },
+          this.db,
+        );
+        // DISTINCT ON guarantees one row per (owner, key), so a plain Map is enough.
+        for (const security of securities) {
+          securityByOwnedKey.set(ownedKey(security.owner_id, security.security_key), security);
+        }
+      }),
+    );
+
+    return keys.map(key => securityByOwnedKey.get(ownedKey(key.ownerId, key.securityKey)) ?? null);
   }
 
-  public securityByKeyLoader = new DataLoader((keys: readonly string[]) =>
-    this.batchSecuritiesByKeys(keys),
+  public securityByKeyLoader = new DataLoader(
+    (keys: readonly OwnedSecurityKey[]) => this.batchSecuritiesByKeys(keys),
+    { cacheKeyFn: key => ownedKey(key.ownerId, key.securityKey) },
   );
 
   /**
@@ -302,18 +372,8 @@ export class ForeignSecuritiesProvider {
    * the other end.
    */
   public async getSecurityBusinessHistory(businessId: string, ownerId: string) {
-    const identifiers =
-      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.load(businessId);
-    const securityKeys = identifiers
-      .filter(identifier => identifier.identifier_type === 'POALIM_SECURITY_KEY')
-      .map(identifier => identifier.identifier_value);
-
-    if (securityKeys.length === 0) {
-      return { executions: [], transactionByExecutionId: new Map<string, MatchedTransaction>() };
-    }
-
     const [executions, transactions] = await Promise.all([
-      getSecurityExecutionsByKeys.run({ securities: securityKeys }, this.db),
+      getSecurityExecutionsByBusinessIds.run({ businessIds: [businessId] }, this.db),
       this.transactionsProvider.getTransactionsByFilters({
         businessIDs: [businessId],
         ownerIDs: [ownerId],
@@ -338,9 +398,10 @@ export class ForeignSecuritiesProvider {
    * it belongs to. Each business gets an entry, so "nothing ingested" is distinguishable from
    * "not a security".
    *
-   * One query for the whole portfolio: `getSecurityExecutionsByKeys` already filters on
-   * `security = ANY(...)` and returns the key on every row, so the union of every business's
-   * Poalim keys can be asked for at once and split back up in memory.
+   * One query for the whole portfolio: `getSecurityExecutionsByBusinessIds` joins the identifier
+   * bridge, so every business can be asked for at once and each row already knows which one it
+   * belongs to — including when two businesses trade the same security under the same Poalim key,
+   * which the key alone cannot tell apart.
    *
    * Unlike `getSecurityBusinessHistory` this never looks at transactions or accounts — those
    * exist only to pair an execution with the cash movement behind it, which a position does not
@@ -356,67 +417,20 @@ export class ForeignSecuritiesProvider {
       return executionsByBusinessId;
     }
 
-    const businessIdByKey = await this.getBusinessIdBySecurityKey(
-      securityBusinesses.map(securityBusiness => securityBusiness.id),
-    );
-
-    if (businessIdByKey.size === 0) {
-      return executionsByBusinessId;
-    }
-
-    // ORDER BY trade_date, id is global to the result, so each key's slice stays chronological —
-    // which is what `calculateSecurityPosition` reads its currency off.
-    const executions = await getSecurityExecutionsByKeys.run(
-      { securities: [...businessIdByKey.keys()] },
+    // ORDER BY trade_date, id is global to the result, so each business's slice stays
+    // chronological — which is what `calculateSecurityPosition` reads its currency off.
+    const executions = await getSecurityExecutionsByBusinessIds.run(
+      { businessIds: securityBusinesses.map(securityBusiness => securityBusiness.id) },
       this.db,
     );
 
     for (const execution of executions) {
-      const businessId = businessIdByKey.get(execution.security);
-      if (!businessId) {
-        continue;
-      }
-      // An identifier can outlive the business it pointed at; skip rather than invent a bucket.
-      executionsByBusinessId.get(businessId)?.push(execution);
+      // The bucket comes from the join, so an execution can only ever land under the business
+      // whose owner *and* key it matches.
+      executionsByBusinessId.get(execution.security_business_id)?.push(execution);
     }
 
     return executionsByBusinessId;
-  }
-
-  /**
-   * Poalim security key -> the security business it belongs to, for the given businesses.
-   *
-   * The executions table is keyed by the bank's proprietary key, and one business can carry
-   * several of them — that is what the identifiers bridge is for — so every read of the
-   * executions feed has to invert the relation first. The unique index on
-   * `(owner_id, identifier_type, identifier_value)` is what makes one key resolve to exactly one
-   * business, so a plain Map is enough.
-   *
-   * One batched query behind the loader, not one per business.
-   */
-  private async getBusinessIdBySecurityKey(
-    businessIds: readonly string[],
-  ): Promise<Map<string, string>> {
-    const identifierLists =
-      await this.securityBusinessesProvider.getIdentifiersByBusinessIdLoader.loadMany([
-        ...businessIds,
-      ]);
-
-    const businessIdByKey = new Map<string, string>();
-    for (const identifiers of identifierLists) {
-      // loadMany reports a rejected key as an Error rather than throwing; one bad business must
-      // not blank the whole list.
-      if (identifiers instanceof Error) {
-        continue;
-      }
-      for (const identifier of identifiers) {
-        if (identifier.identifier_type === 'POALIM_SECURITY_KEY') {
-          businessIdByKey.set(identifier.identifier_value, identifier.business_id);
-        }
-      }
-    }
-
-    return businessIdByKey;
   }
 
   /**
@@ -499,17 +513,12 @@ export class ForeignSecuritiesProvider {
       return this.chargeLinkedExecutionsPage(businessIds, filters, page, limit, ownerId);
     }
 
-    const businessIdByKey = await this.getBusinessIdBySecurityKey(businessIds);
-    if (businessIdByKey.size === 0) {
-      return empty;
-    }
-
     const rawTradeTypes = filters.rawTradeTypes?.filter(Boolean) ?? [];
     const rawTransactionTypes = filters.rawTransactionTypes?.filter(Boolean) ?? [];
 
     const rows = await getFilteredSecurityExecutions.run(
       {
-        securities: [...businessIdByKey.keys()],
+        businessIds: [...businessIds],
         isTradeTypes: rawTradeTypes.length ? 1 : 0,
         isTransactionTypes: rawTransactionTypes.length ? 1 : 0,
         // pgtyped requires a non-empty array for `IN $$list`; the matching `is*` flag
@@ -529,15 +538,14 @@ export class ForeignSecuritiesProvider {
       totalRecords: rows.length ? Number(rows[0].total_count) : 0,
       currentPage: page,
       pageSize: limit,
-      nodes: rows.flatMap(row => {
-        const securityBusinessId = businessIdByKey.get(row.security);
-        // Cannot happen — the rows come from `security IN $$securities`, built from these very
-        // keys — but an identifier can outlive the business it pointed at, so skip rather than
-        // assert a business id into existence.
-        return securityBusinessId
-          ? [{ id: row.id, execution: row, securityBusinessId, transaction: null }]
-          : [];
-      }),
+      // The security business comes off the join, so it is known for every row rather than
+      // looked up afterwards.
+      nodes: rows.map(row => ({
+        id: row.id,
+        execution: row,
+        securityBusinessId: row.security_business_id,
+        transaction: null,
+      })),
     };
   }
 
@@ -609,7 +617,10 @@ export class ForeignSecuritiesProvider {
    * description carries. Keys with no ingested row are still returned, with a null
    * `details`, so a stale or missing scrape is visible instead of silently dropping data.
    */
-  public async getChargeSecurities(chargeId: string): Promise<ChargeSecurityProto[]> {
+  public async getChargeSecurities(
+    chargeId: string,
+    ownerId: string,
+  ): Promise<ChargeSecurityProto[]> {
     const transactions =
       await this.transactionsProvider.transactionsByChargeIDLoader.load(chargeId);
 
@@ -631,7 +642,7 @@ export class ForeignSecuritiesProvider {
 
     const keys = [...transactionIdsByKey.keys()].sort();
     const [details, executionsByKey] = await Promise.all([
-      this.securityByKeyLoader.loadMany(keys),
+      this.securityByKeyLoader.loadMany(keys.map(securityKey => ({ ownerId, securityKey }))),
       this.getMatchedExecutions(transactions, keys),
     ]);
 
@@ -639,6 +650,7 @@ export class ForeignSecuritiesProvider {
       const detail = details[index];
       return {
         id: `${chargeId}-${key}`,
+        ownerId,
         securityKey: key,
         // loadMany surfaces a rejected key as an Error rather than throwing; treat it
         // the same as "not ingested" so one bad key can't blank the whole section.

@@ -295,6 +295,64 @@ describe('accounter_list_security_holdings', () => {
     expect(structured.byCurrency.map(bucket => bucket.currency)).toEqual(['USD', 'ILS']);
   });
 
+  /**
+   * The reference currency is known for a security nothing was ever traded of, so treating it as
+   * evidence of an amount would put that security in a bucket with a 0/0 subtotal — the exact
+   * null-means-nothing-ingested-not-zero confusion the caveats warn about.
+   */
+  it('does not bucket a security by its reference currency alone', async () => {
+    const payload = holdingsPayload();
+    payload.securityHoldings.push({
+      id: 'sb-never-traded',
+      security: {
+        ownerId: B1,
+        isin: 'US1111111111',
+        symbol: 'NONE',
+        engName: 'Never Traded',
+        hebName: null,
+        exchange: 'NASDAQ',
+        // Known from the reference feed even though nothing was ever bought or sold.
+        currencyCode: 'USD',
+        isEtf: false,
+        identifiers: [],
+      },
+      position: {
+        quantity: 0,
+        averageCost: null,
+        totalBought: null,
+        totalSold: null,
+        historyStartDate: null,
+        lastExecutionDate: null,
+      },
+    } as (typeof payload.securityHoldings)[number]);
+
+    const result = await runTool(listSecurityHoldingsTool, clientReturning(payload), {
+      includeClosed: true,
+    });
+    const structured = result.structuredContent as unknown as HoldingsStructured;
+
+    expect(structured.securitiesWithNoCurrency).toBe(1);
+    const usd = structured.byCurrency.find(bucket => bucket.currency === 'USD')!;
+    // Still just the two securities that actually traded in USD.
+    expect(usd.securityCount).toBe(2);
+    expect(usd.totalBought).toBe(41_800);
+  });
+
+  it('trims the search, as the web screen does', async () => {
+    const result = await runTool(listSecurityHoldingsTool, clientReturning(holdingsPayload()), {
+      search: '  nvidia  ',
+    });
+    const structured = result.structuredContent as unknown as HoldingsStructured;
+    expect(structured.holdings.map(holding => holding.securityBusinessId)).toEqual(['sb-big']);
+  });
+
+  it('treats an all-whitespace search as no search', async () => {
+    const result = await runTool(listSecurityHoldingsTool, clientReturning(holdingsPayload()), {
+      search: '   ',
+    });
+    expect((result.structuredContent as unknown as HoldingsStructured).totalCount).toBe(3);
+  });
+
   it('falls back through the name to the ISIN, so a row is never nameless', async () => {
     const result = await runTool(listSecurityHoldingsTool, clientReturning(holdingsPayload()), {
       search: 'טבע',

@@ -315,10 +315,12 @@ beforeAll(async () => {
 
   await ensureRlsRole(pool, {
     grants: [
-      { table: 'poalim_securities', privileges: 'SELECT' },
-      { table: 'poalim_securities_transactions', privileges: 'SELECT' },
-      { table: 'businesses_securities', privileges: 'SELECT' },
-      { table: 'security_identifiers', privileges: 'SELECT' },
+      // DELETE/UPDATE as well as SELECT: the write-target cases below have to reach the policy
+      // check rather than failing on a missing privilege, which would pass for the wrong reason.
+      { table: 'poalim_securities', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'poalim_securities_transactions', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'businesses_securities', privileges: 'SELECT, UPDATE, DELETE' },
+      { table: 'security_identifiers', privileges: 'SELECT, UPDATE, DELETE' },
     ],
   });
 });
@@ -372,7 +374,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].securityKey).toBe('5129523');
@@ -386,7 +388,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0077774297' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].securityKey).toBe('77774297');
@@ -401,7 +403,7 @@ describe('getChargeSecurities', () => {
       { id: 'fee', source_description: 'ניע"ז עמ קניה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].transactionIds).toEqual(['trade', 'fee']);
@@ -414,7 +416,7 @@ describe('getChargeSecurities', () => {
       { id: 't2', source_description: null },
     ]);
 
-    expect(await provider.getChargeSecurities(CHARGE_ID)).toEqual([]);
+    expect(await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID)).toEqual([]);
   });
 
   it('returns one entry per distinct key on a merged charge', async () => {
@@ -429,7 +431,7 @@ describe('getChargeSecurities', () => {
       { id: 't2', source_description: 'ניע"ז קניה 0077774297' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities.map(s => s.securityKey)).toEqual(['5129523', '77774297']);
     expect(securities.map(s => s.details?.eng_name)).toEqual(['Example Corp', 'Other Corp']);
@@ -453,7 +455,7 @@ describe('getChargeSecurities', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities).toHaveLength(1);
     expect(securities[0].details?.eng_name).toBe('Fresh Name');
@@ -499,7 +501,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toHaveLength(1);
     expect(securities[0].executions[0].trade_type).toBe('קניה');
@@ -518,7 +520,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז מכירה 0005129523', amount: '2500.50' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions.map(e => e.net_value_trade_currency)).toEqual(['2500.50']);
   });
@@ -530,7 +532,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -542,7 +544,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -554,7 +556,7 @@ describe('getChargeSecurities — matched executions', () => {
       { id: 't1', source_description: 'ניע"ז קניה 0005129523', amount: '-1000.00' },
     ]);
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -568,7 +570,7 @@ describe('getChargeSecurities — matched executions', () => {
       'IL12-3456',
     );
 
-    const securities = await provider.getChargeSecurities(CHARGE_ID);
+    const securities = await provider.getChargeSecurities(CHARGE_ID, TEST_OWNER_ID);
 
     expect(securities[0].executions).toEqual([]);
   });
@@ -1015,6 +1017,97 @@ describe('getSecurityExecutionsPage', () => {
 });
 
 /**
+ * A Poalim security key is unique only *within* an owner.
+ *
+ * `security_identifiers` is unique on `(owner_id, identifier_type, identifier_value)`, so two
+ * businesses that both trade one security each carry it under the same key — the ordinary case for
+ * a tenant with more than one business, not an exotic one. Reads follow the request's whole
+ * business scope, so both rows are visible at once and a key-only lookup has nothing to tell them
+ * apart: it keeps whichever was seen last and files one business's trades under the other's
+ * security.
+ *
+ * These cases run as the suite's superuser, which bypasses RLS — which is exactly the widest
+ * version of the situation, and what makes them a regression test for the join rather than for the
+ * policy.
+ */
+describe('two businesses trading the same security', () => {
+  const SHARED_KEY = '1097';
+
+  beforeEach(async () => {
+    await insertSecurityBusiness({
+      id: APPLE_BUSINESS_ID,
+      isin: 'ZZ0000000621',
+      engName: 'Shared Security (mine)',
+      securityKeys: [SHARED_KEY],
+    });
+    await insertSecurityBusiness({
+      id: MSFT_BUSINESS_ID,
+      isin: 'ZZ0000000622',
+      engName: 'Shared Security (theirs)',
+      securityKeys: [SHARED_KEY],
+      ownerId: OTHER_OWNER_ID,
+    });
+    await insertExecution({ security: SHARED_KEY, tradeDate: '2024-03-01' });
+    await insertExecution({
+      ownerId: OTHER_OWNER_ID,
+      security: SHARED_KEY,
+      tradeDate: '2024-03-02',
+    });
+  });
+
+  it('gives each business only its own executions', async () => {
+    const executionsByBusinessId = await createProvider([]).getExecutionsBySecurityBusiness();
+
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)).toHaveLength(1);
+    expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)).toHaveLength(1);
+    expect(executionsByBusinessId.get(APPLE_BUSINESS_ID)![0]!.owner_id).toBe(TEST_OWNER_ID);
+    expect(executionsByBusinessId.get(MSFT_BUSINESS_ID)![0]!.owner_id).toBe(OTHER_OWNER_ID);
+  });
+
+  it('keeps a filtered page to the business it named', async () => {
+    const result = await createProvider([]).getSecurityExecutionsPage({
+      filters: { securityBusinessIds: [APPLE_BUSINESS_ID] },
+      page: 0,
+      limit: 50,
+      includeCharges: false,
+      ownerId: TEST_OWNER_ID,
+    });
+
+    expect(result.totalRecords).toBe(1);
+    expect(result.nodes[0]!.securityBusinessId).toBe(APPLE_BUSINESS_ID);
+    expect(result.nodes[0]!.execution.owner_id).toBe(TEST_OWNER_ID);
+  });
+
+  it("keeps one business's history out of the other's", async () => {
+    const { executions } = await createProvider([]).getSecurityBusinessHistory(
+      MSFT_BUSINESS_ID,
+      OTHER_OWNER_ID,
+    );
+
+    expect(executions).toHaveLength(1);
+    expect(executions[0]!.owner_id).toBe(OTHER_OWNER_ID);
+  });
+
+  it('resolves the reference details per owner', async () => {
+    await insertSecurity({ securityKey: SHARED_KEY, engName: 'Mine' });
+    await insertSecurity({
+      ownerId: OTHER_OWNER_ID,
+      securityKey: SHARED_KEY,
+      engName: 'Theirs',
+    });
+
+    const provider = createProvider([]);
+    const [mine, theirs] = await Promise.all([
+      provider.securityByKeyLoader.load({ ownerId: TEST_OWNER_ID, securityKey: SHARED_KEY }),
+      provider.securityByKeyLoader.load({ ownerId: OTHER_OWNER_ID, securityKey: SHARED_KEY }),
+    ]);
+
+    expect(mine?.eng_name).toBe('Mine');
+    expect(theirs?.eng_name).toBe('Theirs');
+  });
+});
+
+/**
  * The read predicate on all four securities tables was pinned to the singular
  * `get_current_business_id()` until this was fixed, so a request whose authorized
  * scope spanned several businesses silently saw only one of them. A
@@ -1097,5 +1190,66 @@ describe('multi-business read scope', () => {
     const owners = await readUnderScope(table, null);
 
     expect(new Set(owners)).toEqual(new Set([TEST_OWNER_ID]));
+  });
+
+  /**
+   * Reads follow the scope; writes do not.
+   *
+   * `USING` selects the rows a statement may act on, and Postgres consults it for DELETE and
+   * UPDATE as well as SELECT — `WITH CHECK` only constrains the *new* values. So the permissive
+   * scope-wide policy on its own would let a session delete another in-scope business's row, or
+   * update one into its own ownership. The restrictive per-command policies are what stop that,
+   * and these cases are the proof: the row is readable, and neither writable.
+   */
+  async function writeUnderScope(
+    statement: 'delete' | 'update',
+    table: string,
+    scope: string[],
+    targetOwnerId: string,
+    currentBusinessId = TEST_OWNER_ID,
+  ): Promise<number> {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`SELECT set_config('app.current_business_id', $1, true)`, [
+        currentBusinessId,
+      ]);
+      await client.query(`SELECT set_config('app.current_business_scope', $1, true)`, [
+        `{${scope.join(',')}}`,
+      ]);
+
+      return await runAsRlsRole(client, async () => {
+        const sql =
+          statement === 'delete'
+            ? `DELETE FROM accounter_schema.${table} WHERE owner_id = $1`
+            : `UPDATE accounter_schema.${table} SET owner_id = owner_id WHERE owner_id = $1`;
+        const result = await client.query(sql, [targetOwnerId]);
+        return result.rowCount ?? 0;
+      });
+    } finally {
+      await client.query('ROLLBACK');
+      client.release();
+    }
+  }
+
+  it.each(TABLES)('%s refuses to delete another business in the scope', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    // Visible...
+    expect(await readUnderScope(table, scope)).toContain(OTHER_OWNER_ID);
+    // ...and still not deletable, because the write target is the other business.
+    expect(await writeUnderScope('delete', table, scope, OTHER_OWNER_ID)).toBe(0);
+  });
+
+  it.each(TABLES)('%s refuses to update another business in the scope', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    expect(await writeUnderScope('update', table, scope, OTHER_OWNER_ID)).toBe(0);
+  });
+
+  it.each(TABLES)('%s still lets the write target delete its own rows', async table => {
+    const scope = [TEST_OWNER_ID, OTHER_OWNER_ID];
+
+    expect(await writeUnderScope('delete', table, scope, TEST_OWNER_ID)).toBeGreaterThan(0);
   });
 });

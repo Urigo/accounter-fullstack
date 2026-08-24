@@ -56,5 +56,16 @@ narrowing rather than a leak: a request whose scope spanned several businesses s
 of them, with nothing in the response saying so. That broke the web client's business switcher, and
 it would have broken the connector harder — it forwards its resolved scope upstream and echoes that
 scope back, so the caller was told it had seen more than it had. Reads now follow
-`get_current_business_scope()` while writes stay pinned to the explicit target, so the scraper
-ingestion path is unaffected.
+`get_current_business_scope()` while **writes stay single-tenant**: `USING` is what selects the rows
+a statement may act on, and Postgres consults it for DELETE and UPDATE as well as SELECT, so
+widening it alone would authorize deleting another in-scope business's row — or updating one into
+the write target's ownership, moving it between businesses. Two restrictive per-command policies
+pin both back to the explicit target, and the scraper ingestion path is unaffected.
+
+Widening the read scope also changed what "unique" means underneath it. A Poalim security key is
+unique only *within* an owner, so two businesses that both trade one security carry it under the
+same key — ordinary for a multi-business tenant. While reads were pinned to one business a key-only
+lookup could not go wrong; spanning owners, it files one business's trades under the other's
+security. The execution queries now resolve the relation in SQL by joining the identifier bridge on
+`(owner_id, identifier_value)` and returning the security business per row, and the two lookups that
+remain in memory take an owner-qualified key.

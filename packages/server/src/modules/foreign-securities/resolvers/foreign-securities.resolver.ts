@@ -37,7 +37,9 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
   ForeignSecuritiesCharge: {
     securities: async (dbCharge, _, { injector }) => {
       try {
-        return await injector.get(ForeignSecuritiesProvider).getChargeSecurities(dbCharge.id);
+        return await injector
+          .get(ForeignSecuritiesProvider)
+          .getChargeSecurities(dbCharge.id, dbCharge.owner_id);
       } catch (e) {
         throw errorSimplifier(`Error fetching securities for charge ${dbCharge.id}`, e);
       }
@@ -53,6 +55,10 @@ export const foreignSecuritiesResolvers: ForeignSecuritiesModule.Resolvers = {
     // be ingested before the executions that create a security business.
     securityBusiness: async (chargeSecurity, _, { injector }) =>
       (await injector.get(SecurityBusinessesProvider).getSecurityBusinessByIdentifierLoader.load({
+        // Scoped to the charge's owner: the key is unique only within one, so a request whose
+        // scope spans two businesses trading the same security would otherwise resolve to
+        // whichever row won the batch.
+        ownerId: chargeSecurity.ownerId,
         type: 'POALIM_SECURITY_KEY',
         value: chargeSecurity.securityKey,
       })) ?? null,

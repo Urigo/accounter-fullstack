@@ -42,12 +42,23 @@ const getSecurityBusinessesByIsins = sql<IGetSecurityBusinessesByIsinsQuery>`
   FROM accounter_schema.businesses_securities
   WHERE isin = ANY($isins!);`;
 
+/**
+ * An explicit `owner_id` predicate, unlike the rest of this file.
+ *
+ * RLS narrows to the request's *scope*, which can span several businesses, while this lookup has
+ * to answer for one owner: `security_identifiers` is unique on
+ * `(owner_id, identifier_type, identifier_value)`, so the same Poalim key legitimately exists
+ * under two of a tenant's businesses when both trade the security. Without the predicate the
+ * batch would see both rows and keep whichever was written last, silently attaching one
+ * business's trade to the other's security.
+ */
 const getSecurityBusinessesByIdentifiers = sql<IGetSecurityBusinessesByIdentifiersQuery>`
-  SELECT si.identifier_value, bs.*
+  SELECT si.identifier_value, si.owner_id AS identifier_owner_id, bs.*
   FROM accounter_schema.security_identifiers si
   INNER JOIN accounter_schema.businesses_securities bs
     ON bs.id = si.business_id
-  WHERE si.identifier_type = $identifierType!
+  WHERE si.owner_id = $ownerId!
+    AND si.identifier_type = $identifierType!
     AND si.identifier_value = ANY($identifierValues!);`;
 
 const getSecurityIdentifiersByBusinessIds = sql<IGetSecurityIdentifiersByBusinessIdsQuery>`
@@ -89,10 +100,33 @@ function toCurrency(rawCurrency: string | null | undefined): Currency | null {
   return label ? formatCurrency(label, true) : null;
 }
 
+/**
+ * A source's name for a security, *within an owner*.
+ *
+ * The owner is not optional: `(owner_id, identifier_type, identifier_value)` is what the relation
+ * is unique on, and reads span the request's whole business scope. A key without it cannot
+ * identify one security business.
+ */
 export type IdentifierKey = {
+  ownerId: string;
   type: SecurityIdentifierType;
   value: string;
 };
+
+/** Cache/lookup key for the identifier relation, which is unique on all three parts. */
+function identifierCacheKey(ownerId: string, type: SecurityIdentifierType, value: string): string {
+  return `${ownerId}:${type}:${value}`;
+}
+
+/** Batch grouping key — one query per (owner, identifier type). */
+function identifierGroupKey(ownerId: string, type: SecurityIdentifierType): string {
+  return `${ownerId}:${type}`;
+}
+
+function splitIdentifierGroupKey(group: string): [string, SecurityIdentifierType] {
+  const separator = group.indexOf(':');
+  return [group.slice(0, separator), group.slice(separator + 1) as SecurityIdentifierType];
+}
 
 @Injectable({
   scope: Scope.Operation,
@@ -143,36 +177,41 @@ export class SecurityBusinessesProvider {
   }
 
   private async batchSecurityBusinessesByIdentifiers(keys: readonly IdentifierKey[]) {
-    // One query per identifier type; in practice a batch carries a single type.
-    const valuesByType = new Map<SecurityIdentifierType, Set<string>>();
+    // One query per (owner, identifier type); in practice a batch carries a single pair.
+    const valuesByOwnerAndType = new Map<string, Set<string>>();
     for (const key of keys) {
-      const values = valuesByType.get(key.type);
+      const group = identifierGroupKey(key.ownerId, key.type);
+      const values = valuesByOwnerAndType.get(group);
       if (values) {
         values.add(key.value);
       } else {
-        valuesByType.set(key.type, new Set([key.value]));
+        valuesByOwnerAndType.set(group, new Set([key.value]));
       }
     }
 
     const found = new Map<string, SecurityBusinessRow>();
     await Promise.all(
-      [...valuesByType].map(async ([identifierType, values]) => {
+      [...valuesByOwnerAndType].map(async ([group, values]) => {
+        const [ownerId, identifierType] = splitIdentifierGroupKey(group);
         const rows = await getSecurityBusinessesByIdentifiers.run(
-          { identifierType, identifierValues: [...values] },
+          { ownerId, identifierType, identifierValues: [...values] },
           this.db,
         );
-        for (const { identifier_value, ...securityBusiness } of rows) {
-          found.set(`${identifierType}:${identifier_value}`, securityBusiness);
+        for (const { identifier_value, identifier_owner_id, ...securityBusiness } of rows) {
+          found.set(
+            identifierCacheKey(identifier_owner_id, identifierType, identifier_value),
+            securityBusiness,
+          );
         }
       }),
     );
 
-    return keys.map(key => found.get(`${key.type}:${key.value}`) ?? null);
+    return keys.map(key => found.get(identifierCacheKey(key.ownerId, key.type, key.value)) ?? null);
   }
 
   public getSecurityBusinessByIdentifierLoader = new DataLoader(
     (keys: readonly IdentifierKey[]) => this.batchSecurityBusinessesByIdentifiers(keys),
-    { cacheKeyFn: key => `${key.type}:${key.value}` },
+    { cacheKeyFn: key => identifierCacheKey(key.ownerId, key.type, key.value) },
   );
 
   private async batchIdentifiersByBusinessIds(businessIds: readonly string[]) {
@@ -383,6 +422,7 @@ export class SecurityBusinessesProvider {
       this.db,
     );
     this.getSecurityBusinessByIdentifierLoader.clear({
+      ownerId,
       type: identifierType,
       value: identifierValue,
     });

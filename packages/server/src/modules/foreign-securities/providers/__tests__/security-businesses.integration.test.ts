@@ -296,6 +296,7 @@ describe('linkIdentifier', () => {
     await provider.linkIdentifier(security.id, 'POALIM_SECURITY_KEY', '5129523');
 
     const found = await provider.getSecurityBusinessByIdentifierLoader.load({
+      ownerId: TEST_OWNER_ID,
       type: 'POALIM_SECURITY_KEY',
       value: '5129523',
     });
@@ -321,6 +322,7 @@ describe('linkIdentifier', () => {
     const provider = createProvider();
 
     const found = await provider.getSecurityBusinessByIdentifierLoader.load({
+      ownerId: TEST_OWNER_ID,
       type: 'POALIM_SECURITY_KEY',
       value: '0000001',
     });

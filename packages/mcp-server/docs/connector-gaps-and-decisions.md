@@ -113,6 +113,52 @@ nothing fails loudly when it doesn't. Any new owner-scoped table needs
 a tool over tables you did not create, check `pg_policies.qual` for them before trusting
 `x-business-scope` to have narrowed anything.
 
+### A Poalim security key is unique only within an owner (2026-08-24, fixed)
+
+Found in review of the securities tools, and reachable _because_ the read scope was widened above.
+
+`accounter_schema.security_identifiers` is unique on
+`(owner_id, identifier_type, identifier_value)`, and `poalim_securities` dedupes per owner too. So
+two of a tenant's businesses that both trade one security each carry it under the same Poalim key —
+the ordinary case for a multi-business tenant, not an exotic one. While reads were pinned to a
+single business a key-only lookup could not go wrong; once they follow a scope that spans owners,
+both rows are visible at once and a `Map<key, business>` keeps whichever was written last, filing
+one business's trades under the other's security.
+
+Three lookups had it: the executions-to-business mapping (twice), the charge-to-security bridge, and
+the reference-details loader. All now carry the owner — the execution queries resolve it in SQL by
+joining `security_identifiers` on `(owner_id, identifier_value)` and returning `business_id` per
+row, so the relation is expressed once rather than rebuilt from a map that cannot hold it; the two
+DataLoaders take an owner-qualified key.
+
+**The general lesson:** widening a read scope silently changes what "unique" means for every lookup
+underneath it. A natural key that was unambiguous under single-business reads may only be unique
+_per owner_ — check the unique index, not the intuition.
+
+### Writes stay single-tenant even when reads do not
+
+`USING` selects the rows a statement may act on, and Postgres consults it for DELETE and UPDATE as
+well as SELECT; `WITH CHECK` constrains only the _new_ values an INSERT or UPDATE writes. A
+permissive policy whose `USING` spans the read scope therefore authorizes deleting another in-scope
+business's row — and updating one, since the `WITH CHECK` will happily accept the result once the
+new value names the write target, which is to say the row gets _moved_ between businesses.
+
+Every tenant-isolated table needs two RESTRICTIVE per-command policies alongside the permissive one:
+
+```sql
+CREATE POLICY tenant_isolation_delete ON … AS RESTRICTIVE FOR DELETE
+  USING (owner_id = accounter_schema.get_current_business_id());
+CREATE POLICY tenant_isolation_update ON … AS RESTRICTIVE FOR UPDATE
+  USING (owner_id = accounter_schema.get_current_business_id());
+```
+
+They must be per-command: a restrictive `FOR ALL` would apply to SELECT and undo the multi-business
+read scope entirely. INSERT needs none, having no `USING` at all.
+
+> **Open item.** `2026-05-26T10-00-00.rls-delete-write-target` added the DELETE half for the 45
+> tables it covered, but not the UPDATE half. Those tables still allow an in-scope cross-business
+> UPDATE. Out of scope for the securities work, and worth its own change.
+
 ### Charge links and pagination do not compose (`accounter_get_security_executions`)
 
 `matchExecutionsToTransactions` pairs a securities execution with the bank row behind it. There is

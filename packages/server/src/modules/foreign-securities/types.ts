@@ -116,6 +116,11 @@ export type SecurityBusinessHistoryProto = {
 export type ChargeSecurityProto = {
   /** Scoped to the charge so the client cache keeps a key's entries distinct per charge. */
   id: string;
+  /**
+   * The charge's owner. Carried because the Poalim key is only unique within one — resolving the
+   * key to a security without it can attach a charge to another business's security.
+   */
+  ownerId: string;
   securityKey: string;
   details: SecurityRow | null;
   transactionIds: string[];

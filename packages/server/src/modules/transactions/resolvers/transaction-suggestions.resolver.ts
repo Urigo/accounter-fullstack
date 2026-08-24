@@ -135,6 +135,10 @@ const missingInfoSuggestions = async (
     const securityBusiness = await injector
       .get(SecurityBusinessesProvider)
       .getSecurityBusinessByIdentifierLoader.load({
+        // The transaction's own owner, not the session's: a Poalim key is unique only within an
+        // owner, so the same security traded by two of a tenant's businesses would otherwise
+        // resolve to whichever row won the batch.
+        ownerId: transaction.owner_id,
         type: 'POALIM_SECURITY_KEY',
         value: securityKeys[0],
       });

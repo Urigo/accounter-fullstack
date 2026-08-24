@@ -217,11 +217,13 @@ function subtotalsByCurrency(holdings: readonly NormalizedHolding[]) {
   let securitiesWithNoCurrency = 0;
 
   for (const holding of holdings) {
+    // Only an actual amount counts. `holding.currency` is the security's static
+    // reference currency, which is known even for a security nothing was ever
+    // traded of — folding it in here would put that security in a bucket with a
+    // 0/0 subtotal, which is exactly the null-vs-zero confusion the caveats warn
+    // against.
     const currency =
-      holding.totalBought?.currency ??
-      holding.totalSold?.currency ??
-      holding.averageCost?.currency ??
-      holding.currency;
+      holding.totalBought?.currency ?? holding.totalSold?.currency ?? holding.averageCost?.currency;
     if (!currency) {
       securitiesWithNoCurrency += 1;
       continue;
@@ -261,7 +263,10 @@ async function listSecurityHoldingsHandler(
   // Upstream takes no search argument and a portfolio is tens to low hundreds of
   // rows, so filtering here costs nothing and keeps the match rules identical to
   // the web screen's.
-  const needle = input.search?.toLowerCase();
+  // Trimmed as well as lowercased, matching the web screen's own normalization
+  // (`screens/securities/index.tsx`) — a pasted `" NVDA "` has to behave the same
+  // in both places for the parity this mirrors to be worth anything.
+  const needle = input.search?.trim().toLowerCase();
   const matched = needle
     ? data.securityHoldings.filter(holding => searchableText(holding).includes(needle))
     : data.securityHoldings;
