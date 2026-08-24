@@ -88,9 +88,9 @@ export function ChartsSection() {
               <XAxis
                 dataKey="month"
                 className="text-xs"
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fill: 'var(--color-muted-foreground)' }}
               />
-              <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+              <YAxis className="text-xs" tick={{ fill: 'var(--color-muted-foreground)' }} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line
                 type="monotone"
