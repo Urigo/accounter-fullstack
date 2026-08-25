@@ -582,7 +582,7 @@ function ChargesFiltersForm({
                     </div>
                     <FormControl>
                       <Tooltip>
-                        <TooltipTrigger asChild>
+                        <TooltipTrigger>
                           <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
                         </TooltipTrigger>
                         <TooltipContent>
