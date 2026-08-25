@@ -337,13 +337,13 @@ describe('searchChargesTool — successful read', () => {
     expect(filters.sortBy).toEqual({ field: 'ABS_AMOUNT', asc: true });
   });
 
-  // `unbalanced` (like `businessTrip` and `byFinancialAccounts`) is accepted by
-  // the upstream input and then ignored — no SQL predicate behind it. Accepting
-  // it here would answer "only unbalanced charges" with the whole table, so it is
-  // rejected instead. Loosen this only together with an upstream implementation.
+  // `unbalanced` (like `businessTrip`) is accepted by the upstream input and
+  // then ignored — no SQL predicate behind it. Accepting it here would answer
+  // "only unbalanced charges" with the whole table, so it is rejected instead.
+  // Loosen this only together with an upstream implementation.
   it('rejects ChargeFilter fields upstream accepts but ignores', async () => {
     const client = clientReturning(oneCharge);
-    for (const field of ['unbalanced', 'businessTrip', 'byFinancialAccounts']) {
+    for (const field of ['unbalanced', 'businessTrip']) {
       const result = await run(client, authContext(['b1']), { [field]: true });
       expect(result.isError).toBe(true);
       expect((result.structuredContent as { code: string }).code).toBe('VALIDATION_ERROR');

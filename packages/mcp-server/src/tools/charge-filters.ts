@@ -22,7 +22,7 @@ import { TIMELESS_DATE } from './dates.js';
  * them and then ignores them.
  *
  * `allCharges` forwards its filter to `ChargesProvider.getChargesByFilters`, and
- * these three are never passed on — there is no SQL predicate behind them at
+ * these two are never passed on — there is no SQL predicate behind them at
  * all (the client's charges screen sends `unbalanced` and it does nothing
  * either). A filter that silently matches everything is worse than an absent
  * one for a model: it asks for "only unbalanced charges", gets the whole table,
@@ -30,11 +30,7 @@ import { TIMELESS_DATE } from './dates.js';
  * schema-contract test uses this list, so it fails loudly if the set of
  * unimplemented fields changes.
  */
-export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = [
-  'businessTrip',
-  'byFinancialAccounts',
-  'unbalanced',
-] as const;
+export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = ['businessTrip', 'unbalanced'] as const;
 
 export const CHARGE_FILTER_IDS_CAP = 300;
 export const CHARGE_FILTER_TAGS_CAP = 50;
@@ -113,6 +109,12 @@ export const CHARGE_FILTER_SHAPE = {
     .describe(
       'Include only charges involving these businesses as the *counterparty* (the other party). ' +
         'This is not the owner predicate — narrow owners with `memberBusinessIds` / `byOwners`.',
+    ),
+  byFinancialAccounts: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP)
+    .optional()
+    .describe(
+      'Include only charges with at least one transaction in these financial accounts (bank ' +
+        'account / credit card ids).',
     ),
   byChargeTypes: optionalNonEmptyEnumArray(CHARGE_TYPES)
     .optional()
@@ -242,6 +244,7 @@ export function buildChargeFilters(
   if (input.accountantStatus) filters.accountantStatus = [...input.accountantStatus];
   if (input.byBusinessTrips) filters.byBusinessTrips = [...input.byBusinessTrips];
   if (input.byBusinesses) filters.byBusinesses = [...input.byBusinesses];
+  if (input.byFinancialAccounts) filters.byFinancialAccounts = [...input.byFinancialAccounts];
   if (input.byChargeTypes) filters.byChargeTypes = [...input.byChargeTypes];
   if (input.byTags) filters.byTags = [...input.byTags];
   if (input.chargesType) filters.chargesType = input.chargesType;
