@@ -15,7 +15,7 @@ export function LoginPage(): ReactElement {
   const returnTo =
     (location.state as { returnTo?: string } | null)?.returnTo ??
     (isReauthFlow ? sessionStorage.getItem('auth:invitationReturnTo') : null) ??
-    ROUTES.HOME;
+    ROUTES.APP_HOME;
   const errorParam = searchParams.get('error');
 
   const authError = errorParam

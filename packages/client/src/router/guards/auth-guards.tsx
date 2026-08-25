@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { PageSkeleton } from '../../components/layout/page-skeleton.js';
 import { useViewer } from '../../hooks/use-viewer.js';
+import { hasStoredAuth0Session } from '../../lib/auth0-session.js';
 import { ROUTES } from '../routes.js';
 
 type GuardProps = {
@@ -69,6 +70,39 @@ export function OnboardingGuard({ children }: GuardProps): ReactElement {
   return children;
 }
 
+/**
+ * Owns the site root, which serves two audiences.
+ *
+ * A visitor without a session gets the public landing page; anyone already
+ * signed in is sent straight into the app. Unlike the other guards this one
+ * does not hold the render back on `isLoading` by default — the landing page is
+ * the first thing a stranger ever sees, and making them wait on an Auth0 round
+ * trip to read marketing copy is the wrong trade. A cached session is the one
+ * case worth waiting for: it means a redirect is coming, so painting the
+ * marketing page first would only be a flash.
+ */
+export function LandingRoute({ children }: GuardProps): ReactElement {
+  if (isDevAuthEnabled) {
+    return <Navigate to={ROUTES.APP_HOME} replace />;
+  }
+
+  return <Auth0LandingRoute>{children}</Auth0LandingRoute>;
+}
+
+function Auth0LandingRoute({ children }: GuardProps): ReactElement {
+  const { isAuthenticated, isLoading } = useAuth0();
+
+  if (isLoading) {
+    return hasStoredAuth0Session() ? <PageSkeleton /> : children;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={ROUTES.APP_HOME} replace />;
+  }
+
+  return children;
+}
+
 export function PublicOnlyGuard({ children }: GuardProps): ReactElement {
   if (isDevAuthEnabled) {
     return children;
@@ -94,7 +128,7 @@ function Auth0PublicOnlyGuard({ children }: GuardProps): ReactElement {
     if (invitationReturnTo) {
       sessionStorage.removeItem('auth:invitationReturnTo');
     }
-    return <Navigate to={invitationReturnTo ?? ROUTES.HOME} replace />;
+    return <Navigate to={invitationReturnTo ?? ROUTES.APP_HOME} replace />;
   }
 
   return children;

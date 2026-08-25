@@ -24,7 +24,7 @@ export function ErrorBoundary(): ReactElement {
             statusCode={404}
           >
             <div className="flex gap-4">
-              <Link to={ROUTES.HOME}>
+              <Link to={ROUTES.APP_HOME}>
                 <Button variant="default">
                   <Home className="mr-2 h-4 w-4" />
                   Go Home
@@ -59,7 +59,7 @@ export function ErrorBoundary(): ReactElement {
             description="You don't have permission to access this resource."
             statusCode={403}
           >
-            <Link to={ROUTES.HOME}>
+            <Link to={ROUTES.APP_HOME}>
               <Button variant="default">
                 <Home className="mr-2 h-4 w-4" />
                 Go Home
@@ -81,7 +81,7 @@ export function ErrorBoundary(): ReactElement {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reload Page
               </Button>
-              <Link to={ROUTES.HOME}>
+              <Link to={ROUTES.APP_HOME}>
                 <Button variant="outline">
                   <Home className="mr-2 h-4 w-4" />
                   Go Home
@@ -99,7 +99,7 @@ export function ErrorBoundary(): ReactElement {
             description={error.statusText || 'An unexpected error occurred'}
             statusCode={error.status}
           >
-            <Link to={ROUTES.HOME}>
+            <Link to={ROUTES.APP_HOME}>
               <Button variant="default">
                 <Home className="mr-2 h-4 w-4" />
                 Go Home
@@ -138,7 +138,7 @@ export function ErrorBoundary(): ReactElement {
           <RefreshCw className="mr-2 h-4 w-4" />
           Reload Page
         </Button>
-        <Link to={ROUTES.HOME}>
+        <Link to={ROUTES.APP_HOME}>
           <Button variant="outline">
             <Home className="mr-2 h-4 w-4" />
             Go Home

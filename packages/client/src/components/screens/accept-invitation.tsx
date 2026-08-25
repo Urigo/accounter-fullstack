@@ -73,7 +73,7 @@ export function AcceptInvitationPage(): ReactElement {
   const handleAccept = async () => {
     const success = await acceptInvitation(token);
     if (success?.success) {
-      navigate(ROUTES.HOME, { replace: true });
+      navigate(ROUTES.APP_HOME, { replace: true });
     }
   };
 

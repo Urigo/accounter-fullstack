@@ -16,7 +16,7 @@ export function AuthManagement(): ReactElement {
   // The backend independently enforces business_owner authorization, but we
   // also guard the route client-side to avoid rendering it for other users.
   if (!adminBusinessId || adminBusinessId !== businessId) {
-    return <Navigate to={ROUTES.HOME} replace />;
+    return <Navigate to={ROUTES.APP_HOME} replace />;
   }
 
   return (
