@@ -1251,16 +1251,11 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     if (!clientInfo) {
       throw new GraphQLError(`Client with business ID ${initialInput.client.id} not found`);
     }
-    let greenInvoiceId: string | null;
-    try {
-      greenInvoiceId =
-        parseStoredClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;
-    } catch (error) {
-      console.error('Failed to validate client integrations', error);
-      throw new GraphQLError(
-        `Client with business ID ${initialInput.client.id} has invalid integrations`,
-      );
-    }
+    // Unreadable stored integrations are indistinguishable from unconfigured
+    // ones here: `parseStoredClientIntegrations` degrades rather than throws, and
+    // either way this client has no Green Invoice id to issue against.
+    const greenInvoiceId =
+      parseStoredClientIntegrations(clientInfo.integrations).greenInvoiceId ?? null;
     if (!greenInvoiceId) {
       throw new GraphQLError(
         `Client with business ID ${initialInput.client.id} not found in Green Invoice`,
