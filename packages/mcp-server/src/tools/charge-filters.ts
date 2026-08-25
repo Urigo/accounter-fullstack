@@ -22,27 +22,15 @@ import { TIMELESS_DATE } from './dates.js';
  * them and then ignores them.
  *
  * `allCharges` forwards its filter to `ChargesProvider.getChargesByFilters`, and
- * these are never passed on — there is no SQL predicate behind them at
+ * these two are never passed on — there is no SQL predicate behind them at
  * all (the client's charges screen sends `unbalanced` and it does nothing
  * either). A filter that silently matches everything is worse than an absent
  * one for a model: it asks for "only unbalanced charges", gets the whole table,
  * and has no way to tell. They stay out until upstream implements them; the
  * schema-contract test uses this list, so it fails loudly if the set of
  * unimplemented fields changes.
- *
- * The four `excluded*` fields were added to the schema alongside the charges
- * filter redesign so the client could send them, with the resolver work
- * deliberately deferred — see `docs/charges-filters/backend-followup.md`.
- * Remove them from this list as each one gains a SQL predicate.
  */
-export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = [
-  'businessTrip',
-  'unbalanced',
-  'excludedBusinesses',
-  'excludedFinancialAccounts',
-  'excludedTags',
-  'excludedFreeText',
-] as const;
+export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = ['businessTrip', 'unbalanced'] as const;
 
 export const CHARGE_FILTER_IDS_CAP = 300;
 export const CHARGE_FILTER_TAGS_CAP = 50;
@@ -143,6 +131,33 @@ export const CHARGE_FILTER_SHAPE = {
   byTags: optionalNonEmptyStringArray(CHARGE_FILTER_TAGS_CAP)
     .optional()
     .describe('Include only charges carrying these tags.'),
+  excludedBusinesses: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP)
+    .optional()
+    .describe(
+      'Drop charges involving any of these businesses as the counterparty. Applied after the ' +
+        'include lists, so a business named in both is excluded.',
+    ),
+  excludedFinancialAccounts: optionalNonEmptyStringArray(CHARGE_FILTER_IDS_CAP)
+    .optional()
+    .describe(
+      'Drop charges with any transaction in these financial accounts. Applied after the include ' +
+        'lists, so an account named in both is excluded.',
+    ),
+  excludedFreeText: z
+    .string()
+    .min(2)
+    .max(CHARGE_FILTER_TEXT_MAX)
+    .optional()
+    .describe(
+      'Drop charges matching this text across the same fields as `freeText`. Charges with no text ' +
+        'at all are kept. Combine with `freeText` for "mentions X but not Y".',
+    ),
+  excludedTags: optionalNonEmptyStringArray(CHARGE_FILTER_TAGS_CAP)
+    .optional()
+    .describe(
+      'Drop charges carrying any of these tags. Applied after the include lists, so a tag named ' +
+        'in both is excluded.',
+    ),
   chargesType: z
     .enum(['ALL', 'INCOME', 'EXPENSE'])
     .optional()
@@ -264,6 +279,12 @@ export function buildChargeFilters(
   if (input.byChargeTypes) filters.byChargeTypes = [...input.byChargeTypes];
   if (input.byTags) filters.byTags = [...input.byTags];
   if (input.chargesType) filters.chargesType = input.chargesType;
+  if (input.excludedBusinesses) filters.excludedBusinesses = [...input.excludedBusinesses];
+  if (input.excludedFinancialAccounts) {
+    filters.excludedFinancialAccounts = [...input.excludedFinancialAccounts];
+  }
+  if (input.excludedFreeText) filters.excludedFreeText = input.excludedFreeText;
+  if (input.excludedTags) filters.excludedTags = [...input.excludedTags];
   if (input.freeText) filters.freeText = input.freeText;
   if (input.fromAnyDate) filters.fromAnyDate = input.fromAnyDate;
   if (input.fromDate) filters.fromDate = input.fromDate;

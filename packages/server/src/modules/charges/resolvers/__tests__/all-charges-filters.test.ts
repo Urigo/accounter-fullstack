@@ -106,4 +106,62 @@ describe('Query.allCharges filter forwarding', () => {
     expect(params.tags).toEqual(['tag-1']);
     expect(params.withoutTags).toBeUndefined();
   });
+
+  /**
+   * The exclusion half of the filter. These shipped in the schema ahead of the SQL
+   * and were accepted-but-ignored for a release; the mapping is the exact place
+   * that silence lived, so each one is pinned here.
+   */
+  describe('exclusions', () => {
+    it('forwards the excluded entity lists onto their provider parameters', async () => {
+      const params = await paramsFor({
+        excludedBusinesses: ['biz-2'],
+        excludedFinancialAccounts: ['account-2'],
+        excludedTags: ['tag-2'],
+      });
+      expect(params).toMatchObject({
+        excludedBusinessIds: ['biz-2'],
+        excludedAccountIds: ['account-2'],
+        excludedTags: ['tag-2'],
+      });
+    });
+
+    it('normalizes excluded free text the same way as freeText', async () => {
+      const params = await paramsFor({ excludedFreeText: '  Refund  ' });
+      expect(params.excludedFreeText).toBe('refund');
+    });
+
+    // Include and exclude are separate predicates, ANDed in SQL — neither side may
+    // leak into the other's parameter, or "X but not Y" silently becomes one of them.
+    it('keeps each exclusion independent of its positive twin', async () => {
+      const params = await paramsFor({
+        byBusinesses: ['biz-1'],
+        excludedBusinesses: ['biz-2'],
+        byTags: ['tag-1'],
+        excludedTags: ['tag-2'],
+        byFinancialAccounts: ['account-1'],
+        excludedFinancialAccounts: ['account-2'],
+        freeText: 'invoice',
+        excludedFreeText: 'refund',
+      });
+      expect(params).toMatchObject({
+        businessIds: ['biz-1'],
+        excludedBusinessIds: ['biz-2'],
+        tags: ['tag-1'],
+        excludedTags: ['tag-2'],
+        accountIds: ['account-1'],
+        excludedAccountIds: ['account-2'],
+        freeText: 'invoice',
+        excludedFreeText: 'refund',
+      });
+    });
+
+    it('leaves the exclusion parameters unset when the filter omits them', async () => {
+      const params = await paramsFor({ byBusinesses: ['biz-1'] });
+      expect(params.excludedBusinessIds).toBeUndefined();
+      expect(params.excludedAccountIds).toBeUndefined();
+      expect(params.excludedTags).toBeUndefined();
+      expect(params.excludedFreeText).toBeUndefined();
+    });
+  });
 });

@@ -1,95 +1,89 @@
-# Charges filter — deferred backend work
+# Charges filter — exclusion predicates
 
-The charges filter redesign added four fields to the `ChargeFilter` GraphQL input **in the typeDefs
-only**, so the client could build and send them. The server currently **accepts and silently ignores
-all four**: `allCharges` destructures `filters` field-by-field in
-[`filtered-charges.helper.ts`](../../packages/server/src/modules/charges/helpers/filtered-charges.helper.ts),
-so unknown keys never reach the provider and no predicate is applied.
+> **Status: implemented.** The four `excluded*` fields were added to the `ChargeFilter` typeDefs
+> ahead of the SQL and spent one release accepted-but-ignored. They now have real predicates and are
+> exposed through the MCP charge tools. This document records how they behave; the outstanding items
+> are in [Still open](#still-open).
 
-This document collects the work needed to make them real. It is a follow-up task, not part of the
-redesign PR.
+| Field                       | Type        | Positive twin         | Predicate                                 |
+| --------------------------- | ----------- | --------------------- | ----------------------------------------- |
+| `excludedBusinesses`        | `[UUID!]`   | `byBusinesses`        | `business_array` non-overlap              |
+| `excludedFinancialAccounts` | `[UUID!]`   | `byFinancialAccounts` | `account_array` non-overlap               |
+| `excludedTags`              | `[String!]` | `byTags`              | `tags` non-overlap                        |
+| `excludedFreeText`          | `String`    | `freeText`            | not present in the `excluded_matches` CTE |
 
-| Field                       | Type        | Positive twin         |
-| --------------------------- | ----------- | --------------------- |
-| `excludedBusinesses`        | `[UUID!]`   | `byBusinesses`        |
-| `excludedFinancialAccounts` | `[UUID!]`   | `byFinancialAccounts` |
-| `excludedTags`              | `[String!]` | `byTags`              |
-| `excludedFreeText`          | `String`    | `freeText`            |
+## How it works
 
-Schema location:
-[`packages/server/src/modules/charges/typeDefs/charges.graphql.ts`](../../packages/server/src/modules/charges/typeDefs/charges.graphql.ts)
-(base `input ChargeFilter`).
+`getChargesByFilters`
+([`charges.provider.ts`](../../packages/server/src/modules/charges/providers/charges.provider.ts))
+already aggregates each charge's businesses, tags and accounts into arrays before the closing
+`WHERE`, so the three entity exclusions are array **non**-overlap rather than the `NOT EXISTS` this
+document originally called for:
 
-## Current user-visible behaviour
+```sql
+AND ($isExcludedTags = 0 OR NOT COALESCE(ec.tags && $excludedTags, FALSE))
+```
 
-The UI ships the exclude controls fully enabled — a per-option `+`/`−` flip on Financial Entities,
-Financial Accounts and Tags, and a Contains/Excludes toggle on free text. Choosing "exclude" today
-produces an **unfiltered** result with no indication that the constraint was dropped. This was a
-deliberate call when the redesign shipped; it is the main reason to prioritise this work.
+The `COALESCE` matters. Those arrays come from `LEFT JOIN`s, and `NULL && array` is `NULL`, not
+`FALSE` — without it, every charge that has _no_ tags at all would be dropped from a tag-exclusion
+query, which is the opposite of what the filter means.
 
-## What each field needs
+Because the arrays hold the charge's full set, this gives the right semantics directly: a charge is
+dropped when **any** of its businesses / tags / accounts appears in the exclusion list. (The concern
+about a plain `NOT IN` matching on a second joined row does not arise — there is no per-row join
+left at that point.)
 
-All four follow the same three-step shape:
+`excludedFreeText` is a set-membership test instead. `excluded_matches` mirrors the existing
+`search_matches` CTE — the same eight sources: charge description, transaction
+description/reference, document description/remarks/serial, transaction and document amounts, and
+counterparty names via transactions, creditor and debtor. Every branch requires the parameter to be
+`NOT NULL`, the inverse of `search_matches`, whose first branch deliberately passes every charge
+through when `$freeText` is `NULL`. `filtered_charges` then requires the charge not to be in that
+set.
 
-1. A new parameter on `ChargesProvider.getChargesByFilters`
-   ([`charges.provider.ts`](../../packages/server/src/modules/charges/providers/charges.provider.ts)).
-2. A SQL predicate, negating the same joins the positive twin already uses.
-3. One wiring line in `filtered-charges.helper.ts`, next to its twin — e.g.
-   `excludedBusinessIds: filters?.excludedBusinesses`.
+This also settles the NULL question the original draft raised: a charge whose columns are all `NULL`
+never enters `excluded_matches`, so **"does not mention X" keeps charges with no text at all** — no
+`COALESCE` needed, because the test is set membership rather than a negated `ILIKE`.
 
-### `excludedBusinesses` / `excludedFinancialAccounts`
-
-Both twins filter through a join against the charge's transactions/documents. The negation must be
-`NOT EXISTS` over that join rather than `NOT IN` over a joined column: with a plain `NOT IN`, a
-charge that touches both an excluded business and a non-excluded one still matches on the second
-row, so the exclusion silently fails to exclude. Semantics to implement: _drop the charge if any of
-its businesses/accounts is in the list._
-
-### `excludedTags`
-
-Same `NOT EXISTS` reasoning against the charge-tags join table. Note the schema types this as
-`[String!]` to mirror `byTags`, even though the values are tag ids — keep them consistent rather
-than "fixing" one side.
-
-### `excludedFreeText`
-
-`freeText` is a multi-column `ILIKE` across user description, transaction description/reference and
-document description/remarks/serial. Negating it needs care on two points:
-
-- **NULL safety.** `NOT (column ILIKE '%x%')` is `NULL`, not `TRUE`, when the column is `NULL`, so a
-  charge with no description would be dropped from an exclusion query rather than kept. Wrap each
-  column in `COALESCE(column, '')`.
-- **Decide the intent explicitly.** "Charges that do not mention X" should almost certainly include
-  charges with no text at all. Confirm and encode that, and cover it with a test.
-
-Apply the same `.trim().toLowerCase()` normalisation the positive twin uses.
+`excludedFreeText` gets the same thousands-separator stripping as `freeText`
+(`excludedFreeTextNumeric`), so excluding `1,234.56` also excludes `1234.56`.
 
 ## Precedence
 
-The tri-state UI cannot put one value in both the include and exclude list, but the API allows it.
-Specify and test **exclude wins** — it is the safer default, and it keeps the predicate order
-irrelevant.
+Include and exclude are separate predicates, `AND`ed. A value named in both lists is therefore
+**excluded** — exclude wins. The client's tri-state cannot produce that, but the API allows it and
+`allCharges` accepts it.
 
-## Tests
+## Editing note
 
-Extend
-[`all-charges-filters.test.ts`](../../packages/server/src/modules/charges/resolvers/__tests__/all-charges-filters.test.ts)
-with, per field: a charge that should be excluded, one that should survive, a charge matching both
-an included and an excluded value (the precedence case), and — for `excludedFreeText` — a charge
-with `NULL` description.
+pgTyped **silently truncates the generated parameter list at the first `--` comment inside the
+closing `WHERE` clause**, dropping every parameter after it. This surfaced while adding these
+predicates: an explanatory comment there cut `IGetChargesByFiltersParams` down to ten entries and
+took `tags`, `accountIds`, `sortColumn` and the rest with it. Comments inside CTEs are fine. Keep
+explanation for that clause in TypeScript, above the `sql` template.
 
-## Downstream
+## Coverage
 
-- **MCP.** The four fields are currently listed in `UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`
-  ([`packages/mcp-server/src/tools/charge-filters.ts`](../../packages/mcp-server/src/tools/charge-filters.ts)),
-  which keeps them out of the charge tools precisely because upstream ignores them. Remove each
-  field from that list as it gains a predicate, and expose it on `accounter_get_charges` /
-  `accounter_search_charges`. The `schema-contract` test enforces this both ways, so a field left in
-  the list after implementation is not silently forgotten.
-- **Client.** No client change is needed — the UI already sends the fields.
+- [`all-charges-filters.test.ts`](../../packages/server/src/modules/charges/resolvers/__tests__/all-charges-filters.test.ts)
+  — each field reaching its provider parameter, free-text normalisation, and independence from its
+  positive twin.
+- [`charge-filter-exclusions.test.ts`](../../packages/mcp-server/src/tools/__tests__/charge-filter-exclusions.test.ts)
+  — the MCP input shape and `buildChargeFilters` forwarding, including empty-array handling.
+- [`schema-contract.test.ts`](../../packages/mcp-server/src/tools/__tests__/schema-contract.test.ts)
+  — enforces, in both directions, that a `ChargeFilter` field is either exposed by the charge tools
+  or explicitly listed as unsupported.
 
-## Related
+## Still open
 
-`unbalanced` and `businessTrip` are in the same accepted-but-ignored category and have been for
-longer. If this work is picked up, they are worth resolving in the same pass — either implement them
-or remove them from the schema.
+- **No DB-level integration test.** The predicates are covered at the mapping layer only; the SQL
+  itself is exercised by hand. A DB-backed test per field — a charge that should be dropped, one
+  that should survive, one matching both lists, and a `NULL`-description charge for
+  `excludedFreeText` — belongs in the integration project.
+- **Query cost.** `excluded_matches` roughly doubles the trigram-scan surface of `search_matches`
+  when an exclusion is active. It is guarded so the CTE is empty and the `NOT EXISTS` short-circuits
+  when both text parameters are `NULL`, but the exclusion path has not been profiled against a large
+  charge table.
+- **`unbalanced` and `businessTrip`** remain accepted-but-ignored, and stay in
+  `UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`
+  ([`charge-filters.ts`](../../packages/mcp-server/src/tools/charge-filters.ts)). They are the same
+  class of problem this change fixed and are worth either implementing or dropping from the schema.

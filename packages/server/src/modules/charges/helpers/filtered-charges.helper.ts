@@ -95,6 +95,12 @@ export async function fetchFilteredCharges(
       withoutTags: filters?.withoutTags,
       freeText: filters?.freeText?.trim().toLowerCase(),
       tags: filters?.byTags,
+      // Exclusions. A value present in both an include and its exclude list is
+      // dropped: the predicates are ANDed, so exclude wins.
+      excludedBusinessIds: filters?.excludedBusinesses,
+      excludedAccountIds: filters?.excludedFinancialAccounts,
+      excludedTags: filters?.excludedTags,
+      excludedFreeText: filters?.excludedFreeText?.trim().toLowerCase(),
       accountantStatuses: filters?.accountantStatus as accountant_statusArray | undefined,
     })
     .catch(error => {
