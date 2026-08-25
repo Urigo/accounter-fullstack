@@ -583,10 +583,7 @@ function ChargesFiltersForm({
                     <FormControl>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Switch
-                            checked={field.value ?? false}
-                            onCheckedChange={field.onChange}
-                          />
+                          <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Show only charges that have no tags</p>
