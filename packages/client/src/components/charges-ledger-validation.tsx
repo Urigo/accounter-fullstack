@@ -7,7 +7,7 @@ import { encodeFilters, ROUTES } from '@/router/routes.js';
 import { ChargesLedgerValidationDocument, type ChargeFilter } from '../gql/graphql.js';
 import { useUrlQuery } from '../hooks/use-url-query.js';
 import { FiltersContext } from '../providers/filters-context.js';
-import { ChargesFilters } from './charges/charges-filters.js';
+import { ChargesFilters } from './charges/charges-filters/index.js';
 import { ChargesTable } from './charges/charges-table.js';
 import { MergeChargesButton, Tooltip } from './common/index.js';
 import { PageLayout } from './layout/page-layout.js';

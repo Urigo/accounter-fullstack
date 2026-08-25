@@ -10,7 +10,7 @@ import {
 import { useUrlQuery } from '../../hooks/use-url-query.js';
 import { FiltersContext } from '../../providers/filters-context.js';
 import { UserContext } from '../../providers/user-provider.js';
-import { ChargesFilters } from '../charges/charges-filters.js';
+import { ChargesFilters } from '../charges/charges-filters/index.js';
 import { PageLayout } from '../layout/page-layout.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen

@@ -22,15 +22,27 @@ import { TIMELESS_DATE } from './dates.js';
  * them and then ignores them.
  *
  * `allCharges` forwards its filter to `ChargesProvider.getChargesByFilters`, and
- * these two are never passed on — there is no SQL predicate behind them at
+ * these are never passed on — there is no SQL predicate behind them at
  * all (the client's charges screen sends `unbalanced` and it does nothing
  * either). A filter that silently matches everything is worse than an absent
  * one for a model: it asks for "only unbalanced charges", gets the whole table,
  * and has no way to tell. They stay out until upstream implements them; the
  * schema-contract test uses this list, so it fails loudly if the set of
  * unimplemented fields changes.
+ *
+ * The four `excluded*` fields were added to the schema alongside the charges
+ * filter redesign so the client could send them, with the resolver work
+ * deliberately deferred — see `docs/charges-filters/backend-followup.md`.
+ * Remove them from this list as each one gains a SQL predicate.
  */
-export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = ['businessTrip', 'unbalanced'] as const;
+export const UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS = [
+  'businessTrip',
+  'unbalanced',
+  'excludedBusinesses',
+  'excludedFinancialAccounts',
+  'excludedTags',
+  'excludedFreeText',
+] as const;
 
 export const CHARGE_FILTER_IDS_CAP = 300;
 export const CHARGE_FILTER_TAGS_CAP = 50;

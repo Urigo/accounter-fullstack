@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from 'urql';
-import { AllFinancialAccountsDocument, type AllFinancialAccountsQuery } from '../gql/graphql.js';
+import {
+  AllFinancialAccountsDocument,
+  type AllFinancialAccountsQuery,
+  type FinancialAccountType,
+} from '../gql/graphql.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -9,6 +13,7 @@ import { AllFinancialAccountsDocument, type AllFinancialAccountsQuery } from '..
     allFinancialAccounts {
       id
       name
+      type
     }
   }
 `;
@@ -21,7 +26,11 @@ type UseGetFinancialAccounts = {
   fetching: boolean;
   refresh: () => void;
   financialAccounts: AllFinancialAccounts;
-  selectableFinancialAccounts: Array<{ value: string; label: string }>;
+  selectableFinancialAccounts: Array<{
+    value: string;
+    label: string;
+    type: FinancialAccountType;
+  }>;
 };
 
 export const useGetFinancialAccounts = (): UseGetFinancialAccounts => {
@@ -44,6 +53,7 @@ export const useGetFinancialAccounts = (): UseGetFinancialAccounts => {
     return financialAccounts.map(account => ({
       value: account.id,
       label: account.name,
+      type: account.type,
     }));
   }, [financialAccounts]);
 
