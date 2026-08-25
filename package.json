@@ -63,7 +63,7 @@
     "@graphql-codegen/typescript-resolvers": "6.1.0",
     "@graphql-eslint/eslint-plugin": "4.4.1",
     "@graphql-hive/cli": "0.62.0",
-    "@graphql-inspector/cli": "6.0.8",
+    "@graphql-inspector/cli": "7.0.0",
     "@graphql-tools/mock": "9.1.13",
     "@parcel/watcher": "2.6.0",
     "@pgtyped/cli": "2.4.3",
