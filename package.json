@@ -48,7 +48,7 @@
     "validate:demo": "tsx packages/server/src/demo-fixtures/validate-demo-data.ts"
   },
   "devDependencies": {
-    "@0no-co/graphqlsp": "1.17.3",
+    "@0no-co/graphqlsp": "1.17.5",
     "@changesets/changelog-github": "1.0.0",
     "@changesets/cli": "2.31.1",
     "@eslint/compat": "2.1.0",
@@ -74,9 +74,9 @@
     "@types/pg": "8.23.1",
     "@typescript-eslint/eslint-plugin": "8.67.0",
     "@typescript-eslint/parser": "8.67.0",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "bob-the-bundler": "7.0.1",
-    "concurrently": "10.0.4",
+    "concurrently": "10.0.5",
     "dotenv": "17.4.2",
     "eslint": "10.9.1",
     "eslint-config-flat-gitignore": "2.3.0",
@@ -102,7 +102,7 @@
     "tsx": "4.23.12",
     "typescript": "6.0.3",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "resolutions": {
     "@slonik/pg-driver@npm:^49.10.9": "patch:@slonik/pg-driver@npm%3A49.10.9#~/.yarn/patches/@slonik-pg-driver-npm-49.10.9-8d2c0c21df.patch",
