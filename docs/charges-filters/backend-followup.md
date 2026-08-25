@@ -9,12 +9,12 @@ so unknown keys never reach the provider and no predicate is applied.
 This document collects the work needed to make them real. It is a follow-up task, not part of the
 redesign PR.
 
-| Field | Type | Positive twin |
-| --- | --- | --- |
-| `excludedBusinesses` | `[UUID!]` | `byBusinesses` |
-| `excludedFinancialAccounts` | `[UUID!]` | `byFinancialAccounts` |
-| `excludedTags` | `[String!]` | `byTags` |
-| `excludedFreeText` | `String` | `freeText` |
+| Field                       | Type        | Positive twin         |
+| --------------------------- | ----------- | --------------------- |
+| `excludedBusinesses`        | `[UUID!]`   | `byBusinesses`        |
+| `excludedFinancialAccounts` | `[UUID!]`   | `byFinancialAccounts` |
+| `excludedTags`              | `[String!]` | `byTags`              |
+| `excludedFreeText`          | `String`    | `freeText`            |
 
 Schema location:
 [`packages/server/src/modules/charges/typeDefs/charges.graphql.ts`](../../packages/server/src/modules/charges/typeDefs/charges.graphql.ts)
@@ -42,8 +42,8 @@ All four follow the same three-step shape:
 Both twins filter through a join against the charge's transactions/documents. The negation must be
 `NOT EXISTS` over that join rather than `NOT IN` over a joined column: with a plain `NOT IN`, a
 charge that touches both an excluded business and a non-excluded one still matches on the second
-row, so the exclusion silently fails to exclude. Semantics to implement: *drop the charge if any of
-its businesses/accounts is in the list.*
+row, so the exclusion silently fails to exclude. Semantics to implement: _drop the charge if any of
+its businesses/accounts is in the list._
 
 ### `excludedTags`
 
@@ -80,8 +80,7 @@ with `NULL` description.
 
 ## Downstream
 
-- **MCP.** The four fields are currently listed in
-  `UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`
+- **MCP.** The four fields are currently listed in `UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`
   ([`packages/mcp-server/src/tools/charge-filters.ts`](../../packages/mcp-server/src/tools/charge-filters.ts)),
   which keeps them out of the charge tools precisely because upstream ignores them. Remove each
   field from that list as it gains a predicate, and expose it on `accounter_get_charges` /
