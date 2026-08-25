@@ -574,6 +574,28 @@ function ChargesFiltersForm({
 
               <FormField
                 control={form.control}
+                name="withoutTags"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel>Without Tags</FormLabel>
+                    </div>
+                    <FormControl>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Show only charges that have no tags</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="unbalanced"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between">

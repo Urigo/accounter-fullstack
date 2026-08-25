@@ -93,4 +93,17 @@ describe('Query.allCharges filter forwarding', () => {
     // Free text is normalized for the trigram search.
     expect(params.freeText).toBe('coffee');
   });
+
+  it('forwards the untagged-charges predicate', async () => {
+    const params = await paramsFor({ withoutTags: true });
+    expect(params.withoutTags).toBe(true);
+  });
+
+  // `byTags` narrows to specific tags while `withoutTags` asks for charges with
+  // none at all — passing one must never populate the other.
+  it('keeps withoutTags independent of byTags', async () => {
+    const params = await paramsFor({ byTags: ['tag-1'] });
+    expect(params.tags).toEqual(['tag-1']);
+    expect(params.withoutTags).toBeUndefined();
+  });
 });

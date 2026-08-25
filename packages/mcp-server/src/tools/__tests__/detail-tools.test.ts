@@ -409,6 +409,7 @@ describe('getChargesTool', () => {
         withoutInvoice: false,
         withoutLedger: false,
         withoutReceipt: false,
+        withoutTags: false,
         withoutTransactions: false,
       },
       includeTransactions: false,
@@ -448,6 +449,7 @@ describe('getChargesTool', () => {
       withoutInvoice: false,
       withoutLedger: false,
       withoutReceipt: false,
+      withoutTags: false,
       withoutTransactions: false,
     });
     expect(variables.includeTransactions).toBe(false);
