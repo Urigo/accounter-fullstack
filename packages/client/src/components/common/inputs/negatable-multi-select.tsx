@@ -58,7 +58,7 @@ export interface NegatableMultiSelectProps {
   renderOption?: (option: NegatableMultiSelectOption) => ReactNode;
   className?: string;
   id?: string;
-  ref?: Ref<HTMLButtonElement>;
+  ref?: Ref<HTMLDivElement>;
   onBlur?: () => void;
   'aria-label'?: string;
   'aria-describedby'?: string;
@@ -196,28 +196,53 @@ export function NegatableMultiSelect({
     onExcludedChange?.([]);
   }
 
-  const selected = [...value, ...excludedValue];
+  // The tri-state moves a value between the two lists rather than copying it, so it
+  // should never appear in both — but the arrays also arrive from a JSON-parsed URL,
+  // where nothing enforces that. Deduplicate so a hand-edited payload renders one chip
+  // per value instead of duplicate React keys.
+  const isDisabled = disabled || loading;
+  const selected = Array.from(new Set([...value, ...excludedValue]));
   const visibleChips = selected.slice(0, maxVisibleChips);
   const overflowChips = selected.slice(maxVisibleChips);
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={!!portalContainer}>
+    <Popover
+      open={open}
+      onOpenChange={(next): void => {
+        if (isDisabled) return;
+        setOpen(next);
+      }}
+      modal={!!portalContainer}
+    >
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        {/*
+          A div rather than a button: the selected chips carry their own flip and
+          remove buttons, and a button cannot contain a button. `role="combobox"`
+          with an explicit tabIndex and key handling keeps it keyboard-operable and
+          is the role that actually supports aria-invalid.
+        */}
+        <div
           id={id}
           ref={ref}
           onBlur={onBlur}
           role="combobox"
+          tabIndex={isDisabled ? -1 : 0}
+          onKeyDown={(event): void => {
+            if (isDisabled) return;
+            if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+              event.preventDefault();
+              setOpen(true);
+            }
+          }}
           aria-label={ariaLabel ?? placeholder}
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={listboxId}
-          disabled={disabled || loading}
+          aria-disabled={isDisabled || undefined}
           className={cn(
-            'flex min-h-10 h-auto w-full items-center gap-1 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-xs focus:outline-hidden focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+            'flex min-h-10 h-auto w-full cursor-default items-center gap-1 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-xs focus:outline-hidden focus:ring-1 focus:ring-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
             className,
           )}
         >
@@ -272,7 +297,7 @@ export function NegatableMultiSelect({
             )}
           </div>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
-        </button>
+        </div>
       </PopoverTrigger>
 
       <PopoverContent
