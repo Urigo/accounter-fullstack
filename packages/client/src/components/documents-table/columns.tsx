@@ -1,8 +1,7 @@
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { TableFeaturesConfig } from '@/lib/table-features.js';
-import { DocumentType, type TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
-import { CloseDocumentButton, EditMiniButton, PreviewDocumentModal } from '../common/index.js';
+import type { TableDocumentsRowFieldsFragment } from '../../gql/graphql.js';
 import { Button } from '../ui/button.js';
 import {
   Amount,
@@ -16,6 +15,7 @@ import {
   TypeCell,
   Vat,
 } from './cells/index.js';
+import { DocumentActionsMenu } from './document-actions-menu.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
 /* GraphQL */ `
@@ -85,248 +85,242 @@ export type DocumentsTableRowType = TableDocumentsRowFieldsFragment & {
   editDocument: () => void;
 };
 
-export const columns: ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[] = [
-  {
-    id: 'date',
-    accessorKey: 'date',
-    sortFn: row => {
-      return 'date' in row.original && row.original.date
-        ? new Date(row.original.date).getTime()
-        : 0;
+export interface DocumentsTableColumnsOptions {
+  /** Include the menu items that navigate to the document's charge. */
+  withChargeLink?: boolean;
+}
+
+/**
+ * Build the shared documents-table columns. It is a factory rather than a constant because the
+ * actions column takes per-host options; `columns` below is the default, option-less column set.
+ */
+export function getDocumentsTableColumns({
+  withChargeLink = false,
+}: DocumentsTableColumnsOptions = {}): ColumnDef<TableFeaturesConfig, DocumentsTableRowType>[] {
+  return [
+    {
+      id: 'date',
+      accessorKey: 'date',
+      sortFn: row => {
+        return 'date' in row.original && row.original.date
+          ? new Date(row.original.date).getTime()
+          : 0;
+      },
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Date
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <DateCell document={row.original} />;
+      },
     },
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Date
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
+    {
+      id: 'amount',
+      accessorKey: 'amount.raw',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Amount
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Amount document={row.original} />;
+      },
     },
-    cell: ({ row }) => {
-      return <DateCell document={row.original} />;
+    {
+      id: 'vat',
+      accessorKey: 'vat.raw',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            VAT
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Vat document={row.original} />;
+      },
     },
-  },
-  {
-    id: 'amount',
-    accessorKey: 'amount.raw',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Amount
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
+    {
+      id: 'type',
+      accessorKey: 'documentType',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Type
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return (
+          <TypeCell
+            document={row.original}
+            isOpen={
+              'issuedDocumentInfo' in row.original &&
+              row.original.issuedDocumentInfo?.status === 'OPEN'
+            }
+          />
+        );
+      },
     },
-    cell: ({ row }) => {
-      return <Amount document={row.original} />;
+    {
+      id: 'serial',
+      accessorKey: 'serialNumber',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Serial
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Serial document={row.original} />;
+      },
     },
-  },
-  {
-    id: 'vat',
-    accessorKey: 'vat.raw',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          VAT
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
+    {
+      id: 'description',
+      accessorKey: 'description',
+      header: 'Description',
+      cell: ({ row }) => {
+        return <Description document={row.original} />;
+      },
     },
-    cell: ({ row }) => {
-      return <Vat document={row.original} />;
+    {
+      id: 'remarks',
+      accessorKey: 'remarks',
+      header: 'Remarks',
+      cell: ({ row }) => {
+        return <Remarks document={row.original} />;
+      },
     },
-  },
-  {
-    id: 'type',
-    accessorKey: 'documentType',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Type
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
+    {
+      id: 'creditor',
+      accessorKey: 'creditor.name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Creditor
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Creditor document={row.original} onChange={row.original.onUpdate} />;
+      },
     },
-    cell: ({ row }) => {
-      return (
-        <TypeCell
-          document={row.original}
-          isOpen={
-            'issuedDocumentInfo' in row.original &&
-            row.original.issuedDocumentInfo?.status === 'OPEN'
-          }
-        />
-      );
+    {
+      id: 'debtor',
+      accessorKey: 'debtor.name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Debtor
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Debtor document={row.original} onChange={row.original.onUpdate} />;
+      },
     },
-  },
-  {
-    id: 'serial',
-    accessorKey: 'serialNumber',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Serial
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
+    {
+      id: 'file',
+      accessorKey: 'file',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            files
+            {column.getIsSorted() &&
+              (column.getIsSorted() === 'asc' ? (
+                <ChevronUp className="ml-2 h-4 w-4" />
+              ) : (
+                <ChevronDown className="ml-2 h-4 w-4" />
+              ))}
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <Files document={row.original} />;
+      },
     },
-    cell: ({ row }) => {
-      return <Serial document={row.original} />;
+    {
+      id: 'actions',
+      accessorKey: 'id',
+      header: '',
+      cell: ({ row }) => {
+        return <DocumentActionsMenu document={row.original} withChargeLink={withChargeLink} />;
+      },
     },
-  },
-  {
-    id: 'description',
-    accessorKey: 'description',
-    header: 'Description',
-    cell: ({ row }) => {
-      return <Description document={row.original} />;
-    },
-  },
-  {
-    id: 'remarks',
-    accessorKey: 'remarks',
-    header: 'Remarks',
-    cell: ({ row }) => {
-      return <Remarks document={row.original} />;
-    },
-  },
-  {
-    id: 'creditor',
-    accessorKey: 'creditor.name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Creditor
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      return <Creditor document={row.original} onChange={row.original.onUpdate} />;
-    },
-  },
-  {
-    id: 'debtor',
-    accessorKey: 'debtor.name',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          Debtor
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      return <Debtor document={row.original} onChange={row.original.onUpdate} />;
-    },
-  },
-  {
-    id: 'file',
-    accessorKey: 'file',
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-        >
-          files
-          {column.getIsSorted() &&
-            (column.getIsSorted() === 'asc' ? (
-              <ChevronUp className="ml-2 h-4 w-4" />
-            ) : (
-              <ChevronDown className="ml-2 h-4 w-4" />
-            ))}
-        </Button>
-      );
-    },
-    cell: ({ row }) => {
-      return <Files document={row.original} />;
-    },
-  },
-  {
-    id: 'edit',
-    accessorKey: 'id',
-    header: 'Edit',
-    cell: ({ row }) => {
-      return (
-        <div className="flex flex-col items-center gap-2">
-          <EditMiniButton onClick={row.original.editDocument} tooltip="Edit Document" />
-          {'issuedDocumentInfo' in row.original &&
-            row.original.issuedDocumentInfo?.status === 'OPEN' && (
-              <>
-                <CloseDocumentButton
-                  documentId={row.original.id}
-                  couldIssueCreditInvoice={
-                    row.original.documentType === DocumentType.Invoice ||
-                    row.original.documentType === DocumentType.InvoiceReceipt
-                  }
-                  onChange={row.original.onUpdate}
-                />
-                <PreviewDocumentModal
-                  documentId={row.original.id}
-                  tooltip="Issue Document out of This Document"
-                  onIssued={row.original.onUpdate}
-                />
-              </>
-            )}
-        </div>
-      );
-    },
-  },
-];
+  ];
+}
+
+/** The default column set, used by hosts that need no per-host options. */
+export const columns = getDocumentsTableColumns();

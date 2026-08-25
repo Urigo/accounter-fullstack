@@ -2,14 +2,14 @@ import { useEffect, useState, type ReactElement } from 'react';
 import { useForm, type SubmitHandler } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { useQuery } from 'urql';
-import { Drawer, Image, Loader } from '@mantine/core';
+import { Image, Loader } from '@mantine/core';
 import { Button } from '@/components/ui/button.js';
 import { Label } from '@/components/ui/label.js';
 import { EditDocumentDocument, type UpdateDocumentFieldsInput } from '../../../gql/graphql.js';
 import { relevantDataPicker, type MakeBoolean } from '../../../helpers/form.js';
 import { useUpdateDocument } from '../../../hooks/use-update-document.js';
 import { Form } from '../../ui/form.js';
-import { ImageMagnifier, SimpleGrid } from '../index.js';
+import { DocumentImageDrawer, SimpleGrid } from '../index.js';
 import { ModifyDocumentFields } from './modify-document-fields.js';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- used by codegen
@@ -195,26 +195,11 @@ export const EditDocument = ({ documentId, onDone, onChange }: Props): ReactElem
               />
             </div>
           </div>
-          {document.image && (
-            <Drawer
-              classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
-              withCloseButton
-              withOverlay={false}
-              position="right"
-              opened={openImage}
-              onClose={(): void => setOpenImage(false)}
-              size="30%"
-            >
-              <div className="m-2">
-                <ImageMagnifier
-                  src={document.image!.toString()}
-                  zoomLevel={3}
-                  magnifierHeight={300}
-                  magnifierWidth={300}
-                />
-              </div>
-            </Drawer>
-          )}
+          <DocumentImageDrawer
+            src={document.image}
+            opened={openImage}
+            onClose={(): void => setOpenImage(false)}
+          />
         </>
       )}
     </div>

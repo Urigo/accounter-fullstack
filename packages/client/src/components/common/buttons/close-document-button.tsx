@@ -1,4 +1,11 @@
-import { useCallback, useState, type ComponentProps, type ReactElement } from 'react';
+import {
+  useCallback,
+  useState,
+  type ComponentProps,
+  type Dispatch,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
 import { CircleX } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip.js';
 import { DocumentType } from '../../../gql/graphql.js';
@@ -12,17 +19,30 @@ type Props = ComponentProps<typeof Button> & {
   couldIssueCreditInvoice: boolean;
   /** Called after the document was closed (or a credit invoice issued for it). */
   onChange?: () => void;
+  /**
+   * Drive the dialog from the outside. When `setOpen` is passed the component renders no trigger
+   * button of its own, so hosts that already have a trigger — a dropdown menu item, for instance —
+   * can open it without nesting a button inside their own control.
+   */
+  open?: boolean;
+  setOpen?: Dispatch<SetStateAction<boolean>>;
 };
 
 export function CloseDocumentButton({
   documentId,
   couldIssueCreditInvoice,
   onChange,
+  open: externalOpen,
+  setOpen: setExternalOpen,
   ...props
 }: Props): ReactElement {
   const { closeDocument } = useCloseDocument();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
   const [previewCreditInvoice, setPreviewCreditInvoice] = useState(false);
+
+  const isControlled = !!setExternalOpen;
+  const open = externalOpen ?? localOpen;
+  const setOpen = setExternalOpen ?? setLocalOpen;
 
   const onFinallyClose = useCallback(async () => {
     const closed = await closeDocument({ documentId });
@@ -37,38 +57,44 @@ export function CloseDocumentButton({
       <ConfirmationModal
         onConfirm={onFinallyClose}
         title="Are you sure you want to close this document?"
+        open={isControlled ? open : undefined}
+        setOpen={isControlled ? setOpen : undefined}
       >
-        <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
-          <Tooltip>
-            <TooltipTrigger>
-              <CircleX className="size-5" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Close Document</p>
-            </TooltipContent>
-          </Tooltip>
-        </Button>
+        {isControlled ? undefined : (
+          <Button className="size-7.5 text-red-600" variant="ghost" {...props}>
+            <Tooltip>
+              <TooltipTrigger>
+                <CircleX className="size-5" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close Document</p>
+              </TooltipContent>
+            </Tooltip>
+          </Button>
+        )}
       </ConfirmationModal>
     );
   }
 
   return (
     <>
-      <Tooltip>
-        <TooltipTrigger>
-          <Button
-            className="size-7.5 text-red-600"
-            variant="ghost"
-            {...props}
-            onClick={() => setOpen(true)}
-          >
-            <CircleX className="size-5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Close Document</p>
-        </TooltipContent>
-      </Tooltip>
+      {!isControlled && (
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              className="size-7.5 text-red-600"
+              variant="ghost"
+              {...props}
+              onClick={() => setOpen(true)}
+            >
+              <CircleX className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Close Document</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

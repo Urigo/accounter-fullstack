@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { File, Image } from 'lucide-react';
-import { Drawer, Indicator, SimpleGrid } from '@mantine/core';
-import { ImageMagnifier, Tooltip } from '../../common/index.js';
+import { Indicator, SimpleGrid } from '@mantine/core';
+import { DocumentImageDrawer, Tooltip } from '../../common/index.js';
 import { Button } from '../../ui/button.js';
 import type { DocumentsTableRowType } from '../columns.js';
 
@@ -52,26 +52,11 @@ export const Files = ({ document: { image, file } }: Props): ReactElement => {
           </SimpleGrid>
         </div>
       </div>
-      {image && (
-        <Drawer
-          classNames={{ content: 'overflow-y-auto drop-shadow-lg' }}
-          withCloseButton
-          withOverlay={false}
-          position="right"
-          opened={openImage}
-          onClose={(): void => setOpenImage(false)}
-          size="30%"
-        >
-          <div className="m-2">
-            <ImageMagnifier
-              src={image.toString()}
-              zoomLevel={3}
-              magnifierHeight={300}
-              magnifierWidth={300}
-            />
-          </div>
-        </Drawer>
-      )}
+      <DocumentImageDrawer
+        src={image}
+        opened={openImage}
+        onClose={(): void => setOpenImage(false)}
+      />
     </>
   );
 };
