@@ -16,7 +16,7 @@
  * result or an input schema and needs to know what it means and what it is
  * *not*. Prefer stating the trap over restating the field name.
  *
- * Budget: at 67 entries the index is ~11 KB and the full glossary ~40 KB against
+ * Budget: at 69 entries the index is ~11 KB and the full glossary ~41 KB against
  * the 60 KB `MAX_TOOL_RESULT_BYTES` guard, so there is room for roughly 30 more
  * before a request for every topic starts truncating. `terminology.test.ts`
  * asserts the whole glossary still fits in one response, so overshooting fails
@@ -645,8 +645,43 @@ const ENTITY_ENTRIES: readonly GlossaryEntry[] = [
     detail:
       'One table holds them all, which is why the full business directory is much larger than the handful you are a member of. Carries the tax identifiers and behaviour flags that drive validation: government/VAT id, country (compared against your locality to decide whether VAT applies at all), VAT-exempt-dealer status, whether a receipt alone suffices, whether documents are required. Businesses also carry matching phrases used to guess a counterparty from a bank description.',
     aliases: ['businesses', 'Business', 'LtdFinancialEntity'],
-    seeAlso: ['financial-entity', 'owner', 'counterparty', 'member-business-id'],
-    tools: ['accounter_list_businesses', 'accounter_list_business_memberships'],
+    seeAlso: ['financial-entity', 'owner', 'counterparty', 'member-business-id', 'client'],
+    tools: [
+      'accounter_list_businesses',
+      'accounter_list_business_memberships',
+      'accounter_list_clients',
+    ],
+  },
+  {
+    term: 'client',
+    topic: 'entity',
+    summary:
+      'A business you sell to — one that carries a clients row, which adds emails and external-system ids.',
+    detail:
+      "The presence of a clients row is what makes a business a client — the same shape as businesses_admin or businesses_securities, and the reason `isClient` is a flag on a business rather than a separate entity. A client's id IS its business id: the `id` of an `isClient: true` row from the directory, this tool's `businessId`, and the `clientIds` filter on contracts are all the same value, so no translation is ever needed between them. Two traps. First, scope: the business directory deliberately reaches wider than your own businesses, but the client list does not — it is strictly owner-scoped, so a client absent from it is out of scope rather than nonexistent. Second, direction: client means the sell side, and nothing more. There is no client charge type, and `isClient` says nothing about the direction of any particular charge — a client can also invoice you.",
+    aliases: ['clients', 'Client', 'clientInfo', 'isClient', 'clientIds', 'clientBusinessIds'],
+    seeAlso: ['business', 'counterparty', 'owner', 'client-integrations'],
+    tools: ['accounter_list_clients', 'accounter_get_contracts', 'accounter_list_businesses'],
+  },
+  {
+    term: 'client-integrations',
+    topic: 'entity',
+    summary:
+      "A client's ids in external systems — Green Invoice, Hive, Linear, Slack, Notion, Workflowy. Not accounting data.",
+    detail:
+      "An open-ended map stored per client, holding this client's identifier in some other tool. Only greenInvoiceId is acted on by the system itself — it is what document issuing and invoice sync address the client by; the rest are cross-links for people, and nothing reads them. Absent means not configured: an unset integration is omitted from the row rather than returned as null, so a missing key is a statement about setup, not about the client. Never read one of these as a business id or a charge id — they are identifiers in someone else's namespace and are meaningless to every other tool here.",
+    aliases: [
+      'integrations',
+      'ClientIntegrations',
+      'greenInvoiceId',
+      'hiveId',
+      'linearId',
+      'slackChannelKey',
+      'notionId',
+      'workflowyUrl',
+    ],
+    seeAlso: ['client', 'business'],
+    tools: ['accounter_list_clients'],
   },
   {
     term: 'tax-category',

@@ -1,6 +1,7 @@
 import { listBusinessMembershipsTool } from './businesses.js';
 import { getChargesTool } from './charge-details.js';
 import { searchChargesTool } from './charges.js';
+import { listClientsTool } from './clients.js';
 import { getContractsTool } from './contracts.js';
 import { getDocumentsTool } from './document-details.js';
 import { uploadDocumentsTool } from './documents-write.js';
@@ -41,6 +42,11 @@ toolRegistry.register(getDocumentsTool);
 // Ledger records are the accounting layer under a charge, so they follow the
 // charge/transaction/document drill-down rather than sitting with the lookups.
 toolRegistry.register(getLedgerRecordsTool);
+// Clients immediately before contracts, for the same reason securities'
+// portfolio precedes its executions: a contract is filtered by `clientIds`, and
+// this is the only tool that enumerates them — so discovery is listed ahead of
+// the tool that consumes it.
+toolRegistry.register(listClientsTool);
 toolRegistry.register(getContractsTool);
 // Securities are their own drill-down, not reference data: the portfolio is the
 // entry point and the execution history is what it drills into, so the pair sits

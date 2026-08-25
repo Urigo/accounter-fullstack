@@ -193,6 +193,16 @@ const listBusinessesInput = z.object({
   memberBusinessIds: memberBusinessIdsInput,
   nameContains,
   activeOnly: z.boolean().optional().default(false).describe('Return only active businesses.'),
+  isClient: z
+    .boolean()
+    .optional()
+    .describe(
+      'Return only businesses that are clients (true), or only those that are not (false). Omit ' +
+        'for both. Unlike `activeOnly`, this is a real upstream predicate applied before paging, ' +
+        'so `pagination` and `totalCount` describe the filtered directory and no page comes back ' +
+        'short on account of it. To enumerate clients *with* their emails and integrations, use ' +
+        '`accounter_list_clients` instead of paging this directory.',
+    ),
   limit,
   // `allBusinesses(page:)` is the third upstream argument, and pinning it to the
   // first page made the directory unwalkable past `limit` rows with no way to
@@ -226,13 +236,21 @@ type ListBusinessesInput = z.infer<typeof listBusinessesInput>;
 // dropped rows from this one. That is the intended reading: the counts describe
 // what upstream holds, `returnedCount` describes what came back.
 const LIST_BUSINESSES_QUERY = /* GraphQL */ `
-  query McpListBusinesses($name: String, $page: Int, $limit: Int) {
-    allBusinesses(name: $name, page: $page, limit: $limit) {
+  query McpListBusinesses($name: String, $page: Int, $limit: Int, $isClient: Boolean) {
+    allBusinesses(name: $name, page: $page, limit: $limit, isClient: $isClient) {
       nodes {
         id
         name
         ownerId
         isActive
+        # isClient hangs off LtdFinancialEntity, not off the Business interface
+        # that allBusinesses is typed to, so it needs a fragment. The branch is a
+        # formality rather than a real choice: Business.__resolveType returns
+        # 'LtdFinancialEntity' unconditionally, so this matches every node.
+        # schema-contract.test.ts pins both halves of that assumption.
+        ... on LtdFinancialEntity {
+          isClient
+        }
       }
       pageInfo {
         totalPages
@@ -243,6 +261,23 @@ const LIST_BUSINESSES_QUERY = /* GraphQL */ `
     }
   }
 `;
+
+/** One row of the upstream business directory, as the generated query types it. */
+type RawBusinessNode = NonNullable<McpListBusinessesQuery['allBusinesses']>['nodes'][number];
+
+/**
+ * Read `isClient` off a directory row.
+ *
+ * The generated node type is a union — `isClient` is selected through an inline
+ * fragment, so only the `LtdFinancialEntity` arm carries it. Every node takes
+ * that arm at runtime (see the query comment), but the compiler cannot know
+ * that, so narrow structurally. The `false` fallback is unreachable in practice
+ * and deliberately not an error: a business that somehow resolved to another
+ * type is not a client.
+ */
+function rawBusinessIsClient(business: RawBusinessNode): boolean {
+  return 'isClient' in business ? business.isClient : false;
+}
 
 async function listBusinessesHandler(
   input: ListBusinessesInput,
@@ -256,6 +291,9 @@ async function listBusinessesHandler(
         // Upstream slices `[page * limit, (page + 1) * limit]`, so it is 0-based.
         page: input.page - 1,
         limit: input.limit,
+        // Null rather than undefined: an omitted `isClient` must reach upstream
+        // as "no predicate", and `null` is what the resolver tests for.
+        isClient: input.isClient ?? null,
       },
     },
     context.upstream,
@@ -271,6 +309,7 @@ async function listBusinessesHandler(
     name: business.name,
     ownerId: business.ownerId,
     isActive: business.isActive,
+    isClient: rawBusinessIsClient(business),
   }));
 
   // `totalRecords` counts upstream's whole (name-filtered) directory rather than
@@ -318,7 +357,7 @@ const DIRECTORY_SCOPE_DESCRIPTION_SUFFIX =
 export const listBusinessesTool: ToolDefinition<typeof listBusinessesInput> = {
   name: LIST_BUSINESSES_TOOL_NAME,
   description:
-    'List the full business directory (id, name, ownerId, active flag) — every business visible to you, not just the ones you are a member of — optionally filtered by name or active status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`. Read-only. ' +
+    'List the full business directory (id, name, ownerId, active flag, and whether the business is a client) — every business visible to you, not just the ones you are a member of — optionally filtered by name, active status, or client status, with `limit`/`page` pagination over the name-ordered directory. For your own memberships and roles use `accounter_list_business_memberships`; for client emails and integrations use `accounter_list_clients`, whose ids are these same business ids. Read-only. ' +
     DIRECTORY_SCOPE_DESCRIPTION_SUFFIX,
   inputSchema: listBusinessesInput,
   policy: { requiresBusinessScope: true, dataClassification: 'business' },

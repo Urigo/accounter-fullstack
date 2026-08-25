@@ -35,7 +35,7 @@ import { IGenerateChargeResult } from '../../charges/types.js';
 import { DocumentsProvider } from '../../documents/providers/documents.provider.js';
 import { IssuedDocumentsProvider } from '../../documents/providers/issued-documents.provider.js';
 import type { document_status, IInsertDocumentsParams } from '../../documents/types.js';
-import { validateClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../../financial-entities/helpers/clients.helper.js';
 import { ClientsProvider } from '../../financial-entities/providers/clients.provider.js';
 
 export function normalizeGreenInvoiceDocumentType(
@@ -1254,7 +1254,7 @@ export async function convertDocumentInputIntoGreenInvoiceInput(
     let greenInvoiceId: string | null;
     try {
       greenInvoiceId =
-        validateClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;
+        parseStoredClientIntegrations(clientInfo.integrations ?? {}).greenInvoiceId ?? null;
     } catch (error) {
       console.error('Failed to validate client integrations', error);
       throw new GraphQLError(

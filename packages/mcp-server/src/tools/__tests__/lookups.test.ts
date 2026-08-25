@@ -146,9 +146,12 @@ describe('listBusinessesTool', () => {
     clientReturning({
       allBusinesses: {
         nodes: [
-          { id: '3', name: 'Zebra', ownerId: 'o1', isActive: true },
+          { id: '3', name: 'Zebra', ownerId: 'o1', isActive: true, isClient: true },
+          // No `isClient` key at all: stands in for a node that did not resolve
+          // to LtdFinancialEntity, which the row mapper must read as `false`
+          // rather than `undefined`.
           { id: '1', name: 'apple', ownerId: 'o1', isActive: false },
-          { id: '2', name: 'Banana', ownerId: 'o1', isActive: true },
+          { id: '2', name: 'Banana', ownerId: 'o1', isActive: true, isClient: false },
         ],
       },
     });
@@ -185,6 +188,53 @@ describe('listBusinessesTool', () => {
     const result = await runTool(listBusinessesTool, client(), authContext([]), {});
     expect(result.isError).toBe(true);
     expect((result.structuredContent as { code: string }).code).toBe('AUTHORIZATION_ERROR');
+  });
+
+  it('reports isClient per row, defaulting a missing flag to false', async () => {
+    const result = await runTool(listBusinessesTool, client(), authContext(['b1']), {});
+    const rows = (
+      result.structuredContent as { businesses: Array<{ name: string; isClient: boolean }> }
+    ).businesses;
+    expect(rows.map(b => [b.name, b.isClient])).toEqual([
+      ['apple', false],
+      ['Banana', false],
+      ['Zebra', true],
+    ]);
+  });
+
+  // `isClient` is a real upstream predicate, unlike `activeOnly`: it must reach
+  // the server so paging and counts describe the filtered directory. Filtering
+  // the returned page instead would silently answer a narrower question.
+  it('forwards isClient upstream rather than filtering the page locally', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning(
+      { allBusinesses: { nodes: [{ id: '1', name: 'apple', ownerId: 'o1', isActive: true, isClient: true }] } },
+      init => (sentInit = init),
+    );
+    const result = await runTool(listBusinessesTool, capturing, authContext(['b1']), {
+      isClient: true,
+    });
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: Record<string, unknown>;
+    };
+    expect(variables.isClient).toBe(true);
+    // Everything upstream returned survives — the handler adds no second pass.
+    expect((result.structuredContent as { businesses: unknown[] }).businesses).toHaveLength(1);
+  });
+
+  it('sends isClient as null when omitted, so upstream applies no predicate', async () => {
+    let sentInit: RequestInit | undefined;
+    const capturing = clientReturning(
+      { allBusinesses: { nodes: [] } },
+      init => (sentInit = init),
+    );
+    await runTool(listBusinessesTool, capturing, authContext(['b1']), {});
+
+    const { variables } = JSON.parse(sentInit!.body as string) as {
+      variables: Record<string, unknown>;
+    };
+    expect(variables.isClient).toBeNull();
   });
 
   // `allBusinesses(page:, limit:)` used to be left unset, so the directory was

@@ -4,7 +4,7 @@ import { sql } from '@pgtyped/runtime';
 import { reassureOwnerIdExists } from '../../../shared/helpers/index.js';
 import { AdminContextProvider } from '../../admin-context/providers/admin-context.provider.js';
 import { TenantAwareDBClient } from '../../app-providers/tenant-db-client.js';
-import { validateClientIntegrations } from '../helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../helpers/clients.helper.js';
 import type {
   IDeleteClientQuery,
   IGetAllClientsQuery,
@@ -51,6 +51,10 @@ const updateClient = sql<IUpdateClientQuery>`
     $integrations,
     integrations,
     NULL
+  ),
+  document_type = COALESCE(
+    $generatedDocumentType,
+    document_type
   )
   WHERE
     business_id = $businessId
@@ -64,8 +68,8 @@ const deleteClient = sql<IDeleteClientQuery>`
 `;
 
 const insertClient = sql<IInsertClientQuery>`
-    INSERT INTO accounter_schema.clients (business_id, emails, integrations, owner_id)
-    VALUES ($businessId, $emails, $integrations, $ownerId)
+    INSERT INTO accounter_schema.clients (business_id, emails, integrations, document_type, owner_id)
+    VALUES ($businessId, $emails, $integrations, $generatedDocumentType, $ownerId)
     RETURNING *;`;
 
 @Injectable({
@@ -86,16 +90,14 @@ export class ClientsProvider {
     this.allClientsPython = getAllClients.run(undefined, this.db).then(clients => {
       clients.map(client => {
         this.getClientByIdLoader.prime(client.business_id, client);
-        try {
-          const { greenInvoiceId } = validateClientIntegrations(client.integrations ?? {});
-          if (greenInvoiceId) {
-            this.getClientByGreenInvoiceIdLoader.prime(greenInvoiceId, {
-              ...client,
-              green_invoice_business_id: greenInvoiceId,
-            });
-          }
-        } catch {
-          // swallow errors
+        // `parseStoredClientIntegrations` never throws, so a client whose stored
+        // integrations are unreadable is simply not primed on this loader.
+        const { greenInvoiceId } = parseStoredClientIntegrations(client.integrations);
+        if (greenInvoiceId) {
+          this.getClientByGreenInvoiceIdLoader.prime(greenInvoiceId, {
+            ...client,
+            green_invoice_business_id: greenInvoiceId,
+          });
         }
       });
       return clients;

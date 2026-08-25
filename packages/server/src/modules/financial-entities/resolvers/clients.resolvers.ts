@@ -1,10 +1,11 @@
 import { GraphQLError } from 'graphql';
 import type { ClientIntegrationsInput, Resolvers } from '../../../__generated__/types.js';
+import { normalizeDocumentType } from '../../documents/resolvers/common.js';
 import {
   addGreenInvoiceClient,
   updateGreenInvoiceClient,
 } from '../../green-invoice/helpers/green-invoice-clients.helper.js';
-import { validateClientIntegrations } from '../helpers/clients.helper.js';
+import { parseStoredClientIntegrations } from '../helpers/clients.helper.js';
 import { BusinessesProvider } from '../providers/businesses.provider.js';
 import { ClientsProvider } from '../providers/clients.provider.js';
 import type {
@@ -54,7 +55,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         if (!currentClient) {
           throw new GraphQLError(`Client with ID="${businessId}" not found`);
         }
-        const currentIntegrations = validateClientIntegrations(currentClient.integrations);
+        const currentIntegrations = parseStoredClientIntegrations(currentClient.integrations);
         updatedIntegrations = {
           ...currentIntegrations,
           ...updatedIntegrations,
@@ -64,6 +65,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         businessId,
         emails: fields.emails ? [...fields.emails] : undefined,
         newBusinessId: fields.newBusinessId,
+        generatedDocumentType: fields.generatedDocumentType,
         integrations: updatedIntegrations,
       };
       try {
@@ -95,6 +97,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
         const newClient: IInsertClientParams = {
           businessId: fields.businessId,
           emails: fields.emails ? [...fields.emails] : [],
+          generatedDocumentType: fields.generatedDocumentType,
           integrations: fields.integrations ?? {},
         };
         const [insertClient] = await injector.get(ClientsProvider).insertClient(newClient);
@@ -118,6 +121,7 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
   },
   Client: {
     id: business => business.business_id,
+    ownerId: business => business.owner_id,
     originalBusiness: async (business, _, { injector }) => {
       const businessMatch = await injector
         .get(BusinessesProvider)
@@ -130,17 +134,20 @@ export const clientsResolvers: FinancialEntitiesModule.Resolvers &
       return businessMatch;
     },
     emails: business => business.emails ?? [],
+    // The client-level default. NOT what actually gets issued for a given
+    // billing agreement — that is `Contract.documentType`, set per contract.
+    generatedDocumentType: business => normalizeDocumentType(business.document_type),
     integrations: business => business,
   },
   ClientIntegrations: {
     id: business => `${business.business_id}-integrations`,
-    hiveId: business => validateClientIntegrations(business.integrations).hiveId ?? null,
-    linearId: business => validateClientIntegrations(business.integrations).linearId ?? null,
+    hiveId: business => parseStoredClientIntegrations(business.integrations).hiveId ?? null,
+    linearId: business => parseStoredClientIntegrations(business.integrations).linearId ?? null,
     slackChannelKey: business =>
-      validateClientIntegrations(business.integrations).slackChannelKey ?? null,
-    notionId: business => validateClientIntegrations(business.integrations).notionId ?? null,
+      parseStoredClientIntegrations(business.integrations).slackChannelKey ?? null,
+    notionId: business => parseStoredClientIntegrations(business.integrations).notionId ?? null,
     workflowyUrl: business =>
-      validateClientIntegrations(business.integrations).workflowyUrl ?? null,
+      parseStoredClientIntegrations(business.integrations).workflowyUrl ?? null,
   },
   LtdFinancialEntity: {
     clientInfo: async (business, _, { injector }) => {

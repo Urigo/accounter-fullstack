@@ -18,6 +18,8 @@ export default gql`
   " business extended with green invoice data "
   type Client {
     id: UUID!
+    " the (admin) business this client record belongs to "
+    ownerId: UUID!
     originalBusiness: LtdFinancialEntity!
     emails: [String!]!
     generatedDocumentType: DocumentType!
