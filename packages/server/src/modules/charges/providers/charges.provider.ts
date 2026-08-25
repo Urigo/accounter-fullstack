@@ -269,6 +269,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
              WHERE t.business_id IS NULL
            ) > 0 AS missing_counterparty_transactions,
            array_agg(DISTINCT t.currency) AS currency_array,
+           array_agg(DISTINCT t.account_id) AS account_array,
            string_agg(COALESCE(t.source_description, '') || ' ' || COALESCE(t.source_reference, ''), ' ') AS search_text
     FROM accounter_schema.transactions t
     JOIN filtered_charges fc ON fc.id = t.charge_id
@@ -658,6 +659,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
       tbc.min_debit_timestamp AS transactions_min_debit_timestamp,
       tbc.max_debit_timestamp AS transactions_max_debit_timestamp,
       tbc.fee_excluded_event_amount AS transactions_fee_excluded_amount,
+      tbc.account_array,
       -- Cast enum arrays to TEXT[]: node-postgres has no array parser registered for the
       -- custom accounter_schema.currency OID, so a currency[] arrives in JS as the raw
       -- array literal ('{USD}') rather than an array. TEXT[] is parsed natively.
@@ -749,6 +751,7 @@ const getChargesByFilters = sql<IGetChargesByFiltersQuery>`
   AND ($isAccountantStatuses = 0 OR ec.accountant_status = ANY ($accountantStatuses::accounter_schema.accountant_status[]))
   AND ($isTags = 0 OR ec.tags && $tags)
   AND ($isBusinessTripIds = 0 OR ec.business_trip_id = ANY ($businessTripIds::uuid[]))
+  AND ($isAccountIds = 0 OR ec.account_array && $accountIds::uuid[])
   AND ($withMissingCounterparty = FALSE OR COALESCE(ec.missing_counterparty_transactions, false) = true OR COALESCE(ec.missing_counterparty_documents, false) = true)
   ORDER BY
   CASE WHEN $asc = true AND $sortColumn = 'event_date' THEN (COALESCE(ec.transactions_min_debit_date, ec.transactions_min_event_date, ec.documents_min_date, ec.ledger_min_value_date, ec.ledger_min_invoice_date), COALESCE(ec.documents_min_date, ec.transactions_min_event_date), ec.id) END ASC,
@@ -1098,6 +1101,8 @@ type IGetAdjustedChargesByFiltersParams = Optional<
     | 'tags'
     | 'isBusinessTripIds'
     | 'businessTripIds'
+    | 'isAccountIds'
+    | 'accountIds'
     | 'freeTextNumeric'
   >,
   'ownerIds' | 'IDs' | 'asc' | 'sortColumn' | 'toDate' | 'fromDate'
@@ -1107,6 +1112,7 @@ type IGetAdjustedChargesByFiltersParams = Optional<
   tags?: readonly string[] | null;
   businessIds?: readonly string[] | null;
   businessTripIds?: readonly string[] | null;
+  accountIds?: readonly string[] | null;
 };
 
 const deleteChargesByIds = sql<IDeleteChargesByIdsQuery>`
@@ -1224,6 +1230,7 @@ export class ChargesProvider {
     const isTags = !!params?.tags?.length;
     const isAccountantStatuses = !!params?.accountantStatuses?.length;
     const isBusinessTripIds = !!params?.businessTripIds?.filter(Boolean).length;
+    const isAccountIds = !!params?.accountIds?.filter(Boolean).length;
 
     const defaults = {
       asc: false,
@@ -1238,6 +1245,7 @@ export class ChargesProvider {
       isTags: isTags ? 1 : 0,
       isAccountantStatuses: isAccountantStatuses ? 1 : 0,
       isBusinessTripIds: isBusinessTripIds ? 1 : 0,
+      isAccountIds: isAccountIds ? 1 : 0,
       ...params,
       fromDate: params.fromDate ?? null,
       toDate: params.toDate ?? null,
@@ -1246,6 +1254,7 @@ export class ChargesProvider {
       IDs: isIDs ? params.IDs! : [null],
       tags: isTags ? (params.tags! as string[]) : null,
       businessTripIds: isBusinessTripIds ? (params.businessTripIds! as string[]) : null,
+      accountIds: isAccountIds ? (params.accountIds! as string[]) : null,
       withMissingCounterparty: params.withMissingCounterparty ?? false,
       chargeType: params.chargeType ?? 'ALL',
       withoutInvoice: params.withoutInvoice ?? false,

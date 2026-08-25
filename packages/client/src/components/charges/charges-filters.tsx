@@ -23,6 +23,7 @@ import {
 import type { TimelessDateString } from '../../helpers/dates.js';
 import { isObjectEmpty, TIMELESS_DATE_REGEX } from '../../helpers/index.js';
 import { useGetBusinessTrips } from '../../hooks/use-get-business-trips.js';
+import { useGetFinancialAccounts } from '../../hooks/use-get-financial-accounts.js';
 import { useGetFinancialEntities } from '../../hooks/use-get-financial-entities.js';
 import { useGetTags } from '../../hooks/use-get-tags.js';
 import { useUrlQuery } from '../../hooks/use-url-query.js';
@@ -119,6 +120,8 @@ function ChargesFiltersForm({
   const { selectableTags: tags, fetching: tagsFetching } = useGetTags();
   const { selectableBusinessTrips: businessTrips, fetching: businessTripsFetching } =
     useGetBusinessTrips();
+  const { selectableFinancialAccounts, fetching: financialAccountsFetching } =
+    useGetFinancialAccounts();
 
   const sortByField = watch('sortBy.field');
 
@@ -186,6 +189,29 @@ function ChargesFiltersForm({
                       data={financialEntities}
                       value={field.value ?? []}
                       disabled={financialEntitiesFetching}
+                      placeholder="Scroll to see all options"
+                      maxDropdownHeight={160}
+                      searchable
+                      withinPortal
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              name="byFinancialAccounts"
+              control={control}
+              defaultValue={filter.byFinancialAccounts}
+              render={({ field }): ReactElement => (
+                <FormItem className="h-min">
+                  <FormLabel>Financial Accounts</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      {...field}
+                      data={selectableFinancialAccounts}
+                      value={field.value ?? []}
+                      disabled={financialAccountsFetching}
                       placeholder="Scroll to see all options"
                       maxDropdownHeight={160}
                       searchable
@@ -586,7 +612,7 @@ function ChargesFiltersForm({
           <div className="flex justify-center mt-5 gap-3">
             <button
               type="submit"
-              disabled={financialEntitiesFetching || tagsFetching}
+              disabled={financialEntitiesFetching || tagsFetching || financialAccountsFetching}
               className="text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-hidden hover:bg-indigo-600 rounded-sm text-lg"
             >
               Filter

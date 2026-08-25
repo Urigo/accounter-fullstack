@@ -84,6 +84,7 @@ export async function fetchFilteredCharges(
       chargeType: filters?.chargesType,
       businessIds: filters?.byBusinesses,
       businessTripIds: filters?.byBusinessTrips,
+      accountIds: filters?.byFinancialAccounts,
       withMissingCounterparty: filters?.withMissingCounterparty,
       withoutInvoice: filters?.withoutInvoice,
       withoutReceipt: filters?.withoutReceipt,

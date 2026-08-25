@@ -142,10 +142,10 @@ scope, because it _is_ the scope.
 
   Both charge tools build their filter from one definition (`tools/charge-filters.ts`), and
   `schema-contract.test.ts` checks that definition against `input ChargeFilter` in `schema.graphql`,
-  so a field added upstream fails the suite instead of quietly becoming unreachable. Three fields —
-  `businessTrip`, `byFinancialAccounts`, `unbalanced` — are deliberately **not** accepted: upstream
-  takes them and never passes them to the SQL, and a filter that silently matches everything is
-  worse than an absent one (`UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`).
+  so a field added upstream fails the suite instead of quietly becoming unreachable. Two fields —
+  `businessTrip`, `unbalanced` — are deliberately **not** accepted: upstream takes them and never
+  passes them to the SQL, and a filter that silently matches everything is worse than an absent one
+  (`UNSUPPORTED_UPSTREAM_CHARGE_FILTER_FIELDS`).
 
 - **`accounter_get_transactions`** — read-only bank/card **transactions**, owner-tagged, by id
   (`transactionIds`) or by `filters` (every `TransactionsFilters` field: ids, charge ids, owners,
